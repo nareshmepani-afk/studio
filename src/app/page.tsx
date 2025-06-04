@@ -1,3 +1,134 @@
-export default function Home() {
-  return <></>;
+
+"use client";
+
+import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
+import { MemoryCard } from '@/components/memory/MemoryCard';
+import { TimelineFilter } from '@/components/memory/TimelineFilter';
+import { Button } from '@/components/ui/button';
+import { mockMemories } from '@/lib/mockData';
+import type { Memory, MemoryCategory } from '@/types';
+import { PlusCircle, LayoutGrid, List } from 'lucide-react';
+import Link from 'next/link';
+import { useState, useMemo, useEffect } from 'react';
+
+export default function TimelinePage() {
+  const [memories, setMemories] = useState<Memory[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortCriteria, setSortCriteria] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc'>('date-desc');
+  const [categoryFilter, setCategoryFilter] = useState<MemoryCategory | 'all'>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid'); // Not implemented yet, but for future
+
+  useEffect(() => {
+    // Simulate API call
+    setTimeout(() => {
+      setMemories(mockMemories);
+      setIsLoading(false);
+    }, 500);
+  }, []);
+
+  const handleEditMemory = (memory: Memory) => {
+    // Navigate to edit page or open modal
+    console.log('Edit memory:', memory);
+    // For now, just log. In a real app, you'd navigate to an edit page.
+    // router.push(`/edit-memory/${memory.id}`);
+  };
+
+  const handleDeleteMemory = (memoryId: string) => {
+    setMemories(prevMemories => prevMemories.filter(m => m.id !== memoryId));
+    // Call API to delete
+  };
+
+  const filteredAndSortedMemories = useMemo(() => {
+    let result = memories;
+
+    // Filter by search term
+    if (searchTerm) {
+      result = result.filter(memory =>
+        memory.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        memory.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by category
+    if (categoryFilter !== 'all') {
+      result = result.filter(memory => memory.category === categoryFilter);
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      switch (sortCriteria) {
+        case 'date-asc':
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        case 'date-desc':
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        case 'title-asc':
+          return a.title.localeCompare(b.title);
+        case 'title-desc':
+          return b.title.localeCompare(a.title);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [memories, searchTerm, sortCriteria, categoryFilter]);
+
+
+  if (isLoading) {
+    return (
+      <AuthenticatedPageWrapper>
+        <div className="container mx-auto py-8 px-4">
+           <p>Loading memories...</p>
+        </div>
+      </AuthenticatedPageWrapper>
+    );
+  }
+
+  return (
+    <AuthenticatedPageWrapper>
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+          <h1 className="font-headline text-4xl mb-4 md:mb-0">Your Memories</h1>
+          <Link href="/add-memory" passHref>
+            <Button>
+              <PlusCircle className="mr-2 h-5 w-5" />
+              Add New Memory
+            </Button>
+          </Link>
+        </div>
+
+        <TimelineFilter
+          onSortChange={setSortCriteria}
+          onCategoryFilterChange={setCategoryFilter}
+          onSearchChange={setSearchTerm}
+        />
+
+        {filteredAndSortedMemories.length === 0 ? (
+          <div className="text-center py-12">
+            <LayoutGrid className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+            <h2 className="font-headline text-2xl mb-2">No Memories Yet</h2>
+            <p className="text-muted-foreground mb-6">Start by adding your first memory to see it here.</p>
+            <Link href="/add-memory" passHref>
+              <Button size="lg">
+                <PlusCircle className="mr-2 h-5 w-5" />
+                Create Your First Memory
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredAndSortedMemories.map((memory) => (
+              <MemoryCard
+                key={memory.id}
+                memory={memory}
+                onEdit={handleEditMemory}
+                onDelete={handleDeleteMemory}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </AuthenticatedPageWrapper>
+  );
 }
