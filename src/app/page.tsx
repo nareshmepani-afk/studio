@@ -20,9 +20,8 @@ export default function TimelinePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid'); // Not implemented yet, but for future
   
-  const { setPendingRequestCount } = useAuth(); // Get setPendingRequestCount from context
+  const { setPendingRequestCount } = useAuth(); 
 
-  // Mock incoming requests data
   const mockPendingRequests = [
     { id: 'req1', text: 'Tell us about your first pet!', user: 'Guest123' },
     { id: 'req2', text: 'What was your favorite childhood vacation?', user: 'Guest456' },
@@ -30,31 +29,50 @@ export default function TimelinePage() {
 
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setMemories(mockMemories);
       setIsLoading(false);
-      // Simulate setting pending request count
       setPendingRequestCount(mockPendingRequests.length); 
     }, 500);
-  }, [setPendingRequestCount]); // Add setPendingRequestCount to dependency array
+    return () => clearTimeout(timer);
+  }, [setPendingRequestCount]); 
+
+  // Effect for scrolling to hash
+  useEffect(() => {
+    const scrollToHash = () => {
+      if (window.location.hash === '#incoming-requests') {
+        const element = document.getElementById('incoming-requests');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    };
+
+    // Scroll on initial load if content is ready, or when isLoading becomes false
+    if (!isLoading) {
+      scrollToHash();
+    }
+
+    // Listen for hash changes for same-page navigation
+    window.addEventListener('hashchange', scrollToHash, false);
+
+    // Cleanup listener
+    return () => {
+      window.removeEventListener('hashchange', scrollToHash, false);
+    };
+  }, [isLoading]); // Re-run when isLoading changes (content ready) and to manage listener
 
   const handleEditMemory = (memory: Memory) => {
-    // Navigate to edit page or open modal
     console.log('Edit memory:', memory);
-    // For now, just log. In a real app, you'd navigate to an edit page.
-    // router.push(`/edit-memory/${memory.id}`);
   };
 
   const handleDeleteMemory = (memoryId: string) => {
     setMemories(prevMemories => prevMemories.filter(m => m.id !== memoryId));
-    // Call API to delete
   };
 
   const filteredAndSortedMemories = useMemo(() => {
     let result = memories;
 
-    // Filter by search term
     if (searchTerm) {
       result = result.filter(memory =>
         memory.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -62,12 +80,10 @@ export default function TimelinePage() {
       );
     }
 
-    // Filter by category
     if (categoryFilter !== 'all') {
       result = result.filter(memory => memory.category === categoryFilter);
     }
 
-    // Sort
     result.sort((a, b) => {
       switch (sortCriteria) {
         case 'date-asc':
@@ -116,7 +132,7 @@ export default function TimelinePage() {
           onSearchChange={setSearchTerm}
         />
 
-        {filteredAndSortedMemories.length === 0 && mockPendingRequests.length === 0 ? ( // Also check if there are no pending requests for this specific empty state
+        {filteredAndSortedMemories.length === 0 && mockPendingRequests.length === 0 ? (
           <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
             <BookHeart className="mx-auto h-16 w-16 text-primary mb-6" />
             <h2 className="font-headline text-3xl mb-3">Welcome to Memory Weaver!</h2>
