@@ -33,7 +33,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
+            <div className="space-y-2" suppressHydrationWarning={true}>
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -44,7 +44,7 @@ export default function LoginPage() {
                 required
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" suppressHydrationWarning={true}>
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
