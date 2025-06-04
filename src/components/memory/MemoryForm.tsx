@@ -311,10 +311,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                 <p className="text-sm text-muted-foreground">Type: {currentMedia.type}</p>
                 <p className="text-sm text-muted-foreground">Filename: {currentMedia.file.name}</p>
                 {currentMedia.type === 'video' && currentMedia.previewUrl && (
-                <video src={currentMedia.previewUrl} controls className="w-full aspect-video rounded-md mt-2 bg-muted" />
+                <video src={currentMedia.previewUrl} controls className="w-full aspect-video rounded-md mt-2 bg-muted" key={currentMedia.previewUrl}/>
                 )}
                 {currentMedia.type === 'audio' && currentMedia.previewUrl && (
-                <audio src={currentMedia.previewUrl} controls className="w-full mt-2" />
+                <audio src={currentMedia.previewUrl} controls className="w-full mt-2" key={currentMedia.previewUrl}/>
                 )}
                 <p className="text-sm text-muted-foreground mt-1">Duration: {currentMedia.duration.toFixed(2)}s</p>
                 {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
@@ -383,4 +383,5 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     </form>
   );
 }
+    
     
