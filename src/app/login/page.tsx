@@ -32,8 +32,8 @@ export default function LoginPage() {
           <CardDescription>Sign in to continue to Memory Weaver</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2" suppressHydrationWarning={true}>
+          <form onSubmit={handleSubmit} className="space-y-6" suppressHydrationWarning={true}>
+            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -44,7 +44,7 @@ export default function LoginPage() {
                 required
               />
             </div>
-            <div className="space-y-2" suppressHydrationWarning={true}>
+            <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
