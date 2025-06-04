@@ -144,7 +144,7 @@ export default function TimelinePage() {
         )}
 
         {/* Incoming Memory Requests Section */}
-        <div className="mt-16"> 
+        <div id="incoming-requests" className="mt-16"> 
           <div className="flex items-center mb-4">
             <BellRing className="h-8 w-8 text-primary mr-3" />
             <h2 className="font-headline text-3xl">Incoming Memory Requests</h2>
