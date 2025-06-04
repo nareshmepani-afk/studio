@@ -49,11 +49,13 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
     } catch (error) {
       console.error('Error accessing media devices:', error);
       setHasCameraPermission(false);
-      toast({
-        variant: 'destructive',
-        title: 'Permissions Denied',
-        description: `Please enable ${type === 'video' ? 'camera and microphone' : 'microphone'} permissions in your browser settings.`,
-      });
+      setTimeout(() => {
+        toast({
+          variant: 'destructive',
+          title: 'Permissions Denied',
+          description: `Please enable ${type === 'video' ? 'camera and microphone' : 'microphone'} permissions in your browser settings.`,
+        });
+      }, 0);
       return null;
     }
   }, [toast]);
@@ -106,7 +108,9 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
 
     recorder.start();
     setIsRecording(true);
-    toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` });
+    setTimeout(() => {
+      toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` });
+    }, 0);
   };
 
   const handleStopRecording = () => {
@@ -133,7 +137,9 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
       const file = event.target.files[0];
       const type = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : null;
       if (!type) {
-        toast({ title: "Invalid File Type", description: "Please upload a video or audio file.", variant: "destructive" });
+        setTimeout(() => {
+          toast({ title: "Invalid File Type", description: "Please upload a video or audio file.", variant: "destructive" });
+        }, 0);
         return;
       }
       setMediaType(type);
@@ -148,23 +154,30 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
         setStartTime(0);
         setEndTime(tempMediaElement.duration);
       };
-
-      toast({ title: "File Uploaded", description: file.name });
+      setTimeout(() => {
+        toast({ title: "File Uploaded", description: file.name });
+      }, 0);
     }
   };
 
   const handleUseMedia = () => {
     if (recordedFile && previewUrl && mediaType && mediaDuration) {
       if (startTime >= endTime) {
-        toast({ title: "Invalid Trim Times", description: "Start time must be less than end time.", variant: "destructive" });
+        setTimeout(() => {
+          toast({ title: "Invalid Trim Times", description: "Start time must be less than end time.", variant: "destructive" });
+        }, 0);
         return;
       }
       if (endTime > mediaDuration) {
-        toast({ title: "Invalid End Time", description: "End time cannot exceed media duration.", variant: "destructive" });
+         setTimeout(() => {
+          toast({ title: "Invalid End Time", description: "End time cannot exceed media duration.", variant: "destructive" });
+        }, 0);
         return;
       }
       onMediaReady({ file: recordedFile, type: mediaType, previewUrl, startTime, endTime, duration: mediaDuration });
-      toast({ title: "Media Selected", description: "This media will be attached to your memory.", icon: <CheckCircle className="h-4 w-4" /> });
+      setTimeout(() => {
+        toast({ title: "Media Selected", description: "This media will be attached to your memory.", icon: <CheckCircle className="h-4 w-4" /> });
+      }, 0);
     }
   };
 
@@ -184,7 +197,9 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
     mediaRecorderRef.current = null;
     recordedChunks.current = [];
     onDiscard();
-    toast({ title: "Media Discarded" });
+    setTimeout(() => {
+      toast({ title: "Media Discarded" });
+    }, 0);
   };
 
   useEffect(() => {
@@ -307,3 +322,4 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
     </Card>
   );
 }
+
