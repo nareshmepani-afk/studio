@@ -7,7 +7,7 @@ import { TimelineFilter } from '@/components/memory/TimelineFilter';
 import { Button } from '@/components/ui/button';
 import { mockMemories } from '@/lib/mockData';
 import type { Memory, MemoryCategory } from '@/types';
-import { PlusCircle, BookHeart } from 'lucide-react';
+import { PlusCircle, BookHeart, BellRing } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 
@@ -130,6 +130,29 @@ export default function TimelinePage() {
             ))}
           </div>
         )}
+
+        {/* Incoming Memory Requests Section */}
+        <div className="mt-16"> {/* Increased margin for better separation */}
+          <div className="flex items-center mb-4">
+            <BellRing className="h-8 w-8 text-primary mr-3" />
+            <h2 className="font-headline text-3xl">Incoming Memory Requests</h2>
+          </div>
+          <p className="text-muted-foreground mb-6">
+            Guests have requested these memories. Click one to start fulfilling it.
+          </p>
+          <div className="p-6 bg-card rounded-lg shadow-md">
+            {/* Placeholder for actual request list */}
+            <p className="text-muted-foreground text-center">Pending memory requests will appear here.</p>
+            {/* 
+              In a real application, you might map over an array of requests:
+              requests.length > 0 ? (
+                requests.map(req => <RequestItem key={req.id} request={req} />)
+              ) : (
+                <p className="text-muted-foreground text-center">No pending memory requests.</p>
+              )
+            */}
+          </div>
+        </div>
       </div>
     </AuthenticatedPageWrapper>
   );
