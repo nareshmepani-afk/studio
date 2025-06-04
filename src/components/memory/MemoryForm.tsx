@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { MediaCaptureControl } from './MediaRecorder';
+import { MediaCaptureControl } from './MediaCaptureControl';
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
 interface MemoryFormProps {
-  memory?: Memory; 
+  memory?: Memory;
   onSubmit: (memoryData: Omit<Memory, 'id' | 'userId'>, userProfileForCues?: string, mediaFile?: File) => void;
   isSubmitting?: boolean;
 }
@@ -45,14 +45,14 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const [userProfile, setUserProfile] = useState(user?.profileInfo || '');
   const [aiCues, setAiCues] = useState<string[]>([]);
   const [isLoadingCues, setIsLoadingCues] = useState(false);
-  
+
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(() => {
     if (memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
       const firstMedia = memory.mediaAttachments[0];
       return {
-        file: new File([], firstMedia.filename || "existing_media"), 
+        file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
         type: firstMedia.type,
-        previewUrl: firstMedia.url, 
+        previewUrl: firstMedia.url,
         startTime: firstMedia.startTime,
         endTime: firstMedia.endTime,
         duration: firstMedia.duration || 0,
@@ -108,30 +108,43 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
+
+    if (!title.trim()) {
+      toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
+      return;
+    }
     if (!date) {
       toast({ title: "Date Required", description: "Please select a date for the memory.", variant: "destructive" });
       return;
     }
+    if (!description.trim()) {
+      toast({ title: "Description Required", description: "Please enter a description for the memory.", variant: "destructive" });
+      return;
+    }
+    if (!currentMedia) {
+      toast({ title: "Media Required", description: "A media attachment (video or audio) is required.", variant: "destructive" });
+      return;
+    }
 
-    let mediaAttachments: MediaAttachment[] | undefined = undefined;
+    let mediaAttachmentsForSubmission: MediaAttachment[] | undefined = undefined;
     if (currentMedia) {
-      mediaAttachments = [{
-        id: memory?.mediaAttachments?.[0]?.id || Date.now().toString(),
+      const isNewFile = currentMedia.file.name !== "existing_media";
+      const originalMediaAttachment = memory?.mediaAttachments?.[0];
+
+      mediaAttachmentsForSubmission = [{
+        id: originalMediaAttachment?.id || Date.now().toString(),
         type: currentMedia.type,
-        url: currentMedia.file.name === "existing_media" ? currentMedia.previewUrl : currentMedia.previewUrl, 
-        filename: currentMedia.file.name === "existing_media" ? currentMedia.file.name : currentMedia.file.name,
+        url: isNewFile ? currentMedia.previewUrl : (originalMediaAttachment?.url || currentMedia.previewUrl), // Placeholder for new, original for existing
+        filename: currentMedia.file.name,
         startTime: currentMedia.startTime,
         endTime: currentMedia.endTime,
         duration: currentMedia.duration,
       }];
-    } else if (memory?.mediaAttachments) { 
-        mediaAttachments = memory.mediaAttachments;
     }
 
-
     onSubmit(
-      { title, date: date.toISOString(), description, category, mediaAttachments }, 
-      userProfile, 
+      { title, date: date.toISOString(), description, category, mediaAttachments: mediaAttachmentsForSubmission },
+      userProfile,
       currentMedia && currentMedia.file.name !== "existing_media" ? currentMedia.file : undefined
     );
   };
@@ -149,16 +162,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-2xl">{memory ? 'Edit Memory' : 'Add New Memory'}</CardTitle>
-          <CardDescription>Capture the details of your moment.</CardDescription>
+          <CardDescription>Capture the details of your moment. All fields marked with * are mandatory.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title">Title *</Label>
             <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" />
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="date">Date</Label>
+            <Label htmlFor="date">Date *</Label>
              <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -184,12 +197,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description *</Label>
             <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} />
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="category">Category</Label>
+            <Label htmlFor="category">Category *</Label>
             <Select value={category} onValueChange={(value: MemoryCategory) => setCategory(value)}>
               <SelectTrigger id="category">
                 <SelectValue placeholder="Select a category" />
@@ -204,40 +217,60 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
         </CardContent>
       </Card>
 
-      {!currentMedia && (
-        <MediaCaptureControl 
-            onMediaReady={handleMediaReady} 
-            onDiscard={handleMediaDiscard}
-            initialMedia={initialMediaForRecorder}
-        />
-      )}
+      <Card>
+        <CardHeader>
+            <CardTitle className="font-headline text-lg">Media Attachment *</CardTitle>
+            {!currentMedia && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}
+        </CardHeader>
+        <CardContent>
+            {!currentMedia && (
+              <MediaCaptureControl
+                  onMediaReady={handleMediaReady}
+                  onDiscard={handleMediaDiscard}
+                  initialMedia={initialMediaForRecorder}
+              />
+            )}
 
-      {currentMedia && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-headline text-lg flex items-center justify-between">
-              <span><Paperclip className="mr-2 h-5 w-5 inline-block" />Attached Media</span>
-              <Button variant="ghost" size="icon" onClick={handleMediaDiscard}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-                <span className="sr-only">Remove media</span>
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">Type: {currentMedia.type}</p>
-            <p className="text-sm text-muted-foreground">Filename: {currentMedia.file.name}</p>
-            {currentMedia.type === 'video' && currentMedia.previewUrl && (
-              <video src={currentMedia.previewUrl} controls className="w-full aspect-video rounded-md mt-2 bg-muted" />
+            {currentMedia && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium flex items-center"><Paperclip className="mr-2 h-5 w-5 inline-block" />Attached Media</p>
+                    <Button variant="ghost" size="icon" onClick={handleMediaDiscard} aria-label="Remove media">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">Type: {currentMedia.type}</p>
+                <p className="text-sm text-muted-foreground">Filename: {currentMedia.file.name}</p>
+                {currentMedia.type === 'video' && currentMedia.previewUrl && (
+                <video src={currentMedia.previewUrl} controls className="w-full aspect-video rounded-md mt-2 bg-muted" />
+                )}
+                {currentMedia.type === 'audio' && currentMedia.previewUrl && (
+                <audio src={currentMedia.previewUrl} controls className="w-full mt-2" />
+                )}
+                <p className="text-sm text-muted-foreground mt-1">Duration: {currentMedia.duration.toFixed(2)}s</p>
+                {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
+                {currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime && <p className="text-sm text-muted-foreground">Trim End: {currentMedia.endTime.toFixed(2)}s</p>}
+                 {/* Allow re-editing trim times if a media is already selected */}
+                <Button variant="outline" type="button" onClick={() => {
+                    const tempMedia = currentMedia; // Store currentMedia
+                    setCurrentMedia(null); // Temporarily set to null to show MediaCaptureControl
+                    // Immediately after, set MediaCaptureControl's initialMedia to what was selected
+                    // This requires MediaCaptureControl to accept an initialMedia prop to pre-fill itself
+                    // And for this button to somehow trigger that. A bit complex for this simple button.
+                    // A simpler UX might be that if they want to re-trim, they discard and re-add.
+                    // Or MediaCaptureControl handles its own 'edit existing trim' state.
+                    // For now, if they want to change trim, they discard and re-add.
+                    // To re-enable MediaCaptureControl to edit existing, we'd set currentMedia to null
+                    // and pass currentMedia's data as initialMedia to a new instance of MediaCaptureControl.
+                    // This is implicitly handled: if they discard currentMedia, MediaCaptureControl shows again.
+                    // If they re-select the same file, they can re-trim.
+                }} className="w-full mt-2">
+                    Change Media or Re-trim
+                </Button>
+              </div>
             )}
-            {currentMedia.type === 'audio' && currentMedia.previewUrl && (
-              <audio src={currentMedia.previewUrl} controls className="w-full mt-2" />
-            )}
-             <p className="text-sm text-muted-foreground mt-1">Duration: {currentMedia.duration.toFixed(2)}s</p>
-            {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
-            {currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime && <p className="text-sm text-muted-foreground">Trim End: {currentMedia.endTime.toFixed(2)}s</p>}
-          </CardContent>
-        </Card>
-      )}
+        </CardContent>
+      </Card>
 
 
       <Card>
@@ -279,5 +312,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     </form>
   );
 }
+    
 
     
