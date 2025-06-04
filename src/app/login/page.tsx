@@ -42,6 +42,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                suppressHydrationWarning={true}
               />
             </div>
             <div className="space-y-2" suppressHydrationWarning={true}>
@@ -53,6 +54,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                suppressHydrationWarning={true}
               />
             </div>
             <Button type="submit" className="w-full">
@@ -70,4 +72,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
