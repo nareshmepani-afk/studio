@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, type FormEvent, useEffect, useCallback } from 'react';
-import type { Memory, MemoryCategory, User, MediaAttachment } from '@/types';
+import type { Memory, MemoryCategory, User, MediaAttachment, Prompt } from '@/types';
 import { memoryCategories } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,13 +14,14 @@ import { MediaCaptureControl } from './MediaRecorder';
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages } from 'lucide-react';
+import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
+import { mockPrompts } from '@/lib/mockData';
 
 interface MemoryFormProps {
   memory?: Memory;
@@ -49,12 +50,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const [aiCues, setAiCues] = useState<string[]>([]);
   const [isLoadingCues, setIsLoadingCues] = useState(false);
   const [cueLanguage, setCueLanguage] = useState<'en' | 'gu'>('en');
+  const [inspirationPrompts, setInspirationPrompts] = useState<Prompt[]>([]);
 
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(() => {
     if (memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
       const firstMedia = memory.mediaAttachments[0];
+      // Ensure filename is a string, default to "existing_media" if undefined or null
+      const filename = firstMedia.filename || "existing_media";
       return {
-        file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
+        file: new File([], filename, {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
         type: firstMedia.type,
         previewUrl: firstMedia.url,
         startTime: firstMedia.startTime,
@@ -65,9 +69,19 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     return null;
   });
 
+  const loadInspirationPrompts = useCallback(() => {
+    const shuffled = [...mockPrompts].sort(() => 0.5 - Math.random());
+    setInspirationPrompts(shuffled.slice(0, 3));
+  }, []);
+
+  useEffect(() => {
+    loadInspirationPrompts();
+  }, [cueLanguage, loadInspirationPrompts]);
+
+
   useEffect(() => {
     const promptFromUrl = searchParams.get('prompt');
-    if (promptFromUrl && !memory) { // Only pre-fill if it's a new memory and not editing
+    if (promptFromUrl && !memory) { 
       setTitle(decodeURIComponent(promptFromUrl));
     }
   }, [searchParams, memory]);
@@ -118,6 +132,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     toast({ title: "Cue Applied!", description: `"${cue}" added to your memory.` });
   };
 
+  const handleInspirationPromptClick = (promptText: string) => {
+    setTitle(promptText);
+    toast({ title: "Title Updated", description: `Title set to: "${promptText}"` });
+  };
+
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
 
@@ -146,8 +165,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       mediaAttachmentsForSubmission = [{
         id: originalMediaAttachment?.id || Date.now().toString(),
         type: currentMedia.type,
-        // For a new file, the URL will be set after upload. For an existing file, we keep its original URL.
-        // The previewUrl is a local blob URL for new files.
         url: isNewFile ? "placeholder_url_to_be_replaced_after_upload" : (originalMediaAttachment?.url || currentMedia.previewUrl),
         filename: currentMedia.file.name,
         startTime: currentMedia.startTime,
@@ -182,6 +199,34 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
           <div className="space-y-1">
             <Label htmlFor="title">Title *</Label>
             <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" />
+             {inspirationPrompts.length > 0 && (
+              <div className="pt-2 space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="inspiration-prompts" className="text-xs text-muted-foreground">Need inspiration for your title?</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={loadInspirationPrompts} className="text-xs h-7">
+                    <RefreshCw className="mr-1 h-3 w-3" />
+                    New Suggestions
+                  </Button>
+                </div>
+                <div id="inspiration-prompts" className="flex flex-wrap gap-1">
+                  {inspirationPrompts.map((prompt) => {
+                    const promptText = prompt.text[cueLanguage] || prompt.text.en;
+                    return (
+                      <Button
+                        type="button"
+                        key={prompt.id}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs h-auto py-1 px-2"
+                        onClick={() => handleInspirationPromptClick(promptText)}
+                      >
+                        {promptText}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-1">
@@ -265,6 +310,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                 {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
                 {currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime && <p className="text-sm text-muted-foreground">Trim End: {currentMedia.endTime.toFixed(2)}s</p>}
                 <Button variant="outline" type="button" onClick={() => {
+                    // To re-trim or change media, user first discards, then uses MediaCaptureControl again
                     handleMediaDiscard(); 
                 }} className="w-full mt-2">
                     Change Media or Re-trim
@@ -305,7 +351,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
           </div>
           {aiCues.length > 0 && (
             <div className="space-y-2 pt-2">
-              <h4 className="text-sm font-medium">Suggested Cues:</h4>
+              <h4 className="text-sm font-medium">Suggested Cues for Description:</h4>
               <ul className="list-disc list-inside space-y-1">
                 {aiCues.map((cue, index) => (
                   <li key={index} className="text-sm text-muted-foreground">
@@ -321,7 +367,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       </Card>
 
       <CardFooter className="flex justify-end p-0 pt-6">
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={!!isSubmitting}>
           {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (memory ? 'Save Changes' : 'Add Memory')}
         </Button>
       </CardFooter>
@@ -329,3 +375,4 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   );
 }
 
+    
