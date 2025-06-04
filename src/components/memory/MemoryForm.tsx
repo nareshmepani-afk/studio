@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { MediaCaptureControl } from './MediaCaptureControl';
+import { MediaCaptureControl } from './MediaRecorder'; // Corrected import path
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -250,20 +250,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                 <p className="text-sm text-muted-foreground mt-1">Duration: {currentMedia.duration.toFixed(2)}s</p>
                 {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
                 {currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime && <p className="text-sm text-muted-foreground">Trim End: {currentMedia.endTime.toFixed(2)}s</p>}
-                 {/* Allow re-editing trim times if a media is already selected */}
                 <Button variant="outline" type="button" onClick={() => {
-                    const tempMedia = currentMedia; // Store currentMedia
-                    setCurrentMedia(null); // Temporarily set to null to show MediaCaptureControl
-                    // Immediately after, set MediaCaptureControl's initialMedia to what was selected
-                    // This requires MediaCaptureControl to accept an initialMedia prop to pre-fill itself
-                    // And for this button to somehow trigger that. A bit complex for this simple button.
-                    // A simpler UX might be that if they want to re-trim, they discard and re-add.
-                    // Or MediaCaptureControl handles its own 'edit existing trim' state.
-                    // For now, if they want to change trim, they discard and re-add.
-                    // To re-enable MediaCaptureControl to edit existing, we'd set currentMedia to null
-                    // and pass currentMedia's data as initialMedia to a new instance of MediaCaptureControl.
-                    // This is implicitly handled: if they discard currentMedia, MediaCaptureControl shows again.
-                    // If they re-select the same file, they can re-trim.
+                    // To re-enable MediaCaptureControl to edit existing, discard currentMedia
+                    // and MediaCaptureControl will re-appear allowing re-selection or new recording.
+                    handleMediaDiscard(); 
                 }} className="w-full mt-2">
                     Change Media or Re-trim
                 </Button>
@@ -312,6 +302,3 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     </form>
   );
 }
-    
-
-    
