@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,12 +9,18 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { BookHeart } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const { login } = useAuth(); // Using login for mock registration for now
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -37,44 +43,65 @@ export default function RegisterPage() {
           <CardDescription>Join Memory Weaver and start preserving your moments</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+          {hasMounted ? (
+            <form onSubmit={handleSubmit} className="space-y-6" suppressHydrationWarning={true}>
+              <div className="space-y-2" suppressHydrationWarning={true}>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  suppressHydrationWarning={true}
+                />
+              </div>
+              <div className="space-y-2" suppressHydrationWarning={true}>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  suppressHydrationWarning={true}
+                />
+              </div>
+              <div className="space-y-2" suppressHydrationWarning={true}>
+                <Label htmlFor="confirm-password">Confirm Password</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  suppressHydrationWarning={true}
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                Sign Up
+              </Button>
+            </form>
+          ) : (
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20 mb-1" /> {/* Label */}
+                <Skeleton className="h-10 w-full" />   {/* Input */}
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20 mb-1" /> {/* Label */}
+                <Skeleton className="h-10 w-full" />   {/* Input */}
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32 mb-1" /> {/* Label for Confirm Password */}
+                <Skeleton className="h-10 w-full" />   {/* Input */}
+              </div>
+              <Skeleton className="h-10 w-full" />       {/* Button */}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm Password</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full">
-              Sign Up
-            </Button>
-          </form>
+          )}
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{' '}
             <Link href="/login" className="font-medium text-primary hover:underline">
@@ -86,3 +113,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+

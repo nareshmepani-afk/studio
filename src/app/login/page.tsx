@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,11 +9,17 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { BookHeart } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login } = useAuth();
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -32,35 +38,49 @@ export default function LoginPage() {
           <CardDescription>Sign in to continue to Memory Weaver</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6" suppressHydrationWarning={true}>
-            <div className="space-y-2" suppressHydrationWarning={true}>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                suppressHydrationWarning={true}
-              />
+          {hasMounted ? (
+            <form onSubmit={handleSubmit} className="space-y-6" suppressHydrationWarning={true}>
+              <div className="space-y-2" suppressHydrationWarning={true}>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  suppressHydrationWarning={true}
+                />
+              </div>
+              <div className="space-y-2" suppressHydrationWarning={true}>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  suppressHydrationWarning={true}
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                Login
+              </Button>
+            </form>
+          ) : (
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20 mb-1" /> {/* Label */}
+                <Skeleton className="h-10 w-full" />   {/* Input */}
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20 mb-1" /> {/* Label */}
+                <Skeleton className="h-10 w-full" />   {/* Input */}
+              </div>
+              <Skeleton className="h-10 w-full" />       {/* Button */}
             </div>
-            <div className="space-y-2" suppressHydrationWarning={true}>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                suppressHydrationWarning={true}
-              />
-            </div>
-            <Button type="submit" className="w-full">
-              Login
-            </Button>
-          </form>
+          )}
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{' '}
             <Link href="/register" className="font-medium text-primary hover:underline">
