@@ -109,7 +109,7 @@ export default function TimelinePage() {
             <BookHeart className="mx-auto h-16 w-16 text-primary mb-6" />
             <h2 className="font-headline text-3xl mb-3">Welcome to Memory Weaver!</h2>
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              Welcome to your Memory Timeline. This is where your life’s moments will live, forever.
+              This is where your life’s moments will live, forever.
             </p>
             <Link href="/add-memory" passHref>
               <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
