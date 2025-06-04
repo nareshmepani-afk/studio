@@ -7,7 +7,7 @@ import { TimelineFilter } from '@/components/memory/TimelineFilter';
 import { Button } from '@/components/ui/button';
 import { mockMemories } from '@/lib/mockData';
 import type { Memory, MemoryCategory } from '@/types';
-import { PlusCircle, LayoutGrid, List } from 'lucide-react';
+import { PlusCircle, BookHeart } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 
@@ -105,14 +105,16 @@ export default function TimelinePage() {
         />
 
         {filteredAndSortedMemories.length === 0 ? (
-          <div className="text-center py-12">
-            <LayoutGrid className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-            <h2 className="font-headline text-2xl mb-2">No Memories Yet</h2>
-            <p className="text-muted-foreground mb-6">Start by adding your first memory to see it here.</p>
+          <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
+            <BookHeart className="mx-auto h-16 w-16 text-primary mb-6" />
+            <h2 className="font-headline text-3xl mb-3">Welcome to Memory Weaver!</h2>
+            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+              Welcome to your Memory Timeline. This is where your life’s moments will live, forever.
+            </p>
             <Link href="/add-memory" passHref>
-              <Button size="lg">
+              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                 <PlusCircle className="mr-2 h-5 w-5" />
-                Create Your First Memory
+                Record Your First Memory
               </Button>
             </Link>
           </div>
