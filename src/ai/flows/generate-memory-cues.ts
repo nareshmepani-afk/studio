@@ -1,9 +1,10 @@
+
 // use server'
 
 /**
  * @fileOverview This file defines a Genkit flow for generating memory cues based on the current date and user profile data.
  *
- * The flow takes user profile data and the current date as input and returns a list of memory cues relevant to the user.
+ * The flow takes user profile data, the current date, and a target language as input and returns a list of memory cues relevant to the user in that language.
  *
  * @exported
  * - `generateMemoryCues`: The main function to generate memory cues.
@@ -21,13 +22,16 @@ const GenerateMemoryCuesInputSchema = z.object({
   currentDate: z
     .string()
     .describe('The current date in ISO format (YYYY-MM-DD).'),
+  language: z
+    .string()
+    .describe('The language for the memory cues (e.g., "en" for English, "gu" for Gujarati).'),
 });
 export type GenerateMemoryCuesInput = z.infer<typeof GenerateMemoryCuesInputSchema>;
 
 const GenerateMemoryCuesOutputSchema = z.object({
   memoryCues: z
     .array(z.string())
-    .describe('An array of memory cues relevant to the user based on their profile and the current date.'),
+    .describe('An array of memory cues relevant to the user based on their profile, the current date, and in the specified language.'),
 });
 export type GenerateMemoryCuesOutput = z.infer<typeof GenerateMemoryCuesOutputSchema>;
 
@@ -39,18 +43,26 @@ const prompt = ai.definePrompt({
   name: 'generateMemoryCuesPrompt',
   input: {schema: GenerateMemoryCuesInputSchema},
   output: {schema: GenerateMemoryCuesOutputSchema},
-  prompt: `You are an AI memory cue generator. Given the user profile and the current date, you will generate a list of memory cues that are relevant to the user.
+  prompt: `You are an AI memory cue generator. Given the user profile, the current date, and a target language, you will generate a list of memory cues that are relevant to the user in the specified language.
 
 User Profile: {{{userProfile}}}
 Current Date: {{{currentDate}}}
+Language: {{{language}}}
 
-Generate a list of memory cues that would be interesting and relevant to the user. Focus on events, people, and places that the user would likely want to remember. Return an array of strings.
+Generate a list of memory cues in {{language}} that would be interesting and relevant to the user. Focus on events, people, and places that the user would likely want to remember. Return an array of strings.
 
-Example:
+Example for English ('en'):
 [
   "That trip to Italy",
   "Your graduation",
   "Meeting your best friend"
+]
+
+Example for Gujarati ('gu'):
+[
+  "ઇટાલીની તે સફર",
+  "તમારું ગ્રેજ્યુએશન",
+  "તમારા શ્રેષ્ઠ મિત્રને મળવું"
 ]
 `,
 });
@@ -66,3 +78,4 @@ const generateMemoryCuesFlow = ai.defineFlow(
     return output!;
   }
 );
+

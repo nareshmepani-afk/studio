@@ -7,18 +7,20 @@ import { mockPrompts } from '@/lib/mockData';
 import type { Prompt } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Search, ThumbsUp, RotateCcw } from 'lucide-react';
+import { PlusCircle, Search, ThumbsUp, RotateCcw, Languages } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast } from '@/hooks/use-toast'; // Changed import
+import { toast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 export default function PromptsPage() {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showFlaggedOnly, setShowFlaggedOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
-  // const { toast } = useToast(); // Removed useToast() call
 
   useEffect(() => {
     setTimeout(() => {
@@ -30,11 +32,15 @@ export default function PromptsPage() {
 
   const handleUsePrompt = (promptId: string) => {
     const prompt = prompts.find(p => p.id === promptId);
-    toast({ // Direct use
+    if (!prompt) return;
+
+    const promptTextForSelectedLanguage = prompt.text[currentLanguage] || prompt.text.en;
+
+    toast({ 
       title: "Prompt Selected!",
-      description: `Using prompt: "${prompt?.text}". Redirecting to add memory...`
+      description: `Using prompt: "${promptTextForSelectedLanguage}". Redirecting to add memory...`
     });
-    router.push(`/add-memory?prompt=${encodeURIComponent(prompt?.text || '')}`);
+    router.push(`/add-memory?prompt=${encodeURIComponent(promptTextForSelectedLanguage)}`);
   };
 
   const handleToggleFlag = (promptId: string, isFlagged: boolean) => {
@@ -46,12 +52,12 @@ export default function PromptsPage() {
   const filteredPrompts = useMemo(() => {
     return prompts
       .filter(prompt =>
-        prompt.text.toLowerCase().includes(searchTerm.toLowerCase())
+        (prompt.text[currentLanguage] || prompt.text.en).toLowerCase().includes(searchTerm.toLowerCase())
       )
       .filter(prompt =>
         showFlaggedOnly ? prompt.isFlaggedForReuse : true
       );
-  }, [prompts, searchTerm, showFlaggedOnly]);
+  }, [prompts, searchTerm, showFlaggedOnly, currentLanguage]);
 
   if (isLoading) {
      return (
@@ -71,9 +77,9 @@ export default function PromptsPage() {
         </div>
 
         <div className="mb-8 p-4 bg-card rounded-lg shadow sticky top-16 z-40">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div>
-              <label htmlFor="search-prompts" className="block text-sm font-medium text-muted-foreground mb-1">Search Prompts</label>
+              <Label htmlFor="search-prompts" className="block text-sm font-medium text-muted-foreground mb-1">Search Prompts</Label>
               <div className="relative">
                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -95,6 +101,18 @@ export default function PromptsPage() {
                     {showFlaggedOnly ? 'Show All' : 'Show Flagged Only'}
                 </Button>
             </div>
+             <div>
+                <Label htmlFor="prompt-language" className="block text-sm font-medium text-muted-foreground mb-1">Language</Label>
+                <Select value={currentLanguage} onValueChange={(value: 'en' | 'gu') => setCurrentLanguage(value)}>
+                    <SelectTrigger id="prompt-language">
+                        <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
           </div>
         </div>
 
@@ -102,14 +120,16 @@ export default function PromptsPage() {
           <div className="text-center py-12">
             <Search className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <h2 className="font-headline text-2xl mb-2">No Prompts Found</h2>
-            <p className="text-muted-foreground">Try adjusting your search or filters.</p>
+            <p className="text-muted-foreground">Try adjusting your search or filters for the selected language.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredPrompts.map((prompt) => (
               <PromptCard
                 key={prompt.id}
-                prompt={prompt}
+                promptId={prompt.id}
+                promptText={prompt.text[currentLanguage] || prompt.text.en}
+                isFlaggedForReuse={prompt.isFlaggedForReuse}
                 onAction={handleUsePrompt}
                 onToggleFlag={handleToggleFlag}
               />
@@ -120,3 +140,4 @@ export default function PromptsPage() {
     </AuthenticatedPageWrapper>
   );
 }
+

@@ -31,9 +31,15 @@ export type MemoryCategory = 'Travel' | 'Family' | 'Work' | 'Personal' | 'Friend
 
 export const memoryCategories: MemoryCategory[] = ['Travel', 'Family', 'Work', 'Personal', 'Friends', 'Event', 'Other'];
 
+export interface PromptText {
+  en: string;
+  gu: string;
+  [key: string]: string; // For future languages
+}
 export interface Prompt {
   id: string;
-  text: string;
+  text: PromptText; // Changed from string to PromptText
   isFlaggedForReuse: boolean;
   userId?: string; // If prompts are user-specific
 }
+

@@ -70,26 +70,39 @@ export const mockMemories: Memory[] = [
 export const mockPrompts: Prompt[] = [
   {
     id: 'p1',
-    text: 'What was a recent challenge you overcame?',
+    text: {
+      en: 'What was a recent challenge you overcame?',
+      gu: 'તમે તાજેતરમાં કયો પડકાર પાર કર્યો?',
+    },
     isFlaggedForReuse: false,
     userId: '1',
   },
   {
     id: 'p2',
-    text: 'Describe a moment that made you laugh out loud.',
+    text: {
+      en: 'Describe a moment that made you laugh out loud.',
+      gu: 'એક ક્ષણ વર્ણવો જેનાથી તમે મોટેથી હસી પડ્યા.',
+    },
     isFlaggedForReuse: true,
     userId: '1',
   },
   {
     id: 'p3',
-    text: 'Who is someone you are grateful for today and why?',
+    text: {
+      en: 'Who is someone you are grateful for today and why?',
+      gu: 'આજે તમે કોના આભારી છો અને શા માટે?',
+    },
     isFlaggedForReuse: false,
     userId: '1',
   },
   {
     id: 'p4',
-    text: 'What new skill did you learn recently?',
+    text: {
+      en: 'What new skill did you learn recently?',
+      gu: 'તમે તાજેતરમાં કઈ નવી કુશળતા શીખ્યા?',
+    },
     isFlaggedForReuse: true,
     userId: '1',
   },
 ];
+

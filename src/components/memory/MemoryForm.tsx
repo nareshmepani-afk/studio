@@ -10,11 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { MediaCaptureControl } from './MediaRecorder'; // Corrected import path
+import { MediaCaptureControl } from './MediaRecorder';
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2 } from 'lucide-react';
+import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
@@ -45,6 +45,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const [userProfile, setUserProfile] = useState(user?.profileInfo || '');
   const [aiCues, setAiCues] = useState<string[]>([]);
   const [isLoadingCues, setIsLoadingCues] = useState(false);
+  const [cueLanguage, setCueLanguage] = useState<'en' | 'gu'>('en');
 
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(() => {
     if (memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
@@ -86,6 +87,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       const result = await generateMemoryCuesAction({
         userProfile: userProfile,
         currentDate: new Date().toISOString().split('T')[0],
+        language: cueLanguage,
       });
       setAiCues(result.memoryCues);
       if (result.memoryCues.length === 0) {
@@ -198,7 +200,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
           <div className="space-y-1">
             <Label htmlFor="description">Description *</Label>
-            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} />
+            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} required/>
           </div>
 
           <div className="space-y-1">
@@ -251,8 +253,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                 {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
                 {currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime && <p className="text-sm text-muted-foreground">Trim End: {currentMedia.endTime.toFixed(2)}s</p>}
                 <Button variant="outline" type="button" onClick={() => {
-                    // To re-enable MediaCaptureControl to edit existing, discard currentMedia
-                    // and MediaCaptureControl will re-appear allowing re-selection or new recording.
                     handleMediaDiscard(); 
                 }} className="w-full mt-2">
                     Change Media or Re-trim
@@ -273,10 +273,24 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
             <Label htmlFor="user-profile">Your Profile for Cues (Interests, past events, etc.)</Label>
             <Textarea id="user-profile" value={userProfile} onChange={(e) => setUserProfile(e.target.value)} placeholder="e.g., Loves hiking, visited Paris in 2022, recently started learning guitar." rows={3} />
           </div>
-          <Button type="button" onClick={handleGenerateCues} disabled={isLoadingCues} variant="outline">
-            {isLoadingCues ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}
-            Get AI Cues
-          </Button>
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+            <div className="flex-grow space-y-1">
+                <Label htmlFor="cue-language">Language for Cues</Label>
+                <Select value={cueLanguage} onValueChange={(value: 'en' | 'gu') => setCueLanguage(value)}>
+                    <SelectTrigger id="cue-language">
+                        <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <Button type="button" onClick={handleGenerateCues} disabled={isLoadingCues} variant="outline" className="w-full sm:w-auto">
+                {isLoadingCues ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}
+                Get AI Cues
+            </Button>
+          </div>
           {aiCues.length > 0 && (
             <div className="space-y-2 pt-2">
               <h4 className="text-sm font-medium">Suggested Cues:</h4>
@@ -302,3 +316,4 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     </form>
   );
 }
+
