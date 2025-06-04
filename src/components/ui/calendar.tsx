@@ -14,12 +14,17 @@ function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  // Explicitly list the props that DayPicker uses for caption and month control
   captionLayout,
   fromYear,
   toYear,
-  defaultMonth,
-  month,
-  ...props
+  month, // For controlled month view
+  defaultMonth, // For uncontrolled initial month view (though we'll primarily use controlled 'month')
+  numberOfMonths,
+  onMonthChange,
+  selected,
+  // ... any other specific DayPicker props you want to ensure are passed
+  ...props // Remaining props
 }: CalendarProps) {
   return (
     <DayPicker
@@ -30,7 +35,7 @@ function Calendar({
         month: "space-y-4",
         caption: "flex justify-center pt-1 relative items-center",
         caption_label: "text-sm font-medium",
-        caption_dropdowns: "flex justify-center gap-1", // Added for dropdown styling if needed
+        caption_dropdowns: "flex justify-center gap-1 rdg-caption_dropdowns",
         nav: "space-x-1 flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
@@ -58,22 +63,26 @@ function Calendar({
         day_range_middle:
           "aria-selected:bg-accent aria-selected:text-accent-foreground",
         day_hidden: "invisible",
-        ...classNames,
+        ...classNames, // Spread any custom classNames passed in
       }}
       components={{
-        IconLeft: ({ className: iconClassName, ...iconProps }) => (
-          <ChevronLeft className={cn("h-4 w-4", iconClassName)} {...iconProps} />
+        IconLeft: ({ className: iconClassNameIn, ...iconProps }) => (
+          <ChevronLeft className={cn("h-4 w-4", iconClassNameIn)} {...iconProps} />
         ),
-        IconRight: ({ className: iconClassName, ...iconProps }) => (
-          <ChevronRight className={cn("h-4 w-4", iconClassName)} {...iconProps} />
+        IconRight: ({ className: iconClassNameIn, ...iconProps }) => (
+          <ChevronRight className={cn("h-4 w-4", iconClassNameIn)} {...iconProps} />
         ),
       }}
+      // Explicitly pass the relevant props
       captionLayout={captionLayout}
       fromYear={fromYear}
       toYear={toYear}
-      defaultMonth={defaultMonth}
       month={month}
-      {...props}
+      defaultMonth={defaultMonth}
+      numberOfMonths={numberOfMonths}
+      onMonthChange={onMonthChange}
+      selected={selected}
+      {...props} // Pass all other props from CalendarProps/DayPickerProps
     />
   )
 }

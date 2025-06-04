@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type FormEvent, useEffect, useCallback } from 'react';
+import { useState, type FormEvent, useEffect, useCallback, useMemo } from 'react';
 import type { Memory, MemoryCategory, User, MediaAttachment, Prompt } from '@/types';
 import { memoryCategories } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -44,7 +44,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const router = useRouter();
 
   const [title, setTitle] = useState(memory?.title || '');
-  const [date, setDate] = useState<Date | undefined>(memory ? new Date(memory.date) : new Date());
+
+  const initialSelectedDate = useMemo(() => {
+    if (memory?.date) {
+      const memDate = new Date(memory.date);
+      return isNaN(memDate.getTime()) ? new Date() : memDate; // Ensure valid date or default to now
+    }
+    return new Date(); // Default to today for new memories
+  }, [memory?.date]);
+
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialSelectedDate);
+  const [displayedMonth, setDisplayedMonth] = useState<Date>(initialSelectedDate); // For controlling calendar view
+
   const [description, setDescription] = useState(memory?.description || '');
   const [category, setCategory] = useState<MemoryCategory>(memory?.category || memoryCategories[0]);
   const [userProfile, setUserProfile] = useState(user?.profileInfo || '');
@@ -144,7 +155,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
       return;
     }
-    if (!date) {
+    if (!selectedDate) {
       toast({ title: "Date Required", description: "Please select a date for the memory.", variant: "destructive" });
       return;
     }
@@ -174,7 +185,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     }
 
     onSubmit(
-      { title, date: date.toISOString(), description, category, mediaAttachments: mediaAttachmentsForSubmission },
+      { title, date: selectedDate.toISOString(), description, category, mediaAttachments: mediaAttachmentsForSubmission },
       userProfile,
       currentMedia && currentMedia.file.name !== "existing_media" ? currentMedia.file : undefined
     );
@@ -189,6 +200,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   } : undefined;
 
   const currentYear = new Date().getFullYear();
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date) {
+      setDisplayedMonth(date); // Update displayed month when a date is selected
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -244,22 +262,24 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                   variant={"outline"}
                   className={cn(
                     "w-full justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
+                    !selectedDate && "text-muted-foreground"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                  {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  defaultMonth={date || new Date()}
+                  selected={selectedDate}
+                  onSelect={handleDateSelect}
+                  month={displayedMonth}
+                  onMonthChange={setDisplayedMonth}
                   captionLayout="dropdowns"
                   fromYear={currentYear - 100}
                   toYear={currentYear}
+                  initialFocus
                 />
               </PopoverContent>
             </Popover>
