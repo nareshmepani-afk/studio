@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { MediaCaptureControl } from './MediaRecorder';
+import { MediaCaptureControl } from './MediaRecorder'; // Corrected import path
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -42,19 +42,27 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const currentYear = new Date().getFullYear();
+  const isEditing = !!memory;
 
   const [title, setTitle] = useState(memory?.title || '');
 
-  const initialSelectedDate = useMemo(() => {
-    if (memory?.date) {
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(() => {
+    if (isEditing && memory.date) {
       const memDate = new Date(memory.date);
-      return isNaN(memDate.getTime()) ? new Date() : memDate; // Ensure valid date or default to now
+      return memDate instanceof Date && !isNaN(memDate.getTime()) ? memDate : new Date();
     }
-    return new Date(); // Default to today for new memories
-  }, [memory?.date]);
+    return new Date();
+  });
 
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialSelectedDate);
-  const [displayedMonth, setDisplayedMonth] = useState<Date>(initialSelectedDate); // For controlling calendar view
+  const [displayedMonth, setDisplayedMonth] = useState<Date>(() => {
+    if (isEditing && memory.date) {
+      const memDate = new Date(memory.date);
+      return memDate instanceof Date && !isNaN(memDate.getTime()) ? memDate : new Date();
+    }
+    return new Date();
+  });
+
 
   const [description, setDescription] = useState(memory?.description || '');
   const [category, setCategory] = useState<MemoryCategory>(memory?.category || memoryCategories[0]);
@@ -68,13 +76,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     if (memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
       const firstMedia = memory.mediaAttachments[0];
       const filename = firstMedia.filename || "existing_media";
+      // Ensure duration is a number, default to 0 if not provided or invalid
+      const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
       return {
         file: new File([], filename, {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
         type: firstMedia.type,
         previewUrl: firstMedia.url,
         startTime: firstMedia.startTime,
         endTime: firstMedia.endTime,
-        duration: firstMedia.duration || 0,
+        duration: duration,
       };
     }
     return null;
@@ -170,8 +180,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
     let mediaAttachmentsForSubmission: MediaAttachment[] | undefined = undefined;
     if (currentMedia) {
-      const isNewFile = currentMedia.file.name !== "existing_media";
+      const isNewFile = currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0; // Check size for new files
       const originalMediaAttachment = memory?.mediaAttachments?.[0];
+      
+      // Ensure duration is a number
+      const duration = (typeof currentMedia.duration === 'number' && !isNaN(currentMedia.duration)) ? currentMedia.duration : 0;
 
       mediaAttachmentsForSubmission = [{
         id: originalMediaAttachment?.id || Date.now().toString(),
@@ -180,33 +193,52 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
         filename: currentMedia.file.name,
         startTime: currentMedia.startTime,
         endTime: currentMedia.endTime,
-        duration: currentMedia.duration,
+        duration: duration,
       }];
     }
 
     onSubmit(
       { title, date: selectedDate.toISOString(), description, category, mediaAttachments: mediaAttachmentsForSubmission },
       userProfile,
-      currentMedia && currentMedia.file.name !== "existing_media" ? currentMedia.file : undefined
+      currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0 ? currentMedia.file : undefined
     );
   };
+  
+  const initialMediaForRecorder = useMemo(() => {
+    if (memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
+        const firstMedia = memory.mediaAttachments[0];
+        const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
+        return {
+            type: firstMedia.type,
+            previewUrl: firstMedia.url,
+            startTime: firstMedia.startTime,
+            endTime: firstMedia.endTime,
+            duration: duration,
+        };
+    }
+    return undefined;
+  }, [memory?.mediaAttachments]);
 
-  const initialMediaForRecorder = memory?.mediaAttachments?.[0] ? {
-    type: memory.mediaAttachments[0].type,
-    previewUrl: memory.mediaAttachments[0].url,
-    startTime: memory.mediaAttachments[0].startTime,
-    endTime: memory.mediaAttachments[0].endTime,
-    duration: memory.mediaAttachments[0].duration || 0,
-  } : undefined;
-
-  const currentYear = new Date().getFullYear();
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
     if (date) {
-      setDisplayedMonth(date); // Update displayed month when a date is selected
+      setDisplayedMonth(date); 
     }
   };
+  
+  const getButtonDisplayText = () => {
+    if (selectedDate && selectedDate instanceof Date && !isNaN(selectedDate.getTime())) {
+      try {
+        return format(selectedDate, "PPP");
+      } catch (e) {
+        console.error("Error formatting date in button:", e, selectedDate);
+        return "Invalid Date - Pick a date";
+      }
+    }
+    return "Pick a date";
+  };
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -266,7 +298,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                  {getButtonDisplayText()}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
@@ -336,12 +368,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                 {currentMedia.type === 'audio' && currentMedia.previewUrl && (
                 <audio src={currentMedia.previewUrl} controls className="w-full mt-2" key={currentMedia.previewUrl}/>
                 )}
-                <p className="text-sm text-muted-foreground mt-1">Duration: {currentMedia.duration.toFixed(2)}s</p>
+                <p className="text-sm text-muted-foreground mt-1">Duration: {typeof currentMedia.duration === 'number' ? currentMedia.duration.toFixed(2) : 'N/A'}s</p>
                 {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
                 {currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime && <p className="text-sm text-muted-foreground">Trim End: {currentMedia.endTime.toFixed(2)}s</p>}
                  <Button variant="outline" type="button" onClick={() => {
+                    // When changing media, we essentially discard the current one to allow MediaCaptureControl to re-initialize
                     handleMediaDiscard(); 
-                }} className="w-full mt-2">
+                    // MediaCaptureControl will then show options to record/upload new media.
+                    // If the user simply wanted to re-trim, they'd re-select/re-upload the same file.
+                 }} className="w-full mt-2">
                     Change Media or Re-trim
                 </Button>
               </div>
