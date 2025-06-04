@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { MediaAttachment } from '@/types';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast'; // Changed import
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface MediaRecorderProps {
@@ -18,7 +18,7 @@ interface MediaRecorderProps {
 }
 
 export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRecorderProps) {
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Removed useToast() call
   const [isRecording, setIsRecording] = useState(false);
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(initialMedia?.type || null);
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
@@ -50,7 +50,7 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
       console.error('Error accessing media devices:', error);
       setHasCameraPermission(false);
       setTimeout(() => {
-        toast({
+        toast({ // Direct use of imported toast
           variant: 'destructive',
           title: 'Permissions Denied',
           description: `Please enable ${type === 'video' ? 'camera and microphone' : 'microphone'} permissions in your browser settings.`,
@@ -109,7 +109,7 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
     recorder.start();
     setIsRecording(true);
     setTimeout(() => {
-      toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` });
+      toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` }); // Direct use
     }, 0);
   };
 
@@ -138,7 +138,7 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
       const type = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : null;
       if (!type) {
         setTimeout(() => {
-          toast({ title: "Invalid File Type", description: "Please upload a video or audio file.", variant: "destructive" });
+          toast({ title: "Invalid File Type", description: "Please upload a video or audio file.", variant: "destructive" }); // Direct use
         }, 0);
         return;
       }
@@ -155,7 +155,7 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
         setEndTime(tempMediaElement.duration);
       };
       setTimeout(() => {
-        toast({ title: "File Uploaded", description: file.name });
+        toast({ title: "File Uploaded", description: file.name }); // Direct use
       }, 0);
     }
   };
@@ -164,19 +164,19 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
     if (recordedFile && previewUrl && mediaType && mediaDuration) {
       if (startTime >= endTime) {
         setTimeout(() => {
-          toast({ title: "Invalid Trim Times", description: "Start time must be less than end time.", variant: "destructive" });
+          toast({ title: "Invalid Trim Times", description: "Start time must be less than end time.", variant: "destructive" }); // Direct use
         }, 0);
         return;
       }
       if (endTime > mediaDuration) {
          setTimeout(() => {
-          toast({ title: "Invalid End Time", description: "End time cannot exceed media duration.", variant: "destructive" });
+          toast({ title: "Invalid End Time", description: "End time cannot exceed media duration.", variant: "destructive" }); // Direct use
         }, 0);
         return;
       }
       onMediaReady({ file: recordedFile, type: mediaType, previewUrl, startTime, endTime, duration: mediaDuration });
       setTimeout(() => {
-        toast({ title: "Media Selected", description: "This media will be attached to your memory.", icon: <CheckCircle className="h-4 w-4" /> });
+        toast({ title: "Media Selected", description: "This media will be attached to your memory.", icon: <CheckCircle className="h-4 w-4" /> }); // Direct use
       }, 0);
     }
   };
@@ -198,7 +198,7 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
     recordedChunks.current = [];
     onDiscard();
     setTimeout(() => {
-      toast({ title: "Media Discarded" });
+      toast({ title: "Media Discarded" }); // Direct use
     }, 0);
   };
 

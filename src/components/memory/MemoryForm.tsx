@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { MediaRecorder } from './MediaRecorder';
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast'; // Changed import
 import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -38,7 +38,7 @@ type CurrentMediaData = {
 
 export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Removed useToast() call
   const [title, setTitle] = useState(memory?.title || '');
   const [date, setDate] = useState<Date | undefined>(memory ? new Date(memory.date) : new Date());
   const [description, setDescription] = useState(memory?.description || '');
@@ -50,15 +50,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(() => {
     if (memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
       const firstMedia = memory.mediaAttachments[0];
-      // This is for editing - we don't have the File object, only URL.
-      // The MediaRecorder will need adaptation for editing existing media with URL.
-      // For now, this setup is primarily for new media.
-      // To fully support editing, MediaRecorder would need to accept a URL and allow re-trimming.
-      // This is a simplified initial state for viewing/editing metadata.
       return {
-        file: new File([], firstMedia.filename || "existing_media"), // Placeholder file
+        file: new File([], firstMedia.filename || "existing_media"), 
         type: firstMedia.type,
-        previewUrl: firstMedia.url, // This would be the actual stored URL
+        previewUrl: firstMedia.url, 
         startTime: firstMedia.startTime,
         endTime: firstMedia.endTime,
         duration: firstMedia.duration || 0,
@@ -84,7 +79,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
   const handleGenerateCues = async () => {
     if (!userProfile.trim()) {
-      toast({ title: "Profile Info Needed", description: "Please provide some information about yourself in the 'Your Profile for Cues' field.", variant: "destructive" });
+      toast({ title: "Profile Info Needed", description: "Please provide some information about yourself in the 'Your Profile for Cues' field.", variant: "destructive" }); // Direct use
       return;
     }
     setIsLoadingCues(true);
@@ -95,13 +90,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       });
       setAiCues(result.memoryCues);
       if (result.memoryCues.length === 0) {
-        toast({ title: "No Cues Generated", description: "Try refining your profile information." });
+        toast({ title: "No Cues Generated", description: "Try refining your profile information." }); // Direct use
       } else {
-        toast({ title: "Memory Cues Generated!", description: "Check the suggestions below." });
+        toast({ title: "Memory Cues Generated!", description: "Check the suggestions below." }); // Direct use
       }
     } catch (error) {
       console.error("Failed to generate cues", error);
-      toast({ title: "Error Generating Cues", description: "Something went wrong. Please try again.", variant: "destructive" });
+      toast({ title: "Error Generating Cues", description: "Something went wrong. Please try again.", variant: "destructive" }); // Direct use
     }
     setIsLoadingCues(false);
   };
@@ -109,30 +104,28 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const handleCueClick = (cue: string) => {
     if (!title) setTitle(cue);
     else setDescription(prev => `${prev}${prev ? '\n' : ''}Inspired by: ${cue}`);
-    toast({ title: "Cue Applied!", description: `"${cue}" added to your memory.` });
+    toast({ title: "Cue Applied!", description: `"${cue}" added to your memory.` }); // Direct use
   };
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (!date) {
-      toast({ title: "Date Required", description: "Please select a date for the memory.", variant: "destructive" });
+      toast({ title: "Date Required", description: "Please select a date for the memory.", variant: "destructive" }); // Direct use
       return;
     }
 
     let mediaAttachments: MediaAttachment[] | undefined = undefined;
     if (currentMedia) {
-      // In a real app, the URL would come from Firestore upload result
-      // For now, using previewUrl (blob) for local testing, or existing URL if editing
       mediaAttachments = [{
-        id: memory?.mediaAttachments?.[0]?.id || Date.now().toString(), // Retain ID if editing, else generate
+        id: memory?.mediaAttachments?.[0]?.id || Date.now().toString(),
         type: currentMedia.type,
-        url: currentMedia.file.name === "existing_media" ? currentMedia.previewUrl : currentMedia.previewUrl, // Distinguish between new blob and existing URL
+        url: currentMedia.file.name === "existing_media" ? currentMedia.previewUrl : currentMedia.previewUrl,
         filename: currentMedia.file.name === "existing_media" ? currentMedia.file.name : currentMedia.file.name,
         startTime: currentMedia.startTime,
         endTime: currentMedia.endTime,
         duration: currentMedia.duration,
       }];
-    } else if (memory?.mediaAttachments) { // If no new media but existing media, keep it
+    } else if (memory?.mediaAttachments) { 
         mediaAttachments = memory.mediaAttachments;
     }
 
@@ -287,3 +280,4 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     </form>
   );
 }
+

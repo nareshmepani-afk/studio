@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast'; // Changed import
 import { Copy, Check } from 'lucide-react';
 
 interface ShareDialogProps {
@@ -19,13 +19,13 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
   const [guestEmail, setGuestEmail] = useState('');
   const [shareLink, setShareLink] = useState('');
   const [copied, setCopied] = useState(false);
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Removed useToast() call
 
   const handleGenerateLink = () => {
     // Mock link generation
     const link = `https://memoryweaver.example.com/share/${memory.id}/${Date.now()}`;
     setShareLink(link);
-    toast({
+    toast({ // Direct use of imported toast
       title: "Share link generated!",
       description: "You can now copy the link to share it.",
     });
@@ -36,7 +36,7 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
       navigator.clipboard.writeText(shareLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      toast({
+      toast({ // Direct use
         title: "Link copied to clipboard!",
       });
     }
@@ -88,3 +88,4 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
     </Dialog>
   );
 }
+

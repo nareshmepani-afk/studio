@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, Search, ThumbsUp, RotateCcw } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast'; // Changed import
 
 export default function PromptsPage() {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
@@ -18,10 +18,9 @@ export default function PromptsPage() {
   const [showFlaggedOnly, setShowFlaggedOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const { toast } = useToast();
+  // const { toast } = useToast(); // Removed useToast() call
 
   useEffect(() => {
-    // Simulate API call
     setTimeout(() => {
       setPrompts(mockPrompts);
       setIsLoading(false);
@@ -31,11 +30,10 @@ export default function PromptsPage() {
 
   const handleUsePrompt = (promptId: string) => {
     const prompt = prompts.find(p => p.id === promptId);
-    toast({
+    toast({ // Direct use
       title: "Prompt Selected!",
       description: `Using prompt: "${prompt?.text}". Redirecting to add memory...`
     });
-    // Redirect to add memory page, potentially with prompt pre-filled
     router.push(`/add-memory?prompt=${encodeURIComponent(prompt?.text || '')}`);
   };
 
@@ -43,7 +41,6 @@ export default function PromptsPage() {
     setPrompts(prevPrompts =>
       prevPrompts.map(p => (p.id === promptId ? { ...p, isFlaggedForReuse: isFlagged } : p))
     );
-    // Call API to update flag status
   };
 
   const filteredPrompts = useMemo(() => {
@@ -71,7 +68,6 @@ export default function PromptsPage() {
       <div className="container mx-auto py-8 px-4">
         <div className="flex flex-col md:flex-row justify-between items-center mb-8">
           <h1 className="font-headline text-4xl mb-4 md:mb-0">Memory Prompts</h1>
-          {/* <Button> <PlusCircle className="mr-2 h-5 w-5" /> Add Custom Prompt </Button> */}
         </div>
 
         <div className="mb-8 p-4 bg-card rounded-lg shadow sticky top-16 z-40">

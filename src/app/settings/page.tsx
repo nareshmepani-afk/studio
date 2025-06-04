@@ -8,14 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast'; // Changed import
 import type { User } from '@/types';
 import { Loader2 } from 'lucide-react';
 import { useState, useEffect, type FormEvent } from 'react';
 
 export default function SettingsPage() {
-  const { user, login, loading: authLoading } = useAuth(); // Re-using login to update user in mock
-  const { toast } = useToast();
+  const { user, login, loading: authLoading } = useAuth(); 
+  // const { toast } = useToast(); // Removed useToast() call
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [profileInfo, setProfileInfo] = useState('');
@@ -33,25 +33,21 @@ export default function SettingsPage() {
     event.preventDefault();
     setIsSubmitting(true);
 
-    // Mock update user
     const updatedUser: User = {
       ...user!,
-      id: user!.id, // Add null check for user
+      id: user!.id, 
       name: name,
-      email: email, // In real app, email change might need verification
+      email: email, 
       profileInfo: profileInfo,
     };
     
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Update user in AuthContext (mock)
-    // In a real app, this would likely involve re-fetching user or updating token
     localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser));
-    login(updatedUser.email); // Re-login to refresh user state in context
+    login(updatedUser.email); 
 
     setIsSubmitting(false);
-    toast({
+    toast({ // Direct use
       title: "Settings Saved!",
       description: "Your profile information has been updated.",
     });
@@ -66,8 +62,6 @@ export default function SettingsPage() {
   }
   
   if (!user) {
-     // This should ideally be handled by AuthenticatedPageWrapper redirecting,
-     // but as a fallback:
     return (
       <AuthenticatedPageWrapper>
         <div className="container mx-auto py-8 px-4">Please log in to view settings.</div>
