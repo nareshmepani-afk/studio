@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, type FormEvent, useEffect } from 'react';
-import type { Memory, MemoryCategory, User } from '@/types';
+import { useState, type FormEvent, useEffect, useCallback } from 'react';
+import type { Memory, MemoryCategory, User, MediaAttachment } from '@/types';
 import { memoryCategories } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,7 @@ import { MediaRecorder } from './MediaRecorder';
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Sparkles, Lightbulb, Loader2 } from 'lucide-react';
+import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
@@ -23,9 +23,18 @@ import { format } from 'date-fns';
 
 interface MemoryFormProps {
   memory?: Memory; // For editing
-  onSubmit: (memoryData: Omit<Memory, 'id' | 'userId'>, userProfileForCues?: string) => void;
+  onSubmit: (memoryData: Omit<Memory, 'id' | 'userId'>, userProfileForCues?: string, mediaFile?: File) => void;
   isSubmitting?: boolean;
 }
+
+type CurrentMediaData = {
+  file: File;
+  type: 'video' | 'audio';
+  previewUrl: string;
+  startTime?: number;
+  endTime?: number;
+  duration: number;
+};
 
 export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) {
   const { user } = useAuth();
@@ -37,13 +46,41 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const [userProfile, setUserProfile] = useState(user?.profileInfo || '');
   const [aiCues, setAiCues] = useState<string[]>([]);
   const [isLoadingCues, setIsLoadingCues] = useState(false);
+  
+  const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(() => {
+    if (memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
+      const firstMedia = memory.mediaAttachments[0];
+      // This is for editing - we don't have the File object, only URL.
+      // The MediaRecorder will need adaptation for editing existing media with URL.
+      // For now, this setup is primarily for new media.
+      // To fully support editing, MediaRecorder would need to accept a URL and allow re-trimming.
+      // This is a simplified initial state for viewing/editing metadata.
+      return {
+        file: new File([], firstMedia.filename || "existing_media"), // Placeholder file
+        type: firstMedia.type,
+        previewUrl: firstMedia.url, // This would be the actual stored URL
+        startTime: firstMedia.startTime,
+        endTime: firstMedia.endTime,
+        duration: firstMedia.duration || 0,
+      };
+    }
+    return null;
+  });
+
 
   useEffect(() => {
-    if (user?.profileInfo && !memory) { // Pre-fill profile if new memory and user has profile
+    if (user?.profileInfo && !memory) {
       setUserProfile(user.profileInfo);
     }
   }, [user, memory]);
 
+  const handleMediaReady = useCallback((mediaData: CurrentMediaData) => {
+    setCurrentMedia(mediaData);
+  }, []);
+
+  const handleMediaDiscard = useCallback(() => {
+    setCurrentMedia(null);
+  }, []);
 
   const handleGenerateCues = async () => {
     if (!userProfile.trim()) {
@@ -54,7 +91,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     try {
       const result = await generateMemoryCuesAction({
         userProfile: userProfile,
-        currentDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+        currentDate: new Date().toISOString().split('T')[0],
       });
       setAiCues(result.memoryCues);
       if (result.memoryCues.length === 0) {
@@ -70,9 +107,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   };
 
   const handleCueClick = (cue: string) => {
-    // Example: append cue to description or set as title if empty
     if (!title) setTitle(cue);
-    else setDescription(prev => `${prev}\nInspired by: ${cue}`);
+    else setDescription(prev => `${prev}${prev ? '\n' : ''}Inspired by: ${cue}`);
     toast({ title: "Cue Applied!", description: `"${cue}" added to your memory.` });
   };
 
@@ -82,8 +118,39 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       toast({ title: "Date Required", description: "Please select a date for the memory.", variant: "destructive" });
       return;
     }
-    onSubmit({ title, date: date.toISOString(), description, category }, userProfile);
+
+    let mediaAttachments: MediaAttachment[] | undefined = undefined;
+    if (currentMedia) {
+      // In a real app, the URL would come from Firestore upload result
+      // For now, using previewUrl (blob) for local testing, or existing URL if editing
+      mediaAttachments = [{
+        id: memory?.mediaAttachments?.[0]?.id || Date.now().toString(), // Retain ID if editing, else generate
+        type: currentMedia.type,
+        url: currentMedia.file.name === "existing_media" ? currentMedia.previewUrl : currentMedia.previewUrl, // Distinguish between new blob and existing URL
+        filename: currentMedia.file.name === "existing_media" ? currentMedia.file.name : currentMedia.file.name,
+        startTime: currentMedia.startTime,
+        endTime: currentMedia.endTime,
+        duration: currentMedia.duration,
+      }];
+    } else if (memory?.mediaAttachments) { // If no new media but existing media, keep it
+        mediaAttachments = memory.mediaAttachments;
+    }
+
+
+    onSubmit(
+      { title, date: date.toISOString(), description, category, mediaAttachments }, 
+      userProfile, 
+      currentMedia && currentMedia.file.name !== "existing_media" ? currentMedia.file : undefined
+    );
   };
+
+  const initialMediaForRecorder = memory?.mediaAttachments?.[0] ? {
+    type: memory.mediaAttachments[0].type,
+    previewUrl: memory.mediaAttachments[0].url,
+    startTime: memory.mediaAttachments[0].startTime,
+    endTime: memory.mediaAttachments[0].endTime,
+    duration: memory.mediaAttachments[0].duration || 0,
+  } : undefined;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -145,7 +212,41 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
         </CardContent>
       </Card>
 
-      <MediaRecorder />
+      {!currentMedia && (
+        <MediaRecorder 
+            onMediaReady={handleMediaReady} 
+            onDiscard={handleMediaDiscard}
+            initialMedia={initialMediaForRecorder}
+        />
+      )}
+
+      {currentMedia && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-headline text-lg flex items-center justify-between">
+              <span><Paperclip className="mr-2 h-5 w-5 inline-block" />Attached Media</span>
+              <Button variant="ghost" size="icon" onClick={handleMediaDiscard}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+                <span className="sr-only">Remove media</span>
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Type: {currentMedia.type}</p>
+            <p className="text-sm text-muted-foreground">Filename: {currentMedia.file.name}</p>
+            {currentMedia.type === 'video' && currentMedia.previewUrl && (
+              <video src={currentMedia.previewUrl} controls className="w-full aspect-video rounded-md mt-2 bg-muted" />
+            )}
+            {currentMedia.type === 'audio' && currentMedia.previewUrl && (
+              <audio src={currentMedia.previewUrl} controls className="w-full mt-2" />
+            )}
+             <p className="text-sm text-muted-foreground mt-1">Duration: {currentMedia.duration.toFixed(2)}s</p>
+            {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
+            {currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime && <p className="text-sm text-muted-foreground">Trim End: {currentMedia.endTime.toFixed(2)}s</p>}
+          </CardContent>
+        </Card>
+      )}
+
 
       <Card>
         <CardHeader>

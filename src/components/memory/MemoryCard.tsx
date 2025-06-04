@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { Memory } from '@/types';
+import type { Memory, MediaAttachment } from '@/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -19,8 +19,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ShareDialog } from './ShareDialog'; // To be created
-import { useState } from 'react';
+import { ShareDialog } from './ShareDialog'; 
+import { useState, useRef, useEffect } from 'react';
 
 interface MemoryCardProps {
   memory: Memory;
@@ -30,11 +30,78 @@ interface MemoryCardProps {
 
 export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
   const [showShareDialog, setShowShareDialog] = useState(false);
-  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const primaryMedia = memory.mediaAttachments?.[0];
+
+  useEffect(() => {
+    const mediaElement = videoRef.current || audioRef.current;
+    if (mediaElement && primaryMedia) {
+      const { startTime, endTime } = primaryMedia;
+
+      const handleLoadedMetadata = () => {
+        if (startTime !== undefined && isFinite(startTime)) {
+          mediaElement.currentTime = startTime;
+        }
+      };
+
+      const handleTimeUpdate = () => {
+        if (endTime !== undefined && isFinite(endTime) && mediaElement.currentTime >= endTime) {
+          mediaElement.pause();
+           // Optional: Reset to start time after reaching end of trim
+           if (startTime !== undefined && isFinite(startTime)) {
+            mediaElement.currentTime = startTime;
+          }
+        }
+      };
+      
+      const handlePlay = () => {
+        // If current time is outside the trim range (e.g., after seeking), reset to startTime
+        if (startTime !== undefined && isFinite(startTime) && mediaElement.currentTime < startTime) {
+            mediaElement.currentTime = startTime;
+        }
+        if (endTime !== undefined && isFinite(endTime) && mediaElement.currentTime > endTime) {
+             if (startTime !== undefined && isFinite(startTime)) {
+                mediaElement.currentTime = startTime;
+             } else {
+                mediaElement.currentTime = 0; // Or pause
+             }
+        }
+      };
+
+      mediaElement.addEventListener('loadedmetadata', handleLoadedMetadata);
+      mediaElement.addEventListener('timeupdate', handleTimeUpdate);
+      mediaElement.addEventListener('play', handlePlay);
+
+      // Initial check in case metadata is already loaded
+      if (mediaElement.readyState >= 1 && startTime !== undefined && isFinite(startTime)) { // HAVE_METADATA or more
+         mediaElement.currentTime = startTime;
+      }
+
+
+      return () => {
+        mediaElement.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        mediaElement.removeEventListener('timeupdate', handleTimeUpdate);
+        mediaElement.removeEventListener('play', handlePlay);
+      };
+    }
+  }, [primaryMedia]);
+
   return (
     <>
       <Card className="flex flex-col overflow-hidden shadow-lg transition-all hover:shadow-xl animate-fade-in h-full">
-        {memory.imageUrl && (
+        {primaryMedia && primaryMedia.type === 'video' && primaryMedia.url && (
+          <div className="relative w-full aspect-video bg-muted">
+            <video ref={videoRef} src={primaryMedia.url} controls className="w-full h-full object-cover" preload="metadata" />
+          </div>
+        )}
+        {primaryMedia && primaryMedia.type === 'audio' && primaryMedia.url && (
+          <div className="p-4 bg-muted">
+            <audio ref={audioRef} src={primaryMedia.url} controls className="w-full" preload="metadata" />
+          </div>
+        )}
+        {!primaryMedia && memory.imageUrl && (
           <div className="relative w-full h-48">
             <Image
               src={memory.imageUrl}
@@ -45,6 +112,7 @@ export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
             />
           </div>
         )}
+        
         <CardHeader>
           <CardTitle className="font-headline text-xl">{memory.title}</CardTitle>
           <div className="flex items-center text-xs text-muted-foreground pt-1">
@@ -54,12 +122,15 @@ export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
         </CardHeader>
         <CardContent className="flex-grow">
           <p className="text-sm text-muted-foreground line-clamp-3">{memory.description}</p>
-          {memory.media && memory.media.length > 0 && (
+          {memory.mediaAttachments && memory.mediaAttachments.length > 0 && (
             <div className="mt-2 flex space-x-2">
-              {memory.media.map((item, index) => (
-                <Badge variant="secondary" key={index} className="text-xs">
+              {memory.mediaAttachments.map((item) => (
+                <Badge variant="secondary" key={item.id} className="text-xs">
                   {item.type === 'video' ? <Video className="h-3 w-3 mr-1" /> : <Mic className="h-3 w-3 mr-1" />}
                   {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                  {item.startTime !== undefined && item.endTime !== undefined && item.duration && Math.abs(item.duration - (item.endTime - item.startTime)) > 1 && (
+                     <span className="ml-1">(Trimmed)</span>
+                  )}
                 </Badge>
               ))}
             </div>
