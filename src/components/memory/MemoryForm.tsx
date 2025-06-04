@@ -20,10 +20,11 @@ import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { useSearchParams } from 'next/navigation';
 
 interface MemoryFormProps {
   memory?: Memory;
-  onSubmit: (memoryData: Omit<Memory, 'id' | 'userId'>, userProfileForCues?: string, mediaFile?: File) => void;
+  onSubmit: (memoryData: Omit<Memory, 'id' | 'userId'>, userProfileForCues?: string, mediaFileToUpload?: File) => void;
   isSubmitting?: boolean;
 }
 
@@ -38,6 +39,8 @@ type CurrentMediaData = {
 
 export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+
   const [title, setTitle] = useState(memory?.title || '');
   const [date, setDate] = useState<Date | undefined>(memory ? new Date(memory.date) : new Date());
   const [description, setDescription] = useState(memory?.description || '');
@@ -61,6 +64,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     }
     return null;
   });
+
+  useEffect(() => {
+    const promptFromUrl = searchParams.get('prompt');
+    if (promptFromUrl && !memory) { // Only pre-fill if it's a new memory and not editing
+      setTitle(decodeURIComponent(promptFromUrl));
+    }
+  }, [searchParams, memory]);
 
 
   useEffect(() => {
@@ -136,7 +146,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       mediaAttachmentsForSubmission = [{
         id: originalMediaAttachment?.id || Date.now().toString(),
         type: currentMedia.type,
-        url: isNewFile ? currentMedia.previewUrl : (originalMediaAttachment?.url || currentMedia.previewUrl), // Placeholder for new, original for existing
+        // For a new file, the URL will be set after upload. For an existing file, we keep its original URL.
+        // The previewUrl is a local blob URL for new files.
+        url: isNewFile ? "placeholder_url_to_be_replaced_after_upload" : (originalMediaAttachment?.url || currentMedia.previewUrl),
         filename: currentMedia.file.name,
         startTime: currentMedia.startTime,
         endTime: currentMedia.endTime,
