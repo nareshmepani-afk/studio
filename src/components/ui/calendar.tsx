@@ -1,18 +1,24 @@
+
 "use client"
 
 import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { DayPicker } from "react-day-picker"
+import { DayPicker, type DayPickerProps } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 
-export type CalendarProps = React.ComponentProps<typeof DayPicker>
+export type CalendarProps = DayPickerProps
 
 function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  captionLayout,
+  fromYear,
+  toYear,
+  defaultMonth,
+  month,
   ...props
 }: CalendarProps) {
   return (
@@ -24,6 +30,7 @@ function Calendar({
         month: "space-y-4",
         caption: "flex justify-center pt-1 relative items-center",
         caption_label: "text-sm font-medium",
+        caption_dropdowns: "flex justify-center gap-1", // Added for dropdown styling if needed
         nav: "space-x-1 flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
@@ -54,13 +61,18 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ className, ...props }) => (
-          <ChevronLeft className={cn("h-4 w-4", className)} {...props} />
+        IconLeft: ({ className: iconClassName, ...iconProps }) => (
+          <ChevronLeft className={cn("h-4 w-4", iconClassName)} {...iconProps} />
         ),
-        IconRight: ({ className, ...props }) => (
-          <ChevronRight className={cn("h-4 w-4", className)} {...props} />
+        IconRight: ({ className: iconClassName, ...iconProps }) => (
+          <ChevronRight className={cn("h-4 w-4", iconClassName)} {...iconProps} />
         ),
       }}
+      captionLayout={captionLayout}
+      fromYear={fromYear}
+      toYear={toYear}
+      defaultMonth={defaultMonth}
+      month={month}
       {...props}
     />
   )
