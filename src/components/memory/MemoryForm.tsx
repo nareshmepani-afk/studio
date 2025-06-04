@@ -10,10 +10,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { MediaRecorder } from './MediaRecorder';
+import { MediaCaptureControl } from './MediaRecorder';
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from '@/hooks/use-toast'; // Changed import
+import { toast } from '@/hooks/use-toast';
 import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
 interface MemoryFormProps {
-  memory?: Memory; // For editing
+  memory?: Memory; 
   onSubmit: (memoryData: Omit<Memory, 'id' | 'userId'>, userProfileForCues?: string, mediaFile?: File) => void;
   isSubmitting?: boolean;
 }
@@ -38,7 +38,6 @@ type CurrentMediaData = {
 
 export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) {
   const { user } = useAuth();
-  // const { toast } = useToast(); // Removed useToast() call
   const [title, setTitle] = useState(memory?.title || '');
   const [date, setDate] = useState<Date | undefined>(memory ? new Date(memory.date) : new Date());
   const [description, setDescription] = useState(memory?.description || '');
@@ -79,7 +78,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
   const handleGenerateCues = async () => {
     if (!userProfile.trim()) {
-      toast({ title: "Profile Info Needed", description: "Please provide some information about yourself in the 'Your Profile for Cues' field.", variant: "destructive" }); // Direct use
+      toast({ title: "Profile Info Needed", description: "Please provide some information about yourself in the 'Your Profile for Cues' field.", variant: "destructive" });
       return;
     }
     setIsLoadingCues(true);
@@ -90,13 +89,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       });
       setAiCues(result.memoryCues);
       if (result.memoryCues.length === 0) {
-        toast({ title: "No Cues Generated", description: "Try refining your profile information." }); // Direct use
+        toast({ title: "No Cues Generated", description: "Try refining your profile information." });
       } else {
-        toast({ title: "Memory Cues Generated!", description: "Check the suggestions below." }); // Direct use
+        toast({ title: "Memory Cues Generated!", description: "Check the suggestions below." });
       }
     } catch (error) {
       console.error("Failed to generate cues", error);
-      toast({ title: "Error Generating Cues", description: "Something went wrong. Please try again.", variant: "destructive" }); // Direct use
+      toast({ title: "Error Generating Cues", description: "Something went wrong. Please try again.", variant: "destructive" });
     }
     setIsLoadingCues(false);
   };
@@ -104,13 +103,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const handleCueClick = (cue: string) => {
     if (!title) setTitle(cue);
     else setDescription(prev => `${prev}${prev ? '\n' : ''}Inspired by: ${cue}`);
-    toast({ title: "Cue Applied!", description: `"${cue}" added to your memory.` }); // Direct use
+    toast({ title: "Cue Applied!", description: `"${cue}" added to your memory.` });
   };
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (!date) {
-      toast({ title: "Date Required", description: "Please select a date for the memory.", variant: "destructive" }); // Direct use
+      toast({ title: "Date Required", description: "Please select a date for the memory.", variant: "destructive" });
       return;
     }
 
@@ -119,7 +118,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       mediaAttachments = [{
         id: memory?.mediaAttachments?.[0]?.id || Date.now().toString(),
         type: currentMedia.type,
-        url: currentMedia.file.name === "existing_media" ? currentMedia.previewUrl : currentMedia.previewUrl,
+        url: currentMedia.file.name === "existing_media" ? currentMedia.previewUrl : currentMedia.previewUrl, 
         filename: currentMedia.file.name === "existing_media" ? currentMedia.file.name : currentMedia.file.name,
         startTime: currentMedia.startTime,
         endTime: currentMedia.endTime,
@@ -206,7 +205,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       </Card>
 
       {!currentMedia && (
-        <MediaRecorder 
+        <MediaCaptureControl 
             onMediaReady={handleMediaReady} 
             onDiscard={handleMediaDiscard}
             initialMedia={initialMediaForRecorder}
@@ -281,3 +280,4 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   );
 }
 
+    

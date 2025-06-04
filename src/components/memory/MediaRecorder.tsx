@@ -8,24 +8,23 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { MediaAttachment } from '@/types';
-import { toast } from '@/hooks/use-toast'; // Changed import
+import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-interface MediaRecorderProps {
+interface MediaCaptureControlProps {
   onMediaReady: (mediaData: { file: File; type: 'video' | 'audio'; previewUrl: string; startTime?: number; endTime?: number, duration: number }) => void;
   onDiscard: () => void;
   initialMedia?: { type: 'video' | 'audio'; previewUrl: string; startTime?: number; endTime?: number, duration: number };
 }
 
-export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRecorderProps) {
-  // const { toast } = useToast(); // Removed useToast() call
+export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: MediaCaptureControlProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(initialMedia?.type || null);
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(initialMedia?.previewUrl || null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaRecorderRef = useRef<globalThis.MediaRecorder | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const liveVideoRef = useRef<HTMLVideoElement>(null);
   const recordedChunks = useRef<Blob[]>([]);
@@ -50,7 +49,7 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
       console.error('Error accessing media devices:', error);
       setHasCameraPermission(false);
       setTimeout(() => {
-        toast({ // Direct use of imported toast
+        toast({
           variant: 'destructive',
           title: 'Permissions Denied',
           description: `Please enable ${type === 'video' ? 'camera and microphone' : 'microphone'} permissions in your browser settings.`,
@@ -58,7 +57,7 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
       }, 0);
       return null;
     }
-  }, [toast]);
+  }, []);
 
   const handleStartRecording = async (type: 'video' | 'audio') => {
     if (isRecording) return;
@@ -73,7 +72,7 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
     if (!currentStream) return;
 
     recordedChunks.current = [];
-    const recorder = new MediaRecorder(currentStream);
+    const recorder = new window.MediaRecorder(currentStream);
     mediaRecorderRef.current = recorder;
 
     recorder.ondataavailable = (event) => {
@@ -92,15 +91,13 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
       setPreviewUrl(url);
       setIsRecording(false);
 
-      // Get duration
       const tempMediaElement = document.createElement(type);
       tempMediaElement.src = url;
       tempMediaElement.onloadedmetadata = () => {
         setMediaDuration(tempMediaElement.duration);
-        setEndTime(tempMediaElement.duration); // Default end time to full duration
+        setEndTime(tempMediaElement.duration); 
       };
 
-      // Stop stream tracks
       stream?.getTracks().forEach(track => track.stop());
       setStream(null);
       if (liveVideoRef.current) liveVideoRef.current.srcObject = null;
@@ -109,8 +106,8 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
     recorder.start();
     setIsRecording(true);
     setTimeout(() => {
-      toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` }); // Direct use
-    }, 0);
+      toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` });
+    },0);
   };
 
   const handleStopRecording = () => {
@@ -119,8 +116,8 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
     }
   };
   
-  const handleVideoLoadedMetadata = (event: React.SyntheticEvent<HTMLVideoElement, Event>) => {
-     if (previewUrl && !mediaDuration) { // only set if not already set (e.g. from recording)
+  const handleVideoLoadedMetadata = (event: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement, Event>) => {
+     if (previewUrl && !mediaDuration) { 
         const duration = event.currentTarget.duration;
         if (duration && isFinite(duration)) {
             setMediaDuration(duration);
@@ -138,7 +135,7 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
       const type = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : null;
       if (!type) {
         setTimeout(() => {
-          toast({ title: "Invalid File Type", description: "Please upload a video or audio file.", variant: "destructive" }); // Direct use
+          toast({ title: "Invalid File Type", description: "Please upload a video or audio file.", variant: "destructive" });
         }, 0);
         return;
       }
@@ -155,7 +152,7 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
         setEndTime(tempMediaElement.duration);
       };
       setTimeout(() => {
-        toast({ title: "File Uploaded", description: file.name }); // Direct use
+        toast({ title: "File Uploaded", description: file.name });
       }, 0);
     }
   };
@@ -164,19 +161,19 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
     if (recordedFile && previewUrl && mediaType && mediaDuration) {
       if (startTime >= endTime) {
         setTimeout(() => {
-          toast({ title: "Invalid Trim Times", description: "Start time must be less than end time.", variant: "destructive" }); // Direct use
+          toast({ title: "Invalid Trim Times", description: "Start time must be less than end time.", variant: "destructive" });
         }, 0);
         return;
       }
       if (endTime > mediaDuration) {
          setTimeout(() => {
-          toast({ title: "Invalid End Time", description: "End time cannot exceed media duration.", variant: "destructive" }); // Direct use
+          toast({ title: "Invalid End Time", description: "End time cannot exceed media duration.", variant: "destructive" });
         }, 0);
         return;
       }
       onMediaReady({ file: recordedFile, type: mediaType, previewUrl, startTime, endTime, duration: mediaDuration });
       setTimeout(() => {
-        toast({ title: "Media Selected", description: "This media will be attached to your memory.", icon: <CheckCircle className="h-4 w-4" /> }); // Direct use
+        toast({ title: "Media Selected", description: "This media will be attached to your memory.", icon: <CheckCircle className="h-4 w-4" /> });
       }, 0);
     }
   };
@@ -198,12 +195,11 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
     recordedChunks.current = [];
     onDiscard();
     setTimeout(() => {
-      toast({ title: "Media Discarded" }); // Direct use
+      toast({ title: "Media Discarded" });
     }, 0);
   };
 
   useEffect(() => {
-    // Clean up blob URL
     return () => {
       if (previewUrl && previewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(previewUrl);
@@ -323,3 +319,4 @@ export function MediaRecorder({ onMediaReady, onDiscard, initialMedia }: MediaRe
   );
 }
 
+    
