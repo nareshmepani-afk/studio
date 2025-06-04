@@ -56,7 +56,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(() => {
     if (memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
       const firstMedia = memory.mediaAttachments[0];
-      // Ensure filename is a string, default to "existing_media" if undefined or null
       const filename = firstMedia.filename || "existing_media";
       return {
         file: new File([], filename, {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
@@ -189,6 +188,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     duration: memory.mediaAttachments[0].duration || 0,
   } : undefined;
 
+  const currentYear = new Date().getFullYear();
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
@@ -256,6 +257,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                   selected={date}
                   onSelect={setDate}
                   initialFocus
+                  captionLayout="dropdowns"
+                  fromYear={currentYear - 100}
+                  toYear={currentYear}
                 />
               </PopoverContent>
             </Popover>
@@ -315,8 +319,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                 <p className="text-sm text-muted-foreground mt-1">Duration: {currentMedia.duration.toFixed(2)}s</p>
                 {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
                 {currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime && <p className="text-sm text-muted-foreground">Trim End: {currentMedia.endTime.toFixed(2)}s</p>}
-                <Button variant="outline" type="button" onClick={() => {
-                    // To re-trim or change media, user first discards, then uses MediaCaptureControl again
+                 <Button variant="outline" type="button" onClick={() => {
                     handleMediaDiscard(); 
                 }} className="w-full mt-2">
                     Change Media or Re-trim
