@@ -195,7 +195,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       <Card>
         <CardHeader>
           <CardTitle className="font-headline text-2xl">{memory ? 'Edit Memory' : 'Add New Memory'}</CardTitle>
-          <CardDescription>Capture the details of your moment. All fields marked with * are mandatory.</CardDescription>
+          <CardDescription>Capture the details of your moment. Fields marked with * are mandatory.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1">
@@ -320,6 +320,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                 {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
                 {currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime && <p className="text-sm text-muted-foreground">Trim End: {currentMedia.endTime.toFixed(2)}s</p>}
                  <Button variant="outline" type="button" onClick={() => {
+                    // To re-trim or change media, the user effectively discards the current one 
+                    // and the MediaCaptureControl will reappear for new recording/upload/trimming.
                     handleMediaDiscard(); 
                 }} className="w-full mt-2">
                     Change Media or Re-trim
@@ -383,5 +385,5 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     </form>
   );
 }
-    
+
     
