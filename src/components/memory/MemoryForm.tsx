@@ -14,13 +14,13 @@ import { MediaCaptureControl } from './MediaRecorder';
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw } from 'lucide-react';
+import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, ArrowRight } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { mockPrompts } from '@/lib/mockData';
 
 interface MemoryFormProps {
@@ -41,6 +41,7 @@ type CurrentMediaData = {
 export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) {
   const { user } = useAuth();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const [title, setTitle] = useState(memory?.title || '');
   const [date, setDate] = useState<Date | undefined>(memory ? new Date(memory.date) : new Date());
@@ -203,10 +204,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
               <div className="pt-2 space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="inspiration-prompts" className="text-xs text-muted-foreground">Need inspiration for your title?</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={loadInspirationPrompts} className="text-xs h-7">
-                    <RefreshCw className="mr-1 h-3 w-3" />
-                    New Suggestions
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={loadInspirationPrompts} className="text-xs h-7">
+                      <RefreshCw className="mr-1 h-3 w-3" />
+                      New Suggestions
+                    </Button>
+                    <Button type="button" variant="link" size="sm" onClick={() => router.push('/prompts')} className="text-xs h-7 px-2">
+                      More Prompts <ArrowRight className="ml-1 h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
                 <div id="inspiration-prompts" className="flex flex-wrap gap-1">
                   {inspirationPrompts.map((prompt) => {
@@ -374,5 +380,4 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     </form>
   );
 }
-
     
