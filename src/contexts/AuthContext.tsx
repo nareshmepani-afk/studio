@@ -2,7 +2,7 @@
 "use client";
 
 import type { User } from '@/types';
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
 interface AuthContextType {
@@ -11,6 +11,8 @@ interface AuthContextType {
   login: (email: string) => void; // Simplified login
   logout: () => void;
   loading: boolean;
+  pendingRequestCount: number;
+  setPendingRequestCount: (count: number) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,6 +21,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
+  const [pendingRequestCount, setPendingRequestCountState] = useState<number>(0);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -54,11 +57,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('memoryWeaverUser');
     setUser(null);
     setIsAuthenticated(false);
+    setPendingRequestCountState(0); // Reset on logout
     router.push('/login');
   };
 
+  const setPendingRequestCount = useCallback((count: number) => {
+    setPendingRequestCountState(count);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading, pendingRequestCount, setPendingRequestCount }}>
       {children}
     </AuthContext.Provider>
   );
