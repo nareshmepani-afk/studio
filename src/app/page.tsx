@@ -20,26 +20,30 @@ export default function TimelinePage() {
   const [sortCriteria, setSortCriteria] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc'>('date-desc');
   const [isLoading, setIsLoading] = useState(true);
 
-  const { user, setPendingRequestCount, userMode, activateFreePass, purchasePaidPass, checkAndUpdatePassStatus, setHasNewSharedMemories, hasNewSharedMemories } = useAuth();
+  const { 
+    user, 
+    setPendingRequestCount, 
+    userMode, 
+    activateFreePass, 
+    purchasePaidPass, 
+    checkAndUpdatePassStatus, 
+    setHasNewSharedMemories, 
+    hasNewSharedMemories,
+    markSharedMemoryAsViewed,
+    checkIfGuestHasUnviewedMemories 
+  } = useAuth();
 
   const mockPendingRequests = [
     { id: 'req1', text: 'Tell us about your first pet!', user: 'Guest123' },
     { id: 'req2', text: 'What was your favorite childhood vacation?', user: 'Guest456' },
   ];
 
-  // Recalculate pass validity for display
   const isFreePassActive = useMemo(() => {
-    if (user?.sharedAccessStatus === 'free_pass_active' && user.freePassActivatedDate) {
-      return true;
-    }
-    return false;
+    return user?.sharedAccessStatus === 'free_pass_active' && user.freePassActivatedDate;
   }, [user]);
 
   const isPaidPassActive = useMemo(() => {
-    if (user?.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate) {
-      return true;
-    }
-    return false;
+    return user?.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate;
   }, [user]);
 
   const canViewSharedMemories = isFreePassActive || isPaidPassActive;
@@ -54,6 +58,7 @@ export default function TimelinePage() {
       if (userMode === 'host') {
         setMemories(mockMemories);
       } else if (userMode === 'guest' && canViewSharedMemories) {
+        // For guests, only show the first 2 mock memories as "shared"
         setMemories(mockMemories.slice(0, 2));
       } else {
         setMemories([]);
@@ -72,23 +77,30 @@ export default function TimelinePage() {
   useEffect(() => {
     let notificationSimulationTimer: NodeJS.Timeout;
 
-    if (userMode === 'host' && user && !hasNewSharedMemories) {
-      // If in host mode and no active notification, simulate new shared memories arriving after a delay.
-      notificationSimulationTimer = setTimeout(() => {
-        // Check again if still in host mode, in case user switched quickly
-        if (userMode === 'host' && user && !hasNewSharedMemories) {
-          const potentialSharedMemories = mockMemories.slice(0, 2); // Check if there's anything to "share"
-          if (potentialSharedMemories.length > 0) {
-            setHasNewSharedMemories(true);
+    if (userMode === 'host' && user) {
+      // Check for unviewed memories immediately when switching to host mode or on load in host mode
+      const guestHasUnviewed = checkIfGuestHasUnviewedMemories();
+      if (guestHasUnviewed && !hasNewSharedMemories) {
+        setHasNewSharedMemories(true);
+      }
+
+      // If no unread memories initially, simulate new ones arriving after a delay.
+      if (!guestHasUnviewed && !hasNewSharedMemories) {
+        notificationSimulationTimer = setTimeout(() => {
+          if (userMode === 'host' && user && !hasNewSharedMemories) {
+            const hasUnviewedNow = checkIfGuestHasUnviewedMemories();
+            if (hasUnviewedNow) {
+              setHasNewSharedMemories(true);
+            }
           }
-        }
-      }, 7000); // 7 seconds after switching to host mode or page load in host mode
+        }, 7000); // 7 seconds
+      }
     }
 
     return () => {
       clearTimeout(notificationSimulationTimer);
     };
-  }, [userMode, user, hasNewSharedMemories, setHasNewSharedMemories]);
+  }, [userMode, user, hasNewSharedMemories, setHasNewSharedMemories, checkIfGuestHasUnviewedMemories]);
 
 
   useEffect(() => {
@@ -179,7 +191,6 @@ export default function TimelinePage() {
       );
     }
 
-    // No active pass, or pass expired
     let title = "Access Shared Memories";
     let description = "Activate your free pass or purchase a monthly pass to view memories shared with you.";
     let actionButton = null;
@@ -276,14 +287,20 @@ export default function TimelinePage() {
 
         {((userMode === 'host') || (userMode === 'guest' && canViewSharedMemories)) && filteredAndSortedMemories.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredAndSortedMemories.map((memory) => (
-              <MemoryCard
-                key={memory.id}
-                memory={memory}
-                onEdit={userMode === 'host' ? handleEditMemory : () => {}}
-                onDelete={userMode === 'host' ? handleDeleteMemory : () => {}}
-              />
-            ))}
+            {filteredAndSortedMemories.map((memory) => {
+              const isUnreadInGuestMode = userMode === 'guest' && user?.viewedSharedMemoryIds ? !user.viewedSharedMemoryIds.includes(memory.id) : false;
+              return (
+                <MemoryCard
+                  key={memory.id}
+                  memory={memory}
+                  onEdit={userMode === 'host' ? handleEditMemory : undefined}
+                  onDelete={userMode === 'host' ? handleDeleteMemory : undefined}
+                  isUnread={userMode === 'guest' ? isUnreadInGuestMode : undefined}
+                  onMarkAsViewed={userMode === 'guest' ? markSharedMemoryAsViewed : undefined}
+                  userMode={userMode}
+                />
+              );
+            })}
           </div>
         )}
 
@@ -317,3 +334,4 @@ export default function TimelinePage() {
     </AuthenticatedPageWrapper>
   );
 }
+

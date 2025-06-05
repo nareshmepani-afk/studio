@@ -13,6 +13,7 @@ export interface User {
   sharedAccessStatus?: 'free_pass_active' | 'paid_pass_active' | 'free_pass_expired' | 'paid_pass_expired' | 'no_pass_initiated';
   freePassActivatedDate?: string; // ISO string - when the 6-month free pass was first activated
   paidPassExpiryDate?: string; // ISO string - when the current 31-day paid pass expires
+  viewedSharedMemoryIds?: string[]; // IDs of shared memories viewed by this user when in guest mode
 }
 
 export type UserMode = 'host' | 'guest';
@@ -42,7 +43,9 @@ export interface Memory {
   emotionTags?: EmotionTag[]; // Replaces category
   mediaAttachments?: MediaAttachment[];
   imageUrl?: string;
-  userId: string;
+  userId: string; // The ID of the user who owns/created this memory
+  // For future host-side tracking of shares (conceptual for now)
+  // shares?: Array<{ guestUserId: string; status: 'pending_view' | 'viewed_by_guest'; sharedDate: string; viewedDate?: string }>;
 }
 
 export interface PromptText {
@@ -66,3 +69,4 @@ export interface PromptGroup {
   }; // e.g., 'Part I: Roots and Foundations'
   prompts: Prompt[];
 }
+

@@ -6,6 +6,7 @@ import React, { createContext, useState, useEffect, ReactNode, useCallback } fro
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import { addMonths, addDays, isBefore, parseISO, format } from 'date-fns';
+import { mockMemories } from '@/lib/mockData'; // For checking available shared memories
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -23,6 +24,8 @@ interface AuthContextType {
   checkAndUpdatePassStatus: () => void;
   hasNewSharedMemories: boolean;
   setHasNewSharedMemories: (status: boolean) => void;
+  markSharedMemoryAsViewed: (memoryId: string) => void;
+  checkIfGuestHasUnviewedMemories: () => boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,6 +49,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
+  const checkIfGuestHasUnviewedMemories = useCallback(() => {
+    if (!user || userMode !== 'host') return false; // Only check if in host mode for notification purposes
+    
+    // Simulate shared memories for guest (e.g., first 2 mock memories)
+    const potentialSharedMemories = mockMemories.slice(0, 2);
+    if (potentialSharedMemories.length === 0) return false;
+
+    const viewedIds = user.viewedSharedMemoryIds || [];
+    const hasUnviewed = potentialSharedMemories.some(mem => !viewedIds.includes(mem.id));
+    return hasUnviewed;
+  }, [user, userMode]);
+
   const checkAndUpdatePassStatus = useCallback(() => {
     if (!user) return;
 
@@ -88,6 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           sharedAccessStatus: storedUser.sharedAccessStatus || 'no_pass_initiated',
           freePassActivatedDate: storedUser.freePassActivatedDate,
           paidPassExpiryDate: storedUser.paidPassExpiryDate,
+          viewedSharedMemoryIds: storedUser.viewedSharedMemoryIds || [],
         };
         setUser(hydratedUser);
         setIsAuthenticated(true);
@@ -102,8 +118,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!loading && user) {
       checkAndUpdatePassStatus();
+       if (userMode === 'host') { // Check for unviewed memories if in host mode
+        setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
+      }
     }
-  }, [loading, user, checkAndUpdatePassStatus, pathname]); // check on path change too
+  }, [loading, user, checkAndUpdatePassStatus, pathname, userMode, checkIfGuestHasUnviewedMemories]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated && !['/login', '/register'].includes(pathname)) {
@@ -134,6 +153,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     sharedAccessStatus: storedUser.sharedAccessStatus || 'no_pass_initiated',
                     freePassActivatedDate: storedUser.freePassActivatedDate,
                     paidPassExpiryDate: storedUser.paidPassExpiryDate,
+                    viewedSharedMemoryIds: storedUser.viewedSharedMemoryIds || [],
                 };
             }
         } catch (e) {
@@ -147,6 +167,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             email, 
             name: email.split('@')[0],
             sharedAccessStatus: 'no_pass_initiated', // Default for new user
+            viewedSharedMemoryIds: [],
         };
     }
     
@@ -171,24 +192,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setPendingRequestCountState(count);
   }, []);
 
+  const handleModeChange = (newMode: UserMode) => {
+    setUserModeState(newMode);
+    if (newMode === 'guest') {
+        if (user) checkAndUpdatePassStatus();
+        setHasNewSharedMemoriesState(false); 
+    } else if (newMode === 'host' && user) {
+        // When switching to host, re-check if there are unviewed memories
+        setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
+    }
+  };
+
   const toggleUserMode = useCallback(() => {
-    setUserModeState(prevMode => {
-        const newMode = prevMode === 'host' ? 'guest' : 'host';
-        if (newMode === 'guest') {
-            if (user) checkAndUpdatePassStatus();
-            setHasNewSharedMemoriesState(false); // Clear notification
-        }
-        return newMode;
-    });
-  }, [user, checkAndUpdatePassStatus]);
+    const newMode = userMode === 'host' ? 'guest' : 'host';
+    handleModeChange(newMode);
+  }, [userMode, handleModeChange]);
   
   const setUserMode = useCallback((mode: UserMode) => {
-    setUserModeState(mode);
-    if (mode === 'guest') {
-        if (user) checkAndUpdatePassStatus();
-        setHasNewSharedMemoriesState(false); // Clear notification
+    if (userMode !== mode) {
+        handleModeChange(mode);
     }
-  }, [user, checkAndUpdatePassStatus]);
+  }, [userMode, handleModeChange]);
+
 
   const activateFreePass = useCallback(() => {
     if (user && user.sharedAccessStatus === 'no_pass_initiated') {
@@ -211,7 +236,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (user) {
       const now = new Date();
       let startDate = now;
-      // If there's an existing paid pass, extend from its expiry, otherwise from now
+      
       if (user.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate && isBefore(now, parseISO(user.paidPassExpiryDate))) {
         startDate = parseISO(user.paidPassExpiryDate);
       }
@@ -231,6 +256,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user]);
 
+  const markSharedMemoryAsViewed = useCallback((memoryId: string) => {
+    if (user) {
+      const currentViewedIds = user.viewedSharedMemoryIds || [];
+      if (!currentViewedIds.includes(memoryId)) {
+        const updatedUser = {
+          ...user,
+          viewedSharedMemoryIds: [...currentViewedIds, memoryId],
+        };
+        updateUserInStateAndStorage(updatedUser);
+        // After marking as viewed, check if there are still any *other* unviewed memories for the notification dot
+        const stillHasUnviewed = mockMemories.slice(0,2).some(mem => mem.id !== memoryId && !(updatedUser.viewedSharedMemoryIds || []).includes(mem.id));
+        setHasNewSharedMemoriesState(stillHasUnviewed);
+      }
+    }
+  }, [user]);
+
+
   return (
     <AuthContext.Provider value={{ 
         isAuthenticated, 
@@ -247,9 +289,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         purchasePaidPass,
         checkAndUpdatePassStatus,
         hasNewSharedMemories,
-        setHasNewSharedMemories: setHasNewSharedMemoriesState
+        setHasNewSharedMemories: setHasNewSharedMemoriesState,
+        markSharedMemoryAsViewed,
+        checkIfGuestHasUnviewedMemories
     }}>
       {children}
     </AuthContext.Provider>
   );
 };
+

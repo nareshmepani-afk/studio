@@ -1,13 +1,13 @@
 
 "use client";
 
-import type { Memory, MediaAttachment, EmotionTag } from '@/types';
+import type { Memory, MediaAttachment, EmotionTag, UserMode } from '@/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { enGB } from 'date-fns/locale';
-import { CalendarDays, Edit3, Trash2, Share2, Video, Mic, Heart } from 'lucide-react'; // Added Heart for emotion tags
+import { CalendarDays, Edit3, Trash2, Share2, Video, Mic, Heart, Eye } from 'lucide-react'; 
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -25,16 +25,26 @@ import { useState, useRef, useEffect } from 'react';
 
 interface MemoryCardProps {
   memory: Memory;
-  onEdit: (memory: Memory) => void;
-  onDelete: (memoryId: string) => void;
+  onEdit?: (memory: Memory) => void;
+  onDelete?: (memoryId: string) => void;
+  isUnread?: boolean; // For guest mode, to indicate if the shared memory is new
+  onMarkAsViewed?: (memoryId: string) => void; // For guest mode, to mark as viewed
+  userMode?: UserMode; // To determine if actions like edit/delete are available
 }
 
-export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
+export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed, userMode }: MemoryCardProps) {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const primaryMedia = memory.mediaAttachments?.[0];
+
+  useEffect(() => {
+    if (userMode === 'guest' && isUnread && onMarkAsViewed) {
+      onMarkAsViewed(memory.id);
+    }
+  }, [userMode, isUnread, onMarkAsViewed, memory.id]);
+
 
   useEffect(() => {
     const mediaElement = videoRef.current || audioRef.current;
@@ -86,9 +96,16 @@ export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
     }
   }, [primaryMedia]);
 
+  const canPerformActions = userMode === 'host' && onEdit && onDelete;
+
   return (
     <>
-      <Card className="flex flex-col overflow-hidden shadow-lg transition-all hover:shadow-xl animate-fade-in h-full">
+      <Card className="flex flex-col overflow-hidden shadow-lg transition-all hover:shadow-xl animate-fade-in h-full relative">
+        {userMode === 'guest' && isUnread && (
+          <Badge variant="default" className="absolute top-2 right-2 z-10 bg-primary text-primary-foreground animate-pulse">
+            <Eye className="h-3 w-3 mr-1" /> New
+          </Badge>
+        )}
         {primaryMedia && primaryMedia.type === 'video' && primaryMedia.url && (
           <div className="relative w-full aspect-video bg-muted">
             <video ref={videoRef} src={primaryMedia.url} controls className="w-full h-full object-cover" preload="metadata" />
@@ -143,39 +160,46 @@ export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
 
         </CardContent>
         <CardFooter className="flex justify-between items-center pt-4">
-          {/* Placeholder for potential future primary badge if needed, or remove entirely */}
-          <div></div> 
+          <div>
+             {/* Placeholder for future info, like "Shared by: User X" in Guest Mode */}
+          </div> 
           <div className="flex space-x-1">
-            <Button variant="ghost" size="icon" onClick={() => onEdit(memory)} aria-label="Edit memory">
-              <Edit3 className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => setShowShareDialog(true)} aria-label="Share memory">
-              <Share2 className="h-4 w-4" />
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Delete memory">
-                  <Trash2 className="h-4 w-4 text-destructive" />
+            {canPerformActions && onEdit && (
+              <Button variant="ghost" size="icon" onClick={() => onEdit(memory)} aria-label="Edit memory">
+                <Edit3 className="h-4 w-4" />
+              </Button>
+            )}
+             {userMode === 'host' && ( // Share button only for host
+                <Button variant="ghost" size="icon" onClick={() => setShowShareDialog(true)} aria-label="Share memory">
+                    <Share2 className="h-4 w-4" />
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete this memory.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => onDelete(memory.id)}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+             )}
+            {canPerformActions && onDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Delete memory">
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete this memory.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => onDelete(memory.id)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </CardFooter>
       </Card>
@@ -183,3 +207,4 @@ export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
     </>
   );
 }
+
