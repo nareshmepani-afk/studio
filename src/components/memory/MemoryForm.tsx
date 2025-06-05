@@ -48,6 +48,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const isEditing = !!memory;
 
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const titleLabelRef = useRef<HTMLLabelElement>(null); // Ref for the Title label
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const yearSelectRef = useRef<HTMLButtonElement>(null); 
   const memoryDetailsCardHeaderRef = useRef<HTMLDivElement>(null);
@@ -187,7 +188,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
     if (!title.trim()) {
       toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
-      memoryDetailsCardHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      titleLabelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       titleInputRef.current?.focus();
       return;
     }
@@ -260,7 +261,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1">
-            <Label htmlFor="title">Title *</Label>
+            <Label htmlFor="title" ref={titleLabelRef}>Title *</Label>
             <Input ref={titleInputRef} id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" />
              {inspirationPrompts.length > 0 && (
               <div className="pt-2 space-y-2">
