@@ -10,7 +10,7 @@ import type { Memory } from '@/types';
 import { PlusCircle, BookHeart, BellRing, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth'; 
+import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { format, parseISO, addMonths } from 'date-fns';
 
@@ -19,8 +19,8 @@ export default function TimelinePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortCriteria, setSortCriteria] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc'>('date-desc');
   const [isLoading, setIsLoading] = useState(true);
-  
-  const { user, setPendingRequestCount, userMode, activateFreePass, purchasePaidPass, checkAndUpdatePassStatus, setHasNewSharedMemories } = useAuth(); 
+
+  const { user, setPendingRequestCount, userMode, activateFreePass, purchasePaidPass, checkAndUpdatePassStatus, setHasNewSharedMemories, hasNewSharedMemories } = useAuth();
 
   const mockPendingRequests = [
     { id: 'req1', text: 'Tell us about your first pet!', user: 'Guest123' },
@@ -41,40 +41,55 @@ export default function TimelinePage() {
     }
     return false;
   }, [user]);
-  
+
   const canViewSharedMemories = isFreePassActive || isPaidPassActive;
 
   useEffect(() => {
-    checkAndUpdatePassStatus(); 
+    checkAndUpdatePassStatus();
   }, [checkAndUpdatePassStatus, userMode]);
 
 
   useEffect(() => {
     const timer = setTimeout(() => {
       if (userMode === 'host') {
-        setMemories(mockMemories); 
-        // Simulate new shared memories becoming available for guest view
-        const potentialSharedMemories = mockMemories.slice(0, 2); 
-        if (potentialSharedMemories.length > 0) {
-           // Set this after a small delay to make the notification noticeable
-           const notifTimer = setTimeout(() => setHasNewSharedMemories(true), 1500);
-           // No explicit cleanup for notifTimer here, it's short-lived.
-           // A more robust solution would clear it if the component unmounts or userMode changes before it fires.
-        }
+        setMemories(mockMemories);
       } else if (userMode === 'guest' && canViewSharedMemories) {
-        setMemories(mockMemories.slice(0, 2)); 
+        setMemories(mockMemories.slice(0, 2));
       } else {
         setMemories([]);
       }
       setIsLoading(false);
       if (userMode === 'host') {
-        setPendingRequestCount(mockPendingRequests.length); 
+        setPendingRequestCount(mockPendingRequests.length);
       } else {
         setPendingRequestCount(0);
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [setPendingRequestCount, userMode, canViewSharedMemories, setHasNewSharedMemories]); 
+  }, [userMode, canViewSharedMemories, setPendingRequestCount]);
+
+  // Effect for simulating new shared memories notification
+  useEffect(() => {
+    let notificationSimulationTimer: NodeJS.Timeout;
+
+    if (userMode === 'host' && user && !hasNewSharedMemories) {
+      // If in host mode and no active notification, simulate new shared memories arriving after a delay.
+      notificationSimulationTimer = setTimeout(() => {
+        // Check again if still in host mode, in case user switched quickly
+        if (userMode === 'host' && user && !hasNewSharedMemories) {
+          const potentialSharedMemories = mockMemories.slice(0, 2); // Check if there's anything to "share"
+          if (potentialSharedMemories.length > 0) {
+            setHasNewSharedMemories(true);
+          }
+        }
+      }, 7000); // 7 seconds after switching to host mode or page load in host mode
+    }
+
+    return () => {
+      clearTimeout(notificationSimulationTimer);
+    };
+  }, [userMode, user, hasNewSharedMemories, setHasNewSharedMemories]);
+
 
   useEffect(() => {
     const scrollToHash = () => {
@@ -93,7 +108,7 @@ export default function TimelinePage() {
     return () => {
       window.removeEventListener('hashchange', scrollToHash, false);
     };
-  }, [isLoading, userMode]); 
+  }, [isLoading, userMode]);
 
   const handleEditMemory = (memory: Memory) => {
     console.log('Edit memory:', memory);
@@ -110,7 +125,7 @@ export default function TimelinePage() {
       result = result.filter(memory =>
         memory.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         memory.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        memory.emotionTags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) 
+        memory.emotionTags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -141,7 +156,7 @@ export default function TimelinePage() {
       </AuthenticatedPageWrapper>
     );
   }
-  
+
   const renderGuestModeAccessUI = () => {
     if (userMode !== 'guest' || !user) return null;
 
@@ -186,7 +201,7 @@ export default function TimelinePage() {
         </Button>
       );
     }
-    
+
     return (
       <Alert variant="destructive" className="mb-6">
         <ShieldOff className="h-5 w-5" />
@@ -215,14 +230,14 @@ export default function TimelinePage() {
             </Link>
           )}
         </div>
-        
+
         {renderGuestModeAccessUI()}
 
         <TimelineFilter
           onSortChange={setSortCriteria}
           onSearchChange={setSearchTerm}
         />
-        
+
         {userMode === 'guest' && !canViewSharedMemories && filteredAndSortedMemories.length === 0 && (
              <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
                 <CalendarClock className="mx-auto h-16 w-16 text-primary mb-6" />
@@ -242,7 +257,7 @@ export default function TimelinePage() {
             </p>
           </div>
         )}
-        
+
         {userMode === 'host' && filteredAndSortedMemories.length === 0 && mockPendingRequests.length === 0 && (
           <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
             <BookHeart className="mx-auto h-16 w-16 text-primary mb-6" />
@@ -273,7 +288,7 @@ export default function TimelinePage() {
         )}
 
         {userMode === 'host' && (
-          <div id="incoming-requests" className="mt-16"> 
+          <div id="incoming-requests" className="mt-16">
             <div className="flex items-center mb-4">
               <BellRing className="h-8 w-8 text-primary mr-3" />
               <h2 className="font-headline text-3xl">Incoming Memory Requests</h2>
