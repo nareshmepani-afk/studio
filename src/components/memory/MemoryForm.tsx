@@ -114,6 +114,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     }
     return null;
   });
+  
+  const [mediaToInitializeRecorder, setMediaToInitializeRecorder] = useState<CurrentMediaData | null>(null);
+
 
   const daysInSelectedMonth = useMemo(() => {
     return getDaysInMonth(new Date(selectedYear, selectedMonth));
@@ -156,11 +159,25 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
   const handleMediaReady = useCallback((mediaData: CurrentMediaData) => {
     setCurrentMedia(mediaData);
+    setMediaToInitializeRecorder(null); // Clear after media is configured
   }, []);
 
-  const handleMediaDiscard = useCallback(() => {
-    setCurrentMedia(null);
+  const handleMediaDiscardInForm = useCallback(() => {
+    // This function is for when the user clicks "Change Media or Re-trim"
+    // It should take the currentMedia's details and prepare them for MediaCaptureControl
+    if (currentMedia) {
+      setMediaToInitializeRecorder(currentMedia);
+    }
+    setCurrentMedia(null); // This will hide the summary and show MediaCaptureControl
+  }, [currentMedia]);
+  
+  const handleMediaDiscardInRecorder = useCallback(() => {
+    // This is for the discard action *within* MediaCaptureControl (e.g., if it has initialMedia and user wants to start fresh)
+    // It should not affect currentMedia in MemoryForm directly, MediaCaptureControl handles its own discard
+    // We might want to clear mediaToInitializeRecorder if they discard *from* the recorder.
+    setMediaToInitializeRecorder(null); 
   }, []);
+
 
   const handleGenerateCues = async () => {
     if (!userProfile.trim()) {
@@ -213,7 +230,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
       carouselApi?.scrollTo(SLIDE_INDEX_DETAILS, true);
       setTimeout(() => {
-        titleLabelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        titleLabelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         titleInputRef.current?.focus();
       }, 100);
       return;
@@ -274,8 +291,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     );
   };
   
-  const initialMediaForRecorder = useMemo(() => {
-    if (memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
+  const initialMediaForRecorderProp = useMemo(() => {
+    // This is for editing an existing, saved memory
+    if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
         const firstMedia = memory.mediaAttachments[0];
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
         return {
@@ -287,14 +305,14 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
         };
     }
     return undefined;
-  }, [memory?.mediaAttachments]);
+  }, [memory?.mediaAttachments, isEditing]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       <Carousel 
         setApi={setCarouselApi} 
         opts={{ align: "start", loop: false }} 
-        className="w-full max-w-3xl mx-auto py-4" // Added max-width and some padding
+        className="w-full max-w-3xl mx-auto py-4" 
       >
         <CarouselContent>
           <CarouselItem>
@@ -416,19 +434,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                   {!currentMedia && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}
               </CardHeader>
               <CardContent>
-                  {!currentMedia && (
-                    <MediaCaptureControl
-                        onMediaReady={handleMediaReady}
-                        onDiscard={handleMediaDiscard}
-                        initialMedia={initialMediaForRecorder}
-                    />
-                  )}
-
-                  {currentMedia && (
+                  {currentMedia ? (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                           <p className="text-sm font-medium flex items-center"><Paperclip className="mr-2 h-5 w-5 inline-block" />Attached Media</p>
-                          <Button variant="ghost" size="icon" onClick={handleMediaDiscard} aria-label="Remove media">
+                          <Button variant="ghost" size="icon" onClick={handleMediaDiscardInForm} aria-label="Remove media">
                               <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                       </div>
@@ -443,12 +453,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                       <p className="text-sm text-muted-foreground mt-1">Duration: {typeof currentMedia.duration === 'number' ? currentMedia.duration.toFixed(2) : 'N/A'}s</p>
                       {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
                       {currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime && <p className="text-sm text-muted-foreground">Trim End: {currentMedia.endTime.toFixed(2)}s</p>}
-                      <Button variant="outline" type="button" onClick={() => {
-                          handleMediaDiscard(); 
-                      }} className="w-full mt-2">
+                      <Button variant="outline" type="button" onClick={handleMediaDiscardInForm} className="w-full mt-2">
                           Change Media or Re-trim
                       </Button>
                     </div>
+                  ) : (
+                    <MediaCaptureControl
+                        onMediaReady={handleMediaReady}
+                        onDiscard={handleMediaDiscardInRecorder}
+                        initialMedia={mediaToInitializeRecorder || initialMediaForRecorderProp}
+                    />
                   )}
               </CardContent>
             </Card>
@@ -513,3 +527,4 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     </form>
   );
 }
+
