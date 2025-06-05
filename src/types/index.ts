@@ -38,8 +38,17 @@ export interface PromptText {
 }
 export interface Prompt {
   id: string;
-  text: PromptText; // Changed from string to PromptText
+  text: PromptText;
   isFlaggedForReuse: boolean;
   userId?: string; // If prompts are user-specific
 }
 
+export interface PromptGroup {
+  id: string; // e.g., 'part-i'
+  title: {
+    en: string;
+    gu: string;
+    [key: string]: string;
+  }; // e.g., 'Part I: Roots and Foundations'
+  prompts: Prompt[];
+}

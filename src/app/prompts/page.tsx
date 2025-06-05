@@ -3,8 +3,8 @@
 
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { PromptCard } from '@/components/prompts/PromptCard';
-import { mockPrompts } from '@/lib/mockData';
-import type { Prompt } from '@/types';
+import { mockPromptGroups } from '@/lib/mockData'; // Changed to mockPromptGroups
+import type { Prompt, PromptGroup } from '@/types'; // Added PromptGroup
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Search, ThumbsUp, RotateCcw, Languages } from 'lucide-react';
@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 
 export default function PromptsPage() {
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [promptGroups, setPromptGroups] = useState<PromptGroup[]>([]); // Changed state to hold PromptGroup[]
   const [searchTerm, setSearchTerm] = useState('');
   const [showFlaggedOnly, setShowFlaggedOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,19 +24,24 @@ export default function PromptsPage() {
 
   useEffect(() => {
     setTimeout(() => {
-      setPrompts(mockPrompts);
+      setPromptGroups(mockPromptGroups); // Use mockPromptGroups
       setIsLoading(false);
     }, 500);
   }, []);
 
 
   const handleUsePrompt = (promptId: string) => {
-    const prompt = prompts.find(p => p.id === promptId);
-    if (!prompt) return;
+    let selectedPrompt: Prompt | undefined;
+    for (const group of promptGroups) { // Iterate through groups to find the prompt
+      selectedPrompt = group.prompts.find(p => p.id === promptId);
+      if (selectedPrompt) break;
+    }
 
-    const promptTextForSelectedLanguage = prompt.text[currentLanguage] || prompt.text.en;
+    if (!selectedPrompt) return;
 
-    toast({ 
+    const promptTextForSelectedLanguage = selectedPrompt.text[currentLanguage] || selectedPrompt.text.en;
+
+    toast({
       title: "Prompt Selected!",
       description: `Using prompt: "${promptTextForSelectedLanguage}". Redirecting to add memory...`
     });
@@ -44,20 +49,32 @@ export default function PromptsPage() {
   };
 
   const handleToggleFlag = (promptId: string, isFlagged: boolean) => {
-    setPrompts(prevPrompts =>
-      prevPrompts.map(p => (p.id === promptId ? { ...p, isFlaggedForReuse: isFlagged } : p))
+    setPromptGroups(prevGroups =>
+      prevGroups.map(group => ({
+        ...group,
+        prompts: group.prompts.map(p =>
+          p.id === promptId ? { ...p, isFlaggedForReuse: isFlagged } : p
+        ),
+      }))
     );
   };
 
-  const filteredPrompts = useMemo(() => {
-    return prompts
-      .filter(prompt =>
-        (prompt.text[currentLanguage] || prompt.text.en).toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .filter(prompt =>
-        showFlaggedOnly ? prompt.isFlaggedForReuse : true
-      );
-  }, [prompts, searchTerm, showFlaggedOnly, currentLanguage]);
+  const filteredPromptGroups = useMemo(() => {
+    if (!promptGroups) return [];
+
+    return promptGroups
+      .map(group => {
+        const filteredGroupPrompts = group.prompts
+          .filter(prompt =>
+            (prompt.text[currentLanguage] || prompt.text.en).toLowerCase().includes(searchTerm.toLowerCase())
+          )
+          .filter(prompt =>
+            showFlaggedOnly ? prompt.isFlaggedForReuse : true
+          );
+        return { ...group, prompts: filteredGroupPrompts };
+      })
+      .filter(group => group.prompts.length > 0); // Only include groups that have prompts after filtering
+  }, [promptGroups, searchTerm, showFlaggedOnly, currentLanguage]);
 
   if (isLoading) {
      return (
@@ -116,23 +133,32 @@ export default function PromptsPage() {
           </div>
         </div>
 
-        {filteredPrompts.length === 0 ? (
+        {filteredPromptGroups.length === 0 ? (
           <div className="text-center py-12">
             <Search className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <h2 className="font-headline text-2xl mb-2">No Prompts Found</h2>
             <p className="text-muted-foreground">Try adjusting your search or filters for the selected language.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPrompts.map((prompt) => (
-              <PromptCard
-                key={prompt.id}
-                promptId={prompt.id}
-                promptText={prompt.text[currentLanguage] || prompt.text.en}
-                isFlaggedForReuse={prompt.isFlaggedForReuse}
-                onAction={handleUsePrompt}
-                onToggleFlag={handleToggleFlag}
-              />
+          <div className="space-y-10">
+            {filteredPromptGroups.map((group) => (
+              <section key={group.id}>
+                <h2 className="font-headline text-3xl mb-6 border-b pb-2">
+                  {group.title[currentLanguage] || group.title.en}
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {group.prompts.map((prompt) => (
+                    <PromptCard
+                      key={prompt.id}
+                      promptId={prompt.id}
+                      promptText={prompt.text[currentLanguage] || prompt.text.en}
+                      isFlaggedForReuse={prompt.isFlaggedForReuse}
+                      onAction={handleUsePrompt}
+                      onToggleFlag={handleToggleFlag}
+                    />
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         )}
@@ -140,4 +166,3 @@ export default function PromptsPage() {
     </AuthenticatedPageWrapper>
   );
 }
-
