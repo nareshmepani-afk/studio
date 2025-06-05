@@ -6,19 +6,19 @@ import { MemoryCard } from '@/components/memory/MemoryCard';
 import { TimelineFilter } from '@/components/memory/TimelineFilter';
 import { Button } from '@/components/ui/button';
 import { mockMemories } from '@/lib/mockData';
-import type { Memory, MemoryCategory } from '@/types';
+import type { Memory } from '@/types'; // Removed MemoryCategory
 import { PlusCircle, BookHeart, BellRing } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth'; // Import useAuth
+import { useAuth } from '@/hooks/useAuth'; 
 
 export default function TimelinePage() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortCriteria, setSortCriteria] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc'>('date-desc');
-  const [categoryFilter, setCategoryFilter] = useState<MemoryCategory | 'all'>('all');
+  // Removed categoryFilter state
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid'); // Not implemented yet, but for future
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid'); 
   
   const { setPendingRequestCount } = useAuth(); 
 
@@ -37,7 +37,6 @@ export default function TimelinePage() {
     return () => clearTimeout(timer);
   }, [setPendingRequestCount]); 
 
-  // Effect for scrolling to hash
   useEffect(() => {
     const scrollToHash = () => {
       if (window.location.hash === '#incoming-requests') {
@@ -48,19 +47,16 @@ export default function TimelinePage() {
       }
     };
 
-    // Scroll on initial load if content is ready, or when isLoading becomes false
     if (!isLoading) {
       scrollToHash();
     }
 
-    // Listen for hash changes for same-page navigation
     window.addEventListener('hashchange', scrollToHash, false);
 
-    // Cleanup listener
     return () => {
       window.removeEventListener('hashchange', scrollToHash, false);
     };
-  }, [isLoading]); // Re-run when isLoading changes (content ready) and to manage listener
+  }, [isLoading]); 
 
   const handleEditMemory = (memory: Memory) => {
     console.log('Edit memory:', memory);
@@ -76,13 +72,12 @@ export default function TimelinePage() {
     if (searchTerm) {
       result = result.filter(memory =>
         memory.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        memory.description?.toLowerCase().includes(searchTerm.toLowerCase())
+        memory.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        memory.emotionTags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) // Optional: search in emotion tags
       );
     }
 
-    if (categoryFilter !== 'all') {
-      result = result.filter(memory => memory.category === categoryFilter);
-    }
+    // Category filter logic removed
 
     result.sort((a, b) => {
       switch (sortCriteria) {
@@ -100,7 +95,7 @@ export default function TimelinePage() {
     });
 
     return result;
-  }, [memories, searchTerm, sortCriteria, categoryFilter]);
+  }, [memories, searchTerm, sortCriteria]); // Removed categoryFilter dependency
 
 
   if (isLoading) {
@@ -128,7 +123,7 @@ export default function TimelinePage() {
 
         <TimelineFilter
           onSortChange={setSortCriteria}
-          onCategoryFilterChange={setCategoryFilter}
+          // onCategoryFilterChange prop removed
           onSearchChange={setSearchTerm}
         />
 
@@ -159,7 +154,6 @@ export default function TimelinePage() {
           </div>
         )}
 
-        {/* Incoming Memory Requests Section */}
         <div id="incoming-requests" className="mt-16"> 
           <div className="flex items-center mb-4">
             <BellRing className="h-8 w-8 text-primary mr-3" />

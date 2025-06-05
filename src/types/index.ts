@@ -16,20 +16,23 @@ export interface MediaAttachment {
   duration?: number;  // Optional: total duration of the media in seconds
 }
 
+export const emotionTagsList = [
+  'Happy', 'Sad', 'Reflective', 'Funny', 'Joy', 'Loss', 'Gratitude', 'Love',
+  'Anger', 'Fear', 'Surprise', 'Excitement', 'Hope', 'Peace', 'Nostalgia', 'Inspiration'
+] as const;
+
+export type EmotionTag = typeof emotionTagsList[number];
+
 export interface Memory {
   id: string;
   title: string;
   date: string; // ISO string
   description?: string;
-  category: MemoryCategory;
-  mediaAttachments?: MediaAttachment[]; // New structure for one or more media items
-  imageUrl?: string; // For cover image (can be a frame from video or separate upload)
+  emotionTags?: EmotionTag[]; // Replaces category
+  mediaAttachments?: MediaAttachment[];
+  imageUrl?: string;
   userId: string;
 }
-
-export type MemoryCategory = 'Travel' | 'Family' | 'Work' | 'Personal' | 'Friends' | 'Event' | 'Other';
-
-export const memoryCategories: MemoryCategory[] = ['Travel', 'Family', 'Work', 'Personal', 'Friends', 'Event', 'Other'];
 
 export interface PromptText {
   en: string;

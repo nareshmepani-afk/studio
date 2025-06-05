@@ -1,5 +1,5 @@
 
-import type { Memory, Prompt, PromptGroup, MemoryCategory, MediaAttachment } from '@/types';
+import type { Memory, Prompt, PromptGroup, MediaAttachment, EmotionTag } from '@/types';
 
 const videoPlaceholderUrl = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"; // A real video for testing trim
 const audioPlaceholderUrl = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3"; // A real audio for testing
@@ -10,7 +10,7 @@ export const mockMemories: Memory[] = [
     title: 'Trip to the Mountains (Video)',
     date: '2023-07-15T10:00:00.000Z',
     description: 'A wonderful weekend getaway with breathtaking views and challenging hikes. This video is trimmed.',
-    category: 'Travel',
+    emotionTags: ['Happy', 'Excitement', 'Peace'],
     userId: '1',
     mediaAttachments: [{
         id: 'media1-1',
@@ -28,7 +28,7 @@ export const mockMemories: Memory[] = [
     title: 'Family Reunion 2023 (Full Audio)',
     date: '2023-12-23T18:30:00.000Z',
     description: 'Gathered with the whole family for the holidays. So much food and laughter! This is a full audio.',
-    category: 'Family',
+    emotionTags: ['Joy', 'Love', 'Nostalgia'],
     userId: '1',
     mediaAttachments: [{
         id: 'media2-1',
@@ -44,7 +44,7 @@ export const mockMemories: Memory[] = [
     title: 'Project Alpha Launch (Untrimmed Video)',
     date: '2024-01-20T14:00:00.000Z',
     description: 'Successfully launched Project Alpha after months of hard work. Proud of the team! This video plays in full.',
-    category: 'Work',
+    emotionTags: ['Gratitude', 'Excitement'],
     userId: '1',
     mediaAttachments: [{
         id: 'media3-1',
@@ -61,7 +61,7 @@ export const mockMemories: Memory[] = [
     title: 'Learning to Bake Sourdough',
     date: '2023-04-10T09:00:00.000Z',
     description: 'My journey into the world of sourdough. Many failed attempts but finally got a good loaf!',
-    category: 'Personal',
+    emotionTags: ['Reflective', 'Hope', 'Funny'],
     imageUrl: 'https://placehold.co/600x400.png', // No media attachment for this one
     userId: '1',
   },

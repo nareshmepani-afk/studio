@@ -1,12 +1,12 @@
 
 "use client";
 
-import type { Memory, MediaAttachment } from '@/types';
+import type { Memory, MediaAttachment, EmotionTag } from '@/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { CalendarDays, Tag, Edit3, Trash2, Share2, Video, Mic } from 'lucide-react';
+import { CalendarDays, Edit3, Trash2, Share2, Video, Mic, Heart } from 'lucide-react'; // Added Heart for emotion tags
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -49,7 +49,6 @@ export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
       const handleTimeUpdate = () => {
         if (endTime !== undefined && isFinite(endTime) && mediaElement.currentTime >= endTime) {
           mediaElement.pause();
-           // Optional: Reset to start time after reaching end of trim
            if (startTime !== undefined && isFinite(startTime)) {
             mediaElement.currentTime = startTime;
           }
@@ -57,7 +56,6 @@ export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
       };
       
       const handlePlay = () => {
-        // If current time is outside the trim range (e.g., after seeking), reset to startTime
         if (startTime !== undefined && isFinite(startTime) && mediaElement.currentTime < startTime) {
             mediaElement.currentTime = startTime;
         }
@@ -65,7 +63,7 @@ export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
              if (startTime !== undefined && isFinite(startTime)) {
                 mediaElement.currentTime = startTime;
              } else {
-                mediaElement.currentTime = 0; // Or pause
+                mediaElement.currentTime = 0; 
              }
         }
       };
@@ -74,8 +72,7 @@ export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
       mediaElement.addEventListener('timeupdate', handleTimeUpdate);
       mediaElement.addEventListener('play', handlePlay);
 
-      // Initial check in case metadata is already loaded
-      if (mediaElement.readyState >= 1 && startTime !== undefined && isFinite(startTime)) { // HAVE_METADATA or more
+      if (mediaElement.readyState >= 1 && startTime !== undefined && isFinite(startTime)) { 
          mediaElement.currentTime = startTime;
       }
 
@@ -122,9 +119,10 @@ export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
         </CardHeader>
         <CardContent className="flex-grow">
           <p className="text-sm text-muted-foreground line-clamp-3">{memory.description}</p>
-          {memory.mediaAttachments && memory.mediaAttachments.length > 0 && (
-            <div className="mt-2 flex space-x-2">
-              {memory.mediaAttachments.map((item) => (
+          
+          {(memory.mediaAttachments && memory.mediaAttachments.length > 0) || (memory.emotionTags && memory.emotionTags.length > 0) ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {memory.mediaAttachments?.map((item) => (
                 <Badge variant="secondary" key={item.id} className="text-xs">
                   {item.type === 'video' ? <Video className="h-3 w-3 mr-1" /> : <Mic className="h-3 w-3 mr-1" />}
                   {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
@@ -133,14 +131,19 @@ export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
                   )}
                 </Badge>
               ))}
+              {memory.emotionTags?.map((tag) => (
+                <Badge variant="outline" key={tag} className="text-xs">
+                  <Heart className="h-3 w-3 mr-1 text-primary/70" />
+                  {tag}
+                </Badge>
+              ))}
             </div>
-          )}
+          ) : null}
+
         </CardContent>
-        <CardFooter className="flex justify-between items-center">
-          <Badge variant="outline" className="flex items-center">
-            <Tag className="mr-1.5 h-3 w-3" />
-            {memory.category}
-          </Badge>
+        <CardFooter className="flex justify-between items-center pt-4">
+          {/* Placeholder for potential future primary badge if needed, or remove entirely */}
+          <div></div> 
           <div className="flex space-x-1">
             <Button variant="ghost" size="icon" onClick={() => onEdit(memory)} aria-label="Edit memory">
               <Edit3 className="h-4 w-4" />

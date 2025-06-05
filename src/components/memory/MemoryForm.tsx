@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, type FormEvent, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { Memory, MemoryCategory, User, MediaAttachment, Prompt } from '@/types';
-import { memoryCategories } from '@/types';
+import type { Memory, User, MediaAttachment, Prompt, EmotionTag } from '@/types';
+import { emotionTagsList } from '@/types'; // Changed import
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,7 @@ import { MediaCaptureControl } from './MediaRecorder';
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, ArrowRight } from 'lucide-react';
+import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, ArrowRight, Tag } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { mockPrompts } from '@/lib/mockData';
 import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, getDate } from 'date-fns';
@@ -50,7 +50,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const titleLabelRef = useRef<HTMLLabelElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const yearSelectRef = useRef<HTMLButtonElement>(null);
+  const yearSelectRef = useRef<HTMLButtonElement>(null); // For SelectTrigger
   const memoryDetailsCardHeaderRef = useRef<HTMLDivElement>(null);
   const mediaCardHeaderRef = useRef<HTMLDivElement>(null);
 
@@ -74,7 +74,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const [selectedDay, setSelectedDay] = useState<number>(() => getInitialDateComponent('day', memory?.date));
 
   const [description, setDescription] = useState(memory?.description || '');
-  const [category, setCategory] = useState<MemoryCategory>(memory?.category || memoryCategories[0]);
+  const [selectedEmotionTags, setSelectedEmotionTags] = useState<EmotionTag[]>(memory?.emotionTags || []);
   const [userProfile, setUserProfile] = useState(user?.profileInfo || '');
   const [aiCues, setAiCues] = useState<string[]>([]);
   const [isLoadingCues, setIsLoadingCues] = useState(false);
@@ -181,6 +181,14 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     toast({ title: "Title Updated", description: `Title set to: "${promptText}"` });
   };
 
+  const handleEmotionTagToggle = (tag: EmotionTag) => {
+    setSelectedEmotionTags(prevTags =>
+      prevTags.includes(tag)
+        ? prevTags.filter(t => t !== tag)
+        : [...prevTags, tag]
+    );
+  };
+
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
 
@@ -191,8 +199,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       return;
     }
     
-    let finalDate = new Date(selectedYear, selectedMonth, 1); // Start with the first of the month
-    finalDate = setDate(finalDate, selectedDay); // Then set the day
+    let finalDate = new Date(selectedYear, selectedMonth, 1); 
+    finalDate = setDate(finalDate, selectedDay);
 
     if (!isValid(finalDate) || getYear(finalDate) !== selectedYear || getMonth(finalDate) !== selectedMonth || getDate(finalDate) !== selectedDay) {
       toast({ title: "Invalid Date", description: "Please select a valid date.", variant: "destructive" });
@@ -231,7 +239,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     }
 
     onSubmit(
-      { title, date: finalDate.toISOString(), description, category, mediaAttachments: mediaAttachmentsForSubmission },
+      { title, date: finalDate.toISOString(), description, emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForSubmission },
       userProfile,
       currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0 ? currentMedia.file : undefined
     );
@@ -343,17 +351,21 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="category">Category *</Label>
-            <Select value={category} onValueChange={(value: MemoryCategory) => setCategory(value)}>
-              <SelectTrigger id="category">
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {memoryCategories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="emotion-tags">Emotion Tags (Optional)</Label>
+            <div className="flex flex-wrap gap-2 pt-1">
+              {emotionTagsList.map((tag) => (
+                <Button
+                  type="button"
+                  key={tag}
+                  variant={selectedEmotionTags.includes(tag) ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleEmotionTagToggle(tag)}
+                  className="text-xs h-auto py-1 px-2"
+                >
+                  {tag}
+                </Button>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -455,4 +467,3 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     </form>
   );
 }
-

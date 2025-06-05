@@ -4,20 +4,19 @@
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import type { MemoryCategory } from '@/types';
-import { memoryCategories } from '@/types';
+// Removed MemoryCategory and memoryCategories imports
 import { ListFilter, Search } from 'lucide-react';
 
 interface TimelineFilterProps {
   onSortChange: (sortBy: 'date-desc' | 'date-asc' | 'title-asc' | 'title-desc') => void;
-  onCategoryFilterChange: (category: MemoryCategory | 'all') => void;
+  // onCategoryFilterChange prop removed
   onSearchChange: (searchTerm: string) => void;
 }
 
-export function TimelineFilter({ onSortChange, onCategoryFilterChange, onSearchChange }: TimelineFilterProps) {
+export function TimelineFilter({ onSortChange, onSearchChange }: TimelineFilterProps) {
   return (
     <div className="mb-8 p-4 bg-card rounded-lg shadow sticky top-16 z-40">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end"> {/* Changed to md:grid-cols-2 */}
         <div>
           <label htmlFor="search-memories" className="block text-sm font-medium text-muted-foreground mb-1">Search</label>
           <div className="relative">
@@ -45,22 +44,7 @@ export function TimelineFilter({ onSortChange, onCategoryFilterChange, onSearchC
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <label htmlFor="filter-category" className="block text-sm font-medium text-muted-foreground mb-1">Category</label>
-          <Select onValueChange={(value) => onCategoryFilterChange(value as any)} defaultValue="all">
-            <SelectTrigger id="filter-category">
-              <SelectValue placeholder="Filter by category..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {memoryCategories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Category Select component removed */}
       </div>
     </div>
   );
