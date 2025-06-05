@@ -3,7 +3,7 @@
 
 import { useState, type FormEvent, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Memory, User, MediaAttachment, Prompt, EmotionTag } from '@/types';
-import { emotionTagsList } from '@/types'; // Changed import
+import { emotionTagsList } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -51,7 +51,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const titleLabelRef = useRef<HTMLLabelElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const yearSelectRef = useRef<HTMLButtonElement>(null); // For SelectTrigger
+  const yearSelectRef = useRef<HTMLButtonElement>(null);
   const memoryDetailsCardHeaderRef = useRef<HTMLDivElement>(null);
   const mediaCardHeaderRef = useRef<HTMLDivElement>(null);
 
@@ -373,7 +373,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
       <Card>
         <CardHeader ref={mediaCardHeaderRef}>
-            <CardTitle className="font-headline text-lg">Media Attachment *</CardTitle>
+            <CardTitle className="font-headline text-lg">
+              Media Attachment {title ? `for "${title}"` : ''} *
+            </CardTitle>
             {!currentMedia && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}
         </CardHeader>
         <CardContent>
