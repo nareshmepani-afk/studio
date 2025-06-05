@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { format } from 'date-fns';
+import { enGB } from 'date-fns/locale';
 import { CalendarDays, Edit3, Trash2, Share2, Video, Mic, Heart } from 'lucide-react'; // Added Heart for emotion tags
 import { Badge } from '@/components/ui/badge';
 import {
@@ -114,7 +115,7 @@ export function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
           <CardTitle className="font-headline text-xl">{memory.title}</CardTitle>
           <div className="flex items-center text-xs text-muted-foreground pt-1">
             <CalendarDays className="mr-1.5 h-3 w-3" />
-            {format(new Date(memory.date), 'PPP')}
+            {format(new Date(memory.date), 'PPP', { locale: enGB })}
           </div>
         </CardHeader>
         <CardContent className="flex-grow">

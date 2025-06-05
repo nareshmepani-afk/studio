@@ -18,6 +18,7 @@ import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { mockPrompts } from '@/lib/mockData';
 import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, getDate } from 'date-fns';
+import { enGB } from 'date-fns/locale';
 
 interface MemoryFormProps {
   memory?: Memory;
@@ -38,7 +39,7 @@ const globalCurrentYear = new Date().getFullYear();
 const years: number[] = Array.from({ length: 101 }, (_, i) => globalCurrentYear - i);
 const months: { value: number; label: string }[] = Array.from({ length: 12 }, (_, i) => ({
   value: i,
-  label: format(new Date(2000, i, 1), 'MMMM'),
+  label: format(new Date(2000, i, 1), 'MMMM', { locale: enGB }),
 }));
 
 export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) {

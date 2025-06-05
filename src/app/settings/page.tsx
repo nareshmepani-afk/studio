@@ -15,12 +15,13 @@ import type { User } from '@/types';
 import { Loader2, UploadCloud, Camera } from 'lucide-react';
 import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
 import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth } from 'date-fns';
+import { enGB } from 'date-fns/locale';
 
 const currentGlobalYear = new Date().getFullYear();
 const dobYears: number[] = Array.from({ length: 120 }, (_, i) => currentGlobalYear - i); // Up to 120 years ago
 const dobMonths: { value: number; label: string }[] = Array.from({ length: 12 }, (_, i) => ({
   value: i, // 0-11 for Date object compatibility
-  label: format(new Date(2000, i, 1), 'MMMM'),
+  label: format(new Date(2000, i, 1), 'MMMM', { locale: enGB }),
 }));
 
 export default function SettingsPage() {
@@ -292,15 +293,15 @@ export default function SettingsPage() {
                   <Label>Location (Optional)</Label>
                   <div className="space-y-1">
                     <Label htmlFor="countryOfBirth" className="text-sm font-normal text-muted-foreground">Country of Birth</Label>
-                    <Input id="countryOfBirth" value={countryOfBirth} onChange={(e) => setCountryOfBirth(e.target.value)} placeholder="e.g., United States" />
+                    <Input id="countryOfBirth" value={countryOfBirth} onChange={(e) => setCountryOfBirth(e.target.value)} placeholder="e.g., United Kingdom" />
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="city" className="text-sm font-normal text-muted-foreground">City</Label>
-                    <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g., New York" />
+                    <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g., London" />
                   </div>
                   <div className="space-y-1">
                     <Label htmlFor="townArea" className="text-sm font-normal text-muted-foreground">Town/Area</Label>
-                    <Input id="townArea" value={townArea} onChange={(e) => setTownArea(e.target.value)} placeholder="e.g., Brooklyn" />
+                    <Input id="townArea" value={townArea} onChange={(e) => setTownArea(e.target.value)} placeholder="e.g., Westminster" />
                   </div>
                 </div>
               </CardContent>
