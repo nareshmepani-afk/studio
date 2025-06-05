@@ -19,7 +19,7 @@ function Calendar({
   fromYear,
   toYear,
   month, // For controlled month view
-  defaultMonth, // For uncontrolled initial month view (though we'll primarily use controlled 'month')
+  defaultMonth, // For uncontrolled initial month view
   numberOfMonths,
   onMonthChange,
   selected,
@@ -35,7 +35,7 @@ function Calendar({
         month: "space-y-4",
         caption: "flex justify-center pt-1 relative items-center",
         caption_label: "text-sm font-medium",
-        caption_dropdowns: "flex justify-center gap-1 rdg-caption_dropdowns",
+        // caption_dropdowns: "flex justify-center gap-1 rdg-caption_dropdowns", // Removed this line
         nav: "space-x-1 flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
