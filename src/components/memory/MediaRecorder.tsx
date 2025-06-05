@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, Video, StopCircle, UploadCloud, RotateCcw, CheckCircle, AlertTriangle, Film, Waves, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider'; // Added Slider import
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -37,32 +38,6 @@ function formatSecondsToTime(timeInSeconds: number | undefined): string {
   }
 }
 
-// Helper function to parse MM:SS.s or SS.s string to total seconds
-function parseTimeToSeconds(timeStr: string): number | null {
-  if (!timeStr || typeof timeStr !== 'string') return null;
-  const parts = timeStr.split(':');
-  let totalSeconds = 0;
-
-  try {
-    if (parts.length === 1) { // Only seconds provided, e.g., "30.5" or "30"
-      const seconds = parseFloat(parts[0]);
-      if (isNaN(seconds) || seconds < 0) return null;
-      totalSeconds = seconds;
-    } else if (parts.length === 2) { // Minutes and seconds, e.g., "1:30.5" or "1:30"
-      const minutes = parseInt(parts[0], 10);
-      const seconds = parseFloat(parts[1]);
-      if (isNaN(minutes) || minutes < 0 || isNaN(seconds) || seconds < 0 || seconds >= 60) return null;
-      totalSeconds = minutes * 60 + seconds;
-    } else { // Invalid format
-      return null;
-    }
-    return isNaN(totalSeconds) ? null : totalSeconds;
-  } catch (error) {
-    return null; // Catch any parsing errors
-  }
-}
-
-
 export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: MediaCaptureControlProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(initialMedia?.type || null);
@@ -92,24 +67,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   useEffect(() => {
     setEndTimeInput(formatSecondsToTime(endTime));
   }, [endTime]);
-
-  const handleStartTimeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setStartTimeInput(val);
-    const parsedSeconds = parseTimeToSeconds(val);
-    if (parsedSeconds !== null && !isNaN(parsedSeconds)) {
-      setStartTime(Math.max(0, parsedSeconds));
-    }
-  };
-
-  const handleEndTimeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setEndTimeInput(val);
-    const parsedSeconds = parseTimeToSeconds(val);
-    if (parsedSeconds !== null && !isNaN(parsedSeconds)) {
-      setEndTime(Math.max(0, parsedSeconds));
-    }
-  };
 
   const getPermissions = useCallback(async (type: 'video' | 'audio') => {
     try {
@@ -341,9 +298,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         }, 0);
         return;
       }
-       if (startTime === endTime && startTime > 0) { 
+       if (startTime === endTime && startTime > 0) { // Allow 0 to 0 for full media if duration is 0 initially
         setTimeout(() => {
-          toast({ title: "Invalid Trim Times", description: "Start time cannot be the same as end time unless both are zero.", variant: "destructive" });
+          toast({ title: "Invalid Trim Times", description: "Start and end times cannot be the same unless both are zero (for full media).", variant: "destructive" });
         }, 0);
         return;
       }
@@ -370,8 +327,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         setTimeout(() => { toast({ title: "Invalid Trim Times", description: "Start time cannot be after end time.", variant: "destructive" }); }, 0);
         return;
       }
-      if (startTime === endTime && startTime > 0) {
-         setTimeout(() => { toast({ title: "Invalid Trim Times", description: "Start time cannot be the same as end time unless both are zero.", variant: "destructive" }); }, 0);
+      if (startTime === endTime && startTime > 0) { // Allow 0 to 0 for full media if duration is 0 initially
+         setTimeout(() => { toast({ title: "Invalid Trim Times", description: "Start and end times cannot be the same unless both are zero (for full media).", variant: "destructive" }); }, 0);
         return;
       }
       if (endTime > mediaDuration && mediaDuration > 0) {
@@ -545,27 +502,27 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
               <audio src={previewUrl} controls className="w-full" onLoadedMetadata={handleVideoLoadedMetadata} key={previewUrl} />
             )}
 
-            {(mediaDuration > 0 || (mediaDuration === 0 && startTime === 0 && endTime ===0)) && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="start-time">Start Time</Label>
-                  <Input 
-                    id="start-time" 
-                    type="text" 
-                    value={startTimeInput} 
-                    onChange={handleStartTimeInputChange}
-                    placeholder="e.g. 1:25.5 or 30.2"
-                  />
+            {(mediaDuration > 0 || (mediaDuration === 0 && startTime === 0 && endTime === 0)) && (
+              <div className="space-y-3 pt-2">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Start: {startTimeInput}</span>
+                  <span>End: {endTimeInput}</span>
                 </div>
-                <div>
-                  <Label htmlFor="end-time">End Time</Label>
-                  <Input 
-                    id="end-time" 
-                    type="text" 
-                    value={endTimeInput} 
-                    onChange={handleEndTimeInputChange}
-                    placeholder="e.g. 1:25.5 or 30.2"
-                  />
+                <Slider
+                  disabled={!mediaDuration || mediaDuration === 0}
+                  value={[startTime, endTime]}
+                  onValueChange={(newValues) => {
+                    setStartTime(newValues[0]);
+                    setEndTime(newValues[1]);
+                  }}
+                  min={0}
+                  max={mediaDuration}
+                  step={0.1} 
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>0:00.0</span>
+                  <span>{formatSecondsToTime(mediaDuration)}</span>
                 </div>
               </div>
             )}
@@ -618,4 +575,5 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     
 
     
+
 
