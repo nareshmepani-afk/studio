@@ -230,8 +230,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   };
 
   const handleUseMedia = () => {
-    if (recordedFile && previewUrl && mediaType && (mediaDuration > 0 || (mediaDuration === 0 && startTime === 0 && endTime ===0) )) { // Allow 0 duration if start/end also 0
-      if (startTime > endTime && endTime > 0) { // Check startTime not greater than endTime
+    if (recordedFile && previewUrl && mediaType && (mediaDuration > 0 || (mediaDuration === 0 && startTime === 0 && endTime ===0) )) { 
+      if (startTime > endTime && endTime > 0) { 
         setTimeout(() => {
           toast({ title: "Invalid Trim Times", description: "Start time cannot be after end time.", variant: "destructive" });
         }, 0);
@@ -243,17 +243,25 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         }, 0);
         return;
       }
-      if (endTime > mediaDuration) {
+      if (endTime > mediaDuration && mediaDuration > 0) { // Check mediaDuration > 0 to avoid issues if it's not loaded
          setTimeout(() => {
           toast({ title: "Invalid End Time", description: "End time cannot exceed media duration.", variant: "destructive" });
         }, 0);
         return;
       }
+
+      const isTrimmed = (startTime && startTime > 0.01) || (endTime && mediaDuration && Math.abs(endTime - mediaDuration) > 0.01 && endTime < mediaDuration);
+      let toastDescription = "This media will be attached to your memory.";
+      if (isTrimmed) {
+        toastDescription = `Media will be attached, trimmed from ${startTime.toFixed(1)}s to ${endTime.toFixed(1)}s.`;
+      }
+      
       onMediaReady({ file: recordedFile, type: mediaType, previewUrl, startTime, endTime, duration: mediaDuration });
       setTimeout(() => {
-        toast({ title: "Media Selected", description: "This media will be attached to your memory.", icon: <CheckCircle className="h-4 w-4" /> });
+        toast({ title: "Media Selected", description: toastDescription, icon: <CheckCircle className="h-4 w-4" /> });
       }, 0);
-    } else if (!recordedFile && initialMedia && previewUrl && mediaType) { // Handling re-confirming initial media with potentially new trim times
+
+    } else if (!recordedFile && initialMedia && previewUrl && mediaType) { 
        if (startTime > endTime && endTime > 0) {
         setTimeout(() => { toast({ title: "Invalid Trim Times", description: "Start time cannot be after end time.", variant: "destructive" }); }, 0);
         return;
@@ -262,14 +270,22 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
          setTimeout(() => { toast({ title: "Invalid Trim Times", description: "Start time cannot be the same as end time unless both are zero.", variant: "destructive" }); }, 0);
         return;
       }
-      if (endTime > mediaDuration) {
+      if (endTime > mediaDuration && mediaDuration > 0) {
          setTimeout(() => { toast({ title: "Invalid End Time", description: "End time cannot exceed media duration.", variant: "destructive" }); }, 0);
         return;
       }
-      // Pass a placeholder File as it's existing media, actual file upload is not needed for this path
+      
       const placeholderFile = new File([], initialMedia.previewUrl.split('/').pop() || "existing_media", {type: mediaType === "video" ? "video/mp4" : "audio/mp3"});
+      const isTrimmed = (startTime && startTime > 0.01) || (endTime && mediaDuration && Math.abs(endTime - mediaDuration) > 0.01 && endTime < mediaDuration);
+      let toastDescription = "Existing media will be used.";
+      if (isTrimmed) {
+        toastDescription = `Existing media trim updated: ${startTime.toFixed(1)}s to ${endTime.toFixed(1)}s.`;
+      } else if (mediaDuration > 0) {
+        toastDescription = "Existing media will be used in full.";
+      }
+      
       onMediaReady({ file: placeholderFile, type: mediaType, previewUrl, startTime, endTime, duration: mediaDuration });
-      setTimeout(() => { toast({ title: "Media Updated", description: "Trim times for existing media updated.", icon: <CheckCircle className="h-4 w-4" /> }); }, 0);
+      setTimeout(() => { toast({ title: "Media Updated", description: toastDescription, icon: <CheckCircle className="h-4 w-4" /> }); }, 0);
 
 
     } else {
@@ -321,8 +337,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     setIsRecording(false); 
     setRecordedFile(null);
     
-    // If initialMedia.previewUrl is not a blob, we don't need to revoke it later unless it's replaced by a new blob.
-    // The main cleanup effect will handle blob URLs created by this component instance.
   }, [initialMedia]);
 
 
@@ -331,13 +345,12 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();
       }
-      cleanupStream(stream); // Cleanup stream from state
-      if (previewUrl && previewUrl.startsWith('blob:')) { // Only revoke if it's a blob URL we created
+      cleanupStream(stream); 
+      if (previewUrl && previewUrl.startsWith('blob:')) { 
         URL.revokeObjectURL(previewUrl);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stream, previewUrl, cleanupStream]); // Dependencies should be correct now
+  }, [stream, previewUrl, cleanupStream]); 
 
 
   return (
@@ -417,7 +430,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
                     value={startTime.toString()} 
                     onChange={(e) => setStartTime(Math.max(0, parseFloat(e.target.value) || 0))}
                     min="0"
-                    max={mediaDuration.toString()}
+                    max={mediaDuration > 0 ? (endTime > 0 ? Math.min(endTime, mediaDuration) : mediaDuration).toString() : "0"}
                     step="0.1"
                   />
                 </div>
@@ -428,8 +441,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
                     type="number" 
                     value={endTime.toString()} 
                     onChange={(e) => setEndTime(Math.max(0, parseFloat(e.target.value) || 0))}
-                    min="0"
-                    max={mediaDuration.toString()}
+                    min={startTime > 0 ? startTime.toString() : "0"}
+                    max={mediaDuration > 0 ? mediaDuration.toString() : "0"}
                     step="0.1"
                   />
                 </div>
