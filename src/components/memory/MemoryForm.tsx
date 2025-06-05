@@ -14,10 +14,10 @@ import { MediaCaptureControl } from './MediaRecorder';
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, ArrowRight, CalendarIcon } from 'lucide-react';
+import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, ArrowRight } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { mockPrompts } from '@/lib/mockData';
-import { getDaysInMonth, format, isValid } from 'date-fns';
+import { getDaysInMonth, format, isValid, set } from 'date-fns';
 
 interface MemoryFormProps {
   memory?: Memory;
@@ -49,14 +49,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const yearSelectRef = useRef<HTMLButtonElement>(null);
+  const yearSelectRef = useRef<HTMLButtonElement>(null); 
+  const memoryDetailsCardHeaderRef = useRef<HTMLDivElement>(null);
+  const mediaCardHeaderRef = useRef<HTMLDivElement>(null);
 
 
   const [title, setTitle] = useState(memory?.title || '');
 
-  const initializeDateComponent = (component: 'year' | 'month' | 'day') => {
-    const dateToParse = isEditing && memory?.date ? new Date(memory.date) : new Date();
-    if (dateToParse instanceof Date && !isNaN(dateToParse.getTime())) {
+  const initializeDateComponent = useCallback((component: 'year' | 'month' | 'day', dateSource?: string) => {
+    const dateToParse = dateSource ? new Date(dateSource) : new Date();
+    if (isValid(dateToParse)) {
       if (component === 'year') return dateToParse.getFullYear();
       if (component === 'month') return dateToParse.getMonth(); // 0-11
       if (component === 'day') return dateToParse.getDate();
@@ -65,11 +67,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     if (component === 'year') return today.getFullYear();
     if (component === 'month') return today.getMonth();
     return today.getDate();
-  };
+  }, []);
 
-  const [selectedYear, setSelectedYear] = useState<number>(initializeDateComponent('year'));
-  const [selectedMonth, setSelectedMonth] = useState<number>(initializeDateComponent('month'));
-  const [selectedDay, setSelectedDay] = useState<number>(initializeDateComponent('day'));
+  const [selectedYear, setSelectedYear] = useState<number>(() => initializeDateComponent('year', memory?.date));
+  const [selectedMonth, setSelectedMonth] = useState<number>(() => initializeDateComponent('month', memory?.date));
+  const [selectedDay, setSelectedDay] = useState<number>(() => initializeDateComponent('day', memory?.date));
+
 
   const [description, setDescription] = useState(memory?.description || '');
   const [category, setCategory] = useState<MemoryCategory>(memory?.category || memoryCategories[0]);
@@ -184,6 +187,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
     if (!title.trim()) {
       toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
+      memoryDetailsCardHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       titleInputRef.current?.focus();
       return;
     }
@@ -191,18 +195,20 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
     if (!isValid(finalDate) || finalDate.getFullYear() !== selectedYear || finalDate.getMonth() !== selectedMonth || finalDate.getDate() !== selectedDay) {
       toast({ title: "Invalid Date", description: "Please select a valid date.", variant: "destructive" });
+      memoryDetailsCardHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       yearSelectRef.current?.focus();
       return;
     }
 
     if (!description.trim()) {
       toast({ title: "Description Required", description: "Please enter a description for the memory.", variant: "destructive" });
+      memoryDetailsCardHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       descriptionTextareaRef.current?.focus();
       return;
     }
     if (!currentMedia) {
       toast({ title: "Media Required", description: "A media attachment (video or audio) is required.", variant: "destructive" });
-      titleInputRef.current?.focus(); // Fallback focus
+      mediaCardHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
 
@@ -248,7 +254,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
-        <CardHeader>
+        <CardHeader ref={memoryDetailsCardHeaderRef}>
           <CardTitle className="font-headline text-2xl">{memory ? 'Edit Memory' : 'Add New Memory'}</CardTitle>
           <CardDescription>Capture the details of your moment. Fields marked with * are mandatory.</CardDescription>
         </CardHeader>
@@ -352,7 +358,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader ref={mediaCardHeaderRef}>
             <CardTitle className="font-headline text-lg">Media Attachment *</CardTitle>
             {!currentMedia && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}
         </CardHeader>
@@ -448,3 +454,4 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     </form>
   );
 }
+
