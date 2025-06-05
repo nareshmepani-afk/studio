@@ -17,7 +17,7 @@ import { toast } from '@/hooks/use-toast';
 import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, ArrowRight } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { mockPrompts } from '@/lib/mockData';
-import { getDaysInMonth, format, isValid, set } from 'date-fns';
+import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, getDate } from 'date-fns';
 
 interface MemoryFormProps {
   memory?: Memory;
@@ -34,8 +34,8 @@ type CurrentMediaData = {
   duration: number;
 };
 
-const currentGlobalYear = new Date().getFullYear();
-const years: number[] = Array.from({ length: 101 }, (_, i) => currentGlobalYear - i);
+const globalCurrentYear = new Date().getFullYear();
+const years: number[] = Array.from({ length: 101 }, (_, i) => globalCurrentYear - i);
 const months: { value: number; label: string }[] = Array.from({ length: 12 }, (_, i) => ({
   value: i,
   label: format(new Date(2000, i, 1), 'MMMM'),
@@ -48,32 +48,30 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const isEditing = !!memory;
 
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const titleLabelRef = useRef<HTMLLabelElement>(null); // Ref for the Title label
+  const titleLabelRef = useRef<HTMLLabelElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const yearSelectRef = useRef<HTMLButtonElement>(null); 
+  const yearSelectRef = useRef<HTMLButtonElement>(null);
   const memoryDetailsCardHeaderRef = useRef<HTMLDivElement>(null);
   const mediaCardHeaderRef = useRef<HTMLDivElement>(null);
 
-
   const [title, setTitle] = useState(memory?.title || '');
 
-  const initializeDateComponent = useCallback((component: 'year' | 'month' | 'day', dateSource?: string) => {
+  const getInitialDateComponent = useCallback((component: 'year' | 'month' | 'day', dateSource?: string) => {
     const dateToParse = dateSource ? new Date(dateSource) : new Date();
     if (isValid(dateToParse)) {
-      if (component === 'year') return dateToParse.getFullYear();
-      if (component === 'month') return dateToParse.getMonth(); // 0-11
-      if (component === 'day') return dateToParse.getDate();
+      if (component === 'year') return getYear(dateToParse);
+      if (component === 'month') return getMonth(dateToParse);
+      if (component === 'day') return getDate(dateToParse);
     }
     const today = new Date();
-    if (component === 'year') return today.getFullYear();
-    if (component === 'month') return today.getMonth();
-    return today.getDate();
+    if (component === 'year') return getYear(today);
+    if (component === 'month') return getMonth(today);
+    return getDate(today);
   }, []);
 
-  const [selectedYear, setSelectedYear] = useState<number>(() => initializeDateComponent('year', memory?.date));
-  const [selectedMonth, setSelectedMonth] = useState<number>(() => initializeDateComponent('month', memory?.date));
-  const [selectedDay, setSelectedDay] = useState<number>(() => initializeDateComponent('day', memory?.date));
-
+  const [selectedYear, setSelectedYear] = useState<number>(() => getInitialDateComponent('year', memory?.date));
+  const [selectedMonth, setSelectedMonth] = useState<number>(() => getInitialDateComponent('month', memory?.date));
+  const [selectedDay, setSelectedDay] = useState<number>(() => getInitialDateComponent('day', memory?.date));
 
   const [description, setDescription] = useState(memory?.description || '');
   const [category, setCategory] = useState<MemoryCategory>(memory?.category || memoryCategories[0]);
@@ -193,8 +191,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       return;
     }
     
-    const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
-    if (!isValid(finalDate) || finalDate.getFullYear() !== selectedYear || finalDate.getMonth() !== selectedMonth || finalDate.getDate() !== selectedDay) {
+    let finalDate = new Date(selectedYear, selectedMonth, 1); // Start with the first of the month
+    finalDate = setDate(finalDate, selectedDay); // Then set the day
+
+    if (!isValid(finalDate) || getYear(finalDate) !== selectedYear || getMonth(finalDate) !== selectedMonth || getDate(finalDate) !== selectedDay) {
       toast({ title: "Invalid Date", description: "Please select a valid date.", variant: "destructive" });
       memoryDetailsCardHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       yearSelectRef.current?.focus();
@@ -253,7 +253,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   }, [memory?.mediaAttachments]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       <Card>
         <CardHeader ref={memoryDetailsCardHeaderRef}>
           <CardTitle className="font-headline text-2xl">{memory ? 'Edit Memory' : 'Add New Memory'}</CardTitle>
