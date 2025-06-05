@@ -3,11 +3,10 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, Video, StopCircle, UploadCloud, RotateCcw, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Mic, Video, StopCircle, UploadCloud, RotateCcw, CheckCircle, AlertTriangle, Film, Waves, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useState, useRef, useEffect, useCallback } from 'react';
-// import type { MediaAttachment } from '@/types'; Removed as not used directly here
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -16,6 +15,11 @@ interface MediaCaptureControlProps {
   onDiscard: () => void;
   initialMedia?: { type: 'video' | 'audio'; previewUrl: string; startTime?: number; endTime?: number, duration: number };
 }
+
+const SAMPLE_VIDEO_URL = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+const SAMPLE_VIDEO_DURATION = 596.48; // Approximate duration
+const SAMPLE_AUDIO_URL = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3";
+const SAMPLE_AUDIO_DURATION = 1.88; // Approximate duration
 
 export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: MediaCaptureControlProps) {
   const [isRecording, setIsRecording] = useState(false);
@@ -32,6 +36,10 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   const [startTime, setStartTime] = useState<number>(initialMedia?.startTime || 0);
   const [endTime, setEndTime] = useState<number>(initialMedia?.endTime || 0);
   const [mediaDuration, setMediaDuration] = useState<number>(initialMedia?.duration || 0);
+  
+  const [isLoadingSample, setIsLoadingSample] = useState(false);
+  const [sampleLoadingType, setSampleLoadingType] = useState<'video' | 'audio' | null>(null);
+
 
   const getPermissions = useCallback(async (type: 'video' | 'audio') => {
     try {
@@ -71,32 +79,26 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   const handleStartRecording = async (type: 'video' | 'audio') => {
     if (isRecording) return;
 
-    // Reset previous recording states
     setRecordedFile(null);
-    
-    if (previewUrl && previewUrl.startsWith('blob:')) { // Check before revoking
+    if (previewUrl && previewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(previewUrl);
     }
-    setPreviewUrl(null); // Set to null after potential revoke
-    
+    setPreviewUrl(null);
     setMediaType(type);
     setStartTime(0);
     setEndTime(0);
     setMediaDuration(0);
     recordedChunks.current = [];
 
-    // Cleanup any existing stream before getting new permissions
     cleanupStream(stream);
     setStream(null);
 
-
     const currentStream = await getPermissions(type);
     if (!currentStream) {
-      setIsRecording(false); // Ensure isRecording is false if permissions fail
+      setIsRecording(false);
       return;
     }
     
-    console.log("Current stream for MediaRecorder:", currentStream, "Active:", currentStream.active);
     if (!currentStream.active) {
         console.error("Stream is not active before initializing MediaRecorder.");
         setTimeout(() => {
@@ -107,7 +109,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         setIsRecording(false);
         return;
     }
-
 
     try {
       const recorder = new window.MediaRecorder(currentStream);
@@ -170,7 +171,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
-      // onstop will handle setIsRecording(false) and stream cleanup
     } else {
       setIsRecording(false);
       cleanupStream(stream);
@@ -179,22 +179,19 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   };
   
   const handleVideoLoadedMetadata = (event: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement, Event>) => {
-     if (previewUrl && !mediaDuration && initialMedia?.previewUrl !== previewUrl) { // Only set if not already set and not initial media just loaded
+     if (previewUrl && !mediaDuration && initialMedia?.previewUrl !== previewUrl) {
         const duration = event.currentTarget.duration;
         if (duration && isFinite(duration)) {
             setMediaDuration(duration);
-            // Set endTime only if it's a new recording or not previously set by initialMedia
             if (!initialMedia || initialMedia.endTime === undefined || initialMedia.endTime === 0 || initialMedia.previewUrl !== previewUrl) {
                  setEndTime(duration);
             }
         }
      } else if (previewUrl && initialMedia?.previewUrl === previewUrl && mediaDuration === 0 && initialMedia.duration) {
-        // Case where initialMedia is loaded, set duration from it if not auto-detected
         setMediaDuration(initialMedia.duration);
         setEndTime(initialMedia.endTime !== undefined ? initialMedia.endTime : initialMedia.duration);
      }
   };
-
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -229,6 +226,43 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     }
   };
 
+  const handleLoadSampleMedia = async (type: 'video' | 'audio') => {
+    setIsLoadingSample(true);
+    setSampleLoadingType(type);
+    handleDiscardMedia(false); // Silently discard any current media
+
+    const url = type === 'video' ? SAMPLE_VIDEO_URL : SAMPLE_AUDIO_URL;
+    const duration = type === 'video' ? SAMPLE_VIDEO_DURATION : SAMPLE_AUDIO_DURATION;
+    const filename = type === 'video' ? 'sample_video.mp4' : 'sample_audio.mp3';
+    const mimeType = type === 'video' ? 'video/mp4' : 'audio/mpeg';
+
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const file = new File([blob], filename, { type: mimeType });
+      const preview = URL.createObjectURL(blob);
+
+      setMediaType(type);
+      setRecordedFile(file);
+      setPreviewUrl(preview);
+      setMediaDuration(duration);
+      setStartTime(0);
+      setEndTime(duration);
+      setTimeout(() => {
+        toast({ title: `Sample ${type} loaded`, description: filename });
+      }, 0);
+    } catch (error) {
+      console.error(`Error loading sample ${type}:`, error);
+      setTimeout(() => {
+        toast({ variant: 'destructive', title: `Failed to load sample ${type}`, description: 'Please check your connection or try again.' });
+      }, 0);
+    } finally {
+      setIsLoadingSample(false);
+      setSampleLoadingType(null);
+    }
+  };
+
+
   const handleUseMedia = () => {
     if (recordedFile && previewUrl && mediaType && (mediaDuration > 0 || (mediaDuration === 0 && startTime === 0 && endTime ===0) )) { 
       if (startTime > endTime && endTime > 0) { 
@@ -243,7 +277,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         }, 0);
         return;
       }
-      if (endTime > mediaDuration && mediaDuration > 0) { // Check mediaDuration > 0 to avoid issues if it's not loaded
+      if (endTime > mediaDuration && mediaDuration > 0) { 
          setTimeout(() => {
           toast({ title: "Invalid End Time", description: "End time cannot exceed media duration.", variant: "destructive" });
         }, 0);
@@ -309,7 +343,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
       URL.revokeObjectURL(previewUrl);
     }
     setRecordedFile(null);
-    setPreviewUrl(initialMedia?.previewUrl || null); // Revert to initial preview if available
+    setPreviewUrl(initialMedia?.previewUrl || null); 
     setMediaType(initialMedia?.type || null); 
     setStartTime(initialMedia?.startTime || 0);
     const initialEndTime = initialMedia?.endTime;
@@ -370,14 +404,14 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         )}
 
         {!previewUrl && !isRecording && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-            <Button onClick={() => handleStartRecording('video')} variant="outline" className="w-full py-6" disabled={isRecording || hasCameraPermission === false}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+             <Button onClick={() => handleStartRecording('video')} variant="outline" className="w-full py-6" disabled={isRecording || hasCameraPermission === false}>
               <Video className="mr-2 h-5 w-5" /> Start Video Recording
             </Button>
             <Button onClick={() => handleStartRecording('audio')} variant="outline" className="w-full py-6" disabled={isRecording || hasCameraPermission === false}>
               <Mic className="mr-2 h-5 w-5" /> Start Audio Recording
             </Button>
-            <div className="md:col-span-2">
+            <div className="md:col-span-3">
               <Label htmlFor="media-upload" className="sr-only">Upload Media</Label>
               <div className="flex items-center justify-center w-full">
                 <label htmlFor="media-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-secondary">
@@ -389,6 +423,19 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
                   <Input id="media-upload" type="file" className="hidden" onChange={handleFileUpload} accept="video/*,audio/*" disabled={isRecording} />
                 </label>
               </div>
+            </div>
+            <div className="md:col-span-3 pt-2 border-t">
+                 <p className="text-sm text-muted-foreground mb-2 text-center">Or, quickly load a sample to test trimming:</p>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Button onClick={() => handleLoadSampleMedia('video')} variant="secondary" size="sm" disabled={isLoadingSample}>
+                        {isLoadingSample && sampleLoadingType === 'video' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}
+                        Use Sample Video
+                    </Button>
+                    <Button onClick={() => handleLoadSampleMedia('audio')} variant="secondary" size="sm" disabled={isLoadingSample}>
+                        {isLoadingSample && sampleLoadingType === 'audio' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Waves className="mr-2 h-4 w-4" />}
+                        Use Sample Audio
+                    </Button>
+                 </div>
             </div>
           </div>
         )}
@@ -457,10 +504,43 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
                 <RotateCcw className="mr-2 h-4 w-4" /> Discard and Record/Upload Again
               </Button>
             </div>
+
+            <div className="mt-6 pt-4 border-t">
+              <p className="text-sm text-muted-foreground mb-2 text-center">Or, load a different sample to test trimming:</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button
+                  onClick={() => {
+                    handleDiscardMedia(false); // Silently discard current
+                    handleLoadSampleMedia('video');
+                  }}
+                  variant="secondary"
+                  size="sm"
+                  disabled={isLoadingSample}
+                >
+                  {isLoadingSample && sampleLoadingType === 'video' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}
+                  Load Sample Video
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleDiscardMedia(false); // Silently discard current
+                    handleLoadSampleMedia('audio');
+                  }}
+                  variant="secondary"
+                  size="sm"
+                  disabled={isLoadingSample}
+                >
+                  {isLoadingSample && sampleLoadingType === 'audio' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Waves className="mr-2 h-4 w-4" />}
+                  Load Sample Audio
+                </Button>
+              </div>
+            </div>
+
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
+    
+
     
