@@ -6,32 +6,58 @@ import { MemoryCard } from '@/components/memory/MemoryCard';
 import { TimelineFilter } from '@/components/memory/TimelineFilter';
 import { Button } from '@/components/ui/button';
 import { mockMemories } from '@/lib/mockData';
-import type { Memory } from '@/types'; // Removed MemoryCategory
-import { PlusCircle, BookHeart, BellRing, Users } from 'lucide-react';
+import type { Memory } from '@/types';
+import { PlusCircle, BookHeart, BellRing, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth'; 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { format, parseISO } from 'date-fns';
 
 export default function TimelinePage() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortCriteria, setSortCriteria] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc'>('date-desc');
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid'); 
   
-  const { setPendingRequestCount, userMode } = useAuth(); 
+  const { user, setPendingRequestCount, userMode, activateFreePass, purchasePaidPass, checkAndUpdatePassStatus } = useAuth(); 
 
   const mockPendingRequests = [
     { id: 'req1', text: 'Tell us about your first pet!', user: 'Guest123' },
     { id: 'req2', text: 'What was your favorite childhood vacation?', user: 'Guest456' },
   ];
 
+  // Recalculate pass validity for display
+  const isFreePassActive = useMemo(() => {
+    if (user?.sharedAccessStatus === 'free_pass_active' && user.freePassActivatedDate) {
+      return true;
+    }
+    return false;
+  }, [user]);
+
+  const isPaidPassActive = useMemo(() => {
+    if (user?.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate) {
+      return true;
+    }
+    return false;
+  }, [user]);
+  
+  const canViewSharedMemories = isFreePassActive || isPaidPassActive;
+
+  useEffect(() => {
+    checkAndUpdatePassStatus(); // Check pass status on component mount/update
+  }, [checkAndUpdatePassStatus, userMode]);
+
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      // In a real app, 'guest' mode would fetch memories shared *with* the user
-      // For now, 'guest' mode will show an empty list or specific message.
-      setMemories(userMode === 'host' ? mockMemories : []); 
+      if (userMode === 'host') {
+        setMemories(mockMemories); 
+      } else if (userMode === 'guest' && canViewSharedMemories) {
+        setMemories(mockMemories.slice(0, 2)); // Show a couple of mock shared memories if pass is active
+      } else {
+        setMemories([]);
+      }
       setIsLoading(false);
       if (userMode === 'host') {
         setPendingRequestCount(mockPendingRequests.length); 
@@ -40,7 +66,7 @@ export default function TimelinePage() {
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [setPendingRequestCount, userMode]); 
+  }, [setPendingRequestCount, userMode, canViewSharedMemories]); 
 
   useEffect(() => {
     const scrollToHash = () => {
@@ -55,9 +81,7 @@ export default function TimelinePage() {
     if (!isLoading) {
       scrollToHash();
     }
-
     window.addEventListener('hashchange', scrollToHash, false);
-
     return () => {
       window.removeEventListener('hashchange', scrollToHash, false);
     };
@@ -65,7 +89,6 @@ export default function TimelinePage() {
 
   const handleEditMemory = (memory: Memory) => {
     console.log('Edit memory:', memory);
-    // Potentially navigate to an edit page: router.push(`/edit-memory/${memory.id}`);
   };
 
   const handleDeleteMemory = (memoryId: string) => {
@@ -73,7 +96,7 @@ export default function TimelinePage() {
   };
 
   const filteredAndSortedMemories = useMemo(() => {
-    let result = memories; // Already filtered by userMode in useEffect
+    let result = memories;
 
     if (searchTerm) {
       result = result.filter(memory =>
@@ -97,7 +120,6 @@ export default function TimelinePage() {
           return 0;
       }
     });
-
     return result;
   }, [memories, searchTerm, sortCriteria]);
 
@@ -111,6 +133,63 @@ export default function TimelinePage() {
       </AuthenticatedPageWrapper>
     );
   }
+  
+  const renderGuestModeAccessUI = () => {
+    if (userMode !== 'guest' || !user) return null;
+
+    if (canViewSharedMemories) {
+      let passInfo = "";
+      if (isFreePassActive && user.freePassActivatedDate) {
+         const expiry = format(addMonths(parseISO(user.freePassActivatedDate), 6), 'PPP');
+         passInfo = `Your 6-month free pass is active until ${expiry}.`;
+      } else if (isPaidPassActive && user.paidPassExpiryDate) {
+         passInfo = `Your paid pass is active until ${format(parseISO(user.paidPassExpiryDate), 'PPP')}.`;
+      }
+      return (
+        <Alert variant="default" className="mb-6 bg-green-50 border-green-200">
+          <ShieldCheck className="h-5 w-5 text-green-600" />
+          <AlertTitle className="text-green-700">Access Granted</AlertTitle>
+          <AlertDescription className="text-green-600">
+            You can view shared memories. {passInfo}
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    // No active pass, or pass expired
+    let title = "Access Shared Memories";
+    let description = "Activate your free pass or purchase a monthly pass to view memories shared with you.";
+    let actionButton = null;
+
+    if (user.sharedAccessStatus === 'no_pass_initiated') {
+      title = "Welcome to Shared Memories!";
+      description = "Activate your 6-month free pass to start viewing memories shared by others.";
+      actionButton = (
+        <Button onClick={activateFreePass} className="mt-4 w-full sm:w-auto">
+          <Gift className="mr-2 h-5 w-5" /> Activate Your 6-Month Free Pass
+        </Button>
+      );
+    } else if (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired') {
+      title = "Your Pass Has Expired";
+      description = "To continue viewing shared memories, please purchase a new 31-day pass.";
+      actionButton = (
+        <Button onClick={purchasePaidPass} className="mt-4 w-full sm:w-auto">
+          <ShoppingCart className="mr-2 h-5 w-5" /> Purchase 31-Day Pass (Mock)
+        </Button>
+      );
+    }
+    
+    return (
+      <Alert variant="destructive" className="mb-6">
+        <ShieldOff className="h-5 w-5" />
+        <AlertTitle>{title}</AlertTitle>
+        <AlertDescription>
+          {description}
+          {actionButton}
+        </AlertDescription>
+      </Alert>
+    );
+  };
 
   return (
     <AuthenticatedPageWrapper>
@@ -128,18 +207,30 @@ export default function TimelinePage() {
             </Link>
           )}
         </div>
+        
+        {renderGuestModeAccessUI()}
 
         <TimelineFilter
           onSortChange={setSortCriteria}
           onSearchChange={setSearchTerm}
         />
+        
+        {userMode === 'guest' && !canViewSharedMemories && filteredAndSortedMemories.length === 0 && (
+             <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
+                <CalendarClock className="mx-auto h-16 w-16 text-primary mb-6" />
+                <h2 className="font-headline text-3xl mb-3">Activate Access</h2>
+                <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+                    Please activate your free pass or purchase a pass above to view shared memories.
+                </p>
+            </div>
+        )}
 
-        {userMode === 'guest' && filteredAndSortedMemories.length === 0 && (
+        {userMode === 'guest' && canViewSharedMemories && filteredAndSortedMemories.length === 0 && (
           <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
             <Users className="mx-auto h-16 w-16 text-primary mb-6" />
             <h2 className="font-headline text-3xl mb-3">Nothing Shared Yet</h2>
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              Memories shared with you by other users will appear here.
+              When other users share memories with you, they will appear here.
             </p>
           </div>
         )}
@@ -160,14 +251,14 @@ export default function TimelinePage() {
           </div>
         )}
 
-        {filteredAndSortedMemories.length > 0 && (
+        {((userMode === 'host') || (userMode === 'guest' && canViewSharedMemories)) && filteredAndSortedMemories.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredAndSortedMemories.map((memory) => (
               <MemoryCard
                 key={memory.id}
                 memory={memory}
-                onEdit={userMode === 'host' ? handleEditMemory : () => {}} // Disable edit in guest mode
-                onDelete={userMode === 'host' ? handleDeleteMemory : () => {}} // Disable delete in guest mode
+                onEdit={userMode === 'host' ? handleEditMemory : () => {}}
+                onDelete={userMode === 'host' ? handleDeleteMemory : () => {}}
               />
             ))}
           </div>

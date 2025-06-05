@@ -12,47 +12,50 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import type { User } from '@/types';
-import { Loader2, UploadCloud, Camera } from 'lucide-react';
+import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart } from 'lucide-react';
 import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
-import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth } from 'date-fns';
+import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 
 const currentGlobalYear = new Date().getFullYear();
-const dobYears: number[] = Array.from({ length: 120 }, (_, i) => currentGlobalYear - i); // Up to 120 years ago
+const dobYears: number[] = Array.from({ length: 120 }, (_, i) => currentGlobalYear - i); 
 const dobMonths: { value: number; label: string }[] = Array.from({ length: 12 }, (_, i) => ({
-  value: i, // 0-11 for Date object compatibility
+  value: i, 
   label: format(new Date(2000, i, 1), 'MMMM', { locale: enGB }),
 }));
 
 export default function SettingsPage() {
-  const { user, login, loading: authLoading } = useAuth();
+  const { user, login, loading: authLoading, activateFreePass, purchasePaidPass, checkAndUpdatePassStatus } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [profileInfo, setProfileInfo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // New profile fields state
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const [dobYear, setDobYear] = useState<string>('');
-  const [dobMonth, setDobMonth] = useState<string>(''); // 0-11
+  const [dobMonth, setDobMonth] = useState<string>(''); 
   const [dobDay, setDobDay] = useState<string>('');
 
   const [countryOfBirth, setCountryOfBirth] = useState('');
   const [city, setCity] = useState('');
   const [townArea, setTownArea] = useState('');
+  
+  useEffect(() => {
+    checkAndUpdatePassStatus();
+  }, [checkAndUpdatePassStatus]);
 
   const daysInSelectedDobMonth = useMemo(() => {
     if (dobYear && dobMonth) {
       const yearNum = parseInt(dobYear);
-      const monthNum = parseInt(dobMonth); // 0-indexed
+      const monthNum = parseInt(dobMonth); 
       if (!isNaN(yearNum) && !isNaN(monthNum) && monthNum >= 0 && monthNum <= 11) {
         return getDaysInMonth(new Date(yearNum, monthNum));
       }
     }
-    return 31; // Default to 31 if year/month not set
+    return 31; 
   }, [dobYear, dobMonth]);
 
   const dobDayOptions = useMemo(() => {
@@ -64,12 +67,12 @@ export default function SettingsPage() {
       setName(user.name || '');
       setEmail(user.email || '');
       setProfileInfo(user.profileInfo || '');
-      setAvatarPreviewUrl(user.avatarUrl || null); // Initialize preview with existing avatar
+      setAvatarPreviewUrl(user.avatarUrl || null); 
 
       if (user.dateOfBirth && isValid(parseISO(user.dateOfBirth))) {
         const dob = parseISO(user.dateOfBirth);
         setDobYear(getYear(dob).toString());
-        setDobMonth(getMonth(dob).toString()); // 0-11
+        setDobMonth(getMonth(dob).toString()); 
         setDobDay(getDate(dob).toString());
       } else {
         setDobYear('');
@@ -84,7 +87,6 @@ export default function SettingsPage() {
   }, [user]);
 
   useEffect(() => {
-    // Adjust day if it becomes invalid for the selected month/year
     if (dobDay && parseInt(dobDay) > daysInSelectedDobMonth) {
       setDobDay(daysInSelectedDobMonth.toString());
     }
@@ -101,7 +103,6 @@ export default function SettingsPage() {
   };
 
   const handleTakePhoto = () => {
-    // For now, this is a placeholder
     console.log("TODO: Implement webcam photo capture");
     toast({
       title: "Feature Coming Soon",
@@ -116,19 +117,13 @@ export default function SettingsPage() {
 
     let finalAvatarUrl = user.avatarUrl;
     if (avatarFile && avatarPreviewUrl) {
-      // In a real app, upload avatarFile here and get a persistent URL
-      // For this demo, we'll use the blob URL (avatarPreviewUrl) or a placeholder
-      // This blob URL will only work for the current session
       finalAvatarUrl = avatarPreviewUrl;
-      // To make it somewhat persistent in localStorage for the demo if not a blob:
-      // if (!avatarPreviewUrl.startsWith('blob:')) finalAvatarUrl = avatarPreviewUrl; 
-      // else console.warn("Avatar preview is a blob URL, won't persist across sessions well in demo.");
     }
 
     let finalDateOfBirth: string | undefined = undefined;
     if (dobYear && dobMonth && dobDay) {
       const yearNum = parseInt(dobYear);
-      const monthNum = parseInt(dobMonth); // 0-indexed
+      const monthNum = parseInt(dobMonth); 
       const dayNum = parseInt(dobDay);
       if (!isNaN(yearNum) && !isNaN(monthNum) && !isNaN(dayNum)) {
         const dobDate = new Date(yearNum, monthNum, dayNum);
@@ -142,7 +137,6 @@ export default function SettingsPage() {
       }
     }
 
-
     const updatedUser: User = {
       ...user,
       id: user.id,
@@ -154,12 +148,16 @@ export default function SettingsPage() {
       countryOfBirth: countryOfBirth || undefined,
       city: city || undefined,
       townArea: townArea || undefined,
+      // Keep existing pass status fields
+      sharedAccessStatus: user.sharedAccessStatus,
+      freePassActivatedDate: user.freePassActivatedDate,
+      paidPassExpiryDate: user.paidPassExpiryDate,
     };
 
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000)); 
 
     localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser));
-    login(updatedUser.email); // This re-sets the user in AuthContext, triggering Navbar update etc.
+    login(updatedUser.email); 
 
     setIsSubmitting(false);
     toast({
@@ -169,7 +167,6 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    // Clean up blob URL when component unmounts or avatarPreviewUrl changes to a new blob
     let currentPreview = avatarPreviewUrl;
     return () => {
       if (currentPreview && currentPreview.startsWith('blob:')) {
@@ -194,6 +191,54 @@ export default function SettingsPage() {
       </AuthenticatedPageWrapper>
     );
   }
+  
+  const renderPassStatusInfo = () => {
+    if (!user) return null;
+    let statusText = "";
+    let actionButton = null;
+
+    switch (user.sharedAccessStatus) {
+        case 'no_pass_initiated':
+            statusText = "You have not yet activated your free pass for viewing shared memories.";
+            actionButton = (
+                <Button onClick={activateFreePass} variant="outline" size="sm">
+                    <Gift className="mr-2 h-4 w-4" /> Activate 6-Month Free Pass
+                </Button>
+            );
+            break;
+        case 'free_pass_active':
+            const freePassExpiry = user.freePassActivatedDate ? format(addMonths(parseISO(user.freePassActivatedDate), 6), 'PPP') : 'N/A';
+            statusText = `Your 6-month free pass for shared memories is active until ${freePassExpiry}.`;
+            break;
+        case 'paid_pass_active':
+            const paidPassExpiry = user.paidPassExpiryDate ? format(parseISO(user.paidPassExpiryDate), 'PPP') : 'N/A';
+            statusText = `Your paid pass for shared memories is active until ${paidPassExpiry}.`;
+            actionButton = (
+                 <Button onClick={purchasePaidPass} variant="outline" size="sm">
+                    <ShoppingCart className="mr-2 h-4 w-4" /> Extend / Purchase Pass (Mock)
+                </Button>
+            );
+            break;
+        case 'free_pass_expired':
+        case 'paid_pass_expired':
+            statusText = "Your pass for viewing shared memories has expired.";
+            actionButton = (
+                <Button onClick={purchasePaidPass} variant="outline" size="sm">
+                    <ShoppingCart className="mr-2 h-4 w-4" /> Purchase 31-Day Pass (Mock)
+                </Button>
+            );
+            break;
+        default:
+            statusText = "Shared memory pass status is unknown.";
+    }
+
+    return (
+        <div className="mt-2 space-y-2">
+            <p className="text-sm text-muted-foreground">{statusText}</p>
+            {actionButton}
+        </div>
+    );
+  };
 
   return (
     <AuthenticatedPageWrapper>
@@ -306,6 +351,19 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-headline text-xl flex items-center">
+                    <ShieldCheck className="mr-2 h-5 w-5 text-primary" /> Shared Memory Access
+                </CardTitle>
+                <CardDescription>Your current pass status for viewing memories shared by others.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {renderPassStatusInfo()}
+              </CardContent>
+            </Card>
+
 
             <CardFooter className="flex justify-end p-0 pt-4">
               <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">

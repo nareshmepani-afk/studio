@@ -9,6 +9,10 @@ export interface User {
   countryOfBirth?: string;
   city?: string;
   townArea?: string;
+  // New fields for shared access monetization
+  sharedAccessStatus?: 'free_pass_active' | 'paid_pass_active' | 'free_pass_expired' | 'paid_pass_expired' | 'no_pass_initiated';
+  freePassActivatedDate?: string; // ISO string - when the 6-month free pass was first activated
+  paidPassExpiryDate?: string; // ISO string - when the current 31-day paid pass expires
 }
 
 export type UserMode = 'host' | 'guest';
