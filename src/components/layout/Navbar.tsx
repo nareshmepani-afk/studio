@@ -57,21 +57,20 @@ export function Navbar() {
           {isAuthenticated && user ? (
             <>
               <div className="flex items-center space-x-2">
-                <Label htmlFor="mode-toggle" className="text-sm text-muted-foreground cursor-pointer flex items-center" onClick={() => setUserMode('host')}>
+                <Label className="text-sm text-muted-foreground cursor-pointer flex items-center" onClick={() => setUserMode('host')}>
                   <UserCog className={`h-4 w-4 mr-1 ${userMode === 'host' ? 'text-primary' : ''}`} /> Host
                 </Label>
                 <Switch
-                  id="mode-toggle"
                   checked={userMode === 'guest'}
                   onCheckedChange={toggleUserMode}
                   aria-label="Toggle between Host and Guest mode"
                 />
-                <Label htmlFor="mode-toggle" className="text-sm text-muted-foreground cursor-pointer flex items-center relative" onClick={() => setUserMode('guest')}>
+                <Label className="text-sm text-muted-foreground cursor-pointer flex items-center relative" onClick={() => setUserMode('guest')}>
                   <Users className={`h-4 w-4 mr-1 ${userMode === 'guest' ? 'text-primary' : ''}`} /> Guest
                   {userMode === 'host' && hasNewSharedMemories && (
-                    <span 
-                      className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-destructive ring-1 ring-background" 
-                      style={{ transform: 'translate(60%, -40%)' }} 
+                    <span
+                      className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-destructive ring-1 ring-background"
+                      style={{ transform: 'translate(60%, -40%)' }}
                       aria-label="New shared memories"
                     />
                   )}
