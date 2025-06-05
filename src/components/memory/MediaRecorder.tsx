@@ -21,16 +21,23 @@ const SAMPLE_VIDEO_DURATION = 596.48;
 const SAMPLE_AUDIO_URL = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3";
 const SAMPLE_AUDIO_DURATION = 1.88; 
 
-// Helper function to format total seconds to MM:SS.s string
+// Helper function to format total seconds to MM:SS.s or SS.s string
 function formatSecondsToTime(timeInSeconds: number | undefined): string {
-  if (timeInSeconds === undefined || isNaN(timeInSeconds) || timeInSeconds < 0) return "0:00.0";
-  const minutes = Math.floor(timeInSeconds / 60);
-  const seconds = timeInSeconds % 60;
-  const formattedSeconds = seconds.toFixed(1);
-  return `${minutes}:${formattedSeconds.padStart(4, '0')}`; // Ensures XX.X format for seconds part, e.g., 05.3 or 00.0
+  if (timeInSeconds === undefined || isNaN(timeInSeconds) || timeInSeconds < 0) return "0.0";
+  
+  const totalSecs = Number(timeInSeconds.toFixed(1)); 
+
+  if (totalSecs < 60) {
+    return totalSecs.toFixed(1); // e.g., "16.0", "5.5"
+  } else {
+    const minutes = Math.floor(totalSecs / 60);
+    const seconds = totalSecs % 60;
+    const formattedSeconds = seconds.toFixed(1);
+    return `${minutes}:${formattedSeconds.padStart(4, '0')}`; // e.g., "1:05.3", "1:00.0"
+  }
 }
 
-// Helper function to parse MM:SS.s string to total seconds
+// Helper function to parse MM:SS.s or SS.s string to total seconds
 function parseTimeToSeconds(timeStr: string): number | null {
   if (!timeStr || typeof timeStr !== 'string') return null;
   const parts = timeStr.split(':');
@@ -44,7 +51,6 @@ function parseTimeToSeconds(timeStr: string): number | null {
     } else if (parts.length === 2) { // Minutes and seconds, e.g., "1:30.5" or "1:30"
       const minutes = parseInt(parts[0], 10);
       const seconds = parseFloat(parts[1]);
-      // Seconds part should be less than 60
       if (isNaN(minutes) || minutes < 0 || isNaN(seconds) || seconds < 0 || seconds >= 60) return null;
       totalSeconds = minutes * 60 + seconds;
     } else { // Invalid format
@@ -408,7 +414,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     }
     setRecordedFile(null);
     
-    // Reset to initialMedia if available, otherwise clear
     setPreviewUrl(initialMedia?.previewUrl || null); 
     setMediaType(initialMedia?.type || null); 
     
@@ -543,23 +548,23 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
             {(mediaDuration > 0 || (mediaDuration === 0 && startTime === 0 && endTime ===0)) && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="start-time">Start Time (MM:SS.s)</Label>
+                  <Label htmlFor="start-time">Start Time</Label>
                   <Input 
                     id="start-time" 
                     type="text" 
                     value={startTimeInput} 
                     onChange={handleStartTimeInputChange}
-                    placeholder="M:SS.s"
+                    placeholder="e.g. 1:25.5 or 30.2"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="end-time">End Time (MM:SS.s)</Label>
+                  <Label htmlFor="end-time">End Time</Label>
                   <Input 
                     id="end-time" 
                     type="text" 
                     value={endTimeInput} 
                     onChange={handleEndTimeInputChange}
-                    placeholder="M:SS.s"
+                    placeholder="e.g. 1:25.5 or 30.2"
                   />
                 </div>
               </div>
@@ -613,3 +618,4 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     
 
     
+
