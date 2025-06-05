@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type FormEvent, useEffect, useCallback, useMemo } from 'react';
+import { useState, type FormEvent, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Memory, MemoryCategory, User, MediaAttachment, Prompt } from '@/types';
 import { memoryCategories } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -14,10 +14,10 @@ import { MediaCaptureControl } from './MediaRecorder';
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, ArrowRight } from 'lucide-react';
+import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, ArrowRight, CalendarIcon } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { mockPrompts } from '@/lib/mockData';
-import { getDaysInMonth, format } from 'date-fns';
+import { getDaysInMonth, format, isValid } from 'date-fns';
 
 interface MemoryFormProps {
   memory?: Memory;
@@ -47,6 +47,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const router = useRouter();
   const isEditing = !!memory;
 
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const yearSelectRef = useRef<HTMLButtonElement>(null);
+
+
   const [title, setTitle] = useState(memory?.title || '');
 
   const initializeDateComponent = (component: 'year' | 'month' | 'day') => {
@@ -56,7 +61,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       if (component === 'month') return dateToParse.getMonth(); // 0-11
       if (component === 'day') return dateToParse.getDate();
     }
-    // Fallback to current date components
     const today = new Date();
     if (component === 'year') return today.getFullYear();
     if (component === 'month') return today.getMonth();
@@ -64,9 +68,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   };
 
   const [selectedYear, setSelectedYear] = useState<number>(initializeDateComponent('year'));
-  const [selectedMonth, setSelectedMonth] = useState<number>(initializeDateComponent('month')); // 0-11
+  const [selectedMonth, setSelectedMonth] = useState<number>(initializeDateComponent('month'));
   const [selectedDay, setSelectedDay] = useState<number>(initializeDateComponent('day'));
-
 
   const [description, setDescription] = useState(memory?.description || '');
   const [category, setCategory] = useState<MemoryCategory>(memory?.category || memoryCategories[0]);
@@ -105,7 +108,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     if (selectedDay > daysInSelectedMonth) {
       setSelectedDay(daysInSelectedMonth);
     }
-  }, [selectedDay, daysInSelectedMonth]);
+  }, [selectedDay, daysInSelectedMonth, selectedMonth, selectedYear]);
 
 
   const loadInspirationPrompts = useCallback(() => {
@@ -149,7 +152,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     try {
       const result = await generateMemoryCuesAction({
         userProfile: userProfile,
-        currentDate: new Date().toISOString().split('T')[0], // Current date for context
+        currentDate: new Date().toISOString().split('T')[0], 
         language: cueLanguage,
       });
       setAiCues(result.memoryCues);
@@ -181,21 +184,25 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
     if (!title.trim()) {
       toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
+      titleInputRef.current?.focus();
       return;
     }
-    // Date is now constructed from selectedYear, selectedMonth, selectedDay
+    
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
-    if (isNaN(finalDate.getTime())) {
+    if (!isValid(finalDate) || finalDate.getFullYear() !== selectedYear || finalDate.getMonth() !== selectedMonth || finalDate.getDate() !== selectedDay) {
       toast({ title: "Invalid Date", description: "Please select a valid date.", variant: "destructive" });
+      yearSelectRef.current?.focus();
       return;
     }
 
     if (!description.trim()) {
       toast({ title: "Description Required", description: "Please enter a description for the memory.", variant: "destructive" });
+      descriptionTextareaRef.current?.focus();
       return;
     }
     if (!currentMedia) {
       toast({ title: "Media Required", description: "A media attachment (video or audio) is required.", variant: "destructive" });
+      titleInputRef.current?.focus(); // Fallback focus
       return;
     }
 
@@ -248,7 +255,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
         <CardContent className="space-y-4">
           <div className="space-y-1">
             <Label htmlFor="title">Title *</Label>
-            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" />
+            <Input ref={titleInputRef} id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" />
              {inspirationPrompts.length > 0 && (
               <div className="pt-2 space-y-2">
                 <div className="flex justify-between items-center">
@@ -290,7 +297,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
               <div>
                 <Label htmlFor="year-select" className="sr-only">Year</Label>
                 <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                  <SelectTrigger id="year-select">
+                  <SelectTrigger id="year-select" ref={yearSelectRef}>
                     <SelectValue placeholder="Year" />
                   </SelectTrigger>
                   <SelectContent>
@@ -325,7 +332,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
           <div className="space-y-1">
             <Label htmlFor="description">Description *</Label>
-            <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} required/>
+            <Textarea ref={descriptionTextareaRef} id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} required/>
           </div>
 
           <div className="space-y-1">
@@ -378,7 +385,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                 {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
                 {currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime && <p className="text-sm text-muted-foreground">Trim End: {currentMedia.endTime.toFixed(2)}s</p>}
                  <Button variant="outline" type="button" onClick={() => {
-                    handleMediaDiscard();
+                    handleMediaDiscard(); 
                  }} className="w-full mt-2">
                     Change Media or Re-trim
                 </Button>
