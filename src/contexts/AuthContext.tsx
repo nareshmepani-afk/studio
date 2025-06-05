@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { User } from '@/types';
+import type { User, UserMode } from '@/types';
 import React, { createContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -13,6 +13,9 @@ interface AuthContextType {
   loading: boolean;
   pendingRequestCount: number;
   setPendingRequestCount: (count: number) => void;
+  userMode: UserMode;
+  toggleUserMode: () => void;
+  setUserMode: (mode: UserMode) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +25,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [pendingRequestCount, setPendingRequestCountState] = useState<number>(0);
+  const [userMode, setUserModeState] = useState<UserMode>('host');
   const router = useRouter();
   const pathname = usePathname();
 
@@ -93,6 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('memoryWeaverUser', JSON.stringify(currentUser));
     setUser(currentUser);
     setIsAuthenticated(true);
+    setUserModeState('host'); // Default to host mode on login
     // Only push to '/' if not already trying to go somewhere specific or on login/register
     if (['/login', '/register'].includes(pathname) || pathname === "") {
         router.push('/');
@@ -104,6 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setIsAuthenticated(false);
     setPendingRequestCountState(0);
+    setUserModeState('host'); // Reset to host mode on logout
     router.push('/login');
   };
 
@@ -111,8 +117,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setPendingRequestCountState(count);
   }, []);
 
+  const toggleUserMode = useCallback(() => {
+    setUserModeState(prevMode => prevMode === 'host' ? 'guest' : 'host');
+  }, []);
+  
+  const setUserMode = useCallback((mode: UserMode) => {
+    setUserModeState(mode);
+  }, []);
+
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading, pendingRequestCount, setPendingRequestCount }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, loading, pendingRequestCount, setPendingRequestCount, userMode, toggleUserMode, setUserMode }}>
       {children}
     </AuthContext.Provider>
   );

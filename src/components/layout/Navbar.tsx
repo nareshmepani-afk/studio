@@ -13,11 +13,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { BookHeart, LogOut, PlusCircle, Settings, Sparkles, Grip, BellRing } from 'lucide-react';
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { BookHeart, LogOut, PlusCircle, Settings, Sparkles, Grip, BellRing, Users, UserCog } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export function Navbar() {
-  const { isAuthenticated, user, logout, pendingRequestCount } = useAuth();
+  const { isAuthenticated, user, logout, pendingRequestCount, userMode, toggleUserMode, setUserMode } = useAuth();
   const router = useRouter();
 
   const handleLogout = () => {
@@ -32,7 +34,7 @@ export function Navbar() {
           <span className="font-headline text-xl font-bold">Memory Weaver</span>
         </Link>
         <nav className="flex flex-1 items-center space-x-4 lg:space-x-6">
-          {isAuthenticated && (
+          {isAuthenticated && userMode === 'host' && (
             <>
               <Link href="/" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
                 Timeline
@@ -45,11 +47,31 @@ export function Navbar() {
               </Link>
             </>
           )}
+           {isAuthenticated && userMode === 'guest' && (
+             <Link href="/" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                Shared With Me
+              </Link>
+           )}
         </nav>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-4"> {/* Increased space-x for toggle */}
           {isAuthenticated && user ? (
             <>
-              {pendingRequestCount > 0 && (
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="mode-toggle" className="text-sm text-muted-foreground cursor-pointer flex items-center" onClick={() => setUserMode('host')}>
+                  <UserCog className={`h-4 w-4 mr-1 ${userMode === 'host' ? 'text-primary' : ''}`} /> Host
+                </Label>
+                <Switch
+                  id="mode-toggle"
+                  checked={userMode === 'guest'}
+                  onCheckedChange={toggleUserMode}
+                  aria-label="Toggle between Host and Guest mode"
+                />
+                <Label htmlFor="mode-toggle" className="text-sm text-muted-foreground cursor-pointer flex items-center" onClick={() => setUserMode('guest')}>
+                  <Users className={`h-4 w-4 mr-1 ${userMode === 'guest' ? 'text-primary' : ''}`} /> Guest
+                </Label>
+              </div>
+
+              {pendingRequestCount > 0 && userMode === 'host' && (
                 <Button variant="ghost" size="icon" className="relative" onClick={() => router.push('/#incoming-requests')}>
                   <BellRing className="h-5 w-5" />
                   <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-destructive-foreground transform translate-x-1/2 -translate-y-1/2 bg-destructive rounded-full">

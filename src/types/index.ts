@@ -11,6 +11,8 @@ export interface User {
   townArea?: string;
 }
 
+export type UserMode = 'host' | 'guest';
+
 export interface MediaAttachment {
   id: string; // Unique ID for this media item within a memory
   type: 'video' | 'audio';
