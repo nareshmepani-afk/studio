@@ -10,18 +10,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { MediaCaptureControl } from './MediaRecorder'; // Corrected import path
+import { MediaCaptureControl } from './MediaRecorder';
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, ArrowRight } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { mockPrompts } from '@/lib/mockData';
+import { getDaysInMonth, format } from 'date-fns';
 
 interface MemoryFormProps {
   memory?: Memory;
@@ -38,30 +34,38 @@ type CurrentMediaData = {
   duration: number;
 };
 
+const currentGlobalYear = new Date().getFullYear();
+const years: number[] = Array.from({ length: 101 }, (_, i) => currentGlobalYear - i);
+const months: { value: number; label: string }[] = Array.from({ length: 12 }, (_, i) => ({
+  value: i,
+  label: format(new Date(2000, i, 1), 'MMMM'),
+}));
+
 export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const currentYear = new Date().getFullYear();
   const isEditing = !!memory;
 
   const [title, setTitle] = useState(memory?.title || '');
 
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(() => {
-    if (isEditing && memory.date) {
-      const memDate = new Date(memory.date);
-      return memDate instanceof Date && !isNaN(memDate.getTime()) ? memDate : new Date();
+  const initializeDateComponent = (component: 'year' | 'month' | 'day') => {
+    const dateToParse = isEditing && memory?.date ? new Date(memory.date) : new Date();
+    if (dateToParse instanceof Date && !isNaN(dateToParse.getTime())) {
+      if (component === 'year') return dateToParse.getFullYear();
+      if (component === 'month') return dateToParse.getMonth(); // 0-11
+      if (component === 'day') return dateToParse.getDate();
     }
-    return new Date();
-  });
+    // Fallback to current date components
+    const today = new Date();
+    if (component === 'year') return today.getFullYear();
+    if (component === 'month') return today.getMonth();
+    return today.getDate();
+  };
 
-  const [displayedMonth, setDisplayedMonth] = useState<Date>(() => {
-    if (isEditing && memory.date) {
-      const memDate = new Date(memory.date);
-      return memDate instanceof Date && !isNaN(memDate.getTime()) ? memDate : new Date();
-    }
-    return new Date();
-  });
+  const [selectedYear, setSelectedYear] = useState<number>(initializeDateComponent('year'));
+  const [selectedMonth, setSelectedMonth] = useState<number>(initializeDateComponent('month')); // 0-11
+  const [selectedDay, setSelectedDay] = useState<number>(initializeDateComponent('day'));
 
 
   const [description, setDescription] = useState(memory?.description || '');
@@ -76,7 +80,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     if (memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
       const firstMedia = memory.mediaAttachments[0];
       const filename = firstMedia.filename || "existing_media";
-      // Ensure duration is a number, default to 0 if not provided or invalid
       const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
       return {
         file: new File([], filename, {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
@@ -90,6 +93,21 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     return null;
   });
 
+  const daysInSelectedMonth = useMemo(() => {
+    return getDaysInMonth(new Date(selectedYear, selectedMonth));
+  }, [selectedYear, selectedMonth]);
+
+  const dayOptions = useMemo(() => {
+    return Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1);
+  }, [daysInSelectedMonth]);
+
+  useEffect(() => {
+    if (selectedDay > daysInSelectedMonth) {
+      setSelectedDay(daysInSelectedMonth);
+    }
+  }, [selectedDay, daysInSelectedMonth]);
+
+
   const loadInspirationPrompts = useCallback(() => {
     const shuffled = [...mockPrompts].sort(() => 0.5 - Math.random());
     setInspirationPrompts(shuffled.slice(0, 3));
@@ -102,7 +120,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
   useEffect(() => {
     const promptFromUrl = searchParams.get('prompt');
-    if (promptFromUrl && !memory) { 
+    if (promptFromUrl && !memory) {
       setTitle(decodeURIComponent(promptFromUrl));
     }
   }, [searchParams, memory]);
@@ -131,7 +149,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     try {
       const result = await generateMemoryCuesAction({
         userProfile: userProfile,
-        currentDate: new Date().toISOString().split('T')[0],
+        currentDate: new Date().toISOString().split('T')[0], // Current date for context
         language: cueLanguage,
       });
       setAiCues(result.memoryCues);
@@ -165,10 +183,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
       return;
     }
-    if (!selectedDate) {
-      toast({ title: "Date Required", description: "Please select a date for the memory.", variant: "destructive" });
+    // Date is now constructed from selectedYear, selectedMonth, selectedDay
+    const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
+    if (isNaN(finalDate.getTime())) {
+      toast({ title: "Invalid Date", description: "Please select a valid date.", variant: "destructive" });
       return;
     }
+
     if (!description.trim()) {
       toast({ title: "Description Required", description: "Please enter a description for the memory.", variant: "destructive" });
       return;
@@ -180,10 +201,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
     let mediaAttachmentsForSubmission: MediaAttachment[] | undefined = undefined;
     if (currentMedia) {
-      const isNewFile = currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0; // Check size for new files
+      const isNewFile = currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0;
       const originalMediaAttachment = memory?.mediaAttachments?.[0];
-      
-      // Ensure duration is a number
       const duration = (typeof currentMedia.duration === 'number' && !isNaN(currentMedia.duration)) ? currentMedia.duration : 0;
 
       mediaAttachmentsForSubmission = [{
@@ -198,12 +217,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     }
 
     onSubmit(
-      { title, date: selectedDate.toISOString(), description, category, mediaAttachments: mediaAttachmentsForSubmission },
+      { title, date: finalDate.toISOString(), description, category, mediaAttachments: mediaAttachmentsForSubmission },
       userProfile,
       currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0 ? currentMedia.file : undefined
     );
   };
-  
+
   const initialMediaForRecorder = useMemo(() => {
     if (memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
         const firstMedia = memory.mediaAttachments[0];
@@ -218,27 +237,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     }
     return undefined;
   }, [memory?.mediaAttachments]);
-
-
-  const handleDateSelect = (date: Date | undefined) => {
-    setSelectedDate(date);
-    if (date) {
-      setDisplayedMonth(date); 
-    }
-  };
-  
-  const getButtonDisplayText = () => {
-    if (selectedDate && selectedDate instanceof Date && !isNaN(selectedDate.getTime())) {
-      try {
-        return format(selectedDate, "PPP");
-      } catch (e) {
-        console.error("Error formatting date in button:", e, selectedDate);
-        return "Invalid Date - Pick a date";
-      }
-    }
-    return "Pick a date";
-  };
-
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -287,34 +285,42 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="date">Date *</Label>
-             <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !selectedDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {getButtonDisplayText()}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={handleDateSelect}
-                  month={displayedMonth}
-                  onMonthChange={setDisplayedMonth}
-                  captionLayout="dropdowns"
-                  fromYear={currentYear - 100}
-                  toYear={currentYear}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <Label>Date *</Label>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <Label htmlFor="year-select" className="sr-only">Year</Label>
+                <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                  <SelectTrigger id="year-select">
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="month-select" className="sr-only">Month</Label>
+                <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
+                  <SelectTrigger id="month-select">
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {months.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="day-select" className="sr-only">Day</Label>
+                <Select value={selectedDay.toString()} onValueChange={(value) => setSelectedDay(parseInt(value))}>
+                  <SelectTrigger id="day-select">
+                    <SelectValue placeholder="Day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dayOptions.map(d => <SelectItem key={d} value={d.toString()}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-1">
@@ -372,10 +378,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                 {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
                 {currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime && <p className="text-sm text-muted-foreground">Trim End: {currentMedia.endTime.toFixed(2)}s</p>}
                  <Button variant="outline" type="button" onClick={() => {
-                    // When changing media, we essentially discard the current one to allow MediaCaptureControl to re-initialize
-                    handleMediaDiscard(); 
-                    // MediaCaptureControl will then show options to record/upload new media.
-                    // If the user simply wanted to re-trim, they'd re-select/re-upload the same file.
+                    handleMediaDiscard();
                  }} className="w-full mt-2">
                     Change Media or Re-trim
                 </Button>
