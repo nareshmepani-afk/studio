@@ -4,6 +4,11 @@ export interface User {
   email: string;
   name?: string;
   profileInfo?: string; // For AI cues
+  avatarUrl?: string;
+  dateOfBirth?: string; // ISO string
+  countryOfBirth?: string;
+  city?: string;
+  townArea?: string;
 }
 
 export interface MediaAttachment {

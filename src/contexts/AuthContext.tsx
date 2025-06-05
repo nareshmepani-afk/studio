@@ -26,11 +26,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Mock checking for a stored token or session
-    const storedUser = localStorage.getItem('memoryWeaverUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
+    const storedUserJson = localStorage.getItem('memoryWeaverUser');
+    if (storedUserJson) {
+      try {
+        const storedUser = JSON.parse(storedUserJson);
+         // Ensure all expected fields are at least present or defaulted if necessary
+        const hydratedUser: User = {
+          id: storedUser.id || '1', // default id if missing
+          email: storedUser.email,
+          name: storedUser.name,
+          profileInfo: storedUser.profileInfo,
+          avatarUrl: storedUser.avatarUrl,
+          dateOfBirth: storedUser.dateOfBirth,
+          countryOfBirth: storedUser.countryOfBirth,
+          city: storedUser.city,
+          townArea: storedUser.townArea,
+        };
+        setUser(hydratedUser);
+        setIsAuthenticated(true);
+      } catch (e) {
+        console.error("Failed to parse user from localStorage", e);
+        localStorage.removeItem('memoryWeaverUser'); // Clear corrupted data
+      }
     }
     setLoading(false);
   }, []);
@@ -45,19 +62,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [isAuthenticated, loading, pathname, router]);
 
   const login = (email: string) => {
-    // Mock login: In a real app, call an API, get a token, user data
-    const mockUser: User = { id: '1', email, name: email.split('@')[0] };
-    localStorage.setItem('memoryWeaverUser', JSON.stringify(mockUser));
-    setUser(mockUser);
+    // If user already exists in localStorage with this email, load it. Otherwise, create a new mock user.
+    const storedUserJson = localStorage.getItem('memoryWeaverUser');
+    let currentUser: User | null = null;
+    if (storedUserJson) {
+        try {
+            const storedUser = JSON.parse(storedUserJson);
+            if (storedUser.email === email) {
+                 currentUser = {
+                    id: storedUser.id || '1',
+                    email: storedUser.email,
+                    name: storedUser.name,
+                    profileInfo: storedUser.profileInfo,
+                    avatarUrl: storedUser.avatarUrl,
+                    dateOfBirth: storedUser.dateOfBirth,
+                    countryOfBirth: storedUser.countryOfBirth,
+                    city: storedUser.city,
+                    townArea: storedUser.townArea,
+                };
+            }
+        } catch (e) {
+            console.error("Failed to parse user from localStorage during login", e);
+        }
+    }
+
+    if (!currentUser) {
+        currentUser = { id: Date.now().toString(), email, name: email.split('@')[0] }; // Create new if not found or error
+    }
+    
+    localStorage.setItem('memoryWeaverUser', JSON.stringify(currentUser));
+    setUser(currentUser);
     setIsAuthenticated(true);
-    router.push('/');
+    // Only push to '/' if not already trying to go somewhere specific or on login/register
+    if (['/login', '/register'].includes(pathname) || pathname === "") {
+        router.push('/');
+    }
   };
 
   const logout = () => {
     localStorage.removeItem('memoryWeaverUser');
     setUser(null);
     setIsAuthenticated(false);
-    setPendingRequestCountState(0); // Reset on logout
+    setPendingRequestCountState(0);
     router.push('/login');
   };
 

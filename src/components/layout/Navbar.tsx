@@ -13,11 +13,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { BookHeart, LogOut, PlusCircle, Settings, Sparkles, Grip, BellRing } from 'lucide-react'; // Added BellRing
+import { BookHeart, LogOut, PlusCircle, Settings, Sparkles, Grip, BellRing } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export function Navbar() {
-  const { isAuthenticated, user, logout, pendingRequestCount } = useAuth(); // Added pendingRequestCount
+  const { isAuthenticated, user, logout, pendingRequestCount } = useAuth();
   const router = useRouter();
 
   const handleLogout = () => {
@@ -46,11 +46,11 @@ export function Navbar() {
             </>
           )}
         </nav>
-        <div className="flex items-center space-x-2"> {/* Reduced space-x for tighter group */}
+        <div className="flex items-center space-x-2">
           {isAuthenticated && user ? (
             <>
               {pendingRequestCount > 0 && (
-                <Button variant="ghost" size="icon" className="relative" onClick={() => router.push('/#incoming-requests')}> {/* Simple navigation for now */}
+                <Button variant="ghost" size="icon" className="relative" onClick={() => router.push('/#incoming-requests')}>
                   <BellRing className="h-5 w-5" />
                   <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-destructive-foreground transform translate-x-1/2 -translate-y-1/2 bg-destructive rounded-full">
                     {pendingRequestCount}
@@ -61,7 +61,7 @@ export function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} alt={user.name || user.email} />
+                      <AvatarImage src={user.avatarUrl || `https://avatar.vercel.sh/${user.email}.png`} alt={user.name || user.email} />
                       <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
                   </Button>
