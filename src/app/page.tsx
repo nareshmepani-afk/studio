@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth'; 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, addMonths } from 'date-fns';
 
 export default function TimelinePage() {
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -20,7 +20,7 @@ export default function TimelinePage() {
   const [sortCriteria, setSortCriteria] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc'>('date-desc');
   const [isLoading, setIsLoading] = useState(true);
   
-  const { user, setPendingRequestCount, userMode, activateFreePass, purchasePaidPass, checkAndUpdatePassStatus } = useAuth(); 
+  const { user, setPendingRequestCount, userMode, activateFreePass, purchasePaidPass, checkAndUpdatePassStatus, setHasNewSharedMemories } = useAuth(); 
 
   const mockPendingRequests = [
     { id: 'req1', text: 'Tell us about your first pet!', user: 'Guest123' },
@@ -45,7 +45,7 @@ export default function TimelinePage() {
   const canViewSharedMemories = isFreePassActive || isPaidPassActive;
 
   useEffect(() => {
-    checkAndUpdatePassStatus(); // Check pass status on component mount/update
+    checkAndUpdatePassStatus(); 
   }, [checkAndUpdatePassStatus, userMode]);
 
 
@@ -53,8 +53,16 @@ export default function TimelinePage() {
     const timer = setTimeout(() => {
       if (userMode === 'host') {
         setMemories(mockMemories); 
+        // Simulate new shared memories becoming available for guest view
+        const potentialSharedMemories = mockMemories.slice(0, 2); 
+        if (potentialSharedMemories.length > 0) {
+           // Set this after a small delay to make the notification noticeable
+           const notifTimer = setTimeout(() => setHasNewSharedMemories(true), 1500);
+           // No explicit cleanup for notifTimer here, it's short-lived.
+           // A more robust solution would clear it if the component unmounts or userMode changes before it fires.
+        }
       } else if (userMode === 'guest' && canViewSharedMemories) {
-        setMemories(mockMemories.slice(0, 2)); // Show a couple of mock shared memories if pass is active
+        setMemories(mockMemories.slice(0, 2)); 
       } else {
         setMemories([]);
       }
@@ -66,7 +74,7 @@ export default function TimelinePage() {
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [setPendingRequestCount, userMode, canViewSharedMemories]); 
+  }, [setPendingRequestCount, userMode, canViewSharedMemories, setHasNewSharedMemories]); 
 
   useEffect(() => {
     const scrollToHash = () => {

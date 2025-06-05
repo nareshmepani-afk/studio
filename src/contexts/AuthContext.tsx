@@ -21,6 +21,8 @@ interface AuthContextType {
   activateFreePass: () => void;
   purchasePaidPass: () => void;
   checkAndUpdatePassStatus: () => void;
+  hasNewSharedMemories: boolean;
+  setHasNewSharedMemories: (status: boolean) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,6 +33,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [pendingRequestCount, setPendingRequestCountState] = useState<number>(0);
   const [userMode, setUserModeState] = useState<UserMode>('host');
+  const [hasNewSharedMemories, setHasNewSharedMemoriesState] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -159,6 +162,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     updateUserInStateAndStorage(null);
     setIsAuthenticated(false);
     setPendingRequestCountState(0);
+    setHasNewSharedMemoriesState(false);
     setUserModeState('host');
     router.push('/login');
   };
@@ -170,8 +174,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const toggleUserMode = useCallback(() => {
     setUserModeState(prevMode => {
         const newMode = prevMode === 'host' ? 'guest' : 'host';
-        if (newMode === 'guest' && user) {
-            checkAndUpdatePassStatus(); // Check pass status when switching to guest mode
+        if (newMode === 'guest') {
+            if (user) checkAndUpdatePassStatus();
+            setHasNewSharedMemoriesState(false); // Clear notification
         }
         return newMode;
     });
@@ -179,8 +184,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const setUserMode = useCallback((mode: UserMode) => {
     setUserModeState(mode);
-    if (mode === 'guest' && user) {
-        checkAndUpdatePassStatus(); // Check pass status when setting to guest mode
+    if (mode === 'guest') {
+        if (user) checkAndUpdatePassStatus();
+        setHasNewSharedMemoriesState(false); // Clear notification
     }
   }, [user, checkAndUpdatePassStatus]);
 
@@ -239,7 +245,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUserMode,
         activateFreePass,
         purchasePaidPass,
-        checkAndUpdatePassStatus
+        checkAndUpdatePassStatus,
+        hasNewSharedMemories,
+        setHasNewSharedMemories: setHasNewSharedMemoriesState
     }}>
       {children}
     </AuthContext.Provider>
