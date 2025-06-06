@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { BookHeart, LogOut, PlusCircle, Settings, Sparkles, Grip, BellRing, Users, UserCog, Gamepad2 } from 'lucide-react'; // Added Gamepad2
+import { BookHeart, LogOut, PlusCircle, Settings, BellRing, Users, UserCog, Gamepad2, MessageSquareQuote } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export function Navbar() {
@@ -45,6 +45,14 @@ export function Navbar() {
               <Link href="/prompts" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
                 Prompts
               </Link>
+              <Link href="/requests" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary flex items-center">
+                 Requests
+                 {pendingRequestCount > 0 && (
+                    <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-destructive-foreground bg-destructive rounded-full">
+                        {pendingRequestCount}
+                    </span>
+                 )}
+              </Link>
               <Link href="/games" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
                 Games
               </Link>
@@ -61,7 +69,7 @@ export function Navbar() {
              </>
            )}
         </nav>
-        <div className="flex items-center space-x-4"> {/* Increased space-x for toggle */}
+        <div className="flex items-center space-x-4">
           {isAuthenticated && user ? (
             <>
               <div className="flex items-center space-x-2">
@@ -86,7 +94,7 @@ export function Navbar() {
               </div>
 
               {pendingRequestCount > 0 && userMode === 'host' && (
-                <Button variant="ghost" size="icon" className="relative" onClick={() => router.push('/#incoming-requests')}>
+                <Button variant="ghost" size="icon" className="relative lg:hidden" onClick={() => router.push('/requests')}>
                   <BellRing className="h-5 w-5" />
                   <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-destructive-foreground transform translate-x-1/2 -translate-y-1/2 bg-destructive rounded-full">
                     {pendingRequestCount}
