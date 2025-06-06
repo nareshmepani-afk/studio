@@ -251,7 +251,7 @@ const countryOptions = [
   { value: "Yemen", label: "Yemen" },
   { value: "Zambia", label: "Zambia" },
   { value: "Zimbabwe", label: "Zimbabwe" },
-  { value: "Other", label: "Other (Not Listed)"}, 
+  { value: "Other", label: "Other (Not Listed)"},
 ];
 
 
@@ -264,20 +264,20 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const titleLabelRef = useRef<HTMLLabelElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const yearSelectRef = useRef<HTMLButtonElement>(null); 
+  const yearSelectRef = useRef<HTMLButtonElement>(null);
   const memoryDetailsCardHeaderRef = useRef<HTMLDivElement>(null);
   const mediaCardHeaderRef = useRef<HTMLDivElement>(null);
 
   const [title, setTitle] = useState(memory?.title || '');
   const [location, setLocation] = useState(memory?.location || '');
-  const [country, setCountry] = useState(memory?.country || '');
+  const [country, setCountry] = useState(memory?.country || 'United Kingdom');
 
 
   const getInitialDateComponent = useCallback((component: 'year' | 'month' | 'day', dateSource?: string) => {
     const dateToParse = dateSource ? new Date(dateSource) : new Date();
     if (isValid(dateToParse)) {
       if (component === 'year') return getYear(dateToParse);
-      if (component === 'month') return getMonth(dateToParse); 
+      if (component === 'month') return getMonth(dateToParse);
       if (component === 'day') return getDate(dateToParse);
     }
     const today = new Date();
@@ -316,7 +316,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     }
     return null;
   });
-  
+
   const [mediaToInitializeRecorder, setMediaToInitializeRecorder] = useState<CurrentMediaData | null>(null);
 
 
@@ -347,34 +347,34 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
   useEffect(() => {
     const promptFromUrl = searchParams.get('prompt');
-    if (promptFromUrl && !memory) { 
+    if (promptFromUrl && !memory) {
       setTitle(decodeURIComponent(promptFromUrl));
     }
   }, [searchParams, memory]);
 
 
   useEffect(() => {
-    if (user?.profileInfo && !memory) { 
+    if (user?.profileInfo && !memory) {
       setUserProfile(user.profileInfo);
     }
   }, [user, memory]);
 
   const handleMediaReady = useCallback((mediaData: CurrentMediaData) => {
     setCurrentMedia(mediaData);
-    setMediaToInitializeRecorder(null); 
+    setMediaToInitializeRecorder(null);
   }, []);
 
   const handleMediaDiscardInForm = useCallback(() => {
-    
+
     if (currentMedia) {
       setMediaToInitializeRecorder(currentMedia);
     }
-    setCurrentMedia(null); 
+    setCurrentMedia(null);
   }, [currentMedia]);
-  
+
   const handleMediaDiscardInRecorder = useCallback(() => {
-    
-    setMediaToInitializeRecorder(null); 
+
+    setMediaToInitializeRecorder(null);
   }, []);
 
 
@@ -387,7 +387,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     try {
       const result = await generateMemoryCuesAction({
         userProfile: userProfile,
-        currentDate: new Date().toISOString().split('T')[0], 
+        currentDate: new Date().toISOString().split('T')[0],
         language: cueLanguage,
       });
       setAiCues(result.memoryCues);
@@ -434,8 +434,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       }, 100);
       return;
     }
-    
-    let finalDate = new Date(selectedYear, selectedMonth, 1); 
+
+    let finalDate = new Date(selectedYear, selectedMonth, 1);
     finalDate = setDate(finalDate, selectedDay);
 
     if (!isValid(finalDate) || getYear(finalDate) !== selectedYear || getMonth(finalDate) !== selectedMonth || getDate(finalDate) !== selectedDay) {
@@ -484,11 +484,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     }
 
     onSubmit(
-      { 
-        title, 
-        date: finalDate.toISOString(), 
-        description, 
-        emotionTags: selectedEmotionTags, 
+      {
+        title,
+        date: finalDate.toISOString(),
+        description,
+        emotionTags: selectedEmotionTags,
         mediaAttachments: mediaAttachmentsForSubmission,
         location: location || undefined,
         country: country || undefined,
@@ -497,9 +497,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0 ? currentMedia.file : undefined
     );
   };
-  
+
   const initialMediaForRecorderProp = useMemo(() => {
-    
+
     if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
         const firstMedia = memory.mediaAttachments[0];
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
@@ -516,10 +516,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-      <Carousel 
-        setApi={setCarouselApi} 
-        opts={{ align: "start", loop: false }} 
-        className="w-full max-w-3xl mx-auto py-4" 
+      <Carousel
+        setApi={setCarouselApi}
+        opts={{ align: "start", loop: false }}
+        className="w-full max-w-3xl mx-auto py-4"
       >
         <CarouselContent>
           <CarouselItem>
@@ -653,7 +653,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
               </CardContent>
             </Card>
           </CarouselItem>
-          
+
           <CarouselItem>
             <Card className="w-full">
               <CardHeader ref={mediaCardHeaderRef}>
@@ -674,10 +674,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                       <p className="text-sm text-muted-foreground">Type: {currentMedia.type}</p>
                       <p className="text-sm text-muted-foreground">Filename: {currentMedia.file.name}</p>
                       {currentMedia.type === 'video' && currentMedia.previewUrl && (
-                      <video src={currentMedia.previewUrl} controls className="w-full aspect-video rounded-md mt-2 bg-muted" key={currentMedia.previewUrl}/>
+                      <video
+                        src={currentMedia.previewUrl}
+                        controls
+                        className="w-full aspect-video rounded-md mt-2 bg-muted"
+                        key={currentMedia.previewUrl}
+                        preload="metadata"
+                      />
                       )}
                       {currentMedia.type === 'audio' && currentMedia.previewUrl && (
-                      <audio src={currentMedia.previewUrl} controls className="w-full mt-2" key={currentMedia.previewUrl}/>
+                      <audio src={currentMedia.previewUrl} controls className="w-full mt-2" key={currentMedia.previewUrl} preload="metadata"/>
                       )}
                       <p className="text-sm text-muted-foreground mt-1">Duration: {typeof currentMedia.duration === 'number' ? currentMedia.duration.toFixed(2) : 'N/A'}s</p>
                       {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
