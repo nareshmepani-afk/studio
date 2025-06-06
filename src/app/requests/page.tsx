@@ -3,10 +3,11 @@
 
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'; // Added CardFooter
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { BellRing, UserCheck, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Import useRouter
 
 // Mock data for pending requests, similar to what was on the main page
 const mockPendingRequests = [
@@ -17,6 +18,7 @@ const mockPendingRequests = [
 
 export default function RequestsPage() {
   const { userMode } = useAuth();
+  const router = useRouter(); // Initialize useRouter
 
   if (userMode !== 'host') {
     return (
@@ -34,6 +36,10 @@ export default function RequestsPage() {
       </AuthenticatedPageWrapper>
     );
   }
+
+  const handleFulfillRequest = (requestText: string) => {
+    router.push(`/add-memory?prompt=${encodeURIComponent(requestText)}`);
+  };
 
   return (
     <AuthenticatedPageWrapper>
@@ -66,8 +72,8 @@ export default function RequestsPage() {
                   <p className="text-foreground">{req.text}</p>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full" onClick={() => alert(`Fulfilling request: ${req.text}`)}>
-                    Fulfill Request (Mock)
+                  <Button className="w-full" onClick={() => handleFulfillRequest(req.text)}>
+                    Fulfill Request
                   </Button>
                 </CardFooter>
               </Card>
