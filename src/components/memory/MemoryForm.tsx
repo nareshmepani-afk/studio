@@ -680,10 +680,32 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                         className="w-full aspect-video rounded-md mt-2 bg-muted"
                         key={currentMedia.previewUrl}
                         preload="metadata"
+                        onLoadedMetadata={(e) => {
+                          const videoElement = e.currentTarget;
+                          if (currentMedia.startTime !== undefined && isFinite(currentMedia.startTime)) {
+                            videoElement.currentTime = currentMedia.startTime;
+                          } else {
+                            videoElement.currentTime = 0.01; 
+                          }
+                        }}
                       />
                       )}
                       {currentMedia.type === 'audio' && currentMedia.previewUrl && (
-                      <audio src={currentMedia.previewUrl} controls className="w-full mt-2" key={currentMedia.previewUrl} preload="metadata"/>
+                      <audio 
+                        src={currentMedia.previewUrl} 
+                        controls 
+                        className="w-full mt-2" 
+                        key={currentMedia.previewUrl} 
+                        preload="metadata"
+                        onLoadedMetadata={(e) => {
+                          const audioElement = e.currentTarget;
+                          if (currentMedia.startTime !== undefined && isFinite(currentMedia.startTime)) {
+                            audioElement.currentTime = currentMedia.startTime;
+                          } else {
+                            audioElement.currentTime = 0.01;
+                          }
+                        }}
+                      />
                       )}
                       <p className="text-sm text-muted-foreground mt-1">Duration: {typeof currentMedia.duration === 'number' ? currentMedia.duration.toFixed(2) : 'N/A'}s</p>
                       {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
