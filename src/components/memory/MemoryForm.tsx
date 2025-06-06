@@ -35,14 +35,24 @@ interface MemoryFormProps {
   isSubmitting?: boolean;
 }
 
-type CurrentMediaData = {
+type MediaRecorderData = { // Type for data coming from MediaCaptureControl
   file: File;
   type: 'video' | 'audio';
-  previewUrl: string;
+  previewUrl: string; // This is MediaCaptureControl's internal preview URL
   startTime?: number;
   endTime?: number;
   duration: number;
 };
+
+type CurrentMediaData = { // Type for MemoryForm's internal state
+  file: File;
+  type: 'video' | 'audio';
+  // previewUrl here is the one managed by MemoryForm
+  startTime?: number;
+  endTime?: number;
+  duration: number;
+};
+
 
 const globalCurrentYear = new Date().getFullYear();
 const years: number[] = Array.from({ length: 101 }, (_, i) => globalCurrentYear - i);
@@ -251,7 +261,7 @@ const countryOptions = [
   { value: "Yemen", label: "Yemen" },
   { value: "Zambia", label: "Zambia" },
   { value: "Zimbabwe", label: "Zimbabwe" },
-  { value: "Other", label: "Other (Not Listed)"},
+  { value: "Other (Not Listed)", label: "Other (Not Listed)"},
 ];
 
 
@@ -267,6 +277,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const yearSelectRef = useRef<HTMLButtonElement>(null);
   const memoryDetailsCardHeaderRef = useRef<HTMLDivElement>(null);
   const mediaCardHeaderRef = useRef<HTMLDivElement>(null);
+  const videoPreviewRef = useRef<HTMLVideoElement>(null);
+  const audioPreviewRef = useRef<HTMLAudioElement>(null);
+
 
   const [title, setTitle] = useState(memory?.title || '');
   const [location, setLocation] = useState(memory?.location || '');
@@ -303,12 +316,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(() => {
     if (memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
       const firstMedia = memory.mediaAttachments[0];
-      const filename = firstMedia.filename || "existing_media";
       const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
       return {
-        file: new File([], filename, {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
+        file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
         type: firstMedia.type,
-        previewUrl: firstMedia.url,
+        // previewUrl will be set by useEffect for existing media to manage blob lifecycle
         startTime: firstMedia.startTime,
         endTime: firstMedia.endTime,
         duration: duration,
@@ -316,8 +328,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     }
     return null;
   });
-
-  const [mediaToInitializeRecorder, setMediaToInitializeRecorder] = useState<CurrentMediaData | null>(null);
+  
+  const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null);
+  const [mediaToInitializeRecorder, setMediaToInitializeRecorder] = useState<MediaRecorderData | null>(null);
 
 
   const daysInSelectedMonth = useMemo(() => {
@@ -347,35 +360,143 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
   useEffect(() => {
     const promptFromUrl = searchParams.get('prompt');
-    if (promptFromUrl && !memory) {
+    if (promptFromUrl && !memory) { // Only apply if not editing (memory is undefined)
       setTitle(decodeURIComponent(promptFromUrl));
     }
   }, [searchParams, memory]);
 
 
   useEffect(() => {
-    if (user?.profileInfo && !memory) {
+    if (user?.profileInfo && !memory) { // Only apply if not editing
       setUserProfile(user.profileInfo);
     }
   }, [user, memory]);
+  
+  useEffect(() => {
+    // Effect to initialize preview URL for existing memory media
+    if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0 && !currentMediaPreviewUrl) {
+      const firstMedia = memory.mediaAttachments[0];
+      // If the currentMedia state already has a file (from initialization), use it to create blob
+      // Otherwise, this assumes the URL is directly usable (e.g. http/https)
+      if (currentMedia && currentMedia.file && currentMedia.file.name === (firstMedia.filename || "existing_media")) {
+         const blobUrl = URL.createObjectURL(currentMedia.file);
+         setCurrentMediaPreviewUrl(blobUrl);
+      } else if (firstMedia.url.startsWith('http')) { // Directly use http/https URLs
+         setCurrentMediaPreviewUrl(firstMedia.url);
+      }
+      // Note: If firstMedia.url is a placeholder that needs conversion to a blob, more logic is needed here.
+      // For this app's mockData structure, mediaAttachments[0].url *is* the usable sample URL for existing media.
+      // If currentMedia's file was just placeholder, it means we need to use memory.mediaAttachments[0].url
+      if (currentMedia?.file.name === "existing_media" && firstMedia.url) {
+          setCurrentMediaPreviewUrl(firstMedia.url);
+      }
 
-  const handleMediaReady = useCallback((mediaData: CurrentMediaData) => {
-    setCurrentMedia(mediaData);
+    }
+    // Cleanup for form-managed blob URLs
+    return () => {
+      if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(currentMediaPreviewUrl);
+      }
+    };
+  }, [isEditing, memory, currentMedia, currentMediaPreviewUrl]);
+
+
+  const handleMediaReady = useCallback((mediaDataFromRecorder: MediaRecorderData) => {
+    // Revoke previous form-level blob URL if it exists and was a blob
+    if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(currentMediaPreviewUrl);
+    }
+
+    const newPreviewUrlForForm = URL.createObjectURL(mediaDataFromRecorder.file);
+    setCurrentMediaPreviewUrl(newPreviewUrlForForm);
+
+    setCurrentMedia({
+      file: mediaDataFromRecorder.file,
+      type: mediaDataFromRecorder.type,
+      startTime: mediaDataFromRecorder.startTime,
+      endTime: mediaDataFromRecorder.endTime,
+      duration: mediaDataFromRecorder.duration,
+    });
     setMediaToInitializeRecorder(null);
-  }, []);
+  }, [currentMediaPreviewUrl]);
+
 
   const handleMediaDiscardInForm = useCallback(() => {
-
     if (currentMedia) {
-      setMediaToInitializeRecorder(currentMedia);
+       const { file, type, previewUrl: _, ...restOfMedia } = currentMedia; // Exclude MemoryForm's previewUrl
+       // We need to pass MediaCaptureControl's idea of previewUrl if it was an initial media
+       let initialPreviewUrlForRecorder = mediaToInitializeRecorder?.previewUrl;
+       if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
+           initialPreviewUrlForRecorder = memory.mediaAttachments[0].url;
+       }
+
+       setMediaToInitializeRecorder({
+           file, // The actual file
+           type,
+           previewUrl: initialPreviewUrlForRecorder || '', // Needs careful handling or just pass undefined
+            ...restOfMedia,
+       });
+    } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
+        // If currentMedia was null, but we are editing, set initial for recorder from memory
+        const firstMedia = memory.mediaAttachments[0];
+        setMediaToInitializeRecorder({
+            file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
+            type: firstMedia.type,
+            previewUrl: firstMedia.url,
+            startTime: firstMedia.startTime,
+            endTime: firstMedia.endTime,
+            duration: firstMedia.duration || 0,
+        });
     }
+
+
+    if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(currentMediaPreviewUrl);
+    }
+    setCurrentMediaPreviewUrl(null);
     setCurrentMedia(null);
-  }, [currentMedia]);
+  }, [currentMedia, currentMediaPreviewUrl, mediaToInitializeRecorder, isEditing, memory]);
 
   const handleMediaDiscardInRecorder = useCallback(() => {
-
     setMediaToInitializeRecorder(null);
   }, []);
+
+  // Effect to manage currentTime for the preview element in MemoryForm (Step 2 summary)
+  useEffect(() => {
+    const mediaElement = currentMedia?.type === 'video' ? videoPreviewRef.current : audioPreviewRef.current;
+
+    if (mediaElement && currentMedia && currentMediaPreviewUrl && mediaElement.src === currentMediaPreviewUrl) {
+      const targetTime = (currentMedia.startTime !== undefined && isFinite(currentMedia.startTime))
+        ? currentMedia.startTime
+        : 0.01;
+
+      const applyStartTime = () => {
+        if (mediaElement.readyState >= 1 && targetTime <= mediaElement.duration) { // HAVE_METADATA
+          if (!mediaElement.paused) {
+            mediaElement.pause(); // Pause before setting time for a still frame
+          }
+          // Check if already at targetTime to avoid potential issues or redundant seeks
+          if (Math.abs(mediaElement.currentTime - targetTime) > 0.1) { // Allow small tolerance
+             try {
+                mediaElement.currentTime = targetTime;
+             } catch (error) {
+                console.warn("Error setting currentTime for preview in MemoryForm:", error);
+             }
+          }
+        }
+      };
+
+      if (mediaElement.readyState >= 1) {
+        applyStartTime();
+      } else {
+        mediaElement.addEventListener('loadedmetadata', applyStartTime, { once: true });
+      }
+      
+      return () => {
+        mediaElement.removeEventListener('loadedmetadata', applyStartTime);
+      };
+    }
+  }, [currentMedia, currentMediaPreviewUrl]); // Depend on currentMedia (which includes startTime) and the URL
 
 
   const handleGenerateCues = async () => {
@@ -471,11 +592,14 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       const isNewFile = currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0;
       const originalMediaAttachment = memory?.mediaAttachments?.[0];
       const duration = (typeof currentMedia.duration === 'number' && !isNaN(currentMedia.duration)) ? currentMedia.duration : 0;
+      const mediaUrlToSubmit = isNewFile 
+        ? "placeholder_url_to_be_replaced_after_upload" 
+        : (originalMediaAttachment?.url || currentMediaPreviewUrl || ''); // Fallback to currentMediaPreviewUrl if original is missing
 
       mediaAttachmentsForSubmission = [{
         id: originalMediaAttachment?.id || Date.now().toString(),
         type: currentMedia.type,
-        url: isNewFile ? "placeholder_url_to_be_replaced_after_upload" : (originalMediaAttachment?.url || currentMedia.previewUrl),
+        url: mediaUrlToSubmit,
         filename: currentMedia.file.name,
         startTime: currentMedia.startTime,
         endTime: currentMedia.endTime,
@@ -499,13 +623,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   };
 
   const initialMediaForRecorderProp = useMemo(() => {
-
     if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
         const firstMedia = memory.mediaAttachments[0];
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
         return {
+            file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
             type: firstMedia.type,
-            previewUrl: firstMedia.url,
+            previewUrl: firstMedia.url, // This is the direct URL from mockData
             startTime: firstMedia.startTime,
             endTime: firstMedia.endTime,
             duration: duration,
@@ -663,7 +787,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                   {!currentMedia && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}
               </CardHeader>
               <CardContent>
-                  {currentMedia ? (
+                  {currentMedia && currentMediaPreviewUrl ? (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                           <p className="text-sm font-medium flex items-center"><Paperclip className="mr-2 h-5 w-5 inline-block" />Attached Media</p>
@@ -673,38 +797,24 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                       </div>
                       <p className="text-sm text-muted-foreground">Type: {currentMedia.type}</p>
                       <p className="text-sm text-muted-foreground">Filename: {currentMedia.file.name}</p>
-                      {currentMedia.type === 'video' && currentMedia.previewUrl && (
+                      {currentMedia.type === 'video' && (
                       <video
-                        src={currentMedia.previewUrl}
+                        ref={videoPreviewRef}
+                        src={currentMediaPreviewUrl}
                         controls
                         className="w-full aspect-video rounded-md mt-2 bg-muted"
-                        key={currentMedia.previewUrl}
-                        preload="metadata"
-                        onLoadedMetadata={(e) => {
-                          const videoElement = e.currentTarget;
-                          if (currentMedia.startTime !== undefined && isFinite(currentMedia.startTime)) {
-                            videoElement.currentTime = currentMedia.startTime;
-                          } else {
-                            videoElement.currentTime = 0.01; 
-                          }
-                        }}
+                        key={currentMediaPreviewUrl}
+                        preload="auto"
                       />
                       )}
-                      {currentMedia.type === 'audio' && currentMedia.previewUrl && (
+                      {currentMedia.type === 'audio' && (
                       <audio 
-                        src={currentMedia.previewUrl} 
+                        ref={audioPreviewRef}
+                        src={currentMediaPreviewUrl} 
                         controls 
                         className="w-full mt-2" 
-                        key={currentMedia.previewUrl} 
-                        preload="metadata"
-                        onLoadedMetadata={(e) => {
-                          const audioElement = e.currentTarget;
-                          if (currentMedia.startTime !== undefined && isFinite(currentMedia.startTime)) {
-                            audioElement.currentTime = currentMedia.startTime;
-                          } else {
-                            audioElement.currentTime = 0.01;
-                          }
-                        }}
+                        key={currentMediaPreviewUrl} 
+                        preload="auto"
                       />
                       )}
                       <p className="text-sm text-muted-foreground mt-1">Duration: {typeof currentMedia.duration === 'number' ? currentMedia.duration.toFixed(2) : 'N/A'}s</p>
@@ -778,9 +888,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
       <CardFooter className="flex justify-end p-0 pt-6 max-w-3xl mx-auto">
         <Button type="submit" disabled={!!isSubmitting} className="w-full sm:w-auto">
-          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (memory ? 'Save Changes' : 'Next')}
+          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isEditing ? 'Save Changes' : 'Next')}
         </Button>
       </CardFooter>
     </form>
   );
 }
+
