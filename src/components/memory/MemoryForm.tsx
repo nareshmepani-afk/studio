@@ -55,6 +55,20 @@ const SLIDE_INDEX_DETAILS = 0;
 const SLIDE_INDEX_MEDIA = 1;
 const SLIDE_INDEX_CUES = 2;
 
+const countryOptions = [
+  { value: "United Kingdom", label: "United Kingdom" },
+  { value: "United States", label: "United States" },
+  { value: "Canada", label: "Canada" },
+  { value: "Australia", label: "Australia" },
+  { value: "France", label: "France" },
+  { value: "Germany", label: "Germany" },
+  { value: "Italy", label: "Italy" },
+  { value: "Spain", label: "Spain" },
+  { value: "India", label: "India" },
+  { value: "Japan", label: "Japan" },
+  { value: "Other", label: "Other" }, // Option for unlisted countries
+];
+
 
 export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) {
   const { user } = useAuth();
@@ -416,8 +430,19 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                         <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g., Eiffel Tower, Paris" />
                     </div>
                     <div className="space-y-1">
-                        <Label htmlFor="country">Country (Optional)</Label>
-                        <Input id="country" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="e.g., France" />
+                        <Label htmlFor="country-select">Country (Optional)</Label>
+                        <Select value={country} onValueChange={setCountry}>
+                            <SelectTrigger id="country-select">
+                                <SelectValue placeholder="Select Country" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {countryOptions.map(option => (
+                                    <SelectItem key={option.value} value={option.value === "Other" ? "" : option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
 
@@ -549,3 +574,4 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     </form>
   );
 }
+
