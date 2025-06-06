@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { enGB } from 'date-fns/locale';
-import { CalendarDays, Edit3, Trash2, Share2, Video, Mic, Heart, Eye, Users2, MapPin } from 'lucide-react'; 
+import { CalendarDays, Edit3, Trash2, Share2, Video, Mic, Heart, Eye, Users2, MapPin, Archive, Film } from 'lucide-react'; 
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ShareDialog } from './ShareDialog'; 
 import { useState, useRef, useEffect } from 'react';
+import { toast } from '@/hooks/use-toast';
 
 interface MemoryCardProps {
   memory: Memory;
@@ -100,6 +101,13 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
   const canPerformActions = userMode === 'host' && onEdit && onDelete;
   const locationString = [memory.location, memory.country].filter(Boolean).join(', ');
 
+  const handleAddToLegacyChest = () => {
+    toast({
+        title: "Feature Coming Soon",
+        description: "Adding memories to the Legacy Chest will be available in a future update.",
+    });
+  };
+
   return (
     <>
       <Card className="flex flex-col overflow-hidden shadow-lg transition-all hover:shadow-xl animate-fade-in h-full relative">
@@ -169,7 +177,18 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
         </CardContent>
         <CardFooter className="flex justify-between items-center pt-4">
           <div>
-             {/* Placeholder for future info, like "Shared by: User X" in Guest Mode */}
+             {userMode === 'host' && (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={handleAddToLegacyChest} aria-label="Add to Legacy Chest">
+                                <Archive className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Add to Legacy Chest (Coming Soon)</p></TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+             )}
           </div> 
           <div className="flex space-x-1">
             {canPerformActions && onEdit && (
@@ -193,7 +212,7 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
                             <Share2 className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent><p>Share Memory</p></TooltipContent>
+                      <TooltipContent><p>Share Memory with Guests</p></TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                   <TooltipProvider>

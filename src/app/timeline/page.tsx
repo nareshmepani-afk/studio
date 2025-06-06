@@ -7,13 +7,14 @@ import { TimelineFilter } from '@/components/memory/TimelineFilter';
 import { Button } from '@/components/ui/button';
 import { mockMemories } from '@/lib/mockData';
 import type { Memory } from '@/types';
-import { PlusCircle, BookHeart, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift, Loader2, Info, Award } from 'lucide-react';
+import { PlusCircle, BookHeart, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift, Loader2, Info, Award, Film } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO, addMonths } from 'date-fns';
+import { toast } from '@/hooks/use-toast';
 
 export default function TimelinePage() {
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -109,6 +110,13 @@ export default function TimelinePage() {
 
   const handleDeleteMemory = (memoryId: string) => {
     setMemories(prevMemories => prevMemories.filter(m => m.id !== memoryId));
+  };
+
+  const handleCreateMontage = () => {
+    toast({
+        title: "Feature Coming Soon",
+        description: "AI Memory Montages and Life Chapters will be available in a future update.",
+    });
   };
 
   const filteredAndSortedMemories = useMemo(() => {
@@ -258,7 +266,7 @@ export default function TimelinePage() {
             {userMode === 'host' ? 'Your Memories' : 'Shared With You'}
           </h1>
           {userMode === 'host' && (
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               {currentStreak > 0 && (
                 <TooltipProvider>
                   <Tooltip>
@@ -274,6 +282,16 @@ export default function TimelinePage() {
                   </Tooltip>
                 </TooltipProvider>
               )}
+              <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={handleCreateMontage} aria-label="Create AI Memory Montage">
+                            <Film className="h-5 w-5" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Create AI Memory Montage (Coming Soon)</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <Link href="/add-memory" passHref>
                 <Button>
                   <PlusCircle className="mr-2 h-5 w-5" />

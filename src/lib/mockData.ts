@@ -336,6 +336,69 @@ export const mockPromptGroups: PromptGroup[] = [
       },
     ],
   },
+  {
+    id: 'family-stories',
+    title: {
+      en: 'Family Storytelling & Oral History',
+      gu: 'કૌટુંબિક વાર્તાકથન અને મૌખિક ઇતિહાસ',
+    },
+    prompts: [
+      {
+        id: 'fs1',
+        text: {
+          en: 'Share a cherished memory of a grandparent or elder.',
+          gu: 'દાદા-દાદી અથવા કોઈ વડીલની વહાલી યાદ શેર કરો.',
+        },
+        isFlaggedForReuse: false,
+        userId: '1',
+      },
+      {
+        id: 'fs2',
+        text: {
+          en: 'What is a family tradition that has been passed down through generations?',
+          gu: 'એવી કઈ પારિવારિક પરંપરા છે જે પેઢીઓથી ચાલી આવી રહી છે?',
+        },
+        isFlaggedForReuse: false,
+        userId: '1',
+      },
+      {
+        id: 'fs3',
+        text: {
+          en: 'Describe a significant historical event that impacted your family.',
+          gu: 'તમારા પરિવાર પર અસર કરનાર કોઈ મહત્વપૂર્ણ ઐતિહાસિક ઘટનાનું વર્ણન કરો.',
+        },
+        isFlaggedForReuse: false,
+        userId: '1',
+      },
+      {
+        id: 'fs4',
+        text: {
+          en: 'What values did your parents or guardians instill in you?',
+          gu: 'તમારા માતાપિતા અથવા વાલીઓએ તમારામાં કયા મૂલ્યો રોપ્યા?',
+        },
+        isFlaggedForReuse: false,
+        userId: '1',
+      },
+      {
+        id: 'fs5',
+        text: {
+          en: 'Tell a story about an ancestor that you admire.',
+          gu: 'તમે જે પૂર્વજની પ્રશંસા કરો છો તેમના વિશે એક વાર્તા કહો.',
+        },
+        isFlaggedForReuse: false,
+        userId: '1',
+      },
+       {
+        id: 'fs6',
+        text: {
+          en: 'Record a message for your children or grandchildren to hear in the future.',
+          gu: 'તમારા બાળકો અથવા પૌત્ર-પૌત્રીઓ માટે ભવિષ્યમાં સાંભળવા માટે એક સંદેશ રેકોર્ડ કરો.',
+        },
+        isFlaggedForReuse: false,
+        userId: '1',
+      },
+    ]
+  }
 ];
 
 
