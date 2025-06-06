@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, Video, StopCircle, UploadCloud, RotateCcw, CheckCircle, AlertTriangle, Film, Waves, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider'; // Added Slider import
+import { Slider } from '@/components/ui/slider';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -22,19 +22,18 @@ const SAMPLE_VIDEO_DURATION = 596.48;
 const SAMPLE_AUDIO_URL = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3";
 const SAMPLE_AUDIO_DURATION = 1.88; 
 
-// Helper function to format total seconds to MM:SS.s or SS.s string
 function formatSecondsToTime(timeInSeconds: number | undefined): string {
   if (timeInSeconds === undefined || isNaN(timeInSeconds) || timeInSeconds < 0) return "0.0";
   
   const totalSecs = Number(timeInSeconds.toFixed(1)); 
 
   if (totalSecs < 60) {
-    return totalSecs.toFixed(1); // e.g., "16.0", "5.5"
+    return totalSecs.toFixed(1);
   } else {
     const minutes = Math.floor(totalSecs / 60);
     const seconds = totalSecs % 60;
     const formattedSeconds = seconds.toFixed(1);
-    return `${minutes}:${formattedSeconds.padStart(4, '0')}`; // e.g., "1:05.3", "1:00.0"
+    return `${minutes}:${formattedSeconds.padStart(4, '0')}`;
   }
 }
 
@@ -47,6 +46,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   const [stream, setStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<globalThis.MediaRecorder | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioPreviewRef = useRef<HTMLAudioElement>(null);
   const liveVideoRef = useRef<HTMLVideoElement>(null);
   const recordedChunks = useRef<Blob[]>([]);
 
@@ -206,17 +206,20 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   };
   
   const handleVideoLoadedMetadata = (event: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement, Event>) => {
+    const currentTarget = event.currentTarget;
      if (previewUrl && !mediaDuration && initialMedia?.previewUrl !== previewUrl) {
-        const duration = event.currentTarget.duration;
+        const duration = currentTarget.duration;
         if (duration && isFinite(duration)) {
             setMediaDuration(duration);
             if (!initialMedia || initialMedia.endTime === undefined || initialMedia.endTime === 0 || initialMedia.previewUrl !== previewUrl) {
                  setEndTime(duration);
             }
+             currentTarget.currentTime = startTime || 0;
         }
      } else if (previewUrl && initialMedia?.previewUrl === previewUrl && mediaDuration === 0 && initialMedia.duration) {
         setMediaDuration(initialMedia.duration);
         setEndTime(initialMedia.endTime !== undefined ? initialMedia.endTime : initialMedia.duration);
+        currentTarget.currentTime = initialMedia.startTime || 0;
      }
   };
 
@@ -298,7 +301,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         }, 0);
         return;
       }
-       if (startTime === endTime && startTime > 0) { // Allow 0 to 0 for full media if duration is 0 initially
+       if (startTime === endTime && startTime > 0) {
         setTimeout(() => {
           toast({ title: "Invalid Trim Times", description: "Start and end times cannot be the same unless both are zero (for full media).", variant: "destructive" });
         }, 0);
@@ -327,7 +330,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         setTimeout(() => { toast({ title: "Invalid Trim Times", description: "Start time cannot be after end time.", variant: "destructive" }); }, 0);
         return;
       }
-      if (startTime === endTime && startTime > 0) { // Allow 0 to 0 for full media if duration is 0 initially
+      if (startTime === endTime && startTime > 0) {
          setTimeout(() => { toast({ title: "Invalid Trim Times", description: "Start and end times cannot be the same unless both are zero (for full media).", variant: "destructive" }); }, 0);
         return;
       }
@@ -422,6 +425,54 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   }, [stream, previewUrl, cleanupStream]); 
 
 
+  useEffect(() => {
+    const mediaElement = mediaType === 'video' ? videoRef.current : audioPreviewRef.current;
+
+    if (!mediaElement || !previewUrl || !(mediaDuration > 0)) {
+      return;
+    }
+
+    const onPlayHandler = () => {
+      const numericStartTime = startTime !== undefined ? Number(startTime) : 0;
+      const numericEndTime = endTime !== undefined ? Number(endTime) : mediaDuration;
+
+      // If current time is before startTime, or at/after endTime (and not playing the full clip naturally),
+      // then set currentTime to startTime.
+      // A small tolerance (e.g., 0.05 seconds) helps with floating point comparisons.
+      if (mediaElement.currentTime < numericStartTime - 0.05 || 
+          (mediaElement.currentTime >= numericEndTime - 0.05 && numericEndTime < mediaDuration - 0.05) ) {
+        mediaElement.currentTime = numericStartTime;
+      }
+    };
+
+    const onTimeUpdateHandler = () => {
+      const numericEndTime = endTime !== undefined ? Number(endTime) : mediaDuration;
+      if (mediaElement.currentTime >= numericEndTime - 0.05) {
+        mediaElement.pause();
+        // Ensure currentTime doesn't exceed endTime if it overshot slightly
+        if (mediaElement.currentTime > numericEndTime) {
+          mediaElement.currentTime = numericEndTime;
+        }
+      }
+    };
+    
+    // If startTime changes while media is paused, update currentTime for scrubber feedback
+    if (mediaElement.paused && startTime !== undefined) {
+        if (Math.abs(mediaElement.currentTime - startTime) > 0.1) { 
+            mediaElement.currentTime = startTime;
+        }
+    }
+
+    mediaElement.addEventListener('play', onPlayHandler);
+    mediaElement.addEventListener('timeupdate', onTimeUpdateHandler);
+
+    return () => {
+      mediaElement.removeEventListener('play', onPlayHandler);
+      mediaElement.removeEventListener('timeupdate', onTimeUpdateHandler);
+    };
+  }, [previewUrl, mediaType, startTime, endTime, mediaDuration, videoRef, audioPreviewRef]);
+
+
   return (
     <Card>
       <CardHeader>
@@ -499,7 +550,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
             {mediaType === 'video' ? (
               <video ref={videoRef} src={previewUrl} controls className="w-full aspect-video rounded-md bg-muted" onLoadedMetadata={handleVideoLoadedMetadata} key={previewUrl} />
             ) : (
-              <audio src={previewUrl} controls className="w-full" onLoadedMetadata={handleVideoLoadedMetadata} key={previewUrl} />
+              <audio ref={audioPreviewRef} src={previewUrl} controls className="w-full" onLoadedMetadata={handleVideoLoadedMetadata} key={previewUrl} />
             )}
 
             {(mediaDuration > 0 || (mediaDuration === 0 && startTime === 0 && endTime === 0)) && (
@@ -575,5 +626,3 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     
 
     
-
-
