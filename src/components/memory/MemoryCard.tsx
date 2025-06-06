@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { enGB } from 'date-fns/locale';
-import { CalendarDays, Edit3, Trash2, Share2, Video, Mic, Heart, Eye, Users2, MapPin, Archive, Film } from 'lucide-react'; 
+import { CalendarDays, Edit3, Trash2, Share2, Video, Mic, Heart, Eye, Users2, MapPin, Archive, Film, CheckSquare } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ShareDialog } from './ShareDialog'; 
+import { ShareDialog } from './ShareDialog';
 import { useState, useRef, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 
@@ -76,7 +76,7 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
              if (startTime !== undefined && isFinite(startTime)) {
                 mediaElement.currentTime = startTime;
              } else {
-                mediaElement.currentTime = 0; 
+                mediaElement.currentTime = 0;
              }
         }
       };
@@ -85,7 +85,7 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
       mediaElement.addEventListener('timeupdate', handleTimeUpdate);
       mediaElement.addEventListener('play', handlePlay);
 
-      if (mediaElement.readyState >= 1 && startTime !== undefined && isFinite(startTime)) { 
+      if (mediaElement.readyState >= 1 && startTime !== undefined && isFinite(startTime)) {
          mediaElement.currentTime = startTime;
       }
 
@@ -102,11 +102,15 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
   const locationString = [memory.location, memory.country].filter(Boolean).join(', ');
 
   const handleAddToLegacyChest = () => {
+    // In a full implementation, this would toggle memory.isLegacy and update data
     toast({
         title: "Feature Coming Soon",
-        description: "Adding memories to the Legacy Chest will be available in a future update.",
+        description: `${memory.isLegacy ? "Removing from" : "Adding to"} Legacy Chest will be functional in a future update.`,
     });
   };
+
+  const LegacyIcon = memory.isLegacy ? CheckSquare : Archive;
+  const legacyTooltipText = memory.isLegacy ? "In Legacy Chest (Coming Soon)" : "Add to Legacy Chest (Coming Soon)";
 
   return (
     <>
@@ -181,15 +185,15 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={handleAddToLegacyChest} aria-label="Add to Legacy Chest">
-                                <Archive className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            <Button variant="ghost" size="icon" onClick={handleAddToLegacyChest} aria-label={legacyTooltipText}>
+                                <LegacyIcon className={`h-4 w-4 ${memory.isLegacy ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`} />
                             </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>Add to Legacy Chest (Coming Soon)</p></TooltipContent>
+                        <TooltipContent><p>{legacyTooltipText}</p></TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
              )}
-          </div> 
+          </div>
           <div className="flex space-x-1">
             {canPerformActions && onEdit && (
               <TooltipProvider>
@@ -267,3 +271,4 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
     </>
   );
 }
+

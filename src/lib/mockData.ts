@@ -24,6 +24,7 @@ export const mockMemories: Memory[] = [
         duration: 596 // Actual duration of BigBuckBunny is ~596s
     }],
     imageUrl: 'https://placehold.co/600x400.png', // Fallback or cover image
+    isLegacy: true, // Marked for Legacy Chest
   },
   {
     id: '2',
@@ -42,6 +43,7 @@ export const mockMemories: Memory[] = [
         duration: 2 // Actual duration of t-rex-roar is ~2s
     }],
     imageUrl: 'https://placehold.co/600x400.png',
+    isLegacy: false,
   },
   {
     id: '3',
@@ -60,6 +62,7 @@ export const mockMemories: Memory[] = [
         // No startTime or endTime, so should play full
     }],
     imageUrl: 'https://placehold.co/600x400.png',
+    isLegacy: true, // Also marked for Legacy Chest
   },
   {
     id: '4',
@@ -71,6 +74,7 @@ export const mockMemories: Memory[] = [
     userId: '1',
     location: 'Home Kitchen',
     country: 'UK',
+    isLegacy: false,
   },
 ];
 
@@ -405,3 +409,4 @@ export const mockPromptGroups: PromptGroup[] = [
 // For MemoryForm inspiration prompts, we'll keep a flat list for easier random selection
 // This is derived from the groups above.
 export const mockPrompts: Prompt[] = mockPromptGroups.reduce((acc, group) => acc.concat(group.prompts), [] as Prompt[]);
+
