@@ -251,7 +251,7 @@ const countryOptions = [
   { value: "Yemen", label: "Yemen" },
   { value: "Zambia", label: "Zambia" },
   { value: "Zimbabwe", label: "Zimbabwe" },
-  { value: "Other", label: "Other (Not Listed)"}, // Kept for completeness
+  { value: "Other", label: "Other (Not Listed)"}, 
 ];
 
 
@@ -264,7 +264,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const titleLabelRef = useRef<HTMLLabelElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const yearSelectRef = useRef<HTMLButtonElement>(null); // SelectTrigger is a button
+  const yearSelectRef = useRef<HTMLButtonElement>(null); 
   const memoryDetailsCardHeaderRef = useRef<HTMLDivElement>(null);
   const mediaCardHeaderRef = useRef<HTMLDivElement>(null);
 
@@ -277,7 +277,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     const dateToParse = dateSource ? new Date(dateSource) : new Date();
     if (isValid(dateToParse)) {
       if (component === 'year') return getYear(dateToParse);
-      if (component === 'month') return getMonth(dateToParse); // 0-indexed
+      if (component === 'month') return getMonth(dateToParse); 
       if (component === 'day') return getDate(dateToParse);
     }
     const today = new Date();
@@ -347,36 +347,33 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
   useEffect(() => {
     const promptFromUrl = searchParams.get('prompt');
-    if (promptFromUrl && !memory) { // Only apply if new memory and prompt exists
+    if (promptFromUrl && !memory) { 
       setTitle(decodeURIComponent(promptFromUrl));
     }
   }, [searchParams, memory]);
 
 
   useEffect(() => {
-    if (user?.profileInfo && !memory) { // Only for new memories
+    if (user?.profileInfo && !memory) { 
       setUserProfile(user.profileInfo);
     }
   }, [user, memory]);
 
   const handleMediaReady = useCallback((mediaData: CurrentMediaData) => {
     setCurrentMedia(mediaData);
-    setMediaToInitializeRecorder(null); // Clear after media is configured
+    setMediaToInitializeRecorder(null); 
   }, []);
 
   const handleMediaDiscardInForm = useCallback(() => {
-    // This function is for when the user clicks "Change Media or Re-trim"
-    // It should take the currentMedia's details and prepare them for MediaCaptureControl
+    
     if (currentMedia) {
       setMediaToInitializeRecorder(currentMedia);
     }
-    setCurrentMedia(null); // This will hide the summary and show MediaCaptureControl
+    setCurrentMedia(null); 
   }, [currentMedia]);
   
   const handleMediaDiscardInRecorder = useCallback(() => {
-    // This is for the discard action *within* MediaCaptureControl (e.g., if it has initialMedia and user wants to start fresh)
-    // It should not affect currentMedia in MemoryForm directly, MediaCaptureControl handles its own discard
-    // We might want to clear mediaToInitializeRecorder if they discard *from* the recorder.
+    
     setMediaToInitializeRecorder(null); 
   }, []);
 
@@ -502,7 +499,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   };
   
   const initialMediaForRecorderProp = useMemo(() => {
-    // This is for editing an existing, saved memory
+    
     if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
         const firstMedia = memory.mediaAttachments[0];
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
@@ -753,12 +750,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
       <CardFooter className="flex justify-end p-0 pt-6 max-w-3xl mx-auto">
         <Button type="submit" disabled={!!isSubmitting} className="w-full sm:w-auto">
-          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (memory ? 'Save Changes' : 'Add Memory')}
+          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (memory ? 'Save Changes' : 'Next')}
         </Button>
       </CardFooter>
     </form>
   );
 }
-
-
-    
