@@ -12,7 +12,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import type { User } from '@/types';
-import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart } from 'lucide-react';
+import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
 import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
@@ -25,7 +26,17 @@ const dobMonths: { value: number; label: string }[] = Array.from({ length: 12 },
 }));
 
 export default function SettingsPage() {
-  const { user, login, loading: authLoading, activateFreePass, purchasePaidPass, checkAndUpdatePassStatus } = useAuth();
+  const { 
+    user, 
+    login, 
+    loading: authLoading, 
+    activateFreePass, 
+    purchasePaidPass, 
+    checkAndUpdatePassStatus,
+    passPriceDetails,
+    fetchPassPrice,
+    isFetchingPassPrice
+  } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [profileInfo, setProfileInfo] = useState('');
@@ -45,7 +56,10 @@ export default function SettingsPage() {
   
   useEffect(() => {
     checkAndUpdatePassStatus();
-  }, [checkAndUpdatePassStatus]);
+     if (user && (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'paid_pass_active')) {
+      fetchPassPrice();
+    }
+  }, [checkAndUpdatePassStatus, user, fetchPassPrice]);
 
   const daysInSelectedDobMonth = useMemo(() => {
     if (dobYear && dobMonth) {
@@ -148,10 +162,10 @@ export default function SettingsPage() {
       countryOfBirth: countryOfBirth || undefined,
       city: city || undefined,
       townArea: townArea || undefined,
-      // Keep existing pass status fields
       sharedAccessStatus: user.sharedAccessStatus,
       freePassActivatedDate: user.freePassActivatedDate,
       paidPassExpiryDate: user.paidPassExpiryDate,
+      viewedSharedMemoryIds: user.viewedSharedMemoryIds || [],
     };
 
     await new Promise(resolve => setTimeout(resolve, 1000)); 
@@ -192,15 +206,53 @@ export default function SettingsPage() {
     );
   }
   
+  const renderPurchaseButton = () => {
+    let buttonText = "Purchase 31-Day Pass (Mock)";
+    if (isFetchingPassPrice) {
+      buttonText = "Fetching price...";
+    } else if (passPriceDetails) {
+      const formattedPrice = new Intl.NumberFormat('en-GB', { style: 'currency', currency: passPriceDetails.currency }).format(passPriceDetails.passPrice);
+      buttonText = `Purchase 31-Day Pass (${formattedPrice})`;
+    }
+
+    const button = (
+      <Button onClick={purchasePaidPass} variant="outline" size="sm" disabled={isFetchingPassPrice}>
+        {isFetchingPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}
+        {buttonText}
+      </Button>
+    );
+    
+    if (passPriceDetails && !isFetchingPassPrice && passPriceDetails.justification) {
+       return (
+        <TooltipProvider>
+          <div className="flex flex-col items-start space-y-1">
+            {button}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-xs text-muted-foreground flex items-center cursor-default">
+                  <Info className="h-3 w-3 mr-1" /> {passPriceDetails.justification}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent align="start" className="max-w-xs">
+                <p>{passPriceDetails.justification} (Based on average coffee price in London, UK: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: passPriceDetails.currency }).format(passPriceDetails.coffeePrice)})</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
+      );
+    }
+    return button;
+  };
+  
   const renderPassStatusInfo = () => {
     if (!user) return null;
     let statusText = "";
-    let actionButton = null;
+    let actionContent = null;
 
     switch (user.sharedAccessStatus) {
         case 'no_pass_initiated':
             statusText = "You have not yet activated your free pass for viewing shared memories.";
-            actionButton = (
+            actionContent = (
                 <Button onClick={activateFreePass} variant="outline" size="sm">
                     <Gift className="mr-2 h-4 w-4" /> Activate 6-Month Free Pass
                 </Button>
@@ -213,20 +265,12 @@ export default function SettingsPage() {
         case 'paid_pass_active':
             const paidPassExpiry = user.paidPassExpiryDate ? format(parseISO(user.paidPassExpiryDate), 'PPP') : 'N/A';
             statusText = `Your paid pass for shared memories is active until ${paidPassExpiry}.`;
-            actionButton = (
-                 <Button onClick={purchasePaidPass} variant="outline" size="sm">
-                    <ShoppingCart className="mr-2 h-4 w-4" /> Extend / Purchase Pass (Mock)
-                </Button>
-            );
+            actionContent = renderPurchaseButton();
             break;
         case 'free_pass_expired':
         case 'paid_pass_expired':
             statusText = "Your pass for viewing shared memories has expired.";
-            actionButton = (
-                <Button onClick={purchasePaidPass} variant="outline" size="sm">
-                    <ShoppingCart className="mr-2 h-4 w-4" /> Purchase 31-Day Pass (Mock)
-                </Button>
-            );
+            actionContent = renderPurchaseButton();
             break;
         default:
             statusText = "Shared memory pass status is unknown.";
@@ -235,7 +279,7 @@ export default function SettingsPage() {
     return (
         <div className="mt-2 space-y-2">
             <p className="text-sm text-muted-foreground">{statusText}</p>
-            {actionButton}
+            {actionContent}
         </div>
     );
   };

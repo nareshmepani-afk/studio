@@ -7,11 +7,12 @@ import { TimelineFilter } from '@/components/memory/TimelineFilter';
 import { Button } from '@/components/ui/button';
 import { mockMemories } from '@/lib/mockData';
 import type { Memory } from '@/types';
-import { PlusCircle, BookHeart, BellRing, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift } from 'lucide-react';
+import { PlusCircle, BookHeart, BellRing, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift, Loader2, Info } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO, addMonths } from 'date-fns';
 
 export default function TimelinePage() {
@@ -30,7 +31,10 @@ export default function TimelinePage() {
     setHasNewSharedMemories, 
     hasNewSharedMemories,
     markSharedMemoryAsViewed,
-    checkIfGuestHasUnviewedMemories 
+    checkIfGuestHasUnviewedMemories,
+    passPriceDetails,
+    fetchPassPrice,
+    isFetchingPassPrice
   } = useAuth();
 
   const mockPendingRequests = [
@@ -50,7 +54,11 @@ export default function TimelinePage() {
 
   useEffect(() => {
     checkAndUpdatePassStatus();
-  }, [checkAndUpdatePassStatus, userMode]);
+    if (userMode === 'guest' && user && 
+        (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired')) {
+      fetchPassPrice();
+    }
+  }, [checkAndUpdatePassStatus, userMode, user, fetchPassPrice]);
 
 
   useEffect(() => {
@@ -58,7 +66,6 @@ export default function TimelinePage() {
       if (userMode === 'host') {
         setMemories(mockMemories);
       } else if (userMode === 'guest' && canViewSharedMemories) {
-        // For guests, only show the first 2 mock memories as "shared"
         setMemories(mockMemories.slice(0, 2));
       } else {
         setMemories([]);
@@ -73,19 +80,14 @@ export default function TimelinePage() {
     return () => clearTimeout(timer);
   }, [userMode, canViewSharedMemories, setPendingRequestCount]);
 
-  // Effect for simulating new shared memories notification
   useEffect(() => {
     let notificationSimulationTimer: NodeJS.Timeout;
 
-    if (userMode === 'host' && user) {
-      // Check for unviewed memories immediately when switching to host mode or on load in host mode
+    if (userMode === 'host' && user && !hasNewSharedMemories) {
       const guestHasUnviewed = checkIfGuestHasUnviewedMemories();
-      if (guestHasUnviewed && !hasNewSharedMemories) {
+      if (guestHasUnviewed) {
         setHasNewSharedMemories(true);
-      }
-
-      // If no unread memories initially, simulate new ones arriving after a delay.
-      if (!guestHasUnviewed && !hasNewSharedMemories) {
+      } else {
         notificationSimulationTimer = setTimeout(() => {
           if (userMode === 'host' && user && !hasNewSharedMemories) {
             const hasUnviewedNow = checkIfGuestHasUnviewedMemories();
@@ -93,10 +95,9 @@ export default function TimelinePage() {
               setHasNewSharedMemories(true);
             }
           }
-        }, 7000); // 7 seconds
+        }, 7000); 
       }
     }
-
     return () => {
       clearTimeout(notificationSimulationTimer);
     };
@@ -168,6 +169,45 @@ export default function TimelinePage() {
       </AuthenticatedPageWrapper>
     );
   }
+  
+  const renderPurchaseButton = () => {
+    let buttonText = "Purchase 31-Day Pass";
+    if (isFetchingPassPrice) {
+      buttonText = "Fetching price...";
+    } else if (passPriceDetails) {
+      const formattedPrice = new Intl.NumberFormat('en-GB', { style: 'currency', currency: passPriceDetails.currency }).format(passPriceDetails.passPrice);
+      buttonText = `Purchase 31-Day Pass (${formattedPrice})`;
+    }
+
+    const button = (
+      <Button onClick={purchasePaidPass} className="mt-4 w-full sm:w-auto" disabled={isFetchingPassPrice}>
+        {isFetchingPassPrice ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShoppingCart className="mr-2 h-5 w-5" />}
+        {buttonText}
+      </Button>
+    );
+
+    if (passPriceDetails && !isFetchingPassPrice && passPriceDetails.justification) {
+      return (
+        <TooltipProvider>
+          <div className="flex flex-col items-start">
+            {button}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="mt-2 text-xs text-muted-foreground flex items-center cursor-default">
+                  <Info className="h-3 w-3 mr-1" /> {passPriceDetails.justification} (Based on ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: passPriceDetails.currency }).format(passPriceDetails.coffeePrice)} coffee)
+                </span>
+              </TooltipTrigger>
+              <TooltipContent align="start" className="max-w-xs">
+                <p>{passPriceDetails.justification} We estimate the average coffee in London, UK is about {new Intl.NumberFormat('en-GB', { style: 'currency', currency: passPriceDetails.currency }).format(passPriceDetails.coffeePrice)}.</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
+      );
+    }
+    return button;
+  };
+
 
   const renderGuestModeAccessUI = () => {
     if (userMode !== 'guest' || !user) return null;
@@ -186,6 +226,11 @@ export default function TimelinePage() {
           <AlertTitle className="text-green-700">Access Granted</AlertTitle>
           <AlertDescription className="text-green-600">
             You can view shared memories. {passInfo}
+            {isPaidPassActive && (
+              <div className="mt-2">
+                {renderPurchaseButton()}
+              </div>
+            )}
           </AlertDescription>
         </Alert>
       );
@@ -193,12 +238,12 @@ export default function TimelinePage() {
 
     let title = "Access Shared Memories";
     let description = "Activate your free pass or purchase a monthly pass to view memories shared with you.";
-    let actionButton = null;
+    let actionContent = null;
 
     if (user.sharedAccessStatus === 'no_pass_initiated') {
       title = "Welcome to Shared Memories!";
       description = "Activate your 6-month free pass to start viewing memories shared by others.";
-      actionButton = (
+      actionContent = (
         <Button onClick={activateFreePass} className="mt-4 w-full sm:w-auto">
           <Gift className="mr-2 h-5 w-5" /> Activate Your 6-Month Free Pass
         </Button>
@@ -206,11 +251,7 @@ export default function TimelinePage() {
     } else if (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired') {
       title = "Your Pass Has Expired";
       description = "To continue viewing shared memories, please purchase a new 31-day pass.";
-      actionButton = (
-        <Button onClick={purchasePaidPass} className="mt-4 w-full sm:w-auto">
-          <ShoppingCart className="mr-2 h-5 w-5" /> Purchase 31-Day Pass (Mock)
-        </Button>
-      );
+      actionContent = renderPurchaseButton();
     }
 
     return (
@@ -219,7 +260,7 @@ export default function TimelinePage() {
         <AlertTitle>{title}</AlertTitle>
         <AlertDescription>
           {description}
-          {actionButton}
+          {actionContent}
         </AlertDescription>
       </Alert>
     );
@@ -334,4 +375,3 @@ export default function TimelinePage() {
     </AuthenticatedPageWrapper>
   );
 }
-
