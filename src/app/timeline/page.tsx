@@ -57,7 +57,7 @@ export default function TimelinePage() {
   useEffect(() => {
     checkAndUpdatePassStatus();
     if (userMode === 'guest' && user && 
-        (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired')) {
+        (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated')) {
       fetchPassPrice();
     }
   }, [checkAndUpdatePassStatus, userMode, user, fetchPassPrice]);
@@ -257,6 +257,21 @@ export default function TimelinePage() {
       </Alert>
     );
   };
+  
+  let accessPlaceholderMessage = "Please activate your free pass or purchase a pass above to view shared memories.";
+  if (userMode === 'guest' && !canViewSharedMemories && (user?.sharedAccessStatus === 'free_pass_expired' || user?.sharedAccessStatus === 'paid_pass_expired')) {
+    if (isFetchingPassPrice) {
+      accessPlaceholderMessage = "Please purchase a pass (fetching price...) above to view shared memories.";
+    } else if (passPriceDetails) {
+      const formattedPrice = new Intl.NumberFormat('en-GB', { style: 'currency', currency: passPriceDetails.currency }).format(passPriceDetails.passPrice);
+      accessPlaceholderMessage = `Please purchase a pass (for ${formattedPrice}) above to view shared memories.`;
+    } else {
+      accessPlaceholderMessage = "Please purchase a pass above to view shared memories.";
+    }
+  } else if (userMode === 'guest' && !canViewSharedMemories && user?.sharedAccessStatus === 'no_pass_initiated') {
+     accessPlaceholderMessage = "Please activate your free pass above to view shared memories.";
+  }
+
 
   return (
     <AuthenticatedPageWrapper>
@@ -314,7 +329,7 @@ export default function TimelinePage() {
                 <CalendarClock className="mx-auto h-16 w-16 text-primary mb-6" />
                 <h2 className="font-headline text-3xl mb-3">Activate Access</h2>
                 <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                    Please activate your free pass or purchase a pass above to view shared memories.
+                    {accessPlaceholderMessage}
                 </p>
             </div>
         )}
