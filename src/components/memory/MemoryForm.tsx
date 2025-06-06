@@ -437,7 +437,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                             </SelectTrigger>
                             <SelectContent>
                                 {countryOptions.map(option => (
-                                    <SelectItem key={option.value} value={option.value === "Other" ? "" : option.value}>
+                                    <SelectItem key={option.value} value={option.value}>
                                         {option.label}
                                     </SelectItem>
                                 ))}
