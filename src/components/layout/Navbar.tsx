@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { BookHeart, LogOut, PlusCircle, Settings, Sparkles, Grip, BellRing, Users, UserCog } from 'lucide-react';
+import { BookHeart, LogOut, PlusCircle, Settings, Sparkles, Grip, BellRing, Users, UserCog, Gamepad2 } from 'lucide-react'; // Added Gamepad2
 import { useRouter } from 'next/navigation';
 
 export function Navbar() {
@@ -45,12 +45,20 @@ export function Navbar() {
               <Link href="/prompts" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
                 Prompts
               </Link>
+              <Link href="/games" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                Games
+              </Link>
             </>
           )}
            {isAuthenticated && userMode === 'guest' && (
-             <Link href="/" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+             <>
+              <Link href="/" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
                 Shared With Me
               </Link>
+              <Link href="/games" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                Games
+              </Link>
+             </>
            )}
         </nav>
         <div className="flex items-center space-x-4"> {/* Increased space-x for toggle */}
