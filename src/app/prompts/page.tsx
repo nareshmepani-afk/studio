@@ -7,7 +7,7 @@ import { mockPromptGroups } from '@/lib/mockData'; // Changed to mockPromptGroup
 import type { Prompt, PromptGroup } from '@/types'; // Added PromptGroup
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Search, ThumbsUp, RotateCcw, Languages } from 'lucide-react';
+import { PlusCircle, Search, ThumbsUp, RotateCcw, Languages, Loader2 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
@@ -79,8 +79,10 @@ export default function PromptsPage() {
   if (isLoading) {
      return (
       <AuthenticatedPageWrapper>
-        <div className="container mx-auto py-8 px-4">
-           <p>Loading prompts...</p>
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+          <h2 className="text-2xl font-headline mb-2">Loading Prompts...</h2>
+          <p className="text-muted-foreground">Please wait while we find inspiring ideas for you.</p>
         </div>
       </AuthenticatedPageWrapper>
     );
@@ -166,3 +168,5 @@ export default function PromptsPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    

@@ -193,15 +193,24 @@ export default function SettingsPage() {
   if (authLoading) {
     return (
       <AuthenticatedPageWrapper>
-        <div className="container mx-auto py-8 px-4">Loading settings...</div>
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+          <h2 className="text-2xl font-headline mb-2">Loading Settings...</h2>
+          <p className="text-muted-foreground">Please wait while we retrieve your preferences.</p>
+        </div>
       </AuthenticatedPageWrapper>
     );
   }
 
   if (!user) {
+    // This case should ideally be handled by AuthenticatedPageWrapper redirecting to login
+    // Adding a fallback here just in case.
     return (
       <AuthenticatedPageWrapper>
-        <div className="container mx-auto py-8 px-4">Please log in to view settings.</div>
+        <div className="container mx-auto py-8 px-4 text-center">
+          <p>Please log in to view settings.</p>
+          <Button onClick={() => router.push('/login')} className="mt-4">Go to Login</Button>
+        </div>
       </AuthenticatedPageWrapper>
     );
   }
@@ -420,3 +429,5 @@ export default function SettingsPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    

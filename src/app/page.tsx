@@ -84,19 +84,15 @@ export default function TimelinePage() {
     let notificationSimulationTimer: NodeJS.Timeout;
 
     if (userMode === 'host' && user && !hasNewSharedMemories) {
-      const guestHasUnviewed = checkIfGuestHasUnviewedMemories();
-      if (guestHasUnviewed) {
-        setHasNewSharedMemories(true);
-      } else {
-        notificationSimulationTimer = setTimeout(() => {
-          if (userMode === 'host' && user && !hasNewSharedMemories) {
-            const hasUnviewedNow = checkIfGuestHasUnviewedMemories();
-            if (hasUnviewedNow) {
-              setHasNewSharedMemories(true);
-            }
+      // Only simulate if there isn't already a notification
+      notificationSimulationTimer = setTimeout(() => {
+        if (userMode === 'host' && user && !hasNewSharedMemories) { // Re-check conditions inside timeout
+          const hasUnviewedNow = checkIfGuestHasUnviewedMemories();
+          if (hasUnviewedNow) {
+            setHasNewSharedMemories(true);
           }
-        }, 7000); 
-      }
+        }
+      }, 7000); // 7-second delay
     }
     return () => {
       clearTimeout(notificationSimulationTimer);
@@ -163,8 +159,10 @@ export default function TimelinePage() {
   if (isLoading) {
     return (
       <AuthenticatedPageWrapper>
-        <div className="container mx-auto py-8 px-4">
-           <p>Loading content...</p>
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+          <h2 className="text-2xl font-headline mb-2">Loading Your Memories...</h2>
+          <p className="text-muted-foreground">Please wait while we gather everything for you.</p>
         </div>
       </AuthenticatedPageWrapper>
     );
@@ -375,3 +373,5 @@ export default function TimelinePage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    
