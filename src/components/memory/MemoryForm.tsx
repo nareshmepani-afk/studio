@@ -38,7 +38,7 @@ interface MemoryFormProps {
 type MediaRecorderData = { // Type for data coming from MediaCaptureControl
   file: File;
   type: 'video' | 'audio';
-  previewUrl: string; // This is MediaCaptureControl's internal preview URL
+  previewUrl: string; 
   startTime?: number;
   endTime?: number;
   duration: number;
@@ -63,7 +63,7 @@ const months: { value: number; label: string }[] = Array.from({ length: 12 }, (_
 const SLIDE_INDEX_DETAILS = 0;
 const SLIDE_INDEX_MEDIA = 1;
 const SLIDE_INDEX_CUES = 2;
-const TOTAL_SLIDES = 3;
+const TOTAL_SLIDES = 3; // Total number of slides/steps
 
 const countryOptions = [
   { value: "Afghanistan", label: "Afghanistan" },
@@ -314,6 +314,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(SLIDE_INDEX_DETAILS);
+  const currentSlideRef = useRef(currentSlide); // Ref to hold the latest currentSlide for use in event handlers
+
+  useEffect(() => {
+    currentSlideRef.current = currentSlide;
+  }, [currentSlide]);
+
 
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(() => {
     if (memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
@@ -342,41 +348,63 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     return Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1);
   }, [daysInSelectedMonth]);
 
+  // Effect to set up Embla API and event listeners
   useEffect(() => {
     if (!carouselApi) {
       return;
     }
-  
-    const handleApiSelect = () => {
+
+    const handleSelect = () => {
       const newSelectedSlide = carouselApi.selectedScrollSnap();
-      setCurrentSlide(newSelectedSlide);
-  
-      setTimeout(() => {
-        if (newSelectedSlide === SLIDE_INDEX_DETAILS && memoryDetailsCardHeaderRef.current) {
-          memoryDetailsCardHeaderRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else if (newSelectedSlide === SLIDE_INDEX_MEDIA && mediaCardHeaderRef.current) {
-          mediaCardHeaderRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else if (newSelectedSlide === SLIDE_INDEX_CUES && aiCuesCardHeaderRef.current) {
-          aiCuesCardHeaderRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 200); // Delay to allow carousel animation to settle
+      if (newSelectedSlide !== currentSlideRef.current) {
+        setCurrentSlide(newSelectedSlide);
+      }
     };
-  
-    carouselApi.on("select", handleApiSelect);
-    carouselApi.on("reInit", handleApiSelect);
-  
-    // Optionally, scroll the initial slide into view if needed,
-    // though usually the carousel handles initial positioning.
-    // If initial scroll is desired:
-    // setTimeout(() => {
-    //   if (carouselApi.slidesInView().length > 0) handleApiSelect();
-    // }, 0);
-  
+
+    carouselApi.on("select", handleSelect);
+    carouselApi.on("reInit", handleSelect);
+
+    // Initial synchronization
+    const initialEmblaSlide = carouselApi.selectedScrollSnap();
+    if (initialEmblaSlide !== currentSlideRef.current) {
+      setCurrentSlide(initialEmblaSlide);
+    }
+
     return () => {
-      carouselApi.off("select", handleApiSelect);
-      carouselApi.off("reInit", handleApiSelect);
+      carouselApi.off("select", handleSelect);
+      carouselApi.off("reInit", handleSelect);
     };
   }, [carouselApi]);
+
+  // Effect to scroll the current slide's header into view
+  useEffect(() => {
+    if (!carouselApi || !carouselApi.engine?.scrollSnaps || carouselApi.engine.scrollSnaps.length === 0) {
+      return; // Wait for carousel to be fully initialized
+    }
+
+    const scrollTarget = () => {
+      let targetRef: React.RefObject<HTMLDivElement> | null = null;
+      if (currentSlide === SLIDE_INDEX_DETAILS) {
+        targetRef = memoryDetailsCardHeaderRef;
+      } else if (currentSlide === SLIDE_INDEX_MEDIA) {
+        targetRef = mediaCardHeaderRef;
+      } else if (currentSlide === SLIDE_INDEX_CUES) {
+        targetRef = aiCuesCardHeaderRef;
+      }
+
+      if (targetRef?.current) {
+        // Ensure we are scrolling the header of the *actually selected* Embla slide
+        if (carouselApi.selectedScrollSnap() === currentSlide) {
+          targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    };
+
+    const timer = setTimeout(scrollTarget, 250); // Delay scrolling
+    return () => clearTimeout(timer);
+
+  }, [currentSlide, carouselApi, memoryDetailsCardHeaderRef, mediaCardHeaderRef, aiCuesCardHeaderRef]);
+
 
   useEffect(() => {
     if (selectedDay > daysInSelectedMonth) {
@@ -419,9 +447,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       const firstMedia = memory.mediaAttachments[0];
       if (firstMedia.url) {
         setCurrentMediaPreviewUrl(firstMedia.url);
+      } else {
+        setCurrentMediaPreviewUrl(null); 
       }
     } else {
-      setCurrentMediaPreviewUrl(null); // Clear if no media or if existing media has no URL
+      setCurrentMediaPreviewUrl(null); 
     }
   
     return () => {
@@ -433,7 +463,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
 
   const handleMediaReady = useCallback((mediaDataFromRecorder: MediaRecorderData) => {
-    // No need to manage currentMediaPreviewUrl here, the useEffect for currentMedia will handle it.
     setCurrentMedia({
       file: mediaDataFromRecorder.file,
       type: mediaDataFromRecorder.type,
@@ -441,18 +470,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       endTime: mediaDataFromRecorder.endTime,
       duration: mediaDataFromRecorder.duration,
     });
-    setMediaToInitializeRecorder(null); // Clear this as we've now set currentMedia
+    setMediaToInitializeRecorder(null); 
   }, []);
 
 
   const handleMediaDiscardInForm = useCallback(() => {
-    // Set up mediaToInitializeRecorder with the media that was just discarded from the form's state.
-    // This allows MediaCaptureControl to re-initialize with it if the user wants to re-trim.
     if (currentMedia) {
       const { file, type, ...restOfMedia } = currentMedia;
-      // Determine a previewUrl for MediaCaptureControl's initialMedia.
-      // If currentMedia had a blob URL, it's now revoked or will be.
-      // If editing, fall back to memory's original URL. Otherwise, it might be empty.
       let previewUrlForRecorder = '';
       if (isEditing && memory?.mediaAttachments?.[0]?.url) {
         previewUrlForRecorder = memory.mediaAttachments[0].url;
@@ -465,7 +489,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
           ...restOfMedia,
       });
     } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
-        // If currentMedia was null but we are editing, set initialMedia from memory
         const firstMedia = memory.mediaAttachments[0];
         setMediaToInitializeRecorder({
             file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
@@ -476,12 +499,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
             duration: firstMedia.duration || 0,
         });
     }
-    setCurrentMedia(null); // This will trigger the useEffect for currentMediaPreviewUrl to clear it
+    setCurrentMedia(null); 
   }, [currentMedia, isEditing, memory?.mediaAttachments]);
 
   const handleMediaDiscardInRecorder = useCallback(() => {
-    // This is called when discard happens *within* MediaCaptureControl *before* "Use This Media" is clicked.
-    // If mediaToInitializeRecorder was set (e.g. from MemoryForm discard), we should clear it.
     setMediaToInitializeRecorder(null); 
   }, []);
 
@@ -491,12 +512,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     if (mediaElement && currentMedia && currentMediaPreviewUrl && mediaElement.src === currentMediaPreviewUrl) {
       const targetTime = (currentMedia.startTime !== undefined && isFinite(currentMedia.startTime))
         ? currentMedia.startTime
-        : 0.01; // Small offset to encourage frame display
+        : 0.01; 
 
       const applyStartTime = () => {
-         if (mediaElement.readyState >= 1) { // HAVE_METADATA or higher
+         if (mediaElement.readyState >= 1) { 
           if (!mediaElement.paused) {
-            mediaElement.pause(); 
+            // It's okay if it's playing, seeking will pause it briefly if necessary by the browser
           }
           if (targetTime <= mediaElement.duration && Math.abs(mediaElement.currentTime - targetTime) > 0.1) {
              try {
@@ -572,7 +593,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
       carouselApi?.scrollTo(SLIDE_INDEX_DETAILS, true);
       setTimeout(() => {
-        memoryDetailsCardHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // memoryDetailsCardHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); // Scrolling is handled by useEffect
         titleInputRef.current?.focus();
       }, 100);
       return;
@@ -585,7 +606,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       toast({ title: "Invalid Date", description: "Please select a valid date.", variant: "destructive" });
       carouselApi?.scrollTo(SLIDE_INDEX_DETAILS, true);
       setTimeout(() => {
-        memoryDetailsCardHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         yearSelectRef.current?.focus();
       }, 100);
       return;
@@ -595,7 +615,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       toast({ title: "Description Required", description: "Please enter a description for the memory.", variant: "destructive" });
       carouselApi?.scrollTo(SLIDE_INDEX_DETAILS, true);
       setTimeout(() => {
-        memoryDetailsCardHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         descriptionTextareaRef.current?.focus();
       }, 100);
       return;
@@ -603,9 +622,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     if (!currentMedia) {
       toast({ title: "Media Required", description: "A media attachment (video or audio) is required.", variant: "destructive" });
       carouselApi?.scrollTo(SLIDE_INDEX_MEDIA, true);
-      setTimeout(() => {
-        mediaCardHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
       return;
     }
 
@@ -645,7 +661,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   };
 
   const initialMediaForRecorderProp = useMemo(() => {
-    // This prop is for initializing MediaCaptureControl if MemoryForm itself is initialized with media (e.g. editing)
     if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
         const firstMedia = memory.mediaAttachments[0];
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
@@ -679,7 +694,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
           <CarouselItem>
             <Card className="w-full">
               <CardHeader ref={memoryDetailsCardHeaderRef}>
-                <CardTitle className="font-headline text-2xl">{memory ? 'Edit Memory' : 'Add New Memory'} (Step 1 of {TOTAL_SLIDES})</CardTitle>
+                <CardTitle className="font-headline text-2xl">{memory ? 'Edit Memory' : 'Add New Memory'} (Step {SLIDE_INDEX_DETAILS + 1} of {TOTAL_SLIDES})</CardTitle>
                 <CardDescription>Capture the details of your moment. Fields marked with * are mandatory.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -812,7 +827,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
             <Card className="w-full">
               <CardHeader ref={mediaCardHeaderRef}>
                   <CardTitle className="font-headline text-lg">
-                    Media Attachment for {title ? `"${title}"` : 'this memory'} * (Step 2 of {TOTAL_SLIDES})
+                    Media Attachment for {title ? `"${title}"` : 'this memory'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})
                   </CardTitle>
                   {!currentMedia && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}
               </CardHeader>
@@ -868,7 +883,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
           <CarouselItem>
             <Card className="w-full">
               <CardHeader ref={aiCuesCardHeaderRef}>
-                <CardTitle className="font-headline text-lg flex items-center"><Sparkles className="mr-2 h-5 w-5 text-primary" />AI-Powered Memory Cues (Step 3 of {TOTAL_SLIDES})</CardTitle>
+                <CardTitle className="font-headline text-lg flex items-center"><Sparkles className="mr-2 h-5 w-5 text-primary" />AI-Powered Memory Cues (Step {SLIDE_INDEX_CUES + 1} of {TOTAL_SLIDES})</CardTitle>
                 <CardDescription>Get suggestions for memories based on your profile and current context.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -921,8 +936,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
           type={isEditing || isLastSlide ? "submit" : "button"}
           onClick={
             isEditing || isLastSlide 
-              ? undefined // Let the form's onSubmit handle it
-              : () => carouselApi?.scrollNext() // Just navigate for intermediate steps
+              ? undefined 
+              : () => carouselApi?.scrollNext() 
           }
           disabled={!!isSubmitting}
           className="w-full sm:w-auto"
