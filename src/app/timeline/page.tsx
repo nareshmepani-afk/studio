@@ -7,7 +7,7 @@ import { TimelineFilter } from '@/components/memory/TimelineFilter';
 import { Button } from '@/components/ui/button';
 import { mockMemories } from '@/lib/mockData';
 import type { Memory } from '@/types';
-import { PlusCircle, BookHeart, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift, Loader2, Info } from 'lucide-react';
+import { PlusCircle, BookHeart, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift, Loader2, Info, Award } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +20,7 @@ export default function TimelinePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortCriteria, setSortCriteria] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc'>('date-desc');
   const [isLoading, setIsLoading] = useState(true);
+  const [currentStreak, setCurrentStreak] = useState(0); // For gamification hint
 
   const { 
     user, 
@@ -65,6 +66,7 @@ export default function TimelinePage() {
     const timer = setTimeout(() => {
       if (userMode === 'host') {
         setMemories(mockMemories);
+        setCurrentStreak(5); // Mock streak
       } else if (userMode === 'guest' && canViewSharedMemories) {
         setMemories(mockMemories.slice(0, 2));
       } else {
@@ -101,6 +103,8 @@ export default function TimelinePage() {
 
   const handleEditMemory = (memory: Memory) => {
     console.log('Edit memory:', memory);
+    // In a real app, you'd likely navigate to an edit page:
+    // router.push(`/edit-memory/${memory.id}`);
   };
 
   const handleDeleteMemory = (memoryId: string) => {
@@ -114,7 +118,9 @@ export default function TimelinePage() {
       result = result.filter(memory =>
         memory.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         memory.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        memory.emotionTags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+        memory.emotionTags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        memory.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        memory.country?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -247,17 +253,34 @@ export default function TimelinePage() {
   return (
     <AuthenticatedPageWrapper>
       <div className="container mx-auto py-8 px-4">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
           <h1 className="font-headline text-4xl mb-4 md:mb-0">
             {userMode === 'host' ? 'Your Memories' : 'Shared With You'}
           </h1>
           {userMode === 'host' && (
-            <Link href="/add-memory" passHref>
-              <Button>
-                <PlusCircle className="mr-2 h-5 w-5" />
-                Add New Memory
-              </Button>
-            </Link>
+            <div className="flex items-center space-x-4">
+              {currentStreak > 0 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center text-sm text-primary font-medium p-2 rounded-md bg-primary/10">
+                        <Award className="mr-1.5 h-5 w-5" />
+                        <span>{currentStreak} Day Streak!</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>You've recorded memories for {currentStreak} days in a row. Keep it up!</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              <Link href="/add-memory" passHref>
+                <Button>
+                  <PlusCircle className="mr-2 h-5 w-5" />
+                  Add New Memory
+                </Button>
+              </Link>
+            </div>
           )}
         </div>
 
@@ -326,5 +349,4 @@ export default function TimelinePage() {
     </AuthenticatedPageWrapper>
   );
 }
-
     

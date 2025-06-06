@@ -12,6 +12,8 @@ export const mockMemories: Memory[] = [
     description: 'A wonderful weekend getaway with breathtaking views and challenging hikes. This video is trimmed.',
     emotionTags: ['Happy', 'Excitement', 'Peace'],
     userId: '1',
+    location: 'Swiss Alps',
+    country: 'Switzerland',
     mediaAttachments: [{
         id: 'media1-1',
         type: 'video',
@@ -30,6 +32,8 @@ export const mockMemories: Memory[] = [
     description: 'Gathered with the whole family for the holidays. So much food and laughter! This is a full audio.',
     emotionTags: ['Joy', 'Love', 'Nostalgia'],
     userId: '1',
+    location: 'Grandma\'s House, Devon',
+    country: 'UK',
     mediaAttachments: [{
         id: 'media2-1',
         type: 'audio',
@@ -46,6 +50,7 @@ export const mockMemories: Memory[] = [
     description: 'Successfully launched Project Alpha after months of hard work. Proud of the team! This video plays in full.',
     emotionTags: ['Gratitude', 'Excitement'],
     userId: '1',
+    // No location/country for this one
     mediaAttachments: [{
         id: 'media3-1',
         type: 'video',
@@ -64,6 +69,8 @@ export const mockMemories: Memory[] = [
     emotionTags: ['Reflective', 'Hope', 'Funny'],
     imageUrl: 'https://placehold.co/600x400.png', // No media attachment for this one
     userId: '1',
+    location: 'Home Kitchen',
+    country: 'UK',
   },
 ];
 

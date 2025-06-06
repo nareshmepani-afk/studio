@@ -26,7 +26,7 @@ export default function AddMemoryPage() {
     // For now, we'll just log it.
 
     const fullMemoryData: Memory = {
-      ...memoryData,
+      ...memoryData, // This includes title, date, description, emotionTags, mediaAttachments, location, country
       id: Date.now().toString(), 
       userId: user.id,
     };
@@ -40,10 +40,14 @@ export default function AddMemoryPage() {
       }
     }
     
-    console.log('New memory data:', fullMemoryData);
+    // This log will now include location and country if provided
+    console.log('New memory data:', fullMemoryData); 
     
+    // Mock saving to localStorage or an API
+    // For demo, we can just log or potentially update a local state if we were managing memories in AddMemoryPage's parent
     await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
 
+    // If userProfile for cues was potentially updated in the form
     if (userProfileForCues && user.profileInfo !== userProfileForCues) {
       // In a real app, you might update the user's profileInfo if it has changed
       console.log("User profile for cues updated (mock):", userProfileForCues);
@@ -66,5 +70,3 @@ export default function AddMemoryPage() {
     </AuthenticatedPageWrapper>
   );
 }
-
-    

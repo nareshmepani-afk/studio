@@ -42,8 +42,10 @@ export interface Memory {
   description?: string;
   emotionTags?: EmotionTag[]; // Replaces category
   mediaAttachments?: MediaAttachment[];
-  imageUrl?: string;
+  imageUrl?: string; // Fallback image if no media or for card previews
   userId: string; // The ID of the user who owns/created this memory
+  location?: string; // For geographical context, e.g., "Paris" or "Yellowstone National Park"
+  country?: string;  // For country context, e.g., "France" or "USA"
   // For future host-side tracking of shares (conceptual for now)
   // shares?: Array<{ guestUserId: string; status: 'pending_view' | 'viewed_by_guest'; sharedDate: string; viewedDate?: string }>;
 }

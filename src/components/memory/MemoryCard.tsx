@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { enGB } from 'date-fns/locale';
-import { CalendarDays, Edit3, Trash2, Share2, Video, Mic, Heart, Eye } from 'lucide-react'; 
+import { CalendarDays, Edit3, Trash2, Share2, Video, Mic, Heart, Eye, Users2, MapPin } from 'lucide-react'; 
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -97,6 +98,7 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
   }, [primaryMedia]);
 
   const canPerformActions = userMode === 'host' && onEdit && onDelete;
+  const locationString = [memory.location, memory.country].filter(Boolean).join(', ');
 
   return (
     <>
@@ -134,6 +136,12 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
             <CalendarDays className="mr-1.5 h-3 w-3" />
             {format(new Date(memory.date), 'PPP', { locale: enGB })}
           </div>
+          {locationString && (
+            <div className="flex items-center text-xs text-muted-foreground pt-0.5">
+              <MapPin className="mr-1.5 h-3 w-3" />
+              {locationString}
+            </div>
+          )}
         </CardHeader>
         <CardContent className="flex-grow">
           <p className="text-sm text-muted-foreground line-clamp-3">{memory.description}</p>
@@ -165,40 +173,73 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
           </div> 
           <div className="flex space-x-1">
             {canPerformActions && onEdit && (
-              <Button variant="ghost" size="icon" onClick={() => onEdit(memory)} aria-label="Edit memory">
-                <Edit3 className="h-4 w-4" />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={() => onEdit(memory)} aria-label="Edit memory">
+                      <Edit3 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Edit Memory</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
-             {userMode === 'host' && ( // Share button only for host
-                <Button variant="ghost" size="icon" onClick={() => setShowShareDialog(true)} aria-label="Share memory">
-                    <Share2 className="h-4 w-4" />
-                </Button>
+             {userMode === 'host' && (
+                <>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={() => setShowShareDialog(true)} aria-label="Share memory">
+                            <Share2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent><p>Share Memory</p></TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" disabled aria-label="Collaborate on memory">
+                            <Users2 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent><p>Collaborate (Coming Soon)</p></TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </>
              )}
             {canPerformActions && onDelete && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label="Delete memory">
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete this memory.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => onDelete(memory.id)}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+               <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" aria-label="Delete memory">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this memory.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => onDelete(memory.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Delete Memory</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
         </CardFooter>
@@ -207,4 +248,3 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
     </>
   );
 }
-

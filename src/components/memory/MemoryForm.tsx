@@ -14,7 +14,7 @@ import { MediaCaptureControl } from './MediaRecorder';
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, ArrowRight, Tag } from 'lucide-react';
+import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, ArrowRight, Tag, MapPin } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { mockPrompts } from '@/lib/mockData';
 import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, getDate } from 'date-fns';
@@ -70,6 +70,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const mediaCardHeaderRef = useRef<HTMLDivElement>(null);
 
   const [title, setTitle] = useState(memory?.title || '');
+  const [location, setLocation] = useState(memory?.location || '');
+  const [country, setCountry] = useState(memory?.country || '');
+
 
   const getInitialDateComponent = useCallback((component: 'year' | 'month' | 'day', dateSource?: string) => {
     const dateToParse = dateSource ? new Date(dateSource) : new Date();
@@ -285,7 +288,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     }
 
     onSubmit(
-      { title, date: finalDate.toISOString(), description, emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForSubmission },
+      { 
+        title, 
+        date: finalDate.toISOString(), 
+        description, 
+        emotionTags: selectedEmotionTags, 
+        mediaAttachments: mediaAttachmentsForSubmission,
+        location: location || undefined,
+        country: country || undefined,
+      },
       userProfile,
       currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0 ? currentMedia.file : undefined
     );
@@ -397,6 +408,17 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                       </Select>
                     </div>
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                        <Label htmlFor="location">Location (Optional)</Label>
+                        <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g., Eiffel Tower, Paris" />
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="country">Country (Optional)</Label>
+                        <Input id="country" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="e.g., France" />
+                    </div>
                 </div>
 
                 <div className="space-y-1">
@@ -527,4 +549,3 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     </form>
   );
 }
-
