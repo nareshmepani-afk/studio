@@ -277,6 +277,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const yearSelectRef = useRef<HTMLButtonElement>(null);
   const memoryDetailsCardHeaderRef = useRef<HTMLDivElement>(null);
   const mediaCardHeaderRef = useRef<HTMLDivElement>(null);
+  const aiCuesCardHeaderRef = useRef<HTMLDivElement>(null);
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
 
@@ -345,18 +346,35 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     if (!carouselApi) {
       return;
     }
-    setCurrentSlide(carouselApi.selectedScrollSnap());
-
-    const handleSelect = () => {
-      setCurrentSlide(carouselApi.selectedScrollSnap());
+  
+    const handleApiSelect = () => {
+      const newSelectedSlide = carouselApi.selectedScrollSnap();
+      setCurrentSlide(newSelectedSlide);
+  
+      setTimeout(() => {
+        if (newSelectedSlide === SLIDE_INDEX_DETAILS && memoryDetailsCardHeaderRef.current) {
+          memoryDetailsCardHeaderRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (newSelectedSlide === SLIDE_INDEX_MEDIA && mediaCardHeaderRef.current) {
+          mediaCardHeaderRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (newSelectedSlide === SLIDE_INDEX_CUES && aiCuesCardHeaderRef.current) {
+          aiCuesCardHeaderRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 200); // Delay to allow carousel animation to settle
     };
-    
-    carouselApi.on("select", handleSelect);
-    carouselApi.on("reInit", handleSelect);
-
+  
+    carouselApi.on("select", handleApiSelect);
+    carouselApi.on("reInit", handleApiSelect);
+  
+    // Optionally, scroll the initial slide into view if needed,
+    // though usually the carousel handles initial positioning.
+    // If initial scroll is desired:
+    // setTimeout(() => {
+    //   if (carouselApi.slidesInView().length > 0) handleApiSelect();
+    // }, 0);
+  
     return () => {
-      carouselApi.off("select", handleSelect);
-      carouselApi.off("reInit", handleSelect);
+      carouselApi.off("select", handleApiSelect);
+      carouselApi.off("reInit", handleApiSelect);
     };
   }, [carouselApi]);
 
@@ -393,35 +411,29 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   
   useEffect(() => {
     let blobUrlToRevoke: string | null = null;
-
-    if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0 && !currentMediaPreviewUrl) {
+  
+    if (currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0) {
+      blobUrlToRevoke = URL.createObjectURL(currentMedia.file);
+      setCurrentMediaPreviewUrl(blobUrlToRevoke);
+    } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
       const firstMedia = memory.mediaAttachments[0];
-      if (currentMedia && currentMedia.file && currentMedia.file.name === (firstMedia.filename || "existing_media") && currentMedia.file.size > 0) {
-         blobUrlToRevoke = URL.createObjectURL(currentMedia.file);
-         setCurrentMediaPreviewUrl(blobUrlToRevoke);
-      } else if (firstMedia.url?.startsWith('http')) { 
-         setCurrentMediaPreviewUrl(firstMedia.url);
-      } else if (firstMedia.url) { // Potentially a sample/mock URL that is already a blob or direct
+      if (firstMedia.url) {
         setCurrentMediaPreviewUrl(firstMedia.url);
       }
+    } else {
+      setCurrentMediaPreviewUrl(null); // Clear if no media or if existing media has no URL
     }
-    
+  
     return () => {
       if (blobUrlToRevoke && blobUrlToRevoke.startsWith('blob:')) {
         URL.revokeObjectURL(blobUrlToRevoke);
       }
     };
-  }, [isEditing, memory, currentMedia, currentMediaPreviewUrl]);
+  }, [currentMedia, isEditing, memory?.mediaAttachments]);
 
 
   const handleMediaReady = useCallback((mediaDataFromRecorder: MediaRecorderData) => {
-    if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(currentMediaPreviewUrl);
-    }
-
-    const newPreviewUrlForForm = URL.createObjectURL(mediaDataFromRecorder.file);
-    setCurrentMediaPreviewUrl(newPreviewUrlForForm);
-
+    // No need to manage currentMediaPreviewUrl here, the useEffect for currentMedia will handle it.
     setCurrentMedia({
       file: mediaDataFromRecorder.file,
       type: mediaDataFromRecorder.type,
@@ -429,46 +441,48 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       endTime: mediaDataFromRecorder.endTime,
       duration: mediaDataFromRecorder.duration,
     });
-    setMediaToInitializeRecorder(null);
-  }, [currentMediaPreviewUrl]);
+    setMediaToInitializeRecorder(null); // Clear this as we've now set currentMedia
+  }, []);
 
 
   const handleMediaDiscardInForm = useCallback(() => {
+    // Set up mediaToInitializeRecorder with the media that was just discarded from the form's state.
+    // This allows MediaCaptureControl to re-initialize with it if the user wants to re-trim.
     if (currentMedia) {
-       const { file, type, ...restOfMedia } = currentMedia; 
-       let initialPreviewUrlForRecorder = mediaToInitializeRecorder?.previewUrl;
-       if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
-           initialPreviewUrlForRecorder = memory.mediaAttachments[0].url;
-       }
-
-       setMediaToInitializeRecorder({
-           file, 
-           type,
-           previewUrl: initialPreviewUrlForRecorder || '', 
-            ...restOfMedia,
-       });
+      const { file, type, ...restOfMedia } = currentMedia;
+      // Determine a previewUrl for MediaCaptureControl's initialMedia.
+      // If currentMedia had a blob URL, it's now revoked or will be.
+      // If editing, fall back to memory's original URL. Otherwise, it might be empty.
+      let previewUrlForRecorder = '';
+      if (isEditing && memory?.mediaAttachments?.[0]?.url) {
+        previewUrlForRecorder = memory.mediaAttachments[0].url;
+      }
+      
+      setMediaToInitializeRecorder({
+          file, 
+          type,
+          previewUrl: previewUrlForRecorder, 
+          ...restOfMedia,
+      });
     } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
+        // If currentMedia was null but we are editing, set initialMedia from memory
         const firstMedia = memory.mediaAttachments[0];
         setMediaToInitializeRecorder({
             file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
             type: firstMedia.type,
-            previewUrl: firstMedia.url,
+            previewUrl: firstMedia.url || '',
             startTime: firstMedia.startTime,
             endTime: firstMedia.endTime,
             duration: firstMedia.duration || 0,
         });
     }
-
-
-    if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(currentMediaPreviewUrl);
-    }
-    setCurrentMediaPreviewUrl(null);
-    setCurrentMedia(null);
-  }, [currentMedia, currentMediaPreviewUrl, mediaToInitializeRecorder, isEditing, memory]);
+    setCurrentMedia(null); // This will trigger the useEffect for currentMediaPreviewUrl to clear it
+  }, [currentMedia, isEditing, memory?.mediaAttachments]);
 
   const handleMediaDiscardInRecorder = useCallback(() => {
-    setMediaToInitializeRecorder(null);
+    // This is called when discard happens *within* MediaCaptureControl *before* "Use This Media" is clicked.
+    // If mediaToInitializeRecorder was set (e.g. from MemoryForm discard), we should clear it.
+    setMediaToInitializeRecorder(null); 
   }, []);
 
   useEffect(() => {
@@ -477,14 +491,14 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     if (mediaElement && currentMedia && currentMediaPreviewUrl && mediaElement.src === currentMediaPreviewUrl) {
       const targetTime = (currentMedia.startTime !== undefined && isFinite(currentMedia.startTime))
         ? currentMedia.startTime
-        : 0.01;
+        : 0.01; // Small offset to encourage frame display
 
       const applyStartTime = () => {
-        if (mediaElement.readyState >= 1 && targetTime <= mediaElement.duration) { 
+         if (mediaElement.readyState >= 1) { // HAVE_METADATA or higher
           if (!mediaElement.paused) {
             mediaElement.pause(); 
           }
-          if (Math.abs(mediaElement.currentTime - targetTime) > 0.1) { 
+          if (targetTime <= mediaElement.duration && Math.abs(mediaElement.currentTime - targetTime) > 0.1) {
              try {
                 mediaElement.currentTime = targetTime;
              } catch (error) {
@@ -558,7 +572,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
       carouselApi?.scrollTo(SLIDE_INDEX_DETAILS, true);
       setTimeout(() => {
-        titleLabelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        memoryDetailsCardHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         titleInputRef.current?.focus();
       }, 100);
       return;
@@ -631,13 +645,14 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   };
 
   const initialMediaForRecorderProp = useMemo(() => {
+    // This prop is for initializing MediaCaptureControl if MemoryForm itself is initialized with media (e.g. editing)
     if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
         const firstMedia = memory.mediaAttachments[0];
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
         return {
             file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
             type: firstMedia.type,
-            previewUrl: firstMedia.url, 
+            previewUrl: firstMedia.url || '', 
             startTime: firstMedia.startTime,
             endTime: firstMedia.endTime,
             duration: duration,
@@ -647,9 +662,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   }, [memory?.mediaAttachments, isEditing]);
 
   const isLastSlide = currentSlide === SLIDE_INDEX_CUES;
-  const mainButtonText = isSubmitting 
-    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-    : isEditing 
+  const mainButtonText = isEditing 
       ? 'Save Changes' 
       : isLastSlide 
         ? 'Add Memory' 
@@ -854,7 +867,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
           <CarouselItem>
             <Card className="w-full">
-              <CardHeader>
+              <CardHeader ref={aiCuesCardHeaderRef}>
                 <CardTitle className="font-headline text-lg flex items-center"><Sparkles className="mr-2 h-5 w-5 text-primary" />AI-Powered Memory Cues (Step 3 of {TOTAL_SLIDES})</CardTitle>
                 <CardDescription>Get suggestions for memories based on your profile and current context.</CardDescription>
               </CardHeader>
@@ -906,12 +919,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       <CardFooter className="flex justify-end p-0 pt-6 max-w-3xl mx-auto">
         <Button
           type={isEditing || isLastSlide ? "submit" : "button"}
-          onClick={isEditing || isLastSlide ? undefined : () => carouselApi?.scrollNext()}
+          onClick={
+            isEditing || isLastSlide 
+              ? undefined // Let the form's onSubmit handle it
+              : () => carouselApi?.scrollNext() // Just navigate for intermediate steps
+          }
           disabled={!!isSubmitting}
           className="w-full sm:w-auto"
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isEditing ? 'Save Changes' : (isLastSlide ? 'Add Memory' : 'Next')}
+          {mainButtonText}
         </Button>
       </CardFooter>
     </form>
