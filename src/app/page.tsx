@@ -1,330 +1,163 @@
 
 "use client";
 
-import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
-import { MemoryCard } from '@/components/memory/MemoryCard';
-import { TimelineFilter } from '@/components/memory/TimelineFilter';
 import { Button } from '@/components/ui/button';
-import { mockMemories } from '@/lib/mockData';
-import type { Memory } from '@/types';
-import { PlusCircle, BookHeart, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift, Loader2, Info } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Navbar } from '@/components/layout/Navbar';
 import Link from 'next/link';
-import { useState, useMemo, useEffect } from 'react';
+import Image from 'next/image';
+import { Sparkles, Film, Users, Lock, BookHeart, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { format, parseISO, addMonths } from 'date-fns';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
-export default function TimelinePage() {
-  const [memories, setMemories] = useState<Memory[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortCriteria, setSortCriteria] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc'>('date-desc');
-  const [isLoading, setIsLoading] = useState(true);
+interface Feature {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  imageHint: string;
+}
 
-  const { 
-    user, 
-    setPendingRequestCount, 
-    userMode, 
-    activateFreePass, 
-    purchasePaidPass, 
-    checkAndUpdatePassStatus, 
-    setHasNewSharedMemories, 
-    hasNewSharedMemories,
-    markSharedMemoryAsViewed,
-    checkIfGuestHasUnviewedMemories,
-    passPriceDetails,
-    fetchPassPrice,
-    isFetchingPassPrice
-  } = useAuth();
+const features: Feature[] = [
+  {
+    icon: Sparkles,
+    title: 'AI-Powered Memory Cues',
+    description: 'Get relevant suggestions based on your profile and the current date to spark your recollections.',
+    imageHint: 'brainstorm lightbulb'
+  },
+  {
+    icon: Film,
+    title: 'Multimedia Recording',
+    description: 'Capture, edit, and store your memories using video and audio directly within the app.',
+    imageHint: 'video camera recording'
+  },
+  {
+    icon: Users,
+    title: 'Interactive Timeline',
+    description: 'Organize and browse your cherished moments in a sortable, filterable timeline.',
+    imageHint: 'timeline interface'
+  },
+  {
+    icon: Lock,
+    title: 'Secure Sharing',
+    description: 'Share selected memories with loved ones through unique, secure links.',
+    imageHint: 'secure lock'
+  },
+];
 
-  const mockHostPendingRequests = [ // Renamed to avoid conflict if it were used for real data
-    { id: 'req1', text: 'Tell us about your first pet!', user: 'Guest123' },
-    { id: 'req2', text: 'What was your favorite childhood vacation?', user: 'Guest456' },
-  ];
-
-  const isFreePassActive = useMemo(() => {
-    return user?.sharedAccessStatus === 'free_pass_active' && user.freePassActivatedDate;
-  }, [user]);
-
-  const isPaidPassActive = useMemo(() => {
-    return user?.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate;
-  }, [user]);
-
-  const canViewSharedMemories = isFreePassActive || isPaidPassActive;
-
-  useEffect(() => {
-    checkAndUpdatePassStatus();
-    if (userMode === 'guest' && user && 
-        (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired')) {
-      fetchPassPrice();
-    }
-  }, [checkAndUpdatePassStatus, userMode, user, fetchPassPrice]);
-
+export default function LandingPage() {
+  const { isAuthenticated, loading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (userMode === 'host') {
-        setMemories(mockMemories);
-      } else if (userMode === 'guest' && canViewSharedMemories) {
-        setMemories(mockMemories.slice(0, 2));
-      } else {
-        setMemories([]);
-      }
-      setIsLoading(false);
-      if (userMode === 'host') {
-        setPendingRequestCount(mockHostPendingRequests.length); // Use renamed mock data
-      } else {
-        setPendingRequestCount(0);
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [userMode, canViewSharedMemories, setPendingRequestCount]);
-
-  useEffect(() => {
-    let notificationSimulationTimer: NodeJS.Timeout;
-
-    if (userMode === 'host' && user && !hasNewSharedMemories) {
-      notificationSimulationTimer = setTimeout(() => {
-        if (userMode === 'host' && user && !hasNewSharedMemories) { 
-          const hasUnviewedNow = checkIfGuestHasUnviewedMemories();
-          if (hasUnviewedNow) {
-            setHasNewSharedMemories(true);
-          }
-        }
-      }, 7000); 
+    if (!loading && isAuthenticated) {
+      router.push('/timeline');
     }
-    return () => {
-      clearTimeout(notificationSimulationTimer);
-    };
-  }, [userMode, user, hasNewSharedMemories, setHasNewSharedMemories, checkIfGuestHasUnviewedMemories]);
+  }, [isAuthenticated, loading, router]);
 
-
-  const handleEditMemory = (memory: Memory) => {
-    console.log('Edit memory:', memory);
-  };
-
-  const handleDeleteMemory = (memoryId: string) => {
-    setMemories(prevMemories => prevMemories.filter(m => m.id !== memoryId));
-  };
-
-  const filteredAndSortedMemories = useMemo(() => {
-    let result = memories;
-
-    if (searchTerm) {
-      result = result.filter(memory =>
-        memory.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        memory.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        memory.emotionTags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
-    result.sort((a, b) => {
-      switch (sortCriteria) {
-        case 'date-asc':
-          return new Date(a.date).getTime() - new Date(b.date).getTime();
-        case 'date-desc':
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
-        case 'title-asc':
-          return a.title.localeCompare(b.title);
-        case 'title-desc':
-          return b.title.localeCompare(a.title);
-        default:
-          return 0;
-      }
-    });
-    return result;
-  }, [memories, searchTerm, sortCriteria]);
-
-
-  if (isLoading) {
+  // Show a simple loading state or null if auth is still loading and user might be redirected.
+  if (loading) {
     return (
-      <AuthenticatedPageWrapper>
-        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <h2 className="text-2xl font-headline mb-2">Loading Your Memories...</h2>
-          <p className="text-muted-foreground">Please wait while we gather everything for you.</p>
-        </div>
-      </AuthenticatedPageWrapper>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50">
+         {/* You can add a more sophisticated global loader here if needed */}
+      </div>
     );
   }
   
-  const renderPurchaseButton = () => {
-    let buttonText = "Purchase 31-Day Pass";
-    if (isFetchingPassPrice) {
-      buttonText = "Fetching price...";
-    } else if (passPriceDetails) {
-      const formattedPrice = new Intl.NumberFormat('en-GB', { style: 'currency', currency: passPriceDetails.currency }).format(passPriceDetails.passPrice);
-      buttonText = `Purchase 31-Day Pass (${formattedPrice})`;
-    }
+  // If authenticated, router.push will handle redirect, so render nothing until redirect happens.
+  if (isAuthenticated) {
+    return null;
+  }
 
-    const button = (
-      <Button onClick={purchasePaidPass} className="mt-4 w-full sm:w-auto" disabled={isFetchingPassPrice}>
-        {isFetchingPassPrice ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShoppingCart className="mr-2 h-5 w-5" />}
-        {buttonText}
-      </Button>
-    );
-
-    if (passPriceDetails && !isFetchingPassPrice && passPriceDetails.justification) {
-      return (
-        <TooltipProvider>
-          <div className="flex flex-col items-start">
-            {button}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="mt-2 text-xs text-muted-foreground flex items-center cursor-default">
-                  <Info className="h-3 w-3 mr-1" /> {passPriceDetails.justification} (Based on ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: passPriceDetails.currency }).format(passPriceDetails.coffeePrice)} coffee)
-                </span>
-              </TooltipTrigger>
-              <TooltipContent align="start" className="max-w-xs">
-                <p>{passPriceDetails.justification} We estimate the average coffee in London, UK is about {new Intl.NumberFormat('en-GB', { style: 'currency', currency: passPriceDetails.currency }).format(passPriceDetails.coffeePrice)}.</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        </TooltipProvider>
-      );
-    }
-    return button;
-  };
-
-
-  const renderGuestModeAccessUI = () => {
-    if (userMode !== 'guest' || !user) return null;
-
-    if (canViewSharedMemories) {
-      let passInfo = "";
-      if (isFreePassActive && user.freePassActivatedDate) {
-         const expiry = format(addMonths(parseISO(user.freePassActivatedDate), 6), 'PPP');
-         passInfo = `Your 6-month free pass is active until ${expiry}.`;
-      } else if (isPaidPassActive && user.paidPassExpiryDate) {
-         passInfo = `Your paid pass is active until ${format(parseISO(user.paidPassExpiryDate), 'PPP')}.`;
-      }
-      return (
-        <Alert variant="default" className="mb-6 bg-green-50 border-green-200">
-          <ShieldCheck className="h-5 w-5 text-green-600" />
-          <AlertTitle className="text-green-700">Access Granted</AlertTitle>
-          <AlertDescription className="text-green-600">
-            You can view shared memories. {passInfo}
-            {isPaidPassActive && (
-              <div className="mt-2">
-                {renderPurchaseButton()}
-              </div>
-            )}
-          </AlertDescription>
-        </Alert>
-      );
-    }
-
-    let title = "Access Shared Memories";
-    let description = "Activate your free pass or purchase a monthly pass to view memories shared with you.";
-    let actionContent = null;
-
-    if (user.sharedAccessStatus === 'no_pass_initiated') {
-      title = "Welcome to Shared Memories!";
-      description = "Activate your 6-month free pass to start viewing memories shared by others.";
-      actionContent = (
-        <Button onClick={activateFreePass} className="mt-4 w-full sm:w-auto">
-          <Gift className="mr-2 h-5 w-5" /> Activate Your 6-Month Free Pass
-        </Button>
-      );
-    } else if (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired') {
-      title = "Your Pass Has Expired";
-      description = "To continue viewing shared memories, please purchase a new 31-day pass.";
-      actionContent = renderPurchaseButton();
-    }
-
-    return (
-      <Alert variant="destructive" className="mb-6">
-        <ShieldOff className="h-5 w-5" />
-        <AlertTitle>{title}</AlertTitle>
-        <AlertDescription>
-          {description}
-          {actionContent}
-        </AlertDescription>
-      </Alert>
-    );
-  };
 
   return (
-    <AuthenticatedPageWrapper>
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-          <h1 className="font-headline text-4xl mb-4 md:mb-0">
-            {userMode === 'host' ? 'Your Memories' : 'Shared With You'}
-          </h1>
-          {userMode === 'host' && (
-            <Link href="/add-memory" passHref>
-              <Button>
-                <PlusCircle className="mr-2 h-5 w-5" />
-                Add New Memory
-              </Button>
-            </Link>
-          )}
-        </div>
-
-        {renderGuestModeAccessUI()}
-
-        <TimelineFilter
-          onSortChange={setSortCriteria}
-          onSearchChange={setSearchTerm}
-        />
-
-        {userMode === 'guest' && !canViewSharedMemories && filteredAndSortedMemories.length === 0 && (
-             <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
-                <CalendarClock className="mx-auto h-16 w-16 text-primary mb-6" />
-                <h2 className="font-headline text-3xl mb-3">Activate Access</h2>
-                <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                    Please activate your free pass or purchase a pass above to view shared memories.
-                </p>
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50">
+      <Navbar />
+      <main className="flex-grow">
+        {/* Hero Section */}
+        <section className="py-20 md:py-32 text-center bg-transparent">
+          <div className="container mx-auto px-4">
+            <BookHeart className="mx-auto h-20 w-20 text-primary mb-6 animate-bounce" />
+            <h1 className="font-headline text-5xl md:text-7xl font-bold mb-6">
+              Memory Weaver
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+              Your life's moments, beautifully preserved and effortlessly recalled. Weave together your precious memories with AI assistance.
+            </p>
+            <div className="space-x-4">
+              <Link href="/register" passHref>
+                <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                  Get Started for Free
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/login" passHref>
+                <Button size="lg" variant="outline">
+                  Login
+                </Button>
+              </Link>
             </div>
-        )}
-
-        {userMode === 'guest' && canViewSharedMemories && filteredAndSortedMemories.length === 0 && (
-          <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
-            <Users className="mx-auto h-16 w-16 text-primary mb-6" />
-            <h2 className="font-headline text-3xl mb-3">Nothing Shared Yet</h2>
-            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              When other users share memories with you, they will appear here.
-            </p>
           </div>
-        )}
+        </section>
 
-        {userMode === 'host' && filteredAndSortedMemories.length === 0 && (
-          <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
-            <BookHeart className="mx-auto h-16 w-16 text-primary mb-6" />
-            <h2 className="font-headline text-3xl mb-3">Welcome to Memory Weaver!</h2>
-            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              This is where your life’s moments will live, forever.
-            </p>
-            <Link href="/add-memory" passHref>
-              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                <PlusCircle className="mr-2 h-5 w-5" />
-                Record Your First Memory
-              </Button>
-            </Link>
+        {/* Features Section */}
+        <section className="py-16 bg-background">
+          <div className="container mx-auto px-4">
+            <h2 className="font-headline text-4xl text-center mb-12">
+              Why Memory Weaver?
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {features.map((feature) => (
+                <Card key={feature.title} className="text-center shadow-xl hover:shadow-2xl transition-shadow">
+                  <CardHeader>
+                    <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit mb-4">
+                       <feature.icon className="h-10 w-10 text-primary" />
+                    </div>
+                    <CardTitle className="font-headline text-2xl">{feature.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">{feature.description}</p>
+                  </CardContent>
+                   <CardFooter className="flex justify-center p-4">
+                     <div className="relative w-full h-40 bg-muted rounded-md overflow-hidden">
+                        <Image
+                            src={`https://placehold.co/300x200.png`}
+                            alt={feature.title}
+                            layout="fill"
+                            objectFit="cover"
+                            data-ai-hint={feature.imageHint}
+                        />
+                     </div>
+                   </CardFooter>
+                </Card>
+              ))}
+            </div>
           </div>
-        )}
+        </section>
 
-        {((userMode === 'host') || (userMode === 'guest' && canViewSharedMemories)) && filteredAndSortedMemories.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredAndSortedMemories.map((memory) => {
-              const isUnreadInGuestMode = userMode === 'guest' && user?.viewedSharedMemoryIds ? !user.viewedSharedMemoryIds.includes(memory.id) : false;
-              return (
-                <MemoryCard
-                  key={memory.id}
-                  memory={memory}
-                  onEdit={userMode === 'host' ? handleEditMemory : undefined}
-                  onDelete={userMode === 'host' ? handleDeleteMemory : undefined}
-                  isUnread={userMode === 'guest' ? isUnreadInGuestMode : undefined}
-                  onMarkAsViewed={userMode === 'guest' ? markSharedMemoryAsViewed : undefined}
-                  userMode={userMode}
-                />
-              );
-            })}
-          </div>
-        )}
+        {/* Testimonial/CTA Section (Optional) */}
+        <section className="py-20 bg-secondary">
+            <div className="container mx-auto px-4 text-center">
+                <h2 className="font-headline text-3xl mb-6">Ready to Weave Your Story?</h2>
+                <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
+                    Join thousands of users who are rediscovering the joy of their past memories and creating a legacy for the future.
+                </p>
+                <Link href="/register" passHref>
+                    <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                        Sign Up Now
+                    </Button>
+                </Link>
+            </div>
+        </section>
+      </main>
 
-        {/* Incoming Memory Requests section removed from here */}
-      </div>
-    </AuthenticatedPageWrapper>
+      <footer className="py-8 border-t bg-background">
+        <div className="container mx-auto px-4 text-center text-muted-foreground text-sm">
+          &copy; {new Date().getFullYear()} Memory Weaver. All rights reserved.
+        </div>
+      </footer>
+    </div>
   );
 }
+
+    

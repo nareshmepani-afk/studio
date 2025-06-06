@@ -55,7 +55,7 @@ export default function AddMemoryPage() {
       title: "Memory Added!",
       description: `"${memoryData.title}" has been saved.`,
     });
-    router.push('/'); 
+    router.push('/timeline'); 
   };
 
   return (
@@ -66,3 +66,5 @@ export default function AddMemoryPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    

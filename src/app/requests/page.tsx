@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { BellRing, UserCheck, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; // Import useRouter
+import { useRouter } from 'next/navigation'; 
 
 // Mock data for pending requests, similar to what was on the main page
 const mockPendingRequests = [
@@ -18,7 +18,7 @@ const mockPendingRequests = [
 
 export default function RequestsPage() {
   const { userMode } = useAuth();
-  const router = useRouter(); // Initialize useRouter
+  const router = useRouter(); 
 
   if (userMode !== 'host') {
     return (
@@ -29,7 +29,7 @@ export default function RequestsPage() {
           <p className="text-muted-foreground mb-6">
             This page is only accessible in Host mode.
           </p>
-          <Link href="/" passHref>
+          <Link href="/timeline" passHref>
             <Button variant="outline">Go to Timeline</Button>
           </Link>
         </div>
@@ -92,3 +92,5 @@ export default function RequestsPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    

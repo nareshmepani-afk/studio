@@ -26,50 +26,43 @@ export function Navbar() {
     logout();
   };
 
+  const navLinkClass = "text-sm font-medium text-muted-foreground transition-colors hover:text-primary";
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
-        <Link href="/" className="mr-6 flex items-center space-x-2">
+        <Link href={isAuthenticated ? "/timeline" : "/"} className="mr-6 flex items-center space-x-2">
           <BookHeart className="h-6 w-6 text-primary" />
           <span className="font-headline text-xl font-bold">Memory Weaver</span>
         </Link>
-        <nav className="flex flex-1 items-center space-x-4 lg:space-x-6">
-          {isAuthenticated && userMode === 'host' && (
-            <>
-              <Link href="/" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-                Timeline
-              </Link>
-              <Link href="/add-memory" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-                Add Memory
-              </Link>
-              <Link href="/prompts" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-                Prompts
-              </Link>
-              <Link href="/requests" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary flex items-center">
-                 Requests
-                 {pendingRequestCount > 0 && (
-                    <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-destructive-foreground bg-destructive rounded-full">
-                        {pendingRequestCount}
-                    </span>
-                 )}
-              </Link>
-              <Link href="/games" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-                Games
-              </Link>
-            </>
-          )}
-           {isAuthenticated && userMode === 'guest' && (
-             <>
-              <Link href="/" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-                Shared With Me
-              </Link>
-              <Link href="/games" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-                Games
-              </Link>
-             </>
-           )}
-        </nav>
-        <div className="flex items-center space-x-4">
+        
+        {isAuthenticated && (
+          <nav className="flex flex-1 items-center space-x-4 lg:space-x-6">
+            {userMode === 'host' ? (
+              <>
+                <Link href="/timeline" className={navLinkClass}>Timeline</Link>
+                <Link href="/add-memory" className={navLinkClass}>Add Memory</Link>
+                <Link href="/prompts" className={navLinkClass}>Prompts</Link>
+                <Link href="/requests" className={`${navLinkClass} flex items-center`}>
+                  Requests
+                  {pendingRequestCount > 0 && (
+                      <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-destructive-foreground bg-destructive rounded-full">
+                          {pendingRequestCount}
+                      </span>
+                  )}
+                </Link>
+                <Link href="/games" className={navLinkClass}>Games</Link>
+              </>
+            ) : ( // Guest mode navigation
+              <>
+                <Link href="/timeline" className={navLinkClass}>Shared With Me</Link>
+                <Link href="/games" className={navLinkClass}>Games</Link>
+              </>
+            )}
+          </nav>
+        )}
+
+        <div className={`flex items-center space-x-4 ${isAuthenticated ? '' : 'ml-auto'}`}>
           {isAuthenticated && user ? (
             <>
               <div className="flex items-center space-x-2">
@@ -143,3 +136,5 @@ export function Navbar() {
     </header>
   );
 }
+
+    

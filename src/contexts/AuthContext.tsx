@@ -129,13 +129,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [loading, user, checkAndUpdatePassStatus, pathname, userMode, checkIfGuestHasUnviewedMemories]);
 
   useEffect(() => {
-    if (!loading && !isAuthenticated && !['/login', '/register'].includes(pathname)) {
-      router.push('/login');
-    }
-    if (!loading && isAuthenticated && ['/login', '/register'].includes(pathname)) {
-      router.push('/');
+    const publicPaths = ['/', '/login', '/register']; // Define public paths
+    const isPublicPath = publicPaths.includes(pathname);
+
+    if (!loading) {
+      if (isAuthenticated) {
+        // User is authenticated
+        if (pathname === '/login' || pathname === '/register') {
+          router.push('/timeline'); // Redirect from login/register to timeline
+        } else if (pathname === '/') {
+           router.push('/timeline'); // Redirect from landing page to timeline if authenticated
+        }
+      } else {
+        // User is NOT authenticated
+        if (!isPublicPath) { // If trying to access a protected path
+          router.push('/login');
+        }
+      }
     }
   }, [isAuthenticated, loading, pathname, router]);
+
 
   const login = (email: string) => {
     const storedUserJson = localStorage.getItem('memoryWeaverUser');
@@ -178,9 +191,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     updateUserInStateAndStorage(currentUser);
     setIsAuthenticated(true);
     setUserModeState('host'); 
-    if (['/login', '/register'].includes(pathname) || pathname === "") {
-        router.push('/');
-    }
+    // Redirection is handled by the useEffect above
+    // router.push('/timeline'); // No longer needed here
   };
 
   const logout = () => {
@@ -190,7 +202,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setHasNewSharedMemoriesState(false);
     setUserModeState('host');
     setPassPriceDetails(null); // Clear price on logout
-    router.push('/login');
+    router.push('/login'); // Go to login page after logout
   };
 
   const setPendingRequestCount = useCallback((count: number) => {
@@ -271,23 +283,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
         updateUserInStateAndStorage(updatedUser);
         // Re-evaluate if there are other unviewed memories for the notification dot
-        setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
+         if (userMode === 'host') { // Only update this visual cue if host is looking at guest notifications
+           setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
+         }
       }
     }
-  }, [user, checkIfGuestHasUnviewedMemories]);
+  }, [user, checkIfGuestHasUnviewedMemories, userMode]);
 
   const fetchPassPrice = useCallback(async () => {
-    if (isFetchingPassPrice || passPriceDetails) return; // Don't fetch if already fetching or already have details
+    if (isFetchingPassPrice || passPriceDetails) return; 
 
     setIsFetchingPassPrice(true);
     try {
-      // Dynamically import the action to avoid making it part of the initial client bundle if not always needed
       const { getPassPriceAction } = await import('@/actions/getPassPriceAction');
       const priceData = await getPassPriceAction({ city: 'London', country: 'UK' });
       setPassPriceDetails(priceData);
     } catch (error) {
       console.error("Failed to fetch pass price:", error);
-      // Fallback is handled in the action itself, but we could set a generic error state here too
       setPassPriceDetails({
         passPrice: 7.99,
         currency: 'GBP',
@@ -327,3 +339,5 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
+    
