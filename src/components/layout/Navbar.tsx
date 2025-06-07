@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { BookHeart, LogOut, PlusCircle, Settings, BellRing, Users, UserCog, BookOpen, History } from 'lucide-react'; // Changed Timeline to History
+import { BookHeart, LogOut, PlusCircle, Settings, BellRing, Users, UserCog, BookOpen, History, Home } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
 export function Navbar() {
@@ -134,6 +134,10 @@ export function Navbar() {
                   <DropdownMenuItem onClick={() => router.push('/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/')}>
+                    <Home className="mr-2 h-4 w-4" />
+                    <span>View Landing Page</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
