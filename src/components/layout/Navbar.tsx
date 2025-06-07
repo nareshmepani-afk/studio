@@ -15,13 +15,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { BookHeart, LogOut, PlusCircle, Settings, BellRing, Users, UserCog, BookOpen } from 'lucide-react';
-import { useRouter, usePathname } from 'next/navigation'; // Added usePathname
+import { BookHeart, LogOut, PlusCircle, Settings, BellRing, Users, UserCog, BookOpen, Timeline } from 'lucide-react'; // Added Timeline
+import { useRouter, usePathname } from 'next/navigation';
 
 export function Navbar() {
   const { isAuthenticated, user, logout, pendingRequestCount, userMode, toggleUserMode, setUserMode, hasNewSharedMemories } = useAuth();
   const router = useRouter();
-  const pathname = usePathname(); // Get current pathname
+  const pathname = usePathname();
 
   const handleLogout = () => {
     logout();
@@ -30,10 +30,19 @@ export function Navbar() {
   const navLinkClass = "text-sm font-medium text-muted-foreground transition-colors hover:text-primary flex items-center";
   const activeNavLinkClass = "text-primary";
 
+  let logoHref = "/";
+  if (isAuthenticated) {
+    if (userMode === 'host') {
+      logoHref = "/prompts";
+    } else { // guest mode
+      logoHref = "/timeline";
+    }
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
-        <Link href={isAuthenticated ? "/prompts" : "/"} className="mr-6 flex items-center space-x-2">
+        <Link href={logoHref} className="mr-6 flex items-center space-x-2">
           <BookHeart className="h-6 w-6 text-primary" />
           <span className="font-headline text-xl font-bold">Memory Weaver</span>
         </Link>
@@ -42,12 +51,14 @@ export function Navbar() {
           <nav className="flex flex-1 items-center space-x-4 lg:space-x-6">
             {userMode === 'host' ? (
               <>
-                <Link href="/prompts" className={`${navLinkClass} ${pathname === '/prompts' ? activeNavLinkClass : ''}`}> 
+                <Link href="/prompts" className={`${navLinkClass} ${pathname === '/prompts' || pathname.startsWith('/add-memory') ? activeNavLinkClass : ''}`}> 
                   <BookOpen className="mr-1.5 h-4 w-4" /> My Life Journey
                 </Link>
-                <Link href="/timeline" className={`${navLinkClass} ${pathname === '/timeline' ? activeNavLinkClass : ''}`}>Timeline</Link>
+                <Link href="/timeline" className={`${navLinkClass} ${pathname === '/timeline' ? activeNavLinkClass : ''}`}>
+                  <Timeline className="mr-1.5 h-4 w-4" /> Timeline
+                </Link>
                 <Link href="/requests" className={`${navLinkClass} ${pathname === '/requests' ? activeNavLinkClass : ''}`}>
-                  Requests
+                  <BellRing className="mr-1.5 h-4 w-4" /> Requests
                   {pendingRequestCount > 0 && (
                       <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-destructive-foreground bg-destructive rounded-full">
                           {pendingRequestCount}
@@ -57,7 +68,9 @@ export function Navbar() {
               </>
             ) : ( // Guest mode navigation
               <>
-                <Link href="/timeline" className={`${navLinkClass} ${pathname === '/timeline' ? activeNavLinkClass : ''}`}>Shared With Me</Link>
+                <Link href="/timeline" className={`${navLinkClass} ${pathname === '/timeline' ? activeNavLinkClass : ''}`}>
+                   <Timeline className="mr-1.5 h-4 w-4" /> Shared With Me
+                </Link>
               </>
             )}
           </nav>

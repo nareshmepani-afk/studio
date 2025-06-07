@@ -129,26 +129,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [loading, user, checkAndUpdatePassStatus, pathname, userMode, checkIfGuestHasUnviewedMemories]);
 
   useEffect(() => {
-    const publicPaths = ['/', '/login', '/register']; // Define public paths
-    const isPublicPath = publicPaths.includes(pathname);
-    const defaultAuthenticatedPath = '/prompts'; // New: Default to "My Life Journey"
+    const publicPaths = ['/', '/login', '/register'];
+    const defaultAuthenticatedHostPath = '/prompts'; // For hosts
+    const defaultAuthenticatedGuestPath = '/timeline'; // For guests
 
     if (!loading) {
       if (isAuthenticated) {
-        // User is authenticated
-        if (pathname === '/login' || pathname === '/register') {
-          router.push(defaultAuthenticatedPath); 
-        } else if (pathname === '/') {
-           router.push(defaultAuthenticatedPath); 
+        const targetPath = userMode === 'host' ? defaultAuthenticatedHostPath : defaultAuthenticatedGuestPath;
+        // If user is authenticated and on a public page (like /, /login, or /register), redirect them to their appropriate dashboard
+        if (publicPaths.includes(pathname)) {
+          router.push(targetPath);
         }
       } else {
         // User is NOT authenticated
-        if (!isPublicPath) { // If trying to access a protected path
+        // If trying to access a protected path (not in publicPaths), redirect to login
+        if (!publicPaths.includes(pathname)) {
           router.push('/login');
         }
       }
     }
-  }, [isAuthenticated, loading, pathname, router]);
+  }, [isAuthenticated, loading, pathname, router, userMode]);
 
 
   const login = (email: string) => {
@@ -192,7 +192,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     updateUserInStateAndStorage(currentUser);
     setIsAuthenticated(true);
     setUserModeState('host'); 
-    // Redirection is handled by the useEffect above
+    // Redirection to the correct default path (/prompts for host) is handled by the useEffect above
   };
 
   const logout = () => {
@@ -201,8 +201,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setPendingRequestCountState(0);
     setHasNewSharedMemoriesState(false);
     setUserModeState('host');
-    setPassPriceDetails(null); // Clear price on logout
-    router.push('/login'); // Go to login page after logout
+    setPassPriceDetails(null); 
+    router.push('/login'); 
   };
 
   const setPendingRequestCount = useCallback((count: number) => {
@@ -222,13 +222,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const toggleUserMode = useCallback(() => {
     const newMode = userMode === 'host' ? 'guest' : 'host';
     handleModeChange(newMode);
-  }, [userMode, handleModeChange]); // Removed dependencies that were causing issues
+  }, [userMode, handleModeChange]);
   
   const setUserMode = useCallback((mode: UserMode) => {
     if (userMode !== mode) {
         handleModeChange(mode);
     }
-  }, [userMode, handleModeChange]); // Removed dependencies that were causing issues
+  }, [userMode, handleModeChange]);
 
 
   const activateFreePass = useCallback(() => {
@@ -282,8 +282,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           viewedSharedMemoryIds: [...currentViewedIds, memoryId],
         };
         updateUserInStateAndStorage(updatedUser);
-        // Re-evaluate if there are other unviewed memories for the notification dot
-         if (userMode === 'host') { // Only update this visual cue if host is looking at guest notifications
+         if (userMode === 'host') { 
            setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
          }
       }
@@ -295,15 +294,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     setIsFetchingPassPrice(true);
     try {
+      // Dynamically import the server action
       const { getPassPriceAction } = await import('@/actions/getPassPriceAction');
-      const priceData = await getPassPriceAction({ city: 'London', country: 'UK' });
+      const priceData = await getPassPriceAction({ city: 'London', country: 'UK' }); // Example location
       setPassPriceDetails(priceData);
     } catch (error) {
       console.error("Failed to fetch pass price:", error);
+      // Set a default/fallback if AI call fails
       setPassPriceDetails({
-        passPrice: 7.99,
-        currency: 'GBP',
-        coffeePrice: 0,
+        passPrice: 7.99, // Default price
+        currency: 'GBP', // Default currency
+        coffeePrice: 3.50, // Mock coffee price
         justification: 'Enjoy a month of shared memories with our standard access pass.',
       });
     } finally {
