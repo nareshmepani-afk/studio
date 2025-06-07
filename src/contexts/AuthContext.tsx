@@ -131,14 +131,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const publicPaths = ['/', '/login', '/register']; // Define public paths
     const isPublicPath = publicPaths.includes(pathname);
+    const defaultAuthenticatedPath = '/prompts'; // New: Default to "My Life Journey"
 
     if (!loading) {
       if (isAuthenticated) {
         // User is authenticated
         if (pathname === '/login' || pathname === '/register') {
-          router.push('/timeline'); // Redirect from login/register to timeline
+          router.push(defaultAuthenticatedPath); 
         } else if (pathname === '/') {
-           router.push('/timeline'); // Redirect from landing page to timeline if authenticated
+           router.push(defaultAuthenticatedPath); 
         }
       } else {
         // User is NOT authenticated
@@ -192,7 +193,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsAuthenticated(true);
     setUserModeState('host'); 
     // Redirection is handled by the useEffect above
-    // router.push('/timeline'); // No longer needed here
   };
 
   const logout = () => {
@@ -222,13 +222,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const toggleUserMode = useCallback(() => {
     const newMode = userMode === 'host' ? 'guest' : 'host';
     handleModeChange(newMode);
-  }, [userMode, handleModeChange, user, checkAndUpdatePassStatus, checkIfGuestHasUnviewedMemories]);
+  }, [userMode, handleModeChange]); // Removed dependencies that were causing issues
   
   const setUserMode = useCallback((mode: UserMode) => {
     if (userMode !== mode) {
         handleModeChange(mode);
     }
-  }, [userMode, handleModeChange, user, checkAndUpdatePassStatus, checkIfGuestHasUnviewedMemories]);
+  }, [userMode, handleModeChange]); // Removed dependencies that were causing issues
 
 
   const activateFreePass = useCallback(() => {
@@ -288,7 +288,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
          }
       }
     }
-  }, [user, checkIfGuestHasUnviewedMemories, userMode]);
+  }, [user, userMode, checkIfGuestHasUnviewedMemories]);
 
   const fetchPassPrice = useCallback(async () => {
     if (isFetchingPassPrice || passPriceDetails) return; 
@@ -339,5 +339,3 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-
-    
