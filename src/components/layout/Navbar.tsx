@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { BookHeart, LogOut, PlusCircle, Settings, BellRing, Users, UserCog, Gamepad2, MessageSquareQuote, BookOpen } from 'lucide-react'; // Added BookOpen
+import { BookHeart, LogOut, PlusCircle, Settings, BellRing, Users, UserCog, BookOpen } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export function Navbar() {
@@ -45,8 +45,6 @@ export function Navbar() {
                 <Link href="/prompts" className={`${navLinkClass}`}> 
                   <BookOpen className="mr-1.5 h-4 w-4" /> My Life Journey
                 </Link>
-                {/* Consider removing or de-emphasizing direct "Add Memory" if journey is primary */}
-                {/* <Link href="/add-memory" className={navLinkClass}>Add Memory</Link> */}
                 <Link href="/requests" className={`${navLinkClass}`}>
                   Requests
                   {pendingRequestCount > 0 && (
@@ -55,12 +53,10 @@ export function Navbar() {
                       </span>
                   )}
                 </Link>
-                <Link href="/games" className={navLinkClass}>Games</Link>
               </>
             ) : ( // Guest mode navigation
               <>
                 <Link href="/timeline" className={navLinkClass}>Shared With Me</Link>
-                <Link href="/games" className={navLinkClass}>Games</Link>
               </>
             )}
           </nav>
