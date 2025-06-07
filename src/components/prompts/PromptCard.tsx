@@ -11,7 +11,7 @@ interface PromptCardProps {
   isCompleted: boolean;
   memoryId?: string; // ID of the memory if this prompt is completed
   onStartChapter: (promptId: string, promptText: string) => void;
-  onViewEditChapter: (promptId: string) // Changed to take promptId, will find memoryId internally or via lookup
+  onViewEditChapter: (promptId: string) => void; // Changed to take promptId, will find memoryId internally or via lookup
 }
 
 export function PromptCard({
