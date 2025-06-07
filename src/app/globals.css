@@ -25,7 +25,8 @@ body {
     --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 30 20% 88%; /* Light, warm gray border */
-    --input: 30 20% 90%; /* Light, warm gray input background */
+    --input: 30 20% 90%; /* Light, warm gray input border */
+    --input-field-bg: hsl(var(--muted)); /* New variable for input field background */
     --ring: 330 60% 75%; /* Lighter version of primary for focus rings */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
@@ -64,7 +65,8 @@ body {
     --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 210 10% 25%;
-    --input: 210 10% 22%;
+    --input: 210 10% 22%; /* Input border in dark mode */
+    --input-field-bg: hsl(var(--muted)); /* Input field background in dark mode */
     --ring: 330 60% 75%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
