@@ -1,43 +1,70 @@
 
 "use client";
 
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { MessageSquarePlus } from 'lucide-react';
+import { BookText, CheckCircle, Edit } from 'lucide-react'; // Updated icons
 
 interface PromptCardProps {
   promptId: string;
-  promptText: string; // Now receives the already localized text
-  isFlaggedForReuse: boolean;
-  onAction: (promptId: string) => void;
-  onToggleFlag: (promptId: string, isFlagged: boolean) => void;
+  promptText: string;
+  isCompleted: boolean;
+  memoryId?: string; // ID of the memory if this prompt is completed
+  onStartChapter: (promptId: string, promptText: string) => void;
+  onViewEditChapter: (promptId: string) // Changed to take promptId, will find memoryId internally or via lookup
 }
 
-export function PromptCard({ promptId, promptText, isFlaggedForReuse, onAction, onToggleFlag }: PromptCardProps) {
+export function PromptCard({
+  promptId,
+  promptText,
+  isCompleted,
+  memoryId,
+  onStartChapter,
+  onViewEditChapter
+}: PromptCardProps) {
+
+  const handleAction = () => {
+    if (isCompleted && memoryId) {
+      onViewEditChapter(promptId);
+    } else {
+      onStartChapter(promptId, promptText);
+    }
+  };
+
   return (
-    <Card className="shadow-lg transition-all hover:shadow-xl animate-fade-in">
-      <CardContent className="pt-6">
-        <p className="text-base text-foreground">{promptText}</p>
+    <Card className={`shadow-lg transition-all hover:shadow-xl animate-fade-in flex flex-col h-full ${isCompleted ? 'bg-green-50 dark:bg-green-900/30 border-green-500' : 'bg-card'}`}>
+      <CardHeader className="pb-3">
+        {isCompleted && (
+            <div className="flex items-center text-green-600 dark:text-green-400 text-xs mb-1">
+                <CheckCircle className="h-4 w-4 mr-1.5" />
+                Chapter Recorded
+            </div>
+        )}
+        <CardTitle className={`font-normal text-base ${isCompleted ? 'text-green-800 dark:text-green-300' : 'text-foreground'}`}>
+          {promptText}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-grow">
+        {/* Can add a snippet of the memory description here if completed, in the future */}
       </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id={`flag-${promptId}`}
-            checked={isFlaggedForReuse}
-            onCheckedChange={(checked) => onToggleFlag(promptId, !!checked)}
-          />
-          <Label htmlFor={`flag-${promptId}`} className="text-sm text-muted-foreground cursor-pointer">
-            Flag for re-use
-          </Label>
-        </div>
-        <Button onClick={() => onAction(promptId)} size="sm">
-          <MessageSquarePlus className="mr-2 h-4 w-4" />
-          Use this Prompt
+      <CardFooter>
+        <Button
+          onClick={handleAction}
+          size="sm"
+          variant={isCompleted ? "outline" : "default"}
+          className="w-full"
+        >
+          {isCompleted ? (
+            <>
+              <Edit className="mr-2 h-4 w-4" /> View / Edit Chapter
+            </>
+          ) : (
+            <>
+              <BookText className="mr-2 h-4 w-4" /> Start this Chapter
+            </>
+          )}
         </Button>
       </CardFooter>
     </Card>
   );
 }
-

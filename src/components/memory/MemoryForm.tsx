@@ -16,8 +16,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, ArrowRight, Tag, MapPin } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { mockPrompts } from '@/lib/mockData';
-import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, getDate } from 'date-fns';
+import { mockPrompts } from '@/lib/mockData'; // For inspiration prompts
+import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, getDate, parseISO } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import {
   Carousel,
@@ -30,12 +30,16 @@ import {
 
 
 interface MemoryFormProps {
-  memory?: Memory;
-  onSubmit: (memoryData: Omit<Memory, 'id' | 'userId'>, userProfileForCues?: string, mediaFileToUpload?: File) => void;
+  memory?: Memory; // Existing memory for editing
+  onSubmit: (
+    memoryData: Omit<Memory, 'id' | 'userId'> & { promptId?: string }, // Include promptId here
+    userProfileForCues?: string, 
+    mediaFileToUpload?: File
+  ) => void;
   isSubmitting?: boolean;
 }
 
-type MediaRecorderData = { // Type for data coming from MediaCaptureControl
+type MediaRecorderData = { 
   file: File;
   type: 'video' | 'audio';
   previewUrl: string; 
@@ -44,7 +48,7 @@ type MediaRecorderData = { // Type for data coming from MediaCaptureControl
   duration: number;
 };
 
-type CurrentMediaData = { // Type for MemoryForm's internal state
+type CurrentMediaData = { 
   file: File;
   type: 'video' | 'audio';
   startTime?: number;
@@ -63,7 +67,7 @@ const months: { value: number; label: string }[] = Array.from({ length: 12 }, (_
 const SLIDE_INDEX_DETAILS = 0;
 const SLIDE_INDEX_MEDIA = 1;
 const SLIDE_INDEX_CUES = 2;
-const TOTAL_SLIDES = 3; // Total number of slides/steps
+const TOTAL_SLIDES = 3; 
 
 const countryOptions = [
   { value: "Afghanistan", label: "Afghanistan" },
@@ -278,17 +282,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const memoryDetailsCardHeaderRef = useRef<HTMLDivElement>(null);
   const mediaCardHeaderRef = useRef<HTMLDivElement>(null);
   const aiCuesCardHeaderRef = useRef<HTMLDivElement>(null);
+  
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
 
 
-  const [title, setTitle] = useState(memory?.title || '');
-  const [location, setLocation] = useState(memory?.location || '');
-  const [country, setCountry] = useState(memory?.country || 'United Kingdom');
+  const [title, setTitle] = useState('');
+  const [location, setLocation] = useState('');
+  const [country, setCountry] = useState('United Kingdom');
 
 
   const getInitialDateComponent = useCallback((component: 'year' | 'month' | 'day', dateSource?: string) => {
-    const dateToParse = dateSource ? new Date(dateSource) : new Date();
+    const dateToParse = dateSource ? parseISO(dateSource) : new Date(); // Use parseISO for string dates
     if (isValid(dateToParse)) {
       if (component === 'year') return getYear(dateToParse);
       if (component === 'month') return getMonth(dateToParse);
@@ -300,12 +305,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     return getDate(today);
   }, []);
 
-  const [selectedYear, setSelectedYear] = useState<number>(() => getInitialDateComponent('year', memory?.date));
-  const [selectedMonth, setSelectedMonth] = useState<number>(() => getInitialDateComponent('month', memory?.date));
-  const [selectedDay, setSelectedDay] = useState<number>(() => getInitialDateComponent('day', memory?.date));
+  const [selectedYear, setSelectedYear] = useState<number>(globalCurrentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number>(getMonth(new Date()));
+  const [selectedDay, setSelectedDay] = useState<number>(getDate(new Date()));
 
-  const [description, setDescription] = useState(memory?.description || '');
-  const [selectedEmotionTags, setSelectedEmotionTags] = useState<EmotionTag[]>(memory?.emotionTags || []);
+  const [description, setDescription] = useState('');
+  const [selectedEmotionTags, setSelectedEmotionTags] = useState<EmotionTag[]>([]);
   const [userProfile, setUserProfile] = useState(user?.profileInfo || '');
   const [aiCues, setAiCues] = useState<string[]>([]);
   const [isLoadingCues, setIsLoadingCues] = useState(false);
@@ -314,30 +319,77 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(SLIDE_INDEX_DETAILS);
-  const currentSlideRef = useRef(currentSlide); // Ref to hold the latest currentSlide for use in event handlers
+  const currentSlideRef = useRef(currentSlide); 
+
+  const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
+  const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null);
+  const [mediaToInitializeRecorder, setMediaToInitializeRecorder] = useState<MediaRecorderData | null>(null);
+
+  const promptIdFromQuery = searchParams.get('promptId');
+
+  useEffect(() => {
+    if (memory) { // Populate form if editing
+      setTitle(memory.title || '');
+      setLocation(memory.location || '');
+      setCountry(memory.country || 'United Kingdom');
+      setDescription(memory.description || '');
+      setSelectedEmotionTags(memory.emotionTags || []);
+      setUserProfile(user?.profileInfo || memory.userId); // Or some other relevant field from memory for cues
+
+      setSelectedYear(getInitialDateComponent('year', memory.date));
+      setSelectedMonth(getInitialDateComponent('month', memory.date));
+      setSelectedDay(getInitialDateComponent('day', memory.date));
+      
+      if (memory.mediaAttachments && memory.mediaAttachments.length > 0) {
+        const firstMedia = memory.mediaAttachments[0];
+        const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
+        // Set currentMedia directly so the summary view shows it initially
+        setCurrentMedia({
+          file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
+          type: firstMedia.type,
+          startTime: firstMedia.startTime,
+          endTime: firstMedia.endTime,
+          duration: duration,
+        });
+        // And set media for MediaCaptureControl to initialize with if user discards
+        setMediaToInitializeRecorder({
+            file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
+            type: firstMedia.type,
+            previewUrl: firstMedia.url || '',
+            startTime: firstMedia.startTime,
+            endTime: firstMedia.endTime,
+            duration: duration,
+        });
+      } else {
+        setCurrentMedia(null);
+        setMediaToInitializeRecorder(null);
+      }
+
+    } else { // Adding new memory
+      const promptTextFromUrl = searchParams.get('prompt');
+      if (promptTextFromUrl) {
+        setTitle(decodeURIComponent(promptTextFromUrl));
+      } else {
+        setTitle(''); // Reset title if not editing and no prompt
+      }
+      // Reset other fields for new memory form
+      setLocation('');
+      setCountry('United Kingdom');
+      setDescription('');
+      setSelectedEmotionTags([]);
+      setSelectedYear(getInitialDateComponent('year'));
+      setSelectedMonth(getInitialDateComponent('month'));
+      setSelectedDay(getInitialDateComponent('day'));
+      setCurrentMedia(null);
+      setMediaToInitializeRecorder(null);
+      setUserProfile(user?.profileInfo || '');
+    }
+  }, [memory, searchParams, user?.profileInfo, getInitialDateComponent]);
+
 
   useEffect(() => {
     currentSlideRef.current = currentSlide;
   }, [currentSlide]);
-
-
-  const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(() => {
-    if (memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
-      const firstMedia = memory.mediaAttachments[0];
-      const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
-      return {
-        file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
-        type: firstMedia.type,
-        startTime: firstMedia.startTime,
-        endTime: firstMedia.endTime,
-        duration: duration,
-      };
-    }
-    return null;
-  });
-  
-  const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null);
-  const [mediaToInitializeRecorder, setMediaToInitializeRecorder] = useState<MediaRecorderData | null>(null);
 
 
   const daysInSelectedMonth = useMemo(() => {
@@ -348,69 +400,44 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     return Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1);
   }, [daysInSelectedMonth]);
 
-  // Effect to set up Embla API and event listeners
-  useEffect(() => {
-    if (!carouselApi) {
-      return;
-    }
 
+  useEffect(() => {
+    if (!carouselApi) return;
     const handleSelect = () => {
       const newSelectedSlide = carouselApi.selectedScrollSnap();
-      if (newSelectedSlide !== currentSlideRef.current) {
-        setCurrentSlide(newSelectedSlide);
-      }
+      if (newSelectedSlide !== currentSlideRef.current) setCurrentSlide(newSelectedSlide);
     };
-
     carouselApi.on("select", handleSelect);
     carouselApi.on("reInit", handleSelect);
-
-    // Initial synchronization
     const initialEmblaSlide = carouselApi.selectedScrollSnap();
-    if (initialEmblaSlide !== currentSlideRef.current) {
-      setCurrentSlide(initialEmblaSlide);
-    }
-
+    if (initialEmblaSlide !== currentSlideRef.current) setCurrentSlide(initialEmblaSlide);
     return () => {
       carouselApi.off("select", handleSelect);
       carouselApi.off("reInit", handleSelect);
     };
   }, [carouselApi]);
 
-  // Effect to scroll the current slide's header into view
-  useEffect(() => {
-    if (!carouselApi || !carouselApi.engine?.scrollSnaps || carouselApi.engine.scrollSnaps.length === 0) {
-      return; // Wait for carousel to be fully initialized
-    }
 
+  useEffect(() => {
+    if (!carouselApi || !carouselApi.engine?.scrollSnaps || carouselApi.engine.scrollSnaps.length === 0) return;
     const scrollTarget = () => {
       let targetRef: React.RefObject<HTMLDivElement> | null = null;
-      if (currentSlide === SLIDE_INDEX_DETAILS) {
-        targetRef = memoryDetailsCardHeaderRef;
-      } else if (currentSlide === SLIDE_INDEX_MEDIA) {
-        targetRef = mediaCardHeaderRef;
-      } else if (currentSlide === SLIDE_INDEX_CUES) {
-        targetRef = aiCuesCardHeaderRef;
-      }
+      if (currentSlide === SLIDE_INDEX_DETAILS) targetRef = memoryDetailsCardHeaderRef;
+      else if (currentSlide === SLIDE_INDEX_MEDIA) targetRef = mediaCardHeaderRef;
+      else if (currentSlide === SLIDE_INDEX_CUES) targetRef = aiCuesCardHeaderRef;
 
-      if (targetRef?.current) {
-        // Ensure we are scrolling the header of the *actually selected* Embla slide
-        if (carouselApi.selectedScrollSnap() === currentSlide) {
-          targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+      if (targetRef?.current && carouselApi.selectedScrollSnap() === currentSlide) {
+        targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     };
-
-    const timer = setTimeout(scrollTarget, 250); // Delay scrolling
+    const timer = setTimeout(scrollTarget, 250);
     return () => clearTimeout(timer);
-
-  }, [currentSlide, carouselApi, memoryDetailsCardHeaderRef, mediaCardHeaderRef, aiCuesCardHeaderRef]);
+  }, [currentSlide, carouselApi]);
 
 
   useEffect(() => {
-    if (selectedDay > daysInSelectedMonth) {
-      setSelectedDay(daysInSelectedMonth);
-    }
-  }, [selectedDay, daysInSelectedMonth, selectedMonth, selectedYear]);
+    if (selectedDay > daysInSelectedMonth) setSelectedDay(daysInSelectedMonth);
+  }, [selectedDay, daysInSelectedMonth]);
 
 
   const loadInspirationPrompts = useCallback(() => {
@@ -424,40 +451,17 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
 
   useEffect(() => {
-    const promptFromUrl = searchParams.get('prompt');
-    if (promptFromUrl && !memory) { 
-      setTitle(decodeURIComponent(promptFromUrl));
-    }
-  }, [searchParams, memory]);
-
-
-  useEffect(() => {
-    if (user?.profileInfo && !memory) { 
-      setUserProfile(user.profileInfo);
-    }
-  }, [user, memory]);
-  
-  useEffect(() => {
     let blobUrlToRevoke: string | null = null;
-  
     if (currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0) {
       blobUrlToRevoke = URL.createObjectURL(currentMedia.file);
       setCurrentMediaPreviewUrl(blobUrlToRevoke);
-    } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
-      const firstMedia = memory.mediaAttachments[0];
-      if (firstMedia.url) {
-        setCurrentMediaPreviewUrl(firstMedia.url);
-      } else {
-        setCurrentMediaPreviewUrl(null); 
-      }
+    } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0 && memory.mediaAttachments[0].url) {
+      setCurrentMediaPreviewUrl(memory.mediaAttachments[0].url);
     } else {
       setCurrentMediaPreviewUrl(null); 
     }
-  
     return () => {
-      if (blobUrlToRevoke && blobUrlToRevoke.startsWith('blob:')) {
-        URL.revokeObjectURL(blobUrlToRevoke);
-      }
+      if (blobUrlToRevoke && blobUrlToRevoke.startsWith('blob:')) URL.revokeObjectURL(blobUrlToRevoke);
     };
   }, [currentMedia, isEditing, memory?.mediaAttachments]);
 
@@ -475,69 +479,42 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
 
   const handleMediaDiscardInForm = useCallback(() => {
-    if (currentMedia) {
-      const { file, type, ...restOfMedia } = currentMedia;
-      let previewUrlForRecorder = '';
-      if (isEditing && memory?.mediaAttachments?.[0]?.url) {
-        previewUrlForRecorder = memory.mediaAttachments[0].url;
-      }
-      
-      setMediaToInitializeRecorder({
-          file, 
-          type,
-          previewUrl: previewUrlForRecorder, 
-          ...restOfMedia,
-      });
-    } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
-        const firstMedia = memory.mediaAttachments[0];
-        setMediaToInitializeRecorder({
-            file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
-            type: firstMedia.type,
-            previewUrl: firstMedia.url || '',
-            startTime: firstMedia.startTime,
-            endTime: firstMedia.endTime,
-            duration: firstMedia.duration || 0,
-        });
+    const mediaToPassBackToRecorder = currentMedia || 
+      (isEditing && memory?.mediaAttachments?.[0] 
+        ? { 
+            file: new File([], memory.mediaAttachments[0].filename || "existing_media", {type: memory.mediaAttachments[0].type === 'video' ? 'video/webm' : 'audio/webm'}),
+            type: memory.mediaAttachments[0].type,
+            previewUrl: memory.mediaAttachments[0].url || '',
+            startTime: memory.mediaAttachments[0].startTime,
+            endTime: memory.mediaAttachments[0].endTime,
+            duration: memory.mediaAttachments[0].duration || 0,
+          }
+        : undefined);
+        
+    if (mediaToPassBackToRecorder) {
+        setMediaToInitializeRecorder(mediaToPassBackToRecorder as MediaRecorderData);
     }
-    setCurrentMedia(null); 
+    setCurrentMedia(null);
+    setCurrentMediaPreviewUrl(null);
   }, [currentMedia, isEditing, memory?.mediaAttachments]);
 
   const handleMediaDiscardInRecorder = useCallback(() => {
     setMediaToInitializeRecorder(null); 
   }, []);
 
+
   useEffect(() => {
     const mediaElement = currentMedia?.type === 'video' ? videoPreviewRef.current : audioPreviewRef.current;
-
     if (mediaElement && currentMedia && currentMediaPreviewUrl && mediaElement.src === currentMediaPreviewUrl) {
-      const targetTime = (currentMedia.startTime !== undefined && isFinite(currentMedia.startTime))
-        ? currentMedia.startTime
-        : 0.01; 
-
+      const targetTime = (currentMedia.startTime !== undefined && isFinite(currentMedia.startTime)) ? currentMedia.startTime : 0.01;
       const applyStartTime = () => {
-         if (mediaElement.readyState >= 1) { 
-          if (!mediaElement.paused) {
-            // It's okay if it's playing, seeking will pause it briefly if necessary by the browser
-          }
-          if (targetTime <= mediaElement.duration && Math.abs(mediaElement.currentTime - targetTime) > 0.1) {
-             try {
-                mediaElement.currentTime = targetTime;
-             } catch (error) {
-                console.warn("Error setting currentTime for preview in MemoryForm:", error);
-             }
-          }
+        if (mediaElement.readyState >= 1 && targetTime <= mediaElement.duration && Math.abs(mediaElement.currentTime - targetTime) > 0.1) {
+          try { mediaElement.currentTime = targetTime; } catch (error) { console.warn("Error setting currentTime:", error); }
         }
       };
-
-      if (mediaElement.readyState >= 1) {
-        applyStartTime();
-      } else {
-        mediaElement.addEventListener('loadedmetadata', applyStartTime, { once: true });
-      }
-      
-      return () => {
-        mediaElement.removeEventListener('loadedmetadata', applyStartTime);
-      };
+      if (mediaElement.readyState >= 1) applyStartTime();
+      else mediaElement.addEventListener('loadedmetadata', applyStartTime, { once: true });
+      return () => mediaElement.removeEventListener('loadedmetadata', applyStartTime);
     }
   }, [currentMedia, currentMediaPreviewUrl]); 
 
@@ -555,11 +532,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
         language: cueLanguage,
       });
       setAiCues(result.memoryCues);
-      if (result.memoryCues.length === 0) {
-        toast({ title: "No Cues Generated", description: "Try refining your profile information." });
-      } else {
-        toast({ title: "Memory Cues Generated!", description: "Check the suggestions below." });
-      }
+      toast({ title: result.memoryCues.length > 0 ? "Memory Cues Generated!" : "No Cues Generated", description: result.memoryCues.length > 0 ? "Check the suggestions below." : "Try refining your profile information." });
     } catch (error) {
       console.error("Failed to generate cues", error);
       toast({ title: "Error Generating Cues", description: "Something went wrong. Please try again.", variant: "destructive" });
@@ -568,7 +541,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   };
 
   const handleCueClick = (cue: string) => {
-    if (!title) setTitle(cue);
+    if (!title && !memory?.title) setTitle(cue); // Only set title if it's empty and not editing a memory with a title
     else setDescription(prev => `${prev}${prev ? '\n' : ''}Inspired by: ${cue}`);
     toast({ title: "Cue Applied!", description: `"${cue}" added to your memory.` });
   };
@@ -580,43 +553,30 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
   const handleEmotionTagToggle = (tag: EmotionTag) => {
     setSelectedEmotionTags(prevTags =>
-      prevTags.includes(tag)
-        ? prevTags.filter(t => t !== tag)
-        : [...prevTags, tag]
+      prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]
     );
   };
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-
     if (!title.trim()) {
       toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
       carouselApi?.scrollTo(SLIDE_INDEX_DETAILS, true);
-      setTimeout(() => {
-        // memoryDetailsCardHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); // Scrolling is handled by useEffect
-        titleInputRef.current?.focus();
-      }, 100);
+      setTimeout(() => titleInputRef.current?.focus(), 100);
       return;
     }
-
     let finalDate = new Date(selectedYear, selectedMonth, 1);
     finalDate = setDate(finalDate, selectedDay);
-
     if (!isValid(finalDate) || getYear(finalDate) !== selectedYear || getMonth(finalDate) !== selectedMonth || getDate(finalDate) !== selectedDay) {
       toast({ title: "Invalid Date", description: "Please select a valid date.", variant: "destructive" });
       carouselApi?.scrollTo(SLIDE_INDEX_DETAILS, true);
-      setTimeout(() => {
-        yearSelectRef.current?.focus();
-      }, 100);
+      setTimeout(() => yearSelectRef.current?.focus(), 100);
       return;
     }
-
     if (!description.trim()) {
       toast({ title: "Description Required", description: "Please enter a description for the memory.", variant: "destructive" });
       carouselApi?.scrollTo(SLIDE_INDEX_DETAILS, true);
-      setTimeout(() => {
-        descriptionTextareaRef.current?.focus();
-      }, 100);
+      setTimeout(() => descriptionTextareaRef.current?.focus(), 100);
       return;
     }
     if (!currentMedia) {
@@ -630,10 +590,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       const isNewFile = currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0;
       const originalMediaAttachment = memory?.mediaAttachments?.[0];
       const duration = (typeof currentMedia.duration === 'number' && !isNaN(currentMedia.duration)) ? currentMedia.duration : 0;
-      const mediaUrlToSubmit = isNewFile 
-        ? "placeholder_url_to_be_replaced_after_upload" 
-        : (originalMediaAttachment?.url || currentMediaPreviewUrl || ''); 
-
+      const mediaUrlToSubmit = isNewFile ? "placeholder_url_to_be_replaced_after_upload" : (originalMediaAttachment?.url || currentMediaPreviewUrl || '');
       mediaAttachmentsForSubmission = [{
         id: originalMediaAttachment?.id || Date.now().toString(),
         type: currentMedia.type,
@@ -654,6 +611,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
         mediaAttachments: mediaAttachmentsForSubmission,
         location: location || undefined,
         country: country || undefined,
+        promptId: promptIdFromQuery || memory?.promptId || undefined, // Include promptId
       },
       userProfile,
       currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0 ? currentMedia.file : undefined
@@ -662,53 +620,44 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
   const initialMediaForRecorderProp = useMemo(() => {
     if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
-        const firstMedia = memory.mediaAttachments[0];
-        const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
-        return {
-            file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
-            type: firstMedia.type,
-            previewUrl: firstMedia.url || '', 
-            startTime: firstMedia.startTime,
-            endTime: firstMedia.endTime,
-            duration: duration,
-        };
+      const firstMedia = memory.mediaAttachments[0];
+      const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
+      return {
+        file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
+        type: firstMedia.type,
+        previewUrl: firstMedia.url || '', 
+        startTime: firstMedia.startTime,
+        endTime: firstMedia.endTime,
+        duration: duration,
+      };
     }
     return undefined;
   }, [memory?.mediaAttachments, isEditing]);
 
   const isLastSlide = currentSlide === SLIDE_INDEX_CUES;
-  const mainButtonText = isEditing 
-      ? 'Save Changes' 
-      : isLastSlide 
-        ? 'Add Memory' 
-        : 'Next';
+  const mainButtonText = isEditing ? 'Save Changes' : isLastSlide ? 'Add Memory' : 'Next';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-      <Carousel
-        setApi={setCarouselApi}
-        opts={{ align: "start", loop: false }}
-        className="w-full max-w-3xl mx-auto py-4"
-      >
+      <Carousel setApi={setCarouselApi} opts={{ align: "start", loop: false }} className="w-full max-w-3xl mx-auto py-4">
         <CarouselContent>
           <CarouselItem>
             <Card className="w-full">
               <CardHeader ref={memoryDetailsCardHeaderRef}>
-                <CardTitle className="font-headline text-2xl">{memory ? 'Edit Memory' : 'Add New Memory'} (Step {SLIDE_INDEX_DETAILS + 1} of {TOTAL_SLIDES})</CardTitle>
+                <CardTitle className="font-headline text-2xl">{memory ? 'Edit Chapter' : 'New Chapter'} (Step {SLIDE_INDEX_DETAILS + 1} of {TOTAL_SLIDES})</CardTitle>
                 <CardDescription>Capture the details of your moment. Fields marked with * are mandatory.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1">
                   <Label htmlFor="title" ref={titleLabelRef}>Title *</Label>
                   <Input ref={titleInputRef} id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" />
-                  {inspirationPrompts.length > 0 && (
+                  {inspirationPrompts.length > 0 && !isEditing && ( // Only show inspiration if not editing
                     <div className="pt-2 space-y-2">
                       <div className="flex justify-between items-center">
                         <Label htmlFor="inspiration-prompts" className="text-xs text-muted-foreground">Need inspiration for your title?</Label>
                         <div className="flex items-center gap-2">
                           <Button type="button" variant="outline" size="sm" onClick={loadInspirationPrompts} className="text-xs h-7">
-                            <RefreshCw className="mr-1 h-3 w-3" />
-                            New Suggestions
+                            <RefreshCw className="mr-1 h-3 w-3" /> New Suggestions
                           </Button>
                           <Button type="button" variant="link" size="sm" onClick={() => router.push('/prompts')} className="text-xs h-7 px-2">
                             More Prompts <ArrowRight className="ml-1 h-3 w-3" />
@@ -719,14 +668,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                         {inspirationPrompts.map((prompt) => {
                           const promptText = prompt.text[cueLanguage] || prompt.text.en;
                           return (
-                            <Button
-                              type="button"
-                              key={prompt.id}
-                              variant="outline"
-                              size="sm"
-                              className="text-xs h-auto py-1 px-2"
-                              onClick={() => handleInspirationPromptClick(promptText)}
-                            >
+                            <Button type="button" key={prompt.id} variant="outline" size="sm" className="text-xs h-auto py-1 px-2" onClick={() => handleInspirationPromptClick(promptText)}>
                               {promptText}
                             </Button>
                           );
@@ -735,46 +677,32 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                     </div>
                   )}
                 </div>
-
                 <div className="space-y-1">
                   <Label>Date *</Label>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
                       <Label htmlFor="year-select" className="sr-only">Year</Label>
                       <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                        <SelectTrigger id="year-select" ref={yearSelectRef}>
-                          <SelectValue placeholder="Year" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
-                        </SelectContent>
+                        <SelectTrigger id="year-select" ref={yearSelectRef}><SelectValue placeholder="Year" /></SelectTrigger>
+                        <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div>
                       <Label htmlFor="month-select" className="sr-only">Month</Label>
                       <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
-                        <SelectTrigger id="month-select">
-                          <SelectValue placeholder="Month" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {months.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}
-                        </SelectContent>
+                        <SelectTrigger id="month-select"><SelectValue placeholder="Month" /></SelectTrigger>
+                        <SelectContent>{months.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div>
                       <Label htmlFor="day-select" className="sr-only">Day</Label>
                       <Select value={selectedDay.toString()} onValueChange={(value) => setSelectedDay(parseInt(value))}>
-                        <SelectTrigger id="day-select">
-                          <SelectValue placeholder="Day" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {dayOptions.map(d => <SelectItem key={d} value={d.toString()}>{d}</SelectItem>)}
-                        </SelectContent>
+                        <SelectTrigger id="day-select"><SelectValue placeholder="Day" /></SelectTrigger>
+                        <SelectContent>{dayOptions.map(d => <SelectItem key={d} value={d.toString()}>{d}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
                         <Label htmlFor="location">Location (Optional)</Label>
@@ -783,37 +711,20 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                     <div className="space-y-1">
                         <Label htmlFor="country-select">Country (Optional)</Label>
                         <Select value={country} onValueChange={setCountry}>
-                            <SelectTrigger id="country-select">
-                                <SelectValue placeholder="Select Country" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {countryOptions.map(option => (
-                                    <SelectItem key={option.value} value={option.value}>
-                                        {option.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
+                            <SelectTrigger id="country-select"><SelectValue placeholder="Select Country" /></SelectTrigger>
+                            <SelectContent>{countryOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent>
                         </Select>
                     </div>
                 </div>
-
                 <div className="space-y-1">
                   <Label htmlFor="description">Description *</Label>
                   <Textarea ref={descriptionTextareaRef} id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} required/>
                 </div>
-
                 <div className="space-y-1">
                   <Label htmlFor="emotion-tags">Emotion Tags (Optional)</Label>
                   <div className="flex flex-wrap gap-2 pt-1">
                     {emotionTagsList.map((tag) => (
-                      <Button
-                        type="button"
-                        key={tag}
-                        variant={selectedEmotionTags.includes(tag) ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => handleEmotionTagToggle(tag)}
-                        className="text-xs h-auto py-1 px-2"
-                      >
+                      <Button type="button" key={tag} variant={selectedEmotionTags.includes(tag) ? 'default' : 'outline'} size="sm" onClick={() => handleEmotionTagToggle(tag)} className="text-xs h-auto py-1 px-2">
                         {tag}
                       </Button>
                     ))}
@@ -822,13 +733,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
               </CardContent>
             </Card>
           </CarouselItem>
-
           <CarouselItem>
             <Card className="w-full">
               <CardHeader ref={mediaCardHeaderRef}>
-                  <CardTitle className="font-headline text-lg">
-                    Media Attachment for {title ? `"${title}"` : 'this memory'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})
-                  </CardTitle>
+                  <CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>
                   {!currentMedia && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}
               </CardHeader>
               <CardContent>
@@ -836,50 +744,20 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                           <p className="text-sm font-medium flex items-center"><Paperclip className="mr-2 h-5 w-5 inline-block" />Attached Media</p>
-                          <Button variant="ghost" size="icon" onClick={handleMediaDiscardInForm} aria-label="Remove media">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
                       </div>
                       <p className="text-sm text-muted-foreground">Type: {currentMedia.type}</p>
                       <p className="text-sm text-muted-foreground">Filename: {currentMedia.file.name}</p>
-                      {currentMedia.type === 'video' && (
-                      <video
-                        ref={videoPreviewRef}
-                        src={currentMediaPreviewUrl}
-                        controls
-                        className="w-full aspect-video rounded-md mt-2 bg-muted"
-                        key={currentMediaPreviewUrl}
-                        preload="auto"
-                      />
-                      )}
-                      {currentMedia.type === 'audio' && (
-                      <audio 
-                        ref={audioPreviewRef}
-                        src={currentMediaPreviewUrl} 
-                        controls 
-                        className="w-full mt-2" 
-                        key={currentMediaPreviewUrl} 
-                        preload="auto"
-                      />
-                      )}
+                      {currentMedia.type === 'video' && (<video ref={videoPreviewRef} src={currentMediaPreviewUrl} controls className="w-full aspect-video rounded-md mt-2 bg-muted" key={currentMediaPreviewUrl} preload="auto"/>)}
+                      {currentMedia.type === 'audio' && (<audio ref={audioPreviewRef} src={currentMediaPreviewUrl} controls className="w-full mt-2" key={currentMediaPreviewUrl} preload="auto"/>)}
                       <p className="text-sm text-muted-foreground mt-1">Duration: {typeof currentMedia.duration === 'number' ? currentMedia.duration.toFixed(2) : 'N/A'}s</p>
                       {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
                       {currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime && <p className="text-sm text-muted-foreground">Trim End: {currentMedia.endTime.toFixed(2)}s</p>}
-                      <Button variant="outline" type="button" onClick={handleMediaDiscardInForm} className="w-full mt-2">
-                          Change Media or Re-trim
-                      </Button>
+                      <Button variant="outline" type="button" onClick={handleMediaDiscardInForm} className="w-full mt-2">Change Media or Re-trim</Button>
                     </div>
-                  ) : (
-                    <MediaCaptureControl
-                        onMediaReady={handleMediaReady}
-                        onDiscard={handleMediaDiscardInRecorder}
-                        initialMedia={mediaToInitializeRecorder || initialMediaForRecorderProp}
-                    />
-                  )}
+                  ) : ( <MediaCaptureControl onMediaReady={handleMediaReady} onDiscard={handleMediaDiscardInRecorder} initialMedia={mediaToInitializeRecorder || initialMediaForRecorderProp} /> )}
               </CardContent>
             </Card>
           </CarouselItem>
-
           <CarouselItem>
             <Card className="w-full">
               <CardHeader ref={aiCuesCardHeaderRef}>
@@ -895,9 +773,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                   <div className="flex-grow space-y-1">
                       <Label htmlFor="cue-language">Language for Cues</Label>
                       <Select value={cueLanguage} onValueChange={(value: 'en' | 'gu') => setCueLanguage(value)}>
-                          <SelectTrigger id="cue-language">
-                              <SelectValue placeholder="Select language" />
-                          </SelectTrigger>
+                          <SelectTrigger id="cue-language"><SelectValue placeholder="Select language" /></SelectTrigger>
                           <SelectContent>
                               <SelectItem value="en">English</SelectItem>
                               <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
@@ -905,8 +781,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                       </Select>
                   </div>
                   <Button type="button" onClick={handleGenerateCues} disabled={isLoadingCues} variant="outline" className="w-full sm:w-auto">
-                      {isLoadingCues ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}
-                      Get AI Cues
+                      {isLoadingCues ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />} Get AI Cues
                   </Button>
                 </div>
                 {aiCues.length > 0 && (
@@ -915,9 +790,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                     <ul className="list-disc list-inside space-y-1">
                       {aiCues.map((cue, index) => (
                         <li key={index} className="text-sm text-muted-foreground">
-                          <button type="button" onClick={() => handleCueClick(cue)} className="text-primary hover:underline text-left">
-                            {cue}
-                          </button>
+                          <button type="button" onClick={() => handleCueClick(cue)} className="text-primary hover:underline text-left">{cue}</button>
                         </li>
                       ))}
                     </ul>
@@ -930,18 +803,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
         <CarouselPrevious />
         <CarouselNext />
       </Carousel>
-
       <CardFooter className="flex justify-end p-0 pt-6 max-w-3xl mx-auto">
-        <Button
-          type={isEditing || isLastSlide ? "submit" : "button"}
-          onClick={
-            isEditing || isLastSlide 
-              ? undefined 
-              : () => carouselApi?.scrollNext() 
-          }
-          disabled={!!isSubmitting}
-          className="w-full sm:w-auto"
-        >
+        <Button type={isEditing || isLastSlide ? "submit" : "button"} onClick={isEditing || isLastSlide ? undefined : () => carouselApi?.scrollNext() } disabled={!!isSubmitting} className="w-full sm:w-auto">
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {mainButtonText}
         </Button>
@@ -949,4 +812,3 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     </form>
   );
 }
-

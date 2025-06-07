@@ -25,6 +25,7 @@ export const mockMemories: Memory[] = [
     }],
     imageUrl: 'https://placehold.co/600x400.png', // Fallback or cover image
     isLegacy: true, // Marked for Legacy Chest
+    promptId: 'p1', // Linked to "A Child of Two Worlds"
   },
   {
     id: '2',
@@ -44,6 +45,7 @@ export const mockMemories: Memory[] = [
     }],
     imageUrl: 'https://placehold.co/600x400.png',
     isLegacy: false,
+    promptId: 'p2', // Linked to "The House I Grew Up In"
   },
   {
     id: '3',
@@ -409,4 +411,3 @@ export const mockPromptGroups: PromptGroup[] = [
 // For MemoryForm inspiration prompts, we'll keep a flat list for easier random selection
 // This is derived from the groups above.
 export const mockPrompts: Prompt[] = mockPromptGroups.reduce((acc, group) => acc.concat(group.prompts), [] as Prompt[]);
-

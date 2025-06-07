@@ -47,6 +47,7 @@ export interface Memory {
   location?: string; // For geographical context, e.g., "Paris" or "Yellowstone National Park"
   country?: string;  // For country context, e.g., "France" or "USA"
   isLegacy?: boolean; // For designating memories for the Legacy Chest
+  promptId?: string; // ID of the prompt this memory fulfills
   // For future host-side tracking of shares (conceptual for now)
   // shares?: Array<{ guestUserId: string; status: 'pending_view' | 'viewed_by_guest'; sharedDate: string; viewedDate?: string }>;
 }
@@ -59,7 +60,7 @@ export interface PromptText {
 export interface Prompt {
   id: string;
   text: PromptText;
-  isFlaggedForReuse: boolean;
+  isFlaggedForReuse: boolean; // Will be removed from UI but kept in type for now
   userId?: string; // If prompts are user-specific
 }
 
@@ -72,4 +73,3 @@ export interface PromptGroup {
   }; // e.g., 'Part I: Roots and Foundations'
   prompts: Prompt[];
 }
-

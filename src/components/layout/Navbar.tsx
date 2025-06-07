@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { BookHeart, LogOut, PlusCircle, Settings, BellRing, Users, UserCog, Gamepad2, MessageSquareQuote } from 'lucide-react';
+import { BookHeart, LogOut, PlusCircle, Settings, BellRing, Users, UserCog, Gamepad2, MessageSquareQuote, BookOpen } from 'lucide-react'; // Added BookOpen
 import { useRouter } from 'next/navigation';
 
 export function Navbar() {
@@ -26,7 +26,8 @@ export function Navbar() {
     logout();
   };
 
-  const navLinkClass = "text-sm font-medium text-muted-foreground transition-colors hover:text-primary";
+  const navLinkClass = "text-sm font-medium text-muted-foreground transition-colors hover:text-primary flex items-center";
+  const activeNavLinkClass = "text-primary"; // May not be needed if using Next's Link active styles
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -41,9 +42,12 @@ export function Navbar() {
             {userMode === 'host' ? (
               <>
                 <Link href="/timeline" className={navLinkClass}>Timeline</Link>
-                <Link href="/add-memory" className={navLinkClass}>Add Memory</Link>
-                <Link href="/prompts" className={navLinkClass}>Prompts</Link>
-                <Link href="/requests" className={`${navLinkClass} flex items-center`}>
+                <Link href="/prompts" className={`${navLinkClass}`}> 
+                  <BookOpen className="mr-1.5 h-4 w-4" /> My Life Journey
+                </Link>
+                {/* Consider removing or de-emphasizing direct "Add Memory" if journey is primary */}
+                {/* <Link href="/add-memory" className={navLinkClass}>Add Memory</Link> */}
+                <Link href="/requests" className={`${navLinkClass}`}>
                   Requests
                   {pendingRequestCount > 0 && (
                       <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-destructive-foreground bg-destructive rounded-full">
@@ -113,6 +117,10 @@ export function Navbar() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                   <DropdownMenuItem onClick={() => router.push('/add-memory')}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    <span>Add Freeform Memory</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
@@ -136,5 +144,3 @@ export function Navbar() {
     </header>
   );
 }
-
-    
