@@ -16,18 +16,19 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { BookHeart, LogOut, PlusCircle, Settings, BellRing, Users, UserCog, BookOpen } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation'; // Added usePathname
 
 export function Navbar() {
   const { isAuthenticated, user, logout, pendingRequestCount, userMode, toggleUserMode, setUserMode, hasNewSharedMemories } = useAuth();
   const router = useRouter();
+  const pathname = usePathname(); // Get current pathname
 
   const handleLogout = () => {
     logout();
   };
 
   const navLinkClass = "text-sm font-medium text-muted-foreground transition-colors hover:text-primary flex items-center";
-  const activeNavLinkClass = "text-primary"; // May not be needed if using Next's Link active styles
+  const activeNavLinkClass = "text-primary";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -41,11 +42,11 @@ export function Navbar() {
           <nav className="flex flex-1 items-center space-x-4 lg:space-x-6">
             {userMode === 'host' ? (
               <>
-                <Link href="/timeline" className={navLinkClass}>Timeline</Link>
-                <Link href="/prompts" className={`${navLinkClass}`}> 
+                <Link href="/timeline" className={`${navLinkClass} ${pathname === '/timeline' ? activeNavLinkClass : ''}`}>Timeline</Link>
+                <Link href="/prompts" className={`${navLinkClass} ${pathname === '/prompts' ? activeNavLinkClass : ''}`}> 
                   <BookOpen className="mr-1.5 h-4 w-4" /> My Life Journey
                 </Link>
-                <Link href="/requests" className={`${navLinkClass}`}>
+                <Link href="/requests" className={`${navLinkClass} ${pathname === '/requests' ? activeNavLinkClass : ''}`}>
                   Requests
                   {pendingRequestCount > 0 && (
                       <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-destructive-foreground bg-destructive rounded-full">
@@ -56,7 +57,7 @@ export function Navbar() {
               </>
             ) : ( // Guest mode navigation
               <>
-                <Link href="/timeline" className={navLinkClass}>Shared With Me</Link>
+                <Link href="/timeline" className={`${navLinkClass} ${pathname === '/timeline' ? activeNavLinkClass : ''}`}>Shared With Me</Link>
               </>
             )}
           </nav>
