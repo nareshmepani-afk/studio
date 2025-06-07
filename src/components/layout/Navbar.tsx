@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { BookHeart, LogOut, PlusCircle, Settings, BellRing, Users, UserCog, BookOpen, Timeline } from 'lucide-react'; // Added Timeline
+import { BookHeart, LogOut, PlusCircle, Settings, BellRing, Users, UserCog, BookOpen, History } from 'lucide-react'; // Changed Timeline to History
 import { useRouter, usePathname } from 'next/navigation';
 
 export function Navbar() {
@@ -55,7 +55,7 @@ export function Navbar() {
                   <BookOpen className="mr-1.5 h-4 w-4" /> My Life Journey
                 </Link>
                 <Link href="/timeline" className={`${navLinkClass} ${pathname === '/timeline' ? activeNavLinkClass : ''}`}>
-                  <Timeline className="mr-1.5 h-4 w-4" /> Timeline
+                  <History className="mr-1.5 h-4 w-4" /> Timeline 
                 </Link>
                 <Link href="/requests" className={`${navLinkClass} ${pathname === '/requests' ? activeNavLinkClass : ''}`}>
                   <BellRing className="mr-1.5 h-4 w-4" /> Requests
@@ -69,7 +69,7 @@ export function Navbar() {
             ) : ( // Guest mode navigation
               <>
                 <Link href="/timeline" className={`${navLinkClass} ${pathname === '/timeline' ? activeNavLinkClass : ''}`}>
-                   <Timeline className="mr-1.5 h-4 w-4" /> Shared With Me
+                   <History className="mr-1.5 h-4 w-4" /> Shared With Me 
                 </Link>
               </>
             )}
