@@ -8,7 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import { addMonths, addDays, isBefore, parseISO, format } from 'date-fns';
 import { mockMemories } from '@/lib/mockData'; // For checking available shared memories
 import type { GetPassPriceOutput } from '@/ai/flows/get-pass-price-flow';
-import { getPassPriceAction } from '@/actions/getPassPriceAction'; // Direct import
+import { getPassPriceAction } from '@/actions/getPassPriceAction';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -22,7 +22,7 @@ interface AuthContextType {
   toggleUserMode: () => void;
   setUserMode: (mode: UserMode) => void;
   activateFreePass: () => void;
-  purchasePaidPass: () => Promise<void>; // Made async
+  purchasePaidPass: () => Promise<void>;
   checkAndUpdatePassStatus: () => void;
   hasNewSharedMemories: boolean;
   setHasNewSharedMemories: (status: boolean) => void;
@@ -80,12 +80,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user]);
 
-  // Core logic for fetching pass price
   const fetchPassPriceLogic = useCallback(async () => {
     if (isFetchingPassPrice || passPriceDetails) return;
     
-    // Guard against calling if user/city/country is not yet available
-    // Though the calling useEffect should also guard this.
     const currentCity = user?.city;
     const currentCountry = user?.countryOfBirth;
 
@@ -106,13 +103,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isFetchingPassPrice, passPriceDetails, user?.city, user?.countryOfBirth]);
 
-  // Store the latest callback in a ref
   const fetchPassPriceRef = useRef(fetchPassPriceLogic);
   useEffect(() => {
     fetchPassPriceRef.current = fetchPassPriceLogic;
   }, [fetchPassPriceLogic]);
 
-  // Stable function to expose/use
   const fetchPassPrice = useCallback(async () => {
     return fetchPassPriceRef.current();
   }, []);
@@ -154,34 +149,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (userMode === 'host') {
         setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
       }
-    }
-  }, [loading, user, checkAndUpdatePassStatus, userMode, checkIfGuestHasUnviewedMemories]);
-  
-  // useEffect specifically for calling fetchPassPrice
-  useEffect(() => {
-    if (!loading && user && userMode === 'guest' &&
-        (user.sharedAccessStatus === 'free_pass_expired' ||
-         user.sharedAccessStatus === 'paid_pass_expired' ||
-         user.sharedAccessStatus === 'no_pass_initiated')) {
-      // Additional guard to prevent multiple fetches if already in progress or details exist
-      if (!isFetchingPassPrice && !passPriceDetails) {
-        fetchPassPrice(); // Calls the stable ref-wrapped version
+      if (userMode === 'guest' && 
+          (user.sharedAccessStatus === 'free_pass_expired' || 
+           user.sharedAccessStatus === 'paid_pass_expired' || 
+           user.sharedAccessStatus === 'no_pass_initiated')) {
+        if (!isFetchingPassPrice && !passPriceDetails) {
+          fetchPassPrice();
+        }
       }
     }
-  }, [loading, user, userMode, isFetchingPassPrice, passPriceDetails, fetchPassPrice]); // fetchPassPrice is stable
-
+  }, [loading, user, checkAndUpdatePassStatus, userMode, checkIfGuestHasUnviewedMemories, fetchPassPrice, isFetchingPassPrice, passPriceDetails]);
+  
   useEffect(() => {
     const publicPaths = ['/', '/login', '/register'];
     const defaultAuthenticatedHostPath = '/prompts';
     const defaultAuthenticatedGuestPath = '/timeline';
-    if (!loading) {
-      if (isAuthenticated) {
+
+    if (loading) return;
+
+    if (isAuthenticated) {
+      if (publicPaths.includes(pathname)) { 
         const targetPath = userMode === 'host' ? defaultAuthenticatedHostPath : defaultAuthenticatedGuestPath;
-        if (publicPaths.includes(pathname)) router.push(targetPath);
-      } else {
-        if (!publicPaths.includes(pathname)) router.push('/login');
+        router.push(targetPath);
       }
     }
+    // No 'else' block to redirect to /login. 
+    // AuthenticatedPageWrapper handles redirection for protected pages if !isAuthenticated.
+    // The logout function explicitly navigates to '/'.
   }, [isAuthenticated, loading, pathname, router, userMode]);
 
   const login = (email: string) => {
@@ -191,7 +185,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const storedUser = JSON.parse(storedUserJson);
         if (storedUser.email === email) {
-          currentUser = { /* ... existing hydration logic ... */ 
+          currentUser = { 
             id: storedUser.id || Date.now().toString(),
             email: storedUser.email,
             name: storedUser.name,
@@ -224,7 +218,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setHasNewSharedMemoriesState(false);
     setUserModeState('host');
     setPassPriceDetails(null);
-    router.push('/');
+    router.push('/'); 
   };
 
   const setPendingRequestCount = useCallback((count: number) => {
@@ -270,19 +264,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const updatedUser: User = { ...user, sharedAccessStatus: 'paid_pass_active', paidPassExpiryDate: newExpiryDate.toISOString() };
       updateUserInStateAndStorage(updatedUser);
       
-      let currentPassPriceDetails = passPriceDetails;
-      if (!currentPassPriceDetails && !isFetchingPassPrice) {
-        await fetchPassPrice(); // Await the stable fetchPassPrice
-        // Re-access from state after fetchPassPrice updates it
-        // This part is tricky as state updates from fetchPassPrice are async.
-        // For the toast, we might have to rely on the state variable which will update.
-        // The toast might show default then update if a re-render happens due to passPriceDetails changing.
-        // Or, we can just use what is available right after the await, but it might not be from state yet.
-        // For simplicity, we'll rely on the possibility that fetchPassPrice sets the state and this component re-renders.
+      if (!passPriceDetails && !isFetchingPassPrice) {
+        await fetchPassPrice();
       }
       
-      // This will use the latest `passPriceDetails` from state after any potential update by `fetchPassPrice`
-      const displayPriceDetails = passPriceDetails; // Use the state variable directly for the toast
+      const displayPriceDetails = passPriceDetails; 
 
       let priceToDisplay = "for your pass";
       if (displayPriceDetails) {
@@ -324,4 +310,3 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-
