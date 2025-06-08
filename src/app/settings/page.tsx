@@ -216,13 +216,22 @@ export default function SettingsPage() {
     );
   }
   
-  const isVercelDefaultAvatar = (url?: string): boolean => {
-    return !!url && url.startsWith('https://avatar.vercel.sh/');
+  const isEffectivelyEmptyOrPlaceholderAvatar = (url?: string): boolean => {
+    if (!url || url.trim() === '') return true;
+    if (url.startsWith('blob:')) return true; // Treat blob as temporary/placeholder for this check
+    if (url.startsWith('https://avatar.vercel.sh/')) return true;
+    return false;
   };
 
-  let srcToAttempt: string | undefined = avatarPreviewUrl || undefined;
-  if (!srcToAttempt && user?.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.startsWith('blob:') && !isVercelDefaultAvatar(user.avatarUrl)) {
-    srcToAttempt = user.avatarUrl;
+  let imageSrcForDisplay: string | undefined = undefined;
+  let showIconAsFallback = true;
+
+  if (avatarPreviewUrl) {
+    imageSrcForDisplay = avatarPreviewUrl;
+    showIconAsFallback = false; // We are attempting to show a preview
+  } else if (user.avatarUrl && !isEffectivelyEmptyOrPlaceholderAvatar(user.avatarUrl)) {
+    imageSrcForDisplay = user.avatarUrl;
+    showIconAsFallback = false; // We are attempting to show a persisted custom avatar
   }
 
 
@@ -318,11 +327,11 @@ export default function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-20 w-20">
-                    <AvatarImage src={srcToAttempt} alt={user.name || user.email} />
+                    <AvatarImage src={imageSrcForDisplay} alt={user.name || user.email} />
                     <AvatarFallback>
-                      {srcToAttempt ? 
-                        (user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?')) :
-                        (<UserCircle2 className="h-12 w-12 text-muted-foreground" />)
+                      {showIconAsFallback ? 
+                        (<UserCircle2 className="h-12 w-12 text-muted-foreground" />) :
+                        (user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?'))
                       }
                     </AvatarFallback>
                   </Avatar>
