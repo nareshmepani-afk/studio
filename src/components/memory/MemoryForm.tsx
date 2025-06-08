@@ -210,11 +210,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
       scrollTimeoutId = setTimeout(() => {
         let targetRef: React.RefObject<HTMLDivElement> | null = null;
+        let scrollOptions: ScrollIntoViewOptions = { behavior: 'smooth', block: 'start' };
+
         if (slideIndex === SLIDE_INDEX_DETAILS) targetRef = detailsCarouselItemRef;
         else if (slideIndex === SLIDE_INDEX_MEDIA) targetRef = mediaCarouselItemRef;
         else if (slideIndex === SLIDE_INDEX_CUES) targetRef = cuesCarouselItemRef;
         
-        targetRef?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        targetRef?.current?.scrollIntoView(scrollOptions);
       }, 200); 
     };
 
@@ -439,15 +441,17 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
     if (isEditing) {
       triggerSubmitProcess();
-    } else { 
+    } else { // New memory
       if (currentSlide === SLIDE_INDEX_CUES) {
         if (justLandedOnCuesSlideRef.current) {
             justLandedOnCuesSlideRef.current = false; 
             return; 
         }
         triggerSubmitProcess();
-      } else {
-        carouselApi?.scrollNext();
+      } else if (currentSlide === SLIDE_INDEX_DETAILS) {
+        carouselApi?.scrollTo(SLIDE_INDEX_MEDIA);
+      } else if (currentSlide === SLIDE_INDEX_MEDIA) {
+        carouselApi?.scrollTo(SLIDE_INDEX_CUES);
       }
     }
   };
@@ -461,7 +465,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         }
         handleActionButtonClick();
     } else if (carouselApi) {
-        carouselApi.scrollNext();
+        if (currentSlide === SLIDE_INDEX_DETAILS) {
+            carouselApi.scrollTo(SLIDE_INDEX_MEDIA);
+        } else if (currentSlide === SLIDE_INDEX_MEDIA) {
+            carouselApi.scrollTo(SLIDE_INDEX_CUES);
+        }
     }
   };
 
