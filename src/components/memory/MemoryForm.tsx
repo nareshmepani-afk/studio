@@ -82,9 +82,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const yearSelectRef = useRef<HTMLButtonElement>(null);
 
-  const detailsCarouselItemRef = useRef<HTMLDivElement>(null);
-  const mediaCarouselItemRef = useRef<HTMLDivElement>(null);
-  const cuesCarouselItemRef = useRef<HTMLDivElement>(null);
+  const step1AnchorRef = useRef<HTMLDivElement>(null);
+  const step2AnchorRef = useRef<HTMLDivElement>(null);
+  const step3AnchorRef = useRef<HTMLDivElement>(null);
 
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
@@ -203,22 +203,20 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     }
     visualScrollTimerRef.current = setTimeout(() => {
       let targetRef: React.RefObject<HTMLDivElement> | null = null;
-      if (slideIndex === SLIDE_INDEX_DETAILS) targetRef = detailsCarouselItemRef;
-      else if (slideIndex === SLIDE_INDEX_MEDIA) targetRef = mediaCarouselItemRef;
-      else if (slideIndex === SLIDE_INDEX_CUES) targetRef = cuesCarouselItemRef;
+      if (slideIndex === SLIDE_INDEX_DETAILS) targetRef = step1AnchorRef;
+      else if (slideIndex === SLIDE_INDEX_MEDIA) targetRef = step2AnchorRef;
+      else if (slideIndex === SLIDE_INDEX_CUES) targetRef = step3AnchorRef;
       
       targetRef?.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
     }, 200); 
   }, []); 
 
-  // Effect to react to `currentSlide` state changes (e.g., from button clicks or API sync)
-  // This effect commands the carousel AND performs the visual scroll.
+
   useEffect(() => {
     if (carouselApi) {
       if (carouselApi.selectedScrollSnap() !== currentSlide) {
-        carouselApi.scrollTo(currentSlide, true); // Jump: true for instant snap
+        carouselApi.scrollTo(currentSlide, true); 
       }
-      // Regardless of whether scrollTo was called, ensure the current slide is in view.
       performVisualScrollWithRef(currentSlide); 
     }
     return () => {
@@ -228,8 +226,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     };
   }, [currentSlide, carouselApi, performVisualScrollWithRef]);
 
-  // Effect for carousel API events (like drag, or after scrollTo completes)
-  // This primarily keeps `currentSlide` state in sync with the carousel's actual position.
+
   useEffect(() => {
     if (!carouselApi) return;
 
@@ -268,7 +265,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       if (justLandedTimeoutIdRef.current) clearTimeout(justLandedTimeoutIdRef.current);
       if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current); 
     };
-  }, [carouselApi, isEditing, setCurrentSlide, performVisualScrollWithRef, currentSlide]); // Added currentSlide to dependencies
+  }, [carouselApi, isEditing, setCurrentSlide, performVisualScrollWithRef, currentSlide]);
 
 
   useEffect(() => {
@@ -413,7 +410,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       setTimeout(() => descriptionTextareaRef.current?.focus(), 100);
       return;
     }
-    if (!currentMedia && !isEditing) { // For new memories, media is required. For editing, it might already exist.
+    if (!currentMedia && !isEditing) { 
         toast({ title: "Media Required", description: "A media attachment (video or audio) is required for new memories.", variant: "destructive" });
         setCurrentSlide(SLIDE_INDEX_MEDIA);
         return;
@@ -426,7 +423,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
 
     let mediaAttachmentsForSubmission: MediaAttachment[] | undefined = undefined;
-    if (currentMedia) { // If new media was selected or existing media was modified
+    if (currentMedia) { 
       const isNewFile = currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0;
       const originalMediaAttachment = memory?.mediaAttachments?.[0];
       const duration = (typeof currentMedia.duration === 'number' && !isNaN(currentMedia.duration)) ? currentMedia.duration : 0;
@@ -441,7 +438,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         duration: duration,
       }];
     } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
-        // If editing and no new media was chosen, use the existing media attachment.
         mediaAttachmentsForSubmission = memory.mediaAttachments;
     }
 
@@ -497,10 +493,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   };
 
   let actionButtonText = 'Next';
+  let ActionButtonIcon = ArrowRight;
   if (isEditing) {
     actionButtonText = 'Save Changes';
+    ActionButtonIcon = Sparkles; // Or Check, Save icon
   } else if (currentSlide === SLIDE_INDEX_CUES) {
     actionButtonText = 'Add Memory';
+    ActionButtonIcon = Sparkles; // Or Check icon
   }
 
   const initialMediaForRecorderProp = useMemo(() => {
@@ -524,7 +523,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     <form onSubmit={handleFormSubmit} className="space-y-6" noValidate>
       <Carousel setApi={setCarouselApi} opts={{ align: "start", loop: false }} className="w-full max-w-3xl mx-auto py-4">
         <CarouselContent>
-          <CarouselItem ref={detailsCarouselItemRef}>
+          <CarouselItem>
+            <div ref={step1AnchorRef} />
             <Card className="w-full">
               <CardHeader>
                 <CardTitle className="font-headline text-2xl">{memory ? 'Edit Chapter' : 'New Chapter'} (Step {SLIDE_INDEX_DETAILS + 1} of {TOTAL_SLIDES})</CardTitle>
@@ -616,7 +616,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
               </CardContent>
             </Card>
           </CarouselItem>
-          <CarouselItem ref={mediaCarouselItemRef}>
+          <CarouselItem>
+            <div ref={step2AnchorRef} />
             <Card className="w-full">
               <CardHeader>
                   <CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>
@@ -641,7 +642,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
               </CardContent>
             </Card>
           </CarouselItem>
-          <CarouselItem ref={cuesCarouselItemRef}>
+          <CarouselItem>
+            <div ref={step3AnchorRef} />
             <Card className="w-full">
               <CardHeader>
                 <CardTitle className="font-headline text-lg flex items-center"><Sparkles className="mr-2 h-5 w-5 text-primary" />AI-Powered Memory Cues (Step {SLIDE_INDEX_CUES + 1} of {TOTAL_SLIDES})</CardTitle>
@@ -707,8 +709,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           className="w-auto"
         >
           {isParentSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <ActionButtonIcon className="mr-2 h-4 w-4" />
           {actionButtonText}
-          {actionButtonText === 'Next' && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
       </div>
     </form>
