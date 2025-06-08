@@ -92,6 +92,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   const justLandedTimeoutIdRef = useRef<NodeJS.Timeout | null>(null);
   const visualScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const latestSelectedMediaDataRef = useRef<CurrentMediaData | null>(null);
+  const initialScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
 
   const [title, setTitle] = useState('');
@@ -203,6 +204,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     return Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1);
   }, [daysInSelectedMonth]);
 
+
   const performVisualScrollWithRef = useCallback((slideIndex: number) => {
     if (visualScrollTimerRef.current) {
       clearTimeout(visualScrollTimerRef.current);
@@ -257,7 +259,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     if (initialSnap !== currentSlide) {
       setCurrentSlide(initialSnap); 
     } else {
-      performVisualScrollWithRef(initialSnap);
+      if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current);
+      initialScrollTimerRef.current = setTimeout(() => {
+        performVisualScrollWithRef(initialSnap);
+      }, 100); 
     }
 
     carouselApi.on("select", handleApiEvent);
@@ -269,7 +274,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         carouselApi.off("reInit", handleApiEvent);
       }
       if (justLandedTimeoutIdRef.current) clearTimeout(justLandedTimeoutIdRef.current);
-      if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current); 
+      if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current);
+      if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current);
     };
   }, [carouselApi, isEditing, performVisualScrollWithRef, currentSlide]); 
 
@@ -360,17 +366,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   useEffect(() => {
     if (isProcessingMedia) {
-      if (currentMedia && latestSelectedMediaDataRef.current &&
-          currentMedia.file.name === latestSelectedMediaDataRef.current.file.name &&
-          currentMedia.type === latestSelectedMediaDataRef.current.type &&
-          Math.abs((currentMedia.duration ?? 0) - (latestSelectedMediaDataRef.current.duration ?? 0)) < 0.01 &&
-          Math.abs((currentMedia.startTime ?? 0) - (latestSelectedMediaDataRef.current.startTime ?? 0)) < 0.01 &&
-          Math.abs((currentMedia.endTime ?? 0) - (latestSelectedMediaDataRef.current.endTime ?? 0)) < 0.01
+      const refData = latestSelectedMediaDataRef.current;
+      if (currentMedia && refData &&
+          currentMedia.file.name === refData.file.name &&
+          currentMedia.type === refData.type &&
+          Math.abs((currentMedia.duration ?? 0) - (refData.duration ?? 0)) < 0.01 &&
+          Math.abs((currentMedia.startTime ?? 0) - (refData.startTime ?? 0)) < 0.01 &&
+          Math.abs((currentMedia.endTime ?? 0) - (refData.endTime ?? 0)) < 0.01
       ) {
         setIsProcessingMedia(false);
-      } else if (!latestSelectedMediaDataRef.current && currentMedia) {
-        setIsProcessingMedia(false);
-      } else if (!latestSelectedMediaDataRef.current && !currentMedia) {
+      } else if (!refData && currentMedia === null) { // Handle discard case
         setIsProcessingMedia(false);
       }
     }
@@ -394,6 +399,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   useEffect(() => {
     if (currentSlide !== SLIDE_INDEX_MEDIA && latestSelectedMediaDataRef.current) {
+      // If user navigates away from media step before processing, use state
       latestSelectedMediaDataRef.current = null;
     }
     if (currentMedia && latestSelectedMediaDataRef.current &&
@@ -402,6 +408,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         currentMedia.endTime === latestSelectedMediaDataRef.current.endTime &&
         currentMedia.duration === latestSelectedMediaDataRef.current.duration 
       ) {
+      // State has caught up with the ref for the same media instance
       latestSelectedMediaDataRef.current = null; 
     }
   }, [currentSlide, currentMedia]);
@@ -566,7 +573,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   };
 
   let actionButtonText = 'Next';
-  let ActionButtonIcon = ArrowRight;
+  let ActionButtonIcon: React.ElementType = ArrowRight;
   if (isEditing) {
     actionButtonText = 'Save Changes';
     ActionButtonIcon = Sparkles; 
@@ -776,7 +783,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           Previous
         </Button>
         <Button
-          type="button"
+          type="button" // Changed from submit to button to rely on explicit handler
           onClick={handleActionButtonClick}
           disabled={
             !!isParentSubmitting || 
@@ -793,3 +800,4 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     </form>
   );
 }
+
