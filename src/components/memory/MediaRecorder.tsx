@@ -18,14 +18,14 @@ interface MediaCaptureControlProps {
 }
 
 const SAMPLE_VIDEO_URL = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-const SAMPLE_VIDEO_DURATION = 596.48; 
+const SAMPLE_VIDEO_DURATION = 596.48;
 const SAMPLE_AUDIO_URL = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3";
-const SAMPLE_AUDIO_DURATION = 1.88; 
+const SAMPLE_AUDIO_DURATION = 1.88;
 
 function formatSecondsToTime(timeInSeconds: number | undefined): string {
   if (timeInSeconds === undefined || isNaN(timeInSeconds) || timeInSeconds < 0) return "0.0";
-  
-  const totalSecs = Number(timeInSeconds.toFixed(1)); 
+
+  const totalSecs = Number(timeInSeconds.toFixed(1));
 
   if (totalSecs < 60) {
     return totalSecs.toFixed(1);
@@ -53,12 +53,20 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   const [startTime, setStartTime] = useState<number>(initialMedia?.startTime || 0);
   const [endTime, setEndTime] = useState<number>(initialMedia?.endTime || initialMedia?.duration || 0);
   const [mediaDuration, setMediaDuration] = useState<number>(initialMedia?.duration || 0);
-  
+
+  const latestTrimValuesRef = useRef({ startTime: initialMedia?.startTime || 0, endTime: initialMedia?.endTime || initialMedia?.duration || 0 });
+
   const [startTimeInput, setStartTimeInput] = useState<string>(formatSecondsToTime(initialMedia?.startTime || 0));
   const [endTimeInput, setEndTimeInput] = useState<string>(formatSecondsToTime(initialMedia?.endTime || initialMedia?.duration || 0));
 
   const [isLoadingSample, setIsLoadingSample] = useState(false);
   const [sampleLoadingType, setSampleLoadingType] = useState<'video' | 'audio' | null>(null);
+
+
+  useEffect(() => {
+    latestTrimValuesRef.current = { startTime, endTime };
+  }, [startTime, endTime]);
+
 
   useEffect(() => {
     setStartTimeInput(formatSecondsToTime(startTime));
@@ -115,6 +123,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     setStartTime(0);
     setEndTime(0);
     setMediaDuration(0);
+    latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
     recordedChunks.current = [];
 
     cleanupStream(stream);
@@ -125,7 +134,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
       setIsRecording(false);
       return;
     }
-    
+
     if (!currentStream.active) {
         console.error("Stream is not active before initializing MediaRecorder.");
         setTimeout(() => {
@@ -152,22 +161,24 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         const blob = new Blob(recordedChunks.current, { type: mime });
         const file = new File([blob], `recording.${type === 'video' ? 'webm' : 'ogg'}`, { type: mime });
         const url = URL.createObjectURL(blob);
-        
+
         setRecordedFile(file);
         setPreviewUrl(url);
-        setIsRecording(false); 
+        setIsRecording(false);
 
         const tempMediaElement = document.createElement(type);
         tempMediaElement.src = url;
         tempMediaElement.onloadedmetadata = () => {
-          setMediaDuration(tempMediaElement.duration);
-          setEndTime(tempMediaElement.duration); 
+          const newDuration = tempMediaElement.duration;
+          setMediaDuration(newDuration);
+          setEndTime(newDuration);
+          latestTrimValuesRef.current = { startTime: 0, endTime: newDuration };
         };
-        
+
         cleanupStream(currentStream);
-        setStream(null); 
+        setStream(null);
       };
-      
+
       recorder.onerror = (event) => {
         console.error('MediaRecorder error:', event);
         setTimeout(() => {
@@ -179,7 +190,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
       };
 
       recorder.start();
-      setIsRecording(true); 
+      setIsRecording(true);
       setTimeout(() => {
         toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` });
       },0);
@@ -190,7 +201,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
          toast({ variant: 'destructive', title: 'Recording Setup Failed', description: 'Could not start recording. Please check permissions and device.' });
       }, 0);
       setIsRecording(false);
-      cleanupStream(currentStream); 
+      cleanupStream(currentStream);
       setStream(null);
     }
   };
@@ -204,7 +215,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
       setStream(null);
     }
   };
-  
+
   const handleVideoLoadedMetadata = (event: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement, Event>) => {
     const currentTarget = event.currentTarget;
      if (previewUrl && !mediaDuration && initialMedia?.previewUrl !== previewUrl) {
@@ -213,12 +224,16 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
             setMediaDuration(duration);
             if (!initialMedia || initialMedia.endTime === undefined || initialMedia.endTime === 0 || initialMedia.previewUrl !== previewUrl) {
                  setEndTime(duration);
+                 latestTrimValuesRef.current = { startTime: startTime, endTime: duration };
             }
              currentTarget.currentTime = startTime || 0;
         }
      } else if (previewUrl && initialMedia?.previewUrl === previewUrl && mediaDuration === 0 && initialMedia.duration) {
-        setMediaDuration(initialMedia.duration);
-        setEndTime(initialMedia.endTime !== undefined ? initialMedia.endTime : initialMedia.duration);
+        const newDuration = initialMedia.duration;
+        const newEndTime = initialMedia.endTime !== undefined ? initialMedia.endTime : newDuration;
+        setMediaDuration(newDuration);
+        setEndTime(newEndTime);
+        latestTrimValuesRef.current = { startTime: initialMedia.startTime || 0, endTime: newEndTime };
         currentTarget.currentTime = initialMedia.startTime || 0;
      }
   };
@@ -233,13 +248,13 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         }, 0);
         return;
       }
-      handleDiscardMedia(false); 
+      handleDiscardMedia(false);
 
       setMediaType(type);
       setRecordedFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
-      
+
       const tempMediaElement = document.createElement(type);
       tempMediaElement.src = url;
       tempMediaElement.onloadedmetadata = () => {
@@ -248,6 +263,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
           setMediaDuration(newDuration);
           setStartTime(0);
           setEndTime(newDuration);
+          latestTrimValuesRef.current = { startTime: 0, endTime: newDuration };
         }
       };
       setTimeout(() => {
@@ -259,7 +275,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   const handleLoadSampleMedia = async (type: 'video' | 'audio') => {
     setIsLoadingSample(true);
     setSampleLoadingType(type);
-    handleDiscardMedia(false); 
+    handleDiscardMedia(false);
 
     const url = type === 'video' ? SAMPLE_VIDEO_URL : SAMPLE_AUDIO_URL;
     const duration = type === 'video' ? SAMPLE_VIDEO_DURATION : SAMPLE_AUDIO_DURATION;
@@ -278,6 +294,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
       setMediaDuration(duration);
       setStartTime(0);
       setEndTime(duration);
+      latestTrimValuesRef.current = { startTime: 0, endTime: duration };
       setTimeout(() => {
         toast({ title: `Sample ${type} loaded`, description: filename });
       }, 0);
@@ -294,61 +311,64 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
 
 
   const handleUseMedia = () => {
-    if (recordedFile && previewUrl && mediaType && (mediaDuration > 0 || (mediaDuration === 0 && startTime === 0 && endTime ===0) )) { 
-      if (startTime > endTime && endTime > 0) { 
+    const currentStartTime = latestTrimValuesRef.current.startTime;
+    const currentEndTime = latestTrimValuesRef.current.endTime;
+
+    if (recordedFile && previewUrl && mediaType && (mediaDuration > 0 || (mediaDuration === 0 && currentStartTime === 0 && currentEndTime ===0) )) {
+      if (currentStartTime > currentEndTime && currentEndTime > 0) {
         setTimeout(() => {
           toast({ title: "Invalid Trim Times", description: "Start time cannot be after end time.", variant: "destructive" });
         }, 0);
         return;
       }
-       if (startTime === endTime && startTime > 0) {
+       if (currentStartTime === currentEndTime && currentStartTime > 0) {
         setTimeout(() => {
           toast({ title: "Invalid Trim Times", description: "Start and end times cannot be the same unless both are zero (for full media).", variant: "destructive" });
         }, 0);
         return;
       }
-      if (endTime > mediaDuration && mediaDuration > 0) { 
+      if (currentEndTime > mediaDuration && mediaDuration > 0) {
          setTimeout(() => {
-          toast({ title: "Invalid End Time", description: `End time (${formatSecondsToTime(endTime)}) cannot exceed media duration (${formatSecondsToTime(mediaDuration)}).`, variant: "destructive" });
+          toast({ title: "Invalid End Time", description: `End time (${formatSecondsToTime(currentEndTime)}) cannot exceed media duration (${formatSecondsToTime(mediaDuration)}).`, variant: "destructive" });
         }, 0);
         return;
       }
 
-      const isTrimmed = (startTime && startTime > 0.01) || (endTime && mediaDuration && Math.abs(endTime - mediaDuration) > 0.01 && endTime < mediaDuration);
+      const isTrimmed = (currentStartTime && currentStartTime > 0.01) || (currentEndTime && mediaDuration && Math.abs(currentEndTime - mediaDuration) > 0.01 && currentEndTime < mediaDuration);
       let toastDescription = "This media will be attached to your memory.";
       if (isTrimmed) {
-        toastDescription = `Media will be attached, trimmed from ${formatSecondsToTime(startTime)} to ${formatSecondsToTime(endTime)}.`;
+        toastDescription = `Media will be attached, trimmed from ${formatSecondsToTime(currentStartTime)} to ${formatSecondsToTime(currentEndTime)}.`;
       }
-      
-      onMediaReady({ file: recordedFile, type: mediaType, previewUrl, startTime, endTime, duration: mediaDuration });
+
+      onMediaReady({ file: recordedFile, type: mediaType, previewUrl, startTime: currentStartTime, endTime: currentEndTime, duration: mediaDuration });
       setTimeout(() => {
         toast({ title: "Media Selected", description: toastDescription, icon: <CheckCircle className="h-4 w-4" /> });
       }, 0);
 
-    } else if (!recordedFile && initialMedia && previewUrl && mediaType) { 
-       if (startTime > endTime && endTime > 0) {
+    } else if (!recordedFile && initialMedia && previewUrl && mediaType) {
+       if (currentStartTime > currentEndTime && currentEndTime > 0) {
         setTimeout(() => { toast({ title: "Invalid Trim Times", description: "Start time cannot be after end time.", variant: "destructive" }); }, 0);
         return;
       }
-      if (startTime === endTime && startTime > 0) {
+      if (currentStartTime === currentEndTime && currentStartTime > 0) {
          setTimeout(() => { toast({ title: "Invalid Trim Times", description: "Start and end times cannot be the same unless both are zero (for full media).", variant: "destructive" }); }, 0);
         return;
       }
-      if (endTime > mediaDuration && mediaDuration > 0) {
-         setTimeout(() => { toast({ title: "Invalid End Time", description: `End time (${formatSecondsToTime(endTime)}) cannot exceed media duration (${formatSecondsToTime(mediaDuration)}).`, variant: "destructive" }); }, 0);
+      if (currentEndTime > mediaDuration && mediaDuration > 0) {
+         setTimeout(() => { toast({ title: "Invalid End Time", description: `End time (${formatSecondsToTime(currentEndTime)}) cannot exceed media duration (${formatSecondsToTime(mediaDuration)}).`, variant: "destructive" }); }, 0);
         return;
       }
-      
+
       const placeholderFile = new File([], initialMedia.previewUrl.split('/').pop() || "existing_media", {type: mediaType === "video" ? "video/mp4" : "audio/mp3"});
-      const isTrimmed = (startTime && startTime > 0.01) || (endTime && mediaDuration && Math.abs(endTime - mediaDuration) > 0.01 && endTime < mediaDuration);
+      const isTrimmed = (currentStartTime && currentStartTime > 0.01) || (currentEndTime && mediaDuration && Math.abs(currentEndTime - mediaDuration) > 0.01 && currentEndTime < mediaDuration);
       let toastDescription = "Existing media will be used.";
       if (isTrimmed) {
-        toastDescription = `Existing media trim updated: ${formatSecondsToTime(startTime)} to ${formatSecondsToTime(endTime)}.`;
+        toastDescription = `Existing media trim updated: ${formatSecondsToTime(currentStartTime)} to ${formatSecondsToTime(currentEndTime)}.`;
       } else if (mediaDuration > 0) {
         toastDescription = "Existing media will be used in full.";
       }
-      
-      onMediaReady({ file: placeholderFile, type: mediaType, previewUrl, startTime, endTime, duration: mediaDuration });
+
+      onMediaReady({ file: placeholderFile, type: mediaType, previewUrl, startTime: currentStartTime, endTime: currentEndTime, duration: mediaDuration });
       setTimeout(() => { toast({ title: "Media Updated", description: toastDescription, icon: <CheckCircle className="h-4 w-4" /> }); }, 0);
 
 
@@ -360,33 +380,34 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   };
 
   const handleDiscardMedia = (showToast = true) => {
-    setIsRecording(false); 
+    setIsRecording(false);
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-        mediaRecorderRef.current.stop(); 
+        mediaRecorderRef.current.stop();
     } else {
-        cleanupStream(stream); 
+        cleanupStream(stream);
         setStream(null);
     }
-    mediaRecorderRef.current = null; 
+    mediaRecorderRef.current = null;
 
     if (previewUrl && previewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(previewUrl);
     }
     setRecordedFile(null);
-    
-    setPreviewUrl(initialMedia?.previewUrl || null); 
-    setMediaType(initialMedia?.type || null); 
-    
+
+    setPreviewUrl(initialMedia?.previewUrl || null);
+    setMediaType(initialMedia?.type || null);
+
     const initialStartTimeValue = initialMedia?.startTime || 0;
     const initialDurationValue = initialMedia?.duration || 0;
     const initialEndTimeValue = initialMedia?.endTime !== undefined ? initialMedia.endTime : initialDurationValue;
 
     setStartTime(initialStartTimeValue);
     setEndTime(initialEndTimeValue);
+    latestTrimValuesRef.current = { startTime: initialStartTimeValue, endTime: initialEndTimeValue };
     setMediaDuration(initialDurationValue);
-    
+
     recordedChunks.current = [];
-    onDiscard(); 
+    onDiscard();
     if (showToast) {
       setTimeout(() => {
         toast({ title: "Media Discarded" });
@@ -397,18 +418,19 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   useEffect(() => {
     setMediaType(initialMedia?.type || null);
     setPreviewUrl(initialMedia?.previewUrl || null);
-    
+
     const initialStartTimeValue = initialMedia?.startTime || 0;
     const initialDurationValue = initialMedia?.duration || 0;
     const initialEndTimeValue = initialMedia?.endTime !== undefined ? initialMedia.endTime : initialDurationValue;
-    
+
     setStartTime(initialStartTimeValue);
     setEndTime(initialEndTimeValue);
+    latestTrimValuesRef.current = { startTime: initialStartTimeValue, endTime: initialEndTimeValue };
     setMediaDuration(initialDurationValue);
-    
-    setIsRecording(false); 
+
+    setIsRecording(false);
     setRecordedFile(null);
-    
+
   }, [initialMedia]);
 
 
@@ -417,12 +439,12 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();
       }
-      cleanupStream(stream); 
-      if (previewUrl && previewUrl.startsWith('blob:')) { 
+      cleanupStream(stream);
+      if (previewUrl && previewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(previewUrl);
       }
     };
-  }, [stream, previewUrl, cleanupStream]); 
+  }, [stream, previewUrl, cleanupStream]);
 
 
   useEffect(() => {
@@ -432,34 +454,35 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
       return;
     }
 
-    const onPlayHandler = () => {
-      const numericStartTime = startTime !== undefined ? Number(startTime) : 0;
-      const numericEndTime = endTime !== undefined ? Number(endTime) : mediaDuration;
+    // Use latestTrimValuesRef for playback control to ensure it reflects immediate slider changes
+    const getPlaybackStartTime = () => latestTrimValuesRef.current.startTime;
+    const getPlaybackEndTime = () => latestTrimValuesRef.current.endTime;
 
-      // If current time is before startTime, or at/after endTime (and not playing the full clip naturally),
-      // then set currentTime to startTime.
-      // A small tolerance (e.g., 0.05 seconds) helps with floating point comparisons.
-      if (mediaElement.currentTime < numericStartTime - 0.05 || 
+
+    const onPlayHandler = () => {
+      const numericStartTime = getPlaybackStartTime();
+      const numericEndTime = getPlaybackEndTime();
+
+      if (mediaElement.currentTime < numericStartTime - 0.05 ||
           (mediaElement.currentTime >= numericEndTime - 0.05 && numericEndTime < mediaDuration - 0.05) ) {
         mediaElement.currentTime = numericStartTime;
       }
     };
 
     const onTimeUpdateHandler = () => {
-      const numericEndTime = endTime !== undefined ? Number(endTime) : mediaDuration;
+      const numericEndTime = getPlaybackEndTime();
       if (mediaElement.currentTime >= numericEndTime - 0.05) {
         mediaElement.pause();
-        // Ensure currentTime doesn't exceed endTime if it overshot slightly
         if (mediaElement.currentTime > numericEndTime) {
           mediaElement.currentTime = numericEndTime;
         }
       }
     };
-    
-    // If startTime changes while media is paused, update currentTime for scrubber feedback
+
     if (mediaElement.paused && startTime !== undefined) {
-        if (Math.abs(mediaElement.currentTime - startTime) > 0.1) { 
-            mediaElement.currentTime = startTime;
+        const numericStartTime = getPlaybackStartTime();
+        if (Math.abs(mediaElement.currentTime - numericStartTime) > 0.1) {
+            mediaElement.currentTime = numericStartTime;
         }
     }
 
@@ -470,8 +493,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
       mediaElement.removeEventListener('play', onPlayHandler);
       mediaElement.removeEventListener('timeupdate', onTimeUpdateHandler);
     };
-  }, [previewUrl, mediaType, startTime, endTime, mediaDuration, videoRef, audioPreviewRef]);
-
+  }, [previewUrl, mediaType, mediaDuration, videoRef, audioPreviewRef, startTime]); // startTime included to re-evaluate if it changes
 
   return (
     <Card>
@@ -546,7 +568,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
               Media available: <span className="text-primary">{recordedFile?.name || (initialMedia && initialMedia.previewUrl === previewUrl ? "Previously attached media" : 'Recorded Media')}</span>
               {(mediaDuration > 0) && ` (Duration: ${formatSecondsToTime(mediaDuration)})`}
             </p>
-            
+
             {mediaType === 'video' ? (
               <video ref={videoRef} src={previewUrl} controls className="w-full aspect-video rounded-md bg-muted" onLoadedMetadata={handleVideoLoadedMetadata} key={previewUrl} />
             ) : (
@@ -556,19 +578,20 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
             {(mediaDuration > 0 || (mediaDuration === 0 && startTime === 0 && endTime === 0)) && (
               <div className="space-y-3 pt-2">
                 <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Start: {startTimeInput}</span>
-                  <span>End: {endTimeInput}</span>
+                  <span>Start: {formatSecondsToTime(latestTrimValuesRef.current.startTime)}</span>
+                  <span>End: {formatSecondsToTime(latestTrimValuesRef.current.endTime)}</span>
                 </div>
                 <Slider
                   disabled={!mediaDuration || mediaDuration === 0}
-                  value={[startTime, endTime]}
+                  value={[startTime, endTime]} // Slider visually reflects state
                   onValueChange={(newValues) => {
-                    setStartTime(newValues[0]);
-                    setEndTime(newValues[1]);
+                    setStartTime(newValues[0]); // Update state for visual feedback
+                    setEndTime(newValues[1]);   // Update state for visual feedback
+                    latestTrimValuesRef.current = { startTime: newValues[0], endTime: newValues[1] }; // Update ref immediately
                   }}
                   min={0}
                   max={mediaDuration}
-                  step={0.1} 
+                  step={0.1}
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground">
@@ -579,7 +602,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
             )}
 
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-              <Button onClick={handleUseMedia} className="w-full sm:w-auto flex-1" disabled={!mediaType || (mediaDuration === 0 && !(startTime === 0 && endTime ===0) )}>
+              <Button onClick={handleUseMedia} className="w-full sm:w-auto flex-1" disabled={!mediaType || (mediaDuration === 0 && !(latestTrimValuesRef.current.startTime === 0 && latestTrimValuesRef.current.endTime ===0) )}>
                 <CheckCircle className="mr-2 h-4 w-4" /> Use This Media
               </Button>
               <Button onClick={() => handleDiscardMedia(true)} variant="outline" className="w-full sm:w-auto flex-1">
@@ -592,7 +615,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Button
                   onClick={() => {
-                    handleDiscardMedia(false); 
+                    handleDiscardMedia(false);
                     handleLoadSampleMedia('video');
                   }}
                   variant="secondary"
@@ -604,7 +627,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
                 </Button>
                 <Button
                   onClick={() => {
-                    handleDiscardMedia(false); 
+                    handleDiscardMedia(false);
                     handleLoadSampleMedia('audio');
                   }}
                   variant="secondary"
@@ -623,6 +646,3 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     </Card>
   );
 }
-    
-
-    
