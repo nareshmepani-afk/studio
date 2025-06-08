@@ -219,7 +219,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
 
   useEffect(() => {
-    if (carouselApi && carouselApi.selectedScrollSnap() !== currentSlide) {
+    if (!carouselApi) return;
+    if (carouselApi.selectedScrollSnap() !== currentSlide) {
       carouselApi.scrollTo(currentSlide, true); 
     }
     performVisualScrollWithRef(currentSlide); 
@@ -596,7 +597,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       <Carousel setApi={setCarouselApi} opts={{ align: "start", loop: false }} className="w-full max-w-3xl mx-auto py-4">
         <CarouselContent>
           <CarouselItem>
-            <div ref={step1AnchorRef} />
+            <div ref={step1AnchorRef}>TOP</div>
             <Card className="w-full">
               <CardHeader>
                 <CardTitle className="font-headline text-2xl">{memory ? 'Edit Chapter' : 'New Chapter'} (Step {SLIDE_INDEX_DETAILS + 1} of {TOTAL_SLIDES})</CardTitle>
@@ -689,7 +690,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             </Card>
           </CarouselItem>
           <CarouselItem>
-            <div ref={step2AnchorRef} />
+            <div ref={step2AnchorRef}>TOP</div>
             <Card className="w-full">
               <CardHeader>
                   <CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>
@@ -715,7 +716,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             </Card>
           </CarouselItem>
           <CarouselItem>
-            <div ref={step3AnchorRef} />
+            <div ref={step3AnchorRef}>TOP</div>
             <Card className="w-full">
               <CardHeader>
                 <CardTitle className="font-headline text-lg flex items-center"><Sparkles className="mr-2 h-5 w-5 text-primary" />AI-Powered Memory Cues (Step {SLIDE_INDEX_CUES + 1} of {TOTAL_SLIDES})</CardTitle>
@@ -792,5 +793,3 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     </form>
   );
 }
-
-    
