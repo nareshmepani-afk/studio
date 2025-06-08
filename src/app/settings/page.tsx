@@ -12,11 +12,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import type { User } from '@/types';
-import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info } from 'lucide-react';
+import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
 import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
+import { useRouter } from 'next/navigation'; // Added for router push
 
 const currentGlobalYear = new Date().getFullYear();
 const dobYears: number[] = Array.from({ length: 120 }, (_, i) => currentGlobalYear - i); 
@@ -37,6 +38,7 @@ export default function SettingsPage() {
     fetchPassPrice,
     isFetchingPassPrice
   } = useAuth();
+  const router = useRouter(); // Initialize router
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [profileInfo, setProfileInfo] = useState('');
@@ -81,7 +83,10 @@ export default function SettingsPage() {
       setName(user.name || '');
       setEmail(user.email || '');
       setProfileInfo(user.profileInfo || '');
-      setAvatarPreviewUrl(user.avatarUrl || null); 
+      // Do not set avatarPreviewUrl from user.avatarUrl here. 
+      // avatarPreviewUrl is only for new uploads.
+      // user.avatarUrl will be used directly in AvatarImage src if no preview.
+      setAvatarPreviewUrl(null); 
 
       if (user.dateOfBirth && isValid(parseISO(user.dateOfBirth))) {
         const dob = parseISO(user.dateOfBirth);
@@ -129,9 +134,13 @@ export default function SettingsPage() {
     if (!user) return;
     setIsSubmitting(true);
 
-    let finalAvatarUrl = user.avatarUrl;
-    if (avatarFile && avatarPreviewUrl) {
-      finalAvatarUrl = avatarPreviewUrl;
+    let finalAvatarUrl = user.avatarUrl; // Start with existing or undefined
+    if (avatarFile && avatarPreviewUrl) { // If a new file is previewed, it will be the new URL (conceptually)
+      // In a real app, you'd upload avatarFile and get a new URL.
+      // For this mock, we'll just use the blob URL for display if it exists,
+      // but a real app would save a persistent URL.
+      // For simplicity, we'll assume avatarPreviewUrl is what gets "saved" in mock.
+      finalAvatarUrl = avatarPreviewUrl; 
     }
 
     let finalDateOfBirth: string | undefined = undefined;
@@ -157,7 +166,7 @@ export default function SettingsPage() {
       name: name,
       email: email,
       profileInfo: profileInfo,
-      avatarUrl: finalAvatarUrl,
+      avatarUrl: finalAvatarUrl, // This will be the blob URL if a new file was selected for preview
       dateOfBirth: finalDateOfBirth,
       countryOfBirth: countryOfBirth || undefined,
       city: city || undefined,
@@ -180,6 +189,7 @@ export default function SettingsPage() {
     });
   };
 
+  // Cleanup effect for avatarPreviewUrl if it's a blob URL
   useEffect(() => {
     let currentPreview = avatarPreviewUrl;
     return () => {
@@ -203,8 +213,6 @@ export default function SettingsPage() {
   }
 
   if (!user) {
-    // This case should ideally be handled by AuthenticatedPageWrapper redirecting to login
-    // Adding a fallback here just in case.
     return (
       <AuthenticatedPageWrapper>
         <div className="container mx-auto py-8 px-4 text-center">
@@ -307,8 +315,16 @@ export default function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-20 w-20">
-                    <AvatarImage src={avatarPreviewUrl || user.avatarUrl || `https://avatar.vercel.sh/${email}.png`} alt={name || email} />
-                    <AvatarFallback>{name ? name.charAt(0).toUpperCase() : email.charAt(0).toUpperCase()}</AvatarFallback>
+                    {(avatarPreviewUrl || user.avatarUrl) ? (
+                      <AvatarImage src={avatarPreviewUrl || user.avatarUrl} alt={name || email} />
+                    ) : null}
+                    <AvatarFallback>
+                      {!avatarPreviewUrl && !user.avatarUrl ? (
+                        <UserCircle2 className="h-12 w-12 text-muted-foreground" />
+                      ) : (
+                        name ? name.charAt(0).toUpperCase() : (email ? email.charAt(0).toUpperCase() : '?')
+                      )}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="space-y-2">
                     <Button type="button" variant="outline" onClick={() => avatarInputRef.current?.click()}>
@@ -429,5 +445,3 @@ export default function SettingsPage() {
     </AuthenticatedPageWrapper>
   );
 }
-
-    
