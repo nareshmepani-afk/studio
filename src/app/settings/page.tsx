@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
 import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
-import { useRouter } from 'next/navigation'; // Added for router push
+import { useRouter } from 'next/navigation'; 
 
 const currentGlobalYear = new Date().getFullYear();
 const dobYears: number[] = Array.from({ length: 120 }, (_, i) => currentGlobalYear - i); 
@@ -38,7 +38,7 @@ export default function SettingsPage() {
     fetchPassPrice,
     isFetchingPassPrice
   } = useAuth();
-  const router = useRouter(); // Initialize router
+  const router = useRouter(); 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [profileInfo, setProfileInfo] = useState('');
@@ -131,16 +131,8 @@ export default function SettingsPage() {
     if (!user) return;
     setIsSubmitting(true);
 
-    // IMPORTANT: In a real app, if avatarFile exists, upload it to a persistent storage 
-    // and get a permanent URL. For this demo, we're using blob URLs for preview
-    // which are temporary and won't persist across sessions if saved as user.avatarUrl.
-    // For now, if a new file is uploaded, we'll assume the "real" URL would be this blob URL
-    // for the purpose of the user object structure. This is not a production pattern.
     let finalAvatarUrlToSave = user.avatarUrl;
     if (avatarFile && avatarPreviewUrl) { 
-      // In a real app, this would be the persistent URL from storage, not the blob.
-      // For demo: we just store the blob url. This will break on next load for this user.
-      // This is a known limitation of the current demo state.
       finalAvatarUrlToSave = avatarPreviewUrl; 
     }
 
@@ -168,7 +160,7 @@ export default function SettingsPage() {
       name: name,
       email: email,
       profileInfo: profileInfo,
-      avatarUrl: finalAvatarUrlToSave, // Potentially saving a blob URL for demo purposes
+      avatarUrl: finalAvatarUrlToSave, 
       dateOfBirth: finalDateOfBirth,
       countryOfBirth: countryOfBirth || undefined,
       city: city || undefined,
@@ -224,9 +216,14 @@ export default function SettingsPage() {
     );
   }
   
-  // Determine what to display in the Avatar
-  const isUserAvatarUrlValid = user?.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.startsWith('blob:');
-  const imageSrcToDisplay = avatarPreviewUrl || (isUserAvatarUrlValid ? user.avatarUrl : undefined);
+  const isVercelDefaultAvatar = (url?: string): boolean => {
+    return !!url && url.startsWith('https://avatar.vercel.sh/');
+  };
+
+  let srcToAttempt: string | undefined = avatarPreviewUrl || undefined;
+  if (!srcToAttempt && user?.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.startsWith('blob:') && !isVercelDefaultAvatar(user.avatarUrl)) {
+    srcToAttempt = user.avatarUrl;
+  }
 
 
   const renderPurchaseButton = () => {
@@ -321,15 +318,12 @@ export default function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-20 w-20">
-                    <AvatarImage src={imageSrcToDisplay} alt={user.name || user.email} />
+                    <AvatarImage src={srcToAttempt} alt={user.name || user.email} />
                     <AvatarFallback>
-                      {imageSrcToDisplay ? ( // If an image src was determined (preview or valid user avatar)
-                        // This fallback is for when that image fails to load
-                        user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?')
-                      ) : (
-                        // No imageSrcToDisplay means no preview and no valid persistent user avatar
-                        <UserCircle2 className="h-12 w-12 text-muted-foreground" />
-                      )}
+                      {srcToAttempt ? 
+                        (user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?')) :
+                        (<UserCircle2 className="h-12 w-12 text-muted-foreground" />)
+                      }
                     </AvatarFallback>
                   </Avatar>
                   <div className="space-y-2">
