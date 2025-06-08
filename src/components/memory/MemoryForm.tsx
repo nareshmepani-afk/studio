@@ -214,7 +214,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         if (justLandedTimeoutId) clearTimeout(justLandedTimeoutId);
         justLandedTimeoutId = setTimeout(() => {
           justLandedOnCuesSlideRef.current = false;
-        }, 150); 
+        }, 100); 
       }
 
       if (scrollTimeoutId) clearTimeout(scrollTimeoutId);
@@ -223,9 +223,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         if (newSelectedSlide === SLIDE_INDEX_CUES && cuesCarouselItemRef.current) {
           cuesCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
         } else if (newSelectedSlide === SLIDE_INDEX_MEDIA && mediaCarouselItemRef.current) {
-          mediaCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+          mediaCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
         } else if (newSelectedSlide === SLIDE_INDEX_DETAILS && detailsCarouselItemRef.current) {
-          detailsCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+          detailsCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
         }
       }, 150); 
     };
@@ -240,9 +240,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
          if (initialSlide === SLIDE_INDEX_CUES && cuesCarouselItemRef.current) {
             cuesCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
           } else if (initialSlide === SLIDE_INDEX_MEDIA && mediaCarouselItemRef.current) {
-            mediaCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            mediaCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
           } else if (initialSlide === SLIDE_INDEX_DETAILS && detailsCarouselItemRef.current) {
-            detailsCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            detailsCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
           }
        }, 150);
     }
