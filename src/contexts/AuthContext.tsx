@@ -202,7 +202,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setHasNewSharedMemoriesState(false);
     setUserModeState('host');
     setPassPriceDetails(null); 
-    router.push('/login'); 
+    router.push('/'); // Changed from '/login' to '/'
   };
 
   const setPendingRequestCount = useCallback((count: number) => {
