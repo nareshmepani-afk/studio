@@ -195,62 +195,67 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     return Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1);
   }, [daysInSelectedMonth]);
 
-  // Carousel effects
   useEffect(() => {
-    if (!carouselApi) return;
+    if (!carouselApi) {
+      return;
+    }
 
-    let selectTimer: NodeJS.Timeout | undefined;
+    let justLandedTimeoutId: NodeJS.Timeout | undefined;
+    let scrollTimeoutId: NodeJS.Timeout | undefined;
 
     const handleSelect = () => {
+      if (!carouselApi) return; 
+
       const newSelectedSlide = carouselApi.selectedScrollSnap();
-      setCurrentSlide(newSelectedSlide);
+      setCurrentSlide(newSelectedSlide); 
 
       if (newSelectedSlide === SLIDE_INDEX_CUES && !isEditing) {
         justLandedOnCuesSlideRef.current = true;
-        if (selectTimer) clearTimeout(selectTimer);
-        selectTimer = setTimeout(() => {
+        if (justLandedTimeoutId) clearTimeout(justLandedTimeoutId);
+        justLandedTimeoutId = setTimeout(() => {
           justLandedOnCuesSlideRef.current = false;
-        }, 100);
+        }, 150); 
       }
+
+      if (scrollTimeoutId) clearTimeout(scrollTimeoutId);
+
+      scrollTimeoutId = setTimeout(() => {
+        if (newSelectedSlide === SLIDE_INDEX_CUES && cuesCarouselItemRef.current) {
+          cuesCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+        } else if (newSelectedSlide === SLIDE_INDEX_MEDIA && mediaCarouselItemRef.current) {
+          mediaCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        } else if (newSelectedSlide === SLIDE_INDEX_DETAILS && detailsCarouselItemRef.current) {
+          detailsCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        }
+      }, 150); 
     };
 
     carouselApi.on("select", handleSelect);
     carouselApi.on("reInit", handleSelect);
-    setCurrentSlide(carouselApi.selectedScrollSnap());
+
+    if (carouselApi.slidesInView().length > 0) {
+       const initialSlide = carouselApi.selectedScrollSnap();
+       setCurrentSlide(initialSlide); 
+       setTimeout(() => { 
+         if (initialSlide === SLIDE_INDEX_CUES && cuesCarouselItemRef.current) {
+            cuesCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+          } else if (initialSlide === SLIDE_INDEX_MEDIA && mediaCarouselItemRef.current) {
+            mediaCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+          } else if (initialSlide === SLIDE_INDEX_DETAILS && detailsCarouselItemRef.current) {
+            detailsCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+          }
+       }, 150);
+    }
 
     return () => {
-      carouselApi.off("select", handleSelect);
-      carouselApi.off("reInit", handleSelect);
-      if (selectTimer) clearTimeout(selectTimer);
+      if (carouselApi) {
+        carouselApi.off("select", handleSelect);
+        carouselApi.off("reInit", handleSelect);
+      }
+      if (justLandedTimeoutId) clearTimeout(justLandedTimeoutId);
+      if (scrollTimeoutId) clearTimeout(scrollTimeoutId);
     };
   }, [carouselApi, isEditing]);
-
-
-  useEffect(() => {
-    if (!carouselApi || currentSlide === undefined) return;
-
-    const timer = setTimeout(() => {
-      if (!carouselApi.engine || carouselApi.selectedScrollSnap() !== currentSlide) return;
-
-      let targetRef: React.RefObject<HTMLDivElement> | null = null;
-      let scrollOptions: ScrollIntoViewOptions = { behavior: 'smooth', block: 'nearest' };
-
-      if (currentSlide === SLIDE_INDEX_DETAILS) {
-        targetRef = detailsCarouselItemRef;
-      } else if (currentSlide === SLIDE_INDEX_MEDIA) {
-        targetRef = mediaCarouselItemRef;
-      } else if (currentSlide === SLIDE_INDEX_CUES) {
-        targetRef = cuesCarouselItemRef;
-        scrollOptions = { behavior: 'smooth', block: 'start' };
-      }
-
-      if (targetRef?.current) {
-        targetRef.current.scrollIntoView(scrollOptions);
-      }
-    }, 300); // Increased delay
-
-    return () => clearTimeout(timer);
-  }, [currentSlide, carouselApi]);
 
 
   useEffect(() => {
@@ -456,13 +461,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     event.preventDefault();
     if (isEditing || currentSlide === SLIDE_INDEX_CUES) {
         if (justLandedOnCuesSlideRef.current && !isEditing && currentSlide === SLIDE_INDEX_CUES) {
-            // If we just landed on cues slide via form submit (e.g. enter key), don't auto-submit
             justLandedOnCuesSlideRef.current = false;
             return;
         }
         handleActionButtonClick();
     } else if (carouselApi) {
-        // If form submitted via Enter key on earlier slides, treat as "Next"
         carouselApi.scrollNext();
     }
   };
@@ -673,4 +676,3 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   );
 }
 
-    
