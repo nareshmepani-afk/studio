@@ -83,9 +83,6 @@ export default function SettingsPage() {
       setName(user.name || '');
       setEmail(user.email || '');
       setProfileInfo(user.profileInfo || '');
-      // Do not set avatarPreviewUrl from user.avatarUrl here. 
-      // avatarPreviewUrl is only for new uploads.
-      // user.avatarUrl will be used directly in AvatarImage src if no preview.
       setAvatarPreviewUrl(null); 
 
       if (user.dateOfBirth && isValid(parseISO(user.dateOfBirth))) {
@@ -134,12 +131,8 @@ export default function SettingsPage() {
     if (!user) return;
     setIsSubmitting(true);
 
-    let finalAvatarUrl = user.avatarUrl; // Start with existing or undefined
-    if (avatarFile && avatarPreviewUrl) { // If a new file is previewed, it will be the new URL (conceptually)
-      // In a real app, you'd upload avatarFile and get a new URL.
-      // For this mock, we'll just use the blob URL for display if it exists,
-      // but a real app would save a persistent URL.
-      // For simplicity, we'll assume avatarPreviewUrl is what gets "saved" in mock.
+    let finalAvatarUrl = user.avatarUrl; 
+    if (avatarFile && avatarPreviewUrl) { 
       finalAvatarUrl = avatarPreviewUrl; 
     }
 
@@ -166,7 +159,7 @@ export default function SettingsPage() {
       name: name,
       email: email,
       profileInfo: profileInfo,
-      avatarUrl: finalAvatarUrl, // This will be the blob URL if a new file was selected for preview
+      avatarUrl: finalAvatarUrl,
       dateOfBirth: finalDateOfBirth,
       countryOfBirth: countryOfBirth || undefined,
       city: city || undefined,
@@ -189,7 +182,6 @@ export default function SettingsPage() {
     });
   };
 
-  // Cleanup effect for avatarPreviewUrl if it's a blob URL
   useEffect(() => {
     let currentPreview = avatarPreviewUrl;
     return () => {
@@ -315,14 +307,12 @@ export default function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-20 w-20">
-                    {(avatarPreviewUrl || user.avatarUrl) ? (
-                      <AvatarImage src={avatarPreviewUrl || user.avatarUrl} alt={name || email} />
-                    ) : null}
+                    <AvatarImage src={avatarPreviewUrl || user.avatarUrl || undefined} alt={user.name || user.email} />
                     <AvatarFallback>
-                      {!avatarPreviewUrl && !user.avatarUrl ? (
-                        <UserCircle2 className="h-12 w-12 text-muted-foreground" />
+                      {(avatarPreviewUrl || user.avatarUrl) ? (
+                        user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?')
                       ) : (
-                        name ? name.charAt(0).toUpperCase() : (email ? email.charAt(0).toUpperCase() : '?')
+                        <UserCircle2 className="h-12 w-12 text-muted-foreground" />
                       )}
                     </AvatarFallback>
                   </Avatar>
