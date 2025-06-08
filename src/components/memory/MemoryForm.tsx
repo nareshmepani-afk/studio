@@ -635,7 +635,22 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   }, [memory?.mediaAttachments, isEditing]);
 
   const isLastSlide = currentSlide === SLIDE_INDEX_CUES;
-  const mainButtonText = isEditing ? 'Save Changes' : isLastSlide ? 'Add Memory' : 'Next';
+
+  // Determine button properties
+  let buttonType: 'submit' | 'button' = 'button';
+  let buttonOnClick: (() => void) | undefined = () => carouselApi?.scrollNext();
+  let buttonText = 'Next';
+
+  if (isEditing) {
+    buttonType = 'submit';
+    buttonOnClick = undefined;
+    buttonText = 'Save Changes';
+  } else if (isLastSlide) {
+    buttonType = 'submit';
+    buttonOnClick = undefined;
+    buttonText = 'Add Memory';
+  }
+  // Default is 'Next', 'button', and scrollNext action
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
@@ -804,11 +819,17 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
         <CarouselNext />
       </Carousel>
       <CardFooter className="flex justify-end p-0 pt-6 max-w-3xl mx-auto">
-        <Button type={isEditing || isLastSlide ? "submit" : "button"} onClick={isEditing || isLastSlide ? undefined : () => carouselApi?.scrollNext() } disabled={!!isSubmitting} className="w-full sm:w-auto">
+        <Button
+          type={buttonType}
+          onClick={buttonOnClick}
+          disabled={!!isSubmitting}
+          className="w-full sm:w-auto"
+        >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {mainButtonText}
+          {buttonText}
         </Button>
       </CardFooter>
     </form>
   );
 }
+
