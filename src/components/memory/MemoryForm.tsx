@@ -90,9 +90,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
   const justLandedOnCuesSlideRef = useRef(false);
   const justLandedTimeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+  
   const visualScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const latestSelectedMediaDataRef = useRef<CurrentMediaData | null>(null);
-  const initialScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
 
 
   const [title, setTitle] = useState('');
@@ -127,6 +128,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(SLIDE_INDEX_DETAILS);
+  const currentSlideRef = useRef(currentSlide); // Ref to hold currentSlide for event handlers
+
+  useEffect(() => {
+    currentSlideRef.current = currentSlide;
+  }, [currentSlide]);
+  
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
 
 
@@ -205,45 +212,58 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }, [daysInSelectedMonth]);
 
 
-  const performVisualScrollWithRef = useCallback((slideIndex: number) => {
+ const performVisualScroll = useCallback((slideIndex: number) => {
     if (visualScrollTimerRef.current) {
       clearTimeout(visualScrollTimerRef.current);
     }
     visualScrollTimerRef.current = setTimeout(() => {
-      let targetRef: React.RefObject<HTMLDivElement> | null = null;
-      if (slideIndex === SLIDE_INDEX_DETAILS) targetRef = step1AnchorRef;
-      else if (slideIndex === SLIDE_INDEX_MEDIA) targetRef = step2AnchorRef;
-      else if (slideIndex === SLIDE_INDEX_CUES) targetRef = step3AnchorRef;
-      
-      targetRef?.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
-    }, 200); 
+      let targetElement: HTMLDivElement | null = null;
+      if (slideIndex === SLIDE_INDEX_DETAILS && step1AnchorRef.current) {
+        targetElement = step1AnchorRef.current;
+      } else if (slideIndex === SLIDE_INDEX_MEDIA && step2AnchorRef.current) {
+        targetElement = step2AnchorRef.current;
+      } else if (slideIndex === SLIDE_INDEX_CUES && step3AnchorRef.current) {
+        targetElement = step3AnchorRef.current;
+      }
+
+      if (targetElement) {
+        const navbar = document.querySelector('header.sticky') as HTMLElement | null;
+        const navbarHeight = navbar ? navbar.offsetHeight : 0;
+        
+        const elementRect = targetElement.getBoundingClientRect();
+        const currentScrollY = window.scrollY; 
+        const targetScrollY = elementRect.top + currentScrollY - navbarHeight;
+
+        window.scrollTo({
+          top: targetScrollY,
+          behavior: 'auto', 
+        });
+      }
+    }, 350); 
   }, []); 
 
 
+  // Commander useEffect: Reacts to `currentSlide` state changes to command carousel and visual scroll
   useEffect(() => {
     if (!carouselApi) return;
+
     if (carouselApi.selectedScrollSnap() !== currentSlide) {
-      carouselApi.scrollTo(currentSlide, true); 
+      carouselApi.scrollTo(currentSlide, true); // true for instant snap
     }
-    performVisualScrollWithRef(currentSlide); 
-    
-    return () => {
-      if (visualScrollTimerRef.current) {
-        clearTimeout(visualScrollTimerRef.current);
-      }
-    };
-  }, [currentSlide, carouselApi, performVisualScrollWithRef]);
+    performVisualScroll(currentSlide);
+
+  }, [currentSlide, carouselApi, performVisualScroll]);
 
 
+  // Synchronizer & Initializer useEffect: Sets up carousel events and syncs state
   useEffect(() => {
     if (!carouselApi) return;
 
-    const handleApiEvent = () => { 
+    const handleApiEvent = () => { // For select, reInit
       if (!carouselApi) return;
       const newSelectedSnap = carouselApi.selectedScrollSnap();
-      
-      if (newSelectedSnap !== currentSlide) { 
-         setCurrentSlide(newSelectedSnap); 
+      if (newSelectedSnap !== currentSlideRef.current) { // Use ref for comparison
+        setCurrentSlide(newSelectedSnap); // Update state, Effect 1 will handle carousel command & scroll
       }
       
       if (newSelectedSnap === SLIDE_INDEX_CUES && !isEditing) {
@@ -255,14 +275,14 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       }
     };
 
+    // Initial setup: Sync `currentSlide` state with carousel's initial position
     const initialSnap = carouselApi.selectedScrollSnap();
-    if (initialSnap !== currentSlide) {
-      setCurrentSlide(initialSnap); 
+    if (initialSnap !== currentSlideRef.current) { // Use ref for comparison
+       setCurrentSlide(initialSnap); // This will trigger the Commander useEffect for initial scroll
     } else {
-      if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current);
-      initialScrollTimerRef.current = setTimeout(() => {
-        performVisualScrollWithRef(initialSnap);
-      }, 100); 
+      // If currentSlide (e.g., 0) is already initialSnap (e.g. 0), Commander won't fire.
+      // So, explicitly call performVisualScroll for the very first render.
+      performVisualScroll(initialSnap);
     }
 
     carouselApi.on("select", handleApiEvent);
@@ -275,9 +295,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       }
       if (justLandedTimeoutIdRef.current) clearTimeout(justLandedTimeoutIdRef.current);
       if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current);
-      if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current);
     };
-  }, [carouselApi, isEditing, performVisualScrollWithRef, currentSlide]); 
+  }, [carouselApi, isEditing, performVisualScroll]); 
 
 
   useEffect(() => {
@@ -323,6 +342,24 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     setCurrentMedia(newCurrentMediaData);
   }, []);
 
+  // Effect to monitor when currentMedia has caught up after setting isProcessingMedia
+  useEffect(() => {
+    if (isProcessingMedia) {
+        const refData = latestSelectedMediaDataRef.current;
+        if (currentMedia && refData &&
+            currentMedia.file.name === refData.file.name &&
+            currentMedia.type === refData.type &&
+            Math.abs((currentMedia.duration ?? 0) - (refData.duration ?? 0)) < 0.01 &&
+            Math.abs((currentMedia.startTime ?? 0) - (refData.startTime ?? 0)) < 0.01 &&
+            Math.abs((currentMedia.endTime ?? 0) - (refData.endTime ?? 0)) < 0.01
+        ) {
+            setIsProcessingMedia(false); // Processing done, media state updated
+        } else if (!refData && currentMedia === null) { // Handle discard case
+            setIsProcessingMedia(false);
+        }
+    }
+  }, [currentMedia, isProcessingMedia]);
+
 
   const handleMediaDiscardInForm = useCallback(() => { 
     const mediaToPassBackToRecorder =
@@ -365,24 +402,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }, [isEditing, memory?.mediaAttachments]);
 
   useEffect(() => {
-    if (isProcessingMedia) {
-      const refData = latestSelectedMediaDataRef.current;
-      if (currentMedia && refData &&
-          currentMedia.file.name === refData.file.name &&
-          currentMedia.type === refData.type &&
-          Math.abs((currentMedia.duration ?? 0) - (refData.duration ?? 0)) < 0.01 &&
-          Math.abs((currentMedia.startTime ?? 0) - (refData.startTime ?? 0)) < 0.01 &&
-          Math.abs((currentMedia.endTime ?? 0) - (refData.endTime ?? 0)) < 0.01
-      ) {
-        setIsProcessingMedia(false);
-      } else if (!refData && currentMedia === null) { // Handle discard case
-        setIsProcessingMedia(false);
-      }
-    }
-  }, [currentMedia, isProcessingMedia]);
-
-
-  useEffect(() => {
     const mediaElement = currentMedia?.type === 'video' ? videoPreviewRef.current : audioPreviewRef.current;
     if (mediaElement && currentMedia && currentMediaPreviewUrl && mediaElement.src === currentMediaPreviewUrl) {
       const targetTime = (currentMedia.startTime !== undefined && isFinite(currentMedia.startTime)) ? currentMedia.startTime : 0.01;
@@ -398,20 +417,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }, [currentMedia, currentMediaPreviewUrl]);
 
   useEffect(() => {
-    if (currentSlide !== SLIDE_INDEX_MEDIA && latestSelectedMediaDataRef.current) {
-      // If user navigates away from media step before processing, use state
-      latestSelectedMediaDataRef.current = null;
-    }
-    if (currentMedia && latestSelectedMediaDataRef.current &&
-        currentMedia.file === latestSelectedMediaDataRef.current.file &&
-        currentMedia.startTime === latestSelectedMediaDataRef.current.startTime &&
-        currentMedia.endTime === latestSelectedMediaDataRef.current.endTime &&
-        currentMedia.duration === latestSelectedMediaDataRef.current.duration 
-      ) {
-      // State has caught up with the ref for the same media instance
-      latestSelectedMediaDataRef.current = null; 
-    }
-  }, [currentSlide, currentMedia]);
+      if (currentSlide !== SLIDE_INDEX_MEDIA && latestSelectedMediaDataRef.current) {
+        latestSelectedMediaDataRef.current = null;
+      }
+      if (currentMedia && latestSelectedMediaDataRef.current &&
+          currentMedia.file === latestSelectedMediaDataRef.current.file &&
+          currentMedia.startTime === latestSelectedMediaDataRef.current.startTime &&
+          currentMedia.endTime === latestSelectedMediaDataRef.current.endTime &&
+          currentMedia.duration === latestSelectedMediaDataRef.current.duration 
+        ) {
+        latestSelectedMediaDataRef.current = null; 
+      }
+    }, [currentSlide, currentMedia]);
 
 
   const handleGenerateCues = async () => {
@@ -783,7 +800,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           Previous
         </Button>
         <Button
-          type="button" // Changed from submit to button to rely on explicit handler
+          type="button" 
           onClick={handleActionButtonClick}
           disabled={
             !!isParentSubmitting || 
