@@ -91,6 +91,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
   const justLandedOnCuesSlideRef = useRef(false);
+  const justLandedTimeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+
 
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
@@ -200,32 +202,31 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       return;
     }
 
-    let justLandedTimeoutId: NodeJS.Timeout | undefined;
     let scrollTimeoutId: NodeJS.Timeout | undefined;
 
     const handleSelect = () => {
-      if (!carouselApi) return; 
+      if (!carouselApi) return;
 
       const newSelectedSlide = carouselApi.selectedScrollSnap();
-      setCurrentSlide(newSelectedSlide); 
+      setCurrentSlide(newSelectedSlide);
 
       if (newSelectedSlide === SLIDE_INDEX_CUES && !isEditing) {
         justLandedOnCuesSlideRef.current = true;
-        if (justLandedTimeoutId) clearTimeout(justLandedTimeoutId);
-        justLandedTimeoutId = setTimeout(() => {
+        if (justLandedTimeoutIdRef.current) clearTimeout(justLandedTimeoutIdRef.current);
+        justLandedTimeoutIdRef.current = setTimeout(() => {
           justLandedOnCuesSlideRef.current = false;
-        }, 100); 
+        }, 100);
       }
 
       if (scrollTimeoutId) clearTimeout(scrollTimeoutId);
 
       scrollTimeoutId = setTimeout(() => {
         if (newSelectedSlide === SLIDE_INDEX_CUES && cuesCarouselItemRef.current) {
-          cuesCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+          cuesCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else if (newSelectedSlide === SLIDE_INDEX_MEDIA && mediaCarouselItemRef.current) {
-          mediaCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+          mediaCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else if (newSelectedSlide === SLIDE_INDEX_DETAILS && detailsCarouselItemRef.current) {
-          detailsCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+          detailsCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       }, 150); 
     };
@@ -233,26 +234,26 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     carouselApi.on("select", handleSelect);
     carouselApi.on("reInit", handleSelect);
 
-    if (carouselApi.slidesInView().length > 0) {
-       const initialSlide = carouselApi.selectedScrollSnap();
-       setCurrentSlide(initialSlide); 
-       setTimeout(() => { 
-         if (initialSlide === SLIDE_INDEX_CUES && cuesCarouselItemRef.current) {
-            cuesCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
-          } else if (initialSlide === SLIDE_INDEX_MEDIA && mediaCarouselItemRef.current) {
-            mediaCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
-          } else if (initialSlide === SLIDE_INDEX_DETAILS && detailsCarouselItemRef.current) {
-            detailsCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
-          }
-       }, 150);
-    }
+    // Initial setup
+    const initialSlide = carouselApi.selectedScrollSnap();
+    setCurrentSlide(initialSlide);
+    setTimeout(() => { 
+      if (initialSlide === SLIDE_INDEX_CUES && cuesCarouselItemRef.current) {
+        cuesCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (initialSlide === SLIDE_INDEX_MEDIA && mediaCarouselItemRef.current) {
+        mediaCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (initialSlide === SLIDE_INDEX_DETAILS && detailsCarouselItemRef.current) {
+        detailsCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 150);
+
 
     return () => {
       if (carouselApi) {
         carouselApi.off("select", handleSelect);
         carouselApi.off("reInit", handleSelect);
       }
-      if (justLandedTimeoutId) clearTimeout(justLandedTimeoutId);
+      if (justLandedTimeoutIdRef.current) clearTimeout(justLandedTimeoutIdRef.current);
       if (scrollTimeoutId) clearTimeout(scrollTimeoutId);
     };
   }, [carouselApi, isEditing]);
@@ -447,8 +448,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     } else { // New memory
       if (currentSlide === SLIDE_INDEX_CUES) {
         if (justLandedOnCuesSlideRef.current) {
-          justLandedOnCuesSlideRef.current = false; 
-          return; 
+          justLandedOnCuesSlideRef.current = false;
+          return;
         }
         triggerSubmitProcess();
       } else {
