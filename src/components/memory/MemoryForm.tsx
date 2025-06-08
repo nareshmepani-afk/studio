@@ -14,7 +14,7 @@ import { MediaCaptureControl } from './MediaRecorder';
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, ArrowRight, Tag, MapPin } from 'lucide-react';
+import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, ArrowRight, Tag, MapPin, ArrowLeft } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { mockPrompts } from '@/lib/mockData'; // For inspiration prompts
 import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, getDate, parseISO } from 'date-fns';
@@ -23,8 +23,8 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselPrevious,
-  CarouselNext,
+  // CarouselPrevious, // No longer using default
+  // CarouselNext,   // No longer using default
   type CarouselApi,
 } from "@/components/ui/carousel";
 
@@ -210,17 +210,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       else if (slideIndex === SLIDE_INDEX_CUES) targetRef = cuesCarouselItemRef;
       
       targetRef?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 200); // Consistent delay
-  }, []); // Empty deps: refs are stable.
+    }, 200); 
+  }, []); 
 
   // Effect to react to `currentSlide` state changes (e.g., from button clicks)
   // This effect commands the carousel and then performs the visual scroll.
   useEffect(() => {
     if (carouselApi) {
-      carouselApi.scrollTo(currentSlide, true); // jump: true for instant snap
+      if (carouselApi.selectedScrollSnap() !== currentSlide) {
+        carouselApi.scrollTo(currentSlide, true); // jump: true for instant snap
+      }
       performVisualScrollWithRef(currentSlide);  // Then visually scroll that slide into view
     }
-    // Cleanup for the visual scroll timer if component unmounts or currentSlide changes rapidly
     return () => {
       if (visualScrollTimerRef.current) {
         clearTimeout(visualScrollTimerRef.current);
@@ -237,13 +238,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       if (!carouselApi) return;
       const newSelectedSnap = carouselApi.selectedScrollSnap();
       
-      // If the carousel's snap point is different from our state, update our state.
-      // This will then trigger the useEffect above to perform the visual scroll.
       if (newSelectedSnap !== currentSlide) {
         setCurrentSlide(newSelectedSnap); 
       }
       
-      // Manage the justLandedOnCuesSlideRef for submission logic (prevents auto-submit on scroll to last slide)
       if (newSelectedSnap === SLIDE_INDEX_CUES && !isEditing) {
         justLandedOnCuesSlideRef.current = true;
         if (justLandedTimeoutIdRef.current) clearTimeout(justLandedTimeoutIdRef.current);
@@ -253,18 +251,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       }
     };
     
-    // Initial setup: Ensure the `currentSlide` state matches the carousel's initial position.
-    // Also, trigger a visual scroll for this initial slide.
     const initialSnap = carouselApi.selectedScrollSnap();
     if (initialSnap !== currentSlide) {
-        setCurrentSlide(initialSnap); // This will trigger the primary useEffect for scroll
+        setCurrentSlide(initialSnap); 
     } else {
-        // If state already matches, explicitly call visual scroll for the initial slide.
         performVisualScrollWithRef(initialSnap);
     }
 
     carouselApi.on("select", handleApiSelectEvent);
-    carouselApi.on("reInit", handleApiSelectEvent); // Also handle reInit
+    carouselApi.on("reInit", handleApiSelectEvent); 
 
     return () => {
       if (carouselApi) {
@@ -272,9 +267,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         carouselApi.off("reInit", handleApiSelectEvent);
       }
       if (justLandedTimeoutIdRef.current) clearTimeout(justLandedTimeoutIdRef.current);
-      if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current); // Also clear visual scroll timer
+      if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current); 
     };
-  }, [carouselApi, isEditing, currentSlide, performVisualScrollWithRef]); // `currentSlide` is needed for initial sync logic
+  }, [carouselApi, isEditing, currentSlide, performVisualScrollWithRef]); 
 
 
   useEffect(() => {
@@ -401,7 +396,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   const triggerSubmitProcess = useCallback(() => {
     if (!title.trim()) {
       toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
-      setCurrentSlide(SLIDE_INDEX_DETAILS); // Navigate to details slide
+      setCurrentSlide(SLIDE_INDEX_DETAILS); 
       setTimeout(() => titleInputRef.current?.focus(), 100);
       return;
     }
@@ -409,19 +404,19 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     finalDate = setDate(finalDate, selectedDay);
     if (!isValid(finalDate) || getYear(finalDate) !== selectedYear || getMonth(finalDate) !== selectedMonth || getDate(finalDate) !== selectedDay) {
       toast({ title: "Invalid Date", description: "Please select a valid date.", variant: "destructive" });
-      setCurrentSlide(SLIDE_INDEX_DETAILS); // Navigate to details slide
+      setCurrentSlide(SLIDE_INDEX_DETAILS); 
       setTimeout(() => yearSelectRef.current?.focus(), 100);
       return;
     }
     if (!description.trim()) {
       toast({ title: "Description Required", description: "Please enter a description for the memory.", variant: "destructive" });
-      setCurrentSlide(SLIDE_INDEX_DETAILS); // Navigate to details slide
+      setCurrentSlide(SLIDE_INDEX_DETAILS); 
       setTimeout(() => descriptionTextareaRef.current?.focus(), 100);
       return;
     }
     if (!currentMedia) {
       toast({ title: "Media Required", description: "A media attachment (video or audio) is required.", variant: "destructive" });
-      setCurrentSlide(SLIDE_INDEX_MEDIA); // Navigate to media slide
+      setCurrentSlide(SLIDE_INDEX_MEDIA); 
       return;
     }
 
@@ -456,7 +451,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       userProfile,
       currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0 ? currentMedia.file : undefined
     );
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, promptIdFromQuery, selectedEmotionTags, userProfile, setCurrentSlide]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, promptIdFromQuery, selectedEmotionTags, userProfile]);
 
 
   const handleActionButtonClick = useCallback(() => {
@@ -486,8 +481,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             justLandedOnCuesSlideRef.current = false;
             return;
         }
-        handleActionButtonClick(); // Delegate to the common handler
-    } else { // Not editing and not on the last slide, so treat Enter as "Next"
+        handleActionButtonClick(); 
+    } else { 
         handleActionButtonClick();
     }
   };
@@ -679,19 +674,36 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             </Card>
           </CarouselItem>
         </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
+        {/* 
+          Removed <CarouselPrevious /> and <CarouselNext /> 
+          Custom navigation buttons are provided below the Carousel.
+        */}
       </Carousel>
       
-      <div className="max-w-3xl mx-auto flex justify-end pt-4 px-1 sm:px-0">
+      <div className="max-w-3xl mx-auto flex justify-between items-center pt-4 px-1 sm:px-0">
+        <Button 
+          type="button" 
+          onClick={() => {
+            if (currentSlide > 0) {
+              setCurrentSlide(currentSlide - 1);
+            }
+          }}
+          disabled={currentSlide === 0 || !!isParentSubmitting}
+          variant="outline"
+          className="w-auto"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Previous
+        </Button>
         <Button
           type="button"
           onClick={handleActionButtonClick}
-          disabled={!!isParentSubmitting}
-          className="w-full sm:w-auto"
+          disabled={!!isParentSubmitting || (currentSlide === SLIDE_INDEX_CUES && !isEditing && justLandedOnCuesSlideRef.current)}
+          className="w-auto"
         >
           {isParentSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {actionButtonText}
+          {actionButtonText === 'Next' && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
       </div>
     </form>
