@@ -33,22 +33,22 @@ interface MemoryFormProps {
   memory?: Memory; // Existing memory for editing
   onSubmit: (
     memoryData: Omit<Memory, 'id' | 'userId'> & { promptId?: string },
-    userProfileForCues?: string, 
+    userProfileForCues?: string,
     mediaFileToUpload?: File
   ) => void;
-  isSubmitting?: boolean; // Renamed to isParentSubmitting internally for clarity
+  isSubmitting?: boolean; // From parent
 }
 
-type MediaRecorderData = { 
+type MediaRecorderData = {
   file: File;
   type: 'video' | 'audio';
-  previewUrl: string; 
+  previewUrl: string;
   startTime?: number;
   endTime?: number;
   duration: number;
 };
 
-type CurrentMediaData = { 
+type CurrentMediaData = {
   file: File;
   type: 'video' | 'audio';
   startTime?: number;
@@ -67,207 +67,12 @@ const months: { value: number; label: string }[] = Array.from({ length: 12 }, (_
 const SLIDE_INDEX_DETAILS = 0;
 const SLIDE_INDEX_MEDIA = 1;
 const SLIDE_INDEX_CUES = 2;
-const TOTAL_SLIDES = 3; 
+const TOTAL_SLIDES = 3;
 
 const countryOptions = [
-  { value: "Afghanistan", label: "Afghanistan" },
-  { value: "Albania", label: "Albania" },
-  { value: "Algeria", label: "Algeria" },
-  { value: "Andorra", label: "Andorra" },
-  { value: "Angola", label: "Angola" },
-  { value: "Antigua and Barbuda", label: "Antigua and Barbuda" },
-  { value: "Argentina", label: "Argentina" },
-  { value: "Armenia", label: "Armenia" },
-  { value: "Australia", label: "Australia" },
-  { value: "Austria", label: "Austria" },
-  { value: "Azerbaijan", label: "Azerbaijan" },
-  { value: "Bahamas", label: "Bahamas" },
-  { value: "Bahrain", label: "Bahrain" },
-  { value: "Bangladesh", label: "Bangladesh" },
-  { value: "Barbados", label: "Barbados" },
-  { value: "Belarus", label: "Belarus" },
-  { value: "Belgium", label: "Belgium" },
-  { value: "Belize", label: "Belize" },
-  { value: "Benin", label: "Benin" },
-  { value: "Bhutan", label: "Bhutan" },
-  { value: "Bolivia", label: "Bolivia" },
-  { value: "Bosnia and Herzegovina", label: "Bosnia and Herzegovina" },
-  { value: "Botswana", label: "Botswana" },
-  { value: "Brazil", label: "Brazil" },
-  { value: "Brunei", label: "Brunei" },
-  { value: "Bulgaria", label: "Bulgaria" },
-  { value: "Burkina Faso", label: "Burkina Faso" },
-  { value: "Burundi", label: "Burundi" },
-  { value: "Cabo Verde", label: "Cabo Verde" },
-  { value: "Cambodia", label: "Cambodia" },
-  { value: "Cameroon", label: "Cameroon" },
-  { value: "Canada", label: "Canada" },
-  { value: "Central African Republic", label: "Central African Republic" },
-  { value: "Chad", label: "Chad" },
-  { value: "Chile", label: "Chile" },
-  { value: "China", label: "China" },
-  { value: "Colombia", label: "Colombia" },
-  { value: "Comoros", label: "Comoros" },
-  { value: "Congo (Congo-Brazzaville)", label: "Congo (Congo-Brazzaville)" },
-  { value: "Congo (Democratic Republic of the)", label: "Congo (Democratic Republic of the)" },
-  { value: "Costa Rica", label: "Costa Rica" },
-  { value: "Croatia", label: "Croatia" },
-  { value: "Cuba", label: "Cuba" },
-  { value: "Cyprus", label: "Cyprus" },
-  { value: "Czech Republic (Czechia)", label: "Czech Republic (Czechia)" },
-  { value: "Denmark", label: "Denmark" },
-  { value: "Djibouti", label: "Djibouti" },
-  { value: "Dominica", label: "Dominica" },
-  { value: "Dominican Republic", label: "Dominican Republic" },
-  { value: "Ecuador", label: "Ecuador" },
-  { value: "Egypt", label: "Egypt" },
-  { value: "El Salvador", label: "El Salvador" },
-  { value: "Equatorial Guinea", label: "Equatorial Guinea" },
-  { value: "Eritrea", label: "Eritrea" },
-  { value: "Estonia", label: "Estonia" },
-  { value: "Eswatini (fmr. Swaziland)", label: "Eswatini (fmr. Swaziland)" },
-  { value: "Ethiopia", label: "Ethiopia" },
-  { value: "Fiji", label: "Fiji" },
-  { value: "Finland", label: "Finland" },
-  { value: "France", label: "France" },
-  { value: "Gabon", label: "Gabon" },
-  { value: "Gambia", label: "Gambia" },
-  { value: "Georgia", label: "Georgia" },
-  { value: "Germany", label: "Germany" },
-  { value: "Ghana", label: "Ghana" },
-  { value: "Greece", label: "Greece" },
-  { value: "Grenada", label: "Grenada" },
-  { value: "Guatemala", label: "Guatemala" },
-  { value: "Guinea", label: "Guinea" },
-  { value: "Guinea-Bissau", label: "Guinea-Bissau" },
-  { value: "Guyana", label: "Guyana" },
-  { value: "Haiti", label: "Haiti" },
-  { value: "Honduras", label: "Honduras" },
-  { value: "Hungary", label: "Hungary" },
-  { value: "Iceland", label: "Iceland" },
-  { value: "India", label: "India" },
-  { value: "Indonesia", label: "Indonesia" },
-  { value: "Iran", label: "Iran" },
-  { value: "Iraq", label: "Iraq" },
-  { value: "Ireland", label: "Ireland" },
-  { value: "Israel", label: "Israel" },
-  { value: "Italy", label: "Italy" },
-  { value: "Jamaica", label: "Jamaica" },
-  { value: "Japan", label: "Japan" },
-  { value: "Jordan", label: "Jordan" },
-  { value: "Kazakhstan", label: "Kazakhstan" },
-  { value: "Kenya", label: "Kenya" },
-  { value: "Kiribati", label: "Kiribati" },
-  { value: "Kuwait", label: "Kuwait" },
-  { value: "Kyrgyzstan", label: "Kyrgyzstan" },
-  { value: "Laos", label: "Laos" },
-  { value: "Latvia", label: "Latvia" },
-  { value: "Lebanon", label: "Lebanon" },
-  { value: "Lesotho", label: "Lesotho" },
-  { value: "Liberia", label: "Liberia" },
-  { value: "Libya", label: "Libya" },
-  { value: "Liechtenstein", label: "Liechtenstein" },
-  { value: "Lithuania", label: "Lithuania" },
-  { value: "Luxembourg", label: "Luxembourg" },
-  { value: "Madagascar", label: "Madagascar" },
-  { value: "Malawi", label: "Malawi" },
-  { value: "Malaysia", label: "Malaysia" },
-  { value: "Maldives", label: "Maldives" },
-  { value: "Mali", label: "Mali" },
-  { value: "Malta", label: "Malta" },
-  { value: "Marshall Islands", label: "Marshall Islands" },
-  { value: "Mauritania", label: "Mauritania" },
-  { value: "Mauritius", label: "Mauritius" },
-  { value: "Mexico", label: "Mexico" },
-  { value: "Micronesia", label: "Micronesia" },
-  { value: "Moldova", label: "Moldova" },
-  { value: "Monaco", label: "Monaco" },
-  { value: "Mongolia", label: "Mongolia" },
-  { value: "Montenegro", label: "Montenegro" },
-  { value: "Morocco", label: "Morocco" },
-  { value: "Mozambique", label: "Mozambique" },
-  { value: "Myanmar (formerly Burma)", label: "Myanmar (formerly Burma)" },
-  { value: "Namibia", label: "Namibia" },
-  { value: "Nauru", label: "Nauru" },
-  { value: "Nepal", label: "Nepal" },
-  { value: "Netherlands", label: "Netherlands" },
-  { value: "New Zealand", label: "New Zealand" },
-  { value: "Nicaragua", label: "Nicaragua" },
-  { value: "Niger", label: "Niger" },
-  { value: "Nigeria", label: "Nigeria" },
-  { value: "North Korea", label: "North Korea" },
-  { value: "North Macedonia (formerly Macedonia)", label: "North Macedonia (formerly Macedonia)" },
-  { value: "Norway", label: "Norway" },
-  { value: "Oman", label: "Oman" },
-  { value: "Pakistan", label: "Pakistan" },
-  { value: "Palau", label: "Palau" },
-  { value: "Palestine State", label: "Palestine State" },
-  { value: "Panama", label: "Panama" },
-  { value: "Papua New Guinea", label: "Papua New Guinea" },
-  { value: "Paraguay", label: "Paraguay" },
-  { value: "Peru", label: "Peru" },
-  { value: "Philippines", label: "Philippines" },
-  { value: "Poland", label: "Poland" },
-  { value: "Portugal", label: "Portugal" },
-  { value: "Qatar", label: "Qatar" },
-  { value: "Romania", label: "Romania" },
-  { value: "Russia", label: "Russia" },
-  { value: "Rwanda", label: "Rwanda" },
-  { value: "Saint Kitts and Nevis", label: "Saint Kitts and Nevis" },
-  { value: "Saint Lucia", label: "Saint Lucia" },
-  { value: "Saint Vincent and the Grenadines", label: "Saint Vincent and the Grenadines" },
-  { value: "Samoa", label: "Samoa" },
-  { value: "San Marino", label: "San Marino" },
-  { value: "Sao Tome and Principe", label: "Sao Tome and Principe" },
-  { value: "Saudi Arabia", label: "Saudi Arabia" },
-  { value: "Senegal", label: "Senegal" },
-  { value: "Serbia", label: "Serbia" },
-  { value: "Seychelles", label: "Seychelles" },
-  { value: "Sierra Leone", label: "Sierra Leone" },
-  { value: "Singapore", label: "Singapore" },
-  { value: "Slovakia", label: "Slovakia" },
-  { value: "Slovenia", label: "Slovenia" },
-  { value: "Solomon Islands", label: "Solomon Islands" },
-  { value: "Somalia", label: "Somalia" },
-  { value: "South Africa", label: "South Africa" },
-  { value: "South Korea", label: "South Korea" },
-  { value: "South Sudan", label: "South Sudan" },
-  { value: "Spain", label: "Spain" },
-  { value: "Sri Lanka", label: "Sri Lanka" },
-  { value: "Sudan", label: "Sudan" },
-  { value: "Suriname", label: "Suriname" },
-  { value: "Sweden", label: "Sweden" },
-  { value: "Switzerland", label: "Switzerland" },
-  { value: "Syria", label: "Syria" },
-  { value: "Taiwan", label: "Taiwan" },
-  { value: "Tajikistan", label: "Tajikistan" },
-  { value: "Tanzania", label: "Tanzania" },
-  { value: "Thailand", label: "Thailand" },
-  { value: "Timor-Leste", label: "Timor-Leste" },
-  { value: "Togo", label: "Togo" },
-  { value: "Tonga", label: "Tonga" },
-  { value: "Trinidad and Tobago", label: "Trinidad and Tobago" },
-  { value: "Tunisia", label: "Tunisia" },
-  { value: "Turkey", label: "Turkey" },
-  { value: "Turkmenistan", label: "Turkmenistan" },
-  { value: "Tuvalu", label: "Tuvalu" },
-  { value: "Uganda", label: "Uganda" },
-  { value: "Ukraine", label: "Ukraine" },
-  { value: "United Arab Emirates", label: "United Arab Emirates" },
-  { value: "United Kingdom", label: "United Kingdom" },
-  { value: "United States", label: "United States" },
-  { value: "Uruguay", label: "Uruguay" },
-  { value: "Uzbekistan", label: "Uzbekistan" },
-  { value: "Vanuatu", label: "Vanuatu" },
-  { value: "Vatican City (Holy See)", label: "Vatican City (Holy See)" },
-  { value: "Venezuela", label: "Venezuela" },
-  { value: "Vietnam", label: "Vietnam" },
-  { value: "Yemen", label: "Yemen" },
-  { value: "Zambia", label: "Zambia" },
-  { value: "Zimbabwe", label: "Zimbabwe" },
+  { value: "Afghanistan", label: "Afghanistan" }, { value: "Albania", label: "Albania" }, { value: "Algeria", label: "Algeria" }, { value: "Andorra", label: "Andorra" }, { value: "Angola", label: "Angola" }, { value: "Antigua and Barbuda", label: "Antigua and Barbuda" }, { value: "Argentina", label: "Argentina" }, { value: "Armenia", label: "Armenia" }, { value: "Australia", label: "Australia" }, { value: "Austria", label: "Austria" }, { value: "Azerbaijan", label: "Azerbaijan" }, { value: "Bahamas", label: "Bahamas" }, { value: "Bahrain", label: "Bahrain" }, { value: "Bangladesh", label: "Bangladesh" }, { value: "Barbados", label: "Barbados" }, { value: "Belarus", label: "Belarus" }, { value: "Belgium", label: "Belgium" }, { value: "Belize", label: "Belize" }, { value: "Benin", label: "Benin" }, { value: "Bhutan", label: "Bhutan" }, { value: "Bolivia", label: "Bolivia" }, { value: "Bosnia and Herzegovina", label: "Bosnia and Herzegovina" }, { value: "Botswana", label: "Botswana" }, { value: "Brazil", label: "Brazil" }, { value: "Brunei", label: "Brunei" }, { value: "Bulgaria", label: "Bulgaria" }, { value: "Burkina Faso", label: "Burkina Faso" }, { value: "Burundi", label: "Burundi" }, { value: "Cabo Verde", label: "Cabo Verde" }, { value: "Cambodia", label: "Cambodia" }, { value: "Cameroon", label: "Cameroon" }, { value: "Canada", label: "Canada" }, { value: "Central African Republic", label: "Central African Republic" }, { value: "Chad", label: "Chad" }, { value: "Chile", label: "Chile" }, { value: "China", label: "China" }, { value: "Colombia", label: "Colombia" }, { value: "Comoros", label: "Comoros" }, { value: "Congo (Congo-Brazzaville)", label: "Congo (Congo-Brazzaville)" }, { value: "Congo (Democratic Republic of the)", label: "Congo (Democratic Republic of the)" }, { value: "Costa Rica", label: "Costa Rica" }, { value: "Croatia", label: "Croatia" }, { value: "Cuba", label: "Cuba" }, { value: "Cyprus", label: "Cyprus" }, { value: "Czech Republic (Czechia)", label: "Czech Republic (Czechia)" }, { value: "Denmark", label: "Denmark" }, { value: "Djibouti", label: "Djibouti" }, { value: "Dominica", label: "Dominica" }, { value: "Dominican Republic", label: "Dominican Republic" }, { value: "Ecuador", label: "Ecuador" }, { value: "Egypt", label: "Egypt" }, { value: "El Salvador", label: "El Salvador" }, { value: "Equatorial Guinea", label: "Equatorial Guinea" }, { value: "Eritrea", label: "Eritrea" }, { value: "Estonia", label: "Estonia" }, { value: "Eswatini (fmr. Swaziland)", label: "Eswatini (fmr. Swaziland)" }, { value: "Ethiopia", label: "Ethiopia" }, { value: "Fiji", label: "Fiji" }, { value: "Finland", label: "Finland" }, { value: "France", label: "France" }, { value: "Gabon", label: "Gabon" }, { value: "Gambia", label: "Gambia" }, { value: "Georgia", label: "Georgia" }, { value: "Germany", label: "Germany" }, { value: "Ghana", label: "Ghana" }, { value: "Greece", label: "Greece" }, { value: "Grenada", label: "Grenada" }, { value: "Guatemala", label: "Guatemala" }, { value: "Guinea", label: "Guinea" }, { value: "Guinea-Bissau", label: "Guinea-Bissau" }, { value: "Guyana", label: "Guyana" }, { value: "Haiti", label: "Haiti" }, { value: "Honduras", label: "Honduras" }, { value: "Hungary", label: "Hungary" }, { value: "Iceland", label: "Iceland" }, { value: "India", label: "India" }, { value: "Indonesia", label: "Indonesia" }, { value: "Iran", label: "Iran" }, { value: "Iraq", label: "Iraq" }, { value: "Ireland", label: "Ireland" }, { value: "Israel", label: "Israel" }, { value: "Italy", label: "Italy" }, { value: "Jamaica", label: "Jamaica" }, { value: "Japan", label: "Japan" }, { value: "Jordan", label: "Jordan" }, { value: "Kazakhstan", label: "Kazakhstan" }, { value: "Kenya", label: "Kenya" }, { value: "Kiribati", label: "Kiribati" }, { value: "Kuwait", label: "Kuwait" }, { value: "Kyrgyzstan", label: "Kyrgyzstan" }, { value: "Laos", label: "Laos" }, { value: "Latvia", label: "Latvia" }, { value: "Lebanon", label: "Lebanon" }, { value: "Lesotho", label: "Lesotho" }, { value: "Liberia", label: "Liberia" }, { value: "Libya", label: "Libya" }, { value: "Liechtenstein", label: "Liechtenstein" }, { value: "Lithuania", label: "Lithuania" }, { value: "Luxembourg", label: "Luxembourg" }, { value: "Madagascar", label: "Madagascar" }, { value: "Malawi", label: "Malawi" }, { value: "Malaysia", label: "Malaysia" }, { value: "Maldives", label: "Maldives" }, { value: "Mali", label: "Mali" }, { value: "Malta", label: "Malta" }, { value: "Marshall Islands", label: "Marshall Islands" }, { value: "Mauritania", label: "Mauritania" }, { value: "Mauritius", label: "Mauritius" }, { value: "Mexico", label: "Mexico" }, { value: "Micronesia", label: "Micronesia" }, { value: "Moldova", label: "Moldova" }, { value: "Monaco", label: "Monaco" }, { value: "Mongolia", label: "Mongolia" }, { value: "Montenegro", label: "Montenegro" }, { value: "Morocco", label: "Morocco" }, { value: "Mozambique", label: "Mozambique" }, { value: "Myanmar (formerly Burma)", label: "Myanmar (formerly Burma)" }, { value: "Namibia", label: "Namibia" }, { value: "Nauru", label: "Nauru" }, { value: "Nepal", label: "Nepal" }, { value: "Netherlands", label: "Netherlands" }, { value: "New Zealand", label: "New Zealand" }, { value: "Nicaragua", label: "Nicaragua" }, { value: "Niger", label: "Niger" }, { value: "Nigeria", label: "Nigeria" }, { value: "North Korea", label: "North Korea" }, { value: "North Macedonia (formerly Macedonia)", label: "North Macedonia (formerly Macedonia)" }, { value: "Norway", label: "Norway" }, { value: "Oman", label: "Oman" }, { value: "Pakistan", label: "Pakistan" }, { value: "Palau", label: "Palau" }, { value: "Palestine State", label: "Palestine State" }, { value: "Panama", label: "Panama" }, { value: "Papua New Guinea", label: "Papua New Guinea" }, { value: "Paraguay", label: "Paraguay" }, { value: "Peru", label: "Peru" }, { value: "Philippines", label: "Philippines" }, { value: "Poland", label: "Poland" }, { value: "Portugal", label: "Portugal" }, { value: "Qatar", label: "Qatar" }, { value: "Romania", label: "Romania" }, { value: "Russia", label: "Russia" }, { value: "Rwanda", label: "Rwanda" }, { value: "Saint Kitts and Nevis", label: "Saint Kitts and Nevis" }, { value: "Saint Lucia", label: "Saint Lucia" }, { value: "Saint Vincent and the Grenadines", label: "Saint Vincent and the Grenadines" }, { value: "Samoa", label: "Samoa" }, { value: "San Marino", label: "San Marino" }, { value: "Sao Tome and Principe", label: "Sao Tome and Principe" }, { value: "Saudi Arabia", label: "Saudi Arabia" }, { value: "Senegal", label: "Senegal" }, { value: "Serbia", label: "Serbia" }, { value: "Seychelles", label: "Seychelles" }, { value: "Sierra Leone", label: "Sierra Leone" }, { value: "Singapore", label: "Singapore" }, { value: "Slovakia", label: "Slovakia" }, { value: "Slovenia", label: "Slovenia" }, { value: "Solomon Islands", label: "Solomon Islands" }, { value: "Somalia", label: "Somalia" }, { value: "South Africa", label: "South Africa" }, { value: "South Korea", label: "South Korea" }, { value: "South Sudan", label: "South Sudan" }, { value: "Spain", label: "Spain" }, { value: "Sri Lanka", label: "Sri Lanka" }, { value: "Sudan", label: "Sudan" }, { value: "Suriname", label: "Suriname" }, { value: "Sweden", label: "Sweden" }, { value: "Switzerland", label: "Switzerland" }, { value: "Syria", label: "Syria" }, { value: "Taiwan", label: "Taiwan" }, { value: "Tajikistan", label: "Tajikistan" }, { value: "Tanzania", label: "Tanzania" }, { value: "Thailand", label: "Thailand" }, { value: "Timor-Leste", label: "Timor-Leste" }, { value: "Togo", label: "Togo" }, { value: "Tonga", label: "Tonga" }, { value: "Trinidad and Tobago", label: "Trinidad and Tobago" }, { value: "Tunisia", label: "Tunisia" }, { value: "Turkey", label: "Turkey" }, { value: "Turkmenistan", label: "Turkmenistan" }, { value: "Tuvalu", label: "Tuvalu" }, { value: "Uganda", label: "Uganda" }, { value: "Ukraine", label: "Ukraine" }, { value: "United Arab Emirates", label: "United Arab Emirates" }, { value: "United Kingdom", label: "United Kingdom" }, { value: "United States", label: "United States" }, { value: "Uruguay", label: "Uruguay" }, { value: "Uzbekistan", label: "Uzbekistan" }, { value: "Vanuatu", label: "Vanuatu" }, { value: "Vatican City (Holy See)", label: "Vatican City (Holy See)" }, { value: "Venezuela", label: "Venezuela" }, { value: "Vietnam", label: "Vietnam" }, { value: "Yemen", label: "Yemen" }, { value: "Zambia", label: "Zambia" }, { value: "Zimbabwe", label: "Zimbabwe" },
   { value: "Other (Not Listed)", label: "Other (Not Listed)"},
 ];
-
 
 export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting }: MemoryFormProps) {
   const { user } = useAuth();
@@ -276,16 +81,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   const isEditing = !!memory;
 
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const titleLabelRef = useRef<HTMLLabelElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const yearSelectRef = useRef<HTMLButtonElement>(null);
+  const yearSelectRef = useRef<HTMLButtonElement>(null); // For focusing date select
   const memoryDetailsCardHeaderRef = useRef<HTMLDivElement>(null);
   const mediaCardHeaderRef = useRef<HTMLDivElement>(null);
   const aiCuesCardHeaderRef = useRef<HTMLDivElement>(null);
-  
+
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
-
+  const justLandedOnCuesSlideRef = useRef(false); // New ref for gating submission
 
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
@@ -293,7 +97,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
 
   const getInitialDateComponent = useCallback((component: 'year' | 'month' | 'day', dateSource?: string) => {
-    const dateToParse = dateSource ? parseISO(dateSource) : new Date(); 
+    const dateToParse = dateSource ? parseISO(dateSource) : new Date();
     if (isValid(dateToParse)) {
       if (component === 'year') return getYear(dateToParse);
       if (component === 'month') return getMonth(dateToParse);
@@ -319,7 +123,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(SLIDE_INDEX_DETAILS);
-  const currentSlideRef = useRef(currentSlide); 
 
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
   const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null);
@@ -328,18 +131,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   const promptIdFromQuery = searchParams.get('promptId');
 
   useEffect(() => {
-    if (memory) { 
+    if (memory) {
       setTitle(memory.title || '');
       setLocation(memory.location || '');
       setCountry(memory.country || 'United Kingdom');
       setDescription(memory.description || '');
       setSelectedEmotionTags(memory.emotionTags || []);
-      setUserProfile(user?.profileInfo || memory.userId); 
+      setUserProfile(user?.profileInfo || memory.userId);
 
       setSelectedYear(getInitialDateComponent('year', memory.date));
       setSelectedMonth(getInitialDateComponent('month', memory.date));
       setSelectedDay(getInitialDateComponent('day', memory.date));
-      
+
       if (memory.mediaAttachments && memory.mediaAttachments.length > 0) {
         const firstMedia = memory.mediaAttachments[0];
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
@@ -363,12 +166,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         setMediaToInitializeRecorder(null);
       }
 
-    } else { 
+    } else {
       const promptTextFromUrl = searchParams.get('prompt');
       if (promptTextFromUrl) {
         setTitle(decodeURIComponent(promptTextFromUrl));
       } else {
-        setTitle(''); 
+        setTitle('');
       }
       setLocation('');
       setCountry('United Kingdom');
@@ -383,12 +186,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     }
   }, [memory, searchParams, user?.profileInfo, getInitialDateComponent]);
 
-
-  useEffect(() => {
-    currentSlideRef.current = currentSlide;
-  }, [currentSlide]);
-
-
   const daysInSelectedMonth = useMemo(() => {
     return getDaysInMonth(new Date(selectedYear, selectedMonth));
   }, [selectedYear, selectedMonth]);
@@ -397,26 +194,41 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     return Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1);
   }, [daysInSelectedMonth]);
 
-
+  // Carousel effects
   useEffect(() => {
     if (!carouselApi) return;
+
+    let selectTimer: NodeJS.Timeout | undefined;
+
     const handleSelect = () => {
       const newSelectedSlide = carouselApi.selectedScrollSnap();
-      if (newSelectedSlide !== currentSlideRef.current) setCurrentSlide(newSelectedSlide);
+      setCurrentSlide(newSelectedSlide);
+
+      if (newSelectedSlide === SLIDE_INDEX_CUES && !isEditing) {
+        justLandedOnCuesSlideRef.current = true;
+        if (selectTimer) clearTimeout(selectTimer); // Clear previous timer if any
+        selectTimer = setTimeout(() => {
+          justLandedOnCuesSlideRef.current = false;
+        }, 100); // Reset after a short delay
+      }
     };
+
     carouselApi.on("select", handleSelect);
     carouselApi.on("reInit", handleSelect);
-    const initialEmblaSlide = carouselApi.selectedScrollSnap();
-    if (initialEmblaSlide !== currentSlideRef.current) setCurrentSlide(initialEmblaSlide);
+    setCurrentSlide(carouselApi.selectedScrollSnap()); // Initialize currentSlide
+
     return () => {
       carouselApi.off("select", handleSelect);
       carouselApi.off("reInit", handleSelect);
+      if (selectTimer) clearTimeout(selectTimer);
     };
-  }, [carouselApi]);
+  }, [carouselApi, isEditing, setCurrentSlide]);
 
 
   useEffect(() => {
     if (!carouselApi || !carouselApi.engine?.scrollSnaps || carouselApi.engine.scrollSnaps.length === 0) return;
+    if (currentSlide === undefined) return;
+
     const scrollTarget = () => {
       let targetRef: React.RefObject<HTMLDivElement> | null = null;
       if (currentSlide === SLIDE_INDEX_DETAILS) targetRef = memoryDetailsCardHeaderRef;
@@ -424,10 +236,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       else if (currentSlide === SLIDE_INDEX_CUES) targetRef = aiCuesCardHeaderRef;
 
       if (targetRef?.current && carouselApi.selectedScrollSnap() === currentSlide) {
-        targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         try {
+            targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+         } catch (e) {
+            // Fallback for browsers that don't support smooth options fully
+            targetRef.current.scrollIntoView();
+         }
       }
     };
-    const timer = setTimeout(scrollTarget, 250);
+    const timer = setTimeout(scrollTarget, 150); // Slightly increased delay for safety
     return () => clearTimeout(timer);
   }, [currentSlide, carouselApi]);
 
@@ -435,7 +252,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   useEffect(() => {
     if (selectedDay > daysInSelectedMonth) setSelectedDay(daysInSelectedMonth);
   }, [selectedDay, daysInSelectedMonth]);
-
 
   const loadInspirationPrompts = useCallback(() => {
     const shuffled = [...mockPrompts].sort(() => 0.5 - Math.random());
@@ -455,7 +271,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0 && memory.mediaAttachments[0].url) {
       setCurrentMediaPreviewUrl(memory.mediaAttachments[0].url);
     } else {
-      setCurrentMediaPreviewUrl(null); 
+      setCurrentMediaPreviewUrl(null);
     }
     return () => {
       if (blobUrlToRevoke && blobUrlToRevoke.startsWith('blob:')) URL.revokeObjectURL(blobUrlToRevoke);
@@ -471,14 +287,14 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       endTime: mediaDataFromRecorder.endTime,
       duration: mediaDataFromRecorder.duration,
     });
-    setMediaToInitializeRecorder(null); 
+    setMediaToInitializeRecorder(null);
   }, []);
 
 
   const handleMediaDiscardInForm = useCallback(() => {
-    const mediaToPassBackToRecorder = currentMedia || 
-      (isEditing && memory?.mediaAttachments?.[0] 
-        ? { 
+    const mediaToPassBackToRecorder = currentMedia ||
+      (isEditing && memory?.mediaAttachments?.[0]
+        ? {
             file: new File([], memory.mediaAttachments[0].filename || "existing_media", {type: memory.mediaAttachments[0].type === 'video' ? 'video/webm' : 'audio/webm'}),
             type: memory.mediaAttachments[0].type,
             previewUrl: memory.mediaAttachments[0].url || '',
@@ -487,7 +303,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             duration: memory.mediaAttachments[0].duration || 0,
           }
         : undefined);
-        
+
     if (mediaToPassBackToRecorder) {
         setMediaToInitializeRecorder(mediaToPassBackToRecorder as MediaRecorderData);
     }
@@ -496,7 +312,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }, [currentMedia, isEditing, memory?.mediaAttachments]);
 
   const handleMediaDiscardInRecorder = useCallback(() => {
-    setMediaToInitializeRecorder(null); 
+    setMediaToInitializeRecorder(null);
   }, []);
 
 
@@ -513,7 +329,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       else mediaElement.addEventListener('loadedmetadata', applyStartTime, { once: true });
       return () => mediaElement.removeEventListener('loadedmetadata', applyStartTime);
     }
-  }, [currentMedia, currentMediaPreviewUrl]); 
+  }, [currentMedia, currentMediaPreviewUrl]);
 
 
   const handleGenerateCues = async () => {
@@ -538,7 +354,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   };
 
   const handleCueClick = (cue: string) => {
-    if (!title && !memory?.title) setTitle(cue); 
+    if (!title && !memory?.title) setTitle(cue);
     else setDescription(prev => `${prev}${prev ? '\n' : ''}Inspired by: ${cue}`);
     toast({ title: "Cue Applied!", description: `"${cue}" added to your memory.` });
   };
@@ -553,8 +369,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]
     );
   };
-  
-  const isLastSlide = currentSlide === SLIDE_INDEX_CUES;
 
   const triggerSubmitProcess = () => {
     if (!title.trim()) {
@@ -615,25 +429,41 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0 ? currentMedia.file : undefined
     );
   };
-  
+
   const handleActionButtonClick = () => {
     if (isParentSubmitting) return;
 
+    const currentIsOnCuesSlide = currentSlide === SLIDE_INDEX_CUES;
+
     if (isEditing) {
       triggerSubmitProcess();
-    } else if (isLastSlide) {
-      triggerSubmitProcess();
-    } else {
-      if (carouselApi) {
-        carouselApi.scrollNext();
+    } else { // New memory
+      if (currentIsOnCuesSlide) {
+        if (justLandedOnCuesSlideRef.current) {
+          // This click was the "Next" that landed us here. Consume it.
+          justLandedOnCuesSlideRef.current = false; // Allow next click to submit
+          return;
+        }
+        triggerSubmitProcess(); // Genuine click on "Add Memory"
+      } else {
+        // Not on the last slide, so scroll next.
+        carouselApi?.scrollNext();
       }
+    }
+  };
+
+  const handleFormSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    // Delegate to the main button's logic if it's a submit-like state
+    if (isEditing || currentSlide === SLIDE_INDEX_CUES) {
+        handleActionButtonClick();
     }
   };
 
   let actionButtonText = 'Next';
   if (isEditing) {
     actionButtonText = 'Save Changes';
-  } else if (isLastSlide) {
+  } else if (currentSlide === SLIDE_INDEX_CUES) {
     actionButtonText = 'Add Memory';
   }
 
@@ -644,7 +474,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       return {
         file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
         type: firstMedia.type,
-        previewUrl: firstMedia.url || '', 
+        previewUrl: firstMedia.url || '',
         startTime: firstMedia.startTime,
         endTime: firstMedia.endTime,
         duration: duration,
@@ -653,17 +483,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     return undefined;
   }, [memory?.mediaAttachments, isEditing]);
 
-
-  // Form's onSubmit is now a no-op as submission is handled by the button's onClick
-  const handleFormSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    // If the button was type="submit", this would be called.
-    // Since button is type="button", this is mainly for completeness or if enter is pressed in a field.
-    // We can delegate to the action button's logic if appropriate.
-    if (isEditing || isLastSlide) {
-        handleActionButtonClick();
-    }
-  };
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-6" noValidate>
@@ -677,9 +496,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1">
-                  <Label htmlFor="title" ref={titleLabelRef}>Title *</Label>
+                  <Label htmlFor="title" >Title *</Label>
                   <Input ref={titleInputRef} id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" />
-                  {inspirationPrompts.length > 0 && !isEditing && ( 
+                  {inspirationPrompts.length > 0 && !isEditing && (
                     <div className="pt-2 space-y-2">
                       <div className="flex justify-between items-center">
                         <Label htmlFor="inspiration-prompts" className="text-xs text-muted-foreground">Need inspiration for your title?</Label>
@@ -833,9 +652,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       </Carousel>
       <CardFooter className="flex justify-end p-0 pt-6 max-w-3xl mx-auto">
         <Button
-          type="button" // Always type="button" now
+          type="button"
           onClick={handleActionButtonClick}
-          disabled={!!isParentSubmitting} // Disable if parent is submitting
+          disabled={!!isParentSubmitting}
           className="w-full sm:w-auto"
         >
           {isParentSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -845,4 +664,3 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     </form>
   );
 }
-
