@@ -128,11 +128,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(SLIDE_INDEX_DETAILS);
-  const currentSlideRef = useRef(currentSlide); // Ref to hold currentSlide for event handlers
-
-  useEffect(() => {
-    currentSlideRef.current = currentSlide;
-  }, [currentSlide]);
+  const currentSlideRef = useRef(currentSlide); 
   
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
 
@@ -212,25 +208,21 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }, [daysInSelectedMonth]);
 
 
- const performVisualScroll = useCallback((slideIndex: number) => {
+const performVisualScroll = useCallback((slideIndex: number) => {
     if (visualScrollTimerRef.current) {
       clearTimeout(visualScrollTimerRef.current);
     }
     visualScrollTimerRef.current = setTimeout(() => {
-      let targetElement: HTMLDivElement | null = null;
-      if (slideIndex === SLIDE_INDEX_DETAILS && step1AnchorRef.current) {
-        targetElement = step1AnchorRef.current;
-      } else if (slideIndex === SLIDE_INDEX_MEDIA && step2AnchorRef.current) {
-        targetElement = step2AnchorRef.current;
-      } else if (slideIndex === SLIDE_INDEX_CUES && step3AnchorRef.current) {
-        targetElement = step3AnchorRef.current;
-      }
+      let targetElementRef: React.RefObject<HTMLDivElement> | null = null;
+      if (slideIndex === SLIDE_INDEX_DETAILS) targetElementRef = step1AnchorRef;
+      else if (slideIndex === SLIDE_INDEX_MEDIA) targetElementRef = step2AnchorRef;
+      else if (slideIndex === SLIDE_INDEX_CUES) targetElementRef = step3AnchorRef;
 
-      if (targetElement) {
+      if (targetElementRef?.current) {
         const navbar = document.querySelector('header.sticky') as HTMLElement | null;
         const navbarHeight = navbar ? navbar.offsetHeight : 0;
         
-        const elementRect = targetElement.getBoundingClientRect();
+        const elementRect = targetElementRef.current.getBoundingClientRect();
         const currentScrollY = window.scrollY; 
         const targetScrollY = elementRect.top + currentScrollY - navbarHeight;
 
@@ -239,9 +231,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           behavior: 'auto', 
         });
       }
-    }, 350); 
-  }, []); 
+    }, 350); // Delay to allow DOM to settle
+  }, []);
 
+
+  useEffect(() => {
+    currentSlideRef.current = currentSlide;
+  }, [currentSlide]);
 
   // Commander useEffect: Reacts to `currentSlide` state changes to command carousel and visual scroll
   useEffect(() => {
@@ -259,11 +255,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   useEffect(() => {
     if (!carouselApi) return;
 
-    const handleApiEvent = () => { // For select, reInit
+    const handleApiEvent = () => { 
       if (!carouselApi) return;
       const newSelectedSnap = carouselApi.selectedScrollSnap();
-      if (newSelectedSnap !== currentSlideRef.current) { // Use ref for comparison
-        setCurrentSlide(newSelectedSnap); // Update state, Effect 1 will handle carousel command & scroll
+      if (newSelectedSnap !== currentSlideRef.current) { 
+        setCurrentSlide(newSelectedSnap); 
       }
       
       if (newSelectedSnap === SLIDE_INDEX_CUES && !isEditing) {
@@ -275,13 +271,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       }
     };
 
-    // Initial setup: Sync `currentSlide` state with carousel's initial position
     const initialSnap = carouselApi.selectedScrollSnap();
-    if (initialSnap !== currentSlideRef.current) { // Use ref for comparison
-       setCurrentSlide(initialSnap); // This will trigger the Commander useEffect for initial scroll
+    if (initialSnap !== currentSlideRef.current) { 
+       setCurrentSlide(initialSnap);
     } else {
-      // If currentSlide (e.g., 0) is already initialSnap (e.g. 0), Commander won't fire.
-      // So, explicitly call performVisualScroll for the very first render.
       performVisualScroll(initialSnap);
     }
 
@@ -342,7 +335,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     setCurrentMedia(newCurrentMediaData);
   }, []);
 
-  // Effect to monitor when currentMedia has caught up after setting isProcessingMedia
   useEffect(() => {
     if (isProcessingMedia) {
         const refData = latestSelectedMediaDataRef.current;
@@ -353,8 +345,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             Math.abs((currentMedia.startTime ?? 0) - (refData.startTime ?? 0)) < 0.01 &&
             Math.abs((currentMedia.endTime ?? 0) - (refData.endTime ?? 0)) < 0.01
         ) {
-            setIsProcessingMedia(false); // Processing done, media state updated
-        } else if (!refData && currentMedia === null) { // Handle discard case
+            setIsProcessingMedia(false); 
+        } else if (!refData && currentMedia === null) { 
             setIsProcessingMedia(false);
         }
     }
@@ -385,6 +377,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     setCurrentMedia(null);
     latestSelectedMediaDataRef.current = null;
     setCurrentMediaPreviewUrl(null);
+    setIsProcessingMedia(false);
 
     const originalOrNullMedia =
         isEditing && memory?.mediaAttachments?.[0]
@@ -398,7 +391,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           }
         : null;
     setMediaToInitializeRecorder(originalOrNullMedia as MediaRecorderData | null);
-    setIsProcessingMedia(false);
   }, [isEditing, memory?.mediaAttachments]);
 
   useEffect(() => {
@@ -621,7 +613,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       <Carousel setApi={setCarouselApi} opts={{ align: "start", loop: false }} className="w-full max-w-3xl mx-auto py-4">
         <CarouselContent>
           <CarouselItem>
-            <div ref={step1AnchorRef}>TOP</div>
+            <div ref={step1AnchorRef} />
             <Card className="w-full">
               <CardHeader>
                 <CardTitle className="font-headline text-2xl">{memory ? 'Edit Chapter' : 'New Chapter'} (Step {SLIDE_INDEX_DETAILS + 1} of {TOTAL_SLIDES})</CardTitle>
@@ -714,7 +706,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             </Card>
           </CarouselItem>
           <CarouselItem>
-            <div ref={step2AnchorRef}>TOP</div>
+            <div ref={step2AnchorRef} />
             <Card className="w-full">
               <CardHeader>
                   <CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>
@@ -740,7 +732,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             </Card>
           </CarouselItem>
           <CarouselItem>
-            <div ref={step3AnchorRef}>TOP</div>
+            <div ref={step3AnchorRef} />
             <Card className="w-full">
               <CardHeader>
                 <CardTitle className="font-headline text-lg flex items-center"><Sparkles className="mr-2 h-5 w-5 text-primary" />AI-Powered Memory Cues (Step {SLIDE_INDEX_CUES + 1} of {TOTAL_SLIDES})</CardTitle>
@@ -794,7 +786,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           }}
           disabled={currentSlide === 0 || !!isParentSubmitting || isProcessingMedia}
           variant="outline"
-          className="w-auto"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Previous
@@ -807,7 +798,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             isProcessingMedia ||
             (currentSlide === SLIDE_INDEX_CUES && !isEditing && justLandedOnCuesSlideRef.current)
           }
-          className="w-auto"
         >
           {(isParentSubmitting || isProcessingMedia) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <ActionButtonIcon className="mr-2 h-4 w-4" />
