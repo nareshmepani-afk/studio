@@ -126,6 +126,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(SLIDE_INDEX_DETAILS);
+  const [isProcessingMedia, setIsProcessingMedia] = useState(false);
+
 
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
   const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null);
@@ -157,8 +159,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           duration: duration,
         };
         setCurrentMedia(initialCurrentMediaData);
-        latestSelectedMediaDataRef.current = initialCurrentMediaData; // Also prime the ref
-        setMediaToInitializeRecorder({ // This is for MediaCaptureControl's initial prop
+        latestSelectedMediaDataRef.current = initialCurrentMediaData; 
+        setMediaToInitializeRecorder({ 
             file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
             type: firstMedia.type,
             previewUrl: firstMedia.url || '',
@@ -201,7 +203,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     return Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1);
   }, [daysInSelectedMonth]);
 
-
   const performVisualScrollWithRef = useCallback((slideIndex: number) => {
     if (visualScrollTimerRef.current) {
       clearTimeout(visualScrollTimerRef.current);
@@ -218,12 +219,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
 
   useEffect(() => {
-    if (carouselApi) {
-      if (carouselApi.selectedScrollSnap() !== currentSlide) {
-        carouselApi.scrollTo(currentSlide, true); 
-      }
-      performVisualScrollWithRef(currentSlide); 
+    if (carouselApi && carouselApi.selectedScrollSnap() !== currentSlide) {
+      carouselApi.scrollTo(currentSlide, true); 
     }
+    performVisualScrollWithRef(currentSlide); 
+    
     return () => {
       if (visualScrollTimerRef.current) {
         clearTimeout(visualScrollTimerRef.current);
@@ -240,7 +240,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       const newSelectedSnap = carouselApi.selectedScrollSnap();
       
       if (newSelectedSnap !== currentSlide) { 
-        setCurrentSlide(newSelectedSnap); 
+         setCurrentSlide(newSelectedSnap); 
       }
       
       if (newSelectedSnap === SLIDE_INDEX_CUES && !isEditing) {
@@ -270,7 +270,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       if (justLandedTimeoutIdRef.current) clearTimeout(justLandedTimeoutIdRef.current);
       if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current); 
     };
-  }, [carouselApi, isEditing, performVisualScrollWithRef, currentSlide]); // Removed setCurrentSlide from deps as it's internal
+  }, [carouselApi, isEditing, performVisualScrollWithRef, currentSlide]); 
 
 
   useEffect(() => {
@@ -304,6 +304,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
 
   const handleMediaReady = useCallback((mediaDataFromRecorder: MediaRecorderData) => {
+    setIsProcessingMedia(true);
     const newCurrentMediaData = {
       file: mediaDataFromRecorder.file,
       type: mediaDataFromRecorder.type,
@@ -313,11 +314,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     };
     latestSelectedMediaDataRef.current = newCurrentMediaData;
     setCurrentMedia(newCurrentMediaData);
-    // Do NOT setMediaToInitializeRecorder(null) here.
   }, []);
 
 
-  const handleMediaDiscardInForm = useCallback(() => { // When user clicks "Change media or re-trim" in MemoryForm
+  const handleMediaDiscardInForm = useCallback(() => { 
     const mediaToPassBackToRecorder =
       (isEditing && memory?.mediaAttachments?.[0]
         ? {
@@ -334,9 +334,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     setCurrentMedia(null);
     latestSelectedMediaDataRef.current = null; 
     setCurrentMediaPreviewUrl(null); 
+    setIsProcessingMedia(false);
   }, [isEditing, memory?.mediaAttachments]);
 
-  const handleMediaDiscardFromChild = useCallback(() => { // When MediaCaptureControl's internal discard is used
+  const handleMediaDiscardFromChild = useCallback(() => { 
     setCurrentMedia(null);
     latestSelectedMediaDataRef.current = null;
     setCurrentMediaPreviewUrl(null);
@@ -353,7 +354,26 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           }
         : null;
     setMediaToInitializeRecorder(originalOrNullMedia as MediaRecorderData | null);
+    setIsProcessingMedia(false);
   }, [isEditing, memory?.mediaAttachments]);
+
+  useEffect(() => {
+    if (isProcessingMedia) {
+      if (currentMedia && latestSelectedMediaDataRef.current &&
+          currentMedia.file.name === latestSelectedMediaDataRef.current.file.name &&
+          currentMedia.type === latestSelectedMediaDataRef.current.type &&
+          Math.abs((currentMedia.duration ?? 0) - (latestSelectedMediaDataRef.current.duration ?? 0)) < 0.01 &&
+          Math.abs((currentMedia.startTime ?? 0) - (latestSelectedMediaDataRef.current.startTime ?? 0)) < 0.01 &&
+          Math.abs((currentMedia.endTime ?? 0) - (latestSelectedMediaDataRef.current.endTime ?? 0)) < 0.01
+      ) {
+        setIsProcessingMedia(false);
+      } else if (!latestSelectedMediaDataRef.current && currentMedia) {
+        setIsProcessingMedia(false);
+      } else if (!latestSelectedMediaDataRef.current && !currentMedia) {
+        setIsProcessingMedia(false);
+      }
+    }
+  }, [currentMedia, isProcessingMedia]);
 
 
   useEffect(() => {
@@ -372,16 +392,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }, [currentMedia, currentMediaPreviewUrl]);
 
   useEffect(() => {
-    // Clear the latestSelectedMediaDataRef if the user navigates away from the media step
-    // or if the currentMedia state successfully updates to match the ref.
     if (currentSlide !== SLIDE_INDEX_MEDIA && latestSelectedMediaDataRef.current) {
       latestSelectedMediaDataRef.current = null;
     }
     if (currentMedia && latestSelectedMediaDataRef.current &&
         currentMedia.file === latestSelectedMediaDataRef.current.file &&
         currentMedia.startTime === latestSelectedMediaDataRef.current.startTime &&
-        currentMedia.endTime === latestSelectedMediaDataRef.current.endTime) {
-      latestSelectedMediaDataRef.current = null; // State has caught up
+        currentMedia.endTime === latestSelectedMediaDataRef.current.endTime &&
+        currentMedia.duration === latestSelectedMediaDataRef.current.duration 
+      ) {
+      latestSelectedMediaDataRef.current = null; 
     }
   }, [currentSlide, currentMedia]);
 
@@ -503,7 +523,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
 
   const handleActionButtonClick = useCallback(() => {
-    if (isParentSubmitting) return;
+    if (isParentSubmitting || isProcessingMedia) return;
 
     if (isEditing) {
       triggerSubmitProcess();
@@ -529,7 +549,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         triggerSubmitProcess();
       }
     }
-  }, [isParentSubmitting, isEditing, currentSlide, triggerSubmitProcess, currentMedia, latestSelectedMediaDataRef]);
+  }, [isParentSubmitting, isEditing, currentSlide, triggerSubmitProcess, currentMedia, latestSelectedMediaDataRef, isProcessingMedia]);
 
   const handleFormSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -555,7 +575,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }
 
   const initialMediaForRecorderProp = useMemo(() => {
-    // This is for initially populating MediaCaptureControl when editing an existing memory
     if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
       const firstMedia = memory.mediaAttachments[0];
       const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
@@ -748,7 +767,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
               setCurrentSlide(currentSlide - 1);
             }
           }}
-          disabled={currentSlide === 0 || !!isParentSubmitting}
+          disabled={currentSlide === 0 || !!isParentSubmitting || isProcessingMedia}
           variant="outline"
           className="w-auto"
         >
@@ -758,10 +777,14 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         <Button
           type="button"
           onClick={handleActionButtonClick}
-          disabled={!!isParentSubmitting || (currentSlide === SLIDE_INDEX_CUES && !isEditing && justLandedOnCuesSlideRef.current)}
+          disabled={
+            !!isParentSubmitting || 
+            isProcessingMedia ||
+            (currentSlide === SLIDE_INDEX_CUES && !isEditing && justLandedOnCuesSlideRef.current)
+          }
           className="w-auto"
         >
-          {isParentSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {(isParentSubmitting || isProcessingMedia) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <ActionButtonIcon className="mr-2 h-4 w-4" />
           {actionButtonText}
         </Button>
