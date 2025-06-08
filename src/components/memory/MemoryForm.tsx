@@ -82,14 +82,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const yearSelectRef = useRef<HTMLButtonElement>(null); // For focusing date select
-  const memoryDetailsCardHeaderRef = useRef<HTMLDivElement>(null);
-  const mediaCardHeaderRef = useRef<HTMLDivElement>(null);
-  const aiCuesCardHeaderRef = useRef<HTMLDivElement>(null);
+  const yearSelectRef = useRef<HTMLButtonElement>(null);
+
+  const detailsCarouselItemRef = useRef<HTMLDivElement>(null);
+  const mediaCarouselItemRef = useRef<HTMLDivElement>(null);
+  const cuesCarouselItemRef = useRef<HTMLDivElement>(null);
 
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
-  const justLandedOnCuesSlideRef = useRef(false); // New ref for gating submission
+  const justLandedOnCuesSlideRef = useRef(false);
 
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
@@ -206,45 +207,48 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
       if (newSelectedSlide === SLIDE_INDEX_CUES && !isEditing) {
         justLandedOnCuesSlideRef.current = true;
-        if (selectTimer) clearTimeout(selectTimer); // Clear previous timer if any
+        if (selectTimer) clearTimeout(selectTimer);
         selectTimer = setTimeout(() => {
           justLandedOnCuesSlideRef.current = false;
-        }, 100); // Reset after a short delay
+        }, 100);
       }
     };
 
     carouselApi.on("select", handleSelect);
     carouselApi.on("reInit", handleSelect);
-    setCurrentSlide(carouselApi.selectedScrollSnap()); // Initialize currentSlide
+    setCurrentSlide(carouselApi.selectedScrollSnap());
 
     return () => {
       carouselApi.off("select", handleSelect);
       carouselApi.off("reInit", handleSelect);
       if (selectTimer) clearTimeout(selectTimer);
     };
-  }, [carouselApi, isEditing, setCurrentSlide]);
+  }, [carouselApi, isEditing]);
 
 
   useEffect(() => {
-    if (!carouselApi || !carouselApi.engine?.scrollSnaps || carouselApi.engine.scrollSnaps.length === 0) return;
-    if (currentSlide === undefined) return;
+    if (!carouselApi || currentSlide === undefined) return;
 
-    const scrollTarget = () => {
+    const timer = setTimeout(() => {
+      if (!carouselApi.engine || carouselApi.selectedScrollSnap() !== currentSlide) return;
+
       let targetRef: React.RefObject<HTMLDivElement> | null = null;
-      if (currentSlide === SLIDE_INDEX_DETAILS) targetRef = memoryDetailsCardHeaderRef;
-      else if (currentSlide === SLIDE_INDEX_MEDIA) targetRef = mediaCardHeaderRef;
-      else if (currentSlide === SLIDE_INDEX_CUES) targetRef = aiCuesCardHeaderRef;
+      let scrollOptions: ScrollIntoViewOptions = { behavior: 'smooth', block: 'nearest' };
 
-      if (targetRef?.current && carouselApi.selectedScrollSnap() === currentSlide) {
-         try {
-            targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-         } catch (e) {
-            // Fallback for browsers that don't support smooth options fully
-            targetRef.current.scrollIntoView();
-         }
+      if (currentSlide === SLIDE_INDEX_DETAILS) {
+        targetRef = detailsCarouselItemRef;
+      } else if (currentSlide === SLIDE_INDEX_MEDIA) {
+        targetRef = mediaCarouselItemRef;
+      } else if (currentSlide === SLIDE_INDEX_CUES) {
+        targetRef = cuesCarouselItemRef;
+        scrollOptions = { behavior: 'smooth', block: 'start' };
       }
-    };
-    const timer = setTimeout(scrollTarget, 150); // Slightly increased delay for safety
+
+      if (targetRef?.current) {
+        targetRef.current.scrollIntoView(scrollOptions);
+      }
+    }, 300); // Increased delay
+
     return () => clearTimeout(timer);
   }, [currentSlide, carouselApi]);
 
@@ -433,20 +437,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   const handleActionButtonClick = () => {
     if (isParentSubmitting) return;
 
-    const currentIsOnCuesSlide = currentSlide === SLIDE_INDEX_CUES;
-
     if (isEditing) {
       triggerSubmitProcess();
     } else { // New memory
-      if (currentIsOnCuesSlide) {
+      if (currentSlide === SLIDE_INDEX_CUES) {
         if (justLandedOnCuesSlideRef.current) {
-          // This click was the "Next" that landed us here. Consume it.
-          justLandedOnCuesSlideRef.current = false; // Allow next click to submit
-          return;
+          justLandedOnCuesSlideRef.current = false; 
+          return; 
         }
-        triggerSubmitProcess(); // Genuine click on "Add Memory"
+        triggerSubmitProcess();
       } else {
-        // Not on the last slide, so scroll next.
         carouselApi?.scrollNext();
       }
     }
@@ -454,9 +454,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const handleFormSubmit = (event: FormEvent) => {
     event.preventDefault();
-    // Delegate to the main button's logic if it's a submit-like state
     if (isEditing || currentSlide === SLIDE_INDEX_CUES) {
+        if (justLandedOnCuesSlideRef.current && !isEditing && currentSlide === SLIDE_INDEX_CUES) {
+            // If we just landed on cues slide via form submit (e.g. enter key), don't auto-submit
+            justLandedOnCuesSlideRef.current = false;
+            return;
+        }
         handleActionButtonClick();
+    } else if (carouselApi) {
+        // If form submitted via Enter key on earlier slides, treat as "Next"
+        carouselApi.scrollNext();
     }
   };
 
@@ -488,9 +495,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     <form onSubmit={handleFormSubmit} className="space-y-6" noValidate>
       <Carousel setApi={setCarouselApi} opts={{ align: "start", loop: false }} className="w-full max-w-3xl mx-auto py-4">
         <CarouselContent>
-          <CarouselItem>
+          <CarouselItem ref={detailsCarouselItemRef}>
             <Card className="w-full">
-              <CardHeader ref={memoryDetailsCardHeaderRef}>
+              <CardHeader>
                 <CardTitle className="font-headline text-2xl">{memory ? 'Edit Chapter' : 'New Chapter'} (Step {SLIDE_INDEX_DETAILS + 1} of {TOTAL_SLIDES})</CardTitle>
                 <CardDescription>Capture the details of your moment. Fields marked with * are mandatory.</CardDescription>
               </CardHeader>
@@ -580,9 +587,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
               </CardContent>
             </Card>
           </CarouselItem>
-          <CarouselItem>
+          <CarouselItem ref={mediaCarouselItemRef}>
             <Card className="w-full">
-              <CardHeader ref={mediaCardHeaderRef}>
+              <CardHeader>
                   <CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>
                   {!currentMedia && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}
               </CardHeader>
@@ -605,9 +612,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
               </CardContent>
             </Card>
           </CarouselItem>
-          <CarouselItem>
+          <CarouselItem ref={cuesCarouselItemRef}>
             <Card className="w-full">
-              <CardHeader ref={aiCuesCardHeaderRef}>
+              <CardHeader>
                 <CardTitle className="font-headline text-lg flex items-center"><Sparkles className="mr-2 h-5 w-5 text-primary" />AI-Powered Memory Cues (Step {SLIDE_INDEX_CUES + 1} of {TOTAL_SLIDES})</CardTitle>
                 <CardDescription>Get suggestions for memories based on your profile and current context.</CardDescription>
               </CardHeader>
@@ -650,7 +657,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         <CarouselPrevious />
         <CarouselNext />
       </Carousel>
-      <CardFooter className="flex justify-end p-0 pt-6 max-w-3xl mx-auto">
+      
+      <div className="max-w-3xl mx-auto flex justify-end pt-4 px-1 sm:px-0">
         <Button
           type="button"
           onClick={handleActionButtonClick}
@@ -660,7 +668,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           {isParentSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {actionButtonText}
         </Button>
-      </CardFooter>
+      </div>
     </form>
   );
 }
+
+    
