@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { BookHeart, LogOut, PlusCircle, Settings, BellRing, Users, UserCog, BookOpen, History, Home } from 'lucide-react';
+import { BookHeart, LogOut, PlusCircle, Settings, BellRing, Users, UserCog, BookOpen, History, Home, UserCircle2 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 
 export function Navbar() {
@@ -38,6 +38,23 @@ export function Navbar() {
       logoHref = "/timeline";
     }
   }
+
+  // Helper to determine if the avatar URL is a placeholder or effectively empty
+  const isEffectivelyEmptyOrPlaceholderAvatar = (url?: string): boolean => {
+    if (!url || url.trim() === '') return true;
+    if (url.startsWith('blob:')) return true;
+    if (url.startsWith('https://avatar.vercel.sh/')) return true;
+    return false;
+  };
+
+  let avatarSrcToAttempt: string | undefined = undefined;
+  let showIconAsFallbackInNavbar = true;
+
+  if (user && user.avatarUrl && !isEffectivelyEmptyOrPlaceholderAvatar(user.avatarUrl)) {
+    avatarSrcToAttempt = user.avatarUrl;
+    showIconAsFallbackInNavbar = false; // We are attempting to show a persisted custom avatar
+  }
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -112,8 +129,13 @@ export function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatarUrl || `https://avatar.vercel.sh/${user.email}.png`} alt={user.name || user.email} />
-                      <AvatarFallback>{user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}</AvatarFallback>
+                      <AvatarImage src={avatarSrcToAttempt} alt={user.name || user.email} />
+                      <AvatarFallback>
+                        {showIconAsFallbackInNavbar ? 
+                          (<UserCircle2 className="h-6 w-6 text-muted-foreground" />) :
+                          (user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?'))
+                        }
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
