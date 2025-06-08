@@ -197,6 +197,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     return Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1);
   }, [daysInSelectedMonth]);
 
+
   useEffect(() => {
     if (!carouselApi) {
       return;
@@ -204,9 +205,21 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
     let scrollTimeoutId: NodeJS.Timeout | undefined;
 
-    const handleSelect = () => {
-      if (!carouselApi) return;
+    const performScrollToActiveSlide = (slideIndex: number) => {
+      if (scrollTimeoutId) clearTimeout(scrollTimeoutId);
 
+      scrollTimeoutId = setTimeout(() => {
+        let targetRef: React.RefObject<HTMLDivElement> | null = null;
+        if (slideIndex === SLIDE_INDEX_DETAILS) targetRef = detailsCarouselItemRef;
+        else if (slideIndex === SLIDE_INDEX_MEDIA) targetRef = mediaCarouselItemRef;
+        else if (slideIndex === SLIDE_INDEX_CUES) targetRef = cuesCarouselItemRef;
+        
+        targetRef?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 200); 
+    };
+
+    const handleApiEvent = () => {
+      if (!carouselApi) return;
       const newSelectedSlide = carouselApi.selectedScrollSnap();
       setCurrentSlide(newSelectedSlide);
 
@@ -215,48 +228,29 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         if (justLandedTimeoutIdRef.current) clearTimeout(justLandedTimeoutIdRef.current);
         justLandedTimeoutIdRef.current = setTimeout(() => {
           justLandedOnCuesSlideRef.current = false;
-        }, 100);
+        }, 100); 
       }
-
-      if (scrollTimeoutId) clearTimeout(scrollTimeoutId);
-
-      scrollTimeoutId = setTimeout(() => {
-        if (newSelectedSlide === SLIDE_INDEX_CUES && cuesCarouselItemRef.current) {
-          cuesCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (newSelectedSlide === SLIDE_INDEX_MEDIA && mediaCarouselItemRef.current) {
-          mediaCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (newSelectedSlide === SLIDE_INDEX_DETAILS && detailsCarouselItemRef.current) {
-          detailsCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 150); 
+      performScrollToActiveSlide(newSelectedSlide);
     };
+    
+    if (carouselApi.slidesInView().length > 0) { 
+        const initialSlideIndex = carouselApi.selectedScrollSnap();
+        setCurrentSlide(initialSlideIndex); 
+        performScrollToActiveSlide(initialSlideIndex); 
+    }
 
-    carouselApi.on("select", handleSelect);
-    carouselApi.on("reInit", handleSelect);
-
-    // Initial setup
-    const initialSlide = carouselApi.selectedScrollSnap();
-    setCurrentSlide(initialSlide);
-    setTimeout(() => { 
-      if (initialSlide === SLIDE_INDEX_CUES && cuesCarouselItemRef.current) {
-        cuesCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else if (initialSlide === SLIDE_INDEX_MEDIA && mediaCarouselItemRef.current) {
-        mediaCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else if (initialSlide === SLIDE_INDEX_DETAILS && detailsCarouselItemRef.current) {
-        detailsCarouselItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 150);
-
+    carouselApi.on("select", handleApiEvent);
+    carouselApi.on("reInit", handleApiEvent); 
 
     return () => {
       if (carouselApi) {
-        carouselApi.off("select", handleSelect);
-        carouselApi.off("reInit", handleSelect);
+        carouselApi.off("select", handleApiEvent);
+        carouselApi.off("reInit", handleApiEvent);
       }
       if (justLandedTimeoutIdRef.current) clearTimeout(justLandedTimeoutIdRef.current);
       if (scrollTimeoutId) clearTimeout(scrollTimeoutId);
     };
-  }, [carouselApi, isEditing]);
+  }, [carouselApi, isEditing]); 
 
 
   useEffect(() => {
@@ -445,11 +439,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
     if (isEditing) {
       triggerSubmitProcess();
-    } else { // New memory
+    } else { 
       if (currentSlide === SLIDE_INDEX_CUES) {
         if (justLandedOnCuesSlideRef.current) {
-          justLandedOnCuesSlideRef.current = false;
-          return;
+            justLandedOnCuesSlideRef.current = false; 
+            return; 
         }
         triggerSubmitProcess();
       } else {
@@ -460,7 +454,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const handleFormSubmit = (event: FormEvent) => {
     event.preventDefault();
-    if (isEditing || currentSlide === SLIDE_INDEX_CUES) {
+     if (isEditing || currentSlide === SLIDE_INDEX_CUES) {
         if (justLandedOnCuesSlideRef.current && !isEditing && currentSlide === SLIDE_INDEX_CUES) {
             justLandedOnCuesSlideRef.current = false;
             return;
