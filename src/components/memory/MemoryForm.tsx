@@ -32,11 +32,11 @@ import {
 interface MemoryFormProps {
   memory?: Memory; // Existing memory for editing
   onSubmit: (
-    memoryData: Omit<Memory, 'id' | 'userId'> & { promptId?: string }, // Include promptId here
+    memoryData: Omit<Memory, 'id' | 'userId'> & { promptId?: string },
     userProfileForCues?: string, 
     mediaFileToUpload?: File
   ) => void;
-  isSubmitting?: boolean;
+  isSubmitting?: boolean; // Renamed to isParentSubmitting internally for clarity
 }
 
 type MediaRecorderData = { 
@@ -269,7 +269,7 @@ const countryOptions = [
 ];
 
 
-export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) {
+export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting }: MemoryFormProps) {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -293,7 +293,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
 
 
   const getInitialDateComponent = useCallback((component: 'year' | 'month' | 'day', dateSource?: string) => {
-    const dateToParse = dateSource ? parseISO(dateSource) : new Date(); // Use parseISO for string dates
+    const dateToParse = dateSource ? parseISO(dateSource) : new Date(); 
     if (isValid(dateToParse)) {
       if (component === 'year') return getYear(dateToParse);
       if (component === 'month') return getMonth(dateToParse);
@@ -328,13 +328,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   const promptIdFromQuery = searchParams.get('promptId');
 
   useEffect(() => {
-    if (memory) { // Populate form if editing
+    if (memory) { 
       setTitle(memory.title || '');
       setLocation(memory.location || '');
       setCountry(memory.country || 'United Kingdom');
       setDescription(memory.description || '');
       setSelectedEmotionTags(memory.emotionTags || []);
-      setUserProfile(user?.profileInfo || memory.userId); // Or some other relevant field from memory for cues
+      setUserProfile(user?.profileInfo || memory.userId); 
 
       setSelectedYear(getInitialDateComponent('year', memory.date));
       setSelectedMonth(getInitialDateComponent('month', memory.date));
@@ -343,7 +343,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       if (memory.mediaAttachments && memory.mediaAttachments.length > 0) {
         const firstMedia = memory.mediaAttachments[0];
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
-        // Set currentMedia directly so the summary view shows it initially
         setCurrentMedia({
           file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
           type: firstMedia.type,
@@ -351,7 +350,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
           endTime: firstMedia.endTime,
           duration: duration,
         });
-        // And set media for MediaCaptureControl to initialize with if user discards
         setMediaToInitializeRecorder({
             file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
             type: firstMedia.type,
@@ -365,14 +363,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
         setMediaToInitializeRecorder(null);
       }
 
-    } else { // Adding new memory
+    } else { 
       const promptTextFromUrl = searchParams.get('prompt');
       if (promptTextFromUrl) {
         setTitle(decodeURIComponent(promptTextFromUrl));
       } else {
-        setTitle(''); // Reset title if not editing and no prompt
+        setTitle(''); 
       }
-      // Reset other fields for new memory form
       setLocation('');
       setCountry('United Kingdom');
       setDescription('');
@@ -541,7 +538,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
   };
 
   const handleCueClick = (cue: string) => {
-    if (!title && !memory?.title) setTitle(cue); // Only set title if it's empty and not editing a memory with a title
+    if (!title && !memory?.title) setTitle(cue); 
     else setDescription(prev => `${prev}${prev ? '\n' : ''}Inspired by: ${cue}`);
     toast({ title: "Cue Applied!", description: `"${cue}" added to your memory.` });
   };
@@ -556,9 +553,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]
     );
   };
+  
+  const isLastSlide = currentSlide === SLIDE_INDEX_CUES;
 
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
+  const triggerSubmitProcess = () => {
     if (!title.trim()) {
       toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
       carouselApi?.scrollTo(SLIDE_INDEX_DETAILS, true);
@@ -611,12 +609,33 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
         mediaAttachments: mediaAttachmentsForSubmission,
         location: location || undefined,
         country: country || undefined,
-        promptId: promptIdFromQuery || memory?.promptId || undefined, // Include promptId
+        promptId: promptIdFromQuery || memory?.promptId || undefined,
       },
       userProfile,
       currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0 ? currentMedia.file : undefined
     );
   };
+  
+  const handleActionButtonClick = () => {
+    if (isParentSubmitting) return;
+
+    if (isEditing) {
+      triggerSubmitProcess();
+    } else if (isLastSlide) {
+      triggerSubmitProcess();
+    } else {
+      if (carouselApi) {
+        carouselApi.scrollNext();
+      }
+    }
+  };
+
+  let actionButtonText = 'Next';
+  if (isEditing) {
+    actionButtonText = 'Save Changes';
+  } else if (isLastSlide) {
+    actionButtonText = 'Add Memory';
+  }
 
   const initialMediaForRecorderProp = useMemo(() => {
     if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
@@ -634,26 +653,20 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
     return undefined;
   }, [memory?.mediaAttachments, isEditing]);
 
-  const isLastSlide = currentSlide === SLIDE_INDEX_CUES;
 
-  // Determine button properties
-  let buttonType: 'submit' | 'button' = 'button';
-  let buttonOnClick: (() => void) | undefined = () => carouselApi?.scrollNext();
-  let buttonText = 'Next';
-
-  if (isEditing) {
-    buttonType = 'submit';
-    buttonOnClick = undefined;
-    buttonText = 'Save Changes';
-  } else if (isLastSlide) {
-    buttonType = 'submit';
-    buttonOnClick = undefined;
-    buttonText = 'Add Memory';
-  }
-  // Default is 'Next', 'button', and scrollNext action
+  // Form's onSubmit is now a no-op as submission is handled by the button's onClick
+  const handleFormSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    // If the button was type="submit", this would be called.
+    // Since button is type="button", this is mainly for completeness or if enter is pressed in a field.
+    // We can delegate to the action button's logic if appropriate.
+    if (isEditing || isLastSlide) {
+        handleActionButtonClick();
+    }
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+    <form onSubmit={handleFormSubmit} className="space-y-6" noValidate>
       <Carousel setApi={setCarouselApi} opts={{ align: "start", loop: false }} className="w-full max-w-3xl mx-auto py-4">
         <CarouselContent>
           <CarouselItem>
@@ -666,7 +679,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
                 <div className="space-y-1">
                   <Label htmlFor="title" ref={titleLabelRef}>Title *</Label>
                   <Input ref={titleInputRef} id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" />
-                  {inspirationPrompts.length > 0 && !isEditing && ( // Only show inspiration if not editing
+                  {inspirationPrompts.length > 0 && !isEditing && ( 
                     <div className="pt-2 space-y-2">
                       <div className="flex justify-between items-center">
                         <Label htmlFor="inspiration-prompts" className="text-xs text-muted-foreground">Need inspiration for your title?</Label>
@@ -820,13 +833,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting }: MemoryFormProps) 
       </Carousel>
       <CardFooter className="flex justify-end p-0 pt-6 max-w-3xl mx-auto">
         <Button
-          type={buttonType}
-          onClick={buttonOnClick}
-          disabled={!!isSubmitting}
+          type="button" // Always type="button" now
+          onClick={handleActionButtonClick}
+          disabled={!!isParentSubmitting} // Disable if parent is submitting
           className="w-full sm:w-auto"
         >
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {buttonText}
+          {isParentSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {actionButtonText}
         </Button>
       </CardFooter>
     </form>
