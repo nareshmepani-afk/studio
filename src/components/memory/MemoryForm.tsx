@@ -215,9 +215,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   useEffect(() => {
     if (carouselApi) {
       if (carouselApi.selectedScrollSnap() !== currentSlide) {
-        carouselApi.scrollTo(currentSlide, true); 
+        carouselApi.scrollTo(currentSlide, true); // Instant snap
       }
-      performVisualScrollWithRef(currentSlide); 
+      performVisualScrollWithRef(currentSlide); // Then smooth scroll visually
     }
     return () => {
       if (visualScrollTimerRef.current) {
@@ -410,13 +410,19 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       setTimeout(() => descriptionTextareaRef.current?.focus(), 100);
       return;
     }
+    
     if (!currentMedia && !isEditing) { 
         toast({ title: "Media Required", description: "A media attachment (video or audio) is required for new memories.", variant: "destructive" });
         setCurrentSlide(SLIDE_INDEX_MEDIA);
         return;
     }
     if (!currentMedia && isEditing && (!memory?.mediaAttachments || memory.mediaAttachments.length === 0)) {
-        toast({ title: "Media Required", description: "A media attachment (video or audio) is required.", variant: "destructive" });
+        // This case means an existing memory had its media removed. This might be allowed depending on product rules.
+        // For now, let's assume media is always required once set, or if a memory type implies media (e.g. video chapter)
+        // If allowing removal, this block might be softened or removed.
+        // However, if we always need *some* media, this validation is correct.
+        // Let's keep it as mandatory for now for consistency.
+        toast({ title: "Media Required", description: "A media attachment (video or audio) is required for this memory.", variant: "destructive" });
         setCurrentSlide(SLIDE_INDEX_MEDIA);
         return;
     }
@@ -468,6 +474,14 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       if (currentSlide === SLIDE_INDEX_DETAILS) {
         setCurrentSlide(SLIDE_INDEX_MEDIA);
       } else if (currentSlide === SLIDE_INDEX_MEDIA) {
+        if (!currentMedia) {
+            toast({ 
+                title: "Media Required", 
+                description: "Please record or upload a video or audio file for Step 2 before proceeding.", 
+                variant: "destructive" 
+            });
+            return; // Block navigation
+        }
         setCurrentSlide(SLIDE_INDEX_CUES);
       } else if (currentSlide === SLIDE_INDEX_CUES) {
         if (justLandedOnCuesSlideRef.current) {
@@ -477,7 +491,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         triggerSubmitProcess();
       }
     }
-  }, [isParentSubmitting, isEditing, currentSlide, triggerSubmitProcess, setCurrentSlide]);
+  }, [isParentSubmitting, isEditing, currentSlide, triggerSubmitProcess, setCurrentSlide, currentMedia]);
 
   const handleFormSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -496,10 +510,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   let ActionButtonIcon = ArrowRight;
   if (isEditing) {
     actionButtonText = 'Save Changes';
-    ActionButtonIcon = Sparkles; // Or Check, Save icon
+    ActionButtonIcon = Sparkles; 
   } else if (currentSlide === SLIDE_INDEX_CUES) {
     actionButtonText = 'Add Memory';
-    ActionButtonIcon = Sparkles; // Or Check icon
+    ActionButtonIcon = Sparkles; 
   }
 
   const initialMediaForRecorderProp = useMemo(() => {
