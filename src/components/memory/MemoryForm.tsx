@@ -23,8 +23,6 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  // CarouselPrevious, // No longer using default
-  // CarouselNext,   // No longer using default
   type CarouselApi,
 } from "@/components/ui/carousel";
 
@@ -209,18 +207,19 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       else if (slideIndex === SLIDE_INDEX_MEDIA) targetRef = mediaCarouselItemRef;
       else if (slideIndex === SLIDE_INDEX_CUES) targetRef = cuesCarouselItemRef;
       
-      targetRef?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      targetRef?.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
     }, 200); 
   }, []); 
 
-  // Effect to react to `currentSlide` state changes (e.g., from button clicks)
-  // This effect commands the carousel and then performs the visual scroll.
+  // Effect to react to `currentSlide` state changes (e.g., from button clicks or API sync)
+  // This effect commands the carousel AND performs the visual scroll.
   useEffect(() => {
     if (carouselApi) {
       if (carouselApi.selectedScrollSnap() !== currentSlide) {
-        carouselApi.scrollTo(currentSlide, true); // jump: true for instant snap
+        carouselApi.scrollTo(currentSlide, true); // Jump: true for instant snap
       }
-      performVisualScrollWithRef(currentSlide);  // Then visually scroll that slide into view
+      // Regardless of whether scrollTo was called, ensure the current slide is in view.
+      performVisualScrollWithRef(currentSlide); 
     }
     return () => {
       if (visualScrollTimerRef.current) {
@@ -230,15 +229,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }, [currentSlide, carouselApi, performVisualScrollWithRef]);
 
   // Effect for carousel API events (like drag, or after scrollTo completes)
-  // This keeps `currentSlide` state in sync with the carousel's actual position.
+  // This primarily keeps `currentSlide` state in sync with the carousel's actual position.
   useEffect(() => {
     if (!carouselApi) return;
 
-    const handleApiSelectEvent = () => {
+    const handleApiEvent = () => { 
       if (!carouselApi) return;
       const newSelectedSnap = carouselApi.selectedScrollSnap();
       
-      if (newSelectedSnap !== currentSlide) {
+      if (newSelectedSnap !== currentSlide) { 
         setCurrentSlide(newSelectedSnap); 
       }
       
@@ -250,26 +249,26 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         }, 100);
       }
     };
-    
+
     const initialSnap = carouselApi.selectedScrollSnap();
     if (initialSnap !== currentSlide) {
-        setCurrentSlide(initialSnap); 
+      setCurrentSlide(initialSnap); 
     } else {
-        performVisualScrollWithRef(initialSnap);
+      performVisualScrollWithRef(initialSnap);
     }
 
-    carouselApi.on("select", handleApiSelectEvent);
-    carouselApi.on("reInit", handleApiSelectEvent); 
+    carouselApi.on("select", handleApiEvent);
+    carouselApi.on("reInit", handleApiEvent); 
 
     return () => {
       if (carouselApi) {
-        carouselApi.off("select", handleApiSelectEvent);
-        carouselApi.off("reInit", handleApiSelectEvent);
+        carouselApi.off("select", handleApiEvent);
+        carouselApi.off("reInit", handleApiEvent);
       }
       if (justLandedTimeoutIdRef.current) clearTimeout(justLandedTimeoutIdRef.current);
       if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current); 
     };
-  }, [carouselApi, isEditing, currentSlide, performVisualScrollWithRef]); 
+  }, [carouselApi, isEditing, setCurrentSlide, performVisualScrollWithRef, currentSlide]); // Added currentSlide to dependencies
 
 
   useEffect(() => {
@@ -414,14 +413,20 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       setTimeout(() => descriptionTextareaRef.current?.focus(), 100);
       return;
     }
-    if (!currentMedia) {
-      toast({ title: "Media Required", description: "A media attachment (video or audio) is required.", variant: "destructive" });
-      setCurrentSlide(SLIDE_INDEX_MEDIA); 
-      return;
+    if (!currentMedia && !isEditing) { // For new memories, media is required. For editing, it might already exist.
+        toast({ title: "Media Required", description: "A media attachment (video or audio) is required for new memories.", variant: "destructive" });
+        setCurrentSlide(SLIDE_INDEX_MEDIA);
+        return;
+    }
+    if (!currentMedia && isEditing && (!memory?.mediaAttachments || memory.mediaAttachments.length === 0)) {
+        toast({ title: "Media Required", description: "A media attachment (video or audio) is required.", variant: "destructive" });
+        setCurrentSlide(SLIDE_INDEX_MEDIA);
+        return;
     }
 
+
     let mediaAttachmentsForSubmission: MediaAttachment[] | undefined = undefined;
-    if (currentMedia) {
+    if (currentMedia) { // If new media was selected or existing media was modified
       const isNewFile = currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0;
       const originalMediaAttachment = memory?.mediaAttachments?.[0];
       const duration = (typeof currentMedia.duration === 'number' && !isNaN(currentMedia.duration)) ? currentMedia.duration : 0;
@@ -435,7 +440,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         endTime: currentMedia.endTime,
         duration: duration,
       }];
+    } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
+        // If editing and no new media was chosen, use the existing media attachment.
+        mediaAttachmentsForSubmission = memory.mediaAttachments;
     }
+
 
     onSubmit(
       {
@@ -451,7 +460,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       userProfile,
       currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0 ? currentMedia.file : undefined
     );
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, promptIdFromQuery, selectedEmotionTags, userProfile]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, promptIdFromQuery, selectedEmotionTags, userProfile, isEditing, setCurrentSlide]);
 
 
   const handleActionButtonClick = useCallback(() => {
@@ -472,7 +481,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         triggerSubmitProcess();
       }
     }
-  }, [isParentSubmitting, isEditing, currentSlide, triggerSubmitProcess]);
+  }, [isParentSubmitting, isEditing, currentSlide, triggerSubmitProcess, setCurrentSlide]);
 
   const handleFormSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -674,10 +683,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             </Card>
           </CarouselItem>
         </CarouselContent>
-        {/* 
-          Removed <CarouselPrevious /> and <CarouselNext /> 
-          Custom navigation buttons are provided below the Carousel.
-        */}
       </Carousel>
       
       <div className="max-w-3xl mx-auto flex justify-between items-center pt-4 px-1 sm:px-0">
