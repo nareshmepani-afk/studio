@@ -131,10 +131,19 @@ export default function SettingsPage() {
     if (!user) return;
     setIsSubmitting(true);
 
-    let finalAvatarUrl = user.avatarUrl; 
+    // IMPORTANT: In a real app, if avatarFile exists, upload it to a persistent storage 
+    // and get a permanent URL. For this demo, we're using blob URLs for preview
+    // which are temporary and won't persist across sessions if saved as user.avatarUrl.
+    // For now, if a new file is uploaded, we'll assume the "real" URL would be this blob URL
+    // for the purpose of the user object structure. This is not a production pattern.
+    let finalAvatarUrlToSave = user.avatarUrl;
     if (avatarFile && avatarPreviewUrl) { 
-      finalAvatarUrl = avatarPreviewUrl; 
+      // In a real app, this would be the persistent URL from storage, not the blob.
+      // For demo: we just store the blob url. This will break on next load for this user.
+      // This is a known limitation of the current demo state.
+      finalAvatarUrlToSave = avatarPreviewUrl; 
     }
+
 
     let finalDateOfBirth: string | undefined = undefined;
     if (dobYear && dobMonth && dobDay) {
@@ -159,7 +168,7 @@ export default function SettingsPage() {
       name: name,
       email: email,
       profileInfo: profileInfo,
-      avatarUrl: finalAvatarUrl,
+      avatarUrl: finalAvatarUrlToSave, // Potentially saving a blob URL for demo purposes
       dateOfBirth: finalDateOfBirth,
       countryOfBirth: countryOfBirth || undefined,
       city: city || undefined,
@@ -215,6 +224,11 @@ export default function SettingsPage() {
     );
   }
   
+  // Determine what to display in the Avatar
+  const isUserAvatarUrlValid = user?.avatarUrl && user.avatarUrl.trim() !== '' && !user.avatarUrl.startsWith('blob:');
+  const imageSrcToDisplay = avatarPreviewUrl || (isUserAvatarUrlValid ? user.avatarUrl : undefined);
+
+
   const renderPurchaseButton = () => {
     let buttonText = "Purchase 31-Day Pass (Mock)";
     if (isFetchingPassPrice) {
@@ -307,11 +321,13 @@ export default function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-20 w-20">
-                    <AvatarImage src={avatarPreviewUrl || user.avatarUrl || undefined} alt={user.name || user.email} />
+                    <AvatarImage src={imageSrcToDisplay} alt={user.name || user.email} />
                     <AvatarFallback>
-                      {(avatarPreviewUrl || user.avatarUrl) ? (
+                      {imageSrcToDisplay ? ( // If an image src was determined (preview or valid user avatar)
+                        // This fallback is for when that image fails to load
                         user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?')
                       ) : (
+                        // No imageSrcToDisplay means no preview and no valid persistent user avatar
                         <UserCircle2 className="h-12 w-12 text-muted-foreground" />
                       )}
                     </AvatarFallback>
@@ -435,3 +451,4 @@ export default function SettingsPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
