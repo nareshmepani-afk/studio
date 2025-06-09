@@ -578,8 +578,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
             {(mediaDuration > 0 || (mediaDuration === 0 && startTime === 0 && endTime === 0)) && (
               <div className="space-y-3 pt-2">
                 <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Start: {formatSecondsToTime(latestTrimValuesRef.current.startTime)}</span>
-                  <span>End: {formatSecondsToTime(latestTrimValuesRef.current.endTime)}</span>
+                  <span>Green: {formatSecondsToTime(latestTrimValuesRef.current.startTime)}</span>
+                  <span>Red: {formatSecondsToTime(latestTrimValuesRef.current.endTime)}</span>
                 </div>
                 <Slider
                   disabled={!mediaDuration || mediaDuration === 0}
@@ -646,3 +646,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     </Card>
   );
 }
+
+
+    
