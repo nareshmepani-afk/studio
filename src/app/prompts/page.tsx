@@ -150,7 +150,7 @@ export default function LifeJourneyPage() {
             <h1 className="font-headline text-4xl">My Life Journey</h1>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-              <Button onClick={() => setShowCustomChapterDialog(true)} variant="outline" className="w-full sm:w-auto">
+              <Button onClick={() => setShowCustomChapterDialog(true)} variant="secondary" className="w-full sm:w-auto">
                 <Sparkles className="mr-2 h-4 w-4" /> Brainstorm Custom Chapter
               </Button>
               <div className="w-full sm:w-auto">
