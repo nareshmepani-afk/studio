@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import type { User, HostPlan } from '@/types'; // Added HostPlan
+import { FREE_TIER_STORAGE_QUOTA_BYTES, PREMIUM_TIER_STORAGE_QUOTA_BYTES } from '@/types';
 import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, AlertTriangle, Zap, Star } from 'lucide-react'; // Added Zap, Star
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
@@ -40,8 +41,8 @@ export default function SettingsPage() {
     isFetchingPassPrice,
     storageQuotaBytes, 
     calculateAndUpdateStorageUsage,
-    upgradeToPremium, // New
-    downgradeToFree,  // New
+    upgradeToPremium, 
+    downgradeToFree,  
   } = useAuth();
   const router = useRouter(); 
   const [name, setName] = useState('');
@@ -178,7 +179,7 @@ export default function SettingsPage() {
       paidPassExpiryDate: user.paidPassExpiryDate,
       viewedSharedMemoryIds: user.viewedSharedMemoryIds || [],
       storageUsedBytes: user.storageUsedBytes,
-      hostPlan: user.hostPlan || 'free', // Preserve host plan
+      hostPlan: user.hostPlan || 'free', 
     };
 
     await new Promise(resolve => setTimeout(resolve, 1000)); 
@@ -324,7 +325,7 @@ export default function SettingsPage() {
   };
 
   const formatBytes = (bytes: number, decimals = 2) => {
-    if (bytes === 0) return '0 Bytes';
+    if (!bytes || bytes === 0) return '0 Bytes';
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
@@ -335,6 +336,9 @@ export default function SettingsPage() {
   const storageUsed = user.storageUsedBytes || 0;
   const storagePercentage = storageQuotaBytes > 0 ? (storageUsed / storageQuotaBytes) * 100 : 0;
   const isQuotaExceeded = storageUsed > storageQuotaBytes;
+
+  const currentPlanName = user.hostPlan === 'premium' ? 'Premium' : 'Free';
+  const currentPlanPrice = user.hostPlan === 'premium' ? '£4.99/month' : '£0/month';
 
 
   return (
@@ -476,7 +480,7 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm">
-                  Current Plan: <span className="font-semibold capitalize">{user.hostPlan || 'Free'}</span>
+                  Current Plan: <span className="font-semibold capitalize">{currentPlanName}</span> ({currentPlanPrice})
                 </p>
                 <Progress value={storagePercentage} className="w-full" />
                 <div className="flex justify-between text-sm text-muted-foreground">
@@ -492,7 +496,7 @@ export default function SettingsPage() {
                 <div className="mt-3">
                   {user.hostPlan === 'free' ? (
                     <Button onClick={upgradeToPremium} variant="default" size="sm">
-                      <Star className="mr-2 h-4 w-4" /> Upgrade to Premium (Mock)
+                      <Star className="mr-2 h-4 w-4" /> Upgrade to Premium (£4.99/month - Mock)
                     </Button>
                   ) : (
                     <Button onClick={downgradeToFree} variant="outline" size="sm">
@@ -501,7 +505,10 @@ export default function SettingsPage() {
                   )}
                 </div>
                  <p className="text-xs text-muted-foreground pt-2">
-                  Free plan includes {formatBytes(10 * 1024 * 1024)} storage and limited "My Life Journey" chapters. Premium includes {formatBytes(100*1024*1024)} storage and full access.
+                    {user.hostPlan === 'free' 
+                        ? `Free plan includes ${formatBytes(FREE_TIER_STORAGE_QUOTA_BYTES)} storage and access to the first 'My Life Journey' chapter group. Ideal for getting started.`
+                        : `Premium plan includes ${formatBytes(PREMIUM_TIER_STORAGE_QUOTA_BYTES)} storage and full access to all 'My Life Journey' chapters. Perfect for dedicated memory keepers.`
+                    }
                 </p>
               </CardContent>
             </Card>
@@ -517,3 +524,5 @@ export default function SettingsPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    

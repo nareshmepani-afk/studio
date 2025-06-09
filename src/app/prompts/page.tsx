@@ -24,7 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Added Alert components
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
 
 export default function LifeJourneyPage() {
   const [promptGroups, setPromptGroups] = useState<PromptGroup[]>([]);
@@ -32,7 +32,7 @@ export default function LifeJourneyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
-  const { user, userMode, upgradeToPremium } = useAuth(); // Added upgradeToPremium
+  const { user, userMode, upgradeToPremium } = useAuth(); 
 
   const [showCustomChapterDialog, setShowCustomChapterDialog] = useState(false);
   const [customChapterUserProfile, setCustomChapterUserProfile] = useState('');
@@ -58,7 +58,7 @@ export default function LifeJourneyPage() {
 
   useEffect(() => {
     setTimeout(() => {
-      setPromptGroups(mockPromptGroups); // Keep all for potential upgrade display
+      setPromptGroups(mockPromptGroups); 
       const userMemories = mockMemories.filter(m => m.userId === user?.id);
       setMemories(userMemories);
       setIsLoading(false);
@@ -120,8 +120,7 @@ export default function LifeJourneyPage() {
 
   const handleUpgradeClick = () => {
     upgradeToPremium(); 
-    // Optionally, you could redirect to settings or show a success message here if it's not handled by AuthContext toast
-    toast({title: "Switched to Premium Features!", description: "You now have access to all chapters."});
+    toast({title: "Switched to Premium Features!", description: "You now have access to all chapters and increased storage."});
   };
 
 
@@ -198,7 +197,7 @@ export default function LifeJourneyPage() {
             <AlertTitle className="font-headline text-primary">Unlock More Chapters!</AlertTitle>
             <AlertDescription className="text-primary/80">
               Upgrade to Premium to access all Life Journey chapters and more features.
-              <Button onClick={handleUpgradeClick} size="sm" className="mt-2 ml-auto block sm:inline-block sm:ml-3">Upgrade to Premium (Mock)</Button>
+              <Button onClick={handleUpgradeClick} size="sm" className="mt-2 ml-auto block sm:inline-block sm:ml-3">Upgrade to Premium (£4.99/month - Mock)</Button>
             </AlertDescription>
           </Alert>
         )}
@@ -311,3 +310,5 @@ export default function LifeJourneyPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    
