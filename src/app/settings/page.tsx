@@ -11,10 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import type { User } from '@/types';
-import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, AlertTriangle } from 'lucide-react';
+import type { User, HostPlan } from '@/types'; // Added HostPlan
+import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, AlertTriangle, Zap, Star } from 'lucide-react'; // Added Zap, Star
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Progress } from "@/components/ui/progress"; // Import Progress
+import { Progress } from "@/components/ui/progress";
 import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
 import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
@@ -38,8 +38,10 @@ export default function SettingsPage() {
     passPriceDetails,
     fetchPassPrice,
     isFetchingPassPrice,
-    storageQuotaBytes, // Added
-    calculateAndUpdateStorageUsage // Added
+    storageQuotaBytes, 
+    calculateAndUpdateStorageUsage,
+    upgradeToPremium, // New
+    downgradeToFree,  // New
   } = useAuth();
   const router = useRouter(); 
   const [name, setName] = useState('');
@@ -65,7 +67,7 @@ export default function SettingsPage() {
       fetchPassPrice();
     }
     if (user?.id) {
-      calculateAndUpdateStorageUsage(user.id); // Recalculate storage on page load
+      calculateAndUpdateStorageUsage(user.id);
     }
   }, [checkAndUpdatePassStatus, user, fetchPassPrice, calculateAndUpdateStorageUsage]);
 
@@ -175,13 +177,14 @@ export default function SettingsPage() {
       freePassActivatedDate: user.freePassActivatedDate,
       paidPassExpiryDate: user.paidPassExpiryDate,
       viewedSharedMemoryIds: user.viewedSharedMemoryIds || [],
-      storageUsedBytes: user.storageUsedBytes, // Preserve existing storage used
+      storageUsedBytes: user.storageUsedBytes,
+      hostPlan: user.hostPlan || 'free', // Preserve host plan
     };
 
     await new Promise(resolve => setTimeout(resolve, 1000)); 
 
     localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser));
-    login(updatedUser.email); // login will also trigger storage recalculation in AuthContext
+    login(updatedUser.email); 
 
     setIsSubmitting(false);
     toast({
@@ -454,7 +457,7 @@ export default function SettingsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="font-headline text-xl flex items-center">
-                    <ShieldCheck className="mr-2 h-5 w-5 text-primary" /> Shared Memory Access
+                    <ShieldCheck className="mr-2 h-5 w-5 text-primary" /> Guest Access Pass
                 </CardTitle>
                 <CardDescription>Your current pass status for viewing memories shared by others.</CardDescription>
               </CardHeader>
@@ -465,12 +468,16 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="font-headline text-xl flex items-center">
-                  <HardDrive className="mr-2 h-5 w-5 text-primary" /> Storage Usage (Host Mode)
+                 <CardTitle className="font-headline text-xl flex items-center">
+                  {user.hostPlan === 'premium' ? <Star className="mr-2 h-5 w-5 text-yellow-500" /> : <Zap className="mr-2 h-5 w-5 text-primary" />}
+                  Host Plan & Storage
                 </CardTitle>
-                <CardDescription>Your estimated media storage usage for recorded memories.</CardDescription>
+                <CardDescription>Your current host plan and media storage usage.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
+                <p className="text-sm">
+                  Current Plan: <span className="font-semibold capitalize">{user.hostPlan || 'Free'}</span>
+                </p>
                 <Progress value={storagePercentage} className="w-full" />
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>{formatBytes(storageUsed)} used</span>
@@ -479,17 +486,25 @@ export default function SettingsPage() {
                 {isQuotaExceeded && (
                   <div className="text-sm text-destructive flex items-center">
                     <AlertTriangle className="mr-1.5 h-4 w-4" />
-                    You have exceeded your storage quota. Please manage your media or upgrade (mock).
+                    You have exceeded your storage quota. Please manage your media or upgrade.
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  This is an estimated usage. Actual storage may vary. Free tier offers {formatBytes(storageQuotaBytes)}.
+                <div className="mt-3">
+                  {user.hostPlan === 'free' ? (
+                    <Button onClick={upgradeToPremium} variant="default" size="sm">
+                      <Star className="mr-2 h-4 w-4" /> Upgrade to Premium (Mock)
+                    </Button>
+                  ) : (
+                    <Button onClick={downgradeToFree} variant="outline" size="sm">
+                      Downgrade to Free Plan (Mock)
+                    </Button>
+                  )}
+                </div>
+                 <p className="text-xs text-muted-foreground pt-2">
+                  Free plan includes {formatBytes(10 * 1024 * 1024)} storage and limited "My Life Journey" chapters. Premium includes {formatBytes(100*1024*1024)} storage and full access.
                 </p>
-                {/* Mock upgrade button */}
-                <Button variant="outline" size="sm" disabled className="mt-2">Upgrade Storage (Mock)</Button>
               </CardContent>
             </Card>
-
 
             <CardFooter className="flex justify-end p-0 pt-4">
               <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">

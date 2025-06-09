@@ -4,10 +4,10 @@
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { PromptCard } from '@/components/prompts/PromptCard';
 import { mockPromptGroups, mockMemories } from '@/lib/mockData';
-import type { Prompt, PromptGroup, Memory } from '@/types';
+import type { Prompt, PromptGroup, Memory, HostPlan } from '@/types';
 import { Button } from '@/components/ui/button';
-import { BookOpen, CheckCircle, Edit3, Loader2, Languages, HelpCircle, Sparkles, Lightbulb } from 'lucide-react';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { BookOpen, CheckCircle, Edit3, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap } from 'lucide-react'; // Added Zap
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Added Alert components
 
 export default function LifeJourneyPage() {
   const [promptGroups, setPromptGroups] = useState<PromptGroup[]>([]);
@@ -31,9 +32,8 @@ export default function LifeJourneyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
-  const { user, userMode } = useAuth();
+  const { user, userMode, upgradeToPremium } = useAuth(); // Added upgradeToPremium
 
-  // State for custom chapter generation dialog
   const [showCustomChapterDialog, setShowCustomChapterDialog] = useState(false);
   const [customChapterUserProfile, setCustomChapterUserProfile] = useState('');
   const [customChapterLanguage, setCustomChapterLanguage] = useState<'en' | 'gu'>('en');
@@ -46,10 +46,19 @@ export default function LifeJourneyPage() {
     }
   }, [user?.profileInfo]);
 
+  const hostPlan: HostPlan = user?.hostPlan || 'free';
+  const availablePromptGroups = useMemo(() => {
+    if (hostPlan === 'premium') {
+      return mockPromptGroups;
+    }
+    // Free plan gets only the first group
+    return mockPromptGroups.length > 0 ? [mockPromptGroups[0]] : [];
+  }, [hostPlan]);
+
+
   useEffect(() => {
-    // Simulate loading data
     setTimeout(() => {
-      setPromptGroups(mockPromptGroups);
+      setPromptGroups(mockPromptGroups); // Keep all for potential upgrade display
       const userMemories = mockMemories.filter(m => m.userId === user?.id);
       setMemories(userMemories);
       setIsLoading(false);
@@ -107,6 +116,12 @@ export default function LifeJourneyPage() {
     router.push(`/add-memory?prompt=${encodeURIComponent(idea)}`);
     setShowCustomChapterDialog(false);
     setGeneratedChapterIdeas([]);
+  };
+
+  const handleUpgradeClick = () => {
+    upgradeToPremium(); 
+    // Optionally, you could redirect to settings or show a success message here if it's not handled by AuthContext toast
+    toast({title: "Switched to Premium Features!", description: "You now have access to all chapters."});
   };
 
 
@@ -173,11 +188,23 @@ export default function LifeJourneyPage() {
             <p className="text-muted-foreground">
                 Welcome to your Life Journey. Each section below represents a chapter of your story.
                 Click on a prompt to record memories associated with it, or brainstorm a custom chapter idea. Completed chapters are marked with a <CheckCircle className="inline-block h-4 w-4 text-green-500" />.
+                {hostPlan === 'free' && ' Your current plan gives you access to the first chapter group.'}
             </p>
         </div>
 
+        {hostPlan === 'free' && availablePromptGroups.length < mockPromptGroups.length && (
+          <Alert className="mb-6 bg-primary/10 border-primary/30">
+            <Zap className="h-5 w-5 text-primary" />
+            <AlertTitle className="font-headline text-primary">Unlock More Chapters!</AlertTitle>
+            <AlertDescription className="text-primary/80">
+              Upgrade to Premium to access all Life Journey chapters and more features.
+              <Button onClick={handleUpgradeClick} size="sm" className="mt-2 ml-auto block sm:inline-block sm:ml-3">Upgrade to Premium (Mock)</Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
-        {promptGroups.length === 0 ? (
+
+        {availablePromptGroups.length === 0 ? (
           <div className="text-center py-12">
             <BookOpen className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <h2 className="font-headline text-2xl mb-2">No Chapters Found</h2>
@@ -185,7 +212,7 @@ export default function LifeJourneyPage() {
           </div>
         ) : (
           <div className="space-y-10">
-            {promptGroups.map((group) => (
+            {availablePromptGroups.map((group) => (
               <section key={group.id}>
                 <h2 className="font-headline text-3xl mb-6 border-b pb-3 text-primary">
                   {group.title[currentLanguage] || group.title.en}

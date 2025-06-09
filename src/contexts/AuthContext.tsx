@@ -1,8 +1,8 @@
 
 "use client";
 
-import type { User, UserMode, Memory as MemoryType } from '@/types'; // Added MemoryType
-import { FREE_TIER_STORAGE_QUOTA_BYTES } from '@/types'; // Import quota
+import type { User, UserMode, Memory as MemoryType, HostPlan } from '@/types';
+import { FREE_TIER_STORAGE_QUOTA_BYTES, PREMIUM_TIER_STORAGE_QUOTA_BYTES } from '@/types';
 import React, { createContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
@@ -34,6 +34,8 @@ interface AuthContextType {
   isFetchingPassPrice: boolean;
   storageQuotaBytes: number;
   calculateAndUpdateStorageUsage: (userId: string) => Promise<void>;
+  upgradeToPremium: () => void; // New
+  downgradeToFree: () => void;   // New
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,7 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
-  const [isLoggingOut, setIsLoggingOut] = useState(false); // New state for logout process
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [pendingRequestCount, setPendingRequestCountState] = useState<number>(0);
   const [userMode, setUserModeState] = useState<UserMode>('host');
   const [hasNewSharedMemories, setHasNewSharedMemoriesState] = useState(false);
@@ -68,10 +70,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         userMemories = JSON.parse(storedMemoriesJson).filter((mem: MemoryType) => mem.userId === userId);
       } catch (e) {
         console.error("Error parsing memories for storage calculation:", e);
-        userMemories = mockMemories.filter(mem => mem.userId === userId); // Fallback to initial mock
+        userMemories = mockMemories.filter(mem => mem.userId === userId);
       }
     } else {
-      userMemories = mockMemories.filter(mem => mem.userId === userId); // Fallback to initial mock
+      userMemories = mockMemories.filter(mem => mem.userId === userId);
     }
 
     const usedBytes = userMemories.reduce((acc, memory) => {
@@ -88,7 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(prevUser => {
       if (prevUser && prevUser.id === userId) {
         const updatedUser = { ...prevUser, storageUsedBytes: usedBytes };
-        localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser)); // Also update storage
+        localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser));
         return updatedUser;
       }
       return prevUser;
@@ -168,10 +170,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           paidPassExpiryDate: storedUser.paidPassExpiryDate,
           viewedSharedMemoryIds: storedUser.viewedSharedMemoryIds || [],
           storageUsedBytes: storedUser.storageUsedBytes || 0,
+          hostPlan: storedUser.hostPlan || 'free', // Initialize hostPlan
         };
         setUser(hydratedUser);
         setIsAuthenticated(true);
-        // Initial calculation of storage after loading user
         if (hydratedUser.id) {
            calculateAndUpdateStorageUsage(hydratedUser.id);
         }
@@ -247,6 +249,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             paidPassExpiryDate: storedUser.paidPassExpiryDate,
             viewedSharedMemoryIds: storedUser.viewedSharedMemoryIds || [],
             storageUsedBytes: storedUser.storageUsedBytes || 0,
+            hostPlan: storedUser.hostPlan || 'free',
           };
         }
       } catch (e) { console.error(e); }
@@ -259,6 +262,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         sharedAccessStatus: 'no_pass_initiated', 
         viewedSharedMemoryIds: [],
         storageUsedBytes: 0,
+        hostPlan: 'free',
       };
     }
     updateUserInStateAndStorage(currentUser);
@@ -360,6 +364,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, userMode, checkIfGuestHasUnviewedMemories, updateUserInStateAndStorage]);
 
+  const getStorageQuotaBytes = useCallback((): number => {
+    if (user?.hostPlan === 'premium') {
+      return PREMIUM_TIER_STORAGE_QUOTA_BYTES;
+    }
+    return FREE_TIER_STORAGE_QUOTA_BYTES;
+  }, [user?.hostPlan]);
+
+  const upgradeToPremium = useCallback(() => {
+    if (user && user.hostPlan === 'free') {
+      const updatedUser = { ...user, hostPlan: 'premium' as HostPlan };
+      updateUserInStateAndStorage(updatedUser);
+      toast({ title: "Upgraded to Premium!", description: "You now have access to premium features and increased storage." });
+    }
+  }, [user, updateUserInStateAndStorage]);
+
+  const downgradeToFree = useCallback(() => {
+    if (user && user.hostPlan === 'premium') {
+      const updatedUser = { ...user, hostPlan: 'free' as HostPlan };
+      updateUserInStateAndStorage(updatedUser);
+      // Here you might want to check if storageUsedBytes > FREE_TIER_STORAGE_QUOTA_BYTES
+      // and prompt the user to delete media, but for mock, we'll just downgrade.
+      toast({ title: "Downgraded to Free Plan", description: "Your plan has been changed to Free." });
+    }
+  }, [user, updateUserInStateAndStorage]);
+
+
   return (
     <AuthContext.Provider value={{
       isAuthenticated, user, login, logout, loading,
@@ -369,8 +399,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       hasNewSharedMemories, setHasNewSharedMemories: setHasNewSharedMemoriesState,
       markSharedMemoryAsViewed, checkIfGuestHasUnviewedMemories,
       passPriceDetails, fetchPassPrice, isFetchingPassPrice,
-      storageQuotaBytes: FREE_TIER_STORAGE_QUOTA_BYTES,
-      calculateAndUpdateStorageUsage
+      storageQuotaBytes: getStorageQuotaBytes(),
+      calculateAndUpdateStorageUsage,
+      upgradeToPremium,
+      downgradeToFree
     }}>
       {children}
     </AuthContext.Provider>
