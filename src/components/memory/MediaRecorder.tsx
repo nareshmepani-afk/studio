@@ -19,9 +19,7 @@ interface MediaCaptureControlProps {
 }
 
 const SAMPLE_VIDEO_URL = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-// const SAMPLE_VIDEO_DURATION = 596.48; // Duration will be fetched dynamically
 const SAMPLE_AUDIO_URL = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3";
-// const SAMPLE_AUDIO_DURATION = 1.88; // Duration will be fetched dynamically
 
 const MAX_VIDEO_DURATION_SECONDS = 120; // 2 minutes
 const MAX_AUDIO_DURATION_SECONDS = 300; // 5 minutes
@@ -372,7 +370,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
           handleDiscardMedia(false); 
           return;
         } else {
-          // Media is within limits or is audio (and already passed audio check if it was long)
           setEndTime(actualDuration);
           latestTrimValuesRef.current = { startTime: 0, endTime: actualDuration };
            setTimeout(() => {
@@ -667,7 +664,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
           <div className="space-y-4">
             <p className="text-sm font-medium">
               Media available: <span className="text-primary">{recordedFile?.name || (initialMedia && initialMedia.previewUrl === previewUrl ? "Previously attached media" : 'Recorded Media')}</span>
-              {(mediaDuration > 0) && ` (Duration: ${formatSecondsToTime(mediaDuration)})`}
+              {(mediaDuration > 0) && ` (Full Duration: ${formatSecondsToTime(mediaDuration)})`}
             </p>
 
             {mediaType === 'video' ? (
@@ -679,8 +676,18 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
             {(mediaDuration > 0 || (mediaDuration === 0 && startTime === 0 && endTime === 0)) && (
               <div className="space-y-3 pt-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-green-500">Start: {formatSecondsToTime(latestTrimValuesRef.current.startTime)}</span>
-                  <span className="text-red-500">End: {formatSecondsToTime(latestTrimValuesRef.current.endTime)}</span>
+                  <span className="text-green-500">Start: {formatSecondsToTime(startTime)}</span>
+                  <span className="text-red-500">End: {formatSecondsToTime(endTime)}</span>
+                </div>
+                <div className="flex justify-between text-sm mt-1">
+                  <span>
+                    Trimmed Duration: <span className="font-medium text-foreground">{formatSecondsToTime(Math.max(0, endTime - startTime))}</span>
+                  </span>
+                  {mediaType && (
+                    <span>
+                      Max Allowed: <span className="font-medium text-foreground">{formatSecondsToTime(mediaType === 'video' ? MAX_VIDEO_DURATION_SECONDS : MAX_AUDIO_DURATION_SECONDS)}</span>
+                    </span>
+                  )}
                 </div>
                 <Slider
                   disabled={!mediaDuration || mediaDuration === 0}
