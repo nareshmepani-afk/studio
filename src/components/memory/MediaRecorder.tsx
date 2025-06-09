@@ -19,9 +19,9 @@ interface MediaCaptureControlProps {
 }
 
 const SAMPLE_VIDEO_URL = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-const SAMPLE_VIDEO_DURATION = 596.48; // This will exceed MAX_VIDEO_DURATION_SECONDS
+// const SAMPLE_VIDEO_DURATION = 596.48; // Duration will be fetched dynamically
 const SAMPLE_AUDIO_URL = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3";
-const SAMPLE_AUDIO_DURATION = 1.88;
+// const SAMPLE_AUDIO_DURATION = 1.88; // Duration will be fetched dynamically
 
 const MAX_VIDEO_DURATION_SECONDS = 120; // 2 minutes
 const MAX_AUDIO_DURATION_SECONDS = 300; // 5 minutes
@@ -323,10 +323,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   const handleLoadSampleMedia = async (type: 'video' | 'audio') => {
     setIsLoadingSample(true);
     setSampleLoadingType(type);
-    handleDiscardMedia(false); // Clear existing
+    handleDiscardMedia(false); 
 
     const sampleUrl = type === 'video' ? SAMPLE_VIDEO_URL : SAMPLE_AUDIO_URL;
-    // const initialSampleDuration = type === 'video' ? SAMPLE_VIDEO_DURATION : SAMPLE_AUDIO_DURATION; // We'll get actual duration
     const filename = type === 'video' ? 'sample_video.mp4' : 'sample_audio.mp3';
     const mimeType = type === 'video' ? 'video/mp4' : 'audio/mpeg';
 
@@ -338,43 +337,48 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
 
       const tempMediaElement = document.createElement(type);
       tempMediaElement.src = preview;
+
       tempMediaElement.onloadedmetadata = () => {
         const actualDuration = tempMediaElement.duration;
-        let durationLimitExceeded = false;
-        let limitMinutes = 0;
-
-        if (type === 'video' && actualDuration > MAX_VIDEO_DURATION_SECONDS) {
-          durationLimitExceeded = true;
-          limitMinutes = MAX_VIDEO_DURATION_SECONDS / 60;
-        } else if (type === 'audio' && actualDuration > MAX_AUDIO_DURATION_SECONDS) {
-          durationLimitExceeded = true;
-          limitMinutes = MAX_AUDIO_DURATION_SECONDS / 60;
-        }
-
-        if (durationLimitExceeded) {
-          setTimeout(() => {
-            toast({
-              variant: 'destructive',
-              title: `Sample ${type} Too Long`,
-              description: `The sample is ${formatSecondsToTime(actualDuration)} long. Maximum duration is ${limitMinutes} minute(s). It cannot be loaded.`,
-              duration: 7000,
-            });
-          }, 0);
-          URL.revokeObjectURL(preview);
-          handleDiscardMedia(false); // Ensure things are reset
-          return;
-        }
         
         setMediaType(type);
         setRecordedFile(file);
         setPreviewUrl(preview);
         setMediaDuration(actualDuration);
         setStartTime(0);
-        setEndTime(actualDuration);
         latestTrimValuesRef.current = { startTime: 0, endTime: actualDuration };
-        setTimeout(() => {
-          toast({ title: `Sample ${type} loaded`, description: filename });
-        }, 0);
+
+
+        if (type === 'video' && actualDuration > MAX_VIDEO_DURATION_SECONDS) {
+          setEndTime(MAX_VIDEO_DURATION_SECONDS);
+          latestTrimValuesRef.current = { startTime: 0, endTime: MAX_VIDEO_DURATION_SECONDS };
+          setTimeout(() => {
+            toast({
+              title: "Sample Loaded & Pre-trimmed",
+              description: `The sample video is ${formatSecondsToTime(actualDuration)} long. It has been pre-trimmed to the first ${MAX_VIDEO_DURATION_SECONDS / 60} minutes. You can adjust the trim, but the final selection cannot exceed ${MAX_VIDEO_DURATION_SECONDS / 60} minutes.`,
+              duration: 10000,
+            });
+          }, 0);
+        } else if (type === 'audio' && actualDuration > MAX_AUDIO_DURATION_SECONDS) {
+          setTimeout(() => {
+            toast({
+              variant: 'destructive',
+              title: `Sample Audio Too Long`,
+              description: `The sample audio is ${formatSecondsToTime(actualDuration)} long. Maximum duration is ${MAX_AUDIO_DURATION_SECONDS / 60} minute(s). It cannot be loaded.`,
+              duration: 7000,
+            });
+          }, 0);
+          URL.revokeObjectURL(preview);
+          handleDiscardMedia(false); 
+          return;
+        } else {
+          // Media is within limits or is audio (and already passed audio check if it was long)
+          setEndTime(actualDuration);
+          latestTrimValuesRef.current = { startTime: 0, endTime: actualDuration };
+           setTimeout(() => {
+            toast({ title: `Sample ${type} loaded`, description: filename });
+          }, 0);
+        }
       };
       tempMediaElement.onerror = () => {
           URL.revokeObjectURL(preview);
@@ -400,26 +404,51 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     const currentStartTime = latestTrimValuesRef.current.startTime;
     const currentEndTime = latestTrimValuesRef.current.endTime;
 
-    if (recordedFile && previewUrl && mediaType && (mediaDuration > 0 || (mediaDuration === 0 && currentStartTime === 0 && currentEndTime ===0) )) {
-      if (currentStartTime > currentEndTime && currentEndTime > 0) {
+    if (currentStartTime > currentEndTime && currentEndTime > 0) {
+      setTimeout(() => {
+        toast({ title: "Invalid Trim Times", description: "Start time cannot be after end time.", variant: "destructive" });
+      }, 0);
+      return;
+    }
+    if (currentStartTime === currentEndTime && currentStartTime > 0) {
+      setTimeout(() => {
+        toast({ title: "Invalid Trim Times", description: "Start and end times cannot be the same unless both are zero (for full media).", variant: "destructive" });
+      }, 0);
+      return;
+    }
+    if (currentEndTime > mediaDuration && mediaDuration > 0) {
         setTimeout(() => {
-          toast({ title: "Invalid Trim Times", description: "Start time cannot be after end time.", variant: "destructive" });
-        }, 0);
-        return;
-      }
-       if (currentStartTime === currentEndTime && currentStartTime > 0) {
-        setTimeout(() => {
-          toast({ title: "Invalid Trim Times", description: "Start and end times cannot be the same unless both are zero (for full media).", variant: "destructive" });
-        }, 0);
-        return;
-      }
-      if (currentEndTime > mediaDuration && mediaDuration > 0) {
-         setTimeout(() => {
-          toast({ title: "Invalid End Time", description: `End time (${formatSecondsToTime(currentEndTime)}) cannot exceed media duration (${formatSecondsToTime(mediaDuration)}).`, variant: "destructive" });
-        }, 0);
-        return;
-      }
+        toast({ title: "Invalid End Time", description: `End time (${formatSecondsToTime(currentEndTime)}) cannot exceed media duration (${formatSecondsToTime(mediaDuration)}).`, variant: "destructive" });
+      }, 0);
+      return;
+    }
 
+    const selectedSegmentDuration = currentEndTime - currentStartTime;
+    if (mediaType === 'video' && selectedSegmentDuration > MAX_VIDEO_DURATION_SECONDS) {
+      setTimeout(() => {
+        toast({
+          title: "Trim Exceeds Limit",
+          description: `Your selected segment is ${formatSecondsToTime(selectedSegmentDuration)}. Please trim to ${MAX_VIDEO_DURATION_SECONDS / 60} minutes or less.`,
+          variant: "destructive",
+          duration: 7000
+        });
+      }, 0);
+      return;
+    }
+    if (mediaType === 'audio' && selectedSegmentDuration > MAX_AUDIO_DURATION_SECONDS) {
+      setTimeout(() => {
+        toast({
+          title: "Trim Exceeds Limit",
+          description: `Your selected segment is ${formatSecondsToTime(selectedSegmentDuration)}. Please trim to ${MAX_AUDIO_DURATION_SECONDS / 60} minutes or less.`,
+          variant: "destructive",
+          duration: 7000
+        });
+      }, 0);
+      return;
+    }
+
+
+    if (recordedFile && previewUrl && mediaType && (mediaDuration > 0 || (mediaDuration === 0 && currentStartTime === 0 && currentEndTime ===0) )) {
       const isTrimmed = (currentStartTime && currentStartTime > 0.01) || (currentEndTime && mediaDuration && Math.abs(currentEndTime - mediaDuration) > 0.01 && currentEndTime < mediaDuration);
       let toastDescription = "This media will be attached to your memory.";
       if (isTrimmed) {
@@ -432,19 +461,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
       }, 0);
 
     } else if (!recordedFile && initialMedia && previewUrl && mediaType) {
-       if (currentStartTime > currentEndTime && currentEndTime > 0) {
-        setTimeout(() => { toast({ title: "Invalid Trim Times", description: "Start time cannot be after end time.", variant: "destructive" }); }, 0);
-        return;
-      }
-      if (currentStartTime === currentEndTime && currentStartTime > 0) {
-         setTimeout(() => { toast({ title: "Invalid Trim Times", description: "Start and end times cannot be the same unless both are zero (for full media).", variant: "destructive" }); }, 0);
-        return;
-      }
-      if (currentEndTime > mediaDuration && mediaDuration > 0) {
-         setTimeout(() => { toast({ title: "Invalid End Time", description: `End time (${formatSecondsToTime(currentEndTime)}) cannot exceed media duration (${formatSecondsToTime(mediaDuration)}).`, variant: "destructive" }); }, 0);
-        return;
-      }
-
       const placeholderFile = new File([], initialMedia.previewUrl.split('/').pop() || "existing_media", {type: mediaType === "video" ? "video/mp4" : "audio/mp3"});
       const isTrimmed = (currentStartTime && currentStartTime > 0.01) || (currentEndTime && mediaDuration && Math.abs(currentEndTime - mediaDuration) > 0.01 && currentEndTime < mediaDuration);
       let toastDescription = "Existing media will be used.";
@@ -618,7 +634,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
               </div>
             </div>
             <div className="md:col-span-3 pt-2 border-t">
-                 <p className="text-sm text-muted-foreground mb-2 text-center">Or, quickly load a sample to test trimming (video sample exceeds 2 min limit):</p>
+                 <p className="text-sm text-muted-foreground mb-2 text-center">Or, quickly load a sample to test trimming:</p>
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <Button onClick={() => handleLoadSampleMedia('video')} variant="secondary" size="sm" disabled={isLoadingSample}>
                         {isLoadingSample && sampleLoadingType === 'video' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}
@@ -696,7 +712,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
             </div>
 
             <div className="mt-6 pt-4 border-t">
-              <p className="text-sm text-muted-foreground mb-2 text-center">Or, load a different sample to test trimming (video sample exceeds 2 min limit):</p>
+              <p className="text-sm text-muted-foreground mb-2 text-center">Or, load a different sample to test trimming:</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Button
                   onClick={() => {
@@ -730,5 +746,3 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   );
 }
 
-
-    
