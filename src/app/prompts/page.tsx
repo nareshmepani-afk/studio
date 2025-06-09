@@ -226,7 +226,7 @@ export default function LifeJourneyPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-1">
-              <Label htmlFor="custom-chapter-user-profile">Your Profile (Interests, life events, etc.)</Label>
+              <Label htmlFor="custom-chapter-user-profile">About Yourself (for AI Chapter Ideas)</Label>
               <Textarea
                 id="custom-chapter-user-profile"
                 value={customChapterUserProfile}
