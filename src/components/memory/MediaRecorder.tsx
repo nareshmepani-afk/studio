@@ -679,16 +679,18 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
                   <span className="text-green-500">Start: {formatSecondsToTime(startTime)}</span>
                   <span className="text-red-500">End: {formatSecondsToTime(endTime)}</span>
                 </div>
-                <div className="flex justify-between text-sm mt-1">
-                  <span>
-                    Trimmed Duration: <span className="font-medium text-foreground">{formatSecondsToTime(Math.max(0, endTime - startTime))}</span>
+                
+                <div className="text-center my-2 space-y-0.5">
+                  <span className="text-lg font-bold text-primary">
+                    Trimmed: {formatSecondsToTime(Math.max(0, endTime - startTime))}
                   </span>
                   {mediaType && (
-                    <span>
-                      Max Allowed: <span className="font-medium text-foreground">{formatSecondsToTime(mediaType === 'video' ? MAX_VIDEO_DURATION_SECONDS : MAX_AUDIO_DURATION_SECONDS)}</span>
-                    </span>
+                    <p className="text-sm text-muted-foreground">
+                      (Max Allowed: {formatSecondsToTime(mediaType === 'video' ? MAX_VIDEO_DURATION_SECONDS : MAX_AUDIO_DURATION_SECONDS)})
+                    </p>
                   )}
                 </div>
+
                 <Slider
                   disabled={!mediaDuration || mediaDuration === 0}
                   value={[startTime, endTime]} 
@@ -752,4 +754,5 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     </Card>
   );
 }
+
 
