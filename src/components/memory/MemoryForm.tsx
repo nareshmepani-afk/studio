@@ -157,7 +157,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       if (memory.mediaAttachments && memory.mediaAttachments.length > 0) {
         const firstMedia = memory.mediaAttachments[0];
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
-        const initialCurrentMediaData = {
+        const initialCurrentMediaData: CurrentMediaData = {
           file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
           type: firstMedia.type,
           startTime: firstMedia.startTime,
@@ -209,7 +209,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     return Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1);
   }, [daysInSelectedMonth]);
 
-const performVisualScroll = useCallback((slideIndex: number) => {
+  const performVisualScroll = useCallback((slideIndex: number) => {
     if (visualScrollTimerRef.current) {
       clearTimeout(visualScrollTimerRef.current);
     }
@@ -232,7 +232,7 @@ const performVisualScroll = useCallback((slideIndex: number) => {
           behavior: 'auto', 
         });
       }
-    }, 350); // Delay to allow DOM to settle
+    }, 350); 
   }, []);
 
 
@@ -241,19 +241,17 @@ const performVisualScroll = useCallback((slideIndex: number) => {
   }, [currentSlide]);
 
 
-  // Commander useEffect: Reacts to `currentSlide` state changes to command carousel and visual scroll
   useEffect(() => {
     if (!carouselApi) return;
 
     if (carouselApi.selectedScrollSnap() !== currentSlide) {
-      carouselApi.scrollTo(currentSlide, true); // true for instant snap
+      carouselApi.scrollTo(currentSlide, true); 
     }
     performVisualScroll(currentSlide);
 
   }, [currentSlide, carouselApi, performVisualScroll]);
 
 
-  // Synchronizer & Initializer useEffect: Sets up carousel events and syncs state
   useEffect(() => {
     if (!carouselApi) return;
 
@@ -277,7 +275,7 @@ const performVisualScroll = useCallback((slideIndex: number) => {
     if (initialSnap !== currentSlideRef.current) { 
        setCurrentSlide(initialSnap);
     } else {
-      performVisualScroll(initialSnap); // Perform initial scroll if already on the correct slide
+      performVisualScroll(initialSnap); 
     }
 
     carouselApi.on("select", handleApiEvent);
@@ -326,7 +324,7 @@ const performVisualScroll = useCallback((slideIndex: number) => {
 
   const handleMediaReady = useCallback((mediaDataFromRecorder: MediaRecorderData) => {
     setIsProcessingMedia(true);
-    const newCurrentMediaData = {
+    const newCurrentMediaData: CurrentMediaData = {
       file: mediaDataFromRecorder.file,
       type: mediaDataFromRecorder.type,
       startTime: mediaDataFromRecorder.startTime,
@@ -726,7 +724,7 @@ const performVisualScroll = useCallback((slideIndex: number) => {
                       {currentMedia.type === 'audio' && (<audio ref={audioPreviewRef} src={currentMediaPreviewUrl} controls className="w-full mt-2" key={currentMediaPreviewUrl} preload="auto"/>)}
                       <p className="text-sm text-muted-foreground mt-1">Duration: {formatSecondsToTime(currentMedia.duration)}</p>
                       {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {formatSecondsToTime(currentMedia.startTime)}</p>}
-                      {(currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime) && <p className="text-sm text-muted-foreground">Trim End: {formatSecondsToTime(currentMedia.endTime)}</p>}
+                      {(currentMedia.endTime !== undefined && currentMedia.duration !== undefined && currentMedia.duration !== currentMedia.endTime) && <p className="text-sm text-muted-foreground">Trim End: {formatSecondsToTime(currentMedia.endTime)}</p>}
                       <Button variant="outline" type="button" onClick={handleMediaDiscardInForm} className="w-full mt-2">Change Media or Re-trim</Button>
                     </div>
                   ) : ( <MediaCaptureControl onMediaReady={handleMediaReady} onDiscard={handleMediaDiscardFromChild} initialMedia={mediaToInitializeRecorder || initialMediaForRecorderProp} /> )}
