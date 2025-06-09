@@ -6,14 +6,24 @@ import { PromptCard } from '@/components/prompts/PromptCard';
 import { mockPromptGroups, mockMemories } from '@/lib/mockData';
 import type { Prompt, PromptGroup, Memory } from '@/types';
 import { Button } from '@/components/ui/button';
-import { BookOpen, CheckCircle, Edit3, Loader2, Languages, HelpCircle } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { BookOpen, CheckCircle, Edit3, Loader2, Languages, HelpCircle, Sparkles, Lightbulb } from 'lucide-react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 
 export default function LifeJourneyPage() {
   const [promptGroups, setPromptGroups] = useState<PromptGroup[]>([]);
@@ -23,11 +33,23 @@ export default function LifeJourneyPage() {
   const router = useRouter();
   const { user, userMode } = useAuth();
 
+  // State for custom chapter generation dialog
+  const [showCustomChapterDialog, setShowCustomChapterDialog] = useState(false);
+  const [customChapterUserProfile, setCustomChapterUserProfile] = useState('');
+  const [customChapterLanguage, setCustomChapterLanguage] = useState<'en' | 'gu'>('en');
+  const [generatedChapterIdeas, setGeneratedChapterIdeas] = useState<string[]>([]);
+  const [isLoadingChapterIdeas, setIsLoadingChapterIdeas] = useState(false);
+
+  useEffect(() => {
+    if (user?.profileInfo) {
+      setCustomChapterUserProfile(user.profileInfo);
+    }
+  }, [user?.profileInfo]);
+
   useEffect(() => {
     // Simulate loading data
     setTimeout(() => {
       setPromptGroups(mockPromptGroups);
-      // In a real app, fetch user's memories
       const userMemories = mockMemories.filter(m => m.userId === user?.id);
       setMemories(userMemories);
       setIsLoading(false);
@@ -54,6 +76,39 @@ export default function LifeJourneyPage() {
       toast({ title: "Error", description: "Could not find the memory for this chapter.", variant: "destructive" });
     }
   };
+
+  const handleGenerateCustomChapterIdeas = async () => {
+    if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {
+      toast({ title: "Profile Info Needed", description: "Please provide some information about yourself in the profile field to generate ideas.", variant: "destructive" });
+      return;
+    }
+    setIsLoadingChapterIdeas(true);
+    try {
+      const profileToUse = customChapterUserProfile.trim() ? customChapterUserProfile : user?.profileInfo || '';
+      const result = await generateMemoryCuesAction({
+        userProfile: profileToUse,
+        currentDate: new Date().toISOString().split('T')[0],
+        language: customChapterLanguage,
+      });
+      setGeneratedChapterIdeas(result.memoryCues);
+      toast({ title: result.memoryCues.length > 0 ? "Chapter Ideas Generated!" : "No Ideas Generated", description: result.memoryCues.length > 0 ? "Select an idea below or refine your profile." : "Try refining your profile information." });
+    } catch (error) {
+      console.error("Failed to generate chapter ideas", error);
+      toast({ title: "Error Generating Ideas", description: "Something went wrong. Please try again.", variant: "destructive" });
+    }
+    setIsLoadingChapterIdeas(false);
+  };
+
+  const handleCustomIdeaSelected = (idea: string) => {
+    toast({
+      title: "Custom Chapter Selected!",
+      description: `Starting chapter: "${idea}". Redirecting...`
+    });
+    router.push(`/add-memory?prompt=${encodeURIComponent(idea)}`);
+    setShowCustomChapterDialog(false);
+    setGeneratedChapterIdeas([]);
+  };
+
 
   if (userMode === 'guest') {
     return (
@@ -89,30 +144,35 @@ export default function LifeJourneyPage() {
   return (
     <AuthenticatedPageWrapper>
       <div className="container mx-auto py-8 px-4">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div className="flex items-center mb-4 md:mb-0">
             <BookOpen className="h-10 w-10 text-primary mr-3" />
             <h1 className="font-headline text-4xl">My Life Journey</h1>
           </div>
-          <div>
-              <Label htmlFor="prompt-language" className="sr-only">Language for Prompts</Label>
-              <Select value={currentLanguage} onValueChange={(value: 'en' | 'gu') => setCurrentLanguage(value)}>
-                  <SelectTrigger id="prompt-language" className="w-full md:w-auto">
-                      <Languages className="mr-2 h-4 w-4" />
-                      <SelectValue placeholder="Select language" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
-                  </SelectContent>
-              </Select>
+          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+              <Button onClick={() => setShowCustomChapterDialog(true)} variant="outline" className="w-full sm:w-auto">
+                <Sparkles className="mr-2 h-4 w-4" /> Brainstorm Custom Chapter
+              </Button>
+              <div className="w-full sm:w-auto">
+                <Label htmlFor="prompt-language" className="sr-only">Language for Prompts</Label>
+                <Select value={currentLanguage} onValueChange={(value: 'en' | 'gu') => setCurrentLanguage(value)}>
+                    <SelectTrigger id="prompt-language" className="w-full">
+                        <Languages className="mr-2 h-4 w-4" />
+                        <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
+                    </SelectContent>
+                </Select>
+              </div>
           </div>
         </div>
         
         <div className="mb-8 p-4 bg-card/50 rounded-lg shadow">
             <p className="text-muted-foreground">
                 Welcome to your Life Journey. Each section below represents a chapter of your story.
-                Click on a prompt to record memories associated with it. Completed chapters are marked with a <CheckCircle className="inline-block h-4 w-4 text-green-500" />.
+                Click on a prompt to record memories associated with it, or brainstorm a custom chapter idea. Completed chapters are marked with a <CheckCircle className="inline-block h-4 w-4 text-green-500" />.
             </p>
         </div>
 
@@ -121,7 +181,7 @@ export default function LifeJourneyPage() {
           <div className="text-center py-12">
             <BookOpen className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <h2 className="font-headline text-2xl mb-2">No Chapters Found</h2>
-            <p className="text-muted-foreground">It seems there are no prompt groups defined yet.</p>
+            <p className="text-muted-foreground">It seems there are no prompt groups defined yet. Try brainstorming a custom chapter!</p>
           </div>
         ) : (
           <div className="space-y-10">
@@ -152,6 +212,74 @@ export default function LifeJourneyPage() {
           </div>
         )}
       </div>
+
+      <Dialog open={showCustomChapterDialog} onOpenChange={setShowCustomChapterDialog}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader>
+            <DialogTitle className="font-headline text-xl flex items-center">
+              <Sparkles className="mr-2 h-5 w-5 text-primary" /> Brainstorm Custom Chapter Idea
+            </DialogTitle>
+            <DialogDescription>
+              Provide some context about yourself to help the AI generate relevant chapter ideas.
+              These ideas can then become the titles for new memory chapters.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-1">
+              <Label htmlFor="custom-chapter-user-profile">Your Profile (Interests, life events, etc.)</Label>
+              <Textarea
+                id="custom-chapter-user-profile"
+                value={customChapterUserProfile}
+                onChange={(e) => setCustomChapterUserProfile(e.target.value)}
+                placeholder="e.g., Loves hiking, visited Paris in 2022, recently started learning guitar."
+                rows={4}
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+              <div className="flex-grow space-y-1">
+                <Label htmlFor="custom-chapter-language">Language for Ideas</Label>
+                <Select value={customChapterLanguage} onValueChange={(value: 'en' | 'gu') => setCustomChapterLanguage(value)}>
+                  <SelectTrigger id="custom-chapter-language">
+                    <Languages className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleGenerateCustomChapterIdeas} disabled={isLoadingChapterIdeas} className="w-full sm:w-auto">
+                {isLoadingChapterIdeas ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}
+                Generate Ideas
+              </Button>
+            </div>
+            {generatedChapterIdeas.length > 0 && (
+              <div className="space-y-2 pt-2 max-h-60 overflow-y-auto">
+                <h4 className="text-sm font-medium">Suggested Chapter Ideas:</h4>
+                <ul className="space-y-1">
+                  {generatedChapterIdeas.map((idea, index) => (
+                    <li key={index}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start text-left h-auto py-1.5 px-2"
+                        onClick={() => handleCustomIdeaSelected(idea)}
+                      >
+                        {idea}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCustomChapterDialog(false)}>Cancel</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </AuthenticatedPageWrapper>
   );
 }

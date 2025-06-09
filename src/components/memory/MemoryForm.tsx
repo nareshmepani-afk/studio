@@ -11,12 +11,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { MediaCaptureControl } from './MediaRecorder';
-import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Lightbulb, Loader2, Paperclip, Trash2, Languages, RefreshCw, ArrowRight, Tag, MapPin, ArrowLeft } from 'lucide-react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { mockPrompts } from '@/lib/mockData'; // For inspiration prompts
+import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, getDate, parseISO } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import {
@@ -32,7 +30,6 @@ interface MemoryFormProps {
   memory?: Memory; // Existing memory for editing
   onSubmit: (
     memoryData: Omit<Memory, 'id' | 'userId'> & { promptId?: string },
-    userProfileForCues?: string,
     mediaFileToUpload?: File
   ) => void;
   isSubmitting?: boolean; // From parent
@@ -65,8 +62,7 @@ const months: { value: number; label: string }[] = Array.from({ length: 12 }, (_
 
 const SLIDE_INDEX_DETAILS = 0;
 const SLIDE_INDEX_MEDIA = 1;
-const SLIDE_INDEX_CUES = 2;
-const TOTAL_SLIDES = 3;
+const TOTAL_SLIDES = 2; // Reduced from 3
 
 const countryOptions = [
   { value: "Afghanistan", label: "Afghanistan" }, { value: "Albania", label: "Albania" }, { value: "Algeria", label: "Algeria" }, { value: "Andorra", label: "Andorra" }, { value: "Angola", label: "Angola" }, { value: "Antigua and Barbuda", label: "Antigua and Barbuda" }, { value: "Argentina", label: "Argentina" }, { value: "Armenia", label: "Armenia" }, { value: "Australia", label: "Australia" }, { value: "Austria", label: "Austria" }, { value: "Azerbaijan", label: "Azerbaijan" }, { value: "Bahamas", label: "Bahamas" }, { value: "Bahrain", label: "Bahrain" }, { value: "Bangladesh", label: "Bangladesh" }, { value: "Barbados", label: "Barbados" }, { value: "Belarus", label: "Belarus" }, { value: "Belgium", label: "Belgium" }, { value: "Belize", label: "Belize" }, { value: "Benin", label: "Benin" }, { value: "Bhutan", label: "Bhutan" }, { value: "Bolivia", label: "Bolivia" }, { value: "Bosnia and Herzegovina", label: "Bosnia and Herzegovina" }, { value: "Botswana", label: "Botswana" }, { value: "Brazil", label: "Brazil" }, { value: "Brunei", label: "Brunei" }, { value: "Bulgaria", label: "Bulgaria" }, { value: "Burkina Faso", label: "Burkina Faso" }, { value: "Burundi", label: "Burundi" }, { value: "Cabo Verde", label: "Cabo Verde" }, { value: "Cambodia", label: "Cambodia" }, { value: "Cameroon", label: "Cameroon" }, { value: "Canada", label: "Canada" }, { value: "Central African Republic", label: "Central African Republic" }, { value: "Chad", label: "Chad" }, { value: "Chile", label: "Chile" }, { value: "China", label: "China" }, { value: "Colombia", label: "Colombia" }, { value: "Comoros", label: "Comoros" }, { value: "Congo (Congo-Brazzaville)", label: "Congo (Congo-Brazzaville)" }, { value: "Congo (Democratic Republic of the)", label: "Congo (Democratic Republic of the)" }, { value: "Costa Rica", label: "Costa Rica" }, { value: "Croatia", label: "Croatia" }, { value: "Cuba", label: "Cuba" }, { value: "Cyprus", label: "Cyprus" }, { value: "Czech Republic (Czechia)", label: "Czech Republic (Czechia)" }, { value: "Denmark", label: "Denmark" }, { value: "Djibouti", label: "Djibouti" }, { value: "Dominica", label: "Dominica" }, { value: "Dominican Republic", label: "Dominican Republic" }, { value: "Ecuador", label: "Ecuador" }, { value: "Egypt", label: "Egypt" }, { value: "El Salvador", label: "El Salvador" }, { value: "Equatorial Guinea", label: "Equatorial Guinea" }, { value: "Eritrea", label: "Eritrea" }, { value: "Estonia", label: "Estonia" }, { value: "Eswatini (fmr. Swaziland)", label: "Eswatini (fmr. Swaziland)" }, { value: "Ethiopia", label: "Ethiopia" }, { value: "Fiji", label: "Fiji" }, { value: "Finland", label: "Finland" }, { value: "France", label: "France" }, { value: "Gabon", label: "Gabon" }, { value: "Gambia", label: "Gambia" }, { value: "Georgia", label: "Georgia" }, { value: "Germany", label: "Germany" }, { value: "Ghana", label: "Ghana" }, { value: "Greece", label: "Greece" }, { value: "Grenada", label: "Grenada" }, { value: "Guatemala", label: "Guatemala" }, { value: "Guinea", label: "Guinea" }, { value: "Guinea-Bissau", label: "Guinea-Bissau" }, { value: "Guyana", label: "Guyana" }, { value: "Haiti", label: "Haiti" }, { value: "Honduras", label: "Honduras" }, { value: "Hungary", label: "Hungary" }, { value: "Iceland", label: "Iceland" }, { value: "India", label: "India" }, { value: "Indonesia", label: "Indonesia" }, { value: "Iran", label: "Iran" }, { value: "Iraq", label: "Iraq" }, { value: "Ireland", label: "Ireland" }, { value: "Israel", label: "Israel" }, { value: "Italy", label: "Italy" }, { value: "Jamaica", label: "Jamaica" }, { value: "Japan", label: "Japan" }, { value: "Jordan", label: "Jordan" }, { value: "Kazakhstan", label: "Kazakhstan" }, { value: "Kenya", label: "Kenya" }, { value: "Kiribati", label: "Kiribati" }, { value: "Kuwait", label: "Kuwait" }, { value: "Kyrgyzstan", label: "Kyrgyzstan" }, { value: "Laos", label: "Laos" }, { value: "Latvia", label: "Latvia" }, { value: "Lebanon", label: "Lebanon" }, { value: "Lesotho", label: "Lesotho" }, { value: "Liberia", label: "Liberia" }, { value: "Libya", label: "Libya" }, { value: "Liechtenstein", label: "Liechtenstein" }, { value: "Lithuania", label: "Lithuania" }, { value: "Luxembourg", label: "Luxembourg" }, { value: "Madagascar", label: "Madagascar" }, { value: "Malawi", label: "Malawi" }, { value: "Malaysia", label: "Malaysia" }, { value: "Maldives", label: "Maldives" }, { value: "Mali", label: "Mali" }, { value: "Malta", label: "Malta" }, { value: "Marshall Islands", label: "Marshall Islands" }, { value: "Mauritania", label: "Mauritania" }, { value: "Mauritius", label: "Mauritius" }, { value: "Mexico", label: "Mexico" }, { value: "Micronesia", label: "Micronesia" }, { value: "Moldova", label: "Moldova" }, { value: "Monaco", label: "Monaco" }, { value: "Mongolia", label: "Mongolia" }, { value: "Montenegro", label: "Montenegro" }, { value: "Morocco", label: "Morocco" }, { value: "Mozambique", label: "Mozambique" }, { value: "Myanmar (formerly Burma)", label: "Myanmar (formerly Burma)" }, { value: "Namibia", label: "Namibia" }, { value: "Nauru", label: "Nauru" }, { value: "Nepal", label: "Nepal" }, { value: "Netherlands", label: "Netherlands" }, { value: "New Zealand", label: "New Zealand" }, { value: "Nicaragua", label: "Nicaragua" }, { value: "Niger", label: "Niger" }, { value: "Nigeria", label: "Nigeria" }, { value: "North Korea", label: "North Korea" }, { value: "North Macedonia (formerly Macedonia)", label: "North Macedonia (formerly Macedonia)" }, { value: "Norway", label: "Norway" }, { value: "Oman", label: "Oman" }, { value: "Pakistan", label: "Pakistan" }, { value: "Palau", label: "Palau" }, { value: "Palestine State", label: "Palestine State" }, { value: "Panama", label: "Panama" }, { value: "Papua New Guinea", label: "Papua New Guinea" }, { value: "Paraguay", label: "Paraguay" }, { value: "Peru", label: "Peru" }, { value: "Philippines", label: "Philippines" }, { value: "Poland", label: "Poland" }, { value: "Portugal", label: "Portugal" }, { value: "Qatar", label: "Qatar" }, { value: "Romania", label: "Romania" }, { value: "Russia", label: "Russia" }, { value: "Rwanda", label: "Rwanda" }, { value: "Saint Kitts and Nevis", label: "Saint Kitts and Nevis" }, { value: "Saint Lucia", label: "Saint Lucia" }, { value: "Saint Vincent and the Grenadines", label: "Saint Vincent and the Grenadines" }, { value: "Samoa", label: "Samoa" }, { value: "San Marino", label: "San Marino" }, { value: "Sao Tome and Principe", label: "Sao Tome and Principe" }, { value: "Saudi Arabia", label: "Saudi Arabia" }, { value: "Senegal", label: "Senegal" }, { value: "Serbia", label: "Serbia" }, { value: "Seychelles", label: "Seychelles" }, { value: "Sierra Leone", label: "Sierra Leone" }, { value: "Singapore", label: "Singapore" }, { value: "Slovakia", label: "Slovakia" }, { value: "Slovenia", label: "Slovenia" }, { value: "Solomon Islands", label: "Solomon Islands" }, { value: "Somalia", label: "Somalia" }, { value: "South Africa", label: "South Africa" }, { value: "South Korea", label: "South Korea" }, { value: "South Sudan", label: "South Sudan" }, { value: "Spain", label: "Spain" }, { value: "Sri Lanka", label: "Sri Lanka" }, { value: "Sudan", label: "Sudan" }, { value: "Suriname", label: "Suriname" }, { value: "Sweden", label: "Sweden" }, { value: "Switzerland", label: "Switzerland" }, { value: "Syria", label: "Syria" }, { value: "Taiwan", label: "Taiwan" }, { value: "Tajikistan", label: "Tajikistan" }, { value: "Tanzania", label: "Tanzania" }, { value: "Thailand", label: "Thailand" }, { value: "Timor-Leste", label: "Timor-Leste" }, { value: "Togo", label: "Togo" }, { value: "Tonga", label: "Tonga" }, { value: "Trinidad and Tobago", label: "Trinidad and Tobago" }, { value: "Tunisia", label: "Tunisia" }, { value: "Turkey", label: "Turkey" }, { value: "Turkmenistan", label: "Turkmenistan" }, { value: "Tuvalu", label: "Tuvalu" }, { value: "Uganda", label: "Uganda" }, { value: "Ukraine", label: "Ukraine" }, { value: "United Arab Emirates", label: "United Arab Emirates" }, { value: "United Kingdom", label: "United Kingdom" }, { value: "United States", label: "United States" }, { value: "Uruguay", label: "Uruguay" }, { value: "Uzbekistan", label: "Uzbekistan" }, { value: "Vanuatu", label: "Vanuatu" }, { value: "Vatican City (Holy See)", label: "Vatican City (Holy See)" }, { value: "Venezuela", label: "Venezuela" }, { value: "Vietnam", label: "Vietnam" }, { value: "Yemen", label: "Yemen" }, { value: "Zambia", label: "Zambia" }, { value: "Zimbabwe", label: "Zimbabwe" },
@@ -76,7 +72,6 @@ const countryOptions = [
 export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting }: MemoryFormProps) {
   const { user } = useAuth();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const isEditing = !!memory;
 
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -85,15 +80,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const step1AnchorRef = useRef<HTMLDivElement>(null);
   const step2AnchorRef = useRef<HTMLDivElement>(null);
-  const step3AnchorRef = useRef<HTMLDivElement>(null);
-
+  
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
   
-  const justLandedOnCuesSlideRef = useRef(false);
-  const justLandedTimeoutIdRef = useRef<NodeJS.Timeout | null>(null);
-  
   const visualScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const initialScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const latestSelectedMediaDataRef = useRef<CurrentMediaData | null>(null);
   
 
@@ -122,11 +114,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const [description, setDescription] = useState('');
   const [selectedEmotionTags, setSelectedEmotionTags] = useState<EmotionTag[]>([]);
-  const [userProfile, setUserProfile] = useState(user?.profileInfo || '');
-  const [aiCues, setAiCues] = useState<string[]>([]);
-  const [isLoadingCues, setIsLoadingCues] = useState(false);
-  const [cueLanguage, setCueLanguage] = useState<'en' | 'gu'>('en');
-  const [inspirationPrompts, setInspirationPrompts] = useState<Prompt[]>([]);
 
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(SLIDE_INDEX_DETAILS);
@@ -148,7 +135,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       setCountry(memory.country || 'United Kingdom');
       setDescription(memory.description || '');
       setSelectedEmotionTags(memory.emotionTags || []);
-      setUserProfile(user?.profileInfo || memory.userId);
 
       setSelectedYear(getInitialDateComponent('year', memory.date));
       setSelectedMonth(getInitialDateComponent('month', memory.date));
@@ -197,9 +183,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       setCurrentMedia(null);
       latestSelectedMediaDataRef.current = null;
       setMediaToInitializeRecorder(null);
-      setUserProfile(user?.profileInfo || '');
     }
-  }, [memory, searchParams, user?.profileInfo, getInitialDateComponent]);
+  }, [memory, searchParams, getInitialDateComponent]);
 
   const daysInSelectedMonth = useMemo(() => {
     return getDaysInMonth(new Date(selectedYear, selectedMonth));
@@ -209,7 +194,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     return Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1);
   }, [daysInSelectedMonth]);
 
-  const performVisualScroll = useCallback((slideIndex: number) => {
+ const performVisualScroll = useCallback((slideIndex: number) => {
     if (visualScrollTimerRef.current) {
       clearTimeout(visualScrollTimerRef.current);
     }
@@ -217,7 +202,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       let targetElementRef: React.RefObject<HTMLDivElement> | null = null;
       if (slideIndex === SLIDE_INDEX_DETAILS) targetElementRef = step1AnchorRef;
       else if (slideIndex === SLIDE_INDEX_MEDIA) targetElementRef = step2AnchorRef;
-      else if (slideIndex === SLIDE_INDEX_CUES) targetElementRef = step3AnchorRef;
 
       if (targetElementRef?.current) {
         const navbar = document.querySelector('header.sticky') as HTMLElement | null;
@@ -241,69 +225,52 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }, [currentSlide]);
 
 
-  useEffect(() => {
+ useEffect(() => { // Commander useEffect
     if (!carouselApi) return;
-
     if (carouselApi.selectedScrollSnap() !== currentSlide) {
-      carouselApi.scrollTo(currentSlide, true); 
+      carouselApi.scrollTo(currentSlide, true); // true for instant snap
     }
     performVisualScroll(currentSlide);
-
   }, [currentSlide, carouselApi, performVisualScroll]);
 
-
-  useEffect(() => {
+  useEffect(() => { // Synchronizer & Initializer useEffect
     if (!carouselApi) return;
 
-    const handleApiEvent = () => { 
+    const handleApiEvent = () => {
       if (!carouselApi) return;
       const newSelectedSnap = carouselApi.selectedScrollSnap();
-      if (newSelectedSnap !== currentSlideRef.current) { 
-        setCurrentSlide(newSelectedSnap); 
-      }
-      
-      if (newSelectedSnap === SLIDE_INDEX_CUES && !isEditing) {
-        justLandedOnCuesSlideRef.current = true;
-        if (justLandedTimeoutIdRef.current) clearTimeout(justLandedTimeoutIdRef.current);
-        justLandedTimeoutIdRef.current = setTimeout(() => {
-          justLandedOnCuesSlideRef.current = false;
-        }, 100);
+      if (newSelectedSnap !== currentSlideRef.current) {
+        setCurrentSlide(newSelectedSnap);
       }
     };
 
     const initialSnap = carouselApi.selectedScrollSnap();
-    if (initialSnap !== currentSlideRef.current) { 
-       setCurrentSlide(initialSnap);
-    } else {
-      performVisualScroll(initialSnap); 
+    if (initialSnap !== currentSlideRef.current) { // Initialize state from carousel
+      setCurrentSlide(initialSnap); // This will trigger the Commander useEffect
+    } else { // If initial snap is already the current state (e.g., 0 on mount), explicitly trigger scroll
+      if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current);
+      initialScrollTimerRef.current = setTimeout(() => {
+         performVisualScroll(initialSnap);
+      }, 100); // Slight delay for initial layout
     }
 
     carouselApi.on("select", handleApiEvent);
-    carouselApi.on("reInit", handleApiEvent); 
+    carouselApi.on("reInit", handleApiEvent);
 
     return () => {
       if (carouselApi) {
         carouselApi.off("select", handleApiEvent);
         carouselApi.off("reInit", handleApiEvent);
       }
-      if (justLandedTimeoutIdRef.current) clearTimeout(justLandedTimeoutIdRef.current);
       if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current);
+      if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current);
     };
-  }, [carouselApi, isEditing, performVisualScroll]); 
+  }, [carouselApi, performVisualScroll]);
 
 
   useEffect(() => {
     if (selectedDay > daysInSelectedMonth) setSelectedDay(daysInSelectedMonth);
   }, [selectedDay, daysInSelectedMonth]);
-
-  const loadInspirationPrompts = useCallback(() => {
-    const shuffled = [...mockPrompts].sort(() => 0.5 - Math.random());
-    setInspirationPrompts(shuffled.slice(0, 3));
-  }, []);
-
-  useEffect(() => {
-    loadInspirationPrompts();
-  }, [cueLanguage, loadInspirationPrompts]);
 
 
   useEffect(() => {
@@ -423,38 +390,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     }, [currentSlide, currentMedia]);
 
 
-  const handleGenerateCues = async () => {
-    if (!userProfile.trim()) {
-      toast({ title: "Profile Info Needed", description: "Please provide some information about yourself in the 'Your Profile for Cues' field.", variant: "destructive" });
-      return;
-    }
-    setIsLoadingCues(true);
-    try {
-      const result = await generateMemoryCuesAction({
-        userProfile: userProfile,
-        currentDate: new Date().toISOString().split('T')[0],
-        language: cueLanguage,
-      });
-      setAiCues(result.memoryCues);
-      toast({ title: result.memoryCues.length > 0 ? "Memory Cues Generated!" : "No Cues Generated", description: result.memoryCues.length > 0 ? "Check the suggestions below." : "Try refining your profile information." });
-    } catch (error) {
-      console.error("Failed to generate cues", error);
-      toast({ title: "Error Generating Cues", description: "Something went wrong. Please try again.", variant: "destructive" });
-    }
-    setIsLoadingCues(false);
-  };
-
-  const handleCueClick = (cue: string) => {
-    if (!title && !memory?.title) setTitle(cue);
-    else setDescription(prev => `${prev}${prev ? '\n' : ''}Inspired by: ${cue}`);
-    toast({ title: "Cue Applied!", description: `"${cue}" added to your memory.` });
-  };
-
-  const handleInspirationPromptClick = (promptText: string) => {
-    setTitle(promptText);
-    toast({ title: "Title Updated", description: `Title set to: "${promptText}"` });
-  };
-
   const handleEmotionTagToggle = (tag: EmotionTag) => {
     setSelectedEmotionTags(prevTags =>
       prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]
@@ -533,10 +468,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         country: country || undefined,
         promptId: promptIdFromQuery || memory?.promptId || undefined,
       },
-      userProfile,
       mediaFileToUpload
     );
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, promptIdFromQuery, selectedEmotionTags, userProfile, isEditing, latestSelectedMediaDataRef]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, promptIdFromQuery, selectedEmotionTags, isEditing, latestSelectedMediaDataRef]);
 
 
   const handleActionButtonClick = useCallback(() => {
@@ -557,12 +491,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             });
             return; 
         }
-        setCurrentSlide(SLIDE_INDEX_CUES);
-      } else if (currentSlide === SLIDE_INDEX_CUES) {
-        if (justLandedOnCuesSlideRef.current) {
-          justLandedOnCuesSlideRef.current = false;
-          return; 
-        }
         triggerSubmitProcess();
       }
     }
@@ -570,11 +498,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const handleFormSubmit = (event: FormEvent) => {
     event.preventDefault();
-     if (isEditing || currentSlide === SLIDE_INDEX_CUES) {
-        if (justLandedOnCuesSlideRef.current && !isEditing && currentSlide === SLIDE_INDEX_CUES) {
-            justLandedOnCuesSlideRef.current = false;
-            return;
-        }
+     if (isEditing || currentSlide === SLIDE_INDEX_MEDIA) {
         handleActionButtonClick(); 
     } else { 
         handleActionButtonClick();
@@ -586,7 +510,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   if (isEditing) {
     actionButtonText = 'Save Changes';
     ActionButtonIcon = Sparkles; 
-  } else if (currentSlide === SLIDE_INDEX_CUES) {
+  } else if (currentSlide === SLIDE_INDEX_MEDIA) {
     actionButtonText = 'Add Memory';
     ActionButtonIcon = Sparkles; 
   }
@@ -623,31 +547,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                 <div className="space-y-1">
                   <Label htmlFor="title" >Title *</Label>
                   <Input ref={titleInputRef} id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" />
-                  {inspirationPrompts.length > 0 && !isEditing && (
-                    <div className="pt-2 space-y-2">
-                      <div className="flex justify-between items-center">
-                        <Label htmlFor="inspiration-prompts" className="text-xs text-muted-foreground">Need inspiration for your title?</Label>
-                        <div className="flex items-center gap-2">
-                          <Button type="button" variant="outline" size="sm" onClick={loadInspirationPrompts} className="text-xs h-7">
-                            <RefreshCw className="mr-1 h-3 w-3" /> New Suggestions
-                          </Button>
-                          <Button type="button" variant="link" size="sm" onClick={() => router.push('/prompts')} className="text-xs h-7 px-2">
-                            More Prompts <ArrowRight className="ml-1 h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div id="inspiration-prompts" className="flex flex-wrap gap-1">
-                        {inspirationPrompts.map((prompt) => {
-                          const promptText = prompt.text[cueLanguage] || prompt.text.en;
-                          return (
-                            <Button type="button" key={prompt.id} variant="outline" size="sm" className="text-xs h-auto py-1 px-2" onClick={() => handleInspirationPromptClick(promptText)}>
-                              {promptText}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
                 </div>
                 <div className="space-y-1">
                   <Label>Date *</Label>
@@ -677,7 +576,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                        <Label htmlFor="location">Location (Optional)</Label>
+                        <Label htmlFor="location"><MapPin className="inline-block mr-1 h-4 w-4" />Location (Optional)</Label>
                         <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g., Eiffel Tower, Paris" />
                     </div>
                     <div className="space-y-1">
@@ -693,7 +592,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                   <Textarea ref={descriptionTextareaRef} id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} required/>
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="emotion-tags">Emotion Tags (Optional)</Label>
+                  <Label htmlFor="emotion-tags"><Tag className="inline-block mr-1 h-4 w-4" />Emotion Tags (Optional)</Label>
                   <div className="flex flex-wrap gap-2 pt-1">
                     {emotionTagsList.map((tag) => (
                       <Button type="button" key={tag} variant={selectedEmotionTags.includes(tag) ? 'default' : 'outline'} size="sm" onClick={() => handleEmotionTagToggle(tag)} className="text-xs h-auto py-1 px-2">
@@ -724,52 +623,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                       {currentMedia.type === 'audio' && (<audio ref={audioPreviewRef} src={currentMediaPreviewUrl} controls className="w-full mt-2" key={currentMediaPreviewUrl} preload="auto"/>)}
                       <p className="text-sm text-muted-foreground mt-1">Duration: {formatSecondsToTime(currentMedia.duration)}</p>
                       {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {formatSecondsToTime(currentMedia.startTime)}</p>}
-                      {(currentMedia.endTime !== undefined && currentMedia.duration !== undefined && currentMedia.duration !== currentMedia.endTime) && <p className="text-sm text-muted-foreground">Trim End: {formatSecondsToTime(currentMedia.endTime)}</p>}
+                      {(currentMedia.endTime !== undefined && currentMedia.duration !== undefined && Math.abs(currentMedia.duration - currentMedia.endTime) > 0.01) && <p className="text-sm text-muted-foreground">Trim End: {formatSecondsToTime(currentMedia.endTime)}</p>}
                       <Button variant="outline" type="button" onClick={handleMediaDiscardInForm} className="w-full mt-2">Change Media or Re-trim</Button>
                     </div>
                   ) : ( <MediaCaptureControl onMediaReady={handleMediaReady} onDiscard={handleMediaDiscardFromChild} initialMedia={mediaToInitializeRecorder || initialMediaForRecorderProp} /> )}
-              </CardContent>
-            </Card>
-          </CarouselItem>
-          <CarouselItem>
-            <div ref={step3AnchorRef} />
-            <Card className="w-full">
-              <CardHeader>
-                <CardTitle className="font-headline text-lg flex items-center"><Sparkles className="mr-2 h-5 w-5 text-primary" />AI-Powered Memory Cues (Step {SLIDE_INDEX_CUES + 1} of {TOTAL_SLIDES})</CardTitle>
-                <CardDescription>Get suggestions for memories based on your profile and current context.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-1">
-                  <Label htmlFor="user-profile">Your Profile for Cues (Interests, past events, etc.)</Label>
-                  <Textarea id="user-profile" value={userProfile} onChange={(e) => setUserProfile(e.target.value)} placeholder="e.g., Loves hiking, visited Paris in 2022, recently started learning guitar." rows={3} />
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-                  <div className="flex-grow space-y-1">
-                      <Label htmlFor="cue-language">Language for Cues</Label>
-                      <Select value={cueLanguage} onValueChange={(value: 'en' | 'gu') => setCueLanguage(value)}>
-                          <SelectTrigger id="cue-language"><SelectValue placeholder="Select language" /></SelectTrigger>
-                          <SelectContent>
-                              <SelectItem value="en">English</SelectItem>
-                              <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
-                          </SelectContent>
-                      </Select>
-                  </div>
-                  <Button type="button" onClick={handleGenerateCues} disabled={isLoadingCues} variant="outline" className="w-full sm:w-auto">
-                      {isLoadingCues ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />} Get AI Cues
-                  </Button>
-                </div>
-                {aiCues.length > 0 && (
-                  <div className="space-y-2 pt-2">
-                    <h4 className="text-sm font-medium">Suggested Cues for Description:</h4>
-                    <ul className="list-disc list-inside space-y-1">
-                      {aiCues.map((cue, index) => (
-                        <li key={index} className="text-sm text-muted-foreground">
-                          <button type="button" onClick={() => handleCueClick(cue)} className="text-primary hover:underline text-left">{cue}</button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </CarouselItem>
@@ -795,8 +652,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           onClick={handleActionButtonClick}
           disabled={
             !!isParentSubmitting || 
-            isProcessingMedia ||
-            (currentSlide === SLIDE_INDEX_CUES && !isEditing && justLandedOnCuesSlideRef.current)
+            isProcessingMedia
           }
         >
           {(isParentSubmitting || isProcessingMedia) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -32,17 +32,17 @@ export default function AddMemoryPage() {
           setMemoryToEdit(foundMemory);
         } else {
           toast({ title: "Memory not found", description: "Could not load the memory for editing.", variant: "destructive" });
-          router.push('/timeline'); // Or to prompts page
+          router.push('/timeline'); 
         }
         setIsLoadingMemory(false);
       }, 300);
     } else {
       setIsLoadingMemory(false);
-      setMemoryToEdit(undefined); // Ensure it's undefined if not editing
+      setMemoryToEdit(undefined); 
     }
   }, [editMemoryId, user?.id, router]);
 
-  const handleSubmit = async (memoryData: Omit<Memory, 'id' | 'userId'>, userProfileForCues?: string, mediaFileToUpload?: File) => {
+  const handleSubmit = async (memoryData: Omit<Memory, 'id' | 'userId'>, mediaFileToUpload?: File) => {
     if (!user) {
       toast({ title: "Authentication Error", description: "You must be logged in to add or edit a memory.", variant: "destructive" });
       return;
@@ -51,38 +51,35 @@ export default function AddMemoryPage() {
 
     let finalMemoryData: Memory;
 
-    if (memoryToEdit) { // Editing existing memory
+    if (memoryToEdit) { 
       finalMemoryData = {
-        ...memoryToEdit, // Start with existing data
-        ...memoryData, // Override with form data
+        ...memoryToEdit, 
+        ...memoryData, 
         userId: user.id,
-        // Ensure promptId from original memory is preserved if not re-prompted, or use new one
         promptId: promptIdFromQuery || memoryToEdit.promptId, 
       };
-    } else { // Adding new memory
+    } else { 
       finalMemoryData = {
         ...memoryData,
         id: Date.now().toString(),
         userId: user.id,
-        promptId: promptIdFromQuery || undefined, // Add promptId if creating from a prompt
+        promptId: promptIdFromQuery || undefined, 
       };
     }
     
     if (mediaFileToUpload && finalMemoryData.mediaAttachments && finalMemoryData.mediaAttachments.length > 0) {
       console.log('Media file to upload:', mediaFileToUpload.name);
-      finalMemoryData.mediaAttachments[0].url = `mock_uploaded_url/${mediaFileToUpload.name}`; // Simulate upload
+      finalMemoryData.mediaAttachments[0].url = `mock_uploaded_url/${mediaFileToUpload.name}`; 
       finalMemoryData.mediaAttachments[0].filename = mediaFileToUpload.name;
     }
 
     console.log(editMemoryId ? 'Updated memory data:' : 'New memory data:', finalMemoryData);
 
-    // Mock saving to localStorage or an API
-    // This part would need to be more robust in a real app, likely involving updating an array in localStorage
     let existingMemories: Memory[] = [];
-    const storedMemoriesJson = localStorage.getItem('mockMemories'); // Assuming we'd save all mockMemories
+    const storedMemoriesJson = localStorage.getItem('mockMemories'); 
     if (storedMemoriesJson) {
         try { existingMemories = JSON.parse(storedMemoriesJson); } catch (e) { console.error(e); }
-    } else { // Initialize if not present (mainly for dev)
+    } else { 
         existingMemories = mockMemories;
     }
 
@@ -90,30 +87,28 @@ export default function AddMemoryPage() {
         const index = existingMemories.findIndex(m => m.id === editMemoryId);
         if (index !== -1) {
             existingMemories[index] = finalMemoryData;
-        } else { // Should not happen if editMemoryId is valid
+        } else { 
             existingMemories.push(finalMemoryData);
         }
     } else {
         existingMemories.push(finalMemoryData);
     }
-    localStorage.setItem('mockMemories', JSON.stringify(existingMemories)); // Save back
-    // Also, update the actual mockMemories array if it's being used by other parts of the app directly (for demo)
+    localStorage.setItem('mockMemories', JSON.stringify(existingMemories)); 
+    
     const mockIndex = mockMemories.findIndex(m => m.id === finalMemoryData.id);
     if (mockIndex !== -1) mockMemories[mockIndex] = finalMemoryData; else mockMemories.push(finalMemoryData);
 
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    if (userProfileForCues && user.profileInfo !== userProfileForCues) {
-      console.log("User profile for cues updated (mock):", userProfileForCues);
-    }
+    // User profile update for cues logic removed as cues are not part of this form anymore
 
     setIsSubmitting(false);
     toast({
       title: memoryToEdit ? "Memory Updated!" : "Memory Added!",
       description: `"${finalMemoryData.title}" has been saved.`,
     });
-    // Redirect to Life Journey if it came from a prompt, otherwise timeline
+    
     if (finalMemoryData.promptId) {
         router.push('/prompts');
     } else {
@@ -138,7 +133,7 @@ export default function AddMemoryPage() {
         <MemoryForm
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
-          memory={memoryToEdit} // Pass memory for editing
+          memory={memoryToEdit}
         />
       </div>
     </AuthenticatedPageWrapper>
