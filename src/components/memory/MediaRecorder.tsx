@@ -10,7 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { formatSecondsToTime } from '@/lib/utils'; // Import from utils
+import { formatSecondsToTime } from '@/lib/utils';
 
 interface MediaCaptureControlProps {
   onMediaReady: (mediaData: { file: File; type: 'video' | 'audio'; previewUrl: string; startTime?: number; endTime?: number, duration: number }) => void;
@@ -19,9 +19,12 @@ interface MediaCaptureControlProps {
 }
 
 const SAMPLE_VIDEO_URL = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-const SAMPLE_VIDEO_DURATION = 596.48;
+const SAMPLE_VIDEO_DURATION = 596.48; // This will exceed MAX_VIDEO_DURATION_SECONDS
 const SAMPLE_AUDIO_URL = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3";
 const SAMPLE_AUDIO_DURATION = 1.88;
+
+const MAX_VIDEO_DURATION_SECONDS = 120; // 2 minutes
+const MAX_AUDIO_DURATION_SECONDS = 300; // 5 minutes
 
 
 export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: MediaCaptureControlProps) {
@@ -149,19 +152,47 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         const file = new File([blob], `recording.${type === 'video' ? 'webm' : 'ogg'}`, { type: mime });
         const url = URL.createObjectURL(blob);
 
-        setRecordedFile(file);
-        setPreviewUrl(url);
-        setIsRecording(false);
-
         const tempMediaElement = document.createElement(type);
         tempMediaElement.src = url;
         tempMediaElement.onloadedmetadata = () => {
           const newDuration = tempMediaElement.duration;
+          let durationLimitExceeded = false;
+          let limitMinutes = 0;
+
+          if (type === 'video' && newDuration > MAX_VIDEO_DURATION_SECONDS) {
+            durationLimitExceeded = true;
+            limitMinutes = MAX_VIDEO_DURATION_SECONDS / 60;
+          } else if (type === 'audio' && newDuration > MAX_AUDIO_DURATION_SECONDS) {
+            durationLimitExceeded = true;
+            limitMinutes = MAX_AUDIO_DURATION_SECONDS / 60;
+          }
+
+          if (durationLimitExceeded) {
+            setTimeout(() => {
+              toast({
+                variant: 'destructive',
+                title: `${type.charAt(0).toUpperCase() + type.slice(1)} Too Long`,
+                description: `The recording is ${formatSecondsToTime(newDuration)} long. Maximum duration is ${limitMinutes} minute(s). Please record a shorter one.`,
+                duration: 7000,
+              });
+            }, 0);
+            URL.revokeObjectURL(url);
+            cleanupStream(currentStream);
+            setStream(null);
+            setIsRecording(false);
+            recordedChunks.current = [];
+            return;
+          }
+
+          setRecordedFile(file);
+          setPreviewUrl(url);
           setMediaDuration(newDuration);
+          setStartTime(0);
           setEndTime(newDuration);
           latestTrimValuesRef.current = { startTime: 0, endTime: newDuration };
         };
-
+        
+        setIsRecording(false);
         cleanupStream(currentStream);
         setStream(null);
       };
@@ -228,63 +259,131 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-      const type = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : null;
-      if (!type) {
+      const fileType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : null;
+      if (!fileType) {
         setTimeout(() => {
           toast({ title: "Invalid File Type", description: "Please upload a video or audio file.", variant: "destructive" });
         }, 0);
         return;
       }
-      handleDiscardMedia(false);
+      handleDiscardMedia(false); // Clear any existing media before processing new file
 
-      setMediaType(type);
-      setRecordedFile(file);
       const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-
-      const tempMediaElement = document.createElement(type);
+      const tempMediaElement = document.createElement(fileType);
       tempMediaElement.src = url;
+
       tempMediaElement.onloadedmetadata = () => {
         const newDuration = tempMediaElement.duration;
-        if (newDuration && isFinite(newDuration)) {
-          setMediaDuration(newDuration);
-          setStartTime(0);
-          setEndTime(newDuration);
-          latestTrimValuesRef.current = { startTime: 0, endTime: newDuration };
+        let durationLimitExceeded = false;
+        let limitMinutes = 0;
+
+        if (fileType === 'video' && newDuration > MAX_VIDEO_DURATION_SECONDS) {
+          durationLimitExceeded = true;
+          limitMinutes = MAX_VIDEO_DURATION_SECONDS / 60;
+        } else if (fileType === 'audio' && newDuration > MAX_AUDIO_DURATION_SECONDS) {
+          durationLimitExceeded = true;
+          limitMinutes = MAX_AUDIO_DURATION_SECONDS / 60;
         }
+
+        if (durationLimitExceeded) {
+          setTimeout(() => {
+            toast({
+              variant: 'destructive',
+              title: `${fileType.charAt(0).toUpperCase() + fileType.slice(1)} Too Long`,
+              description: `The uploaded file is ${formatSecondsToTime(newDuration)} long. Maximum duration is ${limitMinutes} minute(s).`,
+              duration: 7000,
+            });
+          }, 0);
+          URL.revokeObjectURL(url);
+          event.target.value = ''; // Reset file input
+          return;
+        }
+
+        setMediaType(fileType);
+        setRecordedFile(file);
+        setPreviewUrl(url);
+        setMediaDuration(newDuration);
+        setStartTime(0);
+        setEndTime(newDuration);
+        latestTrimValuesRef.current = { startTime: 0, endTime: newDuration };
+        setTimeout(() => {
+          toast({ title: "File Uploaded", description: file.name });
+        }, 0);
       };
-      setTimeout(() => {
-        toast({ title: "File Uploaded", description: file.name });
-      }, 0);
+      tempMediaElement.onerror = () => {
+          URL.revokeObjectURL(url);
+          event.target.value = ''; // Reset file input
+          setTimeout(() => {
+            toast({ title: "Error Loading File", description: "Could not load metadata for the selected file.", variant: "destructive" });
+          },0);
+      };
     }
   };
 
   const handleLoadSampleMedia = async (type: 'video' | 'audio') => {
     setIsLoadingSample(true);
     setSampleLoadingType(type);
-    handleDiscardMedia(false);
+    handleDiscardMedia(false); // Clear existing
 
-    const url = type === 'video' ? SAMPLE_VIDEO_URL : SAMPLE_AUDIO_URL;
-    const duration = type === 'video' ? SAMPLE_VIDEO_DURATION : SAMPLE_AUDIO_DURATION;
+    const sampleUrl = type === 'video' ? SAMPLE_VIDEO_URL : SAMPLE_AUDIO_URL;
+    // const initialSampleDuration = type === 'video' ? SAMPLE_VIDEO_DURATION : SAMPLE_AUDIO_DURATION; // We'll get actual duration
     const filename = type === 'video' ? 'sample_video.mp4' : 'sample_audio.mp3';
     const mimeType = type === 'video' ? 'video/mp4' : 'audio/mpeg';
 
     try {
-      const response = await fetch(url);
+      const response = await fetch(sampleUrl);
       const blob = await response.blob();
       const file = new File([blob], filename, { type: mimeType });
       const preview = URL.createObjectURL(blob);
 
-      setMediaType(type);
-      setRecordedFile(file);
-      setPreviewUrl(preview);
-      setMediaDuration(duration);
-      setStartTime(0);
-      setEndTime(duration);
-      latestTrimValuesRef.current = { startTime: 0, endTime: duration };
-      setTimeout(() => {
-        toast({ title: `Sample ${type} loaded`, description: filename });
-      }, 0);
+      const tempMediaElement = document.createElement(type);
+      tempMediaElement.src = preview;
+      tempMediaElement.onloadedmetadata = () => {
+        const actualDuration = tempMediaElement.duration;
+        let durationLimitExceeded = false;
+        let limitMinutes = 0;
+
+        if (type === 'video' && actualDuration > MAX_VIDEO_DURATION_SECONDS) {
+          durationLimitExceeded = true;
+          limitMinutes = MAX_VIDEO_DURATION_SECONDS / 60;
+        } else if (type === 'audio' && actualDuration > MAX_AUDIO_DURATION_SECONDS) {
+          durationLimitExceeded = true;
+          limitMinutes = MAX_AUDIO_DURATION_SECONDS / 60;
+        }
+
+        if (durationLimitExceeded) {
+          setTimeout(() => {
+            toast({
+              variant: 'destructive',
+              title: `Sample ${type} Too Long`,
+              description: `The sample is ${formatSecondsToTime(actualDuration)} long. Maximum duration is ${limitMinutes} minute(s). It cannot be loaded.`,
+              duration: 7000,
+            });
+          }, 0);
+          URL.revokeObjectURL(preview);
+          handleDiscardMedia(false); // Ensure things are reset
+          return;
+        }
+        
+        setMediaType(type);
+        setRecordedFile(file);
+        setPreviewUrl(preview);
+        setMediaDuration(actualDuration);
+        setStartTime(0);
+        setEndTime(actualDuration);
+        latestTrimValuesRef.current = { startTime: 0, endTime: actualDuration };
+        setTimeout(() => {
+          toast({ title: `Sample ${type} loaded`, description: filename });
+        }, 0);
+      };
+      tempMediaElement.onerror = () => {
+          URL.revokeObjectURL(preview);
+          handleDiscardMedia(false);
+          setTimeout(() => {
+            toast({ title: "Error Loading Sample", description: "Could not load metadata for the sample file.", variant: "destructive" });
+          },0);
+      };
+
     } catch (error) {
       console.error(`Error loading sample ${type}:`, error);
       setTimeout(() => {
@@ -441,7 +540,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
       return;
     }
 
-    // Use latestTrimValuesRef for playback control to ensure it reflects immediate slider changes
     const getPlaybackStartTime = () => latestTrimValuesRef.current.startTime;
     const getPlaybackEndTime = () => latestTrimValuesRef.current.endTime;
 
@@ -480,7 +578,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
       mediaElement.removeEventListener('play', onPlayHandler);
       mediaElement.removeEventListener('timeupdate', onTimeUpdateHandler);
     };
-  }, [previewUrl, mediaType, mediaDuration, videoRef, audioPreviewRef, startTime]); // startTime included to re-evaluate if it changes
+  }, [previewUrl, mediaType, mediaDuration, videoRef, audioPreviewRef, startTime]);
 
   return (
     <Card>
@@ -513,14 +611,14 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
                     <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                    <p className="text-xs text-muted-foreground">Video or Audio files</p>
+                    <p className="text-xs text-muted-foreground">Video (max {MAX_VIDEO_DURATION_SECONDS / 60} min) or Audio (max {MAX_AUDIO_DURATION_SECONDS / 60} min)</p>
                   </div>
                   <Input id="media-upload" type="file" className="hidden" onChange={handleFileUpload} accept="video/*,audio/*" disabled={isRecording} />
                 </label>
               </div>
             </div>
             <div className="md:col-span-3 pt-2 border-t">
-                 <p className="text-sm text-muted-foreground mb-2 text-center">Or, quickly load a sample to test trimming:</p>
+                 <p className="text-sm text-muted-foreground mb-2 text-center">Or, quickly load a sample to test trimming (video sample exceeds 2 min limit):</p>
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <Button onClick={() => handleLoadSampleMedia('video')} variant="secondary" size="sm" disabled={isLoadingSample}>
                         {isLoadingSample && sampleLoadingType === 'video' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}
@@ -570,11 +668,11 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
                 </div>
                 <Slider
                   disabled={!mediaDuration || mediaDuration === 0}
-                  value={[startTime, endTime]} // Slider visually reflects state
+                  value={[startTime, endTime]} 
                   onValueChange={(newValues) => {
-                    setStartTime(newValues[0]); // Update state for visual feedback
-                    setEndTime(newValues[1]);   // Update state for visual feedback
-                    latestTrimValuesRef.current = { startTime: newValues[0], endTime: newValues[1] }; // Update ref immediately
+                    setStartTime(newValues[0]); 
+                    setEndTime(newValues[1]);   
+                    latestTrimValuesRef.current = { startTime: newValues[0], endTime: newValues[1] }; 
                   }}
                   min={0}
                   max={mediaDuration}
@@ -598,11 +696,10 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
             </div>
 
             <div className="mt-6 pt-4 border-t">
-              <p className="text-sm text-muted-foreground mb-2 text-center">Or, load a different sample to test trimming:</p>
+              <p className="text-sm text-muted-foreground mb-2 text-center">Or, load a different sample to test trimming (video sample exceeds 2 min limit):</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Button
                   onClick={() => {
-                    handleDiscardMedia(false);
                     handleLoadSampleMedia('video');
                   }}
                   variant="secondary"
@@ -614,7 +711,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
                 </Button>
                 <Button
                   onClick={() => {
-                    handleDiscardMedia(false);
                     handleLoadSampleMedia('audio');
                   }}
                   variant="secondary"
@@ -633,3 +729,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     </Card>
   );
 }
+
+
+    
