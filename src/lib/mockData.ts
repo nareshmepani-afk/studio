@@ -21,7 +21,8 @@ export const mockMemories: Memory[] = [
         filename: 'mountain_trip.mp4',
         startTime: 5, // Start at 5 seconds
         endTime: 15,   // End at 15 seconds
-        duration: 596 // Actual duration of BigBuckBunny is ~596s
+        duration: 596, // Actual duration of BigBuckBunny is ~596s
+        size: 5 * 1024 * 1024, // Approx 5MB for the sample segment
     }],
     imageUrl: 'https://placehold.co/600x400.png', // Fallback or cover image
     isLegacy: true, // Marked for Legacy Chest
@@ -41,7 +42,8 @@ export const mockMemories: Memory[] = [
         type: 'audio',
         url: audioPlaceholderUrl,
         filename: 'family_reunion.mp3',
-        duration: 2 // Actual duration of t-rex-roar is ~2s
+        duration: 2, // Actual duration of t-rex-roar is ~2s
+        size: 45 * 1024, // Approx 45KB
     }],
     imageUrl: 'https://placehold.co/600x400.png',
     isLegacy: false,
@@ -60,7 +62,8 @@ export const mockMemories: Memory[] = [
         type: 'video',
         url: videoPlaceholderUrl, // Using same video for variety
         filename: 'project_alpha.mp4',
-        duration: 596
+        duration: 596,
+        size: 5 * 1024 * 1024, // Approx 5MB for the sample segment
         // No startTime or endTime, so should play full
     }],
     imageUrl: 'https://placehold.co/600x400.png',

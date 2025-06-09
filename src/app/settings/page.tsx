@@ -12,8 +12,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import type { User } from '@/types';
-import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2 } from 'lucide-react';
+import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, AlertTriangle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress"; // Import Progress
 import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
 import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
@@ -36,7 +37,9 @@ export default function SettingsPage() {
     checkAndUpdatePassStatus,
     passPriceDetails,
     fetchPassPrice,
-    isFetchingPassPrice
+    isFetchingPassPrice,
+    storageQuotaBytes, // Added
+    calculateAndUpdateStorageUsage // Added
   } = useAuth();
   const router = useRouter(); 
   const [name, setName] = useState('');
@@ -61,7 +64,10 @@ export default function SettingsPage() {
      if (user && (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'paid_pass_active')) {
       fetchPassPrice();
     }
-  }, [checkAndUpdatePassStatus, user, fetchPassPrice]);
+    if (user?.id) {
+      calculateAndUpdateStorageUsage(user.id); // Recalculate storage on page load
+    }
+  }, [checkAndUpdatePassStatus, user, fetchPassPrice, calculateAndUpdateStorageUsage]);
 
   const daysInSelectedDobMonth = useMemo(() => {
     if (dobYear && dobMonth) {
@@ -169,12 +175,13 @@ export default function SettingsPage() {
       freePassActivatedDate: user.freePassActivatedDate,
       paidPassExpiryDate: user.paidPassExpiryDate,
       viewedSharedMemoryIds: user.viewedSharedMemoryIds || [],
+      storageUsedBytes: user.storageUsedBytes, // Preserve existing storage used
     };
 
     await new Promise(resolve => setTimeout(resolve, 1000)); 
 
     localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser));
-    login(updatedUser.email); 
+    login(updatedUser.email); // login will also trigger storage recalculation in AuthContext
 
     setIsSubmitting(false);
     toast({
@@ -218,7 +225,7 @@ export default function SettingsPage() {
   
   const isEffectivelyEmptyOrPlaceholderAvatar = (url?: string): boolean => {
     if (!url || url.trim() === '') return true;
-    if (url.startsWith('blob:')) return true; // Treat blob as temporary/placeholder for this check
+    if (url.startsWith('blob:')) return true; 
     if (url.startsWith('https://avatar.vercel.sh/')) return true;
     return false;
   };
@@ -228,10 +235,10 @@ export default function SettingsPage() {
 
   if (avatarPreviewUrl) {
     imageSrcForDisplay = avatarPreviewUrl;
-    showIconAsFallback = false; // We are attempting to show a preview
+    showIconAsFallback = false; 
   } else if (user.avatarUrl && !isEffectivelyEmptyOrPlaceholderAvatar(user.avatarUrl)) {
     imageSrcForDisplay = user.avatarUrl;
-    showIconAsFallback = false; // We are attempting to show a persisted custom avatar
+    showIconAsFallback = false; 
   }
 
 
@@ -312,6 +319,20 @@ export default function SettingsPage() {
         </div>
     );
   };
+
+  const formatBytes = (bytes: number, decimals = 2) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  };
+
+  const storageUsed = user.storageUsedBytes || 0;
+  const storagePercentage = storageQuotaBytes > 0 ? (storageUsed / storageQuotaBytes) * 100 : 0;
+  const isQuotaExceeded = storageUsed > storageQuotaBytes;
+
 
   return (
     <AuthenticatedPageWrapper>
@@ -442,6 +463,33 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-headline text-xl flex items-center">
+                  <HardDrive className="mr-2 h-5 w-5 text-primary" /> Storage Usage (Host Mode)
+                </CardTitle>
+                <CardDescription>Your estimated media storage usage for recorded memories.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Progress value={storagePercentage} className="w-full" />
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>{formatBytes(storageUsed)} used</span>
+                  <span>{formatBytes(storageQuotaBytes)} quota</span>
+                </div>
+                {isQuotaExceeded && (
+                  <div className="text-sm text-destructive flex items-center">
+                    <AlertTriangle className="mr-1.5 h-4 w-4" />
+                    You have exceeded your storage quota. Please manage your media or upgrade (mock).
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  This is an estimated usage. Actual storage may vary. Free tier offers {formatBytes(storageQuotaBytes)}.
+                </p>
+                {/* Mock upgrade button */}
+                <Button variant="outline" size="sm" disabled className="mt-2">Upgrade Storage (Mock)</Button>
+              </CardContent>
+            </Card>
+
 
             <CardFooter className="flex justify-end p-0 pt-4">
               <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
@@ -454,4 +502,3 @@ export default function SettingsPage() {
     </AuthenticatedPageWrapper>
   );
 }
-

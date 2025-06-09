@@ -14,6 +14,7 @@ export interface User {
   freePassActivatedDate?: string; // ISO string - when the 6-month free pass was first activated
   paidPassExpiryDate?: string; // ISO string - when the current 31-day paid pass expires
   viewedSharedMemoryIds?: string[]; // IDs of shared memories viewed by this user when in guest mode
+  storageUsedBytes?: number; // Estimated storage used by the host
 }
 
 export type UserMode = 'host' | 'guest';
@@ -26,6 +27,7 @@ export interface MediaAttachment {
   startTime?: number; // Optional: start time in seconds for pseudo-trim
   endTime?: number;   // Optional: end time in seconds for pseudo-trim
   duration?: number;  // Optional: total duration of the media in seconds
+  size?: number; // Optional: size of the media file in bytes
 }
 
 export const emotionTagsList = [
@@ -73,3 +75,6 @@ export interface PromptGroup {
   }; // e.g., 'Part I: Roots and Foundations'
   prompts: Prompt[];
 }
+
+// Storage Quota
+export const FREE_TIER_STORAGE_QUOTA_BYTES = 10 * 1024 * 1024; // 10 MB for testing

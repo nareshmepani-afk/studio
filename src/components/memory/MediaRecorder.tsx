@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, Video, StopCircle, UploadCloud, RotateCcw, CheckCircle, AlertTriangle, Film, Waves, Loader2 } from 'lucide-react';
+import { Mic, Video, StopCircle, UploadCloud, RotateCcw, CheckCircle, AlertTriangle, Film, Waves, Loader2, ShieldAlert } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
@@ -11,11 +11,12 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatSecondsToTime } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth'; // For storage quota
 
 interface MediaCaptureControlProps {
-  onMediaReady: (mediaData: { file: File; type: 'video' | 'audio'; previewUrl: string; startTime?: number; endTime?: number, duration: number }) => void;
+  onMediaReady: (mediaData: { file: File; type: 'video' | 'audio'; previewUrl: string; startTime?: number; endTime?: number, duration: number, size: number }) => void;
   onDiscard: () => void;
-  initialMedia?: { type: 'video' | 'audio'; previewUrl: string; startTime?: number; endTime?: number, duration: number };
+  initialMedia?: { type: 'video' | 'audio'; previewUrl: string; startTime?: number; endTime?: number, duration: number, size: number };
 }
 
 const SAMPLE_VIDEO_URL = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
@@ -26,6 +27,7 @@ const MAX_AUDIO_DURATION_SECONDS = 300; // 5 minutes
 
 
 export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: MediaCaptureControlProps) {
+  const { user, storageQuotaBytes } = useAuth(); // Get user and quota
   const [isRecording, setIsRecording] = useState(false);
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(initialMedia?.type || null);
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
@@ -41,6 +43,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   const [startTime, setStartTime] = useState<number>(initialMedia?.startTime || 0);
   const [endTime, setEndTime] = useState<number>(initialMedia?.endTime || initialMedia?.duration || 0);
   const [mediaDuration, setMediaDuration] = useState<number>(initialMedia?.duration || 0);
+  const [mediaSize, setMediaSize] = useState<number>(initialMedia?.size || 0); // Added mediaSize
 
   const latestTrimValuesRef = useRef({ startTime: initialMedia?.startTime || 0, endTime: initialMedia?.endTime || initialMedia?.duration || 0 });
 
@@ -99,6 +102,23 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     }
   }, []);
 
+  const checkStorageQuota = (fileSize: number): boolean => {
+    if (user && user.storageUsedBytes !== undefined && (user.storageUsedBytes + fileSize > storageQuotaBytes)) {
+      setTimeout(() => {
+        toast({
+          variant: 'destructive',
+          title: 'Storage Quota Exceeded',
+          description: `This media file (${(fileSize / (1024*1024)).toFixed(2)} MB) would exceed your storage quota of ${(storageQuotaBytes / (1024*1024)).toFixed(0)} MB.`,
+          duration: 7000,
+          icon: <ShieldAlert className="h-5 w-5" />
+        });
+      }, 0);
+      return false;
+    }
+    return true;
+  };
+
+
   const handleStartRecording = async (type: 'video' | 'audio') => {
     if (isRecording) return;
 
@@ -111,6 +131,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     setStartTime(0);
     setEndTime(0);
     setMediaDuration(0);
+    setMediaSize(0);
     latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
     recordedChunks.current = [];
 
@@ -150,6 +171,15 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         const file = new File([blob], `recording.${type === 'video' ? 'webm' : 'ogg'}`, { type: mime });
         const url = URL.createObjectURL(blob);
 
+        if (!checkStorageQuota(file.size)) {
+          URL.revokeObjectURL(url);
+          cleanupStream(currentStream);
+          setStream(null);
+          setIsRecording(false);
+          recordedChunks.current = [];
+          return;
+        }
+
         const tempMediaElement = document.createElement(type);
         tempMediaElement.src = url;
         tempMediaElement.onloadedmetadata = () => {
@@ -185,6 +215,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
           setRecordedFile(file);
           setPreviewUrl(url);
           setMediaDuration(newDuration);
+          setMediaSize(file.size);
           setStartTime(0);
           setEndTime(newDuration);
           latestTrimValuesRef.current = { startTime: 0, endTime: newDuration };
@@ -249,6 +280,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         const newEndTime = initialMedia.endTime !== undefined ? initialMedia.endTime : newDuration;
         setMediaDuration(newDuration);
         setEndTime(newEndTime);
+        setMediaSize(initialMedia.size || 0);
         latestTrimValuesRef.current = { startTime: initialMedia.startTime || 0, endTime: newEndTime };
         currentTarget.currentTime = initialMedia.startTime || 0;
      }
@@ -264,7 +296,13 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         }, 0);
         return;
       }
-      handleDiscardMedia(false); // Clear any existing media before processing new file
+
+      if (!checkStorageQuota(file.size)) {
+        event.target.value = ''; // Reset file input
+        return;
+      }
+
+      handleDiscardMedia(false); 
 
       const url = URL.createObjectURL(file);
       const tempMediaElement = document.createElement(fileType);
@@ -293,7 +331,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
             });
           }, 0);
           URL.revokeObjectURL(url);
-          event.target.value = ''; // Reset file input
+          event.target.value = ''; 
           return;
         }
 
@@ -301,6 +339,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         setRecordedFile(file);
         setPreviewUrl(url);
         setMediaDuration(newDuration);
+        setMediaSize(file.size);
         setStartTime(0);
         setEndTime(newDuration);
         latestTrimValuesRef.current = { startTime: 0, endTime: newDuration };
@@ -310,7 +349,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
       };
       tempMediaElement.onerror = () => {
           URL.revokeObjectURL(url);
-          event.target.value = ''; // Reset file input
+          event.target.value = ''; 
           setTimeout(() => {
             toast({ title: "Error Loading File", description: "Could not load metadata for the selected file.", variant: "destructive" });
           },0);
@@ -333,6 +372,13 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
       const file = new File([blob], filename, { type: mimeType });
       const preview = URL.createObjectURL(blob);
 
+      if (!checkStorageQuota(file.size)) {
+        URL.revokeObjectURL(preview);
+        setIsLoadingSample(false);
+        setSampleLoadingType(null);
+        return;
+      }
+
       const tempMediaElement = document.createElement(type);
       tempMediaElement.src = preview;
 
@@ -343,6 +389,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         setRecordedFile(file);
         setPreviewUrl(preview);
         setMediaDuration(actualDuration);
+        setMediaSize(file.size);
         setStartTime(0);
         latestTrimValuesRef.current = { startTime: 0, endTime: actualDuration };
 
@@ -452,7 +499,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         toastDescription = `Media will be attached, trimmed from ${formatSecondsToTime(currentStartTime)} to ${formatSecondsToTime(currentEndTime)}.`;
       }
 
-      onMediaReady({ file: recordedFile, type: mediaType, previewUrl, startTime: currentStartTime, endTime: currentEndTime, duration: mediaDuration });
+      onMediaReady({ file: recordedFile, type: mediaType, previewUrl, startTime: currentStartTime, endTime: currentEndTime, duration: mediaDuration, size: mediaSize });
       setTimeout(() => {
         toast({ title: "Media Selected", description: toastDescription, icon: <CheckCircle className="h-4 w-4" /> });
       }, 0);
@@ -467,7 +514,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
         toastDescription = "Existing media will be used in full.";
       }
 
-      onMediaReady({ file: placeholderFile, type: mediaType, previewUrl, startTime: currentStartTime, endTime: currentEndTime, duration: mediaDuration });
+      onMediaReady({ file: placeholderFile, type: mediaType, previewUrl, startTime: currentStartTime, endTime: currentEndTime, duration: mediaDuration, size: mediaSize });
       setTimeout(() => { toast({ title: "Media Updated", description: toastDescription, icon: <CheckCircle className="h-4 w-4" /> }); }, 0);
 
 
@@ -499,11 +546,13 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     const initialStartTimeValue = initialMedia?.startTime || 0;
     const initialDurationValue = initialMedia?.duration || 0;
     const initialEndTimeValue = initialMedia?.endTime !== undefined ? initialMedia.endTime : initialDurationValue;
+    const initialSizeValue = initialMedia?.size || 0;
 
     setStartTime(initialStartTimeValue);
     setEndTime(initialEndTimeValue);
     latestTrimValuesRef.current = { startTime: initialStartTimeValue, endTime: initialEndTimeValue };
     setMediaDuration(initialDurationValue);
+    setMediaSize(initialSizeValue);
 
     recordedChunks.current = [];
     onDiscard();
@@ -521,11 +570,13 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     const initialStartTimeValue = initialMedia?.startTime || 0;
     const initialDurationValue = initialMedia?.duration || 0;
     const initialEndTimeValue = initialMedia?.endTime !== undefined ? initialMedia.endTime : initialDurationValue;
+    const initialSizeValue = initialMedia?.size || 0;
 
     setStartTime(initialStartTimeValue);
     setEndTime(initialEndTimeValue);
     latestTrimValuesRef.current = { startTime: initialStartTimeValue, endTime: initialEndTimeValue };
     setMediaDuration(initialDurationValue);
+    setMediaSize(initialSizeValue);
 
     setIsRecording(false);
     setRecordedFile(null);
@@ -754,5 +805,3 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     </Card>
   );
 }
-
-

@@ -1,7 +1,8 @@
 
 "use client";
 
-import type { User, UserMode } from '@/types';
+import type { User, UserMode, Memory as MemoryType } from '@/types'; // Added MemoryType
+import { FREE_TIER_STORAGE_QUOTA_BYTES } from '@/types'; // Import quota
 import React, { createContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
@@ -31,6 +32,8 @@ interface AuthContextType {
   passPriceDetails: GetPassPriceOutput | null;
   fetchPassPrice: () => Promise<void>;
   isFetchingPassPrice: boolean;
+  storageQuotaBytes: number;
+  calculateAndUpdateStorageUsage: (userId: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,6 +58,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else {
       localStorage.removeItem('memoryWeaverUser');
     }
+  }, []);
+
+  const calculateAndUpdateStorageUsage = useCallback(async (userId: string) => {
+    const storedMemoriesJson = localStorage.getItem('mockMemories');
+    let userMemories: MemoryType[] = [];
+    if (storedMemoriesJson) {
+      try {
+        userMemories = JSON.parse(storedMemoriesJson).filter((mem: MemoryType) => mem.userId === userId);
+      } catch (e) {
+        console.error("Error parsing memories for storage calculation:", e);
+        userMemories = mockMemories.filter(mem => mem.userId === userId); // Fallback to initial mock
+      }
+    } else {
+      userMemories = mockMemories.filter(mem => mem.userId === userId); // Fallback to initial mock
+    }
+
+    const usedBytes = userMemories.reduce((acc, memory) => {
+      if (memory.mediaAttachments) {
+        memory.mediaAttachments.forEach(attachment => {
+          if (attachment.size && typeof attachment.size === 'number') {
+            acc += attachment.size;
+          }
+        });
+      }
+      return acc;
+    }, 0);
+
+    setUser(prevUser => {
+      if (prevUser && prevUser.id === userId) {
+        const updatedUser = { ...prevUser, storageUsedBytes: usedBytes };
+        localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser)); // Also update storage
+        return updatedUser;
+      }
+      return prevUser;
+    });
   }, []);
 
   const checkIfGuestHasUnviewedMemories = useCallback(() => {
@@ -129,16 +167,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           freePassActivatedDate: storedUser.freePassActivatedDate,
           paidPassExpiryDate: storedUser.paidPassExpiryDate,
           viewedSharedMemoryIds: storedUser.viewedSharedMemoryIds || [],
+          storageUsedBytes: storedUser.storageUsedBytes || 0,
         };
         setUser(hydratedUser);
         setIsAuthenticated(true);
+        // Initial calculation of storage after loading user
+        if (hydratedUser.id) {
+           calculateAndUpdateStorageUsage(hydratedUser.id);
+        }
       } catch (e) {
         console.error("Failed to parse user from localStorage", e);
         localStorage.removeItem('memoryWeaverUser');
       }
     }
     setLoading(false);
-  }, []);
+  }, [calculateAndUpdateStorageUsage]);
 
   useEffect(() => {
     if (!loading && user) {
@@ -157,16 +200,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [loading, user, checkAndUpdatePassStatus, userMode, checkIfGuestHasUnviewedMemories, fetchPassPrice, isFetchingPassPrice, passPriceDetails]);
   
-  // Effect to reset isLoggingOut after navigation to '/' completes
   useEffect(() => {
     if (isLoggingOut && pathname === '/') {
       setIsLoggingOut(false);
     }
   }, [isLoggingOut, pathname]);
 
-  // Main routing effect
   useEffect(() => {
-    if (loading || isLoggingOut) return; // Guard against routing during initial load or active logout
+    if (loading || isLoggingOut) return; 
 
     const publicPaths = ['/', '/login', '/register'];
     const defaultAuthenticatedHostPath = '/prompts';
@@ -178,14 +219,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         router.push(targetPath);
       }
     } else {
-      // If not authenticated AND not on a public path, redirect to login
       if (!publicPaths.includes(pathname)) {
         router.push('/login');
       }
     }
-  }, [isAuthenticated, loading, pathname, router, userMode, isLoggingOut]); // Added isLoggingOut
+  }, [isAuthenticated, loading, pathname, router, userMode, isLoggingOut]);
 
-  const login = (email: string) => {
+  const login = async (email: string) => {
     const storedUserJson = localStorage.getItem('memoryWeaverUser');
     let currentUser: User | null = null;
     if (storedUserJson) {
@@ -206,17 +246,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             freePassActivatedDate: storedUser.freePassActivatedDate,
             paidPassExpiryDate: storedUser.paidPassExpiryDate,
             viewedSharedMemoryIds: storedUser.viewedSharedMemoryIds || [],
+            storageUsedBytes: storedUser.storageUsedBytes || 0,
           };
         }
       } catch (e) { console.error(e); }
     }
     if (!currentUser) {
-      currentUser = { id: Date.now().toString(), email, name: email.split('@')[0], sharedAccessStatus: 'no_pass_initiated', viewedSharedMemoryIds: [] };
+      currentUser = { 
+        id: Date.now().toString(), 
+        email, 
+        name: email.split('@')[0], 
+        sharedAccessStatus: 'no_pass_initiated', 
+        viewedSharedMemoryIds: [],
+        storageUsedBytes: 0,
+      };
     }
     updateUserInStateAndStorage(currentUser);
     setIsAuthenticated(true);
     setUserModeState('host');
-    setIsLoggingOut(false); // Ensure isLoggingOut is false on new login
+    setIsLoggingOut(false);
+    if (currentUser.id) {
+      await calculateAndUpdateStorageUsage(currentUser.id);
+    }
   };
 
   const logout = useCallback(() => {
@@ -274,16 +325,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       updateUserInStateAndStorage(updatedUser);
       
       if (!passPriceDetails && !isFetchingPassPrice) {
-        await fetchPassPrice(); // Ensure price details are fetched if not already
+        await fetchPassPrice(); 
       }
       
-      // Use a local const for priceDetails in this scope to ensure it's the latest one
       const currentPassPriceDetails = passPriceDetails || await (async () => {
           const price = await getPassPriceAction({ city: user?.city || 'London', country: user?.countryOfBirth || 'UK' });
           setPassPriceDetails(price);
           return price;
       })();
-
 
       let priceToDisplay = "for your pass";
       if (currentPassPriceDetails) {
@@ -319,11 +368,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       activateFreePass, purchasePaidPass, checkAndUpdatePassStatus,
       hasNewSharedMemories, setHasNewSharedMemories: setHasNewSharedMemoriesState,
       markSharedMemoryAsViewed, checkIfGuestHasUnviewedMemories,
-      passPriceDetails, fetchPassPrice, isFetchingPassPrice
+      passPriceDetails, fetchPassPrice, isFetchingPassPrice,
+      storageQuotaBytes: FREE_TIER_STORAGE_QUOTA_BYTES,
+      calculateAndUpdateStorageUsage
     }}>
       {children}
     </AuthContext.Provider>
   );
 };
-
-    

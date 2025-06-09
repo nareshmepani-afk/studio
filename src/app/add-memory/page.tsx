@@ -14,7 +14,7 @@ import { Loader2 } from 'lucide-react';
 export default function AddMemoryPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user, calculateAndUpdateStorageUsage } = useAuth(); // Added calculateAndUpdateStorageUsage
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [memoryToEdit, setMemoryToEdit] = useState<Memory | undefined>(undefined);
   const [isLoadingMemory, setIsLoadingMemory] = useState(true);
@@ -67,11 +67,23 @@ export default function AddMemoryPage() {
       };
     }
     
+    // Ensure mediaAttachments has size if new file is uploaded or if mediaData has it
     if (mediaFileToUpload && finalMemoryData.mediaAttachments && finalMemoryData.mediaAttachments.length > 0) {
-      console.log('Media file to upload:', mediaFileToUpload.name);
+      console.log('Media file to upload:', mediaFileToUpload.name, 'Size:', mediaFileToUpload.size);
       finalMemoryData.mediaAttachments[0].url = `mock_uploaded_url/${mediaFileToUpload.name}`; 
       finalMemoryData.mediaAttachments[0].filename = mediaFileToUpload.name;
+      // The size should already be on memoryData.mediaAttachments[0] from MemoryForm
+      // If not, we could add it from mediaFileToUpload.size here, but MemoryForm should handle it
+      if (!finalMemoryData.mediaAttachments[0].size) {
+        finalMemoryData.mediaAttachments[0].size = mediaFileToUpload.size;
+      }
+    } else if (memoryData.mediaAttachments && memoryData.mediaAttachments.length > 0 && !finalMemoryData.mediaAttachments?.[0]?.size && mediaFileToUpload?.size) {
+       // Fallback if size wasn't set correctly but we have a file
+       if (finalMemoryData.mediaAttachments && finalMemoryData.mediaAttachments.length > 0) {
+        finalMemoryData.mediaAttachments[0].size = mediaFileToUpload.size;
+       }
     }
+
 
     console.log(editMemoryId ? 'Updated memory data:' : 'New memory data:', finalMemoryData);
 
@@ -98,10 +110,10 @@ export default function AddMemoryPage() {
     const mockIndex = mockMemories.findIndex(m => m.id === finalMemoryData.id);
     if (mockIndex !== -1) mockMemories[mockIndex] = finalMemoryData; else mockMemories.push(finalMemoryData);
 
+    await calculateAndUpdateStorageUsage(user.id); // Recalculate storage usage
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // User profile update for cues logic removed as cues are not part of this form anymore
 
     setIsSubmitting(false);
     toast({
