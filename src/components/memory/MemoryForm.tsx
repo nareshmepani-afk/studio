@@ -25,6 +25,7 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
+import { formatSecondsToTime } from '@/lib/utils';
 
 
 interface MemoryFormProps {
@@ -88,6 +89,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
+  
   const justLandedOnCuesSlideRef = useRef(false);
   const justLandedTimeoutIdRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -207,7 +209,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     return Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1);
   }, [daysInSelectedMonth]);
 
-
 const performVisualScroll = useCallback((slideIndex: number) => {
     if (visualScrollTimerRef.current) {
       clearTimeout(visualScrollTimerRef.current);
@@ -238,6 +239,7 @@ const performVisualScroll = useCallback((slideIndex: number) => {
   useEffect(() => {
     currentSlideRef.current = currentSlide;
   }, [currentSlide]);
+
 
   // Commander useEffect: Reacts to `currentSlide` state changes to command carousel and visual scroll
   useEffect(() => {
@@ -275,7 +277,7 @@ const performVisualScroll = useCallback((slideIndex: number) => {
     if (initialSnap !== currentSlideRef.current) { 
        setCurrentSlide(initialSnap);
     } else {
-      performVisualScroll(initialSnap);
+      performVisualScroll(initialSnap); // Perform initial scroll if already on the correct slide
     }
 
     carouselApi.on("select", handleApiEvent);
@@ -334,7 +336,7 @@ const performVisualScroll = useCallback((slideIndex: number) => {
     latestSelectedMediaDataRef.current = newCurrentMediaData;
     setCurrentMedia(newCurrentMediaData);
   }, []);
-
+  
   useEffect(() => {
     if (isProcessingMedia) {
         const refData = latestSelectedMediaDataRef.current;
@@ -722,9 +724,9 @@ const performVisualScroll = useCallback((slideIndex: number) => {
                       <p className="text-sm text-muted-foreground">Filename: {currentMedia.file.name}</p>
                       {currentMedia.type === 'video' && (<video ref={videoPreviewRef} src={currentMediaPreviewUrl} controls className="w-full aspect-video rounded-md mt-2 bg-muted" key={currentMediaPreviewUrl} preload="auto"/>)}
                       {currentMedia.type === 'audio' && (<audio ref={audioPreviewRef} src={currentMediaPreviewUrl} controls className="w-full mt-2" key={currentMediaPreviewUrl} preload="auto"/>)}
-                      <p className="text-sm text-muted-foreground mt-1">Duration: {typeof currentMedia.duration === 'number' ? currentMedia.duration.toFixed(2) : 'N/A'}s</p>
-                      {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {currentMedia.startTime.toFixed(2)}s</p>}
-                      {currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime && <p className="text-sm text-muted-foreground">Trim End: {currentMedia.endTime.toFixed(2)}s</p>}
+                      <p className="text-sm text-muted-foreground mt-1">Duration: {formatSecondsToTime(currentMedia.duration)}</p>
+                      {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {formatSecondsToTime(currentMedia.startTime)}</p>}
+                      {(currentMedia.endTime !== undefined && currentMedia.duration !== currentMedia.endTime) && <p className="text-sm text-muted-foreground">Trim End: {formatSecondsToTime(currentMedia.endTime)}</p>}
                       <Button variant="outline" type="button" onClick={handleMediaDiscardInForm} className="w-full mt-2">Change Media or Re-trim</Button>
                     </div>
                   ) : ( <MediaCaptureControl onMediaReady={handleMediaReady} onDiscard={handleMediaDiscardFromChild} initialMedia={mediaToInitializeRecorder || initialMediaForRecorderProp} /> )}
@@ -807,4 +809,3 @@ const performVisualScroll = useCallback((slideIndex: number) => {
     </form>
   );
 }
-

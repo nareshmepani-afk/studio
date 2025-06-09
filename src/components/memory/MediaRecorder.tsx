@@ -10,6 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { formatSecondsToTime } from '@/lib/utils'; // Import from utils
 
 interface MediaCaptureControlProps {
   onMediaReady: (mediaData: { file: File; type: 'video' | 'audio'; previewUrl: string; startTime?: number; endTime?: number, duration: number }) => void;
@@ -22,20 +23,6 @@ const SAMPLE_VIDEO_DURATION = 596.48;
 const SAMPLE_AUDIO_URL = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3";
 const SAMPLE_AUDIO_DURATION = 1.88;
 
-function formatSecondsToTime(timeInSeconds: number | undefined): string {
-  if (timeInSeconds === undefined || isNaN(timeInSeconds) || timeInSeconds < 0) return "0.0";
-
-  const totalSecs = Number(timeInSeconds.toFixed(1));
-
-  if (totalSecs < 60) {
-    return totalSecs.toFixed(1);
-  } else {
-    const minutes = Math.floor(totalSecs / 60);
-    const seconds = totalSecs % 60;
-    const formattedSeconds = seconds.toFixed(1);
-    return `${minutes}:${formattedSeconds.padStart(4, '0')}`;
-  }
-}
 
 export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: MediaCaptureControlProps) {
   const [isRecording, setIsRecording] = useState(false);
@@ -595,7 +582,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>0:00.0</span>
+                  <span>{formatSecondsToTime(0)}</span>
                   <span>{formatSecondsToTime(mediaDuration)}</span>
                 </div>
               </div>
@@ -646,4 +633,3 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     </Card>
   );
 }
-
