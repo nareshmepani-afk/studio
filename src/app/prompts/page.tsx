@@ -6,7 +6,7 @@ import { PromptCard } from '@/components/prompts/PromptCard';
 import { mockPromptGroups, mockMemories } from '@/lib/mockData';
 import type { Prompt, PromptGroup, Memory } from '@/types';
 import { Button } from '@/components/ui/button';
-import { BookOpen, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star } from 'lucide-react';
+import { BookOpenText, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star } from 'lucide-react'; // Changed from BookOpen
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
@@ -86,7 +86,7 @@ export default function LifeJourneyPage() {
 
   const handleGenerateCustomChapterIdeas = async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {
-      toast({ title: "Profile Info Needed", variant: "destructive" }); return;
+      toast({ title: "Profile Info Needed", description: "Please provide some information about yourself or your interests in the text area.", variant: "destructive" }); return;
     }
     if (!canAccessFullJourney) {
         toast({ title: "Host Pass Required", description: "Activate or purchase a Host Pass to use AI brainstorming.", variant: "destructive" });
@@ -122,13 +122,13 @@ export default function LifeJourneyPage() {
   let hostPassButtonText = "Activate Free Host Pass";
   let hostPassPriceString = "";
   if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
-    hostPassButtonText = "Purchase Host Pass";
+    hostPassButtonText = "Purchase Host Pass (£4.99/month - Mock)"; // Hardcoded price for simplicity
     if (isFetchingHostPassPrice) hostPassButtonText = "Fetching price...";
     else if (hostPassPriceDetails) {
         hostPassPriceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
-        hostPassButtonText += hostPassPriceString;
+        hostPassButtonText = `Purchase Host Pass ${hostPassPriceString}`;
     } else {
-        hostPassButtonText += " (Price N/A)";
+         hostPassButtonText = `Purchase Host Pass (£4.99/month - Mock)`;
     }
   }
 
@@ -140,7 +140,7 @@ export default function LifeJourneyPage() {
     <AuthenticatedPageWrapper>
       <div className="container mx-auto py-8 px-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-          <div className="flex items-center mb-4 md:mb-0"><BookOpen className="h-10 w-10 text-primary mr-3" /><h1 className="font-headline text-4xl">My Life Journey</h1></div>
+          <div className="flex items-center mb-4 md:mb-0"><BookOpenText className="h-10 w-10 text-primary mr-3" /> {/* Changed Icon */}<h1 className="font-headline text-4xl">My Life Journey</h1></div>
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
               <Button onClick={() => setShowCustomChapterDialog(true)} variant="secondary" className="w-full sm:w-auto" disabled={!canAccessFullJourney}><Sparkles className="mr-2 h-4 w-4" /> Brainstorm Custom Chapter</Button>
               <div className="w-full sm:w-auto"><Label htmlFor="prompt-language" className="sr-only">Language</Label><Select value={currentLanguage} onValueChange={(value: 'en' | 'gu') => setCurrentLanguage(value)}><SelectTrigger id="prompt-language" className="w-full"><Languages className="mr-2 h-4 w-4" /><SelectValue placeholder="Language" /></SelectTrigger><SelectContent><SelectItem value="en">English</SelectItem><SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem></SelectContent></Select></div>
@@ -172,9 +172,9 @@ export default function LifeJourneyPage() {
         )}
 
         {availablePromptGroups.length === 0 && canAccessFullJourney ? ( // Case where pass is active but no prompts loaded (shouldn't happen with mockData)
-          <div className="text-center py-12"><BookOpen className="mx-auto h-16 w-16 text-muted-foreground mb-4" /><h2 className="font-headline text-2xl mb-2">No Chapters Found</h2><p className="text-muted-foreground">Try brainstorming a custom chapter!</p></div>
+          <div className="text-center py-12"><BookOpenText className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> {/* Changed Icon */}<h2 className="font-headline text-2xl mb-2">No Chapters Found</h2><p className="text-muted-foreground">Try brainstorming a custom chapter!</p></div>
         ) : availablePromptGroups.length === 0 && !canAccessFullJourney ? ( // Case where pass is inactive and no teaser chapters shown
-            <div className="text-center py-12"><BookOpen className="mx-auto h-16 w-16 text-muted-foreground mb-4" /><h2 className="font-headline text-2xl mb-2">Activate Your Host Pass</h2><p className="text-muted-foreground">Activate or purchase a host pass to begin your Life Journey.</p></div>
+            <div className="text-center py-12"><BookOpenText className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> {/* Changed Icon */}<h2 className="font-headline text-2xl mb-2">Activate Your Host Pass</h2><p className="text-muted-foreground">Activate or purchase a host pass to begin your Life Journey.</p></div>
         ) : (
           <div className="space-y-10">
             {availablePromptGroups.map((group) => (
@@ -217,3 +217,4 @@ export default function LifeJourneyPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
