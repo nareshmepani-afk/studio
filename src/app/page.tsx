@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Navbar } from '@/components/layout/Navbar';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Sparkles, Film, Users, Lock, BookHeart, ArrowRight } from 'lucide-react';
+import { Sparkles, Film, Users, Lock, BookOpen, ArrowRight } from 'lucide-react'; // Changed BookHeart to BookOpen
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -77,7 +77,7 @@ export default function LandingPage() {
         {/* Hero Section */}
         <section className="py-20 md:py-32 text-center bg-transparent">
           <div className="container mx-auto px-4">
-            <BookHeart className="mx-auto h-20 w-20 text-primary mb-6 animate-bounce" />
+            <BookOpen className="mx-auto h-20 w-20 text-primary mb-6 animate-bounce" /> {/* Changed Icon */}
             <h1 className="font-headline text-5xl md:text-7xl font-bold mb-6">
               Memory Weaver
             </h1>
