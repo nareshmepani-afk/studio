@@ -12,8 +12,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import type { User } from '@/types';
-import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types'; // Using standard host quota
-import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, AlertTriangle, Star, Zap } from 'lucide-react';
+import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types'; 
+import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, AlertTriangle, Star, Zap, RotateCcw } from 'lucide-react'; // Added RotateCcw
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
@@ -33,21 +33,19 @@ export default function SettingsPage() {
     user, 
     login, 
     loading: authLoading, 
-    // Guest Pass related
-    activateFreePass: activateFreeGuestPass, 
-    purchasePaidPass: purchasePaidGuestPass, 
+    activateFreeGuestPass, 
+    purchasePaidGuestPass, 
     checkAndUpdateGuestPassStatus,
     guestPassPriceDetails,
     fetchGuestPassPrice,
     isFetchingGuestPassPrice,
-    // Host Pass related - NEW
     activateFreeHostPass,
     purchasePaidHostPass,
     checkAndUpdateHostPassStatus,
     hostPassPriceDetails,
     fetchHostPassPrice,
     isFetchingHostPassPrice,
-    // Storage
+    resetHostPassForTesting, // New function from context
     storageQuotaBytes, 
     calculateAndUpdateStorageUsage,
   } = useAuth();
@@ -71,13 +69,11 @@ export default function SettingsPage() {
   
   useEffect(() => {
     checkAndUpdateGuestPassStatus();
-    checkAndUpdateHostPassStatus(); // Check host pass status
+    checkAndUpdateHostPassStatus(); 
      if (user) {
-        // Fetch guest pass price if relevant
         if (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated') {
             fetchGuestPassPrice();
         }
-        // Fetch host pass price if relevant - NEW
         if (user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired' || user.hostPassStatus === 'no_pass_initiated') {
             fetchHostPassPrice();
         }
@@ -158,7 +154,7 @@ export default function SettingsPage() {
       ...user, id: user.id, name: name, email: email, profileInfo: profileInfo, avatarUrl: finalAvatarUrlToSave, 
       dateOfBirth: finalDateOfBirth, countryOfBirth: countryOfBirth || undefined, city: city || undefined, townArea: townArea || undefined,
       sharedAccessStatus: user.sharedAccessStatus, freePassActivatedDate: user.freePassActivatedDate, paidPassExpiryDate: user.paidPassExpiryDate,
-      hostPassStatus: user.hostPassStatus, freeHostPassActivatedDate: user.freeHostPassActivatedDate, paidHostPassExpiryDate: user.paidHostPassExpiryDate, // Host pass fields
+      hostPassStatus: user.hostPassStatus, freeHostPassActivatedDate: user.freeHostPassActivatedDate, paidHostPassExpiryDate: user.paidHostPassExpiryDate, 
       viewedSharedMemoryIds: user.viewedSharedMemoryIds || [], storageUsedBytes: user.storageUsedBytes,
     };
     await new Promise(resolve => setTimeout(resolve, 1000)); 
@@ -177,7 +173,6 @@ export default function SettingsPage() {
   let imageSrcForDisplay: string | undefined = avatarPreviewUrl || (user.avatarUrl && !isEffectivelyEmptyOrPlaceholderAvatar(user.avatarUrl) ? user.avatarUrl : undefined);
   let showIconAsFallback = !imageSrcForDisplay;
 
-  // Guest Pass Purchase Button
   const renderGuestPurchaseButton = () => {
     let buttonText = "Purchase 31-Day Guest Pass";
     if (isFetchingGuestPassPrice) buttonText = "Fetching price...";
@@ -189,7 +184,6 @@ export default function SettingsPage() {
     return button;
   };
   
-  // Guest Pass Status Info
   const renderGuestPassStatusInfo = () => {
     if (!user) return null;
     let statusText = ""; let actionContent = null;
@@ -203,30 +197,66 @@ export default function SettingsPage() {
     return (<div className="mt-2 space-y-2"><p className="text-sm text-muted-foreground">{statusText}</p>{actionContent}</div>);
   };
 
-  // Host Pass Purchase Button - NEW
   const renderHostPurchaseButton = () => {
     let buttonText = "Purchase 31-Day Host Pass";
     if (isFetchingHostPassPrice) buttonText = "Fetching price...";
     else if (hostPassPriceDetails) buttonText = `Purchase 31-Day Host Pass (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
+    else buttonText = `Purchase 31-Day Host Pass (£12.99 - Mock)`; // Fallback if price not loaded
+
     const button = (<Button onClick={purchasePaidHostPass} variant="default" size="sm" disabled={isFetchingHostPassPrice}>{isFetchingHostPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}{buttonText}</Button>);
+    
     if (hostPassPriceDetails && !isFetchingHostPassPrice && hostPassPriceDetails.justification) {
        return (<TooltipProvider><div className="flex flex-col items-start space-y-1">{button}<Tooltip><TooltipTrigger asChild><span className="text-xs text-muted-foreground flex items-center cursor-default"><Info className="h-3 w-3 mr-1" /> {hostPassPriceDetails.justification}</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{hostPassPriceDetails.justification} (Based on avg coffee: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
     }
     return button;
   };
 
-  // Host Pass Status Info - NEW
   const renderHostPassStatusInfo = () => {
     if (!user) return null;
     let statusText = ""; let actionContent = null;
+    let currentPriceString = "";
+    if (hostPassPriceDetails && !isFetchingHostPassPrice) {
+        currentPriceString = `(${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
+    } else if (isFetchingHostPassPrice) {
+        currentPriceString = "(fetching price...)";
+    } else {
+        currentPriceString = "(£12.99 - Mock)"; // Fallback text
+    }
+
     switch (user.hostPassStatus) {
-        case 'no_pass_initiated': statusText = "Activate your free host pass to begin creating memories and access all features."; actionContent = (<Button onClick={activateFreeHostPass} variant="default" size="sm"><Star className="mr-2 h-4 w-4" /> Activate 6-Month Free Host Pass</Button>); break;
-        case 'free_host_pass_active': const fhpExp = user.freeHostPassActivatedDate ? format(addMonths(parseISO(user.freeHostPassActivatedDate), 6), 'PPP') : 'N/A'; statusText = `Your 6-month free host pass is active until ${fhpExp}. Enjoy full creation features!`; break;
-        case 'paid_host_pass_active': const phpExp = user.paidHostPassExpiryDate ? format(parseISO(user.paidHostPassExpiryDate), 'PPP') : 'N/A'; statusText = `Your paid host pass is active until ${phpExp}.`; actionContent = renderHostPurchaseButton(); break;
-        case 'free_host_pass_expired': case 'paid_host_pass_expired': statusText = "Your host pass has expired. Purchase a pass to continue creating memories."; actionContent = renderHostPurchaseButton(); break;
+        case 'no_pass_initiated': 
+          statusText = "Activate your free host pass to begin creating memories and access all features."; 
+          actionContent = (<Button onClick={activateFreeHostPass} variant="default" size="sm"><Star className="mr-2 h-4 w-4" /> Activate 6-Month Free Host Pass</Button>); 
+          break;
+        case 'free_host_pass_active': 
+          const fhpExp = user.freeHostPassActivatedDate ? format(addMonths(parseISO(user.freeHostPassActivatedDate), 6), 'PPP') : 'N/A'; 
+          statusText = `Your 6-month free host pass is active until ${fhpExp}. Enjoy full creation features!`; 
+          break;
+        case 'paid_host_pass_active': 
+          const phpExp = user.paidHostPassExpiryDate ? format(parseISO(user.paidHostPassExpiryDate), 'PPP') : 'N/A'; 
+          statusText = `Your paid host pass is active until ${phpExp}.`; 
+          actionContent = renderHostPurchaseButton(); 
+          break;
+        case 'free_host_pass_expired': case 'paid_host_pass_expired': 
+          statusText = `Your host pass has expired. Purchase a 31-day pass ${currentPriceString} to continue creating memories.`; 
+          actionContent = renderHostPurchaseButton(); 
+          break;
         default: statusText = "Host pass status unknown.";
     }
-    return (<div className="mt-2 space-y-2"><p className="text-sm text-muted-foreground">{statusText}</p>{actionContent}</div>);
+    return (
+      <div className="mt-2 space-y-2">
+        <p className="text-sm text-muted-foreground">{statusText}</p>
+        {actionContent}
+        <Button 
+          onClick={resetHostPassForTesting} 
+          variant="outline" 
+          size="sm" 
+          className="mt-3 ml-auto block sm:inline-block sm:ml-3 border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        >
+          <RotateCcw className="mr-2 h-4 w-4" /> Reset Host Pass (For Testing)
+        </Button>
+      </div>
+    );
   };
 
   const formatBytes = (bytes: number, decimals = 2) => {
@@ -237,7 +267,7 @@ export default function SettingsPage() {
   const storageUsed = user.storageUsedBytes || 0;
   const currentStorageQuota = (user.hostPassStatus === 'free_host_pass_active' || user.hostPassStatus === 'paid_host_pass_active') ? STANDARD_HOST_STORAGE_QUOTA_BYTES : 0;
   const storagePercentage = currentStorageQuota > 0 ? (storageUsed / currentStorageQuota) * 100 : 0;
-  const isQuotaExceeded = storageUsed > currentStorageQuota && currentStorageQuota > 0; // Exceeded only if quota is positive
+  const isQuotaExceeded = storageUsed > currentStorageQuota && currentStorageQuota > 0; 
 
   return (
     <AuthenticatedPageWrapper>
@@ -294,3 +324,5 @@ export default function SettingsPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    
