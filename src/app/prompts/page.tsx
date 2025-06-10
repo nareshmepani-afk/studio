@@ -140,7 +140,7 @@ export default function LifeJourneyPage() {
     <AuthenticatedPageWrapper>
       <div className="container mx-auto py-8 px-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-          <div className="flex items-center mb-4 md:mb-0"><BookOpenText className="h-10 w-10 text-primary mr-3" /> {/* Changed Icon */}<h1 className="font-headline text-4xl">My Life Journey</h1></div>
+          <div className="flex items-center mb-4 md:mb-0"><BookOpenText className="h-10 w-10 text-primary mr-3" /> <h1 className="font-headline text-4xl">My Life Journey</h1></div>
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
               <Button onClick={() => setShowCustomChapterDialog(true)} variant="secondary" className="w-full sm:w-auto" disabled={!canAccessFullJourney}><Sparkles className="mr-2 h-4 w-4" /> Brainstorm Custom Chapter</Button>
               <div className="w-full sm:w-auto"><Label htmlFor="prompt-language" className="sr-only">Language</Label><Select value={currentLanguage} onValueChange={(value: 'en' | 'gu') => setCurrentLanguage(value)}><SelectTrigger id="prompt-language" className="w-full"><Languages className="mr-2 h-4 w-4" /><SelectValue placeholder="Language" /></SelectTrigger><SelectContent><SelectItem value="en">English</SelectItem><SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem></SelectContent></Select></div>
@@ -155,15 +155,20 @@ export default function LifeJourneyPage() {
 
         {(!canAccessFullJourney && (hostPassStatus === 'no_pass_initiated' || hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired')) && (
           <Alert className="mb-6 bg-primary/10 border-primary/30">
-            <Zap className="h-5 w-5 text-primary" />
+            {hostPassStatus === 'no_pass_initiated' ? <Star className="h-5 w-5 text-primary" /> : <Zap className="h-5 w-5 text-primary" />}
             <AlertTitle className="font-headline text-primary">
-              {hostPassStatus === 'no_pass_initiated' ? "Unlock Your Full Life Journey!" : "Renew Host Pass for Full Access"}
+              {hostPassStatus === 'no_pass_initiated' ? "Host Pass & Features" : "Renew Host Pass for Full Access"}
             </AlertTitle>
             <AlertDescription className="text-primary/80">
               {hostPassStatus === 'no_pass_initiated' 
-                ? "Activate your 6-month free Host Pass to access all chapters, AI brainstorming, and more features."
+                ? (
+                    <>
+                        <p>Manage your access to memory creation tools and features.</p>
+                        <p className="mt-1">Activate your 6-month free Host Pass to access all chapters, AI brainstorming, and more features to begin your Life Journey.</p>
+                    </>
+                  )
                 : "Your Host Pass has expired. Renew to continue accessing all Life Journey chapters and creation tools."}
-              <Button onClick={handleHostPassAction} size="sm" className="mt-2 ml-auto block sm:inline-block sm:ml-3 bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isFetchingHostPassPrice && hostPassStatus !== 'no_pass_initiated'}>
+              <Button onClick={handleHostPassAction} size="sm" className="mt-3 ml-auto block sm:inline-block sm:ml-3 bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isFetchingHostPassPrice && hostPassStatus !== 'no_pass_initiated'}>
                 {isFetchingHostPassPrice && hostPassStatus !== 'no_pass_initiated' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (hostPassStatus === 'no_pass_initiated' ? <Star className="mr-2 h-4 w-4"/> : <Zap className="mr-2 h-4 w-4"/>) }
                 {hostPassButtonText}
               </Button>
@@ -172,9 +177,9 @@ export default function LifeJourneyPage() {
         )}
 
         {availablePromptGroups.length === 0 && canAccessFullJourney ? ( // Case where pass is active but no prompts loaded (shouldn't happen with mockData)
-          <div className="text-center py-12"><BookOpenText className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> {/* Changed Icon */}<h2 className="font-headline text-2xl mb-2">No Chapters Found</h2><p className="text-muted-foreground">Try brainstorming a custom chapter!</p></div>
+          <div className="text-center py-12"><BookOpenText className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> <h2 className="font-headline text-2xl mb-2">No Chapters Found</h2><p className="text-muted-foreground">Try brainstorming a custom chapter!</p></div>
         ) : availablePromptGroups.length === 0 && !canAccessFullJourney ? ( // Case where pass is inactive and no teaser chapters shown
-            <div className="text-center py-12"><BookOpenText className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> {/* Changed Icon */}<h2 className="font-headline text-2xl mb-2">Activate Your Host Pass</h2><p className="text-muted-foreground">Activate or purchase a host pass to begin your Life Journey.</p></div>
+            <div className="text-center py-12"><BookOpenText className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> <h2 className="font-headline text-2xl mb-2">Activate Your Host Pass</h2><p className="text-muted-foreground">Activate or purchase a host pass to begin your Life Journey.</p></div>
         ) : (
           <div className="space-y-10">
             {availablePromptGroups.map((group) => (
