@@ -9,12 +9,19 @@ export interface User {
   countryOfBirth?: string;
   city?: string;
   townArea?: string;
+
+  // Guest Pass fields
   sharedAccessStatus?: 'free_pass_active' | 'paid_pass_active' | 'free_pass_expired' | 'paid_pass_expired' | 'no_pass_initiated';
-  freePassActivatedDate?: string; // ISO string - when the 6-month free pass was first activated
-  paidPassExpiryDate?: string; // ISO string - when the current 31-day paid pass expires
+  freePassActivatedDate?: string; // ISO string - when the 6-month free GUEST pass was first activated
+  paidPassExpiryDate?: string; // ISO string - when the current 31-day paid GUEST pass expires
   viewedSharedMemoryIds?: string[]; // IDs of shared memories viewed by this user when in guest mode
+
+  // Host Pass fields - NEW
+  hostPassStatus?: 'no_pass_initiated' | 'free_host_pass_active' | 'paid_host_pass_active' | 'free_host_pass_expired' | 'paid_host_pass_expired';
+  freeHostPassActivatedDate?: string; // ISO string - when the 6-month free HOST pass was first activated
+  paidHostPassExpiryDate?: string;    // ISO string - when the current 31-day paid HOST pass expires
+
   storageUsedBytes?: number; // Estimated storage used by the host
-  hostPlan?: 'free' | 'premium'; // New field for host plan
 }
 
 export type UserMode = 'host' | 'guest';
@@ -75,6 +82,6 @@ export interface PromptGroup {
 }
 
 // Storage Quotas
-export const FREE_TIER_STORAGE_QUOTA_BYTES = 10 * 1024 * 1024; // 10 MB
-export const PREMIUM_TIER_STORAGE_QUOTA_BYTES = 100 * 1024 * 1024; // 100 MB (for mock)
-export type HostPlan = 'free' | 'premium';
+export const FREE_TIER_STORAGE_QUOTA_BYTES = 10 * 1024 * 1024; // 10 MB (Kept for reference, but primary quota will be standard)
+export const STANDARD_HOST_STORAGE_QUOTA_BYTES = 100 * 1024 * 1024; // 100 MB - for users with an active host pass
+// PREMIUM_TIER_STORAGE_QUOTA_BYTES is removed as we shift from fixed tiers.

@@ -11,9 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import type { User, HostPlan } from '@/types'; // Added HostPlan
-import { FREE_TIER_STORAGE_QUOTA_BYTES, PREMIUM_TIER_STORAGE_QUOTA_BYTES } from '@/types';
-import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, AlertTriangle, Zap, Star } from 'lucide-react'; // Added Zap, Star
+import type { User } from '@/types';
+import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types'; // Using standard host quota
+import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, AlertTriangle, Star, Zap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
@@ -33,16 +33,23 @@ export default function SettingsPage() {
     user, 
     login, 
     loading: authLoading, 
-    activateFreePass, 
-    purchasePaidPass, 
-    checkAndUpdatePassStatus,
-    passPriceDetails,
-    fetchPassPrice,
-    isFetchingPassPrice,
+    // Guest Pass related
+    activateFreePass: activateFreeGuestPass, 
+    purchasePaidPass: purchasePaidGuestPass, 
+    checkAndUpdateGuestPassStatus,
+    guestPassPriceDetails,
+    fetchGuestPassPrice,
+    isFetchingGuestPassPrice,
+    // Host Pass related - NEW
+    activateFreeHostPass,
+    purchasePaidHostPass,
+    checkAndUpdateHostPassStatus,
+    hostPassPriceDetails,
+    fetchHostPassPrice,
+    isFetchingHostPassPrice,
+    // Storage
     storageQuotaBytes, 
     calculateAndUpdateStorageUsage,
-    upgradeToPremium, 
-    downgradeToFree,  
   } = useAuth();
   const router = useRouter(); 
   const [name, setName] = useState('');
@@ -63,14 +70,20 @@ export default function SettingsPage() {
   const [townArea, setTownArea] = useState('');
   
   useEffect(() => {
-    checkAndUpdatePassStatus();
-     if (user && (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'paid_pass_active')) {
-      fetchPassPrice();
+    checkAndUpdateGuestPassStatus();
+    checkAndUpdateHostPassStatus(); // Check host pass status
+     if (user) {
+        // Fetch guest pass price if relevant
+        if (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated') {
+            fetchGuestPassPrice();
+        }
+        // Fetch host pass price if relevant - NEW
+        if (user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired' || user.hostPassStatus === 'no_pass_initiated') {
+            fetchHostPassPrice();
+        }
+        calculateAndUpdateStorageUsage(user.id);
     }
-    if (user?.id) {
-      calculateAndUpdateStorageUsage(user.id);
-    }
-  }, [checkAndUpdatePassStatus, user, fetchPassPrice, calculateAndUpdateStorageUsage]);
+  }, [checkAndUpdateGuestPassStatus, checkAndUpdateHostPassStatus, user, fetchGuestPassPrice, fetchHostPassPrice, calculateAndUpdateStorageUsage]);
 
   const daysInSelectedDobMonth = useMemo(() => {
     if (dobYear && dobMonth) {
@@ -99,11 +112,7 @@ export default function SettingsPage() {
         setDobYear(getYear(dob).toString());
         setDobMonth(getMonth(dob).toString()); 
         setDobDay(getDate(dob).toString());
-      } else {
-        setDobYear('');
-        setDobMonth('');
-        setDobDay('');
-      }
+      } else { setDobYear(''); setDobMonth(''); setDobDay(''); }
 
       setCountryOfBirth(user.countryOfBirth || '');
       setCity(user.city || '');
@@ -111,12 +120,7 @@ export default function SettingsPage() {
     }
   }, [user]);
 
-  useEffect(() => {
-    if (dobDay && parseInt(dobDay) > daysInSelectedDobMonth) {
-      setDobDay(daysInSelectedDobMonth.toString());
-    }
-  }, [dobDay, daysInSelectedDobMonth]);
-
+  useEffect(() => { if (dobDay && parseInt(dobDay) > daysInSelectedDobMonth) setDobDay(daysInSelectedDobMonth.toString()); }, [dobDay, daysInSelectedDobMonth]);
 
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -128,218 +132,112 @@ export default function SettingsPage() {
   };
 
   const handleTakePhoto = () => {
-    console.log("TODO: Implement webcam photo capture");
-    toast({
-      title: "Feature Coming Soon",
-      description: "Webcam photo capture will be implemented in a future update.",
-    });
+    toast({ title: "Feature Coming Soon", description: "Webcam photo capture will be implemented." });
   };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!user) return;
     setIsSubmitting(true);
-
     let finalAvatarUrlToSave = user.avatarUrl;
-    if (avatarFile && avatarPreviewUrl) { 
-      finalAvatarUrlToSave = avatarPreviewUrl; 
-    }
-
+    if (avatarFile && avatarPreviewUrl) finalAvatarUrlToSave = avatarPreviewUrl; 
 
     let finalDateOfBirth: string | undefined = undefined;
     if (dobYear && dobMonth && dobDay) {
-      const yearNum = parseInt(dobYear);
-      const monthNum = parseInt(dobMonth); 
-      const dayNum = parseInt(dobDay);
+      const yearNum = parseInt(dobYear); const monthNum = parseInt(dobMonth); const dayNum = parseInt(dobDay);
       if (!isNaN(yearNum) && !isNaN(monthNum) && !isNaN(dayNum)) {
         const dobDate = new Date(yearNum, monthNum, dayNum);
         if (isValid(dobDate) && getYear(dobDate) === yearNum && getMonth(dobDate) === monthNum && getDate(dobDate) === dayNum) {
           finalDateOfBirth = dobDate.toISOString();
         } else {
-          toast({ title: "Invalid Date of Birth", description: "Please select a valid date.", variant: "destructive" });
-          setIsSubmitting(false);
-          return;
+          toast({ title: "Invalid Date of Birth", variant: "destructive" }); setIsSubmitting(false); return;
         }
       }
     }
-
     const updatedUser: User = {
-      ...user,
-      id: user.id,
-      name: name,
-      email: email,
-      profileInfo: profileInfo,
-      avatarUrl: finalAvatarUrlToSave, 
-      dateOfBirth: finalDateOfBirth,
-      countryOfBirth: countryOfBirth || undefined,
-      city: city || undefined,
-      townArea: townArea || undefined,
-      sharedAccessStatus: user.sharedAccessStatus,
-      freePassActivatedDate: user.freePassActivatedDate,
-      paidPassExpiryDate: user.paidPassExpiryDate,
-      viewedSharedMemoryIds: user.viewedSharedMemoryIds || [],
-      storageUsedBytes: user.storageUsedBytes,
-      hostPlan: user.hostPlan || 'free', 
+      ...user, id: user.id, name: name, email: email, profileInfo: profileInfo, avatarUrl: finalAvatarUrlToSave, 
+      dateOfBirth: finalDateOfBirth, countryOfBirth: countryOfBirth || undefined, city: city || undefined, townArea: townArea || undefined,
+      sharedAccessStatus: user.sharedAccessStatus, freePassActivatedDate: user.freePassActivatedDate, paidPassExpiryDate: user.paidPassExpiryDate,
+      hostPassStatus: user.hostPassStatus, freeHostPassActivatedDate: user.freeHostPassActivatedDate, paidHostPassExpiryDate: user.paidHostPassExpiryDate, // Host pass fields
+      viewedSharedMemoryIds: user.viewedSharedMemoryIds || [], storageUsedBytes: user.storageUsedBytes,
     };
-
     await new Promise(resolve => setTimeout(resolve, 1000)); 
-
     localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser));
     login(updatedUser.email); 
-
     setIsSubmitting(false);
-    toast({
-      title: "Settings Saved!",
-      description: "Your profile information has been updated.",
-    });
+    toast({ title: "Settings Saved!", description: "Your profile information has been updated." });
   };
 
-  useEffect(() => {
-    let currentPreview = avatarPreviewUrl;
-    return () => {
-      if (currentPreview && currentPreview.startsWith('blob:')) {
-        URL.revokeObjectURL(currentPreview);
-      }
-    };
-  }, [avatarPreviewUrl]);
+  useEffect(() => { let currentPreview = avatarPreviewUrl; return () => { if (currentPreview && currentPreview.startsWith('blob:')) URL.revokeObjectURL(currentPreview); }; }, [avatarPreviewUrl]);
 
-
-  if (authLoading) {
-    return (
-      <AuthenticatedPageWrapper>
-        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <h2 className="text-2xl font-headline mb-2">Loading Settings...</h2>
-          <p className="text-muted-foreground">Please wait while we retrieve your preferences.</p>
-        </div>
-      </AuthenticatedPageWrapper>
-    );
-  }
-
-  if (!user) {
-    return (
-      <AuthenticatedPageWrapper>
-        <div className="container mx-auto py-8 px-4 text-center">
-          <p>Please log in to view settings.</p>
-          <Button onClick={() => router.push('/login')} className="mt-4">Go to Login</Button>
-        </div>
-      </AuthenticatedPageWrapper>
-    );
-  }
+  if (authLoading) return (<AuthenticatedPageWrapper><div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4"><Loader2 className="h-12 w-12 animate-spin text-primary mb-4" /><h2 className="text-2xl font-headline mb-2">Loading Settings...</h2></div></AuthenticatedPageWrapper>);
+  if (!user) return (<AuthenticatedPageWrapper><div className="container mx-auto py-8 px-4 text-center"><p>Please log in.</p><Button onClick={() => router.push('/login')} className="mt-4">Go to Login</Button></div></AuthenticatedPageWrapper>);
   
-  const isEffectivelyEmptyOrPlaceholderAvatar = (url?: string): boolean => {
-    if (!url || url.trim() === '') return true;
-    if (url.startsWith('blob:')) return true; 
-    if (url.startsWith('https://avatar.vercel.sh/')) return true;
-    return false;
-  };
+  const isEffectivelyEmptyOrPlaceholderAvatar = (url?: string): boolean => (!url || url.trim() === '' || url.startsWith('blob:') || url.startsWith('https://avatar.vercel.sh/'));
+  let imageSrcForDisplay: string | undefined = avatarPreviewUrl || (user.avatarUrl && !isEffectivelyEmptyOrPlaceholderAvatar(user.avatarUrl) ? user.avatarUrl : undefined);
+  let showIconAsFallback = !imageSrcForDisplay;
 
-  let imageSrcForDisplay: string | undefined = undefined;
-  let showIconAsFallback = true;
-
-  if (avatarPreviewUrl) {
-    imageSrcForDisplay = avatarPreviewUrl;
-    showIconAsFallback = false; 
-  } else if (user.avatarUrl && !isEffectivelyEmptyOrPlaceholderAvatar(user.avatarUrl)) {
-    imageSrcForDisplay = user.avatarUrl;
-    showIconAsFallback = false; 
-  }
-
-
-  const renderPurchaseButton = () => {
-    let buttonText = "Purchase 31-Day Pass (Mock)";
-    if (isFetchingPassPrice) {
-      buttonText = "Fetching price...";
-    } else if (passPriceDetails) {
-      const formattedPrice = new Intl.NumberFormat('en-GB', { style: 'currency', currency: passPriceDetails.currency }).format(passPriceDetails.passPrice);
-      buttonText = `Purchase 31-Day Pass (${formattedPrice})`;
-    }
-
-    const button = (
-      <Button onClick={purchasePaidPass} variant="outline" size="sm" disabled={isFetchingPassPrice}>
-        {isFetchingPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}
-        {buttonText}
-      </Button>
-    );
-    
-    if (passPriceDetails && !isFetchingPassPrice && passPriceDetails.justification) {
-       return (
-        <TooltipProvider>
-          <div className="flex flex-col items-start space-y-1">
-            {button}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-xs text-muted-foreground flex items-center cursor-default">
-                  <Info className="h-3 w-3 mr-1" /> {passPriceDetails.justification}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent align="start" className="max-w-xs">
-                <p>{passPriceDetails.justification} (Based on average coffee price in London, UK: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: passPriceDetails.currency }).format(passPriceDetails.coffeePrice)})</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        </TooltipProvider>
-      );
+  // Guest Pass Purchase Button
+  const renderGuestPurchaseButton = () => {
+    let buttonText = "Purchase 31-Day Guest Pass";
+    if (isFetchingGuestPassPrice) buttonText = "Fetching price...";
+    else if (guestPassPriceDetails) buttonText = `Purchase 31-Day Guest Pass (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.passPrice)})`;
+    const button = (<Button onClick={purchasePaidGuestPass} variant="outline" size="sm" disabled={isFetchingGuestPassPrice}>{isFetchingGuestPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}{buttonText}</Button>);
+    if (guestPassPriceDetails && !isFetchingGuestPassPrice && guestPassPriceDetails.justification) {
+       return (<TooltipProvider><div className="flex flex-col items-start space-y-1">{button}<Tooltip><TooltipTrigger asChild><span className="text-xs text-muted-foreground flex items-center cursor-default"><Info className="h-3 w-3 mr-1" /> {guestPassPriceDetails.justification}</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{guestPassPriceDetails.justification} (Based on avg coffee: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
     }
     return button;
   };
   
-  const renderPassStatusInfo = () => {
+  // Guest Pass Status Info
+  const renderGuestPassStatusInfo = () => {
     if (!user) return null;
-    let statusText = "";
-    let actionContent = null;
-
+    let statusText = ""; let actionContent = null;
     switch (user.sharedAccessStatus) {
-        case 'no_pass_initiated':
-            statusText = "You have not yet activated your free pass for viewing shared memories.";
-            actionContent = (
-                <Button onClick={activateFreePass} variant="outline" size="sm">
-                    <Gift className="mr-2 h-4 w-4" /> Activate 6-Month Free Pass
-                </Button>
-            );
-            break;
-        case 'free_pass_active':
-            const freePassExpiry = user.freePassActivatedDate ? format(addMonths(parseISO(user.freePassActivatedDate), 6), 'PPP') : 'N/A';
-            statusText = `Your 6-month free pass for shared memories is active until ${freePassExpiry}.`;
-            break;
-        case 'paid_pass_active':
-            const paidPassExpiry = user.paidPassExpiryDate ? format(parseISO(user.paidPassExpiryDate), 'PPP') : 'N/A';
-            statusText = `Your paid pass for shared memories is active until ${paidPassExpiry}.`;
-            actionContent = renderPurchaseButton();
-            break;
-        case 'free_pass_expired':
-        case 'paid_pass_expired':
-            statusText = "Your pass for viewing shared memories has expired.";
-            actionContent = renderPurchaseButton();
-            break;
-        default:
-            statusText = "Shared memory pass status is unknown.";
+        case 'no_pass_initiated': statusText = "Activate your free guest pass for viewing shared memories."; actionContent = (<Button onClick={activateFreeGuestPass} variant="outline" size="sm"><Gift className="mr-2 h-4 w-4" /> Activate 6-Month Free Guest Pass</Button>); break;
+        case 'free_pass_active': const fpExp = user.freePassActivatedDate ? format(addMonths(parseISO(user.freePassActivatedDate), 6), 'PPP') : 'N/A'; statusText = `Your 6-month free guest pass is active until ${fpExp}.`; break;
+        case 'paid_pass_active': const ppExp = user.paidPassExpiryDate ? format(parseISO(user.paidPassExpiryDate), 'PPP') : 'N/A'; statusText = `Your paid guest pass is active until ${ppExp}.`; actionContent = renderGuestPurchaseButton(); break;
+        case 'free_pass_expired': case 'paid_pass_expired': statusText = "Your guest pass has expired."; actionContent = renderGuestPurchaseButton(); break;
+        default: statusText = "Guest pass status unknown.";
     }
+    return (<div className="mt-2 space-y-2"><p className="text-sm text-muted-foreground">{statusText}</p>{actionContent}</div>);
+  };
 
-    return (
-        <div className="mt-2 space-y-2">
-            <p className="text-sm text-muted-foreground">{statusText}</p>
-            {actionContent}
-        </div>
-    );
+  // Host Pass Purchase Button - NEW
+  const renderHostPurchaseButton = () => {
+    let buttonText = "Purchase 31-Day Host Pass";
+    if (isFetchingHostPassPrice) buttonText = "Fetching price...";
+    else if (hostPassPriceDetails) buttonText = `Purchase 31-Day Host Pass (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
+    const button = (<Button onClick={purchasePaidHostPass} variant="default" size="sm" disabled={isFetchingHostPassPrice}>{isFetchingHostPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}{buttonText}</Button>);
+    if (hostPassPriceDetails && !isFetchingHostPassPrice && hostPassPriceDetails.justification) {
+       return (<TooltipProvider><div className="flex flex-col items-start space-y-1">{button}<Tooltip><TooltipTrigger asChild><span className="text-xs text-muted-foreground flex items-center cursor-default"><Info className="h-3 w-3 mr-1" /> {hostPassPriceDetails.justification}</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{hostPassPriceDetails.justification} (Based on avg coffee: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
+    }
+    return button;
+  };
+
+  // Host Pass Status Info - NEW
+  const renderHostPassStatusInfo = () => {
+    if (!user) return null;
+    let statusText = ""; let actionContent = null;
+    switch (user.hostPassStatus) {
+        case 'no_pass_initiated': statusText = "Activate your free host pass to begin creating memories and access all features."; actionContent = (<Button onClick={activateFreeHostPass} variant="default" size="sm"><Star className="mr-2 h-4 w-4" /> Activate 6-Month Free Host Pass</Button>); break;
+        case 'free_host_pass_active': const fhpExp = user.freeHostPassActivatedDate ? format(addMonths(parseISO(user.freeHostPassActivatedDate), 6), 'PPP') : 'N/A'; statusText = `Your 6-month free host pass is active until ${fhpExp}. Enjoy full creation features!`; break;
+        case 'paid_host_pass_active': const phpExp = user.paidHostPassExpiryDate ? format(parseISO(user.paidHostPassExpiryDate), 'PPP') : 'N/A'; statusText = `Your paid host pass is active until ${phpExp}.`; actionContent = renderHostPurchaseButton(); break;
+        case 'free_host_pass_expired': case 'paid_host_pass_expired': statusText = "Your host pass has expired. Purchase a pass to continue creating memories."; actionContent = renderHostPurchaseButton(); break;
+        default: statusText = "Host pass status unknown.";
+    }
+    return (<div className="mt-2 space-y-2"><p className="text-sm text-muted-foreground">{statusText}</p>{actionContent}</div>);
   };
 
   const formatBytes = (bytes: number, decimals = 2) => {
-    if (!bytes || bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    if (!bytes || bytes === 0) return '0 Bytes'; const k = 1024; const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']; const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
-
   const storageUsed = user.storageUsedBytes || 0;
-  const storagePercentage = storageQuotaBytes > 0 ? (storageUsed / storageQuotaBytes) * 100 : 0;
-  const isQuotaExceeded = storageUsed > storageQuotaBytes;
-
-  const currentPlanName = user.hostPlan === 'premium' ? 'Premium' : 'Free';
-  const currentPlanPrice = user.hostPlan === 'premium' ? '£4.99/month' : '£0/month';
-
+  const currentStorageQuota = (user.hostPassStatus === 'free_host_pass_active' || user.hostPassStatus === 'paid_host_pass_active') ? STANDARD_HOST_STORAGE_QUOTA_BYTES : 0;
+  const storagePercentage = currentStorageQuota > 0 ? (storageUsed / currentStorageQuota) * 100 : 0;
+  const isQuotaExceeded = storageUsed > currentStorageQuota && currentStorageQuota > 0; // Exceeded only if quota is positive
 
   return (
     <AuthenticatedPageWrapper>
@@ -348,181 +246,51 @@ export default function SettingsPage() {
         <div className="max-w-2xl mx-auto">
           <form onSubmit={handleSubmit} className="space-y-8">
             <Card>
-              <CardHeader>
-                <CardTitle className="font-headline text-2xl">User Profile</CardTitle>
-                <CardDescription>Manage your account information. This helps AI generate relevant memory cues.</CardDescription>
-              </CardHeader>
+              <CardHeader><CardTitle className="font-headline text-2xl">User Profile</CardTitle><CardDescription>Manage your account information. This helps AI generate relevant memory cues.</CardDescription></CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center space-x-4">
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage src={imageSrcForDisplay} alt={user.name || user.email} />
-                    <AvatarFallback>
-                      {showIconAsFallback ? 
-                        (<UserCircle2 className="h-12 w-12 text-muted-foreground" />) :
-                        (user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?'))
-                      }
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-2">
-                    <Button type="button" variant="outline" onClick={() => avatarInputRef.current?.click()}>
-                      <UploadCloud className="mr-2 h-4 w-4" /> Upload Photo
-                    </Button>
-                    <input type="file" accept="image/*" ref={avatarInputRef} onChange={handleAvatarUpload} className="hidden" />
-                    <Button type="button" variant="outline" onClick={handleTakePhoto}>
-                      <Camera className="mr-2 h-4 w-4" /> Take Photo
-                    </Button>
-                  </div>
+                  <Avatar className="h-20 w-20"><AvatarImage src={imageSrcForDisplay} alt={user.name || user.email} /><AvatarFallback>{showIconAsFallback ? (<UserCircle2 className="h-12 w-12 text-muted-foreground" />) : (user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?'))}</AvatarFallback></Avatar>
+                  <div className="space-y-2"><Button type="button" variant="outline" onClick={() => avatarInputRef.current?.click()}><UploadCloud className="mr-2 h-4 w-4" /> Upload Photo</Button><input type="file" accept="image/*" ref={avatarInputRef} onChange={handleAvatarUpload} className="hidden" /><Button type="button" variant="outline" onClick={handleTakePhoto}><Camera className="mr-2 h-4 w-4" /> Take Photo</Button></div>
                 </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="name">Name</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your Name" />
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" disabled />
-                  <p className="text-xs text-muted-foreground">Email cannot be changed in this demo.</p>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="profile-info">Profile for AI Cues</Label>
-                  <Textarea
-                    id="profile-info"
-                    value={profileInfo}
-                    onChange={(e) => setProfileInfo(e.target.value)}
-                    placeholder="Tell us about your interests, significant life events, favorite places, etc. The more details, the better the AI cues!"
-                    rows={5}
-                  />
-                </div>
+                <div className="space-y-1"><Label htmlFor="name">Name</Label><Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your Name" /></div>
+                <div className="space-y-1"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" disabled /><p className="text-xs text-muted-foreground">Email cannot be changed in this demo.</p></div>
+                <div className="space-y-1"><Label htmlFor="profile-info">Profile for AI Cues</Label><Textarea id="profile-info" value={profileInfo} onChange={(e) => setProfileInfo(e.target.value)} placeholder="Interests, life events, favorite places, etc." rows={5}/></div>
               </CardContent>
             </Card>
-
             <Card>
-              <CardHeader>
-                <CardTitle className="font-headline text-xl">Additional Information</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="font-headline text-xl">Additional Information</CardTitle></CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label>Date of Birth (Optional)</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <Label htmlFor="dob-day" className="sr-only">Day</Label>
-                      <Select value={dobDay} onValueChange={setDobDay}>
-                        <SelectTrigger id="dob-day">
-                          <SelectValue placeholder="Day" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {dobDayOptions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="dob-month" className="sr-only">Month</Label>
-                      <Select value={dobMonth} onValueChange={setDobMonth}>
-                        <SelectTrigger id="dob-month">
-                          <SelectValue placeholder="Month" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {dobMonths.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="dob-year" className="sr-only">Year</Label>
-                      <Select value={dobYear} onValueChange={setDobYear}>
-                        <SelectTrigger id="dob-year">
-                          <SelectValue placeholder="Year" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {dobYears.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Location (Optional)</Label>
-                  <div className="space-y-1">
-                    <Label htmlFor="countryOfBirth" className="text-sm font-normal text-muted-foreground">Country of Birth</Label>
-                    <Input id="countryOfBirth" value={countryOfBirth} onChange={(e) => setCountryOfBirth(e.target.value)} placeholder="e.g., United Kingdom" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="city" className="text-sm font-normal text-muted-foreground">City</Label>
-                    <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g., London" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="townArea" className="text-sm font-normal text-muted-foreground">Town/Area</Label>
-                    <Input id="townArea" value={townArea} onChange={(e) => setTownArea(e.target.value)} placeholder="e.g., Westminster" />
-                  </div>
-                </div>
+                <div className="space-y-2"><Label>Date of Birth (Optional)</Label><div className="grid grid-cols-3 gap-2"><div><Label htmlFor="dob-day" className="sr-only">Day</Label><Select value={dobDay} onValueChange={setDobDay}><SelectTrigger id="dob-day"><SelectValue placeholder="Day" /></SelectTrigger><SelectContent>{dobDayOptions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select></div><div><Label htmlFor="dob-month" className="sr-only">Month</Label><Select value={dobMonth} onValueChange={setDobMonth}><SelectTrigger id="dob-month"><SelectValue placeholder="Month" /></SelectTrigger><SelectContent>{dobMonths.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}</SelectContent></Select></div><div><Label htmlFor="dob-year" className="sr-only">Year</Label><Select value={dobYear} onValueChange={setDobYear}><SelectTrigger id="dob-year"><SelectValue placeholder="Year" /></SelectTrigger><SelectContent>{dobYears.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent></Select></div></div></div>
+                <div className="space-y-2"><Label>Location (Optional)</Label><div className="space-y-1"><Label htmlFor="countryOfBirth" className="text-sm font-normal text-muted-foreground">Country of Birth</Label><Input id="countryOfBirth" value={countryOfBirth} onChange={(e) => setCountryOfBirth(e.target.value)} placeholder="e.g., United Kingdom" /></div><div className="space-y-1"><Label htmlFor="city" className="text-sm font-normal text-muted-foreground">City</Label><Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g., London" /></div><div className="space-y-1"><Label htmlFor="townArea" className="text-sm font-normal text-muted-foreground">Town/Area</Label><Input id="townArea" value={townArea} onChange={(e) => setTownArea(e.target.value)} placeholder="e.g., Westminster" /></div></div>
               </CardContent>
             </Card>
-            
             <Card>
-              <CardHeader>
-                <CardTitle className="font-headline text-xl flex items-center">
-                    <ShieldCheck className="mr-2 h-5 w-5 text-primary" /> Guest Access Pass
-                </CardTitle>
-                <CardDescription>Your current pass status for viewing memories shared by others.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {renderPassStatusInfo()}
-              </CardContent>
+              <CardHeader><CardTitle className="font-headline text-xl flex items-center"><Star className="mr-2 h-5 w-5 text-primary" /> Host Pass & Features</CardTitle><CardDescription>Manage your access to memory creation tools and features.</CardDescription></CardHeader>
+              <CardContent>{renderHostPassStatusInfo()}</CardContent>
             </Card>
-
             <Card>
-              <CardHeader>
-                 <CardTitle className="font-headline text-xl flex items-center">
-                  {user.hostPlan === 'premium' ? <Star className="mr-2 h-5 w-5 text-yellow-500" /> : <Zap className="mr-2 h-5 w-5 text-primary" />}
-                  Host Plan & Storage
-                </CardTitle>
-                <CardDescription>Your current host plan and media storage usage.</CardDescription>
-              </CardHeader>
+              <CardHeader><CardTitle className="font-headline text-xl flex items-center"><ShieldCheck className="mr-2 h-5 w-5 text-green-600" /> Guest Access Pass</CardTitle><CardDescription>Your pass status for viewing memories shared by others.</CardDescription></CardHeader>
+              <CardContent>{renderGuestPassStatusInfo()}</CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle className="font-headline text-xl flex items-center"><HardDrive className="mr-2 h-5 w-5 text-accent" /> Media Storage</CardTitle><CardDescription>Your current media storage usage.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm">
-                  Current Plan: <span className="font-semibold capitalize">{currentPlanName}</span> ({currentPlanPrice})
-                </p>
-                <Progress value={storagePercentage} className="w-full" />
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>{formatBytes(storageUsed)} used</span>
-                  <span>{formatBytes(storageQuotaBytes)} quota</span>
-                </div>
-                {isQuotaExceeded && (
-                  <div className="text-sm text-destructive flex items-center">
-                    <AlertTriangle className="mr-1.5 h-4 w-4" />
-                    You have exceeded your storage quota. Please manage your media or upgrade.
-                  </div>
+                {(user.hostPassStatus === 'free_host_pass_active' || user.hostPassStatus === 'paid_host_pass_active') ? (
+                  <>
+                    <Progress value={storagePercentage} className="w-full" />
+                    <div className="flex justify-between text-sm text-muted-foreground"><span>{formatBytes(storageUsed)} used</span><span>{formatBytes(currentStorageQuota)} quota</span></div>
+                    {isQuotaExceeded && (<div className="text-sm text-destructive flex items-center"><AlertTriangle className="mr-1.5 h-4 w-4" />You have exceeded your storage quota. Please manage media.</div>)}
+                    <p className="text-xs text-muted-foreground pt-2">Your active host pass includes {formatBytes(STANDARD_HOST_STORAGE_QUOTA_BYTES)} of storage for your memories.</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Activate or purchase a Host Pass to enable media storage ({formatBytes(STANDARD_HOST_STORAGE_QUOTA_BYTES)} included).</p>
                 )}
-                <div className="mt-3">
-                  {user.hostPlan === 'free' ? (
-                    <Button onClick={upgradeToPremium} variant="default" size="sm">
-                      <Star className="mr-2 h-4 w-4" /> Upgrade to Premium (£4.99/month - Mock)
-                    </Button>
-                  ) : (
-                    <Button onClick={downgradeToFree} variant="outline" size="sm">
-                      Downgrade to Free Plan (Mock)
-                    </Button>
-                  )}
-                </div>
-                 <p className="text-xs text-muted-foreground pt-2">
-                    {user.hostPlan === 'free' 
-                        ? `Free plan includes ${formatBytes(FREE_TIER_STORAGE_QUOTA_BYTES)} storage and access to the first 'My Life Journey' chapter group. Ideal for getting started.`
-                        : `Premium plan includes ${formatBytes(PREMIUM_TIER_STORAGE_QUOTA_BYTES)} storage and full access to all 'My Life Journey' chapters. Perfect for dedicated memory keepers.`
-                    }
-                </p>
               </CardContent>
             </Card>
-
-            <CardFooter className="flex justify-end p-0 pt-4">
-              <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Changes'}
-              </Button>
-            </CardFooter>
+            <CardFooter className="flex justify-end p-0 pt-4"><Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">{isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Changes'}</Button></CardFooter>
           </form>
         </div>
       </div>
     </AuthenticatedPageWrapper>
   );
 }
-
-    
