@@ -6,7 +6,7 @@ import { PromptCard } from '@/components/prompts/PromptCard';
 import { mockPromptGroups, mockMemories } from '@/lib/mockData';
 import type { Prompt, PromptGroup, Memory } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star } from 'lucide-react'; // Changed from BookOpenText
+import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
@@ -42,15 +42,10 @@ export default function LifeJourneyPage() {
 
   useEffect(() => { if (user?.profileInfo) setCustomChapterUserProfile(user.profileInfo); }, [user?.profileInfo]);
 
-  // Access to My Life Journey chapters depends on an active host pass
   const canAccessFullJourney = hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
 
   const availablePromptGroups = useMemo(() => {
     if (canAccessFullJourney) return mockPromptGroups;
-    // If no active host pass (or in states like 'no_pass_initiated', 'expired'), show no chapters or limited chapters
-    // For now, let's show no chapters if pass isn't active, to prompt activation/purchase.
-    // Or, you could show the first group as a teaser even without an active pass.
-    // Let's show the first group as a teaser for 'no_pass_initiated' or 'free_host_pass_expired', 'paid_host_pass_expired'
      if (hostPassStatus === 'no_pass_initiated' || hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
         return mockPromptGroups.length > 0 ? [mockPromptGroups[0]] : [];
      }
@@ -119,7 +114,7 @@ export default function LifeJourneyPage() {
     else if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') purchasePaidHostPass();
   };
 
-  let hostPassButtonText = "Activate Free Host Pass";
+  let hostPassButtonText = "Activate 6-Month Free Host Pass";
   let hostPassPriceString = "";
   if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
     hostPassButtonText = "Purchase Host Pass (£4.99/month - Mock)"; 
@@ -133,14 +128,18 @@ export default function LifeJourneyPage() {
   }
 
 
-  if (userMode === 'guest') return (<AuthenticatedPageWrapper><div className="container mx-auto py-8 px-4 text-center"><HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" /><h1 className="font-headline text-3xl mb-2">Life Journey Not Available</h1><p className="text-muted-foreground mb-6">This feature is for hosts. Guests view shared memories.</p><Link href="/timeline" passHref><Button variant="outline">Go to Timeline</Button></Link></div></AuthenticatedPageWrapper>);
-  if (isLoading) return (<AuthenticatedPageWrapper><div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4"><Loader2 className="h-12 w-12 animate-spin text-primary mb-4" /><h2 className="text-2xl font-headline mb-2">Loading Life Journey...</h2></div></AuthenticatedPageWrapper>);
+  if (userMode === 'guest') {
+    return (<AuthenticatedPageWrapper><div className="container mx-auto py-8 px-4 text-center"><HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" /><h1 className="font-headline text-3xl mb-2">Life Journey Not Available</h1><p className="text-muted-foreground mb-6">This feature is for hosts. Guests view shared memories.</p><Link href="/timeline" passHref><Button variant="outline">Go to Timeline</Button></Link></div></AuthenticatedPageWrapper>);
+  }
+  if (isLoading) {
+    return (<AuthenticatedPageWrapper><div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4"><Loader2 className="h-12 w-12 animate-spin text-primary mb-4" /><h2 className="text-2xl font-headline mb-2">Loading Life Journey...</h2></div></AuthenticatedPageWrapper>);
+  }
 
   return (
     <AuthenticatedPageWrapper>
       <div className="container mx-auto py-8 px-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-          <div className="flex items-center mb-4 md:mb-0"><Film className="h-10 w-10 text-primary mr-3" /> <h1 className="font-headline text-4xl">My Life Journey</h1></div> {/* Changed Icon */}
+          <div className="flex items-center mb-4 md:mb-0"><Film className="h-10 w-10 text-primary mr-3" /> <h1 className="font-headline text-4xl">My Life Journey</h1></div>
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
               <Button onClick={() => setShowCustomChapterDialog(true)} variant="secondary" className="w-full sm:w-auto" disabled={!canAccessFullJourney}><Sparkles className="mr-2 h-4 w-4" /> Brainstorm Custom Chapter</Button>
               <div className="w-full sm:w-auto"><Label htmlFor="prompt-language" className="sr-only">Language</Label><Select value={currentLanguage} onValueChange={(value: 'en' | 'gu') => setCurrentLanguage(value)}><SelectTrigger id="prompt-language" className="w-full"><Languages className="mr-2 h-4 w-4" /><SelectValue placeholder="Language" /></SelectTrigger><SelectContent><SelectItem value="en">English</SelectItem><SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem></SelectContent></Select></div>
@@ -177,9 +176,9 @@ export default function LifeJourneyPage() {
         )}
 
         {availablePromptGroups.length === 0 && canAccessFullJourney ? ( 
-          <div className="text-center py-12"><Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> <h2 className="font-headline text-2xl mb-2">No Chapters Found</h2><p className="text-muted-foreground">Try brainstorming a custom chapter!</p></div> {/* Changed Icon */}
+          <div className="text-center py-12"><Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> <h2 className="font-headline text-2xl mb-2">No Chapters Found</h2><p className="text-muted-foreground">Try brainstorming a custom chapter!</p></div>
         ) : availablePromptGroups.length === 0 && !canAccessFullJourney ? ( 
-            <div className="text-center py-12"><Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> <h2 className="font-headline text-2xl mb-2">Activate Your Host Pass</h2><p className="text-muted-foreground">Activate or purchase a host pass to begin your Life Journey.</p></div> {/* Changed Icon */}
+            <div className="text-center py-12"><Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> <h2 className="font-headline text-2xl mb-2">Activate Your Host Pass</h2><p className="text-muted-foreground">Activate or purchase a host pass to begin your Life Journey.</p></div>
         ) : (
           <div className="space-y-10">
             {availablePromptGroups.map((group) => (
@@ -189,13 +188,11 @@ export default function LifeJourneyPage() {
                   {group.prompts.map((prompt) => {
                     const isCompleted = completedPromptIds.has(prompt.id);
                     const memoryForPrompt = memories.find(m => m.promptId === prompt.id);
-                    // Prompt is clickable if it's part of an accessible group OR if it's already completed
                     const isPromptActionable = canAccessFullJourney || availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === prompt.id) || isCompleted;
                     return (
                       <PromptCard key={prompt.id} promptId={prompt.id} promptText={prompt.text[currentLanguage] || prompt.text.en}
                         isCompleted={isCompleted} memoryId={memoryForPrompt?.id}
                         onStartChapter={handleStartChapter} onViewEditChapter={handleViewEditChapter}
-                        // Consider disabling card actions if not actionable, or handle in onStartChapter
                       />);
                   })}
                 </div>
