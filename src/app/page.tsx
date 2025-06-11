@@ -15,6 +15,7 @@ interface Feature {
   icon: React.ElementType;
   title: string;
   description: string;
+  imageSrc: string;
   imageHint: string;
 }
 
@@ -23,24 +24,28 @@ const features: Feature[] = [
     icon: ListChecks,
     title: 'Guided Life Journey',
     description: 'Embark on a structured "My Life Journey" with guided chapters. AI helps you brainstorm unique prompts tailored to your story.',
+    imageSrc: 'https://images.unsplash.com/photo-1617361194384-1852022fe186?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxMaWZlJTIwSm91cm5leXxlbnwwfHx8fDE3NDk2NTA0ODh8MA&ixlib=rb-4.1.0&q=80&w=1080',
     imageHint: 'journal path'
   },
   {
     icon: Film,
     title: 'Rich Multimedia Memories',
     description: 'Capture life\'s moments with video and audio. Easily edit, trim, and store your recordings within the app.',
+    imageSrc: 'https://placehold.co/300x200.png',
     imageHint: 'media editing'
   },
   {
     icon: LayoutList,
     title: 'Organized Timeline View',
     description: 'Visually browse, sort, and filter your cherished moments in an interactive and intuitive timeline.',
+    imageSrc: 'https://placehold.co/300x200.png',
     imageHint: 'memory timeline'
   },
   {
     icon: Share2,
     title: 'Secure & Easy Sharing',
     description: 'Share selected memories with family and friends through unique, secure links. Guests can easily view what you share.',
+    imageSrc: 'https://placehold.co/300x200.png',
     imageHint: 'secure sharing'
   },
 ];
@@ -118,7 +123,7 @@ export default function LandingPage() {
                    <CardFooter className="flex justify-center p-4">
                      <div className="relative w-full h-40 bg-muted rounded-md overflow-hidden">
                         <Image
-                            src={`https://placehold.co/300x200.png`}
+                            src={feature.imageSrc}
                             alt={feature.title}
                             layout="fill"
                             objectFit="cover"
