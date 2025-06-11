@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Navbar } from '@/components/layout/Navbar';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Sparkles, Film, Users, Lock, ArrowRight } from 'lucide-react'; // Removed BookOpenText
+import { Film, ArrowRight, ListChecks, LayoutList, Share2 } from 'lucide-react'; // Updated icons
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -20,28 +20,28 @@ interface Feature {
 
 const features: Feature[] = [
   {
-    icon: Sparkles,
-    title: 'AI-Powered Memory Cues',
-    description: 'Get relevant suggestions based on your profile and the current date to spark your recollections.',
-    imageHint: 'brainstorm lightbulb'
+    icon: ListChecks,
+    title: 'Guided Life Journey',
+    description: 'Embark on a structured "My Life Journey" with guided chapters. AI helps you brainstorm unique prompts tailored to your story.',
+    imageHint: 'journal writing path'
   },
   {
     icon: Film,
-    title: 'Multimedia Recording',
-    description: 'Capture, edit, and store your memories using video and audio directly within the app.',
-    imageHint: 'video camera recording'
+    title: 'Rich Multimedia Memories',
+    description: 'Capture life\'s moments with video and audio. Easily edit, trim, and store your recordings within the app.',
+    imageHint: 'video audio editing'
   },
   {
-    icon: Users,
-    title: 'Interactive Timeline',
-    description: 'Organize and browse your cherished moments in a sortable, filterable timeline.',
-    imageHint: 'timeline interface'
+    icon: LayoutList,
+    title: 'Organized Timeline View',
+    description: 'Visually browse, sort, and filter your cherished moments in an interactive and intuitive timeline.',
+    imageHint: 'digital memory timeline'
   },
   {
-    icon: Lock,
-    title: 'Secure Sharing',
-    description: 'Share selected memories with loved ones through unique, secure links.',
-    imageHint: 'secure lock'
+    icon: Share2,
+    title: 'Secure & Easy Sharing',
+    description: 'Share selected memories with family and friends through unique, secure links. Guests can easily view what you share.',
+    imageHint: 'secure link sharing'
   },
 ];
 
@@ -55,7 +55,6 @@ export default function LandingPage() {
     }
   }, [isAuthenticated, loading, router]);
 
-  // Show a simple loading state or null if auth is still loading and user might be redirected.
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50">
@@ -64,11 +63,9 @@ export default function LandingPage() {
     );
   }
   
-  // If authenticated, router.push will handle redirect, so render nothing until redirect happens.
   if (isAuthenticated) {
     return null;
   }
-
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50">
@@ -77,17 +74,17 @@ export default function LandingPage() {
         {/* Hero Section */}
         <section className="py-20 md:py-32 text-center bg-transparent">
           <div className="container mx-auto px-4">
-            <Film className="mx-auto h-20 w-20 text-primary mb-6 animate-bounce" /> {/* Changed Icon */}
+            <Film className="mx-auto h-20 w-20 text-primary mb-6 animate-bounce" />
             <h1 className="font-headline text-5xl md:text-7xl font-bold mb-6">
               Memory Weaver
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              Your life's moments, beautifully preserved and effortlessly recalled. Weave together your precious memories with AI assistance.
+            <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto">
+              Weave your life's story with guided chapters, rich multimedia, and easy sharing. Preserve your legacy, one memory at a time. Start today with a complimentary 6-month Host Pass to unlock all creation features!
             </p>
             <div className="space-x-4">
               <Link href="/register" passHref>
                 <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                  Get Started for Free
+                  Start Your Free Journey
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
@@ -140,7 +137,7 @@ export default function LandingPage() {
             <div className="container mx-auto px-4 text-center">
                 <h2 className="font-headline text-3xl mb-6">Ready to Weave Your Story?</h2>
                 <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-                    Join thousands of users who are rediscovering the joy of their past memories and creating a legacy for the future.
+                    Join Memory Weaver to rediscover the joy of your past memories and create a lasting legacy for the future.
                 </p>
                 <Link href="/register" passHref>
                     <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
@@ -159,5 +156,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-    
