@@ -7,7 +7,7 @@ import { TimelineFilter } from '@/components/memory/TimelineFilter';
 import { Button } from '@/components/ui/button';
 import { mockMemories } from '@/lib/mockData';
 import type { Memory } from '@/types';
-import { PlusCircle, BookOpenText, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift, Loader2, Info, Award, Film } from 'lucide-react'; // Changed BookHeart to BookOpenText
+import { PlusCircle, Film, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift, Loader2, Info, Award } from 'lucide-react'; // Changed BookOpenText, kept Film
 import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,8 +28,8 @@ export default function TimelinePage() {
     setPendingRequestCount, 
     userMode, 
     // Guest Pass
-    activateFreePass: activateFreeGuestPass, 
-    purchasePaidPass: purchasePaidGuestPass, 
+    activateFreeGuestPass, 
+    purchasePaidGuestPass, 
     checkAndUpdateGuestPassStatus,
     guestPassPriceDetails,
     fetchGuestPassPrice,
@@ -196,7 +196,7 @@ export default function TimelinePage() {
 
         {userMode === 'guest' && !canGuestViewSharedMemories && filteredAndSortedMemories.length === 0 && (<div className="text-center py-12 bg-card shadow-lg rounded-lg p-8"><CalendarClock className="mx-auto h-16 w-16 text-primary mb-6" /><h2 className="font-headline text-3xl mb-3">Activate Guest Access</h2><p className="text-muted-foreground mb-8 max-w-md mx-auto">{guestAccessPlaceholderMessage}</p></div>)}
         {userMode === 'guest' && canGuestViewSharedMemories && filteredAndSortedMemories.length === 0 && (<div className="text-center py-12 bg-card shadow-lg rounded-lg p-8"><Users className="mx-auto h-16 w-16 text-primary mb-6" /><h2 className="font-headline text-3xl mb-3">Nothing Shared Yet</h2><p className="text-muted-foreground mb-8 max-w-md mx-auto">When memories are shared with you, they appear here.</p></div>)}
-        {userMode === 'host' && filteredAndSortedMemories.length === 0 && (<div className="text-center py-12 bg-card shadow-lg rounded-lg p-8"><BookOpenText className="mx-auto h-16 w-16 text-primary mb-6" /> {/* Changed Icon */}<h2 className="font-headline text-3xl mb-3">Welcome to Memory Weaver!</h2><p className="text-muted-foreground mb-8 max-w-md mx-auto">Record your life’s moments. If you need a Host Pass, check Settings.</p><Link href={addMemoryButtonDisabled ? "/settings" : "/add-memory"} passHref><Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground"><PlusCircle className="mr-2 h-5 w-5" />{addMemoryButtonDisabled ? "Go to Settings" : "Record First Memory"}</Button></Link></div>)}
+        {userMode === 'host' && filteredAndSortedMemories.length === 0 && (<div className="text-center py-12 bg-card shadow-lg rounded-lg p-8"><Film className="mx-auto h-16 w-16 text-primary mb-6" /> {/* Changed Icon */}<h2 className="font-headline text-3xl mb-3">Welcome to Memory Weaver!</h2><p className="text-muted-foreground mb-8 max-w-md mx-auto">Record your life’s moments. If you need a Host Pass, check Settings.</p><Link href={addMemoryButtonDisabled ? "/settings" : "/add-memory"} passHref><Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground"><PlusCircle className="mr-2 h-5 w-5" />{addMemoryButtonDisabled ? "Go to Settings" : "Record First Memory"}</Button></Link></div>)}
 
         {((userMode === 'host') || (userMode === 'guest' && canGuestViewSharedMemories)) && filteredAndSortedMemories.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

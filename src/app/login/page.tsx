@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { BookOpenText } from 'lucide-react'; // Changed from BookHeart
+import { Film } from 'lucide-react'; // Changed from BookOpenText
 import { Skeleton } from '@/components/ui/skeleton';
 import { Navbar } from '@/components/layout/Navbar'; // Import Navbar
 
@@ -35,7 +35,7 @@ export default function LoginPage() {
         <Card className="w-full max-w-md shadow-xl">
           <CardHeader className="text-center">
             <div className="inline-flex justify-center items-center mb-4">
-              <BookOpenText className="h-10 w-10 text-primary" /> {/* Changed Icon */}
+              <Film className="h-10 w-10 text-primary" /> {/* Changed Icon */}
             </div>
             <CardTitle className="font-headline text-3xl">Welcome Back</CardTitle>
             <CardDescription>Sign in to continue to Memory Weaver</CardDescription>

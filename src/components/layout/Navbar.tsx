@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { LogOut, PlusCircle, Settings, BellRing, Users, UserCog, BookOpenText, History, Home, UserCircle2 } from 'lucide-react';
+import { LogOut, PlusCircle, Settings, BellRing, Users, UserCog, Film, History, Home, UserCircle2 } from 'lucide-react'; // Changed BookOpenText to Film
 import { useRouter, usePathname } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -64,7 +64,7 @@ export function Navbar() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href={logoHref} className="mr-6 flex items-center space-x-2">
-                <BookOpenText className="h-6 w-6 text-primary ml-2" />
+                <Film className="h-6 w-6 text-primary ml-2" /> {/* Changed Icon */}
                 <span className="font-headline text-xl font-bold">Memory Weaver</span>
               </Link>
             </TooltipTrigger>
@@ -80,7 +80,7 @@ export function Navbar() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Link href="/prompts" className={`${navLinkClass} ${pathname === '/prompts' || pathname.startsWith('/add-memory') ? activeNavLinkClass : ''}`}> 
-                        <BookOpenText className="mr-1.5 h-4 w-4" /> My Life Journey
+                        <Film className="mr-1.5 h-4 w-4" /> My Life Journey {/* Changed Icon */}
                       </Link>
                     </TooltipTrigger>
                     <TooltipContent><p>Record and view your life story chapters</p></TooltipContent>
