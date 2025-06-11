@@ -84,7 +84,8 @@ export default function LandingPage() {
               Memory Weaver
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto">
-              Weave your life's story with guided chapters, rich multimedia, and easy sharing. Preserve your legacy, one memory at a time. Start today with a complimentary 6-month Host Pass to unlock all creation features!
+              Weave your life's story with guided chapters, rich multimedia, and easy sharing. Preserve your legacy, one memory at a time. 
+              Start today with a complimentary 6-month Host Pass to unlock all creation features! After your free access, you can continue creating with flexible 31-day Host Passes (e.g., approx. £12.99/$14.99) – pay only when you need it, no subscription required.
             </p>
             <div className="space-x-4">
               <Link href="/register" passHref>
