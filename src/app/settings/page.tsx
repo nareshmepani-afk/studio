@@ -13,7 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import type { User } from '@/types';
 import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types'; 
-import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, AlertTriangle, Star, Zap, RotateCcw } from 'lucide-react'; // Added RotateCcw
+import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, AlertTriangle, Star, Zap, RotateCcw } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
@@ -45,14 +45,14 @@ export default function SettingsPage() {
     hostPassPriceDetails,
     fetchHostPassPrice,
     isFetchingHostPassPrice,
-    resetHostPassForTesting, // New function from context
+    resetHostPassForTesting,
     storageQuotaBytes, 
     calculateAndUpdateStorageUsage,
   } = useAuth();
   const router = useRouter(); 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [profileInfo, setProfileInfo] = useState('');
+  // profileInfo state is removed as the field was removed from the form
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -100,7 +100,7 @@ export default function SettingsPage() {
     if (user) {
       setName(user.name || '');
       setEmail(user.email || '');
-      setProfileInfo(user.profileInfo || '');
+      // user.profileInfo is no longer set as it was removed
       setAvatarPreviewUrl(null); 
 
       if (user.dateOfBirth && isValid(parseISO(user.dateOfBirth))) {
@@ -151,7 +151,7 @@ export default function SettingsPage() {
       }
     }
     const updatedUser: User = {
-      ...user, id: user.id, name: name, email: email, profileInfo: profileInfo, avatarUrl: finalAvatarUrlToSave, 
+      ...user, id: user.id, name: name, email: email, /* profileInfo no longer exists */ avatarUrl: finalAvatarUrlToSave, 
       dateOfBirth: finalDateOfBirth, countryOfBirth: countryOfBirth || undefined, city: city || undefined, townArea: townArea || undefined,
       sharedAccessStatus: user.sharedAccessStatus, freePassActivatedDate: user.freePassActivatedDate, paidPassExpiryDate: user.paidPassExpiryDate,
       hostPassStatus: user.hostPassStatus, freeHostPassActivatedDate: user.freeHostPassActivatedDate, paidHostPassExpiryDate: user.paidHostPassExpiryDate, 
@@ -201,7 +201,7 @@ export default function SettingsPage() {
     let buttonText = "Purchase 31-Day Host Pass";
     if (isFetchingHostPassPrice) buttonText = "Fetching price...";
     else if (hostPassPriceDetails) buttonText = `Purchase 31-Day Host Pass (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
-    else buttonText = `Purchase 31-Day Host Pass (£12.99 - Mock)`; // Fallback if price not loaded
+    else buttonText = `Purchase 31-Day Host Pass (£12.99 - Mock)`; 
 
     const button = (<Button onClick={purchasePaidHostPass} variant="default" size="sm" disabled={isFetchingHostPassPrice}>{isFetchingHostPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}{buttonText}</Button>);
     
@@ -220,7 +220,7 @@ export default function SettingsPage() {
     } else if (isFetchingHostPassPrice) {
         currentPriceString = "(fetching price...)";
     } else {
-        currentPriceString = "(£4.99/month - Mock)"; // Updated to reflect new pricing strategy.
+        currentPriceString = "(£4.99/month - Mock)"; 
     }
 
     switch (user.hostPassStatus) {
@@ -247,14 +247,17 @@ export default function SettingsPage() {
       <div className="mt-2 space-y-2">
         <p className="text-sm text-muted-foreground">{statusText}</p>
         {actionContent}
-        <Button 
-          onClick={resetHostPassForTesting} 
-          variant="outline" 
-          size="sm" 
-          className="mt-3 ml-auto block sm:inline-block sm:ml-3 border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
-        >
-          <RotateCcw className="mr-2 h-4 w-4" /> Reset Host Pass (For Testing)
-        </Button>
+        <div className="mt-3 border-t pt-3">
+            <p className="text-xs text-muted-foreground mb-1">For Testing: Current `hostPassStatus`: <code className="font-mono bg-muted p-1 rounded">{user.hostPassStatus || 'N/A'}</code></p>
+            <Button 
+              onClick={resetHostPassForTesting} 
+              variant="outline" 
+              size="sm" 
+              className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <RotateCcw className="mr-2 h-4 w-4" /> Reset Host Pass (For Testing)
+            </Button>
+        </div>
       </div>
     );
   };
@@ -295,10 +298,10 @@ export default function SettingsPage() {
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="font-headline text-xl flex items-center"><Star className="mr-2 h-5 w-5 text-primary" /> Host Pass & Features (£0/month or £4.99/month - Mock)</CardTitle>
+                <CardTitle className="font-headline text-xl flex items-center"><Star className="mr-2 h-5 w-5 text-primary" /> Host Pass & Features</CardTitle>
                 <CardDescription>
                   Your Host Pass grants access to memory creation, all "My Life Journey" chapters, and storage.
-                  Activate a 6-month free pass, then purchase 31-day passes. Current Premium Tier Mock Price: £4.99/month.
+                  Activate a 6-month free pass, then purchase 31-day passes as needed.
                 </CardDescription>
               </CardHeader>
               <CardContent>{renderHostPassStatusInfo()}</CardContent>
@@ -329,7 +332,5 @@ export default function SettingsPage() {
     </AuthenticatedPageWrapper>
   );
 }
-
-    
 
     
