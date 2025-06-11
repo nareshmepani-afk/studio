@@ -47,15 +47,18 @@ export default function LifeJourneyPage() {
   const availablePromptGroups = useMemo(() => {
     if (canAccessFullJourney) return mockPromptGroups;
      if (hostPassStatus === 'no_pass_initiated' || hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
+        // For teaser: show only the first group if it exists
         return mockPromptGroups.length > 0 ? [mockPromptGroups[0]] : [];
      }
-    return [];
+    return []; // Should not happen if logic is correct, implies an unhandled hostPassStatus or issue
   }, [hostPassStatus, canAccessFullJourney]);
 
 
   useEffect(() => {
+    // Simulate loading prompts and user's memories
     setTimeout(() => {
       setPromptGroups(mockPromptGroups); 
+      // In a real app, fetch memories for the user
       const userMemories = mockMemories.filter(m => m.userId === user?.id);
       setMemories(userMemories);
       setIsLoading(false);
@@ -65,7 +68,10 @@ export default function LifeJourneyPage() {
   const completedPromptIds = useMemo(() => new Set(memories.filter(m => m.promptId).map(m => m.promptId)), [memories]);
 
   const handleStartChapter = (promptId: string, promptText: string) => {
-    if (!canAccessFullJourney && availablePromptGroups.flatMap(g => g.prompts).filter(p=>p.id === promptId).length === 0) {
+    // Check if this specific prompt is available to the user (part of the first group if on teaser, or any group if full access)
+    const isPromptInAvailableGroups = availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === promptId);
+
+    if (!canAccessFullJourney && !isPromptInAvailableGroups) {
         toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters.", variant: "destructive" });
         return;
     }
@@ -75,13 +81,17 @@ export default function LifeJourneyPage() {
 
   const handleViewEditChapter = (promptId: string) => {
     const memoryForPrompt = memories.find(m => m.promptId === promptId);
-    if (memoryForPrompt) router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
-    else toast({ title: "Error", description: "Could not find memory.", variant: "destructive" });
+    if (memoryForPrompt) {
+      router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
+    } else {
+      toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
+    }
   };
 
   const handleGenerateCustomChapterIdeas = async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {
-      toast({ title: "Profile Info Needed", description: "Please provide some information about yourself or your interests in the text area.", variant: "destructive" }); return;
+      toast({ title: "Profile Info Needed", description: "Please provide some information about yourself or your interests in the text area.", variant: "destructive" });
+      return;
     }
     if (!canAccessFullJourney) {
         toast({ title: "Host Pass Required", description: "Activate or purchase a Host Pass to use AI brainstorming.", variant: "destructive" });
@@ -105,58 +115,109 @@ export default function LifeJourneyPage() {
         return;
     }
     toast({ title: "Custom Chapter Selected!", description: `Starting chapter: "${idea}". Redirecting...`});
-    router.push(`/add-memory?prompt=${encodeURIComponent(idea)}`);
-    setShowCustomChapterDialog(false); setGeneratedChapterIdeas([]);
+    router.push(`/add-memory?prompt=${encodeURIComponent(idea)}`); // No promptId for custom ones initially
+    setShowCustomChapterDialog(false);
+    setGeneratedChapterIdeas([]); // Clear ideas after selection
   };
 
   const handleHostPassAction = () => {
-    if (hostPassStatus === 'no_pass_initiated') activateFreeHostPass();
-    else if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') purchasePaidHostPass();
+    if (hostPassStatus === 'no_pass_initiated') {
+      activateFreeHostPass();
+    } else if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
+      purchasePaidHostPass();
+    }
   };
 
+  // Determine button text and price string for host pass
   let hostPassButtonText = "Activate 6-Month Free Host Pass";
-  let hostPassPriceString = "";
+  let hostPassPriceString = ""; // e.g. "(£4.99)"
   if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
-    hostPassButtonText = "Purchase Host Pass (£4.99/month - Mock)"; 
-    if (isFetchingHostPassPrice) hostPassButtonText = "Fetching price...";
-    else if (hostPassPriceDetails) {
+    hostPassButtonText = "Purchase Host Pass"; 
+    if (isFetchingHostPassPrice) {
+        hostPassButtonText = "Fetching price...";
+    } else if (hostPassPriceDetails) {
         hostPassPriceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
         hostPassButtonText = `Purchase Host Pass ${hostPassPriceString}`;
     } else {
+         // Fallback if price details are not yet available but it's an expired state
          hostPassButtonText = `Purchase Host Pass (£4.99/month - Mock)`;
     }
   }
 
 
   if (userMode === 'guest') {
-    return (<AuthenticatedPageWrapper><div className="container mx-auto py-8 px-4 text-center"><HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" /><h1 className="font-headline text-3xl mb-2">Life Journey Not Available</h1><p className="text-muted-foreground mb-6">This feature is for hosts. Guests view shared memories.</p><Link href="/timeline" passHref><Button variant="outline">Go to Timeline</Button></Link></div></AuthenticatedPageWrapper>);
+    return (
+      <AuthenticatedPageWrapper>
+        <div className="container mx-auto py-8 px-4 text-center">
+          <HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+          <h1 className="font-headline text-3xl mb-2">Life Journey Not Available</h1>
+          <p className="text-muted-foreground mb-6">
+            This feature is for hosts to record their memories. Guests can view memories shared with them on the Timeline.
+          </p>
+          <Link href="/timeline" passHref>
+            <Button variant="outline">Go to Timeline</Button>
+          </Link>
+        </div>
+      </AuthenticatedPageWrapper>
+    );
   }
+
   if (isLoading) {
-    return (<AuthenticatedPageWrapper><div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4"><Loader2 className="h-12 w-12 animate-spin text-primary mb-4" /><h2 className="text-2xl font-headline mb-2">Loading Life Journey...</h2></div></AuthenticatedPageWrapper>);
+    return (
+      <AuthenticatedPageWrapper>
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+          <h2 className="text-2xl font-headline mb-2">Loading Life Journey...</h2>
+        </div>
+      </AuthenticatedPageWrapper>
+    );
   }
 
   return (
     <AuthenticatedPageWrapper>
       <div className="container mx-auto py-8 px-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-          <div className="flex items-center mb-4 md:mb-0"><Film className="h-10 w-10 text-primary mr-3" /> <h1 className="font-headline text-4xl">My Life Journey</h1></div>
+          <div className="flex items-center mb-4 md:mb-0">
+            <Film className="h-10 w-10 text-primary mr-3" /> {/* Changed Icon */}
+            <h1 className="font-headline text-4xl">My Life Journey</h1>
+          </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-              <Button onClick={() => setShowCustomChapterDialog(true)} variant="secondary" className="w-full sm:w-auto" disabled={!canAccessFullJourney}><Sparkles className="mr-2 h-4 w-4" /> Brainstorm Custom Chapter</Button>
-              <div className="w-full sm:w-auto"><Label htmlFor="prompt-language" className="sr-only">Language</Label><Select value={currentLanguage} onValueChange={(value: 'en' | 'gu') => setCurrentLanguage(value)}><SelectTrigger id="prompt-language" className="w-full"><Languages className="mr-2 h-4 w-4" /><SelectValue placeholder="Language" /></SelectTrigger><SelectContent><SelectItem value="en">English</SelectItem><SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem></SelectContent></Select></div>
+              <Button onClick={() => setShowCustomChapterDialog(true)} variant="secondary" className="w-full sm:w-auto" disabled={!canAccessFullJourney}>
+                <Sparkles className="mr-2 h-4 w-4" /> Brainstorm Custom Chapter
+              </Button>
+              <div className="w-full sm:w-auto">
+                <Label htmlFor="prompt-language" className="sr-only">Language</Label>
+                <Select value={currentLanguage} onValueChange={(value: 'en' | 'gu') => setCurrentLanguage(value)}>
+                  <SelectTrigger id="prompt-language" className="w-full">
+                    <Languages className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
           </div>
         </div>
         
         <div className="mb-8 p-4 bg-card/50 rounded-lg shadow">
-            <p className="text-muted-foreground">Welcome! Click a prompt to record memories or brainstorm a custom chapter. Completed chapters <CheckCircle className="inline-block h-4 w-4 text-green-500" />.</p>
-            {!canAccessFullJourney && hostPassStatus !== 'no_pass_initiated' && (<p className="text-sm text-primary mt-1">Your Host Pass has expired. Full access to all chapters and brainstorming requires an active pass.</p>)}
-             {hostPassStatus === 'no_pass_initiated' && !canAccessFullJourney && (<p className="text-sm text-primary mt-1">Activate your 6-month free Host Pass to unlock all chapters and features!</p>)}
+            <p className="text-muted-foreground">Welcome! Click a prompt to record memories or brainstorm a custom chapter. Completed chapters are marked with <CheckCircle className="inline-block h-4 w-4 text-green-500" />.</p>
+            {!canAccessFullJourney && hostPassStatus !== 'no_pass_initiated' && (
+                <p className="text-sm text-primary mt-1">Your Host Pass has expired. Full access to all chapters and brainstorming requires an active pass.</p>
+            )}
+             {hostPassStatus === 'no_pass_initiated' && !canAccessFullJourney && (
+                <p className="text-sm text-primary mt-1">Activate your 6-month free Host Pass to unlock all chapters and features!</p>
+            )}
         </div>
 
         {(!canAccessFullJourney && (hostPassStatus === 'no_pass_initiated' || hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired')) && (
           <Alert className="mb-6 bg-primary/10 border-primary/30">
             {hostPassStatus === 'no_pass_initiated' ? <Star className="h-5 w-5 text-primary" /> : <Zap className="h-5 w-5 text-primary" />}
             <AlertTitle className="font-headline text-primary">
-              {hostPassStatus === 'no_pass_initiated' ? "Host Pass & Features" : "Renew Host Pass for Full Access"}
+              {hostPassStatus === 'no_pass_initiated' 
+                ? "Host Pass & Features" 
+                : "Renew Host Pass for Full Access"}
             </AlertTitle>
             <AlertDescription className="text-primary/80">
               {hostPassStatus === 'no_pass_initiated' 
@@ -176,9 +237,19 @@ export default function LifeJourneyPage() {
         )}
 
         {availablePromptGroups.length === 0 && canAccessFullJourney ? ( 
-          <div className="text-center py-12"><Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> <h2 className="font-headline text-2xl mb-2">No Chapters Found</h2><p className="text-muted-foreground">Try brainstorming a custom chapter!</p></div>
+          <div className="text-center py-12">
+            <Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> {/* Changed Icon */}
+            <h2 className="font-headline text-2xl mb-2">No Chapters Found</h2>
+            <p className="text-muted-foreground">Try brainstorming a custom chapter!</p>
+          </div>
         ) : availablePromptGroups.length === 0 && !canAccessFullJourney ? ( 
-            <div className="text-center py-12"><Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> <h2 className="font-headline text-2xl mb-2">Activate Your Host Pass</h2><p className="text-muted-foreground">Activate or purchase a host pass to begin your Life Journey.</p></div>
+            // This case means no_pass_initiated or expired, AND mockPromptGroups is empty (unlikely with current mockData)
+            // Or, more likely, they are in 'no_pass_initiated' state and the *first* group is also empty.
+            <div className="text-center py-12">
+                <Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> {/* Changed Icon */}
+                <h2 className="font-headline text-2xl mb-2">Activate Your Host Pass</h2>
+                <p className="text-muted-foreground">Activate or purchase a host pass to begin your Life Journey.</p>
+            </div>
         ) : (
           <div className="space-y-10">
             {availablePromptGroups.map((group) => (
@@ -188,12 +259,21 @@ export default function LifeJourneyPage() {
                   {group.prompts.map((prompt) => {
                     const isCompleted = completedPromptIds.has(prompt.id);
                     const memoryForPrompt = memories.find(m => m.promptId === prompt.id);
+                    // A prompt is actionable if user has full access OR if it's in the available (teaser) groups OR if it's already completed
                     const isPromptActionable = canAccessFullJourney || availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === prompt.id) || isCompleted;
+                    
                     return (
-                      <PromptCard key={prompt.id} promptId={prompt.id} promptText={prompt.text[currentLanguage] || prompt.text.en}
-                        isCompleted={isCompleted} memoryId={memoryForPrompt?.id}
-                        onStartChapter={handleStartChapter} onViewEditChapter={handleViewEditChapter}
-                      />);
+                      <PromptCard
+                        key={prompt.id}
+                        promptId={prompt.id}
+                        promptText={prompt.text[currentLanguage] || prompt.text.en}
+                        isCompleted={isCompleted}
+                        memoryId={memoryForPrompt?.id}
+                        onStartChapter={handleStartChapter}
+                        onViewEditChapter={handleViewEditChapter}
+                        // The card itself might not need to be "disabled" but the actions within it are gated by onStartChapter logic
+                      />
+                    );
                   })}
                 </div>
               </section>
@@ -204,16 +284,61 @@ export default function LifeJourneyPage() {
 
       <Dialog open={showCustomChapterDialog} onOpenChange={setShowCustomChapterDialog}>
         <DialogContent className="sm:max-w-[525px]">
-          <DialogHeader><DialogTitle className="font-headline text-xl flex items-center"><Sparkles className="mr-2 h-5 w-5 text-primary" /> Brainstorm Custom Chapter Idea</DialogTitle><DialogDescription>Provide context to help AI generate chapter ideas. These become titles for new memory chapters.</DialogDescription></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-headline text-xl flex items-center"><Sparkles className="mr-2 h-5 w-5 text-primary" /> Brainstorm Custom Chapter Idea</DialogTitle>
+            <DialogDescription>
+              Provide context to help AI generate chapter ideas. These become titles for new memory chapters.
+            </DialogDescription>
+          </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="space-y-1"><Label htmlFor="custom-chapter-user-profile">About Yourself (for AI Chapter Ideas)</Label><Textarea id="custom-chapter-user-profile" value={customChapterUserProfile} onChange={(e) => setCustomChapterUserProfile(e.target.value)} placeholder="Feeling stuck? Share life themes, interests, periods (e.g., 'childhood in London', 'my gardening passion', '70s travels'). AI will suggest chapter starting points." rows={4}/></div>
-            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-              <div className="flex-grow space-y-1"><Label htmlFor="custom-chapter-language">Language</Label><Select value={customChapterLanguage} onValueChange={(value: 'en' | 'gu') => setCustomChapterLanguage(value)}><SelectTrigger id="custom-chapter-language"><Languages className="mr-2 h-4 w-4" /><SelectValue placeholder="Language" /></SelectTrigger><SelectContent><SelectItem value="en">English</SelectItem><SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem></SelectContent></Select></div>
-              <Button onClick={handleGenerateCustomChapterIdeas} disabled={isLoadingChapterIdeas || !canAccessFullJourney} className="w-full sm:w-auto">{isLoadingChapterIdeas ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}Generate Ideas</Button>
+            <div className="space-y-1">
+              <Label htmlFor="custom-chapter-user-profile">About Yourself (for AI Chapter Ideas)</Label>
+              <Textarea
+                id="custom-chapter-user-profile"
+                value={customChapterUserProfile}
+                onChange={(e) => setCustomChapterUserProfile(e.target.value)}
+                placeholder="Feeling stuck? Share life themes, interests, periods (e.g., 'childhood in London', 'my gardening passion', '70s travels'). AI will suggest chapter starting points."
+                rows={4}
+              />
             </div>
-            {generatedChapterIdeas.length > 0 && (<div className="space-y-2 pt-2 max-h-60 overflow-y-auto"><h4 className="text-sm font-medium">Suggested Chapter Ideas:</h4><p className="text-xs text-muted-foreground mt-1 mb-2">AI generated chapter themes. Clicking an idea pre-fills it as a new chapter title.</p><ul className="space-y-1">{generatedChapterIdeas.map((idea, index) => (<li key={index}><Button variant="outline" size="sm" className="w-full justify-start text-left h-auto py-1.5 px-2" onClick={() => handleCustomIdeaSelected(idea)}>{idea}</Button></li>))}</ul></div>)}
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+              <div className="flex-grow space-y-1">
+                <Label htmlFor="custom-chapter-language">Language</Label>
+                <Select value={customChapterLanguage} onValueChange={(value: 'en' | 'gu') => setCustomChapterLanguage(value)}>
+                  <SelectTrigger id="custom-chapter-language">
+                    <Languages className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleGenerateCustomChapterIdeas} disabled={isLoadingChapterIdeas || !canAccessFullJourney} className="w-full sm:w-auto">
+                {isLoadingChapterIdeas ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}
+                Generate Ideas
+              </Button>
+            </div>
+            {generatedChapterIdeas.length > 0 && (
+              <div className="space-y-2 pt-2 max-h-60 overflow-y-auto">
+                <h4 className="text-sm font-medium">Suggested Chapter Ideas:</h4>
+                 <p className="text-xs text-muted-foreground mt-1 mb-2">AI generated chapter themes. Clicking an idea pre-fills it as a new chapter title.</p>
+                <ul className="space-y-1">
+                  {generatedChapterIdeas.map((idea, index) => (
+                    <li key={index}>
+                      <Button variant="outline" size="sm" className="w-full justify-start text-left h-auto py-1.5 px-2" onClick={() => handleCustomIdeaSelected(idea)}>
+                        {idea}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setShowCustomChapterDialog(false)}>Cancel</Button></DialogFooter>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCustomChapterDialog(false)}>Cancel</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </AuthenticatedPageWrapper>
