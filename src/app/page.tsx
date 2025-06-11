@@ -105,14 +105,14 @@ export default function LandingPage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {features.map((feature) => (
-                <Card key={feature.title} className="text-center shadow-xl hover:shadow-2xl transition-shadow">
+                <Card key={feature.title} className="flex flex-col h-full text-center shadow-xl hover:shadow-2xl transition-shadow">
                   <CardHeader>
                     <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit mb-4">
                        <feature.icon className="h-10 w-10 text-primary" />
                     </div>
                     <CardTitle className="font-headline text-2xl">{feature.title}</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="flex-grow">
                     <p className="text-muted-foreground">{feature.description}</p>
                   </CardContent>
                    <CardFooter className="flex justify-center p-4">
