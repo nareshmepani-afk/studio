@@ -32,7 +32,16 @@ export default function LifeJourneyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
-  const { user, userMode, hostPassStatus, purchasePaidHostPass, activateFreeHostPass, hostPassPriceDetails, isFetchingHostPassPrice } = useAuth(); 
+  
+  const { 
+    user, 
+    userMode, 
+    purchasePaidHostPass, 
+    activateFreeHostPass, 
+    hostPassPriceDetails, 
+    isFetchingHostPassPrice: isFetchingAuthHostPassPrice // Renamed to avoid conflict
+  } = useAuth(); 
+  const hostPassStatus = user?.hostPassStatus; // Correctly derive hostPassStatus
 
   const [showCustomChapterDialog, setShowCustomChapterDialog] = useState(false);
   const [customChapterUserProfile, setCustomChapterUserProfile] = useState('');
@@ -40,14 +49,19 @@ export default function LifeJourneyPage() {
   const [generatedChapterIdeas, setGeneratedChapterIdeas] = useState<string[]>([]);
   const [isLoadingChapterIdeas, setIsLoadingChapterIdeas] = useState(false);
 
+  // Use isFetchingAuthHostPassPrice for the button disabling logic if that's its purpose
+  const isActuallyFetchingHostPassPrice = isFetchingAuthHostPassPrice;
+
+
   useEffect(() => { if (user?.profileInfo) setCustomChapterUserProfile(user.profileInfo); }, [user?.profileInfo]);
 
-  const canAccessFullJourney = hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
+  const canAccessFullJourney = useMemo(() => {
+    return hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
+  }, [hostPassStatus]);
 
   const availablePromptGroups = useMemo(() => {
     if (canAccessFullJourney) return mockPromptGroups;
      if (hostPassStatus === 'no_pass_initiated' || hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
-        
         return mockPromptGroups.length > 0 ? [mockPromptGroups[0]] : [];
      }
     return []; 
@@ -55,10 +69,8 @@ export default function LifeJourneyPage() {
 
 
   useEffect(() => {
-    
     setTimeout(() => {
       setPromptGroups(mockPromptGroups); 
-      
       const userMemories = mockMemories.filter(m => m.userId === user?.id);
       setMemories(userMemories);
       setIsLoading(false);
@@ -68,7 +80,6 @@ export default function LifeJourneyPage() {
   const completedPromptIds = useMemo(() => new Set(memories.filter(m => m.promptId).map(m => m.promptId)), [memories]);
 
   const handleStartChapter = (promptId: string, promptText: string) => {
-    
     const isPromptInAvailableGroups = availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === promptId);
 
     if (!canAccessFullJourney && !isPromptInAvailableGroups) {
@@ -127,23 +138,22 @@ export default function LifeJourneyPage() {
       purchasePaidHostPass();
     }
   };
-
   
   let hostPassButtonText = "Activate 6-Month Free Host Pass";
   let hostPassPriceString = ""; 
   if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
     hostPassButtonText = "Purchase Host Pass"; 
-    if (isFetchingHostPassPrice) {
+    if (isActuallyFetchingHostPassPrice) {
         hostPassButtonText = "Fetching price...";
     } else if (hostPassPriceDetails) {
         hostPassPriceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
         hostPassButtonText = `Purchase Host Pass ${hostPassPriceString}`;
     } else {
-         
          hostPassButtonText = `Purchase Host Pass (£4.99/month - Mock)`;
     }
   }
 
+  console.log("[PromptsPage] Rendering with hostPassStatus from user object:", hostPassStatus, "User object:", user);
 
   if (userMode === 'guest') {
     return (
@@ -228,8 +238,8 @@ export default function LifeJourneyPage() {
                     </>
                   )
                 : "Your Host Pass has expired. Renew to continue accessing all Life Journey chapters and creation tools."}
-              <Button onClick={handleHostPassAction} size="sm" className="mt-3 ml-auto block sm:inline-block sm:ml-3 bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isFetchingHostPassPrice && hostPassStatus !== 'no_pass_initiated'}>
-                {isFetchingHostPassPrice && hostPassStatus !== 'no_pass_initiated' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (hostPassStatus === 'no_pass_initiated' ? <Star className="mr-2 h-4 w-4"/> : <Zap className="mr-2 h-4 w-4"/>) }
+              <Button onClick={handleHostPassAction} size="sm" className="mt-3 ml-auto block sm:inline-block sm:ml-3 bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isActuallyFetchingHostPassPrice && hostPassStatus !== 'no_pass_initiated'}>
+                {isActuallyFetchingHostPassPrice && hostPassStatus !== 'no_pass_initiated' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (hostPassStatus === 'no_pass_initiated' ? <Star className="mr-2 h-4 w-4"/> : <Zap className="mr-2 h-4 w-4"/>) }
                 {hostPassButtonText}
               </Button>
             </AlertDescription>
@@ -243,8 +253,6 @@ export default function LifeJourneyPage() {
             <p className="text-muted-foreground">Try brainstorming a custom chapter!</p>
           </div>
         ) : availablePromptGroups.length === 0 && !canAccessFullJourney ? ( 
-            
-            
             <div className="text-center py-12">
                 <Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> 
                 <h2 className="font-headline text-2xl mb-2">Activate Your Host Pass</h2>
@@ -259,7 +267,6 @@ export default function LifeJourneyPage() {
                   {group.prompts.map((prompt) => {
                     const isCompleted = completedPromptIds.has(prompt.id);
                     const memoryForPrompt = memories.find(m => m.promptId === prompt.id);
-                    
                     const isPromptActionable = canAccessFullJourney || availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === prompt.id) || isCompleted;
                     
                     return (
@@ -271,7 +278,6 @@ export default function LifeJourneyPage() {
                         memoryId={memoryForPrompt?.id}
                         onStartChapter={handleStartChapter}
                         onViewEditChapter={handleViewEditChapter}
-                        
                       />
                     );
                   })}
@@ -344,3 +350,5 @@ export default function LifeJourneyPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    
