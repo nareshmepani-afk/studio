@@ -45,7 +45,7 @@ const features: Feature[] = [
     icon: Share2,
     title: 'Secure & Easy Sharing',
     description: 'Share selected memories with family and friends through unique, secure links. Guests can easily view what you share.',
-    imageSrc: 'https://placehold.co/300x200.png',
+    imageSrc: 'https://images.unsplash.com/photo-1588196749597-9ff075ee6b5b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMXx8U2hhcmUlMjB2aWRlb3xlbnwwfHx8fDE3NDk2NTE3ODJ8MA&ixlib=rb-4.1.0&q=80&w=1080',
     imageHint: 'secure sharing'
   },
 ];
