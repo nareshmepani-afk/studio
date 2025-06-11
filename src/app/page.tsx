@@ -24,7 +24,7 @@ const features: Feature[] = [
     icon: ListChecks,
     title: 'Guided Life Journey',
     description: 'Embark on a structured "My Life Journey" with guided chapters. AI helps you brainstorm unique prompts tailored to your story.',
-    imageSrc: 'https://images.unsplash.com/photo-1617361194384-1852022fe186?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxMaWZlJTIwSm91cm5leXxlbnwwfHx8fDE3NDk2NTA0ODh8MA&ixlib=rb-4.1.0&q=80&w=1080',
+    imageSrc: 'https://images.unsplash.com/photo-1589820675999-b1fc94f318a3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxmaWxtJTIwc2NyaXB0fGVufDB8fHx8MTc0OTU4OTk5OXww&ixlib=rb-4.1.0&q=80&w=1080',
     imageHint: 'journal path'
   },
   {
