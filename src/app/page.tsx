@@ -31,7 +31,7 @@ const features: Feature[] = [
     icon: Film,
     title: 'Rich Multimedia Memories',
     description: 'Capture life\'s moments with video and audio. Easily edit, trim, and store your recordings within the app.',
-    imageSrc: 'https://placehold.co/300x200.png',
+    imageSrc: 'https://images.unsplash.com/photo-1650654561494-50e4bd25452a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx2aWRlbyUyMG1pY3xlbnwwfHx8fDE3NDk2NTEzNjR8MA&ixlib=rb-4.1.0&q=80&w=1080',
     imageHint: 'media editing'
   },
   {
