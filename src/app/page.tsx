@@ -23,25 +23,25 @@ const features: Feature[] = [
     icon: ListChecks,
     title: 'Guided Life Journey',
     description: 'Embark on a structured "My Life Journey" with guided chapters. AI helps you brainstorm unique prompts tailored to your story.',
-    imageHint: 'journal writing path'
+    imageHint: 'journal path'
   },
   {
     icon: Film,
     title: 'Rich Multimedia Memories',
     description: 'Capture life\'s moments with video and audio. Easily edit, trim, and store your recordings within the app.',
-    imageHint: 'video audio editing'
+    imageHint: 'media editing'
   },
   {
     icon: LayoutList,
     title: 'Organized Timeline View',
     description: 'Visually browse, sort, and filter your cherished moments in an interactive and intuitive timeline.',
-    imageHint: 'digital memory timeline'
+    imageHint: 'memory timeline'
   },
   {
     icon: Share2,
     title: 'Secure & Easy Sharing',
     description: 'Share selected memories with family and friends through unique, secure links. Guests can easily view what you share.',
-    imageHint: 'secure link sharing'
+    imageHint: 'secure sharing'
   },
 ];
 
