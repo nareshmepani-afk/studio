@@ -44,7 +44,7 @@ interface AuthContextType {
   hostPassPriceDetails: GetHostPassPriceOutput | null;
   fetchHostPassPrice: () => Promise<void>;
   isFetchingHostPassPrice: boolean;
-  resetHostPassForTesting: () => void; // New function for testing
+  resetHostPassForTesting: () => void; 
 
   // Storage related
   storageQuotaBytes: number;
@@ -73,9 +73,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateUserInStateAndStorage = useCallback((updatedUserArg: User | null) => {
     setUser(prevUser => {
-      // Only update if the user object has actually changed.
-      // A simple JSON.stringify comparison might be too naive for complex objects if order matters,
-      // but for this user object, it's generally okay. A deep equality check would be more robust.
       if (JSON.stringify(prevUser) !== JSON.stringify(updatedUserArg)) {
           if (updatedUserArg) {
             localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUserArg));
@@ -96,10 +93,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         userMemories = JSON.parse(storedMemoriesJson).filter((mem: MemoryType) => mem.userId === userId);
       } catch (e) {
         console.error("Error parsing memories for storage calculation:", e);
-        userMemories = mockMemories.filter(mem => mem.userId === userId); // Fallback to mock if parse fails
+        userMemories = mockMemories.filter(mem => mem.userId === userId); 
       }
     } else {
-      userMemories = mockMemories.filter(mem => mem.userId === userId); // Fallback to mock if not in localStorage
+      userMemories = mockMemories.filter(mem => mem.userId === userId); 
     }
 
     const usedBytes = userMemories.reduce((acc, memory) => {
@@ -128,7 +125,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkIfGuestHasUnviewedMemories = useCallback(() => {
     if (!user) return false;
-    const potentialSharedMemories = mockMemories.slice(0, 2); // Using the same logic as Timeline for guest's shared view
+    const potentialSharedMemories = mockMemories.slice(0, 2); 
     if (potentialSharedMemories.length === 0) return false;
     const viewedIds = user.viewedSharedMemoryIds || [];
     return potentialSharedMemories.some(mem => !viewedIds.includes(mem.id));
@@ -149,7 +146,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         newStatus = 'paid_pass_expired';
       }
     }
-    // Only update if status changed
+    
     if (newStatus !== user.sharedAccessStatus) {
       const updatedUser = { ...user, sharedAccessStatus: newStatus };
       updateUserInStateAndStorage(updatedUser);
@@ -179,21 +176,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
   const fetchGuestPassPriceLogic = useCallback(async () => {
-    if (isFetchingGuestPassPrice || guestPassPriceDetails) return; // Prevent multiple fetches
+    if (isFetchingGuestPassPrice || guestPassPriceDetails) return; 
     setIsFetchingGuestPassPrice(true);
     try {
-      // Use user's city/country if available, otherwise default.
+      
       const cityForPrice = user?.city || 'London';
-      const countryForPrice = user?.countryOfBirth || 'UK'; // Assuming countryOfBirth might imply current country for pricing
+      const countryForPrice = user?.countryOfBirth || 'UK'; 
       const priceData = await getGuestPassPriceAction({ city: cityForPrice, country: countryForPrice });
       setGuestPassPriceDetails(priceData);
     } catch (error) {
       console.error("Failed to fetch guest pass price:", error);
-      // Fallback price if AI call fails
+      
       setGuestPassPriceDetails({
-        passPrice: 7.99, // Default fallback price
-        currency: 'GBP', // Default fallback currency
-        coffeePrice: 3.50, // Mock coffee price
+        passPrice: 7.99, 
+        currency: 'GBP', 
+        coffeePrice: 3.50, 
         justification: 'Enjoy a month of shared memories with our standard access pass.',
       });
     } finally {
@@ -236,7 +233,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (storedUserJson) {
       try {
         const storedUserData = JSON.parse(storedUserJson);
-        // Calculate initial storage used for this user from localStorage memories
+        
         let initialStorageUsedBytes = 0;
         if (storedUserData.id) {
             const memoriesForCalcJson = localStorage.getItem('mockMemories');
@@ -256,35 +253,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         const hydratedUser: User = {
-          id: storedUserData.id || '1', // Default ID if missing
+          id: storedUserData.id || '1', 
           email: storedUserData.email,
           name: storedUserData.name,
-          profileInfo: storedUserData.profileInfo,
           avatarUrl: storedUserData.avatarUrl,
           dateOfBirth: storedUserData.dateOfBirth,
           countryOfBirth: storedUserData.countryOfBirth,
           city: storedUserData.city,
           townArea: storedUserData.townArea,
-          // Guest Pass
+          
           sharedAccessStatus: storedUserData.sharedAccessStatus || 'no_pass_initiated',
           freePassActivatedDate: storedUserData.freePassActivatedDate,
           paidPassExpiryDate: storedUserData.paidPassExpiryDate,
           viewedSharedMemoryIds: storedUserData.viewedSharedMemoryIds || [],
-          // Host Pass
+          
           hostPassStatus: storedUserData.hostPassStatus || 'no_pass_initiated',
           freeHostPassActivatedDate: storedUserData.freeHostPassActivatedDate,
           paidHostPassExpiryDate: storedUserData.paidHostPassExpiryDate,
-          storageUsedBytes: initialStorageUsedBytes, // Set calculated initial storage
+          storageUsedBytes: initialStorageUsedBytes, 
         };
-        setUser(hydratedUser); // Set the user state
+        setUser(hydratedUser); 
         setIsAuthenticated(true);
       } catch (e) {
         console.error("Failed to parse user from localStorage", e);
-        localStorage.removeItem('memoryWeaverUser'); // Clear corrupted data
+        localStorage.removeItem('memoryWeaverUser'); 
       }
     }
     setLoading(false);
-  }, []); // Empty dependency array means this runs once on mount
+  }, []); 
 
   useEffect(() => {
     if (!loading && user) {
@@ -305,12 +301,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
          }
       }
     }
-  }, [loading, user, userMode, checkIfGuestHasUnviewedMemories, fetchGuestPassPrice, isFetchingGuestPassPrice, guestPassPriceDetails, checkAndUpdateGuestPassStatus,
-      fetchHostPassPrice, isFetchingHostPassPrice, hostPassPriceDetails, checkAndUpdateHostPassStatus]);
+  }, [loading, user, userMode, checkIfGuestHasUnviewedMemories, 
+      fetchGuestPassPrice, isFetchingGuestPassPrice, guestPassPriceDetails, checkAndUpdateGuestPassStatus,
+      fetchHostPassPrice, isFetchingHostPassPrice, hostPassPriceDetails, checkAndUpdateHostPassStatus,
+      setHasNewSharedMemoriesState 
+    ]);
 
   useEffect(() => {
-    // This effect handles redirection based on auth state and current path
-    if (loading || isLoggingOut) return; // Don't redirect while loading or logging out
+    
+    if (loading || isLoggingOut) return; 
 
     const publicPaths = ['/', '/login', '/register'];
     const defaultAuthenticatedHostPath = '/prompts'; 
@@ -328,7 +327,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isAuthenticated, loading, pathname, router, userMode, isLoggingOut]);
 
-  // Effect to reset isLoggingOut if user navigates back to a public page after logout
+  
   useEffect(() => {
     if (isLoggingOut && (pathname === '/' || pathname === '/login' || pathname === '/register')) {
       setIsLoggingOut(false);
@@ -341,21 +340,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (storedUserJson) {
       try {
         const parsedUser = JSON.parse(storedUserJson);
-        // Important: Only use stored data if email matches, otherwise it's a new login for a different user
+        
         if (parsedUser.email === email) {
           currentUserData = parsedUser;
         }
       } catch (e) { console.error("Error parsing user data on login:", e); }
     }
 
-    const userIdForLogin = currentUserData.id || Date.now().toString(); // Use existing ID or generate new
+    const userIdForLogin = currentUserData.id || Date.now().toString(); 
     
-    // Default to 'no_pass_initiated' for a truly new user or if fields are missing
+    
     const finalUser: User = {
       id: userIdForLogin,
       email,
-      name: currentUserData.name || email.split('@')[0], // Default name from email
-      profileInfo: currentUserData.profileInfo,
+      name: currentUserData.name || email.split('@')[0], 
       avatarUrl: currentUserData.avatarUrl,
       dateOfBirth: currentUserData.dateOfBirth,
       countryOfBirth: currentUserData.countryOfBirth,
@@ -368,13 +366,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       hostPassStatus: currentUserData.hostPassStatus || 'no_pass_initiated',
       freeHostPassActivatedDate: currentUserData.freeHostPassActivatedDate,
       paidHostPassExpiryDate: currentUserData.paidHostPassExpiryDate,
-      storageUsedBytes: 0, // Recalculate for this user
+      storageUsedBytes: 0, 
     };
-    updateUserInStateAndStorage(finalUser); // This also saves to localStorage
+    updateUserInStateAndStorage(finalUser); 
     setIsAuthenticated(true);
-    setUserModeState('host'); // Default to host mode on login
-    setIsLoggingOut(false); // Ensure logging out state is cleared
-    await calculateAndUpdateStorageUsage(finalUser.id); // Calculate storage for this user
+    setUserModeState('host'); 
+    setIsLoggingOut(false); 
+    await calculateAndUpdateStorageUsage(finalUser.id); 
   };
 
   const logout = useCallback(() => {
@@ -383,10 +381,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsAuthenticated(false);
     setPendingRequestCountState(0);
     setHasNewSharedMemoriesState(false);
-    setUserModeState('host'); // Reset to default mode
-    setGuestPassPriceDetails(null); // Clear price details
+    setUserModeState('host'); 
+    setGuestPassPriceDetails(null); 
     setHostPassPriceDetails(null);
-    router.push('/'); // Redirect to landing page
+    router.push('/'); 
   }, [router, updateUserInStateAndStorage]);
 
   const setPendingRequestCount = useCallback((count: number) => {
@@ -401,7 +399,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       checkAndUpdateHostPassStatus();
       setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
     }
-  }, [user, checkAndUpdateGuestPassStatus, checkAndUpdateHostPassStatus, checkIfGuestHasUnviewedMemories]);
+  }, [user, checkAndUpdateGuestPassStatus, checkAndUpdateHostPassStatus, checkIfGuestHasUnviewedMemories, setHasNewSharedMemoriesState]);
 
   const toggleUserMode = useCallback(() => {
     handleModeChange(userMode === 'host' ? 'guest' : 'host');
@@ -426,16 +424,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (user) {
       const now = new Date();
       let startDate = now;
-      // If current paid pass is still active, extend from its expiry.
+      
       if (user.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate && isBefore(now, parseISO(user.paidPassExpiryDate))) {
         startDate = parseISO(user.paidPassExpiryDate);
       }
-      const newExpiryDate = addDays(startDate, 31); // 31-day pass
+      const newExpiryDate = addDays(startDate, 31); 
       const updatedUser: User = { ...user, sharedAccessStatus: 'paid_pass_active', paidPassExpiryDate: newExpiryDate.toISOString() };
       updateUserInStateAndStorage(updatedUser);
 
       let currentPassPrice = guestPassPriceDetails;
-      if (!currentPassPrice && !isFetchingGuestPassPrice) { // Fetch if not already available
+      if (!currentPassPrice && !isFetchingGuestPassPrice) { 
          currentPassPrice = await getGuestPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
          setGuestPassPriceDetails(currentPassPrice);
       }
@@ -486,19 +484,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!currentViewedIds.includes(memoryId)) {
         const updatedUser = { ...user, viewedSharedMemoryIds: [...currentViewedIds, memoryId] };
         updateUserInStateAndStorage(updatedUser);
-        // If user is currently in host mode, update the notification badge state
+        
         if (userMode === 'host') {
           setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
         }
       }
     }
-  }, [user, userMode, checkIfGuestHasUnviewedMemories, updateUserInStateAndStorage]);
+  }, [user, userMode, checkIfGuestHasUnviewedMemories, updateUserInStateAndStorage, setHasNewSharedMemoriesState]);
   
   const getStorageQuotaBytes = useCallback((): number => {
     if (user && (user.hostPassStatus === 'free_host_pass_active' || user.hostPassStatus === 'paid_host_pass_active')) {
       return STANDARD_HOST_STORAGE_QUOTA_BYTES;
     }
-    return 0; // No active host pass, no quota for new uploads.
+    return 0; 
   }, [user]);
 
   const resetHostPassForTesting = useCallback(() => {
@@ -510,7 +508,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         paidHostPassExpiryDate: undefined,
       };
       updateUserInStateAndStorage(updatedUser);
-      // Clear price details so they refetch if needed
+      
       setHostPassPriceDetails(null);
       toast({ title: "Host Pass Reset (Testing)", description: "Host pass status has been reset to initial state." });
     }
@@ -527,7 +525,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       guestPassPriceDetails, fetchGuestPassPrice, isFetchingGuestPassPrice,
       activateFreeHostPass, purchasePaidHostPass, checkAndUpdateHostPassStatus,
       hostPassPriceDetails, fetchHostPassPrice, isFetchingHostPassPrice,
-      resetHostPassForTesting, // Expose the new function
+      resetHostPassForTesting, 
       storageQuotaBytes: getStorageQuotaBytes(),
       calculateAndUpdateStorageUsage,
     }}>
@@ -535,5 +533,3 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-
-    

@@ -47,18 +47,18 @@ export default function LifeJourneyPage() {
   const availablePromptGroups = useMemo(() => {
     if (canAccessFullJourney) return mockPromptGroups;
      if (hostPassStatus === 'no_pass_initiated' || hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
-        // For teaser: show only the first group if it exists
+        
         return mockPromptGroups.length > 0 ? [mockPromptGroups[0]] : [];
      }
-    return []; // Should not happen if logic is correct, implies an unhandled hostPassStatus or issue
+    return []; 
   }, [hostPassStatus, canAccessFullJourney]);
 
 
   useEffect(() => {
-    // Simulate loading prompts and user's memories
+    
     setTimeout(() => {
       setPromptGroups(mockPromptGroups); 
-      // In a real app, fetch memories for the user
+      
       const userMemories = mockMemories.filter(m => m.userId === user?.id);
       setMemories(userMemories);
       setIsLoading(false);
@@ -68,7 +68,7 @@ export default function LifeJourneyPage() {
   const completedPromptIds = useMemo(() => new Set(memories.filter(m => m.promptId).map(m => m.promptId)), [memories]);
 
   const handleStartChapter = (promptId: string, promptText: string) => {
-    // Check if this specific prompt is available to the user (part of the first group if on teaser, or any group if full access)
+    
     const isPromptInAvailableGroups = availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === promptId);
 
     if (!canAccessFullJourney && !isPromptInAvailableGroups) {
@@ -115,9 +115,9 @@ export default function LifeJourneyPage() {
         return;
     }
     toast({ title: "Custom Chapter Selected!", description: `Starting chapter: "${idea}". Redirecting...`});
-    router.push(`/add-memory?prompt=${encodeURIComponent(idea)}`); // No promptId for custom ones initially
+    router.push(`/add-memory?prompt=${encodeURIComponent(idea)}`); 
     setShowCustomChapterDialog(false);
-    setGeneratedChapterIdeas([]); // Clear ideas after selection
+    setGeneratedChapterIdeas([]); 
   };
 
   const handleHostPassAction = () => {
@@ -128,9 +128,9 @@ export default function LifeJourneyPage() {
     }
   };
 
-  // Determine button text and price string for host pass
+  
   let hostPassButtonText = "Activate 6-Month Free Host Pass";
-  let hostPassPriceString = ""; // e.g. "(£4.99)"
+  let hostPassPriceString = ""; 
   if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
     hostPassButtonText = "Purchase Host Pass"; 
     if (isFetchingHostPassPrice) {
@@ -139,7 +139,7 @@ export default function LifeJourneyPage() {
         hostPassPriceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
         hostPassButtonText = `Purchase Host Pass ${hostPassPriceString}`;
     } else {
-         // Fallback if price details are not yet available but it's an expired state
+         
          hostPassButtonText = `Purchase Host Pass (£4.99/month - Mock)`;
     }
   }
@@ -178,7 +178,7 @@ export default function LifeJourneyPage() {
       <div className="container mx-auto py-8 px-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div className="flex items-center mb-4 md:mb-0">
-            <Film className="h-10 w-10 text-primary mr-3" /> {/* Changed Icon */}
+            <Film className="h-10 w-10 text-primary mr-3" /> 
             <h1 className="font-headline text-4xl">My Life Journey</h1>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
@@ -238,15 +238,15 @@ export default function LifeJourneyPage() {
 
         {availablePromptGroups.length === 0 && canAccessFullJourney ? ( 
           <div className="text-center py-12">
-            <Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> {/* Changed Icon */}
+            <Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> 
             <h2 className="font-headline text-2xl mb-2">No Chapters Found</h2>
             <p className="text-muted-foreground">Try brainstorming a custom chapter!</p>
           </div>
         ) : availablePromptGroups.length === 0 && !canAccessFullJourney ? ( 
-            // This case means no_pass_initiated or expired, AND mockPromptGroups is empty (unlikely with current mockData)
-            // Or, more likely, they are in 'no_pass_initiated' state and the *first* group is also empty.
+            
+            
             <div className="text-center py-12">
-                <Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> {/* Changed Icon */}
+                <Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> 
                 <h2 className="font-headline text-2xl mb-2">Activate Your Host Pass</h2>
                 <p className="text-muted-foreground">Activate or purchase a host pass to begin your Life Journey.</p>
             </div>
@@ -259,7 +259,7 @@ export default function LifeJourneyPage() {
                   {group.prompts.map((prompt) => {
                     const isCompleted = completedPromptIds.has(prompt.id);
                     const memoryForPrompt = memories.find(m => m.promptId === prompt.id);
-                    // A prompt is actionable if user has full access OR if it's in the available (teaser) groups OR if it's already completed
+                    
                     const isPromptActionable = canAccessFullJourney || availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === prompt.id) || isCompleted;
                     
                     return (
@@ -271,7 +271,7 @@ export default function LifeJourneyPage() {
                         memoryId={memoryForPrompt?.id}
                         onStartChapter={handleStartChapter}
                         onViewEditChapter={handleViewEditChapter}
-                        // The card itself might not need to be "disabled" but the actions within it are gated by onStartChapter logic
+                        
                       />
                     );
                   })}
@@ -344,4 +344,3 @@ export default function LifeJourneyPage() {
     </AuthenticatedPageWrapper>
   );
 }
-
