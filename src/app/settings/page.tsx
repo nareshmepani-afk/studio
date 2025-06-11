@@ -220,7 +220,7 @@ export default function SettingsPage() {
     } else if (isFetchingHostPassPrice) {
         currentPriceString = "(fetching price...)";
     } else {
-        currentPriceString = "(£12.99 - Mock)"; // Fallback text
+        currentPriceString = "(£4.99/month - Mock)"; // Updated to reflect new pricing strategy.
     }
 
     switch (user.hostPassStatus) {
@@ -276,7 +276,7 @@ export default function SettingsPage() {
         <div className="max-w-2xl mx-auto">
           <form onSubmit={handleSubmit} className="space-y-8">
             <Card>
-              <CardHeader><CardTitle className="font-headline text-2xl">User Profile</CardTitle><CardDescription>Manage your account information. This helps AI generate relevant memory cues.</CardDescription></CardHeader>
+              <CardHeader><CardTitle className="font-headline text-2xl">User Profile</CardTitle><CardDescription>Manage your account information.</CardDescription></CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-20 w-20"><AvatarImage src={imageSrcForDisplay} alt={user.name || user.email} /><AvatarFallback>{showIconAsFallback ? (<UserCircle2 className="h-12 w-12 text-muted-foreground" />) : (user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?'))}</AvatarFallback></Avatar>
@@ -284,7 +284,6 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-1"><Label htmlFor="name">Name</Label><Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your Name" /></div>
                 <div className="space-y-1"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" disabled /><p className="text-xs text-muted-foreground">Email cannot be changed in this demo.</p></div>
-                <div className="space-y-1"><Label htmlFor="profile-info">Profile for AI Cues</Label><Textarea id="profile-info" value={profileInfo} onChange={(e) => setProfileInfo(e.target.value)} placeholder="Interests, life events, favorite places, etc." rows={5}/></div>
               </CardContent>
             </Card>
             <Card>
@@ -295,7 +294,13 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><CardTitle className="font-headline text-xl flex items-center"><Star className="mr-2 h-5 w-5 text-primary" /> Host Pass & Features</CardTitle><CardDescription>Manage your access to memory creation tools and features.</CardDescription></CardHeader>
+              <CardHeader>
+                <CardTitle className="font-headline text-xl flex items-center"><Star className="mr-2 h-5 w-5 text-primary" /> Host Pass & Features (£0/month or £4.99/month - Mock)</CardTitle>
+                <CardDescription>
+                  Your Host Pass grants access to memory creation, all "My Life Journey" chapters, and storage.
+                  Activate a 6-month free pass, then purchase 31-day passes. Current Premium Tier Mock Price: £4.99/month.
+                </CardDescription>
+              </CardHeader>
               <CardContent>{renderHostPassStatusInfo()}</CardContent>
             </Card>
             <Card>
@@ -324,5 +329,7 @@ export default function SettingsPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    
 
     
