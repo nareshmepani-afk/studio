@@ -38,7 +38,7 @@ const features: Feature[] = [
     icon: LayoutList,
     title: 'Organized Timeline View',
     description: 'Visually browse, sort, and filter your cherished moments in an interactive and intuitive timeline.',
-    imageSrc: 'https://placehold.co/300x200.png',
+    imageSrc: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxNHx8b3JnYW5pemUlMjBkaWdpdGFsfGVufDB8fHx8MTc0OTY1MTYwMnww&ixlib=rb-4.1.0&q=80&w=1080',
     imageHint: 'memory timeline'
   },
   {
@@ -161,3 +161,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
