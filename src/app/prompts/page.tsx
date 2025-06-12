@@ -243,8 +243,8 @@ export default function LifeJourneyPage() {
                 onClick={handleHostPassAction}
                 size="sm"
                 className={cn(
-                  "mt-3 ml-auto block sm:inline-block sm:ml-3 bg-primary hover:bg-primary/90 text-primary-foreground",
-                  hostPassStatus === 'no_pass_initiated' && "px-4" // Increased padding for this specific button
+                  "mt-3 ml-auto block bg-primary hover:bg-primary/90 text-primary-foreground",
+                  hostPassStatus === 'no_pass_initiated' && "px-4" 
                 )}
                 disabled={isActuallyFetchingHostPassPrice && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired')}
               >
