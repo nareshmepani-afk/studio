@@ -131,7 +131,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   const promptIdFromQuery = searchParams.get('promptId');
 
   useEffect(() => {
-    if (memory) {
+    if (memory) { // Editing an existing memory
       setTitle(memory.title || '');
       setLocation(memory.location || '');
       setCountry(memory.country || 'United Kingdom');
@@ -142,11 +142,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       setSelectedMonth(getInitialDateComponent('month', memory.date));
       setSelectedDay(getInitialDateComponent('day', memory.date));
 
-      if (memory.mediaAttachments && memory.mediaAttachments.length > 0) {
+      if (memory.mediaAttachments && memory.mediaAttachments.length > 0 && memory.mediaAttachments[0].url) {
         const firstMedia = memory.mediaAttachments[0];
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
         const size = (typeof firstMedia.size === 'number' && !isNaN(firstMedia.size)) ? firstMedia.size : 0;
-        const initialCurrentMediaData: CurrentMediaData = {
+        
+        const existingMediaData: CurrentMediaData = {
           file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
           type: firstMedia.type,
           startTime: firstMedia.startTime,
@@ -154,9 +155,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           duration: duration,
           size: size,
         };
-        setCurrentMedia(initialCurrentMediaData);
-        latestSelectedMediaDataRef.current = initialCurrentMediaData; 
-        setMediaToInitializeRecorder({ 
+        setCurrentMedia(existingMediaData);
+        setCurrentMediaPreviewUrl(firstMedia.url); // Directly set preview URL for existing media
+        latestSelectedMediaDataRef.current = existingMediaData;
+
+        setMediaToInitializeRecorder({ // For MediaCaptureControl if user discards current
             file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
             type: firstMedia.type,
             previewUrl: firstMedia.url || '',
@@ -165,19 +168,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             duration: duration,
             size: size,
         });
-      } else {
+      } else { // Editing, but no media attachments or URL is missing
         setCurrentMedia(null);
+        setCurrentMediaPreviewUrl(null);
         latestSelectedMediaDataRef.current = null;
         setMediaToInitializeRecorder(null);
       }
-
-    } else {
+    } else { // Creating a new memory
       const promptTextFromUrl = searchParams.get('prompt');
-      if (promptTextFromUrl) {
-        setTitle(decodeURIComponent(promptTextFromUrl));
-      } else {
-        setTitle('');
-      }
+      setTitle(promptTextFromUrl ? decodeURIComponent(promptTextFromUrl) : '');
       setLocation('');
       setCountry('United Kingdom');
       setDescription('');
@@ -186,10 +185,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       setSelectedMonth(getInitialDateComponent('month'));
       setSelectedDay(getInitialDateComponent('day'));
       setCurrentMedia(null);
+      setCurrentMediaPreviewUrl(null);
       latestSelectedMediaDataRef.current = null;
       setMediaToInitializeRecorder(null);
     }
   }, [memory, searchParams, getInitialDateComponent]);
+
 
   const daysInSelectedMonth = useMemo(() => {
     return getDaysInMonth(new Date(selectedYear, selectedMonth));
@@ -279,19 +280,21 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
 
   useEffect(() => {
+    // Handles setting preview URL for newly selected/recorded files (blob URLs)
     let blobUrlToRevoke: string | null = null;
     if (currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0) {
       blobUrlToRevoke = URL.createObjectURL(currentMedia.file);
       setCurrentMediaPreviewUrl(blobUrlToRevoke);
-    } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments[0].url) {
-      setCurrentMediaPreviewUrl(memory.mediaAttachments[0].url);
-    } else {
-      setCurrentMediaPreviewUrl(null);
     }
+    // If currentMedia.file.name IS "existing_media", setCurrentMediaPreviewUrl was handled by the [memory] effect.
+    // If currentMedia is null, the [memory] effect (or discard handlers) should have set preview to null.
+
     return () => {
-      if (blobUrlToRevoke && blobUrlToRevoke.startsWith('blob:')) URL.revokeObjectURL(blobUrlToRevoke);
+      if (blobUrlToRevoke && blobUrlToRevoke.startsWith('blob:')) {
+        URL.revokeObjectURL(blobUrlToRevoke);
+      }
     };
-  }, [currentMedia, isEditing, memory?.mediaAttachments]);
+  }, [currentMedia]);
 
 
   const handleMediaReady = useCallback((mediaDataFromRecorder: MediaRecorderData) => {
@@ -305,7 +308,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       size: mediaDataFromRecorder.size,
     };
     latestSelectedMediaDataRef.current = newCurrentMediaData;
-    setCurrentMedia(newCurrentMediaData);
+    setCurrentMedia(newCurrentMediaData); // This will trigger the [currentMedia] useEffect for blob URL
   }, []);
   
   useEffect(() => {
@@ -328,45 +331,49 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
 
   const handleMediaDiscardInForm = useCallback(() => { 
-    const mediaToPassBackToRecorder =
-      (isEditing && memory?.mediaAttachments?.[0]
-        ? {
-            file: new File([], memory.mediaAttachments[0].filename || "existing_media", {type: memory.mediaAttachments[0].type === 'video' ? 'video/webm' : 'audio/webm'}),
-            type: memory.mediaAttachments[0].type,
-            previewUrl: memory.mediaAttachments[0].url || '',
-            startTime: memory.mediaAttachments[0].startTime,
-            endTime: memory.mediaAttachments[0].endTime,
-            duration: memory.mediaAttachments[0].duration || 0,
-            size: memory.mediaAttachments[0].size || 0,
-          }
-        : null); 
-
-    setMediaToInitializeRecorder(mediaToPassBackToRecorder as MediaRecorderData | null);
+    // This is called when user clicks "Change Media or Re-trim" for an already displayed media.
+    // We want to clear the current display and show MediaCaptureControl.
+    // MediaCaptureControl should be initialized with the original media details if editing.
     setCurrentMedia(null);
-    latestSelectedMediaDataRef.current = null; 
-    setCurrentMediaPreviewUrl(null); 
-    setIsProcessingMedia(false);
-  }, [isEditing, memory?.mediaAttachments]);
-
-  const handleMediaDiscardFromChild = useCallback(() => { 
-    setCurrentMedia(null);
-    latestSelectedMediaDataRef.current = null;
     setCurrentMediaPreviewUrl(null);
+    // mediaToInitializeRecorder is already set correctly by the [memory] useEffect.
+    // No need to call onDiscard to parent, just internal form state change.
     setIsProcessingMedia(false);
+  }, []);
+  
 
-    const originalOrNullMedia =
-        isEditing && memory?.mediaAttachments?.[0]
-        ? {
-            file: new File([], memory.mediaAttachments[0].filename || "existing_media", {type: memory.mediaAttachments[0].type === 'video' ? 'video/webm' : 'audio/webm'}),
-            type: memory.mediaAttachments[0].type,
-            previewUrl: memory.mediaAttachments[0].url || '',
-            startTime: memory.mediaAttachments[0].startTime,
-            endTime: memory.mediaAttachments[0].endTime,
-            duration: memory.mediaAttachments[0].duration || 0,
-            size: memory.mediaAttachments[0].size || 0,
-          }
-        : null;
-    setMediaToInitializeRecorder(originalOrNullMedia as MediaRecorderData | null);
+  const handleMediaDiscardFromChild = useCallback(() => {
+    // This is called when MediaCaptureControl discards its content.
+    // We need to revert MemoryForm's state to either the original memory's media (if editing) or empty.
+    if (isEditing && memory?.mediaAttachments?.[0]?.url) {
+      const firstMedia = memory.mediaAttachments[0];
+      const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
+      const size = (typeof firstMedia.size === 'number' && !isNaN(firstMedia.size)) ? firstMedia.size : 0;
+      setCurrentMedia({
+        file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
+        type: firstMedia.type,
+        startTime: firstMedia.startTime,
+        endTime: firstMedia.endTime,
+        duration: duration,
+        size: size,
+      });
+      setCurrentMediaPreviewUrl(firstMedia.url);
+       setMediaToInitializeRecorder({ // Ensure MediaCaptureControl gets the original if user discards *again*
+          file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
+          type: firstMedia.type,
+          previewUrl: firstMedia.url || '',
+          startTime: firstMedia.startTime,
+          endTime: firstMedia.endTime,
+          duration: duration,
+          size: size,
+      });
+    } else {
+      setCurrentMedia(null);
+      setCurrentMediaPreviewUrl(null);
+      setMediaToInitializeRecorder(null);
+    }
+    latestSelectedMediaDataRef.current = null; 
+    setIsProcessingMedia(false);
   }, [isEditing, memory?.mediaAttachments]);
 
   useEffect(() => {
@@ -528,6 +535,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }
 
   const initialMediaForRecorderProp = useMemo(() => {
+    // This prop is for MediaCaptureControl's own `initialMedia` when MemoryForm first renders it.
+    // It should reflect the original media if editing, or null if new.
     if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
       const firstMedia = memory.mediaAttachments[0];
       const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
@@ -542,8 +551,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         size: size,
       };
     }
-    return undefined;
-  }, [memory?.mediaAttachments, isEditing]);
+    return undefined; // Let MediaCaptureControl initialize with no media if not editing or no existing media
+  }, [memory, isEditing]); // Corrected dependency: use `memory` not `memory.mediaAttachments`
 
   const currentPromptIdForTeleprompter = promptIdFromQuery || memory?.promptId;
 
@@ -643,10 +652,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                     </div>
                   ) : ( 
                     <MediaCaptureControl 
-                        key={hostPassStatus} 
+                        key={hostPassStatus + (mediaToInitializeRecorder?.previewUrl || 'new')} // Add previewUrl to key for re-init if that changes
                         onMediaReady={handleMediaReady} 
                         onDiscard={handleMediaDiscardFromChild} 
-                        initialMedia={mediaToInitializeRecorder || initialMediaForRecorderProp}
+                        initialMedia={mediaToInitializeRecorder} // No fallback to initialMediaForRecorderProp here, rely on state
                         promptIdForTeleprompter={currentPromptIdForTeleprompter}
                         chapterTitleForTeleprompter={title}
                     /> 
