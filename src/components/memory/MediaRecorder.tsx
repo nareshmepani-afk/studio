@@ -35,7 +35,7 @@ const MAX_AUDIO_DURATION_SECONDS = 300;
 
 export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, promptIdForTeleprompter, chapterTitleForTeleprompter }: MediaCaptureControlProps) {
   const { user, storageQuotaBytes, hostPassStatus } = useAuth();
-  const [isRecording, setIsRecording] = useState(isRecording);
+  const [isRecording, setIsRecording] = useState(false);
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(initialMedia?.type || null);
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(initialMedia?.previewUrl || null);
@@ -372,3 +372,4 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     </Card>
   );
 }
+
