@@ -3,20 +3,27 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, Video, StopCircle, UploadCloud, RotateCcw, CheckCircle, AlertTriangle, Film, Waves, Loader2, ShieldAlert } from 'lucide-react';
+import { Mic, Video, StopCircle, UploadCloud, RotateCcw, CheckCircle, AlertTriangle, Film, Waves, Loader2, ShieldAlert, BookOpen } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatSecondsToTime } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
+import { mockPromptGroups } from '@/lib/mockData';
+
 
 interface MediaCaptureControlProps {
   onMediaReady: (mediaData: { file: File; type: 'video' | 'audio'; previewUrl: string; startTime?: number; endTime?: number, duration: number, size: number }) => void;
   onDiscard: () => void;
   initialMedia?: { type: 'video' | 'audio'; previewUrl: string; startTime?: number; endTime?: number, duration: number, size: number };
+  promptIdForTeleprompter?: string;
+  chapterTitleForTeleprompter?: string;
 }
 
 const SAMPLE_VIDEO_URL = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
@@ -26,9 +33,9 @@ const MAX_VIDEO_DURATION_SECONDS = 120;
 const MAX_AUDIO_DURATION_SECONDS = 300;
 
 
-export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: MediaCaptureControlProps) {
+export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, promptIdForTeleprompter, chapterTitleForTeleprompter }: MediaCaptureControlProps) {
   const { user, storageQuotaBytes, hostPassStatus } = useAuth();
-  const [isRecording, setIsRecording] = useState(false);
+  const [isRecording, setIsRecording] = useState(isRecording);
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(initialMedia?.type || null);
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(initialMedia?.previewUrl || null);
@@ -48,6 +55,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
   const latestTrimValuesRef = useRef({ startTime: initialMedia?.startTime || 0, endTime: initialMedia?.endTime || initialMedia?.duration || 0 });
   const [isLoadingSample, setIsLoadingSample] = useState(false);
   const [sampleLoadingType, setSampleLoadingType] = useState<'video' | 'audio' | null>(null);
+
+  const [showTeleprompter, setShowTeleprompter] = useState(false);
+  const [currentTeleprompterScript, setCurrentTeleprompterScript] = useState<string | null>(null);
 
   const canRecordOrUpload = hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
 
@@ -104,6 +114,26 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     if (!currentStream) { setIsRecording(false); return; }
     if (!currentStream.active) { cleanupStream(currentStream); setStream(null); setIsRecording(false); return; }
 
+    // Teleprompter logic
+    let scriptKey = promptIdForTeleprompter;
+    if (!scriptKey && chapterTitleForTeleprompter) {
+        for (const group of mockPromptGroups) {
+            const foundPrompt = group.prompts.find(p => p.text.en.toLowerCase() === chapterTitleForTeleprompter.toLowerCase() || p.text.gu === chapterTitleForTeleprompter); // Case-insensitive for English
+            if (foundPrompt) {
+                scriptKey = foundPrompt.id;
+                break;
+            }
+        }
+    }
+    const script = scriptKey ? teleprompterScripts[scriptKey] : null;
+    if (script) {
+        setCurrentTeleprompterScript(script);
+        setShowTeleprompter(true);
+    } else {
+        setCurrentTeleprompterScript(defaultTeleprompterFallbackScript);
+        setShowTeleprompter(true);
+    }
+
     try {
       const recorder = new window.MediaRecorder(currentStream); mediaRecorderRef.current = recorder;
       recorder.ondataavailable = (event) => { if (event.data.size > 0) recordedChunks.current.push(event.data); };
@@ -127,15 +157,17 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
           setStartTime(0); setEndTime(newDuration); latestTrimValuesRef.current = { startTime: 0, endTime: newDuration };
         };
         setIsRecording(false); cleanupStream(currentStream); setStream(null);
+        // Don't close teleprompter here, user might still need it while reviewing
       };
-      recorder.onerror = (event) => { console.error('MediaRecorder error:', event); setIsRecording(false); cleanupStream(currentStream); setStream(null); };
+      recorder.onerror = (event) => { console.error('MediaRecorder error:', event); setIsRecording(false); cleanupStream(currentStream); setStream(null); setShowTeleprompter(false); setCurrentTeleprompterScript(null); };
       recorder.start(); setIsRecording(true); setTimeout(() => toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` }),0);
-    } catch (err) { setIsRecording(false); cleanupStream(currentStream); setStream(null); }
+    } catch (err) { setIsRecording(false); cleanupStream(currentStream); setStream(null); setShowTeleprompter(false); setCurrentTeleprompterScript(null); }
   };
 
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && isRecording) mediaRecorderRef.current.stop();
     else { setIsRecording(false); cleanupStream(stream); setStream(null); }
+    // Keep teleprompter open after stopping, user might want to re-record or check something.
   };
 
   const handleVideoLoadedMetadata = (event: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement, Event>) => {
@@ -225,6 +257,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
       onMediaReady({ file: placeholderFile, type: mediaType, previewUrl, startTime: currentStartTime, endTime: currentEndTime, duration: mediaDuration, size: mediaSize });
       setTimeout(() => toast({ title: "Media Updated", description: toastDesc, icon: <CheckCircle className="h-4 w-4" /> }), 0);
     } else { setTimeout(() => toast({ title: "Media Not Ready", variant: "destructive" }), 0); }
+    setShowTeleprompter(false); setCurrentTeleprompterScript(null);
   };
 
   const handleDiscardMedia = (showToast = true) => {
@@ -241,6 +274,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
     setMediaDuration(initDuration); setMediaSize(initSize);
     recordedChunks.current = []; onDiscard();
     if (showToast) setTimeout(() => toast({ title: "Media Discarded" }), 0);
+    setShowTeleprompter(false); setCurrentTeleprompterScript(null);
   };
 
   useEffect(() => {
@@ -309,9 +343,32 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia }: M
             <div className="mt-6 pt-4 border-t"><p className="text-sm text-muted-foreground mb-2 text-center">Or, load a different sample:</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-2"><Button onClick={() => handleLoadSampleMedia('video')} variant="secondary" size="sm" disabled={isLoadingSample || !canRecordOrUpload}>{isLoadingSample && sampleLoadingType === 'video' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}Load Sample Video</Button><Button onClick={() => handleLoadSampleMedia('audio')} variant="secondary" size="sm" disabled={isLoadingSample || !canRecordOrUpload}>{isLoadingSample && sampleLoadingType === 'audio' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Waves className="mr-2 h-4 w-4" />}Load Sample Audio</Button></div></div>
           </div>
         )}
+
+        {showTeleprompter && currentTeleprompterScript && (
+          <Dialog open={showTeleprompter} onOpenChange={(isOpen) => {
+              if (!isOpen) {
+                  setShowTeleprompter(false);
+                  // Optionally, if recording is active and prompter closed, stop recording?
+                  // For now, just hides prompter. User stops recording via its own button.
+              }
+          }}>
+              <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
+                  <DialogHeader>
+                      <DialogTitle className="font-headline text-xl flex items-center"><BookOpen className="mr-2 h-5 w-5 text-primary" />Recording Cue</DialogTitle>
+                      <DialogDescription>
+                          Use the points below as a guide. You can scroll through the text.
+                      </DialogDescription>
+                  </DialogHeader>
+                  <ScrollArea className="flex-grow py-4 pr-2 my-2 border-y">
+                      <p className="text-sm whitespace-pre-line">{currentTeleprompterScript}</p>
+                  </ScrollArea>
+                  <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowTeleprompter(false)}>Close Prompter</Button>
+                  </DialogFooter>
+              </DialogContent>
+          </Dialog>
+        )}
       </CardContent>
     </Card>
   );
 }
-
-    

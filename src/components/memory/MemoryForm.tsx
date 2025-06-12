@@ -72,7 +72,7 @@ const countryOptions = [
 ];
 
 export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting }: MemoryFormProps) {
-  const { user, hostPassStatus } = useAuth(); // Get hostPassStatus for the key
+  const { user, hostPassStatus } = useAuth(); 
   const searchParams = useSearchParams();
   const isEditing = !!memory;
 
@@ -283,7 +283,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     if (currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0) {
       blobUrlToRevoke = URL.createObjectURL(currentMedia.file);
       setCurrentMediaPreviewUrl(blobUrlToRevoke);
-    } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0 && memory.mediaAttachments[0].url) {
+    } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments[0].url) {
       setCurrentMediaPreviewUrl(memory.mediaAttachments[0].url);
     } else {
       setCurrentMediaPreviewUrl(null);
@@ -545,6 +545,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     return undefined;
   }, [memory?.mediaAttachments, isEditing]);
 
+  const currentPromptIdForTeleprompter = promptIdFromQuery || memory?.promptId;
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-6" noValidate>
@@ -640,7 +641,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                       {(currentMedia.endTime !== undefined && currentMedia.duration !== undefined && Math.abs(currentMedia.duration - currentMedia.endTime) > 0.01) && <p className="text-sm text-muted-foreground">Trim End: {formatSecondsToTime(currentMedia.endTime)}</p>}
                       <Button variant="outline" type="button" onClick={handleMediaDiscardInForm} className="w-full mt-2">Change Media or Re-trim</Button>
                     </div>
-                  ) : ( <MediaCaptureControl key={hostPassStatus} onMediaReady={handleMediaReady} onDiscard={handleMediaDiscardFromChild} initialMedia={mediaToInitializeRecorder || initialMediaForRecorderProp} /> )}
+                  ) : ( 
+                    <MediaCaptureControl 
+                        key={hostPassStatus} 
+                        onMediaReady={handleMediaReady} 
+                        onDiscard={handleMediaDiscardFromChild} 
+                        initialMedia={mediaToInitializeRecorder || initialMediaForRecorderProp}
+                        promptIdForTeleprompter={currentPromptIdForTeleprompter}
+                        chapterTitleForTeleprompter={title}
+                    /> 
+                  )}
               </CardContent>
             </Card>
           </CarouselItem>
