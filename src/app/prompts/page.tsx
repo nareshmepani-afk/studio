@@ -229,22 +229,22 @@ export default function LifeJourneyPage() {
                 ? "Host Pass & Features" 
                 : "Renew Host Pass for Full Access"}
             </AlertTitle>
-            <AlertDescription className="text-primary/80">
+            <AlertDescription className="text-primary/80 flex flex-col items-end">
               {hostPassStatus === 'no_pass_initiated' 
                 ? (
                     <>
-                        <p>Manage your access to memory creation tools and features.</p>
-                        <p className="mt-1">Activate your 6-month free Host Pass to access all chapters, AI brainstorming, and more features to begin your Life Journey.</p>
+                        <p className="w-full">Manage your access to memory creation tools and features.</p>
+                        <p className="mt-1 w-full">Activate your 6-month free Host Pass to access all chapters, AI brainstorming, and more features to begin your Life Journey.</p>
                     </>
                   )
-                : "Your Host Pass has expired. Renew to continue accessing all Life Journey chapters and creation tools."}
+                : <p className="w-full">Your Host Pass has expired. Renew to continue accessing all Life Journey chapters and creation tools.</p>}
               
               <Button
                 onClick={handleHostPassAction}
                 size="sm"
                 className={cn(
-                  "mt-3 ml-auto block bg-primary hover:bg-primary/90 text-primary-foreground",
-                  hostPassStatus === 'no_pass_initiated' && "px-4" 
+                  "mt-3 bg-primary hover:bg-primary/90 text-primary-foreground w-fit",
+                  hostPassStatus === 'no_pass_initiated' && "px-4"
                 )}
                 disabled={isActuallyFetchingHostPassPrice && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired')}
               >
@@ -373,3 +373,4 @@ export default function LifeJourneyPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
