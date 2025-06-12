@@ -155,7 +155,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           duration: duration,
           size: size,
         };
-        setCurrentMedia(existingMediaData);
+        setCurrentMedia(existingMediaData); // Set current media to existing
         setCurrentMediaPreviewUrl(firstMedia.url); // Directly set preview URL for existing media
         latestSelectedMediaDataRef.current = existingMediaData;
 
@@ -489,18 +489,39 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       },
       mediaFileToUpload
     );
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, promptIdFromQuery, selectedEmotionTags, isEditing, latestSelectedMediaDataRef]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, promptIdFromQuery, selectedEmotionTags, isEditing, latestSelectedMediaDataRef, setCurrentSlide]);
 
 
   const handleActionButtonClick = useCallback(() => {
     if (isParentSubmitting || isProcessingMedia) return;
 
-    if (isEditing) {
-      triggerSubmitProcess();
-    } else { 
-      if (currentSlide === SLIDE_INDEX_DETAILS) {
-        setCurrentSlide(SLIDE_INDEX_MEDIA);
-      } else if (currentSlide === SLIDE_INDEX_MEDIA) {
+    // Validate Step 1 details if currently on Step 1
+    if (currentSlide === SLIDE_INDEX_DETAILS) {
+      if (!title.trim()) {
+        toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
+        setTimeout(() => titleInputRef.current?.focus(), 100);
+        return; // Stop if title is missing
+      }
+      // Basic date validation (could be more complex if needed)
+      let tempDate = new Date(selectedYear, selectedMonth, 1);
+      tempDate = setDate(tempDate, selectedDay);
+      if (!isValid(tempDate) || getYear(tempDate) !== selectedYear || getMonth(tempDate) !== selectedMonth || getDate(tempDate) !== selectedDay) {
+        toast({ title: "Invalid Date", description: "Please select a valid date.", variant: "destructive" });
+        setTimeout(() => yearSelectRef.current?.focus(), 100);
+        return;
+      }
+      if (!description.trim()) {
+        toast({ title: "Description Required", description: "Please enter a description for the memory.", variant: "destructive" });
+        setTimeout(() => descriptionTextareaRef.current?.focus(), 100);
+        return; // Stop if description is missing
+      }
+    }
+
+    // Proceed based on current slide
+    if (currentSlide === SLIDE_INDEX_DETAILS) {
+      setCurrentSlide(SLIDE_INDEX_MEDIA); // Navigate to media slide (for both new and edit)
+    } else if (currentSlide === SLIDE_INDEX_MEDIA) {
+      if (!isEditing) { // If creating new, validate media
         const mediaSource = latestSelectedMediaDataRef.current || currentMedia;
         if (!mediaSource) {
             toast({ 
@@ -510,33 +531,36 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             });
             return; 
         }
-        triggerSubmitProcess();
       }
+      triggerSubmitProcess(); // Submit (for both new and edit)
     }
-  }, [isParentSubmitting, isEditing, currentSlide, triggerSubmitProcess, currentMedia, latestSelectedMediaDataRef, isProcessingMedia]);
+  }, [
+    isParentSubmitting, isProcessingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay,
+    isEditing, triggerSubmitProcess, currentMedia, latestSelectedMediaDataRef, setCurrentSlide
+  ]);
 
   const handleFormSubmit = (event: FormEvent) => {
     event.preventDefault();
-     if (isEditing || currentSlide === SLIDE_INDEX_MEDIA) {
-        handleActionButtonClick(); 
-    } else { 
-        handleActionButtonClick();
-    }
+    handleActionButtonClick(); 
   };
 
   let actionButtonText = 'Next';
   let ActionButtonIcon: React.ElementType = ArrowRight;
-  if (isEditing) {
-    actionButtonText = 'Save Changes';
-    ActionButtonIcon = Sparkles; 
+
+  if (currentSlide === SLIDE_INDEX_DETAILS) {
+    actionButtonText = 'Next';
+    ActionButtonIcon = ArrowRight;
   } else if (currentSlide === SLIDE_INDEX_MEDIA) {
-    actionButtonText = 'Add Memory';
-    ActionButtonIcon = Sparkles; 
+    if (isEditing) {
+      actionButtonText = 'Save Changes';
+      ActionButtonIcon = Sparkles;
+    } else { // Creating new
+      actionButtonText = 'Add Memory';
+      ActionButtonIcon = Sparkles;
+    }
   }
 
   const initialMediaForRecorderProp = useMemo(() => {
-    // This prop is for MediaCaptureControl's own `initialMedia` when MemoryForm first renders it.
-    // It should reflect the original media if editing, or null if new.
     if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
       const firstMedia = memory.mediaAttachments[0];
       const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
@@ -551,8 +575,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         size: size,
       };
     }
-    return undefined; // Let MediaCaptureControl initialize with no media if not editing or no existing media
-  }, [memory, isEditing]); // Corrected dependency: use `memory` not `memory.mediaAttachments`
+    return undefined; 
+  }, [memory, isEditing]); 
 
   const currentPromptIdForTeleprompter = promptIdFromQuery || memory?.promptId;
 
@@ -652,10 +676,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                     </div>
                   ) : ( 
                     <MediaCaptureControl 
-                        key={hostPassStatus + (mediaToInitializeRecorder?.previewUrl || 'new')} // Add previewUrl to key for re-init if that changes
+                        key={hostPassStatus + (initialMediaForRecorderProp?.previewUrl || 'new')} 
                         onMediaReady={handleMediaReady} 
                         onDiscard={handleMediaDiscardFromChild} 
-                        initialMedia={mediaToInitializeRecorder} // No fallback to initialMediaForRecorderProp here, rely on state
+                        initialMedia={initialMediaForRecorderProp} 
                         promptIdForTeleprompter={currentPromptIdForTeleprompter}
                         chapterTitleForTeleprompter={title}
                     /> 
