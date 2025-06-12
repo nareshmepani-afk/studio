@@ -229,7 +229,7 @@ export default function LifeJourneyPage() {
                 ? "Host Pass & Features" 
                 : "Renew Host Pass for Full Access"}
             </AlertTitle>
-            <AlertDescription className="text-primary/80 flex flex-col items-end">
+            <AlertDescription className="text-primary/80 flex flex-col items-start">
               {hostPassStatus === 'no_pass_initiated' 
                 ? (
                     <>
