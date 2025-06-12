@@ -72,7 +72,7 @@ const countryOptions = [
 ];
 
 export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting }: MemoryFormProps) {
-  const { user } = useAuth();
+  const { user, hostPassStatus } = useAuth(); // Get hostPassStatus for the key
   const searchParams = useSearchParams();
   const isEditing = !!memory;
 
@@ -640,7 +640,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                       {(currentMedia.endTime !== undefined && currentMedia.duration !== undefined && Math.abs(currentMedia.duration - currentMedia.endTime) > 0.01) && <p className="text-sm text-muted-foreground">Trim End: {formatSecondsToTime(currentMedia.endTime)}</p>}
                       <Button variant="outline" type="button" onClick={handleMediaDiscardInForm} className="w-full mt-2">Change Media or Re-trim</Button>
                     </div>
-                  ) : ( <MediaCaptureControl onMediaReady={handleMediaReady} onDiscard={handleMediaDiscardFromChild} initialMedia={mediaToInitializeRecorder || initialMediaForRecorderProp} /> )}
+                  ) : ( <MediaCaptureControl key={hostPassStatus} onMediaReady={handleMediaReady} onDiscard={handleMediaDiscardFromChild} initialMedia={mediaToInitializeRecorder || initialMediaForRecorderProp} /> )}
               </CardContent>
             </Card>
           </CarouselItem>
@@ -677,3 +677,4 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     </form>
   );
 }
+
