@@ -154,7 +154,7 @@ export default function LifeJourneyPage() {
     }
   }
 
-  console.log("[PromptsPage] Rendering with hostPassStatus from user object:", hostPassStatus, "User object:", user);
+  console.log("[PromptsPage] Rendering with hostPassStatus from user object:", user?.hostPassStatus, "User object:", user);
 
   if (userMode === 'guest') {
     return (
@@ -244,8 +244,7 @@ export default function LifeJourneyPage() {
                 onClick={handleHostPassAction}
                 size="sm"
                 className={cn(
-                  "mt-3 ml-auto block sm:inline-block sm:ml-3 bg-primary hover:bg-primary/90 text-primary-foreground",
-                  (hostPassStatus === 'no_pass_initiated' && !(isActuallyFetchingHostPassPrice && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired'))) && "h-auto py-1.5"
+                  "mt-3 ml-auto block sm:inline-block sm:ml-3 bg-primary hover:bg-primary/90 text-primary-foreground"
                 )}
                 disabled={isActuallyFetchingHostPassPrice && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired')}
               >
@@ -255,10 +254,10 @@ export default function LifeJourneyPage() {
                     {hostPassButtonText}
                   </>
                 ) : hostPassStatus === 'no_pass_initiated' ? (
-                  <div className="flex flex-col items-center text-center -my-0.5">
-                    <Star className="h-4 w-4" />
-                    <span className="text-xs leading-tight mt-0.5">{hostPassButtonText}</span>
-                  </div>
+                  <>
+                    <Star className="mr-2 h-4 w-4" />
+                    {hostPassButtonText}
+                  </>
                 ) : (
                   <>
                     <Zap className="mr-2 h-4 w-4"/>
