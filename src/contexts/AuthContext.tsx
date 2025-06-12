@@ -41,7 +41,7 @@ interface AuthContextType {
   activateFreeHostPass: () => void;
   purchasePaidHostPass: () => Promise<void>;
   checkAndUpdateHostPassStatus: () => void;
-  hostPassStatus: User['hostPassStatus']; // Added hostPassStatus here
+  hostPassStatus: User['hostPassStatus']; 
   hostPassPriceDetails: GetHostPassPriceOutput | null;
   fetchHostPassPrice: () => Promise<void>;
   isFetchingHostPassPrice: boolean;
@@ -74,13 +74,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateUserInStateAndStorage = useCallback((updatedUserArg: User | null) => {
     setUser(prevUser => {
-      if (JSON.stringify(prevUser) !== JSON.stringify(updatedUserArg)) {
-          if (updatedUserArg) {
-            localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUserArg));
-          } else {
-            localStorage.removeItem('memoryWeaverUser');
-          }
-          return updatedUserArg;
+      let significantChange = false;
+      if (!prevUser && updatedUserArg) {
+        significantChange = true;
+      } else if (prevUser && !updatedUserArg) {
+        significantChange = true;
+      } else if (prevUser && updatedUserArg) {
+        // Compare key fields that affect UI or logic
+        if (
+          prevUser.name !== updatedUserArg.name ||
+          prevUser.email !== updatedUserArg.email ||
+          prevUser.avatarUrl !== updatedUserArg.avatarUrl ||
+          prevUser.dateOfBirth !== updatedUserArg.dateOfBirth ||
+          prevUser.countryOfBirth !== updatedUserArg.countryOfBirth ||
+          prevUser.city !== updatedUserArg.city ||
+          prevUser.townArea !== updatedUserArg.townArea ||
+          prevUser.sharedAccessStatus !== updatedUserArg.sharedAccessStatus ||
+          prevUser.freePassActivatedDate !== updatedUserArg.freePassActivatedDate ||
+          prevUser.paidPassExpiryDate !== updatedUserArg.paidPassExpiryDate ||
+          prevUser.hostPassStatus !== updatedUserArg.hostPassStatus ||
+          prevUser.freeHostPassActivatedDate !== updatedUserArg.freeHostPassActivatedDate ||
+          prevUser.paidHostPassExpiryDate !== updatedUserArg.paidHostPassExpiryDate ||
+          prevUser.storageUsedBytes !== updatedUserArg.storageUsedBytes ||
+          JSON.stringify(prevUser.viewedSharedMemoryIds) !== JSON.stringify(updatedUserArg.viewedSharedMemoryIds) // Array comparison
+        ) {
+          significantChange = true;
+        }
+      }
+
+      if (significantChange) {
+        if (updatedUserArg) {
+          localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUserArg));
+        } else {
+          localStorage.removeItem('memoryWeaverUser');
+        }
+        return updatedUserArg;
       }
       return prevUser;
     });
@@ -115,6 +143,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (prevUser && prevUser.id === userId) {
         if (prevUser.storageUsedBytes !== usedBytes) {
           const updatedUser = { ...prevUser, storageUsedBytes: usedBytes };
+          // No need to call updateUserInStateAndStorage here to avoid potential loop with its own check
           localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser));
           return updatedUser;
         }
@@ -485,7 +514,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
       updateUserInStateAndStorage(updatedUser);
       
-      setHostPassPriceDetails(null); // Reset price details as well
+      setHostPassPriceDetails(null); 
       toast({ title: "Host Pass Reset (Testing)", description: "Host pass status has been reset to initial state." });
     }
   }, [user, updateUserInStateAndStorage]);
@@ -525,7 +554,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       markSharedMemoryAsViewed, checkIfGuestHasUnviewedMemories,
       guestPassPriceDetails, fetchGuestPassPrice, isFetchingGuestPassPrice,
       activateFreeHostPass, purchasePaidHostPass, checkAndUpdateHostPassStatus,
-      hostPassStatus: user?.hostPassStatus || 'no_pass_initiated', // Provide hostPassStatus directly
+      hostPassStatus: user?.hostPassStatus || 'no_pass_initiated', 
       hostPassPriceDetails, fetchHostPassPrice, isFetchingHostPassPrice,
       resetHostPassForTesting, 
       storageQuotaBytes: getStorageQuotaBytes(),
@@ -535,3 +564,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
+
+    
