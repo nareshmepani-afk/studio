@@ -41,6 +41,7 @@ interface AuthContextType {
   activateFreeHostPass: () => void;
   purchasePaidHostPass: () => Promise<void>;
   checkAndUpdateHostPassStatus: () => void;
+  hostPassStatus: User['hostPassStatus']; // Added hostPassStatus here
   hostPassPriceDetails: GetHostPassPriceOutput | null;
   fetchHostPassPrice: () => Promise<void>;
   isFetchingHostPassPrice: boolean;
@@ -283,31 +284,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []); 
 
   useEffect(() => {
-    if (!loading && user) {
-      checkAndUpdateGuestPassStatus();
-      checkAndUpdateHostPassStatus();
-      if (userMode === 'host') {
-        setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
-        if (user.hostPassStatus === 'free_host_pass_expired' ||
-            user.hostPassStatus === 'paid_host_pass_expired' ||
-            user.hostPassStatus === 'no_pass_initiated') {
-          if (!isFetchingHostPassPrice && !hostPassPriceDetails) fetchHostPassPrice();
-        }
-      } else if (userMode === 'guest') {
-         if (user.sharedAccessStatus === 'free_pass_expired' ||
-             user.sharedAccessStatus === 'paid_pass_expired' ||
-             user.sharedAccessStatus === 'no_pass_initiated') {
-           if (!isFetchingGuestPassPrice && !guestPassPriceDetails) fetchGuestPassPrice();
-         }
-      }
-    }
-  }, [loading, user, userMode, checkIfGuestHasUnviewedMemories, 
-      fetchGuestPassPrice, isFetchingGuestPassPrice, guestPassPriceDetails, checkAndUpdateGuestPassStatus,
-      fetchHostPassPrice, isFetchingHostPassPrice, hostPassPriceDetails, checkAndUpdateHostPassStatus,
-      setHasNewSharedMemoriesState 
-    ]);
-
-  useEffect(() => {
     
     if (loading || isLoggingOut) return; 
 
@@ -509,10 +485,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
       updateUserInStateAndStorage(updatedUser);
       
-      setHostPassPriceDetails(null);
+      setHostPassPriceDetails(null); // Reset price details as well
       toast({ title: "Host Pass Reset (Testing)", description: "Host pass status has been reset to initial state." });
     }
   }, [user, updateUserInStateAndStorage]);
+
+  useEffect(() => {
+    if (!loading && user) {
+      checkAndUpdateGuestPassStatus();
+      checkAndUpdateHostPassStatus();
+      if (userMode === 'host') {
+        setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
+        if ((user.hostPassStatus === 'free_host_pass_expired' ||
+            user.hostPassStatus === 'paid_host_pass_expired' ||
+            user.hostPassStatus === 'no_pass_initiated') && !isFetchingHostPassPrice && !hostPassPriceDetails) {
+          fetchHostPassPrice();
+        }
+      } else if (userMode === 'guest') {
+         if ((user.sharedAccessStatus === 'free_pass_expired' ||
+             user.sharedAccessStatus === 'paid_pass_expired' ||
+             user.sharedAccessStatus === 'no_pass_initiated') && !isFetchingGuestPassPrice && !guestPassPriceDetails) {
+           fetchGuestPassPrice();
+         }
+      }
+    }
+  }, [loading, user, userMode, checkIfGuestHasUnviewedMemories, 
+      fetchGuestPassPrice, isFetchingGuestPassPrice, guestPassPriceDetails, checkAndUpdateGuestPassStatus,
+      fetchHostPassPrice, isFetchingHostPassPrice, hostPassPriceDetails, checkAndUpdateHostPassStatus,
+      setHasNewSharedMemoriesState 
+    ]);
 
   return (
     <AuthContext.Provider value={{
@@ -524,6 +525,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       markSharedMemoryAsViewed, checkIfGuestHasUnviewedMemories,
       guestPassPriceDetails, fetchGuestPassPrice, isFetchingGuestPassPrice,
       activateFreeHostPass, purchasePaidHostPass, checkAndUpdateHostPassStatus,
+      hostPassStatus: user?.hostPassStatus || 'no_pass_initiated', // Provide hostPassStatus directly
       hostPassPriceDetails, fetchHostPassPrice, isFetchingHostPassPrice,
       resetHostPassForTesting, 
       storageQuotaBytes: getStorageQuotaBytes(),
