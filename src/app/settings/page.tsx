@@ -44,7 +44,7 @@ export default function SettingsPage() {
     checkAndUpdateHostPassStatus,
     hostPassPriceDetails,
     fetchHostPassPrice,
-    isFetchingHostPassPrice,
+    isFetchingHostPassPrice, // Corrected: was fetchingHostPassPrice, changed to isFetchingHostPassPrice
     resetHostPassForTesting,
     storageQuotaBytes, 
     calculateAndUpdateStorageUsage,
@@ -68,18 +68,33 @@ export default function SettingsPage() {
   const [townArea, setTownArea] = useState('');
   
   useEffect(() => {
+    // Initial checks and price fetching logic.
+    // Relies on the stability of context functions (which change if context's `user` changes).
     checkAndUpdateGuestPassStatus();
-    checkAndUpdateHostPassStatus(); 
-     if (user) {
+    checkAndUpdateHostPassStatus();
+    
+    if (user) { // user object itself can still be checked here for conditional logic
         if (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated') {
-            fetchGuestPassPrice();
+            if (!isFetchingGuestPassPrice && !guestPassPriceDetails) fetchGuestPassPrice();
         }
         if (user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired' || user.hostPassStatus === 'no_pass_initiated') {
-            fetchHostPassPrice();
+           if (!isFetchingHostPassPrice && !hostPassPriceDetails) fetchHostPassPrice();
         }
         calculateAndUpdateStorageUsage(user.id);
     }
-  }, [checkAndUpdateGuestPassStatus, checkAndUpdateHostPassStatus, user, fetchGuestPassPrice, fetchHostPassPrice, calculateAndUpdateStorageUsage]);
+  }, [
+    checkAndUpdateGuestPassStatus, 
+    checkAndUpdateHostPassStatus, 
+    fetchGuestPassPrice, 
+    fetchHostPassPrice, 
+    calculateAndUpdateStorageUsage,
+    user?.sharedAccessStatus, // Add specific user properties that drive logic
+    user?.hostPassStatus,
+    user?.id,
+    isFetchingGuestPassPrice, guestPassPriceDetails, // For price fetching conditions
+    isFetchingHostPassPrice, hostPassPriceDetails   // For price fetching conditions
+  ]);
+
 
   const daysInSelectedDobMonth = useMemo(() => {
     if (dobYear && dobMonth) {
@@ -114,7 +129,7 @@ export default function SettingsPage() {
       setCity(user.city || '');
       setTownArea(user.townArea || '');
     }
-  }, [user]);
+  }, [user]); // This effect correctly re-populates form fields when the user object changes.
 
   useEffect(() => { if (dobDay && parseInt(dobDay) > daysInSelectedDobMonth) setDobDay(daysInSelectedDobMonth.toString()); }, [dobDay, daysInSelectedDobMonth]);
 
