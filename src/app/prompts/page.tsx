@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
+import { cn } from "@/lib/utils";
 
 export default function LifeJourneyPage() {
   const [promptGroups, setPromptGroups] = useState<PromptGroup[]>([]);
@@ -41,7 +42,7 @@ export default function LifeJourneyPage() {
     hostPassPriceDetails, 
     isFetchingHostPassPrice: isFetchingAuthHostPassPrice // Renamed to avoid conflict
   } = useAuth(); 
-  const hostPassStatus = user?.hostPassStatus; // Correctly derive hostPassStatus
+  const hostPassStatus = user?.hostPassStatus; 
 
   const [showCustomChapterDialog, setShowCustomChapterDialog] = useState(false);
   const [customChapterUserProfile, setCustomChapterUserProfile] = useState('');
@@ -238,9 +239,32 @@ export default function LifeJourneyPage() {
                     </>
                   )
                 : "Your Host Pass has expired. Renew to continue accessing all Life Journey chapters and creation tools."}
-              <Button onClick={handleHostPassAction} size="sm" className="mt-3 ml-auto block sm:inline-block sm:ml-3 bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isActuallyFetchingHostPassPrice && hostPassStatus !== 'no_pass_initiated'}>
-                {isActuallyFetchingHostPassPrice && hostPassStatus !== 'no_pass_initiated' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (hostPassStatus === 'no_pass_initiated' ? <Star className="mr-2 h-4 w-4"/> : <Zap className="mr-2 h-4 w-4"/>) }
-                {hostPassButtonText}
+              
+              <Button
+                onClick={handleHostPassAction}
+                size="sm"
+                className={cn(
+                  "mt-3 ml-auto block sm:inline-block sm:ml-3 bg-primary hover:bg-primary/90 text-primary-foreground",
+                  (hostPassStatus === 'no_pass_initiated' && !(isActuallyFetchingHostPassPrice && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired'))) && "h-auto py-1.5"
+                )}
+                disabled={isActuallyFetchingHostPassPrice && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired')}
+              >
+                {isActuallyFetchingHostPassPrice && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {hostPassButtonText}
+                  </>
+                ) : hostPassStatus === 'no_pass_initiated' ? (
+                  <div className="flex flex-col items-center text-center -my-0.5">
+                    <Star className="h-4 w-4" />
+                    <span className="text-xs leading-tight mt-0.5">{hostPassButtonText}</span>
+                  </div>
+                ) : (
+                  <>
+                    <Zap className="mr-2 h-4 w-4"/>
+                    {hostPassButtonText}
+                  </>
+                )}
               </Button>
             </AlertDescription>
           </Alert>
@@ -350,5 +374,3 @@ export default function LifeJourneyPage() {
     </AuthenticatedPageWrapper>
   );
 }
-
-    
