@@ -24,7 +24,7 @@ export default function AddMemoryPage() {
     activateFreeHostPass,
     purchasePaidHostPass,
     hostPassPriceDetails,
-    isFetchingHostPassPrice,
+    isFetchingHostPassPrice: isFetchingAuthHostPassPrice, // Corrected alias
     loading: authLoading 
   } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,6 +38,7 @@ export default function AddMemoryPage() {
   useEffect(() => {
     if (editMemoryId) {
       setIsLoadingMemory(true);
+      // Simulate fetching memory
       setTimeout(() => {
         const foundMemory = mockMemories.find(m => m.id === editMemoryId && m.userId === user?.id);
         if (foundMemory) {
@@ -50,7 +51,7 @@ export default function AddMemoryPage() {
       }, 300);
     } else {
       setIsLoadingMemory(false);
-      setMemoryToEdit(undefined); 
+      setMemoryToEdit(undefined); // Ensure memoryToEdit is undefined for new memories
     }
   }, [editMemoryId, user?.id, router]);
 
@@ -79,31 +80,35 @@ export default function AddMemoryPage() {
       };
     }
     
+    // Mock media upload and URL update
     if (mediaFileToUpload && finalMemoryData.mediaAttachments && finalMemoryData.mediaAttachments.length > 0) {
+      // In a real app, upload mediaFileToUpload to storage and get the URL
       finalMemoryData.mediaAttachments[0].url = `mock_uploaded_url/${mediaFileToUpload.name}`; 
       finalMemoryData.mediaAttachments[0].filename = mediaFileToUpload.name;
-      if (!finalMemoryData.mediaAttachments[0].size) {
+      if (!finalMemoryData.mediaAttachments[0].size) { // Ensure size is set from uploaded file if not already
         finalMemoryData.mediaAttachments[0].size = mediaFileToUpload.size;
       }
     } else if (memoryData.mediaAttachments && memoryData.mediaAttachments.length > 0 && !finalMemoryData.mediaAttachments?.[0]?.size && mediaFileToUpload?.size) {
+       // Case where media was selected but not a new file (e.g. re-trim of existing) and recorder provides a new size
        if (finalMemoryData.mediaAttachments && finalMemoryData.mediaAttachments.length > 0) {
         finalMemoryData.mediaAttachments[0].size = mediaFileToUpload.size;
        }
     }
 
+    // Update mockMemories in localStorage and in-memory
     let existingMemories: Memory[] = [];
     const storedMemoriesJson = localStorage.getItem('mockMemories'); 
     if (storedMemoriesJson) {
         try { existingMemories = JSON.parse(storedMemoriesJson); } catch (e) { console.error(e); }
     } else { 
-        existingMemories = mockMemories;
+        existingMemories = mockMemories; // Fallback to initial mock data if localStorage is empty/corrupt
     }
 
     if (editMemoryId) {
         const index = existingMemories.findIndex(m => m.id === editMemoryId);
         if (index !== -1) {
             existingMemories[index] = finalMemoryData;
-        } else { 
+        } else { // Should not happen if editing, but as a fallback
             existingMemories.push(finalMemoryData);
         }
     } else {
@@ -111,11 +116,13 @@ export default function AddMemoryPage() {
     }
     localStorage.setItem('mockMemories', JSON.stringify(existingMemories)); 
     
+    // Also update the in-memory mockMemories if it's used by other parts of the app directly
     const mockIndex = mockMemories.findIndex(m => m.id === finalMemoryData.id);
     if (mockIndex !== -1) mockMemories[mockIndex] = finalMemoryData; else mockMemories.push(finalMemoryData);
 
     await calculateAndUpdateStorageUsage(user.id);
 
+    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     setIsSubmitting(false);
@@ -124,6 +131,7 @@ export default function AddMemoryPage() {
       description: `"${finalMemoryData.title}" has been saved.`,
     });
     
+    // Redirect after save
     if (finalMemoryData.promptId) {
         router.push('/prompts');
     } else {
@@ -142,6 +150,7 @@ export default function AddMemoryPage() {
     );
   }
 
+  // Check for Host Pass if creating a new memory
   const needsPassActivation = isCreatingNew && (
     hostPassStatus === 'no_pass_initiated' ||
     hostPassStatus === 'free_host_pass_expired' ||
@@ -161,13 +170,14 @@ export default function AddMemoryPage() {
       ButtonIcon = Zap;
       action = purchasePaidHostPass;
       titleText = "Renew Host Pass";
-      if (isFetchingHostPassPrice) {
+      if (isFetchingAuthHostPassPrice) {
         buttonText = "Fetching price...";
         disabled = true;
       } else if (hostPassPriceDetails) {
         priceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
         buttonText += priceString;
       } else {
+         // Fallback mock price if details are not available
          buttonText += ` (£12.99 - Mock)`; 
       }
     }
@@ -186,9 +196,9 @@ export default function AddMemoryPage() {
                 onClick={action}
                 size="default"
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                disabled={disabled || (isFetchingHostPassPrice && hostPassStatus !== 'no_pass_initiated')}
+                disabled={disabled || (isFetchingAuthHostPassPrice && hostPassStatus !== 'no_pass_initiated')}
               >
-                {(isFetchingHostPassPrice && hostPassStatus !== 'no_pass_initiated') ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ButtonIcon className="mr-2 h-4 w-4" />}
+                {(isFetchingAuthHostPassPrice && hostPassStatus !== 'no_pass_initiated') ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ButtonIcon className="mr-2 h-4 w-4" />}
                 {buttonText}
               </Button>
               <div className="flex flex-col sm:flex-row gap-2 pt-2">
@@ -210,6 +220,7 @@ export default function AddMemoryPage() {
     <AuthenticatedPageWrapper>
       <div className="container mx-auto py-8 px-4">
         <MemoryForm
+          key={memoryToEdit?.id || 'new-memory-form'} // Force re-mount when memoryToEdit changes
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
           memory={memoryToEdit}
@@ -218,3 +229,5 @@ export default function AddMemoryPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    
