@@ -83,5 +83,6 @@ export interface PromptGroup {
 
 // Storage Quotas
 export const FREE_TIER_STORAGE_QUOTA_BYTES = 10 * 1024 * 1024; // 10 MB (Kept for reference, but primary quota will be standard)
-export const STANDARD_HOST_STORAGE_QUOTA_BYTES = 100 * 1024 * 1024; // 100 MB - for users with an active host pass
+export const STANDARD_HOST_STORAGE_QUOTA_BYTES = 200 * 1024 * 1024; // 200 MB - for users with an active host pass
 // PREMIUM_TIER_STORAGE_QUOTA_BYTES is removed as we shift from fixed tiers.
+
