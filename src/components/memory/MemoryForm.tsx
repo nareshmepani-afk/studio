@@ -14,7 +14,7 @@ import { MediaCaptureControl } from './MediaRecorder';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation'; // Added useRouter
 import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, getDate, parseISO } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import {
@@ -74,6 +74,7 @@ const countryOptions = [
 export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting }: MemoryFormProps) {
   const { user, hostPassStatus } = useAuth(); 
   const searchParams = useSearchParams();
+  const router = useRouter(); // Initialize router
   const isEditing = !!memory;
 
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -131,23 +132,22 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   const promptIdFromQuery = searchParams.get('promptId');
 
   useEffect(() => {
-    if (memory) { // Editing an existing memory
+    if (memory) { 
       setTitle(memory.title || '');
       setLocation(memory.location || '');
 
-      // Country initialization logic improved
-      let initialCountry = 'United Kingdom'; // Default
+      let initialCountryValue = 'United Kingdom'; 
       if (memory.country) {
         if (memory.country.toUpperCase() === 'UK') {
-          initialCountry = 'United Kingdom';
+          initialCountryValue = 'United Kingdom';
         } else if (memory.country.toUpperCase() === 'USA' || memory.country.toUpperCase() === 'US') {
-          initialCountry = 'United States';
+           initialCountryValue = 'United States';
         } else {
-          const foundOption = countryOptions.find(opt => opt.value === memory.country);
-          initialCountry = foundOption ? memory.country : 'United Kingdom';
+          const foundOption = countryOptions.find(opt => opt.value.toLowerCase() === memory.country!.toLowerCase());
+          initialCountryValue = foundOption ? foundOption.value : 'United Kingdom';
         }
       }
-      setCountry(initialCountry);
+      setCountry(initialCountryValue);
       
       setDescription(memory.description || '');
       setSelectedEmotionTags(memory.emotionTags || []);
@@ -188,7 +188,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         latestSelectedMediaDataRef.current = null;
         setMediaToInitializeRecorder(null);
       }
-    } else { // Creating a new memory
+    } else { 
       const promptTextFromUrl = searchParams.get('prompt');
       setTitle(promptTextFromUrl ? decodeURIComponent(promptTextFromUrl) : '');
       setLocation('');
@@ -687,11 +687,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         <Button 
           type="button" 
           onClick={() => {
-            if (currentSlide > 0) {
+            if (currentSlide === SLIDE_INDEX_DETAILS) {
+              router.back();
+            } else if (currentSlide > 0) {
               setCurrentSlide(currentSlide - 1);
             }
           }}
-          disabled={currentSlide === 0 || !!isParentSubmitting || isProcessingMedia}
+          disabled={!!isParentSubmitting || isProcessingMedia}
           variant="outline"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
