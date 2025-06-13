@@ -34,17 +34,20 @@ const MAX_AUDIO_DURATION_SECONDS = 300;
 
 
 export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, promptIdForTeleprompter, chapterTitleForTeleprompter }: MediaCaptureControlProps) {
-  const { user, storageQuotaBytes, hostPassStatus } = useAuth();
+  const { user, storageQuotaBytes, hostPassStatus } = useAuth(); // storageQuotaBytes is now the per-chapter limit
   const [isRecording, setIsRecording] = useState(false);
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(null);
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  
+  // This previewUrl is internal to MediaCaptureControl for its immediate feedback (recording/trimming preview)
+  const [internalPreviewUrl, setInternalPreviewUrl] = useState<string | null>(null);
+  
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<globalThis.MediaRecorder | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const audioPreviewRef = useRef<HTMLAudioElement>(null);
-  const liveVideoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null); // For the trimming preview within MediaCaptureControl
+  const audioPreviewRef = useRef<HTMLAudioElement>(null); // For the trimming preview
+  const liveVideoRef = useRef<HTMLVideoElement>(null); // For live camera feed
   const recordedChunks = useRef<Blob[]>([]);
 
   const [startTime, setStartTime] = useState<number>(0);
@@ -82,18 +85,15 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   }, []);
 
   const checkStorageQuota = useCallback((fileSize: number): boolean => {
-    if (user && user.storageUsedBytes !== undefined && (user.storageUsedBytes + fileSize > storageQuotaBytes)) {
-      const currentUsageMB = (user.storageUsedBytes / (1024 * 1024)).toFixed(2);
+    if (fileSize > storageQuotaBytes) { // storageQuotaBytes is the PER_CHAPTER_QUOTA from AuthContext
       const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
-      const quotaMB = (storageQuotaBytes / (1024 * 1024)).toFixed(0);
-      const remainingMB = Math.max(0, (storageQuotaBytes - user.storageUsedBytes) / (1024 * 1024)).toFixed(2);
-      const newTotalUsageMB = ((user.storageUsedBytes + fileSize) / (1024 * 1024)).toFixed(2);
+      const chapterQuotaMB = (storageQuotaBytes / (1024 * 1024)).toFixed(0);
 
-      const description = `Adding this file (${fileSizeMB} MB) would bring total usage to ${newTotalUsageMB} MB, exceeding your ${quotaMB} MB quota. You have ${remainingMB} MB remaining.`;
+      const description = `This file (${fileSizeMB} MB) exceeds the maximum allowed size per memory of ${chapterQuotaMB} MB.`;
       
       setTimeout(() => toast({ 
         variant: 'destructive', 
-        title: 'Storage Quota Exceeded', 
+        title: 'File Size Exceeds Limit', 
         description: description, 
         duration: 10000, 
         icon: <ShieldAlert className="h-5 w-5" /> 
@@ -101,7 +101,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       return false;
     }
     return true;
-  }, [user, storageQuotaBytes]);
+  }, [storageQuotaBytes]);
 
 
   const checkHostPass = (): boolean => {
@@ -118,14 +118,18 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     return true;
   };
 
+  const revokeCurrentInternalPreviewUrl = useCallback(() => {
+    if (internalPreviewUrl && internalPreviewUrl.startsWith('blob:') && internalPreviewUrl !== initialMedia?.previewUrl) {
+      URL.revokeObjectURL(internalPreviewUrl);
+    }
+  }, [internalPreviewUrl, initialMedia?.previewUrl]);
+
 
   const handleStartRecording = async (type: 'video' | 'audio') => {
     if (isRecording || !checkHostPass()) return;
     
-    if (previewUrl && previewUrl.startsWith('blob:') && previewUrl !== initialMedia?.previewUrl) { 
-      URL.revokeObjectURL(previewUrl); 
-    }
-    setRecordedFile(null); setPreviewUrl(null); setMediaType(type); setStartTime(0); setEndTime(0); setMediaDuration(0); setMediaSize(0);
+    revokeCurrentInternalPreviewUrl();
+    setRecordedFile(null); setInternalPreviewUrl(null); setMediaType(type); setStartTime(0); setEndTime(0); setMediaDuration(0); setMediaSize(0);
     latestTrimValuesRef.current = { startTime: 0, endTime: 0 }; recordedChunks.current = [];
     
     cleanupStream(stream); setStream(null); 
@@ -167,7 +171,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
             setTimeout(() => toast({ variant: 'destructive', title: `${type.charAt(0).toUpperCase() + type.slice(1)} Too Long`, description: `Recording is ${formatSecondsToTime(newDuration)}. Max is ${limitMinutes} min(s).`, duration: 7000 }), 0);
             URL.revokeObjectURL(url); cleanupStream(currentStream); setStream(null); setIsRecording(false); recordedChunks.current = []; return;
           }
-          setRecordedFile(file); setPreviewUrl(url); setMediaDuration(newDuration); setMediaSize(file.size);
+          setRecordedFile(file); setInternalPreviewUrl(url); setMediaDuration(newDuration); setMediaSize(file.size);
           setStartTime(0); setEndTime(newDuration); latestTrimValuesRef.current = { startTime: 0, endTime: newDuration };
         };
         setIsRecording(false); cleanupStream(currentStream); setStream(null);
@@ -184,10 +188,10 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
   const handleVideoLoadedMetadata = (event: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement, Event>) => {
     const currentTarget = event.currentTarget;
-     if (previewUrl && !mediaDuration && initialMedia?.previewUrl !== previewUrl) { 
+     if (internalPreviewUrl && !mediaDuration && initialMedia?.previewUrl !== internalPreviewUrl) { 
         const duration = currentTarget.duration;
-        if (duration && isFinite(duration)) { setMediaDuration(duration); if (!initialMedia || initialMedia.endTime === undefined || initialMedia.endTime === 0 || initialMedia.previewUrl !== previewUrl) { setEndTime(duration); latestTrimValuesRef.current = { startTime: startTime || 0, endTime: duration };} currentTarget.currentTime = startTime || 0;}
-     } else if (previewUrl && initialMedia?.previewUrl === previewUrl && mediaDuration === 0 && initialMedia.duration) { 
+        if (duration && isFinite(duration)) { setMediaDuration(duration); if (!initialMedia || initialMedia.endTime === undefined || initialMedia.endTime === 0 || initialMedia.previewUrl !== internalPreviewUrl) { setEndTime(duration); latestTrimValuesRef.current = { startTime: startTime || 0, endTime: duration };} currentTarget.currentTime = startTime || 0;}
+     } else if (internalPreviewUrl && initialMedia?.previewUrl === internalPreviewUrl && mediaDuration === 0 && initialMedia.duration) { 
         const newDuration = initialMedia.duration; const newEndTime = initialMedia.endTime !== undefined ? initialMedia.endTime : newDuration;
         setMediaDuration(newDuration); setEndTime(newEndTime); setMediaSize(initialMedia.size || 0);
         setStartTime(initialMedia.startTime || 0); 
@@ -203,8 +207,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       if (!fileType) { setTimeout(() => toast({ title: "Invalid File Type", variant: "destructive" }), 0); return; }
       if (!checkStorageQuota(file.size)) { event.target.value = ''; return; }
       
-      if (previewUrl && previewUrl.startsWith('blob:') && previewUrl !== initialMedia?.previewUrl) { URL.revokeObjectURL(previewUrl); }
-      setRecordedFile(null); setPreviewUrl(null);
+      revokeCurrentInternalPreviewUrl();
+      setRecordedFile(null); setInternalPreviewUrl(null);
 
       const url = URL.createObjectURL(file); 
       const tempMediaElement = document.createElement(fileType); tempMediaElement.src = url;
@@ -216,7 +220,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
           setTimeout(() => toast({ variant: 'destructive', title: `${fileType.charAt(0).toUpperCase() + fileType.slice(1)} Too Long`, description: `Uploaded file is ${formatSecondsToTime(newDuration)}. Max is ${limitMinutes} min(s).`, duration: 7000 }), 0);
           URL.revokeObjectURL(url); event.target.value = ''; return;
         }
-        setMediaType(fileType); setRecordedFile(file); setPreviewUrl(url); setMediaDuration(newDuration); setMediaSize(file.size);
+        setMediaType(fileType); setRecordedFile(file); setInternalPreviewUrl(url); setMediaDuration(newDuration); setMediaSize(file.size);
         setStartTime(0); setEndTime(newDuration); latestTrimValuesRef.current = { startTime: 0, endTime: newDuration };
         setTimeout(() => toast({ title: "File Uploaded", description: file.name }), 0);
       };
@@ -227,8 +231,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   const handleLoadSampleMedia = async (type: 'video' | 'audio') => {
     if (!checkHostPass()) return;
     setIsLoadingSample(true); setSampleLoadingType(type);
-    if (previewUrl && previewUrl.startsWith('blob:') && previewUrl !== initialMedia?.previewUrl) { URL.revokeObjectURL(previewUrl); }
-    setRecordedFile(null); setPreviewUrl(null);
+    revokeCurrentInternalPreviewUrl();
+    setRecordedFile(null); setInternalPreviewUrl(null);
 
     const sampleUrl = type === 'video' ? SAMPLE_VIDEO_URL : SAMPLE_AUDIO_URL;
     const filename = type === 'video' ? 'sample_video.mp4' : 'sample_audio.mp3';
@@ -237,21 +241,21 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       const response = await fetch(sampleUrl); const blob = await response.blob();
       const file = new File([blob], filename, { type: mimeType }); 
       if (!checkStorageQuota(file.size)) { setIsLoadingSample(false); setSampleLoadingType(null); return; }
-      const newInternalPreviewUrl = URL.createObjectURL(blob);
-      const tempMediaElement = document.createElement(type); tempMediaElement.src = newInternalPreviewUrl;
+      const newInternalBlobUrl = URL.createObjectURL(blob);
+      const tempMediaElement = document.createElement(type); tempMediaElement.src = newInternalBlobUrl;
       tempMediaElement.onloadedmetadata = () => {
         const actualDuration = tempMediaElement.duration;
-        setMediaType(type); setRecordedFile(file); setPreviewUrl(newInternalPreviewUrl); setMediaDuration(actualDuration); setMediaSize(file.size);
+        setMediaType(type); setRecordedFile(file); setInternalPreviewUrl(newInternalBlobUrl); setMediaDuration(actualDuration); setMediaSize(file.size);
         setStartTime(0); latestTrimValuesRef.current = { startTime: 0, endTime: actualDuration };
         if (type === 'video' && actualDuration > MAX_VIDEO_DURATION_SECONDS) {
           setEndTime(MAX_VIDEO_DURATION_SECONDS); latestTrimValuesRef.current = { startTime: 0, endTime: MAX_VIDEO_DURATION_SECONDS };
           setTimeout(() => toast({ title: "Sample Loaded & Pre-trimmed", description: `Video is ${formatSecondsToTime(actualDuration)}. Pre-trimmed to ${MAX_VIDEO_DURATION_SECONDS / 60} min(s). Adjust trim, final selection <= ${MAX_VIDEO_DURATION_SECONDS / 60} min(s).`, duration: 10000 }), 0);
         } else if (type === 'audio' && actualDuration > MAX_AUDIO_DURATION_SECONDS) {
           setTimeout(() => toast({ variant: 'destructive', title: `Sample Audio Too Long`, description: `Audio is ${formatSecondsToTime(actualDuration)}. Max is ${MAX_AUDIO_DURATION_SECONDS / 60} min(s). Cannot load.`, duration: 7000 }), 0);
-          URL.revokeObjectURL(newInternalPreviewUrl); handleDiscardMedia(false); return;
+          URL.revokeObjectURL(newInternalBlobUrl); handleDiscardMedia(false); return;
         } else { setEndTime(actualDuration); latestTrimValuesRef.current = { startTime: 0, endTime: actualDuration }; setTimeout(() => toast({ title: `Sample ${type} loaded`, description: filename }), 0); }
       };
-      tempMediaElement.onerror = () => { URL.revokeObjectURL(newInternalPreviewUrl); handleDiscardMedia(false); setTimeout(() => toast({ title: "Error Loading Sample", variant: "destructive" }),0); };
+      tempMediaElement.onerror = () => { URL.revokeObjectURL(newInternalBlobUrl); handleDiscardMedia(false); setTimeout(() => toast({ title: "Error Loading Sample", variant: "destructive" }),0); };
     } catch (error) { console.error(`Error loading sample ${type}:`, error); setTimeout(() => toast({ variant: 'destructive', title: `Failed to load sample ${type}` }), 0);
     } finally { setIsLoadingSample(false); setSampleLoadingType(null); }
   };
@@ -267,6 +271,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     if (mediaType === 'audio' && selectedSegmentDuration > MAX_AUDIO_DURATION_SECONDS) { setTimeout(() => toast({ title: "Trim Exceeds Audio Limit", description: `Segment is ${formatSecondsToTime(selectedSegmentDuration)}. Max is ${MAX_AUDIO_DURATION_SECONDS / 60} min(s).`, variant: "destructive", duration: 7000 }), 0); return; }
 
     if (recordedFile && mediaType && (mediaDuration > 0 || (mediaDuration === 0 && currentStartTime === 0 && currentEndTime ===0) )) {
+      // Pass the File object, not the blob URL. MemoryForm will create its own.
       onMediaReady({
         file: recordedFile,
         type: mediaType,
@@ -279,6 +284,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       let toastDesc = isTrimmed ? `Media selected, trimmed: ${formatSecondsToTime(currentStartTime)} to ${formatSecondsToTime(currentEndTime)}.` : "Media selected.";
       setTimeout(() => toast({ title: "Media Ready", description: toastDesc, icon: <CheckCircle className="h-4 w-4" /> }), 0);
     } else if (!recordedFile && initialMedia && mediaType) { 
+      // For existing media re-trim, create a placeholder file to signify intent to use existing backend URL
       const placeholderFile = new File([], initialMedia.previewUrl.split('/').pop() || "existing_media_placeholder", {type: mediaType === "video" ? "video/mp4" : "audio/mp3"});
       onMediaReady({
         file: placeholderFile, 
@@ -293,6 +299,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
        setTimeout(() => toast({ title: "Media Updated", description: toastDesc, icon: <CheckCircle className="h-4 w-4" /> }), 0);
     } else { setTimeout(() => toast({ title: "Media Not Ready", variant: "destructive" }), 0); }
     setShowTeleprompter(false); setCurrentTeleprompterScript(null);
+    // Don't revoke internalPreviewUrl here; MemoryForm might need to use it briefly if it was an initialMedia.
+    // MemoryForm will handle its own Blob URL lifecycle. MCC will revoke its own upon next action or unmount.
   };
 
   const handleDiscardMedia = (showToast = true) => {
@@ -301,12 +309,11 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     else { cleanupStream(stream); setStream(null); }
     mediaRecorderRef.current = null;
 
-    if (previewUrl && previewUrl.startsWith('blob:') && previewUrl !== initialMedia?.previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
+    revokeCurrentInternalPreviewUrl();
 
     setRecordedFile(null);
-    setPreviewUrl(initialMedia?.previewUrl || null); 
+    // Restore to initialMedia state if present, otherwise clear.
+    setInternalPreviewUrl(initialMedia?.previewUrl || null); 
     setMediaType(initialMedia?.type || null);
 
     const initStartTime = initialMedia?.startTime || 0;
@@ -326,9 +333,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setShowTeleprompter(false); setCurrentTeleprompterScript(null);
   };
 
-  useEffect(() => {
+  useEffect(() => { // Initialize from initialMedia prop
     setMediaType(initialMedia?.type || null);
-    setPreviewUrl(initialMedia?.previewUrl || null); 
+    setInternalPreviewUrl(initialMedia?.previewUrl || null); // MCC displays this URL
 
     const initStartTime = initialMedia?.startTime || 0;
     const initDuration = initialMedia?.duration || 0;
@@ -342,30 +349,31 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setMediaSize(initSize);
 
     setIsRecording(false);
-    setRecordedFile(null);
+    setRecordedFile(null); // No local file initially when using initialMedia
   }, [initialMedia]);
 
 
-  useEffect(() => {
-    const currentMCCPreviewUrl = previewUrl; 
+  useEffect(() => { // Cleanup effect for internalPreviewUrl owned by MediaCaptureControl
+    const urlToClean = internalPreviewUrl;
     return () => {
       cleanupStream(stream);
-      if (currentMCCPreviewUrl && currentMCCPreviewUrl.startsWith('blob:') && currentMCCPreviewUrl !== initialMedia?.previewUrl) {
-        URL.revokeObjectURL(currentMCCPreviewUrl);
+      if (urlToClean && urlToClean.startsWith('blob:') && urlToClean !== initialMedia?.previewUrl) {
+        // Only revoke if it's a blob URL created by MCC and not the one passed in as initialMedia.previewUrl
+        URL.revokeObjectURL(urlToClean);
       }
     };
-  }, [stream, previewUrl, cleanupStream, initialMedia?.previewUrl]);
+  }, [stream, internalPreviewUrl, cleanupStream, initialMedia?.previewUrl]);
 
-  useEffect(() => {
+  useEffect(() => { // Logic for media player time updates for trimming
     const mediaElement = mediaType === 'video' ? videoRef.current : audioPreviewRef.current;
-    if (!mediaElement || !previewUrl || !(mediaDuration > 0)) return;
+    if (!mediaElement || !internalPreviewUrl || !(mediaDuration > 0)) return;
     const getPlaybackStartTime = () => latestTrimValuesRef.current.startTime; const getPlaybackEndTime = () => latestTrimValuesRef.current.endTime;
     const onPlayHandler = () => { const numericStartTime = getPlaybackStartTime(); if (mediaElement.currentTime < numericStartTime - 0.05 || (mediaElement.currentTime >= getPlaybackEndTime() - 0.05 && getPlaybackEndTime() < mediaDuration - 0.05) ) mediaElement.currentTime = numericStartTime; };
     const onTimeUpdateHandler = () => { const numericEndTime = getPlaybackEndTime(); if (mediaElement.currentTime >= numericEndTime - 0.05) { mediaElement.pause(); if (mediaElement.currentTime > numericEndTime) mediaElement.currentTime = numericEndTime; } };
     if (mediaElement.paused && startTime !== undefined) { const numericStartTime = getPlaybackStartTime(); if (Math.abs(mediaElement.currentTime - numericStartTime) > 0.1) mediaElement.currentTime = numericStartTime; }
     mediaElement.addEventListener('play', onPlayHandler); mediaElement.addEventListener('timeupdate', onTimeUpdateHandler);
     return () => { mediaElement.removeEventListener('play', onPlayHandler); mediaElement.removeEventListener('timeupdate', onTimeUpdateHandler); };
-  }, [previewUrl, mediaType, mediaDuration, videoRef, audioPreviewRef, startTime]);
+  }, [internalPreviewUrl, mediaType, mediaDuration, videoRef, audioPreviewRef, startTime]);
 
   return (
     <Card>
@@ -374,7 +382,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         {hasCameraPermission === false && (<Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Permissions Required</AlertTitle><AlertDescription>Camera/mic permissions needed. Enable in browser & refresh.</AlertDescription></Alert>)}
         {!canRecordOrUpload && (<Alert variant="destructive"><ShieldAlert className="h-4 w-4" /><AlertTitle>Host Pass Required</AlertTitle><AlertDescription>An active Host Pass is needed to record or upload new media. Please check your pass status in Settings.</AlertDescription></Alert>)}
 
-        {!previewUrl && !isRecording && (
+        {!internalPreviewUrl && !isRecording && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
              <Button onClick={() => handleStartRecording('video')} variant="outline" className="w-full py-6" disabled={isRecording || hasCameraPermission === false || !canRecordOrUpload}><Video className="mr-2 h-5 w-5" /> Start Video</Button>
              <Button onClick={() => handleStartRecording('audio')} variant="outline" className="w-full py-6" disabled={isRecording || hasCameraPermission === false || !canRecordOrUpload}><Mic className="mr-2 h-5 w-5" /> Start Audio</Button>
@@ -391,10 +399,10 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         {isRecording && mediaType === 'video' && (<video ref={liveVideoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />)}
         {isRecording && (<div className="text-center space-y-2"><p className="text-sm text-primary animate-pulse">{mediaType === 'video' ? 'Video' : 'Audio'} Recording...</p><Button onClick={handleStopRecording} variant="destructive" className="w-full md:w-auto"><StopCircle className="mr-2 h-4 w-4" /> Stop</Button></div>)}
 
-        {previewUrl && !isRecording && mediaType && (
+        {internalPreviewUrl && !isRecording && mediaType && (
           <div className="space-y-4">
-            <p className="text-sm font-medium">Media: <span className="text-primary">{recordedFile?.name || (initialMedia?.previewUrl === previewUrl ? "Existing media" : 'Recorded Media')}</span>{mediaDuration > 0 && ` (Full: ${formatSecondsToTime(mediaDuration)})`}</p>
-            {mediaType === 'video' ? (<video ref={videoRef} src={previewUrl} controls className="w-full aspect-video rounded-md bg-muted object-cover" onLoadedMetadata={handleVideoLoadedMetadata} key={previewUrl} preload="metadata"/>) : (<audio ref={audioPreviewRef} src={previewUrl} controls className="w-full" onLoadedMetadata={handleVideoLoadedMetadata} key={previewUrl} preload="metadata"/>)}
+            <p className="text-sm font-medium">Media: <span className="text-primary">{recordedFile?.name || (initialMedia?.previewUrl === internalPreviewUrl ? "Existing media" : 'Recorded Media')}</span>{mediaDuration > 0 && ` (Full: ${formatSecondsToTime(mediaDuration)})`}</p>
+            {mediaType === 'video' ? (<video ref={videoRef} src={internalPreviewUrl} controls className="w-full aspect-video rounded-md bg-muted object-cover" onLoadedMetadata={handleVideoLoadedMetadata} key={internalPreviewUrl} preload="metadata"/>) : (<audio ref={audioPreviewRef} src={internalPreviewUrl} controls className="w-full" onLoadedMetadata={handleVideoLoadedMetadata} key={internalPreviewUrl} preload="metadata"/>)}
             {(mediaDuration > 0 || (mediaDuration === 0 && startTime === 0 && endTime ===0)) && (
               <div className="space-y-3 pt-2">
                 <div className="flex justify-between text-sm"><span className="text-green-500">Start: {formatSecondsToTime(startTime)}</span><span className="text-red-500">End: {formatSecondsToTime(endTime)}</span></div>
@@ -437,3 +445,4 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     </Card>
   );
 }
+

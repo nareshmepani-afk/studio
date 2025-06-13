@@ -15,7 +15,7 @@ import type { User } from '@/types';
 import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types'; 
 import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, AlertTriangle, Star, Zap, RotateCcw } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Progress } from "@/components/ui/progress";
+// Progress component is removed as it's no longer used
 import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
 import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
@@ -44,15 +44,14 @@ export default function SettingsPage() {
     checkAndUpdateHostPassStatus,
     hostPassPriceDetails,
     fetchHostPassPrice,
-    isFetchingHostPassPrice, // Corrected: was fetchingHostPassPrice, changed to isFetchingHostPassPrice
+    isFetchingHostPassPrice, 
     resetHostPassForTesting,
-    storageQuotaBytes, 
+    storageQuotaBytes, // This will be the per-memory limit from AuthContext
     calculateAndUpdateStorageUsage,
   } = useAuth();
   const router = useRouter(); 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  // profileInfo state is removed as the field was removed from the form
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -68,12 +67,10 @@ export default function SettingsPage() {
   const [townArea, setTownArea] = useState('');
   
   useEffect(() => {
-    // Initial checks and price fetching logic.
-    // Relies on the stability of context functions (which change if context's `user` changes).
     checkAndUpdateGuestPassStatus();
     checkAndUpdateHostPassStatus();
     
-    if (user) { // user object itself can still be checked here for conditional logic
+    if (user) { 
         if (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated') {
             if (!isFetchingGuestPassPrice && !guestPassPriceDetails) fetchGuestPassPrice();
         }
@@ -88,11 +85,11 @@ export default function SettingsPage() {
     fetchGuestPassPrice, 
     fetchHostPassPrice, 
     calculateAndUpdateStorageUsage,
-    user?.sharedAccessStatus, // Add specific user properties that drive logic
+    user?.sharedAccessStatus, 
     user?.hostPassStatus,
     user?.id,
-    isFetchingGuestPassPrice, guestPassPriceDetails, // For price fetching conditions
-    isFetchingHostPassPrice, hostPassPriceDetails   // For price fetching conditions
+    isFetchingGuestPassPrice, guestPassPriceDetails, 
+    isFetchingHostPassPrice, hostPassPriceDetails   
   ]);
 
 
@@ -115,7 +112,6 @@ export default function SettingsPage() {
     if (user) {
       setName(user.name || '');
       setEmail(user.email || '');
-      // user.profileInfo is no longer set as it was removed
       setAvatarPreviewUrl(null); 
 
       if (user.dateOfBirth && isValid(parseISO(user.dateOfBirth))) {
@@ -129,7 +125,7 @@ export default function SettingsPage() {
       setCity(user.city || '');
       setTownArea(user.townArea || '');
     }
-  }, [user]); // This effect correctly re-populates form fields when the user object changes.
+  }, [user]); 
 
   useEffect(() => { if (dobDay && parseInt(dobDay) > daysInSelectedDobMonth) setDobDay(daysInSelectedDobMonth.toString()); }, [dobDay, daysInSelectedDobMonth]);
 
@@ -166,7 +162,7 @@ export default function SettingsPage() {
       }
     }
     const updatedUser: User = {
-      ...user, id: user.id, name: name, email: email, /* profileInfo no longer exists */ avatarUrl: finalAvatarUrlToSave, 
+      ...user, id: user.id, name: name, email: email, avatarUrl: finalAvatarUrlToSave, 
       dateOfBirth: finalDateOfBirth, countryOfBirth: countryOfBirth || undefined, city: city || undefined, townArea: townArea || undefined,
       sharedAccessStatus: user.sharedAccessStatus, freePassActivatedDate: user.freePassActivatedDate, paidPassExpiryDate: user.paidPassExpiryDate,
       hostPassStatus: user.hostPassStatus, freeHostPassActivatedDate: user.freeHostPassActivatedDate, paidHostPassExpiryDate: user.paidHostPassExpiryDate, 
@@ -235,7 +231,9 @@ export default function SettingsPage() {
     } else if (isFetchingHostPassPrice) {
         currentPriceString = "(fetching price...)";
     } else {
-        currentPriceString = "(£4.99/month - Mock)"; 
+        // Using a fixed mock value if price details are not yet available for consistency.
+        // The actual STANDARD_HOST_STORAGE_QUOTA_BYTES will provide the 600MB for the other message.
+        currentPriceString = "(approx. £12.99 - Mock)"; 
     }
 
     switch (user.hostPassStatus) {
@@ -283,9 +281,9 @@ export default function SettingsPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
   const storageUsed = user.storageUsedBytes || 0;
-  const currentStorageQuota = (user.hostPassStatus === 'free_host_pass_active' || user.hostPassStatus === 'paid_host_pass_active') ? STANDARD_HOST_STORAGE_QUOTA_BYTES : 0;
-  const storagePercentage = currentStorageQuota > 0 ? (storageUsed / currentStorageQuota) * 100 : 0;
-  const isQuotaExceeded = storageUsed > currentStorageQuota && currentStorageQuota > 0; 
+  // storageQuotaBytes from AuthContext is the per-memory limit (now 600MB)
+  const perMemoryLimitBytes = (user.hostPassStatus === 'free_host_pass_active' || user.hostPassStatus === 'paid_host_pass_active') ? storageQuotaBytes : 0;
+
 
   return (
     <AuthenticatedPageWrapper>
@@ -330,13 +328,17 @@ export default function SettingsPage() {
               <CardContent className="space-y-4">
                 {(user.hostPassStatus === 'free_host_pass_active' || user.hostPassStatus === 'paid_host_pass_active') ? (
                   <>
-                    <Progress value={storagePercentage} className="w-full" />
-                    <div className="flex justify-between text-sm text-muted-foreground"><span>{formatBytes(storageUsed)} used</span><span>{formatBytes(currentStorageQuota)} quota</span></div>
-                    {isQuotaExceeded && (<div className="text-sm text-destructive flex items-center"><AlertTriangle className="mr-1.5 h-4 w-4" />You have exceeded your storage quota. Please manage media.</div>)}
-                    <p className="text-xs text-muted-foreground pt-2">Your active host pass includes {formatBytes(STANDARD_HOST_STORAGE_QUOTA_BYTES)} of storage for your memories.</p>
+                    <div className="text-sm text-muted-foreground">
+                      <span>Total media stored: {formatBytes(storageUsed)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground pt-1">
+                      Your active host pass allows individual memories to be up to {formatBytes(perMemoryLimitBytes)}.
+                    </p>
                   </>
                 ) : (
-                  <p className="text-sm text-muted-foreground">Activate or purchase a Host Pass to enable media storage ({formatBytes(STANDARD_HOST_STORAGE_QUOTA_BYTES)} included).</p>
+                  <p className="text-sm text-muted-foreground">
+                    Activate or purchase a Host Pass to enable media storage (up to {formatBytes(600 * 1024 * 1024)} per memory).
+                  </p>
                 )}
               </CardContent>
             </Card>
