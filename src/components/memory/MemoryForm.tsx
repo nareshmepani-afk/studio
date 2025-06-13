@@ -584,15 +584,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                 <CardDescription>Capture the details of your moment. Fields marked with * are mandatory.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {isEditing && (
-                  <div className="p-2 my-2 border border-dashed border-yellow-500 bg-yellow-50 rounded-md">
-                    <h4 className="text-xs font-semibold text-yellow-700 mb-1">DEBUG: Current Form State Values (for Editing)</h4>
-                    <p className="text-xs text-yellow-600">Year: {selectedYear}</p>
-                    <p className="text-xs text-yellow-600">Month (0-indexed): {selectedMonth} ({months.find(m=>m.value === selectedMonth)?.label})</p>
-                    <p className="text-xs text-yellow-600">Day: {selectedDay}</p>
-                    <p className="text-xs text-yellow-600">Country: {country}</p>
-                  </div>
-                )}
                 <div className="space-y-1">
                   <Label htmlFor="title" >Title *</Label>
                   <Input ref={titleInputRef} id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" />
