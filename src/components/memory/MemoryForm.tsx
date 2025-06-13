@@ -11,10 +11,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { MediaCaptureControl } from './MediaRecorder';
-import { MemoryCard } from './MemoryCard'; // Import MemoryCard
+import { MemoryCard } from './MemoryCard';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft, Eye } from 'lucide-react'; // Added Eye
+import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft, Eye } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, getDate, parseISO } from 'date-fns';
 import { enGB } from 'date-fns/locale';
@@ -28,27 +28,39 @@ import { formatSecondsToTime } from '@/lib/utils';
 
 
 interface MemoryFormProps {
-  memory?: Memory; // Existing memory for editing
+  memory?: Memory;
   onSubmit: (
     memoryData: Omit<Memory, 'id' | 'userId'> & { promptId?: string },
     mediaFileToUpload?: File
   ) => void;
-  isSubmitting?: boolean; // From parent
+  isSubmitting?: boolean;
 }
 
-type MediaRecorderData = {
+// Type for data received from MediaCaptureControl's onMediaReady
+type MediaFromRecorder = {
   file: File;
   type: 'video' | 'audio';
-  previewUrl: string;
   startTime?: number;
   endTime?: number;
-  duration: number;
+  duration: number; // Original total duration of the file
   size: number;
 };
 
+// Type for MemoryForm's internal state for the current media
 type CurrentMediaData = {
-  file: File;
+  file: File; // Can be the original file or a placeholder for existing media
   type: 'video' | 'audio';
+  startTime?: number;
+  endTime?: number;
+  duration: number; // Original total duration of the file/media
+  size: number;
+};
+
+// Type for initializing MediaCaptureControl
+type MediaForRecorderInit = {
+  file?: File; // Optional: if we want to pass the file back for re-init
+  type: 'video' | 'audio';
+  previewUrl: string; // URL for MCC to display (can be MemoryForm's blob or a persistent URL)
   startTime?: number;
   endTime?: number;
   duration: number;
@@ -127,8 +139,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
 
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
-  const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null);
-  const [mediaToInitializeRecorder, setMediaToInitializeRecorder] = useState<MediaRecorderData | null>(null);
+  const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null); // This URL is owned by MemoryForm
+  const [mediaToInitializeRecorder, setMediaToInitializeRecorder] = useState<MediaForRecorderInit | undefined>(undefined);
 
   const promptIdFromQuery = searchParams.get('promptId');
 
@@ -137,23 +149,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       setTitle(memory.title || '');
       setLocation(memory.location || '');
 
-      let initialCountryValue = 'United Kingdom'; // Default
+      let initialCountryValue = 'United Kingdom';
       if (memory.country) {
-        if (memory.country.toUpperCase() === 'UK') {
-          initialCountryValue = 'United Kingdom';
-        } else if (memory.country.toUpperCase() === 'USA' || memory.country.toUpperCase() === 'US') {
-           initialCountryValue = 'United States';
-        } else {
-          const foundOption = countryOptions.find(opt => opt.value.toLowerCase() === memory.country!.toLowerCase());
-          initialCountryValue = foundOption ? foundOption.value : 'United Kingdom'; // Fallback to UK if not found
-        }
+        if (memory.country.toUpperCase() === 'UK') initialCountryValue = 'United Kingdom';
+        else if (memory.country.toUpperCase() === 'USA' || memory.country.toUpperCase() === 'US') initialCountryValue = 'United States';
+        else { const foundOption = countryOptions.find(opt => opt.value.toLowerCase() === memory.country!.toLowerCase()); initialCountryValue = foundOption ? foundOption.value : 'United Kingdom'; }
       }
       setCountry(initialCountryValue);
 
-
       setDescription(memory.description || '');
       setSelectedEmotionTags(memory.emotionTags || []);
-
       setSelectedYear(getInitialDateComponent('year', memory.date));
       setSelectedMonth(getInitialDateComponent('month', memory.date));
       setSelectedDay(getInitialDateComponent('day', memory.date));
@@ -163,44 +168,34 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
         const size = (typeof firstMedia.size === 'number' && !isNaN(firstMedia.size)) ? firstMedia.size : 0;
 
-        const existingMediaData: CurrentMediaData = {
-          file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
-          type: firstMedia.type,
-          startTime: firstMedia.startTime,
-          endTime: firstMedia.endTime,
-          duration: duration,
-          size: size,
-        };
-        setCurrentMedia(existingMediaData);
-        setCurrentMediaPreviewUrl(firstMedia.url);
-
-        setMediaToInitializeRecorder({
-            file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
+        // If URL is not a blob, use it directly. Don't create a placeholder file for CurrentMediaData yet.
+        // Placeholder File is mainly for submission if no new file is uploaded.
+        setCurrentMedia({
+            file: new File([], firstMedia.filename || "existing_media_placeholder", {type: firstMedia.type === 'video' ? 'video/mp4' : 'audio/mp3'}), // Placeholder
             type: firstMedia.type,
-            previewUrl: firstMedia.url || '',
+            startTime: firstMedia.startTime,
+            endTime: firstMedia.endTime,
+            duration: duration,
+            size: size,
+        });
+        setCurrentMediaPreviewUrl(firstMedia.url); // Use existing persistent URL
+        setMediaToInitializeRecorder({ // For MediaCaptureControl
+            type: firstMedia.type,
+            previewUrl: firstMedia.url, // Pass persistent URL to MCC
             startTime: firstMedia.startTime,
             endTime: firstMedia.endTime,
             duration: duration,
             size: size,
         });
       } else {
-        setCurrentMedia(null);
-        setCurrentMediaPreviewUrl(null);
-        setMediaToInitializeRecorder(null);
+        setCurrentMedia(null); setCurrentMediaPreviewUrl(null); setMediaToInitializeRecorder(undefined);
       }
     } else {
       const promptTextFromUrl = searchParams.get('prompt');
       setTitle(promptTextFromUrl ? decodeURIComponent(promptTextFromUrl) : '');
-      setLocation('');
-      setCountry('United Kingdom');
-      setDescription('');
-      setSelectedEmotionTags([]);
-      setSelectedYear(getInitialDateComponent('year'));
-      setSelectedMonth(getInitialDateComponent('month'));
-      setSelectedDay(getInitialDateComponent('day'));
-      setCurrentMedia(null);
-      setCurrentMediaPreviewUrl(null);
-      setMediaToInitializeRecorder(null);
+      setLocation(''); setCountry('United Kingdom'); setDescription(''); setSelectedEmotionTags([]);
+      setSelectedYear(getInitialDateComponent('year')); setSelectedMonth(getInitialDateComponent('month')); setSelectedDay(getInitialDateComponent('day'));
+      setCurrentMedia(null); setCurrentMediaPreviewUrl(null); setMediaToInitializeRecorder(undefined);
     }
   }, [memory, searchParams, getInitialDateComponent]);
 
@@ -214,9 +209,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }, [daysInSelectedMonth]);
 
  const performVisualScroll = useCallback((slideIndex: number) => {
-    if (visualScrollTimerRef.current) {
-      clearTimeout(visualScrollTimerRef.current);
-    }
+    if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current);
     visualScrollTimerRef.current = setTimeout(() => {
       let targetElementRef: React.RefObject<HTMLDivElement> | null = null;
       if (slideIndex === SLIDE_INDEX_DETAILS) targetElementRef = step1AnchorRef;
@@ -226,225 +219,168 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       if (targetElementRef?.current) {
         const navbar = document.querySelector('header.sticky') as HTMLElement | null;
         const navbarHeight = navbar ? navbar.offsetHeight : 0;
-
         const elementRect = targetElementRef.current.getBoundingClientRect();
         const currentScrollY = window.scrollY;
         const targetScrollY = elementRect.top + currentScrollY - navbarHeight;
-
-        window.scrollTo({
-          top: targetScrollY,
-          behavior: 'auto',
-        });
+        window.scrollTo({ top: targetScrollY, behavior: 'auto' });
       }
     }, 350);
   }, []);
 
 
-  useEffect(() => {
-    currentSlideRef.current = currentSlide;
-  }, [currentSlide]);
+  useEffect(() => { currentSlideRef.current = currentSlide; }, [currentSlide]);
 
 
  useEffect(() => {
     if (!carouselApi) return;
-    carouselApi.scrollTo(currentSlide, true); // Force scroll to ensure correct slide
+    carouselApi.scrollTo(currentSlide, true);
     performVisualScroll(currentSlide);
   }, [currentSlide, carouselApi, performVisualScroll]);
 
   useEffect(() => {
     if (!carouselApi) return;
-
-    const handleApiEvent = () => {
-      if (!carouselApi) return;
-      const newSelectedSnap = carouselApi.selectedScrollSnap();
-      if (newSelectedSnap !== currentSlideRef.current) {
-        setCurrentSlide(newSelectedSnap);
-      }
-    };
-
+    const handleApiEvent = () => { if (!carouselApi) return; const newSelectedSnap = carouselApi.selectedScrollSnap(); if (newSelectedSnap !== currentSlideRef.current) setCurrentSlide(newSelectedSnap); };
     const initialSnap = carouselApi.selectedScrollSnap();
-    if (initialSnap !== currentSlideRef.current) {
-      setCurrentSlide(initialSnap);
-    } else {
-      if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current);
-      initialScrollTimerRef.current = setTimeout(() => {
-        if (carouselApi && carouselApi.selectedScrollSnap() === currentSlideRef.current) {
-           performVisualScroll(currentSlideRef.current);
-        }
-      }, 100);
-    }
-
-    carouselApi.on("select", handleApiEvent);
-    carouselApi.on("reInit", handleApiEvent);
-
-    return () => {
-      if (carouselApi) {
-        carouselApi.off("select", handleApiEvent);
-        carouselApi.off("reInit", handleApiEvent);
-      }
-      if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current);
-      if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current);
-    };
+    if (initialSnap !== currentSlideRef.current) setCurrentSlide(initialSnap);
+    else { if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current); initialScrollTimerRef.current = setTimeout(() => { if (carouselApi && carouselApi.selectedScrollSnap() === currentSlideRef.current) performVisualScroll(currentSlideRef.current); }, 100); }
+    carouselApi.on("select", handleApiEvent); carouselApi.on("reInit", handleApiEvent);
+    return () => { if (carouselApi) { carouselApi.off("select", handleApiEvent); carouselApi.off("reInit", handleApiEvent); } if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current); if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current); };
   }, [carouselApi, performVisualScroll]);
 
 
-  useEffect(() => {
-    if (selectedDay > daysInSelectedMonth) setSelectedDay(daysInSelectedMonth);
-  }, [selectedDay, daysInSelectedMonth]);
+  useEffect(() => { if (selectedDay > daysInSelectedMonth) setSelectedDay(daysInSelectedMonth); }, [selectedDay, daysInSelectedMonth]);
 
 
   useEffect(() => {
-    const urlToWatch = currentMediaPreviewUrl;
+    const urlToRevoke = currentMediaPreviewUrl;
     return () => {
-      if (urlToWatch && urlToWatch.startsWith('blob:')) {
-        URL.revokeObjectURL(urlToWatch);
+      if (urlToRevoke && urlToRevoke.startsWith('blob:')) {
+        URL.revokeObjectURL(urlToRevoke);
       }
     };
   }, [currentMediaPreviewUrl]);
 
 
-  const handleMediaReady = useCallback((mediaDataFromRecorder: MediaRecorderData) => {
+  const handleMediaReady = useCallback((mediaPayload: MediaFromRecorder) => {
     setIsProcessingMedia(true);
-    const newCurrentMediaData: CurrentMediaData = {
-      file: mediaDataFromRecorder.file,
-      type: mediaDataFromRecorder.type,
-      startTime: mediaDataFromRecorder.startTime,
-      endTime: mediaDataFromRecorder.endTime,
-      duration: mediaDataFromRecorder.duration,
-      size: mediaDataFromRecorder.size,
-    };
-    setCurrentMedia(newCurrentMediaData);
-    setCurrentMediaPreviewUrl(mediaDataFromRecorder.previewUrl);
+
+    if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(currentMediaPreviewUrl); // Revoke previous MemoryForm-owned blob URL
+    }
+
+    const newPreviewUrlFromFile = URL.createObjectURL(mediaPayload.file); // Create new MemoryForm-owned blob URL
+
+    setCurrentMedia({ // Store the actual file and its metadata
+      file: mediaPayload.file,
+      type: mediaPayload.type,
+      startTime: mediaPayload.startTime,
+      endTime: mediaPayload.endTime,
+      duration: mediaPayload.duration,
+      size: mediaPayload.size,
+    });
+    setCurrentMediaPreviewUrl(newPreviewUrlFromFile); // Use the new blob URL for MemoryForm's previews
+
+    setMediaToInitializeRecorder({ // For MediaCaptureControl re-initialization
+      file: mediaPayload.file, // Pass file if MCC needs it
+      type: mediaPayload.type,
+      previewUrl: newPreviewUrlFromFile, // MCC displays MemoryForm's blob URL
+      startTime: mediaPayload.startTime,
+      endTime: mediaPayload.endTime,
+      duration: mediaPayload.duration,
+      size: mediaPayload.size,
+    });
     setIsProcessingMedia(false);
-  }, []);
+  }, [currentMediaPreviewUrl]);
 
 
   useEffect(() => {
     if (currentSlide === SLIDE_INDEX_MEDIA && currentMediaPreviewUrl && currentMedia) {
-      if (currentMedia.type === 'video' && videoPreviewRef.current) {
-        if (videoPreviewRef.current.src !== currentMediaPreviewUrl) {
-          videoPreviewRef.current.src = currentMediaPreviewUrl;
-        }
-        videoPreviewRef.current.load(); 
-      } else if (currentMedia.type === 'audio' && audioPreviewRef.current) {
-        if (audioPreviewRef.current.src !== currentMediaPreviewUrl) {
-          audioPreviewRef.current.src = currentMediaPreviewUrl;
-        }
-        audioPreviewRef.current.load(); 
+      const mediaElement = currentMedia.type === 'video' ? videoPreviewRef.current : audioPreviewRef.current;
+      if (mediaElement) {
+        if (mediaElement.src !== currentMediaPreviewUrl) mediaElement.src = currentMediaPreviewUrl;
+        mediaElement.load();
       }
     }
   }, [currentMediaPreviewUrl, currentMedia, currentSlide]);
 
 
-  const handleMediaDiscardFromChild = useCallback(() => {
+  const handleMediaDiscardFromChild = useCallback(() => { // Called by MediaCaptureControl
     setIsProcessingMedia(true);
-    if (isEditing && memory?.mediaAttachments?.[0]?.url) {
-      const firstMedia = memory.mediaAttachments[0];
+    if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(currentMediaPreviewUrl); // Revoke MemoryForm's current blob URL
+    }
+
+    if (isEditing && memory?.mediaAttachments?.[0]?.url && !memory.mediaAttachments[0].url.startsWith('blob:')) {
+      const firstMedia = memory.mediaAttachments[0]; // Original persistent media
       const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
       const size = (typeof firstMedia.size === 'number' && !isNaN(firstMedia.size)) ? firstMedia.size : 0;
-      const existingMediaData: CurrentMediaData = {
-        file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
-        type: firstMedia.type,
-        startTime: firstMedia.startTime,
-        endTime: firstMedia.endTime,
-        duration: duration,
-        size: size,
-      };
-      setCurrentMedia(existingMediaData);
-      setCurrentMediaPreviewUrl(firstMedia.url); 
-       setMediaToInitializeRecorder({
-          file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
-          type: firstMedia.type,
-          previewUrl: firstMedia.url || '',
-          startTime: firstMedia.startTime,
-          endTime: firstMedia.endTime,
-          duration: duration,
-          size: size,
+      setCurrentMedia({
+        file: new File([], firstMedia.filename || "existing_media_placeholder", {type: firstMedia.type === 'video' ? 'video/mp4' : 'audio/mp3'}),
+        type: firstMedia.type, startTime: firstMedia.startTime, endTime: firstMedia.endTime, duration, size,
       });
-    } else {
-      setCurrentMedia(null);
-      setCurrentMediaPreviewUrl(null); 
-      setMediaToInitializeRecorder(null);
+      setCurrentMediaPreviewUrl(firstMedia.url); // Restore persistent URL
+      setMediaToInitializeRecorder({
+        type: firstMedia.type, previewUrl: firstMedia.url,
+        startTime: firstMedia.startTime, endTime: firstMedia.endTime, duration, size,
+      });
+    } else { // Discarding to no media
+      setCurrentMedia(null); setCurrentMediaPreviewUrl(null); setMediaToInitializeRecorder(undefined);
     }
     setIsProcessingMedia(false);
-  }, [isEditing, memory?.mediaAttachments]);
+  }, [isEditing, memory?.mediaAttachments, currentMediaPreviewUrl]);
 
-  const handleMediaDiscardInForm = useCallback(() => {
-    handleMediaDiscardFromChild();
-  }, [handleMediaDiscardFromChild]); 
+  const handleMediaDiscardInForm = useCallback(() => { // User clicks discard within MemoryForm (e.g. for the Step 2 preview)
+    handleMediaDiscardFromChild(); // Use the same logic
+  }, [handleMediaDiscardFromChild]);
 
 
   useEffect(() => {
     const mediaElement = currentMedia?.type === 'video' ? videoPreviewRef.current : audioPreviewRef.current;
     if (mediaElement && currentMedia && currentMediaPreviewUrl && mediaElement.src === currentMediaPreviewUrl) {
       const targetTime = (currentMedia.startTime !== undefined && isFinite(currentMedia.startTime)) ? currentMedia.startTime : 0.01;
-      const applyStartTime = () => {
-        if (mediaElement.readyState >= 1 && targetTime <= mediaElement.duration && Math.abs(mediaElement.currentTime - targetTime) > 0.1) {
-          try { mediaElement.currentTime = targetTime; } catch (error) { console.warn("Error setting currentTime:", error); }
-        }
-      };
-      if (mediaElement.readyState >= 1) applyStartTime();
-      else mediaElement.addEventListener('loadedmetadata', applyStartTime, { once: true });
+      const applyStartTime = () => { if (mediaElement.readyState >= 1 && targetTime <= mediaElement.duration && Math.abs(mediaElement.currentTime - targetTime) > 0.1) { try { mediaElement.currentTime = targetTime; } catch (error) { console.warn("Error setting currentTime:", error); }}};
+      if (mediaElement.readyState >= 1) applyStartTime(); else mediaElement.addEventListener('loadedmetadata', applyStartTime, { once: true });
       return () => mediaElement.removeEventListener('loadedmetadata', applyStartTime);
     }
   }, [currentMedia, currentMediaPreviewUrl]);
 
-  useEffect(() => {
-      if (currentSlide !== SLIDE_INDEX_MEDIA && isProcessingMedia) {
-        setIsProcessingMedia(false);
-      }
-    }, [currentSlide, isProcessingMedia]);
+  useEffect(() => { if (currentSlide !== SLIDE_INDEX_MEDIA && isProcessingMedia) setIsProcessingMedia(false); }, [currentSlide, isProcessingMedia]);
 
 
-  const handleEmotionTagToggle = (tag: EmotionTag) => {
-    setSelectedEmotionTags(prevTags =>
-      prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]
-    );
-  };
+  const handleEmotionTagToggle = (tag: EmotionTag) => setSelectedEmotionTags(prevTags => prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]);
 
   const triggerSubmitProcess = useCallback(() => {
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
-
-    const finalMediaDataForSubmission = currentMedia;
-
     let mediaAttachmentsForSubmission: MediaAttachment[] | undefined = undefined;
     let mediaFileToUpload: File | undefined = undefined;
 
-    if (finalMediaDataForSubmission) {
-      const isNewFile = finalMediaDataForSubmission.file.name !== "existing_media" && finalMediaDataForSubmission.file.size > 0;
-      if (isNewFile) {
-        mediaFileToUpload = finalMediaDataForSubmission.file;
-      }
-      const originalMediaAttachment = memory?.mediaAttachments?.[0];
-      const duration = (typeof finalMediaDataForSubmission.duration === 'number' && !isNaN(finalMediaDataForSubmission.duration)) ? finalMediaDataForSubmission.duration : 0;
-      const size = (typeof finalMediaDataForSubmission.size === 'number' && !isNaN(finalMediaDataForSubmission.size)) ? finalMediaDataForSubmission.size : 0;
+    if (currentMedia) { // currentMedia now holds the definitive state
+      // Check if currentMedia.file is a real uploaded/recorded file vs a placeholder for existing media
+      const isNewFile = currentMedia.file.size > 0 && currentMedia.file.name !== "existing_media_placeholder";
+      if (isNewFile) mediaFileToUpload = currentMedia.file;
+
+      const originalMediaAttachmentId = memory?.mediaAttachments?.[0]?.id || Date.now().toString();
+      const urlForSubmission = isNewFile ? "placeholder_for_upload" : (currentMediaPreviewUrl || memory?.mediaAttachments?.[0]?.url || '');
 
       mediaAttachmentsForSubmission = [{
-        id: originalMediaAttachment?.id || Date.now().toString(),
-        type: finalMediaDataForSubmission.type,
-        url: (isNewFile ? "placeholder_for_upload" : (currentMediaPreviewUrl || memory?.mediaAttachments?.[0]?.url || '')),
-        filename: finalMediaDataForSubmission.file.name,
-        startTime: finalMediaDataForSubmission.startTime,
-        endTime: finalMediaDataForSubmission.endTime,
-        duration: duration,
-        size: size,
+        id: originalMediaAttachmentId,
+        type: currentMedia.type,
+        url: urlForSubmission,
+        filename: currentMedia.file.name, // Will be the real filename or placeholder name
+        startTime: currentMedia.startTime,
+        endTime: currentMedia.endTime,
+        duration: currentMedia.duration,
+        size: currentMedia.size,
       }];
     } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
-        mediaAttachmentsForSubmission = memory.mediaAttachments;
+        // This case handles if media was present initially but then discarded, and form submitted.
+        // If `currentMedia` is null, it means media was explicitly removed.
+        mediaAttachmentsForSubmission = []; // Explicitly empty or undefined based on desired behavior for removal
     }
 
-
     onSubmit(
-      {
-        title,
-        date: finalDate.toISOString(),
-        description,
-        emotionTags: selectedEmotionTags,
-        mediaAttachments: mediaAttachmentsForSubmission,
-        location: location || undefined,
-        country: country || undefined,
-        promptId: promptIdFromQuery || memory?.promptId || undefined,
-      },
+      { title, date: finalDate.toISOString(), description, emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForSubmission,
+        location: location || undefined, country: country || undefined, promptId: promptIdFromQuery || memory?.promptId || undefined, },
       mediaFileToUpload
     );
   }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, promptIdFromQuery, selectedEmotionTags, isEditing]);
@@ -452,88 +388,41 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const handleActionButtonClick = useCallback(() => {
     if (isParentSubmitting || isProcessingMedia) return;
-
     if (currentSlide === SLIDE_INDEX_DETAILS) {
-      if (!title.trim()) {
-        toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
-        setTimeout(() => titleInputRef.current?.focus(), 100);
-        return;
-      }
-      let tempDate = new Date(selectedYear, selectedMonth, 1);
-      tempDate = setDate(tempDate, selectedDay);
-      if (!isValid(tempDate) || getYear(tempDate) !== selectedYear || getMonth(tempDate) !== selectedMonth || getDate(tempDate) !== selectedDay) {
-        toast({ title: "Invalid Date", description: "Please select a valid date.", variant: "destructive" });
-        setTimeout(() => yearSelectRef.current?.focus(), 100);
-        return;
-      }
-      if (!description.trim()) {
-        toast({ title: "Description Required", description: "Please enter a description for the memory.", variant: "destructive" });
-        setTimeout(() => descriptionTextareaRef.current?.focus(), 100);
-        return;
-      }
+      if (!title.trim()) { toast({ title: "Title Required", variant: "destructive" }); setTimeout(() => titleInputRef.current?.focus(), 100); return; }
+      let tempDate = new Date(selectedYear, selectedMonth, 1); tempDate = setDate(tempDate, selectedDay);
+      if (!isValid(tempDate) || getYear(tempDate) !== selectedYear || getMonth(tempDate) !== selectedMonth || getDate(tempDate) !== selectedDay) { toast({ title: "Invalid Date", variant: "destructive" }); setTimeout(() => yearSelectRef.current?.focus(), 100); return; }
+      if (!description.trim()) { toast({ title: "Description Required", variant: "destructive" }); setTimeout(() => descriptionTextareaRef.current?.focus(), 100); return; }
        setCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
-       const mediaSource = currentMedia;
-      if (!isEditing && !mediaSource) {
-          toast({
-              title: "Media Required",
-              description: "Please record or upload a video or audio file for Step 2 before proceeding.",
-              variant: "destructive"
-          });
-          return;
-      } else if (isEditing && !mediaSource && (!memory?.mediaAttachments || memory.mediaAttachments.length === 0)) {
-           toast({
-              title: "Media Required",
-              description: "Please record or upload a video or audio file for Step 2 before proceeding.",
-              variant: "destructive"
-          });
-          return;
-      }
+      if (!isEditing && !currentMedia) { toast({ title: "Media Required", description: "Please record or upload media for Step 2.", variant: "destructive" }); return; }
+      else if (isEditing && !currentMedia && (!memory?.mediaAttachments || memory.mediaAttachments.length === 0)) { toast({ title: "Media Required", description: "Please record or upload media for Step 2.", variant: "destructive" }); return; }
       setCurrentSlide(SLIDE_INDEX_PREVIEW);
-    } else if (currentSlide === SLIDE_INDEX_PREVIEW) {
-      triggerSubmitProcess();
-    }
-  }, [
-    isParentSubmitting, isProcessingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay,
-    isEditing, triggerSubmitProcess, currentMedia, setCurrentSlide, memory?.mediaAttachments
-  ]);
+    } else if (currentSlide === SLIDE_INDEX_PREVIEW) triggerSubmitProcess();
+  }, [ isParentSubmitting, isProcessingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments ]);
 
-  const handleFormSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    handleActionButtonClick();
-  };
+  const handleFormSubmit = (event: FormEvent) => { event.preventDefault(); handleActionButtonClick(); };
 
-  let actionButtonText = 'Next';
-  let ActionButtonIcon: React.ElementType = ArrowRight;
-
-  if (currentSlide === SLIDE_INDEX_DETAILS) {
-    actionButtonText = 'Next';
-    ActionButtonIcon = ArrowRight;
-  } else if (currentSlide === SLIDE_INDEX_MEDIA) {
-    actionButtonText = 'Next to Preview';
-    ActionButtonIcon = Eye;
-  } else if (currentSlide === SLIDE_INDEX_PREVIEW) {
-    actionButtonText = isEditing ? 'Update Memory' : 'Save Memory';
-    ActionButtonIcon = Sparkles;
-  }
+  let actionButtonText = 'Next'; let ActionButtonIcon: React.ElementType = ArrowRight;
+  if (currentSlide === SLIDE_INDEX_MEDIA) { actionButtonText = 'Next to Preview'; ActionButtonIcon = Eye; }
+  else if (currentSlide === SLIDE_INDEX_PREVIEW) { actionButtonText = isEditing ? 'Update Memory' : 'Save Memory'; ActionButtonIcon = Sparkles; }
 
   const initialMediaForRecorderProp = useMemo(() => {
-    if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
-      const firstMedia = memory.mediaAttachments[0];
-      const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
-      const size = (typeof firstMedia.size === 'number' && !isNaN(firstMedia.size)) ? firstMedia.size : 0;
+    // This prop is for MediaCaptureControl's initial display.
+    // It should receive MemoryForm's currentMediaPreviewUrl if it's set.
+    if (currentMediaPreviewUrl && currentMedia) {
       return {
-        file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
-        type: firstMedia.type,
-        previewUrl: firstMedia.url || '',
-        startTime: firstMedia.startTime,
-        endTime: firstMedia.endTime,
-        duration: duration,
-        size: size,
+        type: currentMedia.type,
+        previewUrl: currentMediaPreviewUrl, // Use MemoryForm's owned URL
+        startTime: currentMedia.startTime,
+        endTime: currentMedia.endTime,
+        duration: currentMedia.duration,
+        size: currentMedia.size,
+        // file: currentMedia.file, // Optionally pass file if MCC needs it for re-init
       };
     }
     return undefined;
-  }, [memory, isEditing]);
+  }, [currentMedia, currentMediaPreviewUrl]);
 
   const currentPromptIdForTeleprompter = promptIdFromQuery || memory?.promptId;
 
@@ -541,34 +430,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   if (currentSlide === SLIDE_INDEX_PREVIEW) {
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
     let mediaAttachmentsForPreview: MediaAttachment[] | undefined = undefined;
-
-    if (currentMedia && currentMediaPreviewUrl) {
+    if (currentMedia && currentMediaPreviewUrl) { // Use MemoryForm's current state
       mediaAttachmentsForPreview = [{
         id: memory?.mediaAttachments?.[0]?.id || 'preview-media-1',
-        type: currentMedia.type,
-        url: currentMediaPreviewUrl,
-        filename: currentMedia.file.name,
-        startTime: currentMedia.startTime,
-        endTime: currentMedia.endTime,
-        duration: currentMedia.duration,
-        size: currentMedia.size,
+        type: currentMedia.type, url: currentMediaPreviewUrl, filename: currentMedia.file.name,
+        startTime: currentMedia.startTime, endTime: currentMedia.endTime, duration: currentMedia.duration, size: currentMedia.size,
       }];
-    } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
-      mediaAttachmentsForPreview = memory.mediaAttachments;
     }
-
     mockMemoryForPreview = {
-      id: memory?.id || 'preview-id',
-      title: title.trim() || "Untitled Chapter",
-      date: isValid(finalDate) ? finalDate.toISOString() : new Date().toISOString(),
-      description: description.trim() || "No description provided.",
-      emotionTags: selectedEmotionTags,
-      mediaAttachments: mediaAttachmentsForPreview,
-      location: location.trim() || undefined,
-      country: country.trim() || undefined,
-      userId: user?.id || 'preview-user-id',
-      promptId: promptIdFromQuery || memory?.promptId,
-      isLegacy: memory?.isLegacy || false,
+      id: memory?.id || 'preview-id', title: title.trim() || "Untitled Chapter", date: isValid(finalDate) ? finalDate.toISOString() : new Date().toISOString(),
+      description: description.trim() || "No description provided.", emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForPreview,
+      location: location.trim() || undefined, country: country.trim() || undefined, userId: user?.id || 'preview-user-id',
+      promptId: promptIdFromQuery || memory?.promptId, isLegacy: memory?.isLegacy || false,
     };
   }
 
@@ -580,84 +453,24 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           <CarouselItem>
             <div ref={step1AnchorRef} />
             <Card className="w-full">
-              <CardHeader>
-                <CardTitle className="font-headline text-2xl">{memory ? 'Edit Chapter' : 'New Chapter'} (Step {SLIDE_INDEX_DETAILS + 1} of {TOTAL_SLIDES})</CardTitle>
-                <CardDescription>Capture the details of your moment. Fields marked with * are mandatory.</CardDescription>
-              </CardHeader>
+              <CardHeader><CardTitle className="font-headline text-2xl">{memory ? 'Edit Chapter' : 'New Chapter'} (Step {SLIDE_INDEX_DETAILS + 1} of {TOTAL_SLIDES})</CardTitle><CardDescription>Capture the details of your moment. Fields marked with * are mandatory.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-1">
-                  <Label htmlFor="title" >Title *</Label>
-                  <Input ref={titleInputRef} id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" />
-                </div>
-                <div className="space-y-1">
-                  <Label>Date *</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <Label htmlFor="year-select" className="sr-only">Year</Label>
-                      <Select key={`year-${selectedYear.toString()}-${memory?.id || 'new'}`} value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                        <SelectTrigger id="year-select" ref={yearSelectRef}><SelectValue placeholder="Year" /></SelectTrigger>
-                        <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="month-select" className="sr-only">Month</Label>
-                      <Select key={`month-${selectedMonth.toString()}-${memory?.id || 'new'}`} value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
-                        <SelectTrigger id="month-select"><SelectValue placeholder="Month" /></SelectTrigger>
-                        <SelectContent>{months.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="day-select" className="sr-only">Day</Label>
-                      <Select key={`day-${selectedDay.toString()}-${memory?.id || 'new'}`} value={selectedDay.toString()} onValueChange={(value) => setSelectedDay(parseInt(value))}>
-                        <SelectTrigger id="day-select"><SelectValue placeholder="Day" /></SelectTrigger>
-                        <SelectContent>{dayOptions.map(d => <SelectItem key={d} value={d.toString()}>{d}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                        <Label htmlFor="location"><MapPin className="inline-block mr-1 h-4 w-4" />Location (Optional)</Label>
-                        <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g., Eiffel Tower, Paris" />
-                    </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="country-select">Country (Optional)</Label>
-                        <Select key={`country-${country}-${memory?.id || 'new'}`} value={country} onValueChange={setCountry}>
-                            <SelectTrigger id="country-select"><SelectValue placeholder="Select Country" /></SelectTrigger>
-                            <SelectContent>{countryOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="description">Description *</Label>
-                  <Textarea ref={descriptionTextareaRef} id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} required/>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="emotion-tags"><Tag className="inline-block mr-1 h-4 w-4" />Emotion Tags (Optional)</Label>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {emotionTagsList.map((tag) => (
-                      <Button type="button" key={tag} variant={selectedEmotionTags.includes(tag) ? 'default' : 'outline'} size="sm" onClick={() => handleEmotionTagToggle(tag)} className="text-xs h-auto py-1 px-2">
-                        {tag}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
+                <div className="space-y-1"><Label htmlFor="title" >Title *</Label><Input ref={titleInputRef} id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" /></div>
+                <div className="space-y-1"><Label>Date *</Label><div className="grid grid-cols-3 gap-2"><div><Label htmlFor="year-select" className="sr-only">Year</Label><Select key={`year-${selectedYear.toString()}-${memory?.id || 'new'}`} value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}><SelectTrigger id="year-select" ref={yearSelectRef}><SelectValue placeholder="Year" /></SelectTrigger><SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent></Select></div><div><Label htmlFor="month-select" className="sr-only">Month</Label><Select key={`month-${selectedMonth.toString()}-${memory?.id || 'new'}`} value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}><SelectTrigger id="month-select"><SelectValue placeholder="Month" /></SelectTrigger><SelectContent>{months.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}</SelectContent></Select></div><div><Label htmlFor="day-select" className="sr-only">Day</Label><Select key={`day-${selectedDay.toString()}-${memory?.id || 'new'}`} value={selectedDay.toString()} onValueChange={(value) => setSelectedDay(parseInt(value))}><SelectTrigger id="day-select"><SelectValue placeholder="Day" /></SelectTrigger><SelectContent>{dayOptions.map(d => <SelectItem key={d} value={d.toString()}>{d}</SelectItem>)}</SelectContent></Select></div></div></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="space-y-1"><Label htmlFor="location"><MapPin className="inline-block mr-1 h-4 w-4" />Location (Optional)</Label><Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g., Eiffel Tower, Paris" /></div><div className="space-y-1"><Label htmlFor="country-select">Country (Optional)</Label><Select key={`country-${country}-${memory?.id || 'new'}`} value={country} onValueChange={setCountry}><SelectTrigger id="country-select"><SelectValue placeholder="Select Country" /></SelectTrigger><SelectContent>{countryOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent></Select></div></div>
+                <div className="space-y-1"><Label htmlFor="description">Description *</Label><Textarea ref={descriptionTextareaRef} id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} required/></div>
+                <div className="space-y-1"><Label htmlFor="emotion-tags"><Tag className="inline-block mr-1 h-4 w-4" />Emotion Tags (Optional)</Label><div className="flex flex-wrap gap-2 pt-1">{emotionTagsList.map((tag) => (<Button type="button" key={tag} variant={selectedEmotionTags.includes(tag) ? 'default' : 'outline'} size="sm" onClick={() => handleEmotionTagToggle(tag)} className="text-xs h-auto py-1 px-2">{tag}</Button>))}</div></div>
               </CardContent>
             </Card>
           </CarouselItem>
           <CarouselItem>
             <div ref={step2AnchorRef} />
             <Card className="w-full">
-              <CardHeader>
-                  <CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>
-                  {!(currentMedia && currentMediaPreviewUrl) && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}
-              </CardHeader>
+              <CardHeader><CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>{!(currentMedia && currentMediaPreviewUrl) && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}</CardHeader>
               <CardContent>
                   {currentMedia && currentMediaPreviewUrl ? (
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium flex items-center"><Paperclip className="mr-2 h-5 w-5 inline-block" />Attached Media</p>
-                      </div>
+                      <div className="flex items-center justify-between"><p className="text-sm font-medium flex items-center"><Paperclip className="mr-2 h-5 w-5 inline-block" />Attached Media</p></div>
                       <p className="text-sm text-muted-foreground">Type: {currentMedia.type}</p>
                       <p className="text-sm text-muted-foreground">Filename: {currentMedia.file.name}</p>
                       {currentMedia.type === 'video' && (<video ref={videoPreviewRef} src={currentMediaPreviewUrl} controls className="w-full aspect-video rounded-md mt-2 bg-muted object-cover" key={currentMediaPreviewUrl} preload="metadata"/>)}
@@ -683,23 +496,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           <CarouselItem>
             <div ref={step3AnchorRef} />
             <Card className="w-full">
-              <CardHeader>
-                <CardTitle className="font-headline text-2xl">{memory ? 'Preview Changes' : 'Preview New Chapter'} (Step {SLIDE_INDEX_PREVIEW + 1} of {TOTAL_SLIDES})</CardTitle>
-                <CardDescription>Review your chapter details and media. Go back to make changes or click '{actionButtonText}' to save.</CardDescription>
-              </CardHeader>
+              <CardHeader><CardTitle className="font-headline text-2xl">{memory ? 'Preview Changes' : 'Preview New Chapter'} (Step {SLIDE_INDEX_PREVIEW + 1} of {TOTAL_SLIDES})</CardTitle><CardDescription>Review your chapter details and media. Go back to make changes or click '{actionButtonText}' to save.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
-                {mockMemoryForPreview && (
-                  <div className="border p-1 sm:p-2 rounded-lg bg-background shadow-sm">
-                    <MemoryCard 
-                      key={mockMemoryForPreview.mediaAttachments?.[0]?.url || mockMemoryForPreview.id || 'no-media-preview'}
-                      memory={mockMemoryForPreview} 
-                      userMode="guest" 
-                    />
-                  </div>
-                )}
-                {!mockMemoryForPreview && currentSlide === SLIDE_INDEX_PREVIEW && (
-                    <p className="text-muted-foreground text-center py-8">Preparing preview... If this persists, ensure all required fields in previous steps are complete.</p>
-                )}
+                {mockMemoryForPreview && (<div className="border p-1 sm:p-2 rounded-lg bg-background shadow-sm"><MemoryCard key={mockMemoryForPreview.mediaAttachments?.[0]?.url || mockMemoryForPreview.id || 'no-media-preview'} memory={mockMemoryForPreview} userMode="guest" /></div>)}
+                {!mockMemoryForPreview && currentSlide === SLIDE_INDEX_PREVIEW && (<p className="text-muted-foreground text-center py-8">Preparing preview... If this persists, ensure all required fields in previous steps are complete.</p>)}
               </CardContent>
             </Card>
           </CarouselItem>
@@ -707,39 +507,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       </Carousel>
 
       <div className="max-w-3xl mx-auto flex justify-between items-center pt-4 px-1 sm:px-0">
-        <Button
-          type="button"
-          onClick={() => {
-            if (currentSlide === SLIDE_INDEX_DETAILS) {
-              router.back();
-            } else if (currentSlide === SLIDE_INDEX_MEDIA) {
-              setCurrentSlide(SLIDE_INDEX_DETAILS);
-            } else if (currentSlide === SLIDE_INDEX_PREVIEW) {
-              setCurrentSlide(SLIDE_INDEX_MEDIA);
-            }
-          }}
-          disabled={!!isParentSubmitting || isProcessingMedia}
-          variant="outline"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}
-        </Button>
-        <Button
-          type="button"
-          onClick={handleActionButtonClick}
-          disabled={
-            !!isParentSubmitting ||
-            isProcessingMedia ||
-            (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview)
-          }
-        >
-          {(isParentSubmitting || isProcessingMedia) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          <ActionButtonIcon className="mr-2 h-4 w-4" />
-          {actionButtonText}
-        </Button>
+        <Button type="button" onClick={() => { if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) setCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) setCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting || isProcessingMedia} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
+        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || isProcessingMedia || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview)}>{(isParentSubmitting || isProcessingMedia) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</Button>
       </div>
     </form>
   );
 }
-
-    
