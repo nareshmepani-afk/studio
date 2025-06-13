@@ -8,23 +8,35 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { mockMemories } from '@/lib/mockData'; // For fetching memory to edit
-import { Loader2 } from 'lucide-react';
+import { mockMemories } from '@/lib/mockData';
+import { Loader2, Star, Zap } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function AddMemoryPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, calculateAndUpdateStorageUsage } = useAuth(); // Added calculateAndUpdateStorageUsage
+  const { 
+    user, 
+    calculateAndUpdateStorageUsage,
+    hostPassStatus,
+    activateFreeHostPass,
+    purchasePaidHostPass,
+    hostPassPriceDetails,
+    isFetchingHostPassPrice,
+    loading: authLoading 
+  } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [memoryToEdit, setMemoryToEdit] = useState<Memory | undefined>(undefined);
   const [isLoadingMemory, setIsLoadingMemory] = useState(true);
 
   const editMemoryId = searchParams.get('editMemoryId');
-  const promptIdFromQuery = searchParams.get('promptId'); // For linking memory to prompt
+  const promptIdFromQuery = searchParams.get('promptId');
+  const isCreatingNew = !editMemoryId;
 
   useEffect(() => {
     if (editMemoryId) {
-      // Simulate fetching memory
       setIsLoadingMemory(true);
       setTimeout(() => {
         const foundMemory = mockMemories.find(m => m.id === editMemoryId && m.userId === user?.id);
@@ -67,25 +79,17 @@ export default function AddMemoryPage() {
       };
     }
     
-    // Ensure mediaAttachments has size if new file is uploaded or if mediaData has it
     if (mediaFileToUpload && finalMemoryData.mediaAttachments && finalMemoryData.mediaAttachments.length > 0) {
-      console.log('Media file to upload:', mediaFileToUpload.name, 'Size:', mediaFileToUpload.size);
       finalMemoryData.mediaAttachments[0].url = `mock_uploaded_url/${mediaFileToUpload.name}`; 
       finalMemoryData.mediaAttachments[0].filename = mediaFileToUpload.name;
-      // The size should already be on memoryData.mediaAttachments[0] from MemoryForm
-      // If not, we could add it from mediaFileToUpload.size here, but MemoryForm should handle it
       if (!finalMemoryData.mediaAttachments[0].size) {
         finalMemoryData.mediaAttachments[0].size = mediaFileToUpload.size;
       }
     } else if (memoryData.mediaAttachments && memoryData.mediaAttachments.length > 0 && !finalMemoryData.mediaAttachments?.[0]?.size && mediaFileToUpload?.size) {
-       // Fallback if size wasn't set correctly but we have a file
        if (finalMemoryData.mediaAttachments && finalMemoryData.mediaAttachments.length > 0) {
         finalMemoryData.mediaAttachments[0].size = mediaFileToUpload.size;
        }
     }
-
-
-    console.log(editMemoryId ? 'Updated memory data:' : 'New memory data:', finalMemoryData);
 
     let existingMemories: Memory[] = [];
     const storedMemoriesJson = localStorage.getItem('mockMemories'); 
@@ -110,10 +114,9 @@ export default function AddMemoryPage() {
     const mockIndex = mockMemories.findIndex(m => m.id === finalMemoryData.id);
     if (mockIndex !== -1) mockMemories[mockIndex] = finalMemoryData; else mockMemories.push(finalMemoryData);
 
-    await calculateAndUpdateStorageUsage(user.id); // Recalculate storage usage
+    await calculateAndUpdateStorageUsage(user.id);
 
     await new Promise(resolve => setTimeout(resolve, 1000));
-
 
     setIsSubmitting(false);
     toast({
@@ -128,12 +131,76 @@ export default function AddMemoryPage() {
     }
   };
 
-  if (isLoadingMemory) {
+  if (authLoading || isLoadingMemory) {
     return (
       <AuthenticatedPageWrapper>
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
           <h2 className="text-2xl font-headline mb-2">Loading Memory Editor...</h2>
+        </div>
+      </AuthenticatedPageWrapper>
+    );
+  }
+
+  const needsPassActivation = isCreatingNew && (
+    hostPassStatus === 'no_pass_initiated' ||
+    hostPassStatus === 'free_host_pass_expired' ||
+    hostPassStatus === 'paid_host_pass_expired'
+  );
+
+  if (needsPassActivation) {
+    let buttonText = "Activate 6-Month Free Host Pass";
+    let ButtonIcon = Star;
+    let action = activateFreeHostPass;
+    let priceString = "";
+    let disabled = false;
+    let titleText = "Activate Host Pass";
+
+    if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
+      buttonText = "Purchase Host Pass";
+      ButtonIcon = Zap;
+      action = purchasePaidHostPass;
+      titleText = "Renew Host Pass";
+      if (isFetchingHostPassPrice) {
+        buttonText = "Fetching price...";
+        disabled = true;
+      } else if (hostPassPriceDetails) {
+        priceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
+        buttonText += priceString;
+      } else {
+         buttonText += ` (£12.99 - Mock)`; 
+      }
+    }
+  
+    return (
+      <AuthenticatedPageWrapper>
+        <div className="container mx-auto py-8 px-4 flex flex-col items-center justify-center min-h-[calc(100vh-12rem)]">
+          <Alert className="w-full max-w-lg bg-primary/10 border-primary/30 shadow-xl rounded-lg">
+            <ButtonIcon className="h-5 w-5 text-primary" />
+            <AlertTitle className="font-headline text-xl text-primary mt-1">
+              {titleText}
+            </AlertTitle>
+            <AlertDescription className="text-primary/90 space-y-4 mt-2">
+              <p>You need an active Host Pass to create new memories. Please activate your free pass or purchase one to continue.</p>
+              <Button
+                onClick={action}
+                size="default"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                disabled={disabled || (isFetchingHostPassPrice && hostPassStatus !== 'no_pass_initiated')}
+              >
+                {(isFetchingHostPassPrice && hostPassStatus !== 'no_pass_initiated') ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ButtonIcon className="mr-2 h-4 w-4" />}
+                {buttonText}
+              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => router.push('/settings')}>
+                      Go to Settings
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => router.push('/prompts')}>
+                      Back to Life Journey
+                  </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
         </div>
       </AuthenticatedPageWrapper>
     );
