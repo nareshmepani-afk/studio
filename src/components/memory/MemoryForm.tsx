@@ -295,13 +295,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   useEffect(() => {
     const urlToWatch = currentMediaPreviewUrl;
-
+    // This cleanup function will be called when:
+    // 1. currentMediaPreviewUrl changes.
+    // 2. The MemoryForm component unmounts.
     return () => {
       if (urlToWatch && urlToWatch.startsWith('blob:')) {
         URL.revokeObjectURL(urlToWatch);
       }
     };
-  }, [currentMediaPreviewUrl]);
+  }, [currentMediaPreviewUrl]); // Dependency on currentMediaPreviewUrl
 
 
   const handleMediaReady = useCallback((mediaDataFromRecorder: MediaRecorderData) => {
@@ -320,15 +322,33 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }, []);
 
 
+  // Effect to explicitly load media for Step 2 preview elements
+  useEffect(() => {
+    if (currentSlide === SLIDE_INDEX_MEDIA && currentMediaPreviewUrl && currentMedia) {
+      if (currentMedia.type === 'video' && videoPreviewRef.current) {
+        if (videoPreviewRef.current.src !== currentMediaPreviewUrl) {
+          videoPreviewRef.current.src = currentMediaPreviewUrl;
+        }
+        videoPreviewRef.current.load(); // Explicitly call load
+      } else if (currentMedia.type === 'audio' && audioPreviewRef.current) {
+        if (audioPreviewRef.current.src !== currentMediaPreviewUrl) {
+          audioPreviewRef.current.src = currentMediaPreviewUrl;
+        }
+        audioPreviewRef.current.load(); // Explicitly call load
+      }
+    }
+  }, [currentMediaPreviewUrl, currentMedia, currentSlide]);
+
+
   const handleMediaDiscardInForm = useCallback(() => {
-    setCurrentMedia(null);
-    setCurrentMediaPreviewUrl(null);
-    setIsProcessingMedia(false);
-  }, []);
+    // This now calls handleMediaDiscardFromChild which contains the actual reset logic
+    handleMediaDiscardFromChild();
+  }, [handleMediaDiscardFromChild]); // Make sure handleMediaDiscardFromChild is stable or included if it changes
 
 
   const handleMediaDiscardFromChild = useCallback(() => {
     setIsProcessingMedia(true); 
+    // The useEffect for currentMediaPreviewUrl will handle revocation when it changes.
     if (isEditing && memory?.mediaAttachments?.[0]?.url) {
       const firstMedia = memory.mediaAttachments[0];
       const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
@@ -342,7 +362,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         size: size,
       };
       setCurrentMedia(existingMediaData);
-      setCurrentMediaPreviewUrl(firstMedia.url);
+      setCurrentMediaPreviewUrl(firstMedia.url); // Set to original HTTP URL
        setMediaToInitializeRecorder({
           file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
           type: firstMedia.type,
@@ -354,7 +374,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       });
     } else {
       setCurrentMedia(null);
-      setCurrentMediaPreviewUrl(null);
+      setCurrentMediaPreviewUrl(null); // This will trigger revocation of any active blob URL by the useEffect
       setMediaToInitializeRecorder(null);
     }
     setIsProcessingMedia(false); 
