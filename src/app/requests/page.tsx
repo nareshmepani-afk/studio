@@ -57,7 +57,7 @@ export default function RequestsPage() {
         {mockPendingRequests.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {mockPendingRequests.map(req => (
-              <Card key={req.id} className="shadow-lg hover:shadow-xl transition-shadow">
+              <Card key={req.id} className="shadow-lg hover:shadow-xl transition-shadow flex flex-col h-full">
                 <CardHeader>
                   <CardTitle className="font-headline text-xl flex items-center">
                     {req.type === 'prompt_fulfillment' ? 
@@ -68,7 +68,7 @@ export default function RequestsPage() {
                   </CardTitle>
                   <CardDescription>From: {req.user}</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex-grow">
                   <p className="text-foreground">{req.text}</p>
                 </CardContent>
                 <CardFooter>
