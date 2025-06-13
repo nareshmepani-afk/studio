@@ -134,7 +134,21 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     if (memory) { // Editing an existing memory
       setTitle(memory.title || '');
       setLocation(memory.location || '');
-      setCountry(memory.country || 'United Kingdom');
+
+      // Country initialization logic improved
+      let initialCountry = 'United Kingdom'; // Default
+      if (memory.country) {
+        if (memory.country.toUpperCase() === 'UK') {
+          initialCountry = 'United Kingdom';
+        } else if (memory.country.toUpperCase() === 'USA' || memory.country.toUpperCase() === 'US') {
+          initialCountry = 'United States';
+        } else {
+          const foundOption = countryOptions.find(opt => opt.value === memory.country);
+          initialCountry = foundOption ? memory.country : 'United Kingdom';
+        }
+      }
+      setCountry(initialCountry);
+      
       setDescription(memory.description || '');
       setSelectedEmotionTags(memory.emotionTags || []);
 
@@ -496,22 +510,27 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     if (currentSlide === SLIDE_INDEX_DETAILS) {
       setCurrentSlide(SLIDE_INDEX_MEDIA); 
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
-      if (!isEditing) { 
-        const mediaSource = latestSelectedMediaDataRef.current || currentMedia;
-        if (!mediaSource) {
-            toast({ 
-                title: "Media Required", 
-                description: "Please record or upload a video or audio file for Step 2 before proceeding.", 
-                variant: "destructive" 
-            });
-            return; 
-        }
+       const mediaSource = latestSelectedMediaDataRef.current || currentMedia;
+      if (!isEditing && !mediaSource) { 
+          toast({ 
+              title: "Media Required", 
+              description: "Please record or upload a video or audio file for Step 2 before proceeding.", 
+              variant: "destructive" 
+          });
+          return; 
+      } else if (isEditing && !mediaSource && (!memory?.mediaAttachments || memory.mediaAttachments.length === 0)) {
+           toast({ 
+              title: "Media Required", 
+              description: "Please record or upload a video or audio file for Step 2 before proceeding.", 
+              variant: "destructive" 
+          });
+          return;
       }
       triggerSubmitProcess(); 
     }
   }, [
     isParentSubmitting, isProcessingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay,
-    isEditing, triggerSubmitProcess, currentMedia, latestSelectedMediaDataRef, setCurrentSlide
+    isEditing, triggerSubmitProcess, currentMedia, latestSelectedMediaDataRef, setCurrentSlide, memory?.mediaAttachments
   ]);
 
   const handleFormSubmit = (event: FormEvent) => {
@@ -650,7 +669,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                     </div>
                   ) : ( 
                     <MediaCaptureControl 
-                        key={hostPassStatus + (initialMediaForRecorderProp?.previewUrl || 'new')} 
+                        key={hostPassStatus + (initialMediaForRecorderProp?.previewUrl || 'new') + (initialMediaForRecorderProp?.startTime?.toString() || '') + (initialMediaForRecorderProp?.endTime?.toString() || '')}
                         onMediaReady={handleMediaReady} 
                         onDiscard={handleMediaDiscardFromChild} 
                         initialMedia={initialMediaForRecorderProp} 
