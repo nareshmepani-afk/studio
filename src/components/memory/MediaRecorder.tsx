@@ -38,7 +38,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   const [isRecording, setIsRecording] = useState(false);
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(null);
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null); // Internal preview URL for MCC
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<globalThis.MediaRecorder | null>(null);
@@ -81,13 +81,28 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     if (liveVideoRef.current) liveVideoRef.current.srcObject = null;
   }, []);
 
-  const checkStorageQuota = (fileSize: number): boolean => {
+  const checkStorageQuota = useCallback((fileSize: number): boolean => {
     if (user && user.storageUsedBytes !== undefined && (user.storageUsedBytes + fileSize > storageQuotaBytes)) {
-      setTimeout(() => toast({ variant: 'destructive', title: 'Storage Quota Exceeded', description: `This file (${(fileSize / (1024*1024)).toFixed(2)} MB) exceeds quota of ${(storageQuotaBytes / (1024*1024)).toFixed(0)} MB.`, duration: 7000, icon: <ShieldAlert className="h-5 w-5" /> }), 0);
+      const currentUsageMB = (user.storageUsedBytes / (1024 * 1024)).toFixed(2);
+      const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+      const quotaMB = (storageQuotaBytes / (1024 * 1024)).toFixed(0);
+      const remainingMB = Math.max(0, (storageQuotaBytes - user.storageUsedBytes) / (1024 * 1024)).toFixed(2);
+      const newTotalUsageMB = ((user.storageUsedBytes + fileSize) / (1024 * 1024)).toFixed(2);
+
+      const description = `Adding this file (${fileSizeMB} MB) would bring total usage to ${newTotalUsageMB} MB, exceeding your ${quotaMB} MB quota. You have ${remainingMB} MB remaining.`;
+      
+      setTimeout(() => toast({ 
+        variant: 'destructive', 
+        title: 'Storage Quota Exceeded', 
+        description: description, 
+        duration: 10000, 
+        icon: <ShieldAlert className="h-5 w-5" /> 
+      }), 0);
       return false;
     }
     return true;
-  };
+  }, [user, storageQuotaBytes]);
+
 
   const checkHostPass = (): boolean => {
     if (!canRecordOrUpload) {
@@ -106,10 +121,14 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
   const handleStartRecording = async (type: 'video' | 'audio') => {
     if (isRecording || !checkHostPass()) return;
-    if (previewUrl && previewUrl.startsWith('blob:') && previewUrl !== initialMedia?.previewUrl) { URL.revokeObjectURL(previewUrl); }
+    
+    if (previewUrl && previewUrl.startsWith('blob:') && previewUrl !== initialMedia?.previewUrl) { 
+      URL.revokeObjectURL(previewUrl); 
+    }
     setRecordedFile(null); setPreviewUrl(null); setMediaType(type); setStartTime(0); setEndTime(0); setMediaDuration(0); setMediaSize(0);
     latestTrimValuesRef.current = { startTime: 0, endTime: 0 }; recordedChunks.current = [];
-    cleanupStream(stream); setStream(null);
+    
+    cleanupStream(stream); setStream(null); 
     const currentStream = await getPermissions(type);
     if (!currentStream) { setIsRecording(false); return; }
     if (!currentStream.active) { cleanupStream(currentStream); setStream(null); setIsRecording(false); return; }
@@ -132,8 +151,12 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         const mime = type === 'video' ? 'video/webm' : 'audio/webm';
         const blob = new Blob(recordedChunks.current, { type: mime });
         const file = new File([blob], `recording.${type === 'video' ? 'webm' : 'ogg'}`, { type: mime });
-        const url = URL.createObjectURL(blob); // MCC's internal preview URL
-        if (!checkStorageQuota(file.size)) { URL.revokeObjectURL(url); cleanupStream(currentStream); setStream(null); setIsRecording(false); recordedChunks.current = []; return; }
+        
+        if (!checkStorageQuota(file.size)) { 
+          cleanupStream(currentStream); setStream(null); setIsRecording(false); recordedChunks.current = []; return; 
+        }
+
+        const url = URL.createObjectURL(blob); 
         const tempMediaElement = document.createElement(type); tempMediaElement.src = url;
         tempMediaElement.onloadedmetadata = () => {
           const newDuration = tempMediaElement.duration;
@@ -161,13 +184,13 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
   const handleVideoLoadedMetadata = (event: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement, Event>) => {
     const currentTarget = event.currentTarget;
-     if (previewUrl && !mediaDuration && initialMedia?.previewUrl !== previewUrl) { // New media loaded in MCC
+     if (previewUrl && !mediaDuration && initialMedia?.previewUrl !== previewUrl) { 
         const duration = currentTarget.duration;
-        if (duration && isFinite(duration)) { setMediaDuration(duration); if (!initialMedia || initialMedia.endTime === undefined || initialMedia.endTime === 0 || initialMedia.previewUrl !== previewUrl) { setEndTime(duration); latestTrimValuesRef.current = { startTime: startTime, endTime: duration };} currentTarget.currentTime = startTime || 0;}
-     } else if (previewUrl && initialMedia?.previewUrl === previewUrl && mediaDuration === 0 && initialMedia.duration) { // Initial media from parent
+        if (duration && isFinite(duration)) { setMediaDuration(duration); if (!initialMedia || initialMedia.endTime === undefined || initialMedia.endTime === 0 || initialMedia.previewUrl !== previewUrl) { setEndTime(duration); latestTrimValuesRef.current = { startTime: startTime || 0, endTime: duration };} currentTarget.currentTime = startTime || 0;}
+     } else if (previewUrl && initialMedia?.previewUrl === previewUrl && mediaDuration === 0 && initialMedia.duration) { 
         const newDuration = initialMedia.duration; const newEndTime = initialMedia.endTime !== undefined ? initialMedia.endTime : newDuration;
         setMediaDuration(newDuration); setEndTime(newEndTime); setMediaSize(initialMedia.size || 0);
-        setStartTime(initialMedia.startTime || 0); // Ensure startTime is also set from initialMedia
+        setStartTime(initialMedia.startTime || 0); 
         latestTrimValuesRef.current = { startTime: initialMedia.startTime || 0, endTime: newEndTime }; currentTarget.currentTime = initialMedia.startTime || 0;
      }
   };
@@ -181,9 +204,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       if (!checkStorageQuota(file.size)) { event.target.value = ''; return; }
       
       if (previewUrl && previewUrl.startsWith('blob:') && previewUrl !== initialMedia?.previewUrl) { URL.revokeObjectURL(previewUrl); }
-      setRecordedFile(null); setPreviewUrl(null); // Clear previous internal preview
+      setRecordedFile(null); setPreviewUrl(null);
 
-      const url = URL.createObjectURL(file); // MCC's internal preview URL
+      const url = URL.createObjectURL(file); 
       const tempMediaElement = document.createElement(fileType); tempMediaElement.src = url;
       tempMediaElement.onloadedmetadata = () => {
         const newDuration = tempMediaElement.duration; let durationLimitExceeded = false; let limitMinutes = 0;
@@ -205,15 +228,16 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     if (!checkHostPass()) return;
     setIsLoadingSample(true); setSampleLoadingType(type);
     if (previewUrl && previewUrl.startsWith('blob:') && previewUrl !== initialMedia?.previewUrl) { URL.revokeObjectURL(previewUrl); }
-    setRecordedFile(null); setPreviewUrl(null); // Clear previous internal preview
+    setRecordedFile(null); setPreviewUrl(null);
 
     const sampleUrl = type === 'video' ? SAMPLE_VIDEO_URL : SAMPLE_AUDIO_URL;
     const filename = type === 'video' ? 'sample_video.mp4' : 'sample_audio.mp3';
     const mimeType = type === 'video' ? 'video/mp4' : 'audio/mpeg';
     try {
       const response = await fetch(sampleUrl); const blob = await response.blob();
-      const file = new File([blob], filename, { type: mimeType }); const newInternalPreviewUrl = URL.createObjectURL(blob); // MCC's internal preview URL
-      if (!checkStorageQuota(file.size)) { URL.revokeObjectURL(newInternalPreviewUrl); setIsLoadingSample(false); setSampleLoadingType(null); return; }
+      const file = new File([blob], filename, { type: mimeType }); 
+      if (!checkStorageQuota(file.size)) { setIsLoadingSample(false); setSampleLoadingType(null); return; }
+      const newInternalPreviewUrl = URL.createObjectURL(blob);
       const tempMediaElement = document.createElement(type); tempMediaElement.src = newInternalPreviewUrl;
       tempMediaElement.onloadedmetadata = () => {
         const actualDuration = tempMediaElement.duration;
@@ -236,7 +260,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     if (!checkHostPass()) return;
     const currentStartTime = latestTrimValuesRef.current.startTime; const currentEndTime = latestTrimValuesRef.current.endTime;
     if (currentStartTime > currentEndTime && currentEndTime > 0) { setTimeout(() => toast({ title: "Invalid Trim: Start after End", variant: "destructive" }), 0); return; }
-    if (currentStartTime === currentEndTime && currentStartTime > 0) { setTimeout(() => toast({ title: "Invalid Trim: Start equals End", variant: "destructive" }), 0); return; }
+    if (currentStartTime === currentEndTime && currentStartTime > 0 && mediaDuration > 0 ) { setTimeout(() => toast({ title: "Invalid Trim: Start equals End", variant: "destructive" }), 0); return; }
     if (currentEndTime > mediaDuration && mediaDuration > 0) { setTimeout(() => toast({ title: "Invalid End Time", description: `End (${formatSecondsToTime(currentEndTime)}) > duration (${formatSecondsToTime(mediaDuration)}).`, variant: "destructive" }), 0); return; }
     const selectedSegmentDuration = currentEndTime - currentStartTime;
     if (mediaType === 'video' && selectedSegmentDuration > MAX_VIDEO_DURATION_SECONDS) { setTimeout(() => toast({ title: "Trim Exceeds Video Limit", description: `Segment is ${formatSecondsToTime(selectedSegmentDuration)}. Max is ${MAX_VIDEO_DURATION_SECONDS / 60} min(s).`, variant: "destructive", duration: 7000 }), 0); return; }
@@ -248,17 +272,16 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         type: mediaType,
         startTime: currentStartTime,
         endTime: currentEndTime,
-        duration: mediaDuration, // This is the original file's total duration
+        duration: mediaDuration, 
         size: mediaSize
       });
       const isTrimmed = (currentStartTime > 0.01) || (mediaDuration && Math.abs(currentEndTime - mediaDuration) > 0.01 && currentEndTime < mediaDuration);
       let toastDesc = isTrimmed ? `Media selected, trimmed: ${formatSecondsToTime(currentStartTime)} to ${formatSecondsToTime(currentEndTime)}.` : "Media selected.";
       setTimeout(() => toast({ title: "Media Ready", description: toastDesc, icon: <CheckCircle className="h-4 w-4" /> }), 0);
-    } else if (!recordedFile && initialMedia && mediaType) { // Handling re-trim of existing media
-      // Create a placeholder File object as we don't have the original file in MCC for existing media
+    } else if (!recordedFile && initialMedia && mediaType) { 
       const placeholderFile = new File([], initialMedia.previewUrl.split('/').pop() || "existing_media_placeholder", {type: mediaType === "video" ? "video/mp4" : "audio/mp3"});
       onMediaReady({
-        file: placeholderFile, // Pass placeholder for existing media
+        file: placeholderFile, 
         type: mediaType,
         startTime: currentStartTime,
         endTime: currentEndTime,
@@ -283,7 +306,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     }
 
     setRecordedFile(null);
-    setPreviewUrl(initialMedia?.previewUrl || null); // Restore to initial/parent URL if any
+    setPreviewUrl(initialMedia?.previewUrl || null); 
     setMediaType(initialMedia?.type || null);
 
     const initStartTime = initialMedia?.startTime || 0;
@@ -298,15 +321,14 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setMediaSize(initSize);
 
     recordedChunks.current = [];
-    onDiscard(); // Notify parent
+    onDiscard(); 
     if (showToast) setTimeout(() => toast({ title: "Media Discarded" }), 0);
     setShowTeleprompter(false); setCurrentTeleprompterScript(null);
   };
 
   useEffect(() => {
-    // Initialize MCC state from initialMedia prop
     setMediaType(initialMedia?.type || null);
-    setPreviewUrl(initialMedia?.previewUrl || null); // This is the URL MCC should display initially
+    setPreviewUrl(initialMedia?.previewUrl || null); 
 
     const initStartTime = initialMedia?.startTime || 0;
     const initDuration = initialMedia?.duration || 0;
@@ -320,19 +342,14 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setMediaSize(initSize);
 
     setIsRecording(false);
-    // Do not set recordedFile from initialMedia unless you also pass the File object
-    // For existing media, recordedFile will be null until new recording/upload
     setRecordedFile(null);
   }, [initialMedia]);
 
 
   useEffect(() => {
-    const currentMCCPreviewUrl = previewUrl; // Capture current value for cleanup
+    const currentMCCPreviewUrl = previewUrl; 
     return () => {
       cleanupStream(stream);
-      // Only revoke 'currentMCCPreviewUrl' if it's a blob AND it's not the same URL instance
-      // that was passed in via initialMedia. This prevents MCC from revoking a blob URL
-      // that MemoryForm (parent) owns and might still be using for its own display.
       if (currentMCCPreviewUrl && currentMCCPreviewUrl.startsWith('blob:') && currentMCCPreviewUrl !== initialMedia?.previewUrl) {
         URL.revokeObjectURL(currentMCCPreviewUrl);
       }
@@ -382,7 +399,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
               <div className="space-y-3 pt-2">
                 <div className="flex justify-between text-sm"><span className="text-green-500">Start: {formatSecondsToTime(startTime)}</span><span className="text-red-500">End: {formatSecondsToTime(endTime)}</span></div>
                 <div className="text-center my-2 space-y-0.5"><span className="text-lg font-bold text-primary">Trimmed: {formatSecondsToTime(Math.max(0, endTime - startTime))}</span>{mediaType && (<p className="text-sm text-muted-foreground">(Max Allowed: {formatSecondsToTime(mediaType === 'video' ? MAX_VIDEO_DURATION_SECONDS : MAX_AUDIO_DURATION_SECONDS)})</p>)}</div>
-                <Slider disabled={!mediaDuration} value={[startTime, endTime]} onValueChange={(vals) => { setStartTime(vals[0]); setEndTime(vals[1]); latestTrimValuesRef.current = { startTime: vals[0], endTime: vals[1] }; }} min={0} max={mediaDuration} step={0.1} className="w-full" />
+                <Slider disabled={!mediaDuration && mediaDuration !==0} value={[startTime, endTime]} onValueChange={(vals) => { setStartTime(vals[0]); setEndTime(vals[1]); latestTrimValuesRef.current = { startTime: vals[0], endTime: vals[1] }; }} min={0} max={mediaDuration} step={0.1} className="w-full" />
                 <div className="flex justify-between text-xs text-muted-foreground"><span>{formatSecondsToTime(0)}</span><span>{formatSecondsToTime(mediaDuration)}</span></div>
               </div>
             )}
