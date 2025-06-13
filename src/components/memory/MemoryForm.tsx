@@ -64,7 +64,7 @@ const months: { value: number; label: string }[] = Array.from({ length: 12 }, (_
 
 const SLIDE_INDEX_DETAILS = 0;
 const SLIDE_INDEX_MEDIA = 1;
-const TOTAL_SLIDES = 2; 
+const TOTAL_SLIDES = 2;
 
 const countryOptions = [
   { value: "Afghanistan", label: "Afghanistan" }, { value: "Albania", label: "Albania" }, { value: "Algeria", label: "Algeria" }, { value: "Andorra", label: "Andorra" }, { value: "Angola", label: "Angola" }, { value: "Antigua and Barbuda", label: "Antigua and Barbuda" }, { value: "Argentina", label: "Argentina" }, { value: "Armenia", label: "Armenia" }, { value: "Australia", label: "Australia" }, { value: "Austria", label: "Austria" }, { value: "Azerbaijan", label: "Azerbaijan" }, { value: "Bahamas", label: "Bahamas" }, { value: "Bahrain", label: "Bahrain" }, { value: "Bangladesh", label: "Bangladesh" }, { value: "Barbados", label: "Barbados" }, { value: "Belarus", label: "Belarus" }, { value: "Belgium", label: "Belgium" }, { value: "Belize", label: "Belize" }, { value: "Benin", label: "Benin" }, { value: "Bhutan", label: "Bhutan" }, { value: "Bolivia", label: "Bolivia" }, { value: "Bosnia and Herzegovina", label: "Bosnia and Herzegovina" }, { value: "Botswana", label: "Botswana" }, { value: "Brazil", label: "Brazil" }, { value: "Brunei", label: "Brunei" }, { value: "Bulgaria", label: "Bulgaria" }, { value: "Burkina Faso", label: "Burkina Faso" }, { value: "Burundi", label: "Burundi" }, { value: "Cabo Verde", label: "Cabo Verde" }, { value: "Cambodia", label: "Cambodia" }, { value: "Cameroon", label: "Cameroon" }, { value: "Canada", label: "Canada" }, { value: "Central African Republic", label: "Central African Republic" }, { value: "Chad", label: "Chad" }, { value: "Chile", label: "Chile" }, { value: "China", label: "China" }, { value: "Colombia", label: "Colombia" }, { value: "Comoros", label: "Comoros" }, { value: "Congo (Congo-Brazzaville)", label: "Congo (Congo-Brazzaville)" }, { value: "Congo (Democratic Republic of the)", label: "Congo (Democratic Republic of the)" }, { value: "Costa Rica", label: "Costa Rica" }, { value: "Croatia", label: "Croatia" }, { value: "Cuba", label: "Cuba" }, { value: "Cyprus", label: "Cyprus" }, { value: "Czech Republic (Czechia)", label: "Czech Republic (Czechia)" }, { value: "Denmark", label: "Denmark" }, { value: "Djibouti", label: "Djibouti" }, { value: "Dominica", label: "Dominica" }, { value: "Dominican Republic", label: "Dominican Republic" }, { value: "Ecuador", label: "Ecuador" }, { value: "Egypt", label: "Egypt" }, { value: "El Salvador", label: "El Salvador" }, { value: "Equatorial Guinea", label: "Equatorial Guinea" }, { value: "Eritrea", label: "Eritrea" }, { value: "Estonia", label: "Estonia" }, { value: "Eswatini (fmr. Swaziland)", label: "Eswatini (fmr. Swaziland)" }, { value: "Ethiopia", label: "Ethiopia" }, { value: "Fiji", label: "Fiji" }, { value: "Finland", label: "Finland" }, { value: "France", label: "France" }, { value: "Gabon", label: "Gabon" }, { value: "Gambia", label: "Gambia" }, { value: "Georgia", label: "Georgia" }, { value: "Germany", label: "Germany" }, { value: "Ghana", label: "Ghana" }, { value: "Greece", label: "Greece" }, { value: "Grenada", label: "Grenada" }, { value: "Guatemala", label: "Guatemala" }, { value: "Guinea", label: "Guinea" }, { value: "Guinea-Bissau", label: "Guinea-Bissau" }, { value: "Guyana", label: "Guyana" }, { value: "Haiti", label: "Haiti" }, { value: "Honduras", label: "Honduras" }, { value: "Hungary", label: "Hungary" }, { value: "Iceland", label: "Iceland" }, { value: "India", label: "India" }, { value: "Indonesia", label: "Indonesia" }, { value: "Iran", label: "Iran" }, { value: "Iraq", label: "Iraq" }, { value: "Ireland", label: "Ireland" }, { value: "Israel", label: "Israel" }, { value: "Italy", label: "Italy" }, { value: "Jamaica", label: "Jamaica" }, { value: "Japan", label: "Japan" }, { value: "Jordan", label: "Jordan" }, { value: "Kazakhstan", label: "Kazakhstan" }, { value: "Kenya", label: "Kenya" }, { value: "Kiribati", label: "Kiribati" }, { value: "Kuwait", label: "Kuwait" }, { value: "Kyrgyzstan", label: "Kyrgyzstan" }, { value: "Laos", label: "Laos" }, { value: "Latvia", label: "Latvia" }, { value: "Lebanon", label: "Lebanon" }, { value: "Lesotho", label: "Lesotho" }, { value: "Liberia", label: "Liberia" }, { value: "Libya", label: "Libya" }, { value: "Liechtenstein", label: "Liechtenstein" }, { value: "Lithuania", label: "Lithuania" }, { value: "Luxembourg", label: "Luxembourg" }, { value: "Madagascar", label: "Madagascar" }, { value: "Malawi", label: "Malawi" }, { value: "Malaysia", label: "Malaysia" }, { value: "Maldives", label: "Maldives" }, { value: "Mali", label: "Mali" }, { value: "Malta", label: "Malta" }, { value: "Marshall Islands", label: "Marshall Islands" }, { value: "Mauritania", label: "Mauritania" }, { value: "Mauritius", label: "Mauritius" }, { value: "Mexico", label: "Mexico" }, { value: "Micronesia", label: "Micronesia" }, { value: "Moldova", label: "Moldova" }, { value: "Monaco", label: "Monaco" }, { value: "Mongolia", label: "Mongolia" }, { value: "Montenegro", label: "Montenegro" }, { value: "Morocco", label: "Morocco" }, { value: "Mozambique", label: "Mozambique" }, { value: "Myanmar (formerly Burma)", label: "Myanmar (formerly Burma)" }, { value: "Namibia", label: "Namibia" }, { value: "Nauru", label: "Nauru" }, { value: "Nepal", label: "Nepal" }, { value: "Netherlands", label: "Netherlands" }, { value: "New Zealand", label: "New Zealand" }, { value: "Nicaragua", label: "Nicaragua" }, { value: "Niger", label: "Niger" }, { value: "Nigeria", label: "Nigeria" }, { value: "North Korea", label: "North Korea" }, { value: "North Macedonia (formerly Macedonia)", label: "North Macedonia (formerly Macedonia)" }, { value: "Norway", label: "Norway" }, { value: "Oman", label: "Oman" }, { value: "Pakistan", label: "Pakistan" }, { value: "Palau", label: "Palau" }, { value: "Palestine State", label: "Palestine State" }, { value: "Panama", label: "Panama" }, { value: "Papua New Guinea", label: "Papua New Guinea" }, { value: "Paraguay", label: "Paraguay" }, { value: "Peru", label: "Peru" }, { value: "Philippines", label: "Philippines" }, { value: "Poland", label: "Poland" }, { value: "Portugal", label: "Portugal" }, { value: "Qatar", label: "Qatar" }, { value: "Romania", label: "Romania" }, { value: "Russia", label: "Russia" }, { value: "Rwanda", label: "Rwanda" }, { value: "Saint Kitts and Nevis", label: "Saint Kitts and Nevis" }, { value: "Saint Lucia", label: "Saint Lucia" }, { value: "Saint Vincent and the Grenadines", label: "Saint Vincent and the Grenadines" }, { value: "Samoa", label: "Samoa" }, { value: "San Marino", label: "San Marino" }, { value: "Sao Tome and Principe", label: "Sao Tome and Principe" }, { value: "Saudi Arabia", label: "Saudi Arabia" }, { value: "Senegal", label: "Senegal" }, { value: "Serbia", label: "Serbia" }, { value: "Seychelles", label: "Seychelles" }, { value: "Sierra Leone", label: "Sierra Leone" }, { value: "Singapore", label: "Singapore" }, { value: "Slovakia", label: "Slovakia" }, { value: "Slovenia", label: "Slovenia" }, { value: "Solomon Islands", label: "Solomon Islands" }, { value: "Somalia", label: "Somalia" }, { value: "South Africa", label: "South Africa" }, { value: "South Korea", label: "South Korea" }, { value: "South Sudan", label: "South Sudan" }, { value: "Spain", label: "Spain" }, { value: "Sri Lanka", label: "Sri Lanka" }, { value: "Sudan", label: "Sudan" }, { value: "Suriname", label: "Suriname" }, { value: "Sweden", label: "Sweden" }, { value: "Switzerland", label: "Switzerland" }, { value: "Syria", label: "Syria" }, { value: "Taiwan", label: "Taiwan" }, { value: "Tajikistan", label: "Tajikistan" }, { value: "Tanzania", label: "Tanzania" }, { value: "Thailand", label: "Thailand" }, { value: "Timor-Leste", label: "Timor-Leste" }, { value: "Togo", label: "Togo" }, { value: "Tonga", label: "Tonga" }, { value: "Trinidad and Tobago", label: "Trinidad and Tobago" }, { value: "Tunisia", label: "Tunisia" }, { value: "Turkey", label: "Turkey" }, { value: "Turkmenistan", label: "Turkmenistan" }, { value: "Tuvalu", label: "Tuvalu" }, { value: "Uganda", label: "Uganda" }, { value: "Ukraine", label: "Ukraine" }, { value: "United Arab Emirates", label: "United Arab Emirates" }, { value: "United Kingdom", label: "United Kingdom" }, { value: "United States", label: "United States" }, { value: "Uruguay", label: "Uruguay" }, { value: "Uzbekistan", label: "Uzbekistan" }, { value: "Vanuatu", label: "Vanuatu" }, { value: "Vatican City (Holy See)", label: "Vatican City (Holy See)" }, { value: "Venezuela", label: "Venezuela" }, { value: "Vietnam", label: "Vietnam" }, { value: "Yemen", label: "Yemen" }, { value: "Zambia", label: "Zambia" }, { value: "Zimbabwe", label: "Zimbabwe" },
@@ -72,9 +72,9 @@ const countryOptions = [
 ];
 
 export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting }: MemoryFormProps) {
-  const { user, hostPassStatus } = useAuth(); 
+  const { user, hostPassStatus } = useAuth();
   const searchParams = useSearchParams();
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
   const isEditing = !!memory;
 
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -83,14 +83,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const step1AnchorRef = useRef<HTMLDivElement>(null);
   const step2AnchorRef = useRef<HTMLDivElement>(null);
-  
+
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
-  
+
   const visualScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const initialScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const latestSelectedMediaDataRef = useRef<CurrentMediaData | null>(null);
-  
+  const currentMediaPreviewUrlRef = useRef<string | null>(null);
 
 
   const [title, setTitle] = useState('');
@@ -120,8 +119,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(SLIDE_INDEX_DETAILS);
-  const currentSlideRef = useRef(currentSlide); 
-  
+  const currentSlideRef = useRef(currentSlide);
+
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
 
 
@@ -132,11 +131,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   const promptIdFromQuery = searchParams.get('promptId');
 
   useEffect(() => {
-    if (memory) { 
+    if (memory) {
       setTitle(memory.title || '');
       setLocation(memory.location || '');
 
-      let initialCountryValue = 'United Kingdom'; 
+      let initialCountryValue = 'United Kingdom';
       if (memory.country) {
         if (memory.country.toUpperCase() === 'UK') {
           initialCountryValue = 'United Kingdom';
@@ -144,11 +143,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
            initialCountryValue = 'United States';
         } else {
           const foundOption = countryOptions.find(opt => opt.value.toLowerCase() === memory.country!.toLowerCase());
-          initialCountryValue = foundOption ? foundOption.value : 'United Kingdom'; // Default if no match
+          initialCountryValue = foundOption ? foundOption.value : 'United Kingdom';
         }
       }
       setCountry(initialCountryValue);
-      
+
       setDescription(memory.description || '');
       setSelectedEmotionTags(memory.emotionTags || []);
 
@@ -160,7 +159,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         const firstMedia = memory.mediaAttachments[0];
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
         const size = (typeof firstMedia.size === 'number' && !isNaN(firstMedia.size)) ? firstMedia.size : 0;
-        
+
         const existingMediaData: CurrentMediaData = {
           file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
           type: firstMedia.type,
@@ -169,11 +168,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           duration: duration,
           size: size,
         };
-        setCurrentMedia(existingMediaData); 
-        setCurrentMediaPreviewUrl(firstMedia.url); 
-        latestSelectedMediaDataRef.current = existingMediaData;
+        setCurrentMedia(existingMediaData);
+        setCurrentMediaPreviewUrl(firstMedia.url);
 
-        setMediaToInitializeRecorder({ 
+        setMediaToInitializeRecorder({
             file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
             type: firstMedia.type,
             previewUrl: firstMedia.url || '',
@@ -182,13 +180,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             duration: duration,
             size: size,
         });
-      } else { 
+      } else {
         setCurrentMedia(null);
         setCurrentMediaPreviewUrl(null);
-        latestSelectedMediaDataRef.current = null;
         setMediaToInitializeRecorder(null);
       }
-    } else { 
+    } else {
       const promptTextFromUrl = searchParams.get('prompt');
       setTitle(promptTextFromUrl ? decodeURIComponent(promptTextFromUrl) : '');
       setLocation('');
@@ -200,7 +197,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       setSelectedDay(getInitialDateComponent('day'));
       setCurrentMedia(null);
       setCurrentMediaPreviewUrl(null);
-      latestSelectedMediaDataRef.current = null;
       setMediaToInitializeRecorder(null);
     }
   }, [memory, searchParams, getInitialDateComponent]);
@@ -226,17 +222,17 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       if (targetElementRef?.current) {
         const navbar = document.querySelector('header.sticky') as HTMLElement | null;
         const navbarHeight = navbar ? navbar.offsetHeight : 0;
-        
+
         const elementRect = targetElementRef.current.getBoundingClientRect();
-        const currentScrollY = window.scrollY; 
+        const currentScrollY = window.scrollY;
         const targetScrollY = elementRect.top + currentScrollY - navbarHeight;
 
         window.scrollTo({
           top: targetScrollY,
-          behavior: 'auto', 
+          behavior: 'auto',
         });
       }
-    }, 350); 
+    }, 350);
   }, []);
 
 
@@ -245,13 +241,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }, [currentSlide]);
 
 
- useEffect(() => { 
+ useEffect(() => {
     if (!carouselApi) return;
-    carouselApi.scrollTo(currentSlide, true); 
+    carouselApi.scrollTo(currentSlide, true);
     performVisualScroll(currentSlide);
   }, [currentSlide, carouselApi, performVisualScroll]);
 
-  useEffect(() => { 
+  useEffect(() => {
     if (!carouselApi) return;
 
     const handleApiEvent = () => {
@@ -263,15 +259,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     };
 
     const initialSnap = carouselApi.selectedScrollSnap();
-    if (initialSnap !== currentSlideRef.current) { 
-      setCurrentSlide(initialSnap); 
-    } else { 
+    if (initialSnap !== currentSlideRef.current) {
+      setCurrentSlide(initialSnap);
+    } else {
       if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current);
       initialScrollTimerRef.current = setTimeout(() => {
-        if (carouselApi && carouselApi.selectedScrollSnap() === currentSlideRef.current) { 
+        if (carouselApi && carouselApi.selectedScrollSnap() === currentSlideRef.current) {
            performVisualScroll(currentSlideRef.current);
         }
-      }, 100); 
+      }, 100);
     }
 
     carouselApi.on("select", handleApiEvent);
@@ -294,17 +290,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
 
   useEffect(() => {
-    let blobUrlToRevoke: string | null = null;
-    if (currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0) {
-      blobUrlToRevoke = URL.createObjectURL(currentMedia.file);
-      setCurrentMediaPreviewUrl(blobUrlToRevoke);
-    }
+    const urlToWatch = currentMediaPreviewUrl;
+    currentMediaPreviewUrlRef.current = currentMediaPreviewUrl;
+
     return () => {
-      if (blobUrlToRevoke && blobUrlToRevoke.startsWith('blob:')) {
-        URL.revokeObjectURL(blobUrlToRevoke);
+      if (urlToWatch && urlToWatch.startsWith('blob:')) {
+        URL.revokeObjectURL(urlToWatch);
       }
     };
-  }, [currentMedia]);
+  }, [currentMediaPreviewUrl]);
 
 
   const handleMediaReady = useCallback((mediaDataFromRecorder: MediaRecorderData) => {
@@ -317,51 +311,36 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       duration: mediaDataFromRecorder.duration,
       size: mediaDataFromRecorder.size,
     };
-    latestSelectedMediaDataRef.current = newCurrentMediaData;
-    setCurrentMedia(newCurrentMediaData); 
-  }, []);
-  
-  useEffect(() => {
-    if (isProcessingMedia) {
-        const refData = latestSelectedMediaDataRef.current;
-        if (currentMedia && refData &&
-            currentMedia.file.name === refData.file.name &&
-            currentMedia.type === refData.type &&
-            (currentMedia.file.name === "existing_media" ? currentMedia.size === refData.size : currentMedia.file.size === refData.file.size) && 
-            Math.abs((currentMedia.duration ?? 0) - (refData.duration ?? 0)) < 0.01 &&
-            Math.abs((currentMedia.startTime ?? 0) - (refData.startTime ?? 0)) < 0.01 &&
-            Math.abs((currentMedia.endTime ?? 0) - (refData.endTime ?? 0)) < 0.01
-        ) {
-            setIsProcessingMedia(false); 
-        } else if (!refData && currentMedia === null) { 
-            setIsProcessingMedia(false);
-        }
-    }
-  }, [currentMedia, isProcessingMedia]);
+    setCurrentMedia(newCurrentMediaData);
+    setCurrentMediaPreviewUrl(mediaDataFromRecorder.previewUrl);
+    setIsProcessingMedia(false);
+  }, [setCurrentMedia, setCurrentMediaPreviewUrl, setIsProcessingMedia]);
 
 
-  const handleMediaDiscardInForm = useCallback(() => { 
+  const handleMediaDiscardInForm = useCallback(() => {
     setCurrentMedia(null);
     setCurrentMediaPreviewUrl(null);
     setIsProcessingMedia(false);
-  }, []);
-  
+  }, [setCurrentMedia, setCurrentMediaPreviewUrl, setIsProcessingMedia]);
+
 
   const handleMediaDiscardFromChild = useCallback(() => {
+    setIsProcessingMedia(true);
     if (isEditing && memory?.mediaAttachments?.[0]?.url) {
       const firstMedia = memory.mediaAttachments[0];
       const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
       const size = (typeof firstMedia.size === 'number' && !isNaN(firstMedia.size)) ? firstMedia.size : 0;
-      setCurrentMedia({
+      const existingMediaData: CurrentMediaData = {
         file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
         type: firstMedia.type,
         startTime: firstMedia.startTime,
         endTime: firstMedia.endTime,
         duration: duration,
         size: size,
-      });
+      };
+      setCurrentMedia(existingMediaData);
       setCurrentMediaPreviewUrl(firstMedia.url);
-       setMediaToInitializeRecorder({ 
+       setMediaToInitializeRecorder({
           file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
           type: firstMedia.type,
           previewUrl: firstMedia.url || '',
@@ -375,9 +354,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       setCurrentMediaPreviewUrl(null);
       setMediaToInitializeRecorder(null);
     }
-    latestSelectedMediaDataRef.current = null; 
     setIsProcessingMedia(false);
-  }, [isEditing, memory?.mediaAttachments]);
+  }, [isEditing, memory?.mediaAttachments, setCurrentMedia, setCurrentMediaPreviewUrl, setMediaToInitializeRecorder, setIsProcessingMedia]);
 
   useEffect(() => {
     const mediaElement = currentMedia?.type === 'video' ? videoPreviewRef.current : audioPreviewRef.current;
@@ -395,10 +373,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }, [currentMedia, currentMediaPreviewUrl]);
 
   useEffect(() => {
-      if (currentSlide !== SLIDE_INDEX_MEDIA && latestSelectedMediaDataRef.current) {
-        latestSelectedMediaDataRef.current = null;
+      if (currentSlide !== SLIDE_INDEX_MEDIA && isProcessingMedia) {
+        // If user navigates away from media slide while it was "processing" (e.g. by clicking "Previous"),
+        // ensure isProcessingMedia is reset so they are not stuck.
+        // This scenario is less likely with current simplified isProcessingMedia, but good for robustness.
+        setIsProcessingMedia(false);
       }
-    }, [currentSlide]);
+    }, [currentSlide, isProcessingMedia]);
 
 
   const handleEmotionTagToggle = (tag: EmotionTag) => {
@@ -410,7 +391,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   const triggerSubmitProcess = useCallback(() => {
     if (!title.trim()) {
       toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
-      setCurrentSlide(SLIDE_INDEX_DETAILS); 
+      setCurrentSlide(SLIDE_INDEX_DETAILS);
       setTimeout(() => titleInputRef.current?.focus(), 100);
       return;
     }
@@ -418,20 +399,20 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     finalDate = setDate(finalDate, selectedDay);
     if (!isValid(finalDate) || getYear(finalDate) !== selectedYear || getMonth(finalDate) !== selectedMonth || getDate(finalDate) !== selectedDay) {
       toast({ title: "Invalid Date", description: "Please select a valid date.", variant: "destructive" });
-      setCurrentSlide(SLIDE_INDEX_DETAILS); 
+      setCurrentSlide(SLIDE_INDEX_DETAILS);
       setTimeout(() => yearSelectRef.current?.focus(), 100);
       return;
     }
     if (!description.trim()) {
       toast({ title: "Description Required", description: "Please enter a description for the memory.", variant: "destructive" });
-      setCurrentSlide(SLIDE_INDEX_DETAILS); 
+      setCurrentSlide(SLIDE_INDEX_DETAILS);
       setTimeout(() => descriptionTextareaRef.current?.focus(), 100);
       return;
     }
-    
-    const finalMediaDataForSubmission = latestSelectedMediaDataRef.current || currentMedia;
 
-    if (!finalMediaDataForSubmission && !isEditing) { 
+    const finalMediaDataForSubmission = currentMedia; // Use currentMedia which reflects the latest choice
+
+    if (!finalMediaDataForSubmission && !isEditing) {
         toast({ title: "Media Required", description: "A media attachment (video or audio) is required for new memories.", variant: "destructive" });
         setCurrentSlide(SLIDE_INDEX_MEDIA);
         return;
@@ -446,7 +427,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     let mediaAttachmentsForSubmission: MediaAttachment[] | undefined = undefined;
     let mediaFileToUpload: File | undefined = undefined;
 
-    if (finalMediaDataForSubmission) { 
+    if (finalMediaDataForSubmission) {
       const isNewFile = finalMediaDataForSubmission.file.name !== "existing_media" && finalMediaDataForSubmission.file.size > 0;
       if (isNewFile) {
         mediaFileToUpload = finalMediaDataForSubmission.file;
@@ -454,11 +435,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       const originalMediaAttachment = memory?.mediaAttachments?.[0];
       const duration = (typeof finalMediaDataForSubmission.duration === 'number' && !isNaN(finalMediaDataForSubmission.duration)) ? finalMediaDataForSubmission.duration : 0;
       const size = (typeof finalMediaDataForSubmission.size === 'number' && !isNaN(finalMediaDataForSubmission.size)) ? finalMediaDataForSubmission.size : 0;
-      
+
       mediaAttachmentsForSubmission = [{
         id: originalMediaAttachment?.id || Date.now().toString(),
         type: finalMediaDataForSubmission.type,
-        url: (isNewFile ? "placeholder_for_upload" : (memory?.mediaAttachments?.[0]?.url || currentMediaPreviewUrl || '')),
+        url: (isNewFile ? "placeholder_for_upload" : (currentMediaPreviewUrl || memory?.mediaAttachments?.[0]?.url || '')),
         filename: finalMediaDataForSubmission.file.name,
         startTime: finalMediaDataForSubmission.startTime,
         endTime: finalMediaDataForSubmission.endTime,
@@ -483,7 +464,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       },
       mediaFileToUpload
     );
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, promptIdFromQuery, selectedEmotionTags, isEditing, latestSelectedMediaDataRef, setCurrentSlide]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, promptIdFromQuery, selectedEmotionTags, isEditing, setCurrentSlide]);
 
 
   const handleActionButtonClick = useCallback(() => {
@@ -493,7 +474,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       if (!title.trim()) {
         toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
         setTimeout(() => titleInputRef.current?.focus(), 100);
-        return; 
+        return;
       }
       let tempDate = new Date(selectedYear, selectedMonth, 1);
       tempDate = setDate(tempDate, selectedDay);
@@ -505,36 +486,36 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       if (!description.trim()) {
         toast({ title: "Description Required", description: "Please enter a description for the memory.", variant: "destructive" });
         setTimeout(() => descriptionTextareaRef.current?.focus(), 100);
-        return; 
+        return;
       }
-       setCurrentSlide(SLIDE_INDEX_MEDIA); 
+       setCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
-       const mediaSource = latestSelectedMediaDataRef.current || currentMedia;
-      if (!isEditing && !mediaSource) { 
-          toast({ 
-              title: "Media Required", 
-              description: "Please record or upload a video or audio file for Step 2 before proceeding.", 
-              variant: "destructive" 
+       const mediaSource = currentMedia;
+      if (!isEditing && !mediaSource) {
+          toast({
+              title: "Media Required",
+              description: "Please record or upload a video or audio file for Step 2 before proceeding.",
+              variant: "destructive"
           });
-          return; 
+          return;
       } else if (isEditing && !mediaSource && (!memory?.mediaAttachments || memory.mediaAttachments.length === 0)) {
-           toast({ 
-              title: "Media Required", 
-              description: "Please record or upload a video or audio file for Step 2 before proceeding.", 
-              variant: "destructive" 
+           toast({
+              title: "Media Required",
+              description: "Please record or upload a video or audio file for Step 2 before proceeding.",
+              variant: "destructive"
           });
           return;
       }
-      triggerSubmitProcess(); 
+      triggerSubmitProcess();
     }
   }, [
     isParentSubmitting, isProcessingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay,
-    isEditing, triggerSubmitProcess, currentMedia, latestSelectedMediaDataRef, setCurrentSlide, memory?.mediaAttachments
+    isEditing, triggerSubmitProcess, currentMedia, setCurrentSlide, memory?.mediaAttachments
   ]);
 
   const handleFormSubmit = (event: FormEvent) => {
     event.preventDefault();
-    handleActionButtonClick(); 
+    handleActionButtonClick();
   };
 
   let actionButtonText = 'Next';
@@ -546,10 +527,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   } else if (currentSlide === SLIDE_INDEX_MEDIA) {
     if (isEditing) {
       actionButtonText = 'Save Changes';
-    } else { 
+    } else {
       actionButtonText = 'Add Memory';
     }
-    ActionButtonIcon = Sparkles; 
+    ActionButtonIcon = Sparkles;
   }
 
   const initialMediaForRecorderProp = useMemo(() => {
@@ -567,8 +548,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         size: size,
       };
     }
-    return undefined; 
-  }, [memory, isEditing]); 
+    return undefined;
+  }, [memory, isEditing]);
 
   const currentPromptIdForTeleprompter = promptIdFromQuery || memory?.promptId;
 
@@ -666,25 +647,25 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                       {(currentMedia.endTime !== undefined && currentMedia.duration !== undefined && Math.abs(currentMedia.duration - currentMedia.endTime) > 0.01) && <p className="text-sm text-muted-foreground">Trim End: {formatSecondsToTime(currentMedia.endTime)}</p>}
                       <Button variant="outline" type="button" onClick={handleMediaDiscardInForm} className="w-full mt-2">Change Media or Re-trim</Button>
                     </div>
-                  ) : ( 
-                    <MediaCaptureControl 
+                  ) : (
+                    <MediaCaptureControl
                         key={`${hostPassStatus}-${initialMediaForRecorderProp?.previewUrl || 'new'}-${initialMediaForRecorderProp?.startTime?.toString() || 's0'}-${initialMediaForRecorderProp?.endTime?.toString() || 'e0'}`}
-                        onMediaReady={handleMediaReady} 
-                        onDiscard={handleMediaDiscardFromChild} 
-                        initialMedia={initialMediaForRecorderProp} 
+                        onMediaReady={handleMediaReady}
+                        onDiscard={handleMediaDiscardFromChild}
+                        initialMedia={initialMediaForRecorderProp}
                         promptIdForTeleprompter={currentPromptIdForTeleprompter}
                         chapterTitleForTeleprompter={title}
-                    /> 
+                    />
                   )}
               </CardContent>
             </Card>
           </CarouselItem>
         </CarouselContent>
       </Carousel>
-      
+
       <div className="max-w-3xl mx-auto flex justify-between items-center pt-4 px-1 sm:px-0">
-        <Button 
-          type="button" 
+        <Button
+          type="button"
           onClick={() => {
             if (currentSlide === SLIDE_INDEX_DETAILS) {
               router.back();
@@ -699,10 +680,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           {currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}
         </Button>
         <Button
-          type="button" 
+          type="button"
           onClick={handleActionButtonClick}
           disabled={
-            !!isParentSubmitting || 
+            !!isParentSubmitting ||
             isProcessingMedia
           }
         >
