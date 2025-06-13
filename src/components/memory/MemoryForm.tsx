@@ -65,8 +65,8 @@ const months: { value: number; label: string }[] = Array.from({ length: 12 }, (_
 
 const SLIDE_INDEX_DETAILS = 0;
 const SLIDE_INDEX_MEDIA = 1;
-const SLIDE_INDEX_PREVIEW = 2; // New
-const TOTAL_SLIDES = 3; // Updated
+const SLIDE_INDEX_PREVIEW = 2; 
+const TOTAL_SLIDES = 3; 
 
 const countryOptions = [
   { value: "Afghanistan", label: "Afghanistan" }, { value: "Albania", label: "Albania" }, { value: "Algeria", label: "Algeria" }, { value: "Andorra", label: "Andorra" }, { value: "Angola", label: "Angola" }, { value: "Antigua and Barbuda", label: "Antigua and Barbuda" }, { value: "Argentina", label: "Argentina" }, { value: "Armenia", label: "Armenia" }, { value: "Australia", label: "Australia" }, { value: "Austria", label: "Austria" }, { value: "Azerbaijan", label: "Azerbaijan" }, { value: "Bahamas", label: "Bahamas" }, { value: "Bahrain", label: "Bahrain" }, { value: "Bangladesh", label: "Bangladesh" }, { value: "Barbados", label: "Barbados" }, { value: "Belarus", label: "Belarus" }, { value: "Belgium", label: "Belgium" }, { value: "Belize", label: "Belize" }, { value: "Benin", label: "Benin" }, { value: "Bhutan", label: "Bhutan" }, { value: "Bolivia", label: "Bolivia" }, { value: "Bosnia and Herzegovina", label: "Bosnia and Herzegovina" }, { value: "Botswana", label: "Botswana" }, { value: "Brazil", label: "Brazil" }, { value: "Brunei", label: "Brunei" }, { value: "Bulgaria", label: "Bulgaria" }, { value: "Burkina Faso", label: "Burkina Faso" }, { value: "Burundi", label: "Burundi" }, { value: "Cabo Verde", label: "Cabo Verde" }, { value: "Cambodia", label: "Cambodia" }, { value: "Cameroon", label: "Cameroon" }, { value: "Canada", label: "Canada" }, { value: "Central African Republic", label: "Central African Republic" }, { value: "Chad", label: "Chad" }, { value: "Chile", label: "Chile" }, { value: "China", label: "China" }, { value: "Colombia", label: "Colombia" }, { value: "Comoros", label: "Comoros" }, { value: "Congo (Congo-Brazzaville)", label: "Congo (Congo-Brazzaville)" }, { value: "Congo (Democratic Republic of the)", label: "Congo (Democratic Republic of the)" }, { value: "Costa Rica", label: "Costa Rica" }, { value: "Croatia", label: "Croatia" }, { value: "Cuba", label: "Cuba" }, { value: "Cyprus", label: "Cyprus" }, { value: "Czech Republic (Czechia)", label: "Czech Republic (Czechia)" }, { value: "Denmark", label: "Denmark" }, { value: "Djibouti", label: "Djibouti" }, { value: "Dominica", label: "Dominica" }, { value: "Dominican Republic", label: "Dominican Republic" }, { value: "Ecuador", label: "Ecuador" }, { value: "Egypt", label: "Egypt" }, { value: "El Salvador", label: "El Salvador" }, { value: "Equatorial Guinea", label: "Equatorial Guinea" }, { value: "Eritrea", label: "Eritrea" }, { value: "Estonia", label: "Estonia" }, { value: "Eswatini (fmr. Swaziland)", label: "Eswatini (fmr. Swaziland)" }, { value: "Ethiopia", label: "Ethiopia" }, { value: "Fiji", label: "Fiji" }, { value: "Finland", label: "Finland" }, { value: "France", label: "France" }, { value: "Gabon", label: "Gabon" }, { value: "Gambia", label: "Gambia" }, { value: "Georgia", label: "Georgia" }, { value: "Germany", label: "Germany" }, { value: "Ghana", label: "Ghana" }, { value: "Greece", label: "Greece" }, { value: "Grenada", label: "Grenada" }, { value: "Guatemala", label: "Guatemala" }, { value: "Guinea", label: "Guinea" }, { value: "Guinea-Bissau", label: "Guinea-Bissau" }, { value: "Guyana", label: "Guyana" }, { value: "Haiti", label: "Haiti" }, { value: "Honduras", label: "Honduras" }, { value: "Hungary", label: "Hungary" }, { value: "Iceland", label: "Iceland" }, { value: "India", label: "India" }, { value: "Indonesia", label: "Indonesia" }, { value: "Iran", label: "Iran" }, { value: "Iraq", label: "Iraq" }, { value: "Ireland", label: "Ireland" }, { value: "Israel", label: "Israel" }, { value: "Italy", label: "Italy" }, { value: "Jamaica", label: "Jamaica" }, { value: "Japan", label: "Japan" }, { value: "Jordan", label: "Jordan" }, { value: "Kazakhstan", label: "Kazakhstan" }, { value: "Kenya", label: "Kenya" }, { value: "Kiribati", label: "Kiribati" }, { value: "Kuwait", label: "Kuwait" }, { value: "Kyrgyzstan", label: "Kyrgyzstan" }, { value: "Laos", label: "Laos" }, { value: "Latvia", label: "Latvia" }, { value: "Lebanon", label: "Lebanon" }, { value: "Lesotho", label: "Lesotho" }, { value: "Liberia", label: "Liberia" }, { value: "Libya", label: "Libya" }, { value: "Liechtenstein", label: "Liechtenstein" }, { value: "Lithuania", label: "Lithuania" }, { value: "Luxembourg", label: "Luxembourg" }, { value: "Madagascar", label: "Madagascar" }, { value: "Malawi", label: "Malawi" }, { value: "Malaysia", label: "Malaysia" }, { value: "Maldives", label: "Maldives" }, { value: "Mali", label: "Mali" }, { value: "Malta", label: "Malta" }, { value: "Marshall Islands", label: "Marshall Islands" }, { value: "Mauritania", label: "Mauritania" }, { value: "Mauritius", label: "Mauritius" }, { value: "Mexico", label: "Mexico" }, { value: "Micronesia", label: "Micronesia" }, { value: "Moldova", label: "Moldova" }, { value: "Monaco", label: "Monaco" }, { value: "Mongolia", label: "Mongolia" }, { value: "Montenegro", label: "Montenegro" }, { value: "Morocco", label: "Morocco" }, { value: "Mozambique", label: "Mozambique" }, { value: "Myanmar (formerly Burma)", label: "Myanmar (formerly Burma)" }, { value: "Namibia", label: "Namibia" }, { value: "Nauru", label: "Nauru" }, { value: "Nepal", label: "Nepal" }, { value: "Netherlands", label: "Netherlands" }, { value: "New Zealand", label: "New Zealand" }, { value: "Nicaragua", label: "Nicaragua" }, { value: "Niger", label: "Niger" }, { value: "Nigeria", label: "Nigeria" }, { value: "North Korea", label: "North Korea" }, { value: "North Macedonia (formerly Macedonia)", label: "North Macedonia (formerly Macedonia)" }, { value: "Norway", label: "Norway" }, { value: "Oman", label: "Oman" }, { value: "Pakistan", label: "Pakistan" }, { value: "Palau", label: "Palau" }, { value: "Palestine State", label: "Palestine State" }, { value: "Panama", label: "Panama" }, { value: "Papua New Guinea", label: "Papua New Guinea" }, { value: "Paraguay", label: "Paraguay" }, { value: "Peru", label: "Peru" }, { value: "Philippines", label: "Philippines" }, { value: "Poland", label: "Poland" }, { value: "Portugal", label: "Portugal" }, { value: "Qatar", label: "Qatar" }, { value: "Romania", label: "Romania" }, { value: "Russia", label: "Russia" }, { value: "Rwanda", label: "Rwanda" }, { value: "Saint Kitts and Nevis", label: "Saint Kitts and Nevis" }, { value: "Saint Lucia", label: "Saint Lucia" }, { value: "Saint Vincent and the Grenadines", label: "Saint Vincent and the Grenadines" }, { value: "Samoa", label: "Samoa" }, { value: "San Marino", label: "San Marino" }, { value: "Sao Tome and Principe", label: "Sao Tome and Principe" }, { value: "Saudi Arabia", label: "Saudi Arabia" }, { value: "Senegal", label: "Senegal" }, { value: "Serbia", label: "Serbia" }, { value: "Seychelles", label: "Seychelles" }, { value: "Sierra Leone", label: "Sierra Leone" }, { value: "Singapore", label: "Singapore" }, { value: "Slovakia", label: "Slovakia" }, { value: "Slovenia", label: "Slovenia" }, { value: "Solomon Islands", label: "Solomon Islands" }, { value: "Somalia", label: "Somalia" }, { value: "South Africa", label: "South Africa" }, { value: "South Korea", label: "South Korea" }, { value: "South Sudan", label: "South Sudan" }, { value: "Spain", label: "Spain" }, { value: "Sri Lanka", label: "Sri Lanka" }, { value: "Sudan", label: "Sudan" }, { value: "Suriname", label: "Suriname" }, { value: "Sweden", label: "Sweden" }, { value: "Switzerland", label: "Switzerland" }, { value: "Syria", label: "Syria" }, { value: "Taiwan", label: "Taiwan" }, { value: "Tajikistan", label: "Tajikistan" }, { value: "Tanzania", label: "Tanzania" }, { value: "Thailand", label: "Thailand" }, { value: "Timor-Leste", label: "Timor-Leste" }, { value: "Togo", label: "Togo" }, { value: "Tonga", label: "Tonga" }, { value: "Trinidad and Tobago", label: "Trinidad and Tobago" }, { value: "Tunisia", label: "Tunisia" }, { value: "Turkey", label: "Turkey" }, { value: "Turkmenistan", label: "Turkmenistan" }, { value: "Tuvalu", label: "Tuvalu" }, { value: "Uganda", label: "Uganda" }, { value: "Ukraine", label: "Ukraine" }, { value: "United Arab Emirates", label: "United Arab Emirates" }, { value: "United Kingdom", label: "United Kingdom" }, { value: "United States", label: "United States" }, { value: "Uruguay", label: "Uruguay" }, { value: "Uzbekistan", label: "Uzbekistan" }, { value: "Vanuatu", label: "Vanuatu" }, { value: "Vatican City (Holy See)", label: "Vatican City (Holy See)" }, { value: "Venezuela", label: "Venezuela" }, { value: "Vietnam", label: "Vietnam" }, { value: "Yemen", label: "Yemen" }, { value: "Zambia", label: "Zambia" }, { value: "Zimbabwe", label: "Zimbabwe" },
@@ -85,14 +85,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const step1AnchorRef = useRef<HTMLDivElement>(null);
   const step2AnchorRef = useRef<HTMLDivElement>(null);
-  const step3AnchorRef = useRef<HTMLDivElement>(null); // New
+  const step3AnchorRef = useRef<HTMLDivElement>(null); 
 
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
 
   const visualScrollTimerRef = useRef<NodeJS.Timeout | null>();
   const initialScrollTimerRef = useRef<NodeJS.Timeout | null>();
-  const currentMediaPreviewUrlRef = useRef<string | null>();
 
 
   const [title, setTitle] = useState('');
@@ -138,7 +137,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       setTitle(memory.title || '');
       setLocation(memory.location || '');
 
-      let initialCountryValue = 'United Kingdom'; // Default
+      let initialCountryValue = 'United Kingdom'; 
       if (memory.country) {
         if (memory.country.toUpperCase() === 'UK') {
           initialCountryValue = 'United Kingdom';
@@ -146,7 +145,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
            initialCountryValue = 'United States';
         } else {
           const foundOption = countryOptions.find(opt => opt.value.toLowerCase() === memory.country!.toLowerCase());
-          initialCountryValue = foundOption ? foundOption.value : 'United Kingdom'; // Fallback to UK if not found or other
+          initialCountryValue = foundOption ? foundOption.value : 'United Kingdom'; 
         }
       }
       setCountry(initialCountryValue);
@@ -222,7 +221,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       let targetElementRef: React.RefObject<HTMLDivElement> | null = null;
       if (slideIndex === SLIDE_INDEX_DETAILS) targetElementRef = step1AnchorRef;
       else if (slideIndex === SLIDE_INDEX_MEDIA) targetElementRef = step2AnchorRef;
-      else if (slideIndex === SLIDE_INDEX_PREVIEW) targetElementRef = step3AnchorRef; // New
+      else if (slideIndex === SLIDE_INDEX_PREVIEW) targetElementRef = step3AnchorRef; 
 
       if (targetElementRef?.current) {
         const navbar = document.querySelector('header.sticky') as HTMLElement | null;
@@ -248,7 +247,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
  useEffect(() => {
     if (!carouselApi) return;
-    carouselApi.scrollTo(currentSlide, true); // Always scroll to currentSlide when it changes
+    carouselApi.scrollTo(currentSlide, true); 
     performVisualScroll(currentSlide);
   }, [currentSlide, carouselApi, performVisualScroll]);
 
@@ -296,7 +295,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   useEffect(() => {
     const urlToWatch = currentMediaPreviewUrl;
-    currentMediaPreviewUrlRef.current = currentMediaPreviewUrl;
 
     return () => {
       if (urlToWatch && urlToWatch.startsWith('blob:')) {
@@ -319,18 +317,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     setCurrentMedia(newCurrentMediaData);
     setCurrentMediaPreviewUrl(mediaDataFromRecorder.previewUrl);
     setIsProcessingMedia(false);
-  }, [setCurrentMedia, setCurrentMediaPreviewUrl]);
+  }, []);
 
 
   const handleMediaDiscardInForm = useCallback(() => {
     setCurrentMedia(null);
     setCurrentMediaPreviewUrl(null);
     setIsProcessingMedia(false);
-  }, [setCurrentMedia, setCurrentMediaPreviewUrl]);
+  }, []);
 
 
   const handleMediaDiscardFromChild = useCallback(() => {
-    setIsProcessingMedia(true); // Start processing
+    setIsProcessingMedia(true); 
     if (isEditing && memory?.mediaAttachments?.[0]?.url) {
       const firstMedia = memory.mediaAttachments[0];
       const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
@@ -359,8 +357,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       setCurrentMediaPreviewUrl(null);
       setMediaToInitializeRecorder(null);
     }
-    setIsProcessingMedia(false); // End processing
-  }, [isEditing, memory?.mediaAttachments, setCurrentMedia, setCurrentMediaPreviewUrl, setMediaToInitializeRecorder]);
+    setIsProcessingMedia(false); 
+  }, [isEditing, memory?.mediaAttachments]);
 
   useEffect(() => {
     const mediaElement = currentMedia?.type === 'video' ? videoPreviewRef.current : audioPreviewRef.current;
@@ -391,8 +389,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   };
 
   const triggerSubmitProcess = useCallback(() => {
-    // Validations moved to handleActionButtonClick for step-by-step progression
-    const finalDate = new Date(selectedYear, selectedMonth, selectedDay); // Ensure day is correctly set
+    const finalDate = new Date(selectedYear, selectedMonth, selectedDay); 
 
     const finalMediaDataForSubmission = currentMedia;
 
@@ -478,9 +475,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           });
           return;
       }
-      setCurrentSlide(SLIDE_INDEX_PREVIEW); // Go to Preview
+      setCurrentSlide(SLIDE_INDEX_PREVIEW); 
     } else if (currentSlide === SLIDE_INDEX_PREVIEW) {
-      triggerSubmitProcess(); // Submit from Preview
+      triggerSubmitProcess(); 
     }
   }, [
     isParentSubmitting, isProcessingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay,
@@ -500,7 +497,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     ActionButtonIcon = ArrowRight;
   } else if (currentSlide === SLIDE_INDEX_MEDIA) {
     actionButtonText = 'Next to Preview';
-    ActionButtonIcon = Eye; // Changed to Eye for preview
+    ActionButtonIcon = Eye; 
   } else if (currentSlide === SLIDE_INDEX_PREVIEW) {
     actionButtonText = isEditing ? 'Update Memory' : 'Save Memory';
     ActionButtonIcon = Sparkles;
@@ -649,8 +646,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                       </div>
                       <p className="text-sm text-muted-foreground">Type: {currentMedia.type}</p>
                       <p className="text-sm text-muted-foreground">Filename: {currentMedia.file.name}</p>
-                      {currentMedia.type === 'video' && (<video ref={videoPreviewRef} src={currentMediaPreviewUrl} controls className="w-full aspect-video rounded-md mt-2 bg-muted" key={currentMediaPreviewUrl} preload="auto"/>)}
-                      {currentMedia.type === 'audio' && (<audio ref={audioPreviewRef} src={currentMediaPreviewUrl} controls className="w-full mt-2" key={currentMediaPreviewUrl} preload="auto"/>)}
+                      {currentMedia.type === 'video' && (<video ref={videoPreviewRef} src={currentMediaPreviewUrl} controls className="w-full aspect-video rounded-md mt-2 bg-muted object-cover" key={currentMediaPreviewUrl} preload="metadata"/>)}
+                      {currentMedia.type === 'audio' && (<audio ref={audioPreviewRef} src={currentMediaPreviewUrl} controls className="w-full mt-2" key={currentMediaPreviewUrl} preload="metadata"/>)}
                       <p className="text-sm text-muted-foreground mt-1">Duration: {formatSecondsToTime(currentMedia.duration)}</p>
                       {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {formatSecondsToTime(currentMedia.startTime)}</p>}
                       {(currentMedia.endTime !== undefined && currentMedia.duration !== undefined && Math.abs(currentMedia.duration - currentMedia.endTime) > 0.01) && <p className="text-sm text-muted-foreground">Trim End: {formatSecondsToTime(currentMedia.endTime)}</p>}
@@ -715,7 +712,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           disabled={
             !!isParentSubmitting ||
             isProcessingMedia ||
-            (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview) // Disable save if preview isn't ready
+            (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview) 
           }
         >
           {(isParentSubmitting || isProcessingMedia) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -726,6 +723,5 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     </form>
   );
 }
-
 
     
