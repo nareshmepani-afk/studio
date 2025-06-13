@@ -155,11 +155,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           duration: duration,
           size: size,
         };
-        setCurrentMedia(existingMediaData); // Set current media to existing
-        setCurrentMediaPreviewUrl(firstMedia.url); // Directly set preview URL for existing media
+        setCurrentMedia(existingMediaData); 
+        setCurrentMediaPreviewUrl(firstMedia.url); 
         latestSelectedMediaDataRef.current = existingMediaData;
 
-        setMediaToInitializeRecorder({ // For MediaCaptureControl if user discards current
+        setMediaToInitializeRecorder({ 
             file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
             type: firstMedia.type,
             previewUrl: firstMedia.url || '',
@@ -168,7 +168,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             duration: duration,
             size: size,
         });
-      } else { // Editing, but no media attachments or URL is missing
+      } else { 
         setCurrentMedia(null);
         setCurrentMediaPreviewUrl(null);
         latestSelectedMediaDataRef.current = null;
@@ -231,15 +231,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }, [currentSlide]);
 
 
- useEffect(() => { // Commander useEffect
+ useEffect(() => { 
     if (!carouselApi) return;
-    if (carouselApi.selectedScrollSnap() !== currentSlide) {
-      carouselApi.scrollTo(currentSlide, true); // true for instant snap
-    }
+    carouselApi.scrollTo(currentSlide, true); 
     performVisualScroll(currentSlide);
   }, [currentSlide, carouselApi, performVisualScroll]);
 
-  useEffect(() => { // Synchronizer & Initializer useEffect
+  useEffect(() => { 
     if (!carouselApi) return;
 
     const handleApiEvent = () => {
@@ -251,13 +249,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     };
 
     const initialSnap = carouselApi.selectedScrollSnap();
-    if (initialSnap !== currentSlideRef.current) { // Initialize state from carousel
-      setCurrentSlide(initialSnap); // This will trigger the Commander useEffect
-    } else { // If initial snap is already the current state (e.g., 0 on mount), explicitly trigger scroll
+    if (initialSnap !== currentSlideRef.current) { 
+      setCurrentSlide(initialSnap); 
+    } else { 
       if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current);
       initialScrollTimerRef.current = setTimeout(() => {
          performVisualScroll(initialSnap);
-      }, 100); // Slight delay for initial layout
+      }, 100); 
     }
 
     carouselApi.on("select", handleApiEvent);
@@ -280,15 +278,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
 
   useEffect(() => {
-    // Handles setting preview URL for newly selected/recorded files (blob URLs)
     let blobUrlToRevoke: string | null = null;
     if (currentMedia && currentMedia.file.name !== "existing_media" && currentMedia.file.size > 0) {
       blobUrlToRevoke = URL.createObjectURL(currentMedia.file);
       setCurrentMediaPreviewUrl(blobUrlToRevoke);
     }
-    // If currentMedia.file.name IS "existing_media", setCurrentMediaPreviewUrl was handled by the [memory] effect.
-    // If currentMedia is null, the [memory] effect (or discard handlers) should have set preview to null.
-
     return () => {
       if (blobUrlToRevoke && blobUrlToRevoke.startsWith('blob:')) {
         URL.revokeObjectURL(blobUrlToRevoke);
@@ -308,7 +302,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       size: mediaDataFromRecorder.size,
     };
     latestSelectedMediaDataRef.current = newCurrentMediaData;
-    setCurrentMedia(newCurrentMediaData); // This will trigger the [currentMedia] useEffect for blob URL
+    setCurrentMedia(newCurrentMediaData); 
   }, []);
   
   useEffect(() => {
@@ -317,10 +311,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         if (currentMedia && refData &&
             currentMedia.file.name === refData.file.name &&
             currentMedia.type === refData.type &&
+            (currentMedia.file.name === "existing_media" ? currentMedia.size === refData.size : currentMedia.file.size === refData.file.size) && 
             Math.abs((currentMedia.duration ?? 0) - (refData.duration ?? 0)) < 0.01 &&
             Math.abs((currentMedia.startTime ?? 0) - (refData.startTime ?? 0)) < 0.01 &&
-            Math.abs((currentMedia.endTime ?? 0) - (refData.endTime ?? 0)) < 0.01 &&
-            Math.abs((currentMedia.size ?? 0) - (refData.size ?? 0)) < 1 
+            Math.abs((currentMedia.endTime ?? 0) - (refData.endTime ?? 0)) < 0.01
         ) {
             setIsProcessingMedia(false); 
         } else if (!refData && currentMedia === null) { 
@@ -331,20 +325,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
 
   const handleMediaDiscardInForm = useCallback(() => { 
-    // This is called when user clicks "Change Media or Re-trim" for an already displayed media.
-    // We want to clear the current display and show MediaCaptureControl.
-    // MediaCaptureControl should be initialized with the original media details if editing.
     setCurrentMedia(null);
     setCurrentMediaPreviewUrl(null);
-    // mediaToInitializeRecorder is already set correctly by the [memory] useEffect.
-    // No need to call onDiscard to parent, just internal form state change.
     setIsProcessingMedia(false);
   }, []);
   
 
   const handleMediaDiscardFromChild = useCallback(() => {
-    // This is called when MediaCaptureControl discards its content.
-    // We need to revert MemoryForm's state to either the original memory's media (if editing) or empty.
     if (isEditing && memory?.mediaAttachments?.[0]?.url) {
       const firstMedia = memory.mediaAttachments[0];
       const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
@@ -358,7 +345,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         size: size,
       });
       setCurrentMediaPreviewUrl(firstMedia.url);
-       setMediaToInitializeRecorder({ // Ensure MediaCaptureControl gets the original if user discards *again*
+       setMediaToInitializeRecorder({ 
           file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
           type: firstMedia.type,
           previewUrl: firstMedia.url || '',
@@ -395,16 +382,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       if (currentSlide !== SLIDE_INDEX_MEDIA && latestSelectedMediaDataRef.current) {
         latestSelectedMediaDataRef.current = null;
       }
-      if (currentMedia && latestSelectedMediaDataRef.current &&
-          currentMedia.file === latestSelectedMediaDataRef.current.file &&
-          currentMedia.startTime === latestSelectedMediaDataRef.current.startTime &&
-          currentMedia.endTime === latestSelectedMediaDataRef.current.endTime &&
-          currentMedia.duration === latestSelectedMediaDataRef.current.duration &&
-          currentMedia.size === latestSelectedMediaDataRef.current.size
-        ) {
-        latestSelectedMediaDataRef.current = null; 
-      }
-    }, [currentSlide, currentMedia]);
+    }, [currentSlide]);
 
 
   const handleEmotionTagToggle = (tag: EmotionTag) => {
@@ -495,14 +473,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   const handleActionButtonClick = useCallback(() => {
     if (isParentSubmitting || isProcessingMedia) return;
 
-    // Validate Step 1 details if currently on Step 1
     if (currentSlide === SLIDE_INDEX_DETAILS) {
       if (!title.trim()) {
         toast({ title: "Title Required", description: "Please enter a title for the memory.", variant: "destructive" });
         setTimeout(() => titleInputRef.current?.focus(), 100);
-        return; // Stop if title is missing
+        return; 
       }
-      // Basic date validation (could be more complex if needed)
       let tempDate = new Date(selectedYear, selectedMonth, 1);
       tempDate = setDate(tempDate, selectedDay);
       if (!isValid(tempDate) || getYear(tempDate) !== selectedYear || getMonth(tempDate) !== selectedMonth || getDate(tempDate) !== selectedDay) {
@@ -513,15 +489,14 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       if (!description.trim()) {
         toast({ title: "Description Required", description: "Please enter a description for the memory.", variant: "destructive" });
         setTimeout(() => descriptionTextareaRef.current?.focus(), 100);
-        return; // Stop if description is missing
+        return; 
       }
     }
 
-    // Proceed based on current slide
     if (currentSlide === SLIDE_INDEX_DETAILS) {
-      setCurrentSlide(SLIDE_INDEX_MEDIA); // Navigate to media slide (for both new and edit)
+      setCurrentSlide(SLIDE_INDEX_MEDIA); 
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
-      if (!isEditing) { // If creating new, validate media
+      if (!isEditing) { 
         const mediaSource = latestSelectedMediaDataRef.current || currentMedia;
         if (!mediaSource) {
             toast({ 
@@ -532,7 +507,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
             return; 
         }
       }
-      triggerSubmitProcess(); // Submit (for both new and edit)
+      triggerSubmitProcess(); 
     }
   }, [
     isParentSubmitting, isProcessingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay,
@@ -553,11 +528,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   } else if (currentSlide === SLIDE_INDEX_MEDIA) {
     if (isEditing) {
       actionButtonText = 'Save Changes';
-      ActionButtonIcon = Sparkles;
-    } else { // Creating new
+    } else { 
       actionButtonText = 'Add Memory';
-      ActionButtonIcon = Sparkles;
     }
+    ActionButtonIcon = Sparkles; 
   }
 
   const initialMediaForRecorderProp = useMemo(() => {
