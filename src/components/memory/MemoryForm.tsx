@@ -247,6 +247,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
  useEffect(() => { 
     if (!carouselApi) return;
+    // No longer checking carouselApi.selectedScrollSnap() !== currentSlide before scrolling
     carouselApi.scrollTo(currentSlide, true); 
     performVisualScroll(currentSlide);
   }, [currentSlide, carouselApi, performVisualScroll]);
@@ -268,7 +269,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     } else { 
       if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current);
       initialScrollTimerRef.current = setTimeout(() => {
-         performVisualScroll(initialSnap);
+        if (carouselApi && carouselApi.selectedScrollSnap() === currentSlideRef.current) { 
+           performVisualScroll(currentSlideRef.current);
+        }
       }, 100); 
     }
 
@@ -505,10 +508,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         setTimeout(() => descriptionTextareaRef.current?.focus(), 100);
         return; 
       }
-    }
-
-    if (currentSlide === SLIDE_INDEX_DETAILS) {
-      setCurrentSlide(SLIDE_INDEX_MEDIA); 
+       setCurrentSlide(SLIDE_INDEX_MEDIA); 
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
        const mediaSource = latestSelectedMediaDataRef.current || currentMedia;
       if (!isEditing && !mediaSource) { 
@@ -594,21 +594,21 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                   <div className="grid grid-cols-3 gap-2">
                     <div>
                       <Label htmlFor="year-select" className="sr-only">Year</Label>
-                      <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                      <Select key={`year-${selectedYear.toString()}-${memory?.id || 'new'}`} value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
                         <SelectTrigger id="year-select" ref={yearSelectRef}><SelectValue placeholder="Year" /></SelectTrigger>
                         <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div>
                       <Label htmlFor="month-select" className="sr-only">Month</Label>
-                      <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
+                      <Select key={`month-${selectedMonth.toString()}-${memory?.id || 'new'}`} value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
                         <SelectTrigger id="month-select"><SelectValue placeholder="Month" /></SelectTrigger>
                         <SelectContent>{months.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div>
                       <Label htmlFor="day-select" className="sr-only">Day</Label>
-                      <Select value={selectedDay.toString()} onValueChange={(value) => setSelectedDay(parseInt(value))}>
+                      <Select key={`day-${selectedDay.toString()}-${memory?.id || 'new'}`} value={selectedDay.toString()} onValueChange={(value) => setSelectedDay(parseInt(value))}>
                         <SelectTrigger id="day-select"><SelectValue placeholder="Day" /></SelectTrigger>
                         <SelectContent>{dayOptions.map(d => <SelectItem key={d} value={d.toString()}>{d}</SelectItem>)}</SelectContent>
                       </Select>
@@ -622,7 +622,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                     </div>
                     <div className="space-y-1">
                         <Label htmlFor="country-select">Country (Optional)</Label>
-                        <Select value={country} onValueChange={setCountry}>
+                        <Select key={`country-${country}-${memory?.id || 'new'}`} value={country} onValueChange={setCountry}>
                             <SelectTrigger id="country-select"><SelectValue placeholder="Select Country" /></SelectTrigger>
                             <SelectContent>{countryOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent>
                         </Select>
@@ -669,7 +669,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                     </div>
                   ) : ( 
                     <MediaCaptureControl 
-                        key={hostPassStatus + (initialMediaForRecorderProp?.previewUrl || 'new') + (initialMediaForRecorderProp?.startTime?.toString() || '') + (initialMediaForRecorderProp?.endTime?.toString() || '')}
+                        key={`${hostPassStatus}-${initialMediaForRecorderProp?.previewUrl || 'new'}-${initialMediaForRecorderProp?.startTime?.toString() || 's0'}-${initialMediaForRecorderProp?.endTime?.toString() || 'e0'}`}
                         onMediaReady={handleMediaReady} 
                         onDiscard={handleMediaDiscardFromChild} 
                         initialMedia={initialMediaForRecorderProp} 
@@ -697,7 +697,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
           variant="outline"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Previous
+          {currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}
         </Button>
         <Button
           type="button" 
