@@ -137,7 +137,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       setTitle(memory.title || '');
       setLocation(memory.location || '');
 
-      let initialCountryValue = 'United Kingdom';
+      let initialCountryValue = 'United Kingdom'; // Default
       if (memory.country) {
         if (memory.country.toUpperCase() === 'UK') {
           initialCountryValue = 'United Kingdom';
@@ -145,7 +145,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
            initialCountryValue = 'United States';
         } else {
           const foundOption = countryOptions.find(opt => opt.value.toLowerCase() === memory.country!.toLowerCase());
-          initialCountryValue = foundOption ? foundOption.value : 'United Kingdom';
+          initialCountryValue = foundOption ? foundOption.value : 'United Kingdom'; // Fallback to UK if not found
         }
       }
       setCountry(initialCountryValue);
@@ -247,7 +247,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
  useEffect(() => {
     if (!carouselApi) return;
-    carouselApi.scrollTo(currentSlide, true);
+    carouselApi.scrollTo(currentSlide, true); // Force scroll to ensure correct slide
     performVisualScroll(currentSlide);
   }, [currentSlide, carouselApi, performVisualScroll]);
 
@@ -295,15 +295,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   useEffect(() => {
     const urlToWatch = currentMediaPreviewUrl;
-    // This cleanup function will be called when:
-    // 1. currentMediaPreviewUrl changes.
-    // 2. The MemoryForm component unmounts.
     return () => {
       if (urlToWatch && urlToWatch.startsWith('blob:')) {
         URL.revokeObjectURL(urlToWatch);
       }
     };
-  }, [currentMediaPreviewUrl]); // Dependency on currentMediaPreviewUrl
+  }, [currentMediaPreviewUrl]);
 
 
   const handleMediaReady = useCallback((mediaDataFromRecorder: MediaRecorderData) => {
@@ -322,19 +319,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   }, []);
 
 
-  // Effect to explicitly load media for Step 2 preview elements
   useEffect(() => {
     if (currentSlide === SLIDE_INDEX_MEDIA && currentMediaPreviewUrl && currentMedia) {
       if (currentMedia.type === 'video' && videoPreviewRef.current) {
         if (videoPreviewRef.current.src !== currentMediaPreviewUrl) {
           videoPreviewRef.current.src = currentMediaPreviewUrl;
         }
-        videoPreviewRef.current.load(); // Explicitly call load
+        videoPreviewRef.current.load(); 
       } else if (currentMedia.type === 'audio' && audioPreviewRef.current) {
         if (audioPreviewRef.current.src !== currentMediaPreviewUrl) {
           audioPreviewRef.current.src = currentMediaPreviewUrl;
         }
-        audioPreviewRef.current.load(); // Explicitly call load
+        audioPreviewRef.current.load(); 
       }
     }
   }, [currentMediaPreviewUrl, currentMedia, currentSlide]);
@@ -342,7 +338,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const handleMediaDiscardFromChild = useCallback(() => {
     setIsProcessingMedia(true);
-    // The useEffect for currentMediaPreviewUrl will handle revocation when it changes.
     if (isEditing && memory?.mediaAttachments?.[0]?.url) {
       const firstMedia = memory.mediaAttachments[0];
       const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
@@ -356,7 +351,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         size: size,
       };
       setCurrentMedia(existingMediaData);
-      setCurrentMediaPreviewUrl(firstMedia.url); // Set to original HTTP URL
+      setCurrentMediaPreviewUrl(firstMedia.url); 
        setMediaToInitializeRecorder({
           file: new File([], firstMedia.filename || "existing_media", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}),
           type: firstMedia.type,
@@ -368,17 +363,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       });
     } else {
       setCurrentMedia(null);
-      setCurrentMediaPreviewUrl(null); // This will trigger revocation of any active blob URL by the useEffect
+      setCurrentMediaPreviewUrl(null); 
       setMediaToInitializeRecorder(null);
     }
     setIsProcessingMedia(false);
   }, [isEditing, memory?.mediaAttachments]);
 
-
   const handleMediaDiscardInForm = useCallback(() => {
-    // This now calls handleMediaDiscardFromChild which contains the actual reset logic
     handleMediaDiscardFromChild();
-  }, [handleMediaDiscardFromChild]); // Make sure handleMediaDiscardFromChild is stable or included if it changes
+  }, [handleMediaDiscardFromChild]); 
 
 
   useEffect(() => {
@@ -697,7 +690,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
               <CardContent className="space-y-4">
                 {mockMemoryForPreview && (
                   <div className="border p-1 sm:p-2 rounded-lg bg-background shadow-sm">
-                    <MemoryCard memory={mockMemoryForPreview} userMode="guest" />
+                    <MemoryCard 
+                      key={mockMemoryForPreview.mediaAttachments?.[0]?.url || mockMemoryForPreview.id || 'no-media-preview'}
+                      memory={mockMemoryForPreview} 
+                      userMode="guest" 
+                    />
                   </div>
                 )}
                 {!mockMemoryForPreview && currentSlide === SLIDE_INDEX_PREVIEW && (
