@@ -44,9 +44,9 @@ export default function SettingsPage() {
     checkAndUpdateHostPassStatus,
     hostPassPriceDetails,
     fetchHostPassPrice,
-    isFetchingHostPassPrice, 
+    isFetchingHostPassPrice: isFetchingAuthHostPassPrice, // Corrected alias to avoid conflict
     resetHostPassForTesting,
-    storageQuotaBytes, // This will be the per-memory limit from AuthContext
+    storageQuotaBytes, 
     calculateAndUpdateStorageUsage,
   } = useAuth();
   const router = useRouter(); 
@@ -75,7 +75,7 @@ export default function SettingsPage() {
             if (!isFetchingGuestPassPrice && !guestPassPriceDetails) fetchGuestPassPrice();
         }
         if (user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired' || user.hostPassStatus === 'no_pass_initiated') {
-           if (!isFetchingHostPassPrice && !hostPassPriceDetails) fetchHostPassPrice();
+           if (!isFetchingAuthHostPassPrice && !hostPassPriceDetails) fetchHostPassPrice();
         }
         calculateAndUpdateStorageUsage(user.id);
     }
@@ -89,7 +89,7 @@ export default function SettingsPage() {
     user?.hostPassStatus,
     user?.id,
     isFetchingGuestPassPrice, guestPassPriceDetails, 
-    isFetchingHostPassPrice, hostPassPriceDetails   
+    isFetchingAuthHostPassPrice, hostPassPriceDetails   
   ]);
 
 
@@ -210,13 +210,13 @@ export default function SettingsPage() {
 
   const renderHostPurchaseButton = () => {
     let buttonText = "Purchase 31-Day Host Pass";
-    if (isFetchingHostPassPrice) buttonText = "Fetching price...";
+    if (isFetchingAuthHostPassPrice) buttonText = "Fetching price..."; // Use alias here
     else if (hostPassPriceDetails) buttonText = `Purchase 31-Day Host Pass (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
     else buttonText = `Purchase 31-Day Host Pass (£12.99 - Mock)`; 
 
-    const button = (<Button onClick={purchasePaidHostPass} variant="default" size="sm" disabled={isFetchingHostPassPrice}>{isFetchingHostPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}{buttonText}</Button>);
+    const button = (<Button onClick={purchasePaidHostPass} variant="default" size="sm" disabled={isFetchingAuthHostPassPrice}>{isFetchingAuthHostPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}{buttonText}</Button>);
     
-    if (hostPassPriceDetails && !isFetchingHostPassPrice && hostPassPriceDetails.justification) {
+    if (hostPassPriceDetails && !isFetchingAuthHostPassPrice && hostPassPriceDetails.justification) {
        return (<TooltipProvider><div className="flex flex-col items-start space-y-1">{button}<Tooltip><TooltipTrigger asChild><span className="text-xs text-muted-foreground flex items-center cursor-default"><Info className="h-3 w-3 mr-1" /> {hostPassPriceDetails.justification}</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{hostPassPriceDetails.justification} (Based on avg coffee: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
     }
     return button;
@@ -226,14 +226,12 @@ export default function SettingsPage() {
     if (!user) return null;
     let statusText = ""; let actionContent = null;
     let currentPriceString = "";
-    if (hostPassPriceDetails && !isFetchingHostPassPrice) {
+    if (hostPassPriceDetails && !isFetchingAuthHostPassPrice) {
         currentPriceString = `(${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
-    } else if (isFetchingHostPassPrice) {
+    } else if (isFetchingAuthHostPassPrice) {
         currentPriceString = "(fetching price...)";
     } else {
-        // Using a fixed mock value if price details are not yet available for consistency.
-        // The actual STANDARD_HOST_STORAGE_QUOTA_BYTES will provide the 600MB for the other message.
-        currentPriceString = "(approx. £12.99 - Mock)"; 
+         currentPriceString = "(approx. £12.99 - Mock)"; 
     }
 
     switch (user.hostPassStatus) {
@@ -281,7 +279,6 @@ export default function SettingsPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
   const storageUsed = user.storageUsedBytes || 0;
-  // storageQuotaBytes from AuthContext is the per-memory limit (now 600MB)
   const perMemoryLimitBytes = (user.hostPassStatus === 'free_host_pass_active' || user.hostPassStatus === 'paid_host_pass_active') ? storageQuotaBytes : 0;
 
 
@@ -337,7 +334,7 @@ export default function SettingsPage() {
                   </>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Activate or purchase a Host Pass to enable media storage (up to {formatBytes(600 * 1024 * 1024)} per memory).
+                    Activate or purchase a Host Pass to enable media storage (up to {formatBytes(STANDARD_HOST_STORAGE_QUOTA_BYTES)} per memory).
                   </p>
                 )}
               </CardContent>
