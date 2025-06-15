@@ -73,7 +73,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       return mediaStream;
     } catch (error) {
       console.error('Error accessing media devices:', error); setHasCameraPermission(false);
-      setTimeout(() => toast({ variant: 'destructive', title: 'Permissions Denied', description: `Enable ${type === 'video' ? 'camera & mic' : 'mic'} permissions.` }), 0);
+      setTimeout(() => toast({ variant: 'destructive', title: 'Permissions Denied', description: `Please enable ${type === 'video' ? 'camera and microphone' : 'microphone'} permissions in your browser settings to use this feature. You may need to refresh the page.` }), 0);
       return null;
     }
   }, []);
@@ -173,11 +173,24 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
           setRecordedFile(file); setInternalPreviewUrl(url); setMediaDuration(newDuration); setMediaSize(file.size);
           setStartTime(0); setEndTime(newDuration); latestTrimValuesRef.current = { startTime: 0, endTime: newDuration };
         };
+        tempMediaElement.onerror = () => {
+            URL.revokeObjectURL(url);
+            cleanupStream(currentStream); setStream(null); setIsRecording(false); recordedChunks.current = [];
+            setTimeout(() => toast({ variant: 'destructive', title: 'Media Error', description: 'Could not load metadata from the recorded media. It might be corrupted.' }), 0);
+        };
         setIsRecording(false); cleanupStream(currentStream); setStream(null);
       };
-      recorder.onerror = (event) => { console.error('MediaRecorder error:', event); setIsRecording(false); cleanupStream(currentStream); setStream(null); setShowTeleprompter(false); setCurrentTeleprompterScript(null); };
+      recorder.onerror = (event) => { 
+        console.error('MediaRecorder error:', event); 
+        setIsRecording(false); cleanupStream(currentStream); setStream(null); setShowTeleprompter(false); setCurrentTeleprompterScript(null); 
+        setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Something went wrong during recording. Please try again.' }), 0);
+      };
       recorder.start(); setIsRecording(true); setTimeout(() => toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` }),0);
-    } catch (err) { setIsRecording(false); cleanupStream(currentStream); setStream(null); setShowTeleprompter(false); setCurrentTeleprompterScript(null); }
+    } catch (err) { 
+      console.error("Error initializing MediaRecorder:", err);
+      setIsRecording(false); cleanupStream(currentStream); setStream(null); setShowTeleprompter(false); setCurrentTeleprompterScript(null); 
+      setTimeout(() => toast({ variant: 'destructive', title: 'Recording Setup Failed', description: 'Could not start recording. Check device compatibility or permissions.' }), 0);
+    }
   };
 
   const handleStopRecording = () => {
@@ -203,7 +216,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
       const fileType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : null;
-      if (!fileType) { setTimeout(() => toast({ title: "Invalid File Type", variant: "destructive" }), 0); return; }
+      if (!fileType) { setTimeout(() => toast({ title: "Invalid File Type", description:"Please upload a valid video or audio file.", variant: "destructive" }), 0); return; }
       if (!checkStorageQuota(file.size)) { event.target.value = ''; return; }
       
       revokeCurrentInternalPreviewUrl();
@@ -223,7 +236,10 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         setStartTime(0); setEndTime(newDuration); latestTrimValuesRef.current = { startTime: 0, endTime: newDuration };
         setTimeout(() => toast({ title: "File Uploaded", description: file.name }), 0);
       };
-      tempMediaElement.onerror = () => { URL.revokeObjectURL(url); event.target.value = ''; setTimeout(() => toast({ title: "Error Loading File", variant: "destructive" }),0); };
+      tempMediaElement.onerror = () => { 
+        URL.revokeObjectURL(url); event.target.value = ''; 
+        setTimeout(() => toast({ title: "Error Loading File", description: "Could not load the uploaded file. It might be corrupted or an unsupported format.", variant: "destructive" }),0); 
+      };
     }
   };
 
@@ -237,7 +253,11 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     const filename = type === 'video' ? 'sample_video.mp4' : 'sample_audio.mp3';
     const mimeType = type === 'video' ? 'video/mp4' : 'audio/mpeg';
     try {
-      const response = await fetch(sampleUrl); const blob = await response.blob();
+      const response = await fetch(sampleUrl); 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const blob = await response.blob();
       const file = new File([blob], filename, { type: mimeType }); 
       if (!checkStorageQuota(file.size)) { setIsLoadingSample(false); setSampleLoadingType(null); return; }
       const newInternalBlobUrl = URL.createObjectURL(blob);
@@ -254,8 +274,13 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
           URL.revokeObjectURL(newInternalBlobUrl); handleDiscardMedia(false); return;
         } else { setEndTime(actualDuration); latestTrimValuesRef.current = { startTime: 0, endTime: actualDuration }; setTimeout(() => toast({ title: `Sample ${type} loaded`, description: filename }), 0); }
       };
-      tempMediaElement.onerror = () => { URL.revokeObjectURL(newInternalBlobUrl); handleDiscardMedia(false); setTimeout(() => toast({ title: "Error Loading Sample", variant: "destructive" }),0); };
-    } catch (error) { console.error(`Error loading sample ${type}:`, error); setTimeout(() => toast({ variant: 'destructive', title: `Failed to load sample ${type}` }), 0);
+      tempMediaElement.onerror = () => { 
+        URL.revokeObjectURL(newInternalBlobUrl); handleDiscardMedia(false); 
+        setTimeout(() => toast({ title: "Error Loading Sample", description: "Could not load the sample media. It might be corrupted or an unsupported format.", variant: "destructive" }),0); 
+      };
+    } catch (error) { 
+      console.error(`Error loading sample ${type}:`, error); 
+      setTimeout(() => toast({ variant: 'destructive', title: `Failed to Load Sample ${type.charAt(0).toUpperCase() + type.slice(1)}`, description: "Please check your network connection or try again later." }), 0);
     } finally { setIsLoadingSample(false); setSampleLoadingType(null); }
   };
 
