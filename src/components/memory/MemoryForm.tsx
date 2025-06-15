@@ -93,7 +93,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const yearSelectRef = useRef<HTMLButtonElement>(null);
+  const yearSelectRef = useRef<HTMLButtonElement>(null); // Ref for the year SelectTrigger
 
   const step1AnchorRef = useRef<HTMLDivElement>(null);
   const step2AnchorRef = useRef<HTMLDivElement>(null);
