@@ -382,6 +382,7 @@ export default function LifeJourneyPage() {
                 placeholder="Feeling stuck? Share life themes, interests, periods (e.g., 'childhood in London', 'my gardening passion', '70s travels'). AI will suggest chapter starting points."
                 rows={4}
               />
+              <p className="text-xs text-muted-foreground pt-1">Mentioning specific decades, significant life events (like migrations, career changes), or periods you lived through can help AI generate more evocative, context-rich chapter ideas.</p>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-end gap-4">
               <div className="flex-grow space-y-1">

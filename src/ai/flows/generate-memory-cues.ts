@@ -18,7 +18,7 @@ import {z} from 'genkit';
 const GenerateMemoryCuesInputSchema = z.object({
   userProfile: z
     .string()
-    .describe('User profile data including demographics, interests, past events, family information, and historical context if relevant.'),
+    .describe('User profile data including demographics, interests, past events, family information, historical context, or specific decades/periods they lived through if relevant.'),
   currentDate: z
     .string()
     .describe('The current date in ISO format (YYYY-MM-DD).'),
@@ -31,7 +31,7 @@ export type GenerateMemoryCuesInput = z.infer<typeof GenerateMemoryCuesInputSche
 const GenerateMemoryCuesOutputSchema = z.object({
   memoryCues: z
     .array(z.string())
-    .describe('An array of memory cues relevant to the user based on their profile, the current date, and in the specified language. Consider family relationships and historical periods if mentioned in the profile.'),
+    .describe('An array of memory cues (chapter ideas) relevant to the user based on their profile, the current date, and in the specified language. Consider family relationships and historical periods if mentioned in the profile.'),
 });
 export type GenerateMemoryCuesOutput = z.infer<typeof GenerateMemoryCuesOutputSchema>;
 
@@ -44,32 +44,37 @@ const prompt = ai.definePrompt({
   input: {schema: GenerateMemoryCuesInputSchema},
   output: {schema: GenerateMemoryCuesOutputSchema},
   prompt: `You are an AI memory cue generator specializing in personal and family history.
-Given the user profile, the current date, and a target language, you will generate a list of memory cues that are relevant to the user in the specified language.
+Your goal is to provide evocative chapter ideas for a user's life story.
+Given the user profile, the current date, and a target language, generate a list of memory cues in the specified language.
 
 User Profile: {{{userProfile}}}
 Current Date: {{{currentDate}}}
 Language: {{{language}}}
 
-Generate a list of memory cues in {{language}} that would be interesting and relevant to the user.
-Focus on events, people, and places that the user would likely want to remember.
-If the user profile mentions family members, significant life events (like marriages, births, migrations), or specific historical periods they lived through, try to generate cues that touch upon these aspects.
-For example, if their profile mentions "grandparents lived through WWII" or "immigrated in the 1970s", cues could relate to those experiences.
+Generate a list of memory cues (chapter ideas) in {{language}}. These cues should be:
+1.  **Personally Relevant**: Focus on events, people, places, and feelings the user would likely want to remember based on their profile.
+2.  **Contextually Enriched (If Possible)**: If the user's profile mentions specific historical periods, decades they lived through (e.g., "childhood in the 1960s London", "university during the dot-com boom"), or significant life events (e.g., "immigrated during the 1980s", "experienced a major natural disaster"), try to subtly weave in the general atmosphere, common experiences, or societal shifts of those times into some of the cues. For example, instead of just "Childhood games", it could be "Playing outside: Recollections of popular games and neighborhood life in the [Decade/Era mentioned]". Do NOT invent specific historical facts the user didn't mention, but evoke the *feeling* or general context of the period if their profile provides such hints. If the profile is very generic, focus primarily on personal themes.
+3.  **Family Oriented**: If family members or relationships are prominently mentioned, include cues that touch upon these aspects.
+4.  **Actionable**: Phrase cues as compelling chapter titles or clear starting points for telling a story. Aim for 5-7 diverse cues.
+
 Return an array of strings.
 
-Example for English ('en'):
+Example for English ('en') if profile mentions "grew up in the 70s, loved music, and talks about their parents":
 [
-  "That trip to Italy with your family",
-  "Your grandparents' stories from their youth",
-  "The day your first child was born",
-  "A significant cultural event you experienced"
+  "The Soundtrack of My Youth: Bands and Songs that Defined the 70s for Me",
+  "School Days and Playground Politics in the Seventies",
+  "Lessons My Parents Taught Me: Values That Shaped My Life",
+  "Family Holidays: Adventures and Misadventures",
+  "First Job Jitters and Early Career Steps in a Changing World"
 ]
 
-Example for Gujarati ('gu'):
+Example for Gujarati ('gu') if profile mentions "lived through the independence movement and has strong family bonds":
 [
-  "તમારા પરિવાર સાથે ઇટાલીની તે સફર",
-  "તમારા દાદા-દાદીની યુવાનીની વાર્તાઓ",
-  "તમારા પ્રથમ બાળકનો જન્મ થયો તે દિવસ",
-  "તમે અનુભવેલી એક મહત્વપૂર્ણ સાંસ્કૃતિક ઘટના"
+  "સ્વતંત્રતા ચળવળના દિવસો: મારી યાદો અને અનુભવો",
+  "મારા બાળપણનું ગામ: તે સમયનું જીવન અને સમાજ",
+  "પરિવારના વડીલો પાસેથી સાંભળેલી વાર્તાઓ અને સંસ્કાર",
+  "જીવનના મહત્વપૂર્ણ વળાંકો અને પારિવારિક નિર્ણયો",
+  "એ સમયની સામાજિક અને રાજકીય પરિસ્થિતિનો મારા પર પ્રભાવ"
 ]
 `,
 });
