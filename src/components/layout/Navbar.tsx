@@ -15,9 +15,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { LogOut, PlusCircle, Settings, BellRing, Users, UserCog, Film, History, Home, UserCircle2 } from 'lucide-react'; // Changed BookOpenText to Film
+import { LogOut, PlusCircle, Settings, BellRing, Users, UserCog, Film, History, Home, UserCircle2 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ThemeToggle } from './ThemeToggle'; // Import ThemeToggle
 
 export function Navbar() {
   const { isAuthenticated, user, logout, pendingRequestCount, userMode, toggleUserMode, setUserMode, hasNewSharedMemories } = useAuth();
@@ -97,7 +98,7 @@ export function Navbar() {
                       <Link href="/requests" className={`${navLinkClass} ${pathname === '/requests' ? activeNavLinkClass : ''}`}>
                         <BellRing className="mr-1.5 h-4 w-4" /> Requests
                         {pendingRequestCount > 0 && (
-                            <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-destructive-foreground bg-destructive rounded-full" aria-live="polite">
+                            <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-destructive-foreground bg-destructive rounded-full" aria-live="polite" aria-label={`${pendingRequestCount} pending requests`}>
                                 {pendingRequestCount}
                             </span>
                         )}
@@ -121,7 +122,8 @@ export function Navbar() {
             </nav>
           )}
 
-          <div className={`flex items-center space-x-4 ${isAuthenticated ? '' : 'ml-auto'}`}>
+          <div className={`flex items-center space-x-2 sm:space-x-4 ${isAuthenticated ? '' : 'ml-auto'}`}>
+            <ThemeToggle /> {/* Added ThemeToggle */}
             {isAuthenticated && user ? (
               <>
                 <div className="flex items-center space-x-2" role="radiogroup" aria-label="User mode selector">
@@ -265,4 +267,3 @@ export function Navbar() {
     </TooltipProvider>
   );
 }
-
