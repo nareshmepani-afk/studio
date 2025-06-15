@@ -52,6 +52,7 @@ export default function SettingsPage() {
   const router = useRouter(); 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [profileInfo, setProfileInfo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -112,6 +113,7 @@ export default function SettingsPage() {
     if (user) {
       setName(user.name || '');
       setEmail(user.email || '');
+      setProfileInfo(user.profileInfo || '');
       setAvatarPreviewUrl(null); 
 
       if (user.dateOfBirth && isValid(parseISO(user.dateOfBirth))) {
@@ -163,6 +165,7 @@ export default function SettingsPage() {
     }
     const updatedUser: User = {
       ...user, id: user.id, name: name, email: email, avatarUrl: finalAvatarUrlToSave, 
+      profileInfo: profileInfo || undefined,
       dateOfBirth: finalDateOfBirth, countryOfBirth: countryOfBirth || undefined, city: city || undefined, townArea: townArea || undefined,
       sharedAccessStatus: user.sharedAccessStatus, freePassActivatedDate: user.freePassActivatedDate, paidPassExpiryDate: user.paidPassExpiryDate,
       hostPassStatus: user.hostPassStatus, freeHostPassActivatedDate: user.freeHostPassActivatedDate, paidHostPassExpiryDate: user.paidHostPassExpiryDate, 
@@ -279,7 +282,7 @@ export default function SettingsPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
   const storageUsed = user.storageUsedBytes || 0;
-  const perMemoryLimitBytes = (user.hostPassStatus === 'free_host_pass_active' || user.hostPassStatus === 'paid_host_pass_active') ? storageQuotaBytes : 0;
+  const perMemoryLimitBytes = storageQuotaBytes; // storageQuotaBytes is already the per-chapter limit from AuthContext
 
 
   return (
@@ -297,6 +300,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-1"><Label htmlFor="name">Name</Label><Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your Name" /></div>
                 <div className="space-y-1"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" disabled /><p className="text-xs text-muted-foreground">Email cannot be changed in this demo.</p></div>
+                <div className="space-y-1"><Label htmlFor="profileInfo">Profile Info (for AI Chapter Ideas)</Label><Textarea id="profileInfo" value={profileInfo} onChange={(e) => setProfileInfo(e.target.value)} placeholder="e.g., Lived in Paris during the 90s, passionate about jazz music and gardening. Traveled extensively in South East Asia." rows={3} /><p className="text-xs text-muted-foreground">This helps AI generate more relevant chapter ideas for you on the 'My Life Journey' page.</p></div>
               </CardContent>
             </Card>
             <Card>
@@ -346,5 +350,4 @@ export default function SettingsPage() {
     </AuthenticatedPageWrapper>
   );
 }
-
     

@@ -34,20 +34,19 @@ const MAX_AUDIO_DURATION_SECONDS = 300;
 
 
 export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, promptIdForTeleprompter, chapterTitleForTeleprompter }: MediaCaptureControlProps) {
-  const { user, storageQuotaBytes, hostPassStatus } = useAuth(); // storageQuotaBytes is now the per-chapter limit
+  const { user, storageQuotaBytes, hostPassStatus } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(null);
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
   
-  // This previewUrl is internal to MediaCaptureControl for its immediate feedback (recording/trimming preview)
   const [internalPreviewUrl, setInternalPreviewUrl] = useState<string | null>(null);
   
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<globalThis.MediaRecorder | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null); // For the trimming preview within MediaCaptureControl
-  const audioPreviewRef = useRef<HTMLAudioElement>(null); // For the trimming preview
-  const liveVideoRef = useRef<HTMLVideoElement>(null); // For live camera feed
+  const videoRef = useRef<HTMLVideoElement>(null); 
+  const audioPreviewRef = useRef<HTMLAudioElement>(null); 
+  const liveVideoRef = useRef<HTMLVideoElement>(null); 
   const recordedChunks = useRef<Blob[]>([]);
 
   const [startTime, setStartTime] = useState<number>(0);
@@ -85,15 +84,15 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   }, []);
 
   const checkStorageQuota = useCallback((fileSize: number): boolean => {
-    if (fileSize > storageQuotaBytes) { // storageQuotaBytes is the PER_CHAPTER_QUOTA from AuthContext
+    if (fileSize > storageQuotaBytes) { // storageQuotaBytes is the PER_CHAPTER_QUOTA
       const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
-      const chapterQuotaMB = (storageQuotaBytes / (1024 * 1024)).toFixed(0);
+      const chapterQuotaMB = (storageQuotaBytes / (1024 * 1024)).toFixed(0); // Use 0 for integer display
 
       const description = `This file (${fileSizeMB} MB) exceeds the maximum allowed size per memory of ${chapterQuotaMB} MB.`;
       
       setTimeout(() => toast({ 
         variant: 'destructive', 
-        title: 'File Size Exceeds Limit', 
+        title: 'File Size Exceeds Memory Limit', 
         description: description, 
         duration: 10000, 
         icon: <ShieldAlert className="h-5 w-5" /> 
@@ -271,7 +270,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     if (mediaType === 'audio' && selectedSegmentDuration > MAX_AUDIO_DURATION_SECONDS) { setTimeout(() => toast({ title: "Trim Exceeds Audio Limit", description: `Segment is ${formatSecondsToTime(selectedSegmentDuration)}. Max is ${MAX_AUDIO_DURATION_SECONDS / 60} min(s).`, variant: "destructive", duration: 7000 }), 0); return; }
 
     if (recordedFile && mediaType && (mediaDuration > 0 || (mediaDuration === 0 && currentStartTime === 0 && currentEndTime ===0) )) {
-      // Pass the File object, not the blob URL. MemoryForm will create its own.
       onMediaReady({
         file: recordedFile,
         type: mediaType,
@@ -284,7 +282,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       let toastDesc = isTrimmed ? `Media selected, trimmed: ${formatSecondsToTime(currentStartTime)} to ${formatSecondsToTime(currentEndTime)}.` : "Media selected.";
       setTimeout(() => toast({ title: "Media Ready", description: toastDesc, icon: <CheckCircle className="h-4 w-4" /> }), 0);
     } else if (!recordedFile && initialMedia && mediaType) { 
-      // For existing media re-trim, create a placeholder file to signify intent to use existing backend URL
       const placeholderFile = new File([], initialMedia.previewUrl.split('/').pop() || "existing_media_placeholder", {type: mediaType === "video" ? "video/mp4" : "audio/mp3"});
       onMediaReady({
         file: placeholderFile, 
@@ -299,8 +296,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
        setTimeout(() => toast({ title: "Media Updated", description: toastDesc, icon: <CheckCircle className="h-4 w-4" /> }), 0);
     } else { setTimeout(() => toast({ title: "Media Not Ready", variant: "destructive" }), 0); }
     setShowTeleprompter(false); setCurrentTeleprompterScript(null);
-    // Don't revoke internalPreviewUrl here; MemoryForm might need to use it briefly if it was an initialMedia.
-    // MemoryForm will handle its own Blob URL lifecycle. MCC will revoke its own upon next action or unmount.
   };
 
   const handleDiscardMedia = (showToast = true) => {
@@ -312,7 +307,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     revokeCurrentInternalPreviewUrl();
 
     setRecordedFile(null);
-    // Restore to initialMedia state if present, otherwise clear.
     setInternalPreviewUrl(initialMedia?.previewUrl || null); 
     setMediaType(initialMedia?.type || null);
 
@@ -333,9 +327,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setShowTeleprompter(false); setCurrentTeleprompterScript(null);
   };
 
-  useEffect(() => { // Initialize from initialMedia prop
+  useEffect(() => { 
     setMediaType(initialMedia?.type || null);
-    setInternalPreviewUrl(initialMedia?.previewUrl || null); // MCC displays this URL
+    setInternalPreviewUrl(initialMedia?.previewUrl || null); 
 
     const initStartTime = initialMedia?.startTime || 0;
     const initDuration = initialMedia?.duration || 0;
@@ -349,22 +343,21 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setMediaSize(initSize);
 
     setIsRecording(false);
-    setRecordedFile(null); // No local file initially when using initialMedia
+    setRecordedFile(null); 
   }, [initialMedia]);
 
 
-  useEffect(() => { // Cleanup effect for internalPreviewUrl owned by MediaCaptureControl
+  useEffect(() => { 
     const urlToClean = internalPreviewUrl;
     return () => {
       cleanupStream(stream);
       if (urlToClean && urlToClean.startsWith('blob:') && urlToClean !== initialMedia?.previewUrl) {
-        // Only revoke if it's a blob URL created by MCC and not the one passed in as initialMedia.previewUrl
         URL.revokeObjectURL(urlToClean);
       }
     };
   }, [stream, internalPreviewUrl, cleanupStream, initialMedia?.previewUrl]);
 
-  useEffect(() => { // Logic for media player time updates for trimming
+  useEffect(() => { 
     const mediaElement = mediaType === 'video' ? videoRef.current : audioPreviewRef.current;
     if (!mediaElement || !internalPreviewUrl || !(mediaDuration > 0)) return;
     const getPlaybackStartTime = () => latestTrimValuesRef.current.startTime; const getPlaybackEndTime = () => latestTrimValuesRef.current.endTime;
@@ -445,4 +438,3 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     </Card>
   );
 }
-

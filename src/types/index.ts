@@ -16,7 +16,7 @@ export interface User {
   paidPassExpiryDate?: string; // ISO string - when the current 31-day paid GUEST pass expires
   viewedSharedMemoryIds?: string[]; // IDs of shared memories viewed by this user when in guest mode
 
-  // Host Pass fields - NEW
+  // Host Pass fields
   hostPassStatus?: 'no_pass_initiated' | 'free_host_pass_active' | 'paid_host_pass_active' | 'free_host_pass_expired' | 'paid_host_pass_expired';
   freeHostPassActivatedDate?: string; // ISO string - when the 6-month free HOST pass was first activated
   paidHostPassExpiryDate?: string;    // ISO string - when the current 31-day paid HOST pass expires
@@ -62,7 +62,7 @@ export interface Memory {
   country?: string;  // For country context, e.g., "France" or "USA"
   isLegacy?: boolean; // For designating memories for the Legacy Chest
   promptId?: string; // ID of the prompt this memory fulfills
-  category?: MemoryCategory; // Added category field
+  category?: MemoryCategory;
 }
 
 export interface PromptText {

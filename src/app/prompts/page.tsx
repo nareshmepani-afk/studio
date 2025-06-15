@@ -6,7 +6,7 @@ import { PromptCard } from '@/components/prompts/PromptCard';
 import { mockPromptGroups, mockMemories } from '@/lib/mockData';
 import type { Prompt, PromptGroup, Memory } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star as StarIcon } from 'lucide-react'; // Renamed Star to StarIcon to avoid conflict
+import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star as StarIcon } from 'lucide-react'; 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
@@ -42,9 +42,9 @@ export default function LifeJourneyPage() {
     purchasePaidHostPass, 
     activateFreeHostPass, 
     hostPassPriceDetails, 
-    isFetchingHostPassPrice: isFetchingAuthHostPassPrice 
+    isFetchingHostPassPrice: isFetchingAuthHostPassPrice,
+    hostPassStatus 
   } = useAuth(); 
-  const hostPassStatus = user?.hostPassStatus; 
 
   const [showCustomChapterDialog, setShowCustomChapterDialog] = useState(false);
   const [customChapterUserProfile, setCustomChapterUserProfile] = useState('');
@@ -62,23 +62,18 @@ export default function LifeJourneyPage() {
   }, [hostPassStatus]);
 
   const availablePromptGroups = useMemo(() => {
-    if (canAccessFullJourney) return promptGroups; // Use state `promptGroups`
-     if (hostPassStatus === 'no_pass_initiated' || hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
-        return promptGroups.length > 0 ? [promptGroups[0]] : []; // Use state `promptGroups`
-     }
-    return []; 
-  }, [hostPassStatus, canAccessFullJourney, promptGroups]);
+    if (canAccessFullJourney || promptGroups.length === 0) return promptGroups;
+    return [promptGroups[0]];
+  }, [canAccessFullJourney, promptGroups]);
 
 
   useEffect(() => {
     setTimeout(() => {
-      // Load prompts from localStorage or initialize from mockData
       const storedPromptGroupsJson = localStorage.getItem(LOCAL_STORAGE_PROMPT_GROUPS_KEY);
       let loadedPromptGroups: PromptGroup[];
       if (storedPromptGroupsJson) {
         try {
           loadedPromptGroups = JSON.parse(storedPromptGroupsJson);
-          // Ensure `isFlaggedForReuse` exists on all prompts
           loadedPromptGroups = loadedPromptGroups.map(group => ({
             ...group,
             prompts: group.prompts.map(prompt => ({
@@ -88,7 +83,7 @@ export default function LifeJourneyPage() {
           }));
         } catch (e) {
           console.error("Failed to parse prompt groups from localStorage, using default mocks.", e);
-          loadedPromptGroups = mockPromptGroups.map(group => ({ // Ensure mock data also has flags
+          loadedPromptGroups = mockPromptGroups.map(group => ({ 
             ...group,
             prompts: group.prompts.map(prompt => ({
               ...prompt,
@@ -98,7 +93,7 @@ export default function LifeJourneyPage() {
           localStorage.setItem(LOCAL_STORAGE_PROMPT_GROUPS_KEY, JSON.stringify(loadedPromptGroups));
         }
       } else {
-        loadedPromptGroups = mockPromptGroups.map(group => ({ // Ensure mock data also has flags
+        loadedPromptGroups = mockPromptGroups.map(group => ({ 
             ...group,
             prompts: group.prompts.map(prompt => ({
               ...prompt,
@@ -208,11 +203,9 @@ export default function LifeJourneyPage() {
         hostPassPriceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
         hostPassButtonText = `Purchase Host Pass ${hostPassPriceString}`;
     } else {
-         hostPassButtonText = `Purchase Host Pass (£4.99/month - Mock)`;
+         hostPassButtonText = `Purchase Host Pass (£12.99 - Mock)`;
     }
   }
-
-  console.log("[PromptsPage] Rendering with hostPassStatus from user object:", user?.hostPassStatus, "User object:", user);
 
   if (userMode === 'guest') {
     return (
@@ -285,15 +278,15 @@ export default function LifeJourneyPage() {
             {hostPassStatus === 'no_pass_initiated' ? <StarIcon className="h-5 w-5 text-primary" /> : <Zap className="h-5 w-5 text-primary" />}
             <AlertTitle className="font-headline text-primary">
               {hostPassStatus === 'no_pass_initiated' 
-                ? "Host Pass & Features" 
+                ? "Unlock Full Life Journey Access" 
                 : "Renew Host Pass for Full Access"}
             </AlertTitle>
             <AlertDescription className="text-primary/80 flex flex-col items-start">
               {hostPassStatus === 'no_pass_initiated' 
                 ? (
                     <>
-                        <p className="w-full">Manage your access to memory creation tools and features.</p>
-                        <p className="mt-1 w-full">Activate your 6-month free Host Pass to access all chapters, AI brainstorming, and more features to begin your Life Journey.</p>
+                        <p className="w-full">Only the first chapter group is available.</p>
+                        <p className="mt-1 w-full">Activate your 6-month free Host Pass to access all chapters, AI brainstorming, and more features to continue your Life Journey.</p>
                     </>
                   )
                 : <p className="w-full">Your Host Pass has expired. Renew to continue accessing all Life Journey chapters and creation tools.</p>}

@@ -126,6 +126,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } else {
       userMemories = mockMemories.filter(mem => mem.userId === userId); 
+      // If mockMemories is the source, save it to localStorage so it's there for next time
+      localStorage.setItem('mockMemories', JSON.stringify(mockMemories));
     }
 
     const usedBytes = userMemories.reduce((acc, memory) => {
@@ -143,7 +145,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (prevUser && prevUser.id === userId) {
         if (prevUser.storageUsedBytes !== usedBytes) {
           const updatedUser = { ...prevUser, storageUsedBytes: usedBytes };
-          // No need to call updateUserInStateAndStorage here to avoid potential loop with its own check
           localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser));
           return updatedUser;
         }
@@ -273,6 +274,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 catch(e) { console.error("Error parsing mockMemories for initial calculation:", e); userMems = mockMemories.filter(mem => mem.userId === storedUserData.id); }
             } else {
                 userMems = mockMemories.filter(mem => mem.userId === storedUserData.id);
+                // If mockMemories is the source, save it to localStorage
+                localStorage.setItem('mockMemories', JSON.stringify(mockMemories));
             }
             initialStorageUsedBytes = userMems.reduce((acc, memory) => {
                 if (memory.mediaAttachments) {
@@ -291,6 +294,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           countryOfBirth: storedUserData.countryOfBirth,
           city: storedUserData.city,
           townArea: storedUserData.townArea,
+          profileInfo: storedUserData.profileInfo,
           
           sharedAccessStatus: storedUserData.sharedAccessStatus || 'no_pass_initiated',
           freePassActivatedDate: storedUserData.freePassActivatedDate,
@@ -364,6 +368,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       countryOfBirth: currentUserData.countryOfBirth,
       city: currentUserData.city,
       townArea: currentUserData.townArea,
+      profileInfo: currentUserData.profileInfo,
       sharedAccessStatus: currentUserData.sharedAccessStatus || 'no_pass_initiated',
       freePassActivatedDate: currentUserData.freePassActivatedDate,
       paidPassExpiryDate: currentUserData.paidPassExpiryDate,
@@ -371,7 +376,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       hostPassStatus: currentUserData.hostPassStatus || 'no_pass_initiated',
       freeHostPassActivatedDate: currentUserData.freeHostPassActivatedDate,
       paidHostPassExpiryDate: currentUserData.paidHostPassExpiryDate,
-      storageUsedBytes: 0, 
+      storageUsedBytes: currentUserData.storageUsedBytes || 0, // Ensure initialized
     };
     updateUserInStateAndStorage(finalUser); 
     setIsAuthenticated(true);

@@ -52,17 +52,17 @@ export default function TimelinePage() {
   }, [user]);
 
   const canHostCreateMemories = useMemo(() => {
-    return user?.hostPassStatus === 'free_host_pass_active' || user?.hostPassStatus === 'paid_host_pass_active';
-  }, [user]);
+    return hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
+  }, [hostPassStatus]);
 
 
   useEffect(() => {
     checkAndUpdateGuestPassStatus();
     if (userMode === 'guest' && user &&
         (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated')) {
-      fetchGuestPassPrice();
+      if (!isFetchingGuestPassPrice && !guestPassPriceDetails) fetchGuestPassPrice();
     }
-  }, [checkAndUpdateGuestPassStatus, userMode, user, fetchGuestPassPrice]);
+  }, [checkAndUpdateGuestPassStatus, userMode, user, fetchGuestPassPrice, isFetchingGuestPassPrice, guestPassPriceDetails]);
 
 
   useEffect(() => {
@@ -75,10 +75,11 @@ export default function TimelinePage() {
         } catch (e) {
           console.error("Failed to parse memories from localStorage, using default mocks.", e);
           loadedMemories = mockMemories;
+          localStorage.setItem('mockMemories', JSON.stringify(loadedMemories));
         }
       } else {
         loadedMemories = mockMemories;
-        localStorage.setItem('mockMemories', JSON.stringify(mockMemories));
+        localStorage.setItem('mockMemories', JSON.stringify(loadedMemories));
       }
 
       if (userMode === 'host') {
@@ -217,8 +218,8 @@ export default function TimelinePage() {
   const addMemoryButtonDisabled = userMode === 'host' && !canHostCreateMemories;
   let addMemoryTooltipContent = "Add a new memory to your timeline.";
   if (addMemoryButtonDisabled) {
-      if (user?.hostPassStatus === 'no_pass_initiated') addMemoryTooltipContent = "Activate your Free Host Pass in Settings to add memories.";
-      else if (user?.hostPassStatus === 'free_host_pass_expired' || user?.hostPassStatus === 'paid_host_pass_expired') addMemoryTooltipContent = "Your Host Pass has expired. Renew in Settings to add memories.";
+      if (hostPassStatus === 'no_pass_initiated') addMemoryTooltipContent = "Activate your Free Host Pass in Settings to add memories.";
+      else if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') addMemoryTooltipContent = "Your Host Pass has expired. Renew in Settings to add memories.";
       else addMemoryTooltipContent = "An active Host Pass is required to add memories. Check Settings.";
   }
 
@@ -237,7 +238,7 @@ export default function TimelinePage() {
                   <TooltipTrigger asChild>
                     <span>
                       <Link href={addMemoryButtonDisabled ? "#" : "/add-memory"} passHref legacyBehavior>
-                        <Button disabled={addMemoryButtonDisabled} aria-disabled={addMemoryButtonDisabled} onClick={(e) => { if(addMemoryButtonDisabled) e.preventDefault();}}>
+                        <Button disabled={addMemoryButtonDisabled} aria-disabled={addMemoryButtonDisabled} onClick={(e) => { if(addMemoryButtonDisabled) { e.preventDefault(); toast({title: "Host Pass Required", description: addMemoryTooltipContent, variant: "destructive"});} }}>
                           <PlusCircle className="mr-2 h-5 w-5" /> Add New Memory
                         </Button>
                       </Link>
