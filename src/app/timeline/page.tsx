@@ -21,28 +21,28 @@ export default function TimelinePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortCriteria, setSortCriteria] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc'>('date-desc');
   const [categoryFilter, setCategoryFilter] = useState<MemoryCategory | 'all'>('all');
-  const [legacyFilter, setLegacyFilter] = useState<'all' | 'legacy' | 'non-legacy'>('all'); // New state
+  const [legacyFilter, setLegacyFilter] = useState<'all' | 'legacy' | 'non-legacy'>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [currentStreak, setCurrentStreak] = useState(0);
 
-  const { 
-    user, 
-    setPendingRequestCount, 
-    userMode, 
-    activateFreeGuestPass, 
-    purchasePaidGuestPass, 
+  const {
+    user,
+    setPendingRequestCount,
+    userMode,
+    activateFreeGuestPass,
+    purchasePaidGuestPass,
     checkAndUpdateGuestPassStatus,
     guestPassPriceDetails,
     fetchGuestPassPrice,
     isFetchingGuestPassPrice,
-    hostPassStatus, 
-    setHasNewSharedMemories, 
+    hostPassStatus,
+    setHasNewSharedMemories,
     hasNewSharedMemories,
     markSharedMemoryAsViewed,
     checkIfGuestHasUnviewedMemories,
   } = useAuth();
 
-  const mockHostPendingRequests = [ 
+  const mockHostPendingRequests = [
     { id: 'req1', text: 'Tell us about your first pet!', user: 'Guest123' },
     { id: 'req2', text: 'What was your favorite childhood vacation?', user: 'Guest456' },
   ];
@@ -57,8 +57,8 @@ export default function TimelinePage() {
 
 
   useEffect(() => {
-    checkAndUpdateGuestPassStatus(); 
-    if (userMode === 'guest' && user && 
+    checkAndUpdateGuestPassStatus();
+    if (userMode === 'guest' && user &&
         (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated')) {
       fetchGuestPassPrice();
     }
@@ -67,32 +67,30 @@ export default function TimelinePage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Load memories from localStorage or fallback to mockMemories
       const storedMemoriesJson = localStorage.getItem('mockMemories');
-      let loadedMemories: Memory[] = mockMemories; // Fallback
+      let loadedMemories: Memory[] = [];
       if (storedMemoriesJson) {
         try {
           loadedMemories = JSON.parse(storedMemoriesJson);
         } catch (e) {
           console.error("Failed to parse memories from localStorage, using default mocks.", e);
+          loadedMemories = mockMemories;
         }
       } else {
-        // If nothing in localStorage, initialize it with mockMemories
+        loadedMemories = mockMemories;
         localStorage.setItem('mockMemories', JSON.stringify(mockMemories));
       }
 
-
       if (userMode === 'host') {
-        setMemories(loadedMemories); 
-        setCurrentStreak(5); 
+        setMemories(loadedMemories);
+        setCurrentStreak(5);
       } else if (userMode === 'guest' && canGuestViewSharedMemories) {
-        // Guests see a subset for demo purposes; in real app, this would be fetched based on shares
-        setMemories(loadedMemories.slice(0, 2)); 
+        setMemories(loadedMemories.slice(0, 2));
       } else {
         setMemories([]);
       }
       setIsLoading(false);
-      if (userMode === 'host') setPendingRequestCount(mockHostPendingRequests.length); 
+      if (userMode === 'host') setPendingRequestCount(mockHostPendingRequests.length);
       else setPendingRequestCount(0);
     }, 500);
     return () => clearTimeout(timer);
@@ -102,50 +100,62 @@ export default function TimelinePage() {
     let notificationSimulationTimer: NodeJS.Timeout;
     if (userMode === 'host' && user && !hasNewSharedMemories) {
       notificationSimulationTimer = setTimeout(() => {
-        if (userMode === 'host' && user && !hasNewSharedMemories) { 
+        if (userMode === 'host' && user && !hasNewSharedMemories) {
           if (checkIfGuestHasUnviewedMemories()) setHasNewSharedMemories(true);
         }
-      }, 7000); 
+      }, 7000);
     }
     return () => clearTimeout(notificationSimulationTimer);
   }, [userMode, user, hasNewSharedMemories, setHasNewSharedMemories, checkIfGuestHasUnviewedMemories]);
 
-  const handleEditMemory = (memory: Memory) => console.log('Edit memory:', memory); // Placeholder
-  
-  const handleDeleteMemory = (memoryId: string) => {
+  const handleEditMemory = (memory: Memory) => console.log('Edit memory:', memory);
+
+  const handleDeleteMemory = useCallback((memoryId: string) => {
     setMemories(prevMemories => {
         const updatedMemories = prevMemories.filter(m => m.id !== memoryId);
         localStorage.setItem('mockMemories', JSON.stringify(updatedMemories));
         return updatedMemories;
     });
-    toast({ title: "Memory Deleted", description: "The memory has been removed."});
-  };
+    setTimeout(() => {
+      toast({ title: "Memory Deleted", description: "The memory has been removed."});
+    }, 0);
+  }, [setMemories]);
 
   const handleToggleLegacyStatus = useCallback((memoryId: string) => {
+    let toggledMemory: Memory | undefined;
     setMemories(prevMemories => {
-      const updatedMemories = prevMemories.map(mem => 
+      const updatedMemories = prevMemories.map(mem =>
         mem.id === memoryId ? { ...mem, isLegacy: !mem.isLegacy } : mem
       );
       localStorage.setItem('mockMemories', JSON.stringify(updatedMemories));
-      const toggledMemory = updatedMemories.find(mem => mem.id === memoryId);
-      toast({
-        title: toggledMemory?.isLegacy ? "Added to Legacy Chest" : "Removed from Legacy Chest",
-        description: `"${toggledMemory?.title}" status updated.`,
-      });
+      toggledMemory = updatedMemories.find(mem => mem.id === memoryId);
       return updatedMemories;
     });
-  }, []);
 
-  const handleCreateMontage = () => toast({ title: "Feature Coming Soon", description: "AI Memory Montages will be available later." });
+    setTimeout(() => {
+      if (toggledMemory) {
+        toast({
+          title: toggledMemory.isLegacy ? "Added to Legacy Chest" : "Removed from Legacy Chest",
+          description: `"${toggledMemory.title}" status updated.`,
+        });
+      }
+    }, 0);
+  }, [setMemories]);
+
+  const handleCreateMontage = () => {
+    setTimeout(() => {
+      toast({ title: "Feature Coming Soon", description: "AI Memory Montages will be available later." });
+    }, 0);
+  }
 
   const filteredAndSortedMemories = useMemo(() => {
     let result = memories;
     if (searchTerm) {
-      result = result.filter(memory => 
-        memory.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        memory.description?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        memory.emotionTags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) || 
-        memory.location?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      result = result.filter(memory =>
+        memory.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        memory.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        memory.emotionTags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        memory.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         memory.country?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         memory.category?.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -154,7 +164,7 @@ export default function TimelinePage() {
       result = result.filter(memory => memory.category === categoryFilter);
     }
     if (legacyFilter !== 'all') {
-      result = result.filter(memory => legacyFilter === 'legacy' ? memory.isLegacy : !memory.isLegacy);
+      result = result.filter(memory => legacyFilter === 'legacy' ? memory.isLegacy === true : memory.isLegacy !== true);
     }
     result.sort((a, b) => {
       switch (sortCriteria) {
@@ -169,7 +179,7 @@ export default function TimelinePage() {
   }, [memories, searchTerm, sortCriteria, categoryFilter, legacyFilter]);
 
   if (isLoading) return (<AuthenticatedPageWrapper><div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4"><Loader2 className="h-12 w-12 animate-spin text-primary mb-4" /><h2 className="text-2xl font-headline mb-2">Loading Memories...</h2></div></AuthenticatedPageWrapper>);
-  
+
   const renderGuestPurchaseButton = () => {
     let buttonText = "Purchase 31-Day Guest Pass";
     if (isFetchingGuestPassPrice) buttonText = "Fetching price...";
@@ -194,7 +204,7 @@ export default function TimelinePage() {
     else if (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired') { title = "Guest Pass Expired"; description = "Purchase a 31-day guest pass."; actionContent = renderGuestPurchaseButton(); }
     return (<Alert variant="destructive" className="mb-6"><ShieldOff className="h-5 w-5" /><AlertTitle>{title}</AlertTitle><AlertDescription>{description}{actionContent}</AlertDescription></Alert>);
   };
-  
+
   let guestAccessPlaceholderMessage = "Activate or purchase a guest pass to view shared memories.";
   if (userMode === 'guest' && !canGuestViewSharedMemories) {
     if (user?.sharedAccessStatus === 'free_pass_expired' || user?.sharedAccessStatus === 'paid_pass_expired') {
@@ -225,7 +235,7 @@ export default function TimelinePage() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span> 
+                    <span>
                       <Link href={addMemoryButtonDisabled ? "#" : "/add-memory"} passHref legacyBehavior>
                         <Button disabled={addMemoryButtonDisabled} aria-disabled={addMemoryButtonDisabled} onClick={(e) => { if(addMemoryButtonDisabled) e.preventDefault();}}>
                           <PlusCircle className="mr-2 h-5 w-5" /> Add New Memory
@@ -241,11 +251,11 @@ export default function TimelinePage() {
         </div>
 
         {renderGuestModeAccessUI()}
-        <TimelineFilter 
-          onSortChange={setSortCriteria} 
+        <TimelineFilter
+          onSortChange={setSortCriteria}
           onSearchChange={setSearchTerm}
-          onCategoryFilterChange={setCategoryFilter} 
-          onLegacyFilterChange={setLegacyFilter} // Pass new handler
+          onCategoryFilterChange={setCategoryFilter}
+          onLegacyFilterChange={setLegacyFilter}
         />
 
         {userMode === 'guest' && !canGuestViewSharedMemories && filteredAndSortedMemories.length === 0 && (<div className="text-center py-12 bg-card shadow-lg rounded-lg p-8"><CalendarClock className="mx-auto h-16 w-16 text-primary mb-6" /><h2 className="font-headline text-3xl mb-3">Activate Guest Access</h2><p className="text-muted-foreground mb-8 max-w-md mx-auto">{guestAccessPlaceholderMessage}</p></div>)}
@@ -256,15 +266,15 @@ export default function TimelinePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredAndSortedMemories.map((memory) => {
               const isUnreadInGuestMode = userMode === 'guest' && user?.viewedSharedMemoryIds ? !user.viewedSharedMemoryIds.includes(memory.id) : false;
-              return (<MemoryCard 
-                          key={memory.id} 
-                          memory={memory} 
-                          onEdit={userMode === 'host' ? handleEditMemory : undefined} 
-                          onDelete={userMode === 'host' ? handleDeleteMemory : undefined} 
-                          onToggleLegacyStatus={userMode === 'host' ? handleToggleLegacyStatus : undefined} // Pass handler
-                          isUnread={userMode === 'guest' ? isUnreadInGuestMode : undefined} 
-                          onMarkAsViewed={userMode === 'guest' ? markSharedMemoryAsViewed : undefined} 
-                          userMode={userMode} 
+              return (<MemoryCard
+                          key={memory.id}
+                          memory={memory}
+                          onEdit={userMode === 'host' ? handleEditMemory : undefined}
+                          onDelete={userMode === 'host' ? handleDeleteMemory : undefined}
+                          onToggleLegacyStatus={userMode === 'host' ? handleToggleLegacyStatus : undefined}
+                          isUnread={userMode === 'guest' ? isUnreadInGuestMode : undefined}
+                          onMarkAsViewed={userMode === 'guest' ? markSharedMemoryAsViewed : undefined}
+                          userMode={userMode}
                       />);
             })}
           </div>
@@ -273,4 +283,3 @@ export default function TimelinePage() {
     </AuthenticatedPageWrapper>
   );
 }
-
