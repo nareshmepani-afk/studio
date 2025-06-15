@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, type FormEvent, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { Memory, User, MediaAttachment, Prompt, EmotionTag } from '@/types';
-import { emotionTagsList } from '@/types';
+import type { Memory, User, MediaAttachment, Prompt, EmotionTag, MemoryCategory } from '@/types';
+import { emotionTagsList, memoryCategoriesList } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,7 @@ import { MediaCaptureControl } from './MediaRecorder';
 import { MemoryCard } from './MemoryCard';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft, Eye } from 'lucide-react';
+import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft, Eye, Layers } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, getDate, parseISO } from 'date-fns';
 import { enGB } from 'date-fns/locale';
@@ -109,6 +109,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
   const [country, setCountry] = useState('United Kingdom');
+  const [selectedCategory, setSelectedCategory] = useState<MemoryCategory | undefined>(memoryCategoriesList[0]);
 
 
   const getInitialDateComponent = useCallback((component: 'year' | 'month' | 'day', dateSource?: string) => {
@@ -148,6 +149,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     if (memory) {
       setTitle(memory.title || '');
       setLocation(memory.location || '');
+      setSelectedCategory(memory.category || memoryCategoriesList[0]);
 
       let initialCountryValue = 'United Kingdom';
       if (memory.country) {
@@ -168,20 +170,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
         const size = (typeof firstMedia.size === 'number' && !isNaN(firstMedia.size)) ? firstMedia.size : 0;
 
-        // If URL is not a blob, use it directly. Don't create a placeholder file for CurrentMediaData yet.
-        // Placeholder File is mainly for submission if no new file is uploaded.
         setCurrentMedia({
-            file: new File([], firstMedia.filename || "existing_media_placeholder", {type: firstMedia.type === 'video' ? 'video/mp4' : 'audio/mp3'}), // Placeholder
+            file: new File([], firstMedia.filename || "existing_media_placeholder", {type: firstMedia.type === 'video' ? 'video/mp4' : 'audio/mp3'}), 
             type: firstMedia.type,
             startTime: firstMedia.startTime,
             endTime: firstMedia.endTime,
             duration: duration,
             size: size,
         });
-        setCurrentMediaPreviewUrl(firstMedia.url); // Use existing persistent URL
-        setMediaToInitializeRecorder({ // For MediaCaptureControl
+        setCurrentMediaPreviewUrl(firstMedia.url); 
+        setMediaToInitializeRecorder({ 
             type: firstMedia.type,
-            previewUrl: firstMedia.url, // Pass persistent URL to MCC
+            previewUrl: firstMedia.url, 
             startTime: firstMedia.startTime,
             endTime: firstMedia.endTime,
             duration: duration,
@@ -193,7 +193,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     } else {
       const promptTextFromUrl = searchParams.get('prompt');
       setTitle(promptTextFromUrl ? decodeURIComponent(promptTextFromUrl) : '');
-      setLocation(''); setCountry('United Kingdom'); setDescription(''); setSelectedEmotionTags([]);
+      setLocation(''); setCountry('United Kingdom'); setDescription(''); setSelectedEmotionTags([]); setSelectedCategory(memoryCategoriesList[0]);
       setSelectedYear(getInitialDateComponent('year')); setSelectedMonth(getInitialDateComponent('month')); setSelectedDay(getInitialDateComponent('day'));
       setCurrentMedia(null); setCurrentMediaPreviewUrl(null); setMediaToInitializeRecorder(undefined);
     }
@@ -265,12 +265,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     setIsProcessingMedia(true);
 
     if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(currentMediaPreviewUrl); // Revoke previous MemoryForm-owned blob URL
+      URL.revokeObjectURL(currentMediaPreviewUrl);
     }
 
-    const newPreviewUrlFromFile = URL.createObjectURL(mediaPayload.file); // Create new MemoryForm-owned blob URL
+    const newPreviewUrlFromFile = URL.createObjectURL(mediaPayload.file);
 
-    setCurrentMedia({ // Store the actual file and its metadata
+    setCurrentMedia({ 
       file: mediaPayload.file,
       type: mediaPayload.type,
       startTime: mediaPayload.startTime,
@@ -278,12 +278,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       duration: mediaPayload.duration,
       size: mediaPayload.size,
     });
-    setCurrentMediaPreviewUrl(newPreviewUrlFromFile); // Use the new blob URL for MemoryForm's previews
+    setCurrentMediaPreviewUrl(newPreviewUrlFromFile);
 
-    setMediaToInitializeRecorder({ // For MediaCaptureControl re-initialization
-      file: mediaPayload.file, // Pass file if MCC needs it
+    setMediaToInitializeRecorder({ 
+      file: mediaPayload.file,
       type: mediaPayload.type,
-      previewUrl: newPreviewUrlFromFile, // MCC displays MemoryForm's blob URL
+      previewUrl: newPreviewUrlFromFile, 
       startTime: mediaPayload.startTime,
       endTime: mediaPayload.endTime,
       duration: mediaPayload.duration,
@@ -297,40 +297,42 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     if (currentSlide === SLIDE_INDEX_MEDIA && currentMediaPreviewUrl && currentMedia) {
       const mediaElement = currentMedia.type === 'video' ? videoPreviewRef.current : audioPreviewRef.current;
       if (mediaElement) {
-        if (mediaElement.src !== currentMediaPreviewUrl) mediaElement.src = currentMediaPreviewUrl;
-        mediaElement.load();
+        if (mediaElement.src !== currentMediaPreviewUrl) {
+            mediaElement.src = currentMediaPreviewUrl;
+        }
+        mediaElement.load(); 
       }
     }
   }, [currentMediaPreviewUrl, currentMedia, currentSlide]);
 
 
-  const handleMediaDiscardFromChild = useCallback(() => { // Called by MediaCaptureControl
+  const handleMediaDiscardFromChild = useCallback(() => { 
     setIsProcessingMedia(true);
     if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(currentMediaPreviewUrl); // Revoke MemoryForm's current blob URL
+      URL.revokeObjectURL(currentMediaPreviewUrl); 
     }
 
     if (isEditing && memory?.mediaAttachments?.[0]?.url && !memory.mediaAttachments[0].url.startsWith('blob:')) {
-      const firstMedia = memory.mediaAttachments[0]; // Original persistent media
+      const firstMedia = memory.mediaAttachments[0]; 
       const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
       const size = (typeof firstMedia.size === 'number' && !isNaN(firstMedia.size)) ? firstMedia.size : 0;
       setCurrentMedia({
         file: new File([], firstMedia.filename || "existing_media_placeholder", {type: firstMedia.type === 'video' ? 'video/mp4' : 'audio/mp3'}),
         type: firstMedia.type, startTime: firstMedia.startTime, endTime: firstMedia.endTime, duration, size,
       });
-      setCurrentMediaPreviewUrl(firstMedia.url); // Restore persistent URL
+      setCurrentMediaPreviewUrl(firstMedia.url); 
       setMediaToInitializeRecorder({
         type: firstMedia.type, previewUrl: firstMedia.url,
         startTime: firstMedia.startTime, endTime: firstMedia.endTime, duration, size,
       });
-    } else { // Discarding to no media
+    } else { 
       setCurrentMedia(null); setCurrentMediaPreviewUrl(null); setMediaToInitializeRecorder(undefined);
     }
     setIsProcessingMedia(false);
   }, [isEditing, memory?.mediaAttachments, currentMediaPreviewUrl]);
 
-  const handleMediaDiscardInForm = useCallback(() => { // User clicks discard within MemoryForm (e.g. for the Step 2 preview)
-    handleMediaDiscardFromChild(); // Use the same logic
+  const handleMediaDiscardInForm = useCallback(() => { 
+    handleMediaDiscardFromChild(); 
   }, [handleMediaDiscardFromChild]);
 
 
@@ -354,8 +356,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     let mediaAttachmentsForSubmission: MediaAttachment[] | undefined = undefined;
     let mediaFileToUpload: File | undefined = undefined;
 
-    if (currentMedia) { // currentMedia now holds the definitive state
-      // Check if currentMedia.file is a real uploaded/recorded file vs a placeholder for existing media
+    if (currentMedia) { 
       const isNewFile = currentMedia.file.size > 0 && currentMedia.file.name !== "existing_media_placeholder";
       if (isNewFile) mediaFileToUpload = currentMedia.file;
 
@@ -366,24 +367,23 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         id: originalMediaAttachmentId,
         type: currentMedia.type,
         url: urlForSubmission,
-        filename: currentMedia.file.name, // Will be the real filename or placeholder name
+        filename: currentMedia.file.name, 
         startTime: currentMedia.startTime,
         endTime: currentMedia.endTime,
         duration: currentMedia.duration,
         size: currentMedia.size,
       }];
     } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
-        // This case handles if media was present initially but then discarded, and form submitted.
-        // If `currentMedia` is null, it means media was explicitly removed.
-        mediaAttachmentsForSubmission = []; // Explicitly empty or undefined based on desired behavior for removal
+        mediaAttachmentsForSubmission = []; 
     }
 
     onSubmit(
       { title, date: finalDate.toISOString(), description, emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForSubmission,
-        location: location || undefined, country: country || undefined, promptId: promptIdFromQuery || memory?.promptId || undefined, },
+        location: location || undefined, country: country || undefined, category: selectedCategory, 
+        promptId: promptIdFromQuery || memory?.promptId || undefined, },
       mediaFileToUpload
     );
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, promptIdFromQuery, selectedEmotionTags, isEditing]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, selectedCategory, promptIdFromQuery, selectedEmotionTags, isEditing]);
 
 
   const handleActionButtonClick = useCallback(() => {
@@ -393,13 +393,14 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       let tempDate = new Date(selectedYear, selectedMonth, 1); tempDate = setDate(tempDate, selectedDay);
       if (!isValid(tempDate) || getYear(tempDate) !== selectedYear || getMonth(tempDate) !== selectedMonth || getDate(tempDate) !== selectedDay) { toast({ title: "Invalid Date", variant: "destructive" }); setTimeout(() => yearSelectRef.current?.focus(), 100); return; }
       if (!description.trim()) { toast({ title: "Description Required", variant: "destructive" }); setTimeout(() => descriptionTextareaRef.current?.focus(), 100); return; }
+      if (!selectedCategory) { toast({ title: "Category Required", variant: "destructive" }); return; }
        setCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
       if (!isEditing && !currentMedia) { toast({ title: "Media Required", description: "Please record or upload media for Step 2.", variant: "destructive" }); return; }
       else if (isEditing && !currentMedia && (!memory?.mediaAttachments || memory.mediaAttachments.length === 0)) { toast({ title: "Media Required", description: "Please record or upload media for Step 2.", variant: "destructive" }); return; }
       setCurrentSlide(SLIDE_INDEX_PREVIEW);
     } else if (currentSlide === SLIDE_INDEX_PREVIEW) triggerSubmitProcess();
-  }, [ isParentSubmitting, isProcessingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments ]);
+  }, [ isParentSubmitting, isProcessingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments ]);
 
   const handleFormSubmit = (event: FormEvent) => { event.preventDefault(); handleActionButtonClick(); };
 
@@ -408,17 +409,14 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   else if (currentSlide === SLIDE_INDEX_PREVIEW) { actionButtonText = isEditing ? 'Update Memory' : 'Save Memory'; ActionButtonIcon = Sparkles; }
 
   const initialMediaForRecorderProp = useMemo(() => {
-    // This prop is for MediaCaptureControl's initial display.
-    // It should receive MemoryForm's currentMediaPreviewUrl if it's set.
     if (currentMediaPreviewUrl && currentMedia) {
       return {
         type: currentMedia.type,
-        previewUrl: currentMediaPreviewUrl, // Use MemoryForm's owned URL
+        previewUrl: currentMediaPreviewUrl, 
         startTime: currentMedia.startTime,
         endTime: currentMedia.endTime,
         duration: currentMedia.duration,
         size: currentMedia.size,
-        // file: currentMedia.file, // Optionally pass file if MCC needs it for re-init
       };
     }
     return undefined;
@@ -430,7 +428,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   if (currentSlide === SLIDE_INDEX_PREVIEW) {
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
     let mediaAttachmentsForPreview: MediaAttachment[] | undefined = undefined;
-    if (currentMedia && currentMediaPreviewUrl) { // Use MemoryForm's current state
+    if (currentMedia && currentMediaPreviewUrl) { 
       mediaAttachmentsForPreview = [{
         id: memory?.mediaAttachments?.[0]?.id || 'preview-media-1',
         type: currentMedia.type, url: currentMediaPreviewUrl, filename: currentMedia.file.name,
@@ -440,7 +438,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     mockMemoryForPreview = {
       id: memory?.id || 'preview-id', title: title.trim() || "Untitled Chapter", date: isValid(finalDate) ? finalDate.toISOString() : new Date().toISOString(),
       description: description.trim() || "No description provided.", emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForPreview,
-      location: location.trim() || undefined, country: country.trim() || undefined, userId: user?.id || 'preview-user-id',
+      location: location.trim() || undefined, country: country.trim() || undefined, category: selectedCategory,
+      userId: user?.id || 'preview-user-id',
       promptId: promptIdFromQuery || memory?.promptId, isLegacy: memory?.isLegacy || false,
     };
   }
@@ -458,6 +457,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
                 <div className="space-y-1"><Label htmlFor="title" >Title *</Label><Input ref={titleInputRef} id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" /></div>
                 <div className="space-y-1"><Label>Date *</Label><div className="grid grid-cols-3 gap-2"><div><Label htmlFor="year-select" className="sr-only">Year</Label><Select key={`year-${selectedYear.toString()}-${memory?.id || 'new'}`} value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}><SelectTrigger id="year-select" ref={yearSelectRef}><SelectValue placeholder="Year" /></SelectTrigger><SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent></Select></div><div><Label htmlFor="month-select" className="sr-only">Month</Label><Select key={`month-${selectedMonth.toString()}-${memory?.id || 'new'}`} value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}><SelectTrigger id="month-select"><SelectValue placeholder="Month" /></SelectTrigger><SelectContent>{months.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}</SelectContent></Select></div><div><Label htmlFor="day-select" className="sr-only">Day</Label><Select key={`day-${selectedDay.toString()}-${memory?.id || 'new'}`} value={selectedDay.toString()} onValueChange={(value) => setSelectedDay(parseInt(value))}><SelectTrigger id="day-select"><SelectValue placeholder="Day" /></SelectTrigger><SelectContent>{dayOptions.map(d => <SelectItem key={d} value={d.toString()}>{d}</SelectItem>)}</SelectContent></Select></div></div></div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="space-y-1"><Label htmlFor="location"><MapPin className="inline-block mr-1 h-4 w-4" />Location (Optional)</Label><Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g., Eiffel Tower, Paris" /></div><div className="space-y-1"><Label htmlFor="country-select">Country (Optional)</Label><Select key={`country-${country}-${memory?.id || 'new'}`} value={country} onValueChange={setCountry}><SelectTrigger id="country-select"><SelectValue placeholder="Select Country" /></SelectTrigger><SelectContent>{countryOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent></Select></div></div>
+                <div className="space-y-1"><Label htmlFor="category-select">Category *</Label><Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as MemoryCategory)}><SelectTrigger id="category-select"><Layers className="inline-block mr-2 h-4 w-4 text-muted-foreground" /><SelectValue placeholder="Select category" /></SelectTrigger><SelectContent>{memoryCategoriesList.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select></div>
                 <div className="space-y-1"><Label htmlFor="description">Description *</Label><Textarea ref={descriptionTextareaRef} id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} required/></div>
                 <div className="space-y-1"><Label htmlFor="emotion-tags"><Tag className="inline-block mr-1 h-4 w-4" />Emotion Tags (Optional)</Label><div className="flex flex-wrap gap-2 pt-1">{emotionTagsList.map((tag) => (<Button type="button" key={tag} variant={selectedEmotionTags.includes(tag) ? 'default' : 'outline'} size="sm" onClick={() => handleEmotionTagToggle(tag)} className="text-xs h-auto py-1 px-2">{tag}</Button>))}</div></div>
               </CardContent>

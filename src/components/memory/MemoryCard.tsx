@@ -1,13 +1,13 @@
 
 "use client";
 
-import type { Memory, MediaAttachment, EmotionTag, UserMode } from '@/types';
+import type { Memory, MediaAttachment, EmotionTag, UserMode, MemoryCategory } from '@/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { enGB } from 'date-fns/locale';
-import { CalendarDays, Edit3, Trash2, Share2, Video, Mic, Heart, Eye, Users2, MapPin, Archive, Film, CheckSquare } from 'lucide-react';
+import { CalendarDays, Edit3, Trash2, Share2, Video, Mic, Heart, Eye, Users2, MapPin, Archive, Film, CheckSquare, Layers } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -158,25 +158,29 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
         <CardContent className="flex-grow">
           <p className="text-sm text-muted-foreground line-clamp-3">{memory.description}</p>
           
-          {(memory.mediaAttachments && memory.mediaAttachments.length > 0) || (memory.emotionTags && memory.emotionTags.length > 0) ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {memory.mediaAttachments?.map((item) => (
-                <Badge variant="secondary" key={item.id} className="text-xs">
-                  {item.type === 'video' ? <Video className="h-3 w-3 mr-1" /> : <Mic className="h-3 w-3 mr-1" />}
-                  {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-                  {item.startTime !== undefined && item.endTime !== undefined && item.duration && Math.abs(item.duration - (item.endTime - item.startTime)) > 1 && (
-                     <span className="ml-1">(Trimmed)</span>
-                  )}
-                </Badge>
-              ))}
-              {memory.emotionTags?.map((tag) => (
-                <Badge variant="outline" key={tag} className="text-xs">
-                  <Heart className="h-3 w-3 mr-1 text-primary/70" />
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          ) : null}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {memory.category && (
+              <Badge variant="secondary" className="text-xs capitalize">
+                <Layers className="h-3 w-3 mr-1" />
+                {memory.category}
+              </Badge>
+            )}
+            {memory.mediaAttachments?.map((item) => (
+              <Badge variant="secondary" key={item.id} className="text-xs">
+                {item.type === 'video' ? <Video className="h-3 w-3 mr-1" /> : <Mic className="h-3 w-3 mr-1" />}
+                {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                {item.startTime !== undefined && item.endTime !== undefined && item.duration && Math.abs(item.duration - (item.endTime - item.startTime)) > 1 && (
+                   <span className="ml-1">(Trimmed)</span>
+                )}
+              </Badge>
+            ))}
+            {memory.emotionTags?.map((tag) => (
+              <Badge variant="outline" key={tag} className="text-xs">
+                <Heart className="h-3 w-3 mr-1 text-primary/70" />
+                {tag}
+              </Badge>
+            ))}
+          </div>
 
         </CardContent>
         <CardFooter className="flex justify-between items-center pt-4">
@@ -271,4 +275,3 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
     </>
   );
 }
-

@@ -6,8 +6,8 @@ import { MemoryCard } from '@/components/memory/MemoryCard';
 import { TimelineFilter } from '@/components/memory/TimelineFilter';
 import { Button } from '@/components/ui/button';
 import { mockMemories } from '@/lib/mockData';
-import type { Memory } from '@/types';
-import { PlusCircle, Film, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift, Loader2, Info, Award } from 'lucide-react'; // Changed BookOpenText, kept Film
+import type { Memory, MemoryCategory } from '@/types';
+import { PlusCircle, Film, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift, Loader2, Info, Award } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +20,7 @@ export default function TimelinePage() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortCriteria, setSortCriteria] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc'>('date-desc');
+  const [categoryFilter, setCategoryFilter] = useState<MemoryCategory | 'all'>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [currentStreak, setCurrentStreak] = useState(0);
 
@@ -35,7 +36,7 @@ export default function TimelinePage() {
     fetchGuestPassPrice,
     isFetchingGuestPassPrice,
     // Host Pass
-    hostPassStatus, // Use hostPassStatus to determine if host can create
+    hostPassStatus, 
     // Shared memory notifications
     setHasNewSharedMemories, 
     hasNewSharedMemories,
@@ -48,20 +49,17 @@ export default function TimelinePage() {
     { id: 'req2', text: 'What was your favorite childhood vacation?', user: 'Guest456' },
   ];
 
-  // Guest can view shared memories if their guest pass is active
   const canGuestViewSharedMemories = useMemo(() => {
     return user?.sharedAccessStatus === 'free_pass_active' || user?.sharedAccessStatus === 'paid_pass_active';
   }, [user]);
 
-  // Host can create/add memories if their host pass is active
   const canHostCreateMemories = useMemo(() => {
     return user?.hostPassStatus === 'free_host_pass_active' || user?.hostPassStatus === 'paid_host_pass_active';
   }, [user]);
 
 
   useEffect(() => {
-    checkAndUpdateGuestPassStatus(); // For guest viewing logic
-    // checkAndUpdateHostPassStatus(); // Already called in settings/prompts or context effect
+    checkAndUpdateGuestPassStatus(); 
     if (userMode === 'guest' && user && 
         (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated')) {
       fetchGuestPassPrice();
@@ -72,10 +70,10 @@ export default function TimelinePage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (userMode === 'host') {
-        setMemories(mockMemories); // Host sees all their memories regardless of pass status for viewing on timeline
+        setMemories(mockMemories); 
         setCurrentStreak(5); 
       } else if (userMode === 'guest' && canGuestViewSharedMemories) {
-        setMemories(mockMemories.slice(0, 2)); // Guests see limited shared memories if their pass is active
+        setMemories(mockMemories.slice(0, 2)); 
       } else {
         setMemories([]);
       }
@@ -104,7 +102,19 @@ export default function TimelinePage() {
 
   const filteredAndSortedMemories = useMemo(() => {
     let result = memories;
-    if (searchTerm) result = result.filter(memory => memory.title.toLowerCase().includes(searchTerm.toLowerCase()) || memory.description?.toLowerCase().includes(searchTerm.toLowerCase()) || memory.emotionTags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) || memory.location?.toLowerCase().includes(searchTerm.toLowerCase()) || memory.country?.toLowerCase().includes(searchTerm.toLowerCase()));
+    if (searchTerm) {
+      result = result.filter(memory => 
+        memory.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        memory.description?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        memory.emotionTags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) || 
+        memory.location?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        memory.country?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        memory.category?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    if (categoryFilter !== 'all') {
+      result = result.filter(memory => memory.category === categoryFilter);
+    }
     result.sort((a, b) => {
       switch (sortCriteria) {
         case 'date-asc': return new Date(a.date).getTime() - new Date(b.date).getTime();
@@ -115,7 +125,7 @@ export default function TimelinePage() {
       }
     });
     return result;
-  }, [memories, searchTerm, sortCriteria]);
+  }, [memories, searchTerm, sortCriteria, categoryFilter]);
 
   if (isLoading) return (<AuthenticatedPageWrapper><div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4"><Loader2 className="h-12 w-12 animate-spin text-primary mb-4" /><h2 className="text-2xl font-headline mb-2">Loading Memories...</h2></div></AuthenticatedPageWrapper>);
   
@@ -174,8 +184,7 @@ export default function TimelinePage() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    {/* The Button component will be the direct child for TooltipTrigger */}
-                    <span> {/* Required for Tooltip with disabled button */}
+                    <span> 
                       <Link href={addMemoryButtonDisabled ? "#" : "/add-memory"} passHref legacyBehavior>
                         <Button disabled={addMemoryButtonDisabled} aria-disabled={addMemoryButtonDisabled} onClick={(e) => { if(addMemoryButtonDisabled) e.preventDefault();}}>
                           <PlusCircle className="mr-2 h-5 w-5" /> Add New Memory
@@ -183,7 +192,6 @@ export default function TimelinePage() {
                       </Link>
                     </span>
                   </TooltipTrigger>
-                  {/* TooltipContent always renders, Tooltip controls visibility */}
                   <TooltipContent><p>{addMemoryTooltipContent}</p></TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -192,11 +200,15 @@ export default function TimelinePage() {
         </div>
 
         {renderGuestModeAccessUI()}
-        <TimelineFilter onSortChange={setSortCriteria} onSearchChange={setSearchTerm} />
+        <TimelineFilter 
+          onSortChange={setSortCriteria} 
+          onSearchChange={setSearchTerm}
+          onCategoryFilterChange={setCategoryFilter} 
+        />
 
         {userMode === 'guest' && !canGuestViewSharedMemories && filteredAndSortedMemories.length === 0 && (<div className="text-center py-12 bg-card shadow-lg rounded-lg p-8"><CalendarClock className="mx-auto h-16 w-16 text-primary mb-6" /><h2 className="font-headline text-3xl mb-3">Activate Guest Access</h2><p className="text-muted-foreground mb-8 max-w-md mx-auto">{guestAccessPlaceholderMessage}</p></div>)}
         {userMode === 'guest' && canGuestViewSharedMemories && filteredAndSortedMemories.length === 0 && (<div className="text-center py-12 bg-card shadow-lg rounded-lg p-8"><Users className="mx-auto h-16 w-16 text-primary mb-6" /><h2 className="font-headline text-3xl mb-3">Nothing Shared Yet</h2><p className="text-muted-foreground mb-8 max-w-md mx-auto">When memories are shared with you, they appear here.</p></div>)}
-        {userMode === 'host' && filteredAndSortedMemories.length === 0 && (<div className="text-center py-12 bg-card shadow-lg rounded-lg p-8"><Film className="mx-auto h-16 w-16 text-primary mb-6" /> {/* Changed Icon */}<h2 className="font-headline text-3xl mb-3">Welcome to Memory Weaver!</h2><p className="text-muted-foreground mb-8 max-w-md mx-auto">Record your life’s moments. If you need a Host Pass, check Settings.</p><Link href={addMemoryButtonDisabled ? "/settings" : "/add-memory"} passHref><Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground"><PlusCircle className="mr-2 h-5 w-5" />{addMemoryButtonDisabled ? "Go to Settings" : "Record First Memory"}</Button></Link></div>)}
+        {userMode === 'host' && filteredAndSortedMemories.length === 0 && (<div className="text-center py-12 bg-card shadow-lg rounded-lg p-8"><Film className="mx-auto h-16 w-16 text-primary mb-6" /><h2 className="font-headline text-3xl mb-3">Welcome to Memory Weaver!</h2><p className="text-muted-foreground mb-8 max-w-md mx-auto">Record your life’s moments. If you need a Host Pass, check Settings.</p><Link href={addMemoryButtonDisabled ? "/settings" : "/add-memory"} passHref><Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground"><PlusCircle className="mr-2 h-5 w-5" />{addMemoryButtonDisabled ? "Go to Settings" : "Record First Memory"}</Button></Link></div>)}
 
         {((userMode === 'host') || (userMode === 'guest' && canGuestViewSharedMemories)) && filteredAndSortedMemories.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -210,4 +222,3 @@ export default function TimelinePage() {
     </AuthenticatedPageWrapper>
   );
 }
-

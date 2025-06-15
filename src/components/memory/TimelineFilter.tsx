@@ -4,19 +4,19 @@
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-// Removed MemoryCategory and memoryCategories imports
-import { ListFilter, Search } from 'lucide-react';
+import { memoryCategoriesList, type MemoryCategory } from '@/types';
+import { ListFilter, Search, Layers } from 'lucide-react';
 
 interface TimelineFilterProps {
   onSortChange: (sortBy: 'date-desc' | 'date-asc' | 'title-asc' | 'title-desc') => void;
-  // onCategoryFilterChange prop removed
+  onCategoryFilterChange: (category: MemoryCategory | 'all') => void;
   onSearchChange: (searchTerm: string) => void;
 }
 
-export function TimelineFilter({ onSortChange, onSearchChange }: TimelineFilterProps) {
+export function TimelineFilter({ onSortChange, onCategoryFilterChange, onSearchChange }: TimelineFilterProps) {
   return (
     <div className="mb-8 p-4 bg-card rounded-lg shadow sticky top-16 z-40">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end"> {/* Changed to md:grid-cols-2 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
         <div>
           <label htmlFor="search-memories" className="block text-sm font-medium text-muted-foreground mb-1">Search</label>
           <div className="relative">
@@ -44,7 +44,21 @@ export function TimelineFilter({ onSortChange, onSearchChange }: TimelineFilterP
             </SelectContent>
           </Select>
         </div>
-        {/* Category Select component removed */}
+        <div>
+          <label htmlFor="category-filter" className="block text-sm font-medium text-muted-foreground mb-1">Category</label>
+          <Select onValueChange={(value) => onCategoryFilterChange(value as MemoryCategory | 'all')} defaultValue="all">
+            <SelectTrigger id="category-filter">
+              <Layers className="mr-2 h-4 w-4 text-muted-foreground" />
+              <SelectValue placeholder="Filter by category..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {memoryCategoriesList.map(category => (
+                <SelectItem key={category} value={category}>{category}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
   );

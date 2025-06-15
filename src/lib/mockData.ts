@@ -1,5 +1,6 @@
 
-import type { Memory, Prompt, PromptGroup, MediaAttachment, EmotionTag } from '@/types';
+import type { Memory, Prompt, PromptGroup, MediaAttachment, EmotionTag, MemoryCategory } from '@/types';
+import { memoryCategoriesList } from '@/types'; // Import the categories list
 
 const videoPlaceholderUrl = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"; // A real video for testing trim
 const audioPlaceholderUrl = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3"; // A real audio for testing
@@ -27,6 +28,7 @@ export const mockMemories: Memory[] = [
     imageUrl: 'https://placehold.co/600x400.png', // Fallback or cover image
     isLegacy: true, // Marked for Legacy Chest
     promptId: 'p1', // Linked to "A Child of Two Worlds"
+    category: 'Travel',
   },
   {
     id: '2',
@@ -48,6 +50,7 @@ export const mockMemories: Memory[] = [
     imageUrl: 'https://placehold.co/600x400.png',
     isLegacy: false,
     promptId: 'p2', // Linked to "The House I Grew Up In"
+    category: 'Family',
   },
   {
     id: '3',
@@ -68,6 +71,7 @@ export const mockMemories: Memory[] = [
     }],
     imageUrl: 'https://placehold.co/600x400.png',
     isLegacy: true, // Also marked for Legacy Chest
+    category: 'Work',
   },
   {
     id: '4',
@@ -80,6 +84,7 @@ export const mockMemories: Memory[] = [
     location: 'Home Kitchen',
     country: 'UK',
     isLegacy: false,
+    category: 'Hobbies',
   },
 ];
 

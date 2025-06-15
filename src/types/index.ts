@@ -44,12 +44,18 @@ export const emotionTagsList = [
 
 export type EmotionTag = typeof emotionTagsList[number];
 
+export const memoryCategoriesList = [
+  'Travel', 'Family', 'Work', 'Personal Growth', 'Hobbies', 'Education', 'Celebrations', 'Challenges', 'Friends', 'Other'
+] as const;
+
+export type MemoryCategory = typeof memoryCategoriesList[number];
+
 export interface Memory {
   id: string;
   title: string;
   date: string; // ISO string
   description?: string;
-  emotionTags?: EmotionTag[]; // Replaces category
+  emotionTags?: EmotionTag[];
   mediaAttachments?: MediaAttachment[];
   imageUrl?: string; // Fallback image if no media or for card previews
   userId: string; // The ID of the user who owns/created this memory
@@ -57,6 +63,7 @@ export interface Memory {
   country?: string;  // For country context, e.g., "France" or "USA"
   isLegacy?: boolean; // For designating memories for the Legacy Chest
   promptId?: string; // ID of the prompt this memory fulfills
+  category?: MemoryCategory; // Added category field
 }
 
 export interface PromptText {
@@ -67,7 +74,7 @@ export interface PromptText {
 export interface Prompt {
   id: string;
   text: PromptText;
-  isFlaggedForReuse: boolean; // Will be removed from UI but kept in type for now
+  isFlaggedForReuse: boolean;
   userId?: string; // If prompts are user-specific
 }
 
@@ -84,5 +91,4 @@ export interface PromptGroup {
 // Storage Quotas
 export const FREE_TIER_STORAGE_QUOTA_BYTES = 10 * 1024 * 1024; // 10 MB (Kept for reference)
 export const STANDARD_HOST_STORAGE_QUOTA_BYTES = 600 * 1024 * 1024; // 600 MB - for users with an active host pass (interpreted as per-memory/chapter limit)
-// PREMIUM_TIER_STORAGE_QUOTA_BYTES is removed as we shift from fixed tiers.
 
