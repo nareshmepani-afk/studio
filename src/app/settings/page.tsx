@@ -15,7 +15,6 @@ import type { User } from '@/types';
 import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types'; 
 import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, AlertTriangle, Star, Zap, RotateCcw } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-// Progress component is removed as it's no longer used
 import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
 import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
@@ -42,9 +41,10 @@ export default function SettingsPage() {
     activateFreeHostPass,
     purchasePaidHostPass,
     checkAndUpdateHostPassStatus,
+    hostPassStatus, // Direct use from context
     hostPassPriceDetails,
     fetchHostPassPrice,
-    isFetchingHostPassPrice: isFetchingAuthHostPassPrice, // Corrected alias to avoid conflict
+    isFetchingHostPassPrice: isFetchingAuthHostPassPrice,
     resetHostPassForTesting,
     storageQuotaBytes, 
     calculateAndUpdateStorageUsage,
@@ -68,29 +68,32 @@ export default function SettingsPage() {
   const [townArea, setTownArea] = useState('');
   
   useEffect(() => {
-    checkAndUpdateGuestPassStatus();
-    checkAndUpdateHostPassStatus();
-    
-    if (user) { 
-        if (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated') {
-            if (!isFetchingGuestPassPrice && !guestPassPriceDetails) fetchGuestPassPrice();
+    // Call these once when the component mounts and user data is available
+    if (user) {
+      checkAndUpdateGuestPassStatus();
+      checkAndUpdateHostPassStatus();
+      
+      if (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated') {
+        if (!isFetchingGuestPassPrice && !guestPassPriceDetails) {
+          fetchGuestPassPrice();
         }
-        if (user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired' || user.hostPassStatus === 'no_pass_initiated') {
-           if (!isFetchingAuthHostPassPrice && !hostPassPriceDetails) fetchHostPassPrice();
-        }
-        calculateAndUpdateStorageUsage(user.id);
+      }
+      if (user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired' || user.hostPassStatus === 'no_pass_initiated') {
+         if (!isFetchingAuthHostPassPrice && !hostPassPriceDetails) {
+           fetchHostPassPrice();
+         }
+      }
+      calculateAndUpdateStorageUsage(user.id);
     }
   }, [
+    user, // Rerun if user object changes significantly
     checkAndUpdateGuestPassStatus, 
     checkAndUpdateHostPassStatus, 
     fetchGuestPassPrice, 
     fetchHostPassPrice, 
     calculateAndUpdateStorageUsage,
-    user?.sharedAccessStatus, 
-    user?.hostPassStatus,
-    user?.id,
     isFetchingGuestPassPrice, guestPassPriceDetails, 
-    isFetchingAuthHostPassPrice, hostPassPriceDetails   
+    isFetchingAuthHostPassPrice, hostPassPriceDetails
   ]);
 
 
@@ -189,11 +192,20 @@ export default function SettingsPage() {
 
   const renderGuestPurchaseButton = () => {
     let buttonText = "Purchase 31-Day Guest Pass";
-    if (isFetchingGuestPassPrice) buttonText = "Fetching price...";
-    else if (guestPassPriceDetails) buttonText = `Purchase 31-Day Guest Pass (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.passPrice)})`;
+    let priceString = "";
+    if (isFetchingGuestPassPrice) {
+        buttonText = "Fetching price...";
+    } else if (guestPassPriceDetails) {
+        priceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.passPrice)})`;
+        buttonText += priceString;
+    } else {
+         buttonText += ` (£7.99 - Mock)`;
+    }
+    
     const button = (<Button onClick={purchasePaidGuestPass} variant="outline" size="sm" disabled={isFetchingGuestPassPrice}>{isFetchingGuestPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}{buttonText}</Button>);
+    
     if (guestPassPriceDetails && !isFetchingGuestPassPrice && guestPassPriceDetails.justification) {
-       return (<TooltipProvider><div className="flex flex-col items-start space-y-1">{button}<Tooltip><TooltipTrigger asChild><span className="text-xs text-muted-foreground flex items-center cursor-default"><Info className="h-3 w-3 mr-1" /> {guestPassPriceDetails.justification}</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{guestPassPriceDetails.justification} (Based on avg coffee: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
+       return (<TooltipProvider><div className="flex flex-col items-start space-y-1">{button}<Tooltip><TooltipTrigger asChild><span className="text-xs text-muted-foreground flex items-center cursor-default mt-1"><Info className="h-3 w-3 mr-1" /> {guestPassPriceDetails.justification}</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{guestPassPriceDetails.justification} (Based on avg coffee: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
     }
     return button;
   };
@@ -202,10 +214,24 @@ export default function SettingsPage() {
     if (!user) return null;
     let statusText = ""; let actionContent = null;
     switch (user.sharedAccessStatus) {
-        case 'no_pass_initiated': statusText = "Activate your free guest pass for viewing shared memories."; actionContent = (<Button onClick={activateFreeGuestPass} variant="outline" size="sm"><Gift className="mr-2 h-4 w-4" /> Activate 6-Month Free Guest Pass</Button>); break;
-        case 'free_pass_active': const fpExp = user.freePassActivatedDate ? format(addMonths(parseISO(user.freePassActivatedDate), 6), 'PPP') : 'N/A'; statusText = `Your 6-month free guest pass is active until ${fpExp}.`; break;
-        case 'paid_pass_active': const ppExp = user.paidPassExpiryDate ? format(parseISO(user.paidPassExpiryDate), 'PPP') : 'N/A'; statusText = `Your paid guest pass is active until ${ppExp}.`; actionContent = renderGuestPurchaseButton(); break;
-        case 'free_pass_expired': case 'paid_pass_expired': statusText = "Your guest pass has expired."; actionContent = renderGuestPurchaseButton(); break;
+        case 'no_pass_initiated': 
+            statusText = "Activate your free guest pass for viewing shared memories."; 
+            actionContent = (<Button onClick={activateFreeGuestPass} variant="outline" size="sm"><Gift className="mr-2 h-4 w-4" /> Activate 6-Month Free Guest Pass</Button>); 
+            break;
+        case 'free_pass_active': 
+            const fpExp = user.freePassActivatedDate ? format(addMonths(parseISO(user.freePassActivatedDate), 6), 'PPP', { locale: enGB }) : 'N/A'; 
+            statusText = `Your 6-month free guest pass is active until ${fpExp}.`; 
+            break;
+        case 'paid_pass_active': 
+            const ppExp = user.paidPassExpiryDate ? format(parseISO(user.paidPassExpiryDate), 'PPP', { locale: enGB }) : 'N/A'; 
+            statusText = `Your paid guest pass is active until ${ppExp}.`; 
+            actionContent = renderGuestPurchaseButton(); 
+            break;
+        case 'free_pass_expired': 
+        case 'paid_pass_expired': 
+            statusText = "Your guest pass has expired."; 
+            actionContent = renderGuestPurchaseButton(); 
+            break;
         default: statusText = "Guest pass status unknown.";
     }
     return (<div className="mt-2 space-y-2"><p className="text-sm text-muted-foreground">{statusText}</p>{actionContent}</div>);
@@ -213,14 +239,20 @@ export default function SettingsPage() {
 
   const renderHostPurchaseButton = () => {
     let buttonText = "Purchase 31-Day Host Pass";
-    if (isFetchingAuthHostPassPrice) buttonText = "Fetching price..."; // Use alias here
-    else if (hostPassPriceDetails) buttonText = `Purchase 31-Day Host Pass (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
-    else buttonText = `Purchase 31-Day Host Pass (£12.99 - Mock)`; 
+    let priceString = "";
+    if (isFetchingAuthHostPassPrice) { // Use alias here
+        buttonText = "Fetching price...";
+    } else if (hostPassPriceDetails) {
+        priceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
+        buttonText += priceString;
+    } else {
+         buttonText += ` (£12.99 - Mock)`; 
+    }
 
     const button = (<Button onClick={purchasePaidHostPass} variant="default" size="sm" disabled={isFetchingAuthHostPassPrice}>{isFetchingAuthHostPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}{buttonText}</Button>);
     
     if (hostPassPriceDetails && !isFetchingAuthHostPassPrice && hostPassPriceDetails.justification) {
-       return (<TooltipProvider><div className="flex flex-col items-start space-y-1">{button}<Tooltip><TooltipTrigger asChild><span className="text-xs text-muted-foreground flex items-center cursor-default"><Info className="h-3 w-3 mr-1" /> {hostPassPriceDetails.justification}</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{hostPassPriceDetails.justification} (Based on avg coffee: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
+       return (<TooltipProvider><div className="flex flex-col items-start space-y-1">{button}<Tooltip><TooltipTrigger asChild><span className="text-xs text-muted-foreground flex items-center cursor-default mt-1"><Info className="h-3 w-3 mr-1" /> {hostPassPriceDetails.justification}</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{hostPassPriceDetails.justification} (Based on avg coffee: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
     }
     return button;
   };
@@ -230,24 +262,24 @@ export default function SettingsPage() {
     let statusText = ""; let actionContent = null;
     let currentPriceString = "";
     if (hostPassPriceDetails && !isFetchingAuthHostPassPrice) {
-        currentPriceString = `(${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
+        currentPriceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
     } else if (isFetchingAuthHostPassPrice) {
         currentPriceString = "(fetching price...)";
     } else {
          currentPriceString = "(approx. £12.99 - Mock)"; 
     }
 
-    switch (user.hostPassStatus) {
+    switch (hostPassStatus) { // Use direct hostPassStatus from context
         case 'no_pass_initiated': 
           statusText = "Activate your free host pass to begin creating memories and access all features."; 
           actionContent = (<Button onClick={activateFreeHostPass} variant="default" size="sm"><Star className="mr-2 h-4 w-4" /> Activate 6-Month Free Host Pass</Button>); 
           break;
         case 'free_host_pass_active': 
-          const fhpExp = user.freeHostPassActivatedDate ? format(addMonths(parseISO(user.freeHostPassActivatedDate), 6), 'PPP') : 'N/A'; 
+          const fhpExp = user.freeHostPassActivatedDate ? format(addMonths(parseISO(user.freeHostPassActivatedDate), 6), 'PPP', { locale: enGB }) : 'N/A'; 
           statusText = `Your 6-month free host pass is active until ${fhpExp}. Enjoy full creation features!`; 
           break;
         case 'paid_host_pass_active': 
-          const phpExp = user.paidHostPassExpiryDate ? format(parseISO(user.paidHostPassExpiryDate), 'PPP') : 'N/A'; 
+          const phpExp = user.paidHostPassExpiryDate ? format(parseISO(user.paidHostPassExpiryDate), 'PPP', { locale: enGB }) : 'N/A'; 
           statusText = `Your paid host pass is active until ${phpExp}.`; 
           actionContent = renderHostPurchaseButton(); 
           break;
@@ -262,7 +294,7 @@ export default function SettingsPage() {
         <p className="text-sm text-muted-foreground">{statusText}</p>
         {actionContent}
         <div className="mt-3 border-t pt-3">
-            <p className="text-xs text-muted-foreground mb-1">For Testing: Current `hostPassStatus`: <code className="font-mono bg-muted p-1 rounded">{user.hostPassStatus || 'N/A'}</code></p>
+            <p className="text-xs text-muted-foreground mb-1">For Testing: Current `hostPassStatus`: <code className="font-mono bg-muted p-1 rounded">{hostPassStatus || 'N/A'}</code></p>
             <Button 
               onClick={resetHostPassForTesting} 
               variant="outline" 
@@ -282,7 +314,7 @@ export default function SettingsPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
   const storageUsed = user.storageUsedBytes || 0;
-  const perMemoryLimitBytes = storageQuotaBytes; // storageQuotaBytes is already the per-chapter limit from AuthContext
+  const perMemoryLimitBytes = storageQuotaBytes;
 
 
   return (
@@ -327,7 +359,7 @@ export default function SettingsPage() {
             <Card>
               <CardHeader><CardTitle className="font-headline text-xl flex items-center"><HardDrive className="mr-2 h-5 w-5 text-accent" /> Media Storage</CardTitle><CardDescription>Your current media storage usage.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
-                {(user.hostPassStatus === 'free_host_pass_active' || user.hostPassStatus === 'paid_host_pass_active') ? (
+                {(hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active') ? (
                   <>
                     <div className="text-sm text-muted-foreground">
                       <span>Total media stored: {formatBytes(storageUsed)}</span>

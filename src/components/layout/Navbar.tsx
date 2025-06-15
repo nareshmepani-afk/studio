@@ -40,11 +40,10 @@ export function Navbar() {
     }
   }
 
-  // Helper to determine if the avatar URL is a placeholder or effectively empty
   const isEffectivelyEmptyOrPlaceholderAvatar = (url?: string): boolean => {
     if (!url || url.trim() === '') return true;
-    if (url.startsWith('blob:')) return true; // blob URLs are temporary previews
-    if (url.startsWith('https://avatar.vercel.sh/')) return true; // Vercel default
+    if (url.startsWith('blob:')) return true; 
+    if (url.startsWith('https://avatar.vercel.sh/')) return true; 
     return false;
   };
 
@@ -53,7 +52,7 @@ export function Navbar() {
 
   if (user && user.avatarUrl && !isEffectivelyEmptyOrPlaceholderAvatar(user.avatarUrl)) {
     avatarSrcToAttempt = user.avatarUrl;
-    showIconAsFallbackInNavbar = false; // We are attempting to show a persisted custom avatar
+    showIconAsFallbackInNavbar = false; 
   }
 
 
@@ -64,7 +63,7 @@ export function Navbar() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Link href={logoHref} className="mr-6 flex items-center space-x-2">
-                <Film className="h-6 w-6 text-primary ml-2" /> {/* Changed Icon */}
+                <Film className="h-6 w-6 text-primary ml-2" /> 
                 <span className="font-headline text-xl font-bold">Memory Weaver</span>
               </Link>
             </TooltipTrigger>
@@ -80,7 +79,7 @@ export function Navbar() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Link href="/prompts" className={`${navLinkClass} ${pathname === '/prompts' || pathname.startsWith('/add-memory') ? activeNavLinkClass : ''}`}> 
-                        <Film className="mr-1.5 h-4 w-4" /> My Life Journey {/* Changed Icon */}
+                        <Film className="mr-1.5 h-4 w-4" /> My Life Journey 
                       </Link>
                     </TooltipTrigger>
                     <TooltipContent><p>Record and view your life story chapters</p></TooltipContent>
@@ -107,7 +106,7 @@ export function Navbar() {
                     <TooltipContent><p>View memory requests from guests ({pendingRequestCount} pending)</p></TooltipContent>
                   </Tooltip>
                 </>
-              ) : ( // Guest mode navigation
+              ) : ( 
                 <>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -136,7 +135,6 @@ export function Navbar() {
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                       {/* The Switch itself doesn't easily accept TooltipTrigger asChild, so wrap its container or use a descriptive label */}
                        <div className="flex items-center">
                          <Switch
                             checked={userMode === 'guest'}
@@ -161,7 +159,7 @@ export function Navbar() {
                         )}
                       </Label>
                     </TooltipTrigger>
-                    <TooltipContent><p>Switch to Guest mode (view shared memories){hasNewSharedMemories && userMode === 'host' ? " - New shared memories available!" : ""}</p></TooltipContent>
+                    <TooltipContent><p>Switch to Guest mode (view shared memories){userMode === 'host' && hasNewSharedMemories ? " - New shared memories available!" : ""}</p></TooltipContent>
                   </Tooltip>
                 </div>
 

@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO, addMonths } from 'date-fns';
+import { enGB } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 
 export default function TimelinePage() {
@@ -49,7 +50,7 @@ export default function TimelinePage() {
 
   const canGuestViewSharedMemories = useMemo(() => {
     return user?.sharedAccessStatus === 'free_pass_active' || user?.sharedAccessStatus === 'paid_pass_active';
-  }, [user]);
+  }, [user?.sharedAccessStatus]);
 
   const canHostCreateMemories = useMemo(() => {
     return hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
@@ -57,12 +58,17 @@ export default function TimelinePage() {
 
 
   useEffect(() => {
-    checkAndUpdateGuestPassStatus();
+    // Fetch guest pass price if in guest mode and pass is not active or price details are missing
     if (userMode === 'guest' && user &&
-        (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated')) {
-      if (!isFetchingGuestPassPrice && !guestPassPriceDetails) fetchGuestPassPrice();
+        (user.sharedAccessStatus === 'free_pass_expired' || 
+         user.sharedAccessStatus === 'paid_pass_expired' || 
+         user.sharedAccessStatus === 'no_pass_initiated')) {
+      if (!isFetchingGuestPassPrice && !guestPassPriceDetails) {
+        fetchGuestPassPrice();
+      }
     }
-  }, [checkAndUpdateGuestPassStatus, userMode, user, fetchGuestPassPrice, isFetchingGuestPassPrice, guestPassPriceDetails]);
+    // AuthContext now handles initial pass status checks on load, so only need to fetch price here if conditions are met.
+  }, [userMode, user, fetchGuestPassPrice, isFetchingGuestPassPrice, guestPassPriceDetails]);
 
 
   useEffect(() => {
@@ -84,9 +90,9 @@ export default function TimelinePage() {
 
       if (userMode === 'host') {
         setMemories(loadedMemories);
-        setCurrentStreak(5);
-      } else if (userMode === 'guest' && canGuestViewSharedMemories) {
-        setMemories(loadedMemories.slice(0, 2));
+        setCurrentStreak(5); // Mock streak
+      } else if (userMode === 'guest') { // Removed canGuestViewSharedMemories check here, will control display later
+        setMemories(loadedMemories.slice(0, 2)); // Guests see only first two mock memories
       } else {
         setMemories([]);
       }
@@ -95,21 +101,21 @@ export default function TimelinePage() {
       else setPendingRequestCount(0);
     }, 500);
     return () => clearTimeout(timer);
-  }, [userMode, canGuestViewSharedMemories, setPendingRequestCount]);
+  }, [userMode, setPendingRequestCount]);
 
   useEffect(() => {
     let notificationSimulationTimer: NodeJS.Timeout;
     if (userMode === 'host' && user && !hasNewSharedMemories) {
       notificationSimulationTimer = setTimeout(() => {
-        if (userMode === 'host' && user && !hasNewSharedMemories) {
-          if (checkIfGuestHasUnviewedMemories()) setHasNewSharedMemories(true);
+        if (userMode === 'host' && user && !hasNewSharedMemories && checkIfGuestHasUnviewedMemories()) {
+            setHasNewSharedMemories(true);
         }
-      }, 7000);
+      }, 7000); // Simulates a delay before "notifying" host
     }
     return () => clearTimeout(notificationSimulationTimer);
   }, [userMode, user, hasNewSharedMemories, setHasNewSharedMemories, checkIfGuestHasUnviewedMemories]);
 
-  const handleEditMemory = (memory: Memory) => console.log('Edit memory:', memory);
+  const handleEditMemory = (memory: Memory) => console.log('Edit memory:', memory); // Mock, redirect in actual app
 
   const handleDeleteMemory = useCallback((memoryId: string) => {
     setMemories(prevMemories => {
@@ -183,36 +189,87 @@ export default function TimelinePage() {
 
   const renderGuestPurchaseButton = () => {
     let buttonText = "Purchase 31-Day Guest Pass";
-    if (isFetchingGuestPassPrice) buttonText = "Fetching price...";
-    else if (guestPassPriceDetails) buttonText = `Purchase 31-Day Guest Pass (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.passPrice)})`;
-    const button = (<Button onClick={purchasePaidGuestPass} className="mt-4 w-full sm:w-auto" disabled={isFetchingGuestPassPrice}>{isFetchingGuestPassPrice ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShoppingCart className="mr-2 h-5 w-5" />}{buttonText}</Button>);
-    if (guestPassPriceDetails && !isFetchingGuestPassPrice && guestPassPriceDetails.justification) {
-      return (<TooltipProvider><div className="flex flex-col items-start">{button}<Tooltip><TooltipTrigger asChild><span className="mt-2 text-xs text-muted-foreground flex items-center cursor-default"><Info className="h-3 w-3 mr-1" /> {guestPassPriceDetails.justification} (Based on ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.coffeePrice)} coffee)</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{guestPassPriceDetails.justification} (Avg coffee in London, UK is ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
+    let priceString = "";
+    if (isFetchingGuestPassPrice) {
+        buttonText = "Fetching price...";
+    } else if (guestPassPriceDetails) {
+        priceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.passPrice)})`;
+        buttonText += priceString;
+    } else {
+         buttonText += ` (£7.99 - Mock)`;
     }
-    return button;
+    
+    const button = (<Button onClick={purchasePaidGuestPass} className="mt-2 sm:mt-0 sm:ml-2 w-full sm:w-auto" disabled={isFetchingGuestPassPrice}>{isFetchingGuestPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}{buttonText}</Button>);
+    
+    if (guestPassPriceDetails && !isFetchingGuestPassPrice && guestPassPriceDetails.justification) {
+      return (<TooltipProvider><div className="flex flex-col sm:flex-row items-start sm:items-center mt-2">{button}<Tooltip><TooltipTrigger asChild><span className="mt-1 sm:mt-0 sm:ml-2 text-xs text-muted-foreground flex items-center cursor-default"><Info className="h-3 w-3 mr-1" /> {guestPassPriceDetails.justification}</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{guestPassPriceDetails.justification} (Based on avg coffee: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
+    }
+    return <div className="mt-2">{button}</div>;
   };
 
   const renderGuestModeAccessUI = () => {
     if (userMode !== 'guest' || !user) return null;
+
     if (canGuestViewSharedMemories) {
       let passInfo = "";
-      if (user.sharedAccessStatus === 'free_pass_active' && user.freePassActivatedDate) passInfo = `Your 6-month free guest pass is active until ${format(addMonths(parseISO(user.freePassActivatedDate), 6), 'PPP')}.`;
-      else if (user.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate) passInfo = `Your paid guest pass is active until ${format(parseISO(user.paidPassExpiryDate), 'PPP')}.`;
-      return (<Alert variant="default" className="mb-6 bg-green-50 border-green-200"><ShieldCheck className="h-5 w-5 text-green-600" /><AlertTitle className="text-green-700">Access Granted</AlertTitle><AlertDescription className="text-green-600">You can view shared memories. {passInfo}{user.sharedAccessStatus === 'paid_pass_active' && (<div className="mt-2">{renderGuestPurchaseButton()}</div>)}</AlertDescription></Alert>);
+      if (user.sharedAccessStatus === 'free_pass_active' && user.freePassActivatedDate) {
+        passInfo = `Your 6-month free guest pass is active until ${format(addMonths(parseISO(user.freePassActivatedDate), 6), 'PPP', { locale: enGB })}.`;
+      } else if (user.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate) {
+        passInfo = `Your paid guest pass is active until ${format(parseISO(user.paidPassExpiryDate), 'PPP', { locale: enGB })}.`;
+      }
+      return (
+        <Alert variant="default" className="mb-6 bg-green-50 border-green-200 dark:bg-green-900/30 dark:border-green-700">
+          <ShieldCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
+          <AlertTitle className="text-green-700 dark:text-green-300">Access Granted</AlertTitle>
+          <AlertDescription className="text-green-600 dark:text-green-500">
+            {passInfo} You can view memories shared with you.
+            {user.sharedAccessStatus === 'paid_pass_active' && (
+              <div className="mt-2">{renderGuestPurchaseButton()}</div>
+            )}
+          </AlertDescription>
+        </Alert>
+      );
     }
-    let title = "Access Shared Memories"; let description = "Activate your free pass or purchase a pass to view shared memories."; let actionContent = null;
-    if (user.sharedAccessStatus === 'no_pass_initiated') { title = "Welcome!"; description = "Activate your 6-month free guest pass."; actionContent = (<Button onClick={activateFreeGuestPass} className="mt-4 w-full sm:w-auto"><Gift className="mr-2 h-5 w-5" /> Activate Free Guest Pass</Button>); }
-    else if (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired') { title = "Guest Pass Expired"; description = "Purchase a 31-day guest pass."; actionContent = renderGuestPurchaseButton(); }
-    return (<Alert variant="destructive" className="mb-6"><ShieldOff className="h-5 w-5" /><AlertTitle>{title}</AlertTitle><AlertDescription>{description}{actionContent}</AlertDescription></Alert>);
-  };
 
+    let title = "Access Shared Memories";
+    let description = "Activate your free pass or purchase a pass to view shared memories.";
+    let actionContent = null;
+
+    if (user.sharedAccessStatus === 'no_pass_initiated') {
+      title = "Welcome, Guest!";
+      description = "To view memories shared with you by hosts, please activate your complimentary 6-month free Guest Pass.";
+      actionContent = (
+        <Button onClick={activateFreeGuestPass} className="mt-3 w-full sm:w-auto">
+          <Gift className="mr-2 h-5 w-5" /> Activate Free Guest Pass
+        </Button>
+      );
+    } else if (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired') {
+      title = "Guest Pass Expired";
+      description = "Your Guest Pass has expired. To continue viewing shared memories, please purchase a new 31-day pass.";
+      actionContent = renderGuestPurchaseButton();
+    }
+
+    return (
+      <Alert variant="destructive" className="mb-6">
+        <ShieldOff className="h-5 w-5" />
+        <AlertTitle>{title}</AlertTitle>
+        <AlertDescription className="flex flex-col items-start">
+          {description}
+          {actionContent}
+        </AlertDescription>
+      </Alert>
+    );
+  };
+  
   let guestAccessPlaceholderMessage = "Activate or purchase a guest pass to view shared memories.";
-  if (userMode === 'guest' && !canGuestViewSharedMemories) {
-    if (user?.sharedAccessStatus === 'free_pass_expired' || user?.sharedAccessStatus === 'paid_pass_expired') {
-      if (isFetchingGuestPassPrice) guestAccessPlaceholderMessage = "Purchase pass (fetching price...) to view.";
-      else if (guestPassPriceDetails) guestAccessPlaceholderMessage = `Purchase pass (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.passPrice)}) to view.`;
+  if (userMode === 'guest' && !canGuestViewSharedMemories && user) {
+    if (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired') {
+      if (isFetchingGuestPassPrice) guestAccessPlaceholderMessage = "Purchase pass (fetching price...) to view shared memories.";
+      else if (guestPassPriceDetails) guestAccessPlaceholderMessage = `Purchase pass (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.passPrice)}) to view shared memories.`;
       else guestAccessPlaceholderMessage = "Purchase pass to view shared memories.";
-    } else if (user?.sharedAccessStatus === 'no_pass_initiated') guestAccessPlaceholderMessage = "Activate your free guest pass to view shared memories.";
+    } else if (user.sharedAccessStatus === 'no_pass_initiated') {
+      guestAccessPlaceholderMessage = "Activate your free guest pass to view shared memories.";
+    }
   }
 
   const addMemoryButtonDisabled = userMode === 'host' && !canHostCreateMemories;
@@ -259,9 +316,32 @@ export default function TimelinePage() {
           onLegacyFilterChange={setLegacyFilter}
         />
 
-        {userMode === 'guest' && !canGuestViewSharedMemories && filteredAndSortedMemories.length === 0 && (<div className="text-center py-12 bg-card shadow-lg rounded-lg p-8"><CalendarClock className="mx-auto h-16 w-16 text-primary mb-6" /><h2 className="font-headline text-3xl mb-3">Activate Guest Access</h2><p className="text-muted-foreground mb-8 max-w-md mx-auto">{guestAccessPlaceholderMessage}</p></div>)}
-        {userMode === 'guest' && canGuestViewSharedMemories && filteredAndSortedMemories.length === 0 && (<div className="text-center py-12 bg-card shadow-lg rounded-lg p-8"><Users className="mx-auto h-16 w-16 text-primary mb-6" /><h2 className="font-headline text-3xl mb-3">Nothing Shared Yet</h2><p className="text-muted-foreground mb-8 max-w-md mx-auto">When memories are shared with you, they appear here.</p></div>)}
-        {userMode === 'host' && filteredAndSortedMemories.length === 0 && (<div className="text-center py-12 bg-card shadow-lg rounded-lg p-8"><Film className="mx-auto h-16 w-16 text-primary mb-6" /><h2 className="font-headline text-3xl mb-3">Welcome to Memory Weaver!</h2><p className="text-muted-foreground mb-8 max-w-md mx-auto">Record your life’s moments. If you need a Host Pass, check Settings.</p><Link href={addMemoryButtonDisabled ? "/settings" : "/add-memory"} passHref><Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground"><PlusCircle className="mr-2 h-5 w-5" />{addMemoryButtonDisabled ? "Go to Settings" : "Record First Memory"}</Button></Link></div>)}
+        {userMode === 'guest' && !canGuestViewSharedMemories && (
+          <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
+            <CalendarClock className="mx-auto h-16 w-16 text-primary mb-6" />
+            <h2 className="font-headline text-3xl mb-3">Activate Guest Access</h2>
+            <p className="text-muted-foreground mb-8 max-w-md mx-auto">{guestAccessPlaceholderMessage}</p>
+          </div>
+        )}
+        {userMode === 'guest' && canGuestViewSharedMemories && filteredAndSortedMemories.length === 0 && (
+          <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
+            <Users className="mx-auto h-16 w-16 text-primary mb-6" />
+            <h2 className="font-headline text-3xl mb-3">Nothing Shared Yet</h2>
+            <p className="text-muted-foreground mb-8 max-w-md mx-auto">When memories are shared with you, they appear here.</p>
+          </div>
+        )}
+        {userMode === 'host' && filteredAndSortedMemories.length === 0 && (
+          <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
+            <Film className="mx-auto h-16 w-16 text-primary mb-6" />
+            <h2 className="font-headline text-3xl mb-3">Welcome to Memory Weaver!</h2>
+            <p className="text-muted-foreground mb-8 max-w-md mx-auto">Record your life’s moments. If you need a Host Pass, check Settings.</p>
+            <Link href={addMemoryButtonDisabled ? "/settings" : "/add-memory"} passHref>
+              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <PlusCircle className="mr-2 h-5 w-5" />{addMemoryButtonDisabled ? "Go to Settings" : "Record First Memory"}
+              </Button>
+            </Link>
+          </div>
+        )}
 
         {((userMode === 'host') || (userMode === 'guest' && canGuestViewSharedMemories)) && filteredAndSortedMemories.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -284,3 +364,4 @@ export default function TimelinePage() {
     </AuthenticatedPageWrapper>
   );
 }
+
