@@ -3,15 +3,18 @@
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookText, CheckCircle, Edit } from 'lucide-react'; // Updated icons
+import { BookText, CheckCircle, Edit, Star } from 'lucide-react'; // Updated icons
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PromptCardProps {
   promptId: string;
   promptText: string;
   isCompleted: boolean;
   memoryId?: string; // ID of the memory if this prompt is completed
+  isFlaggedForReuse: boolean; // New prop
   onStartChapter: (promptId: string, promptText: string) => void;
-  onViewEditChapter: (promptId: string) => void; // Changed to take promptId, will find memoryId internally or via lookup
+  onViewEditChapter: (promptId: string) => void;
+  onToggleFlagPrompt: (promptId: string) => void; // New prop
 }
 
 export function PromptCard({
@@ -19,8 +22,10 @@ export function PromptCard({
   promptText,
   isCompleted,
   memoryId,
+  isFlaggedForReuse,
   onStartChapter,
-  onViewEditChapter
+  onViewEditChapter,
+  onToggleFlagPrompt
 }: PromptCardProps) {
 
   const handleAction = () => {
@@ -29,6 +34,11 @@ export function PromptCard({
     } else {
       onStartChapter(promptId, promptText);
     }
+  };
+
+  const handleFlagToggle = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card action if clicking flag button
+    onToggleFlagPrompt(promptId);
   };
 
   return (
@@ -47,12 +57,12 @@ export function PromptCard({
       <CardContent className="flex-grow">
         {/* Can add a snippet of the memory description here if completed, in the future */}
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex justify-between items-center">
         <Button
           onClick={handleAction}
           size="sm"
           variant={isCompleted ? "outline" : "default"}
-          className="w-full"
+          className="flex-grow" // Main action button takes more space
         >
           {isCompleted ? (
             <>
@@ -64,7 +74,26 @@ export function PromptCard({
             </>
           )}
         </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleFlagToggle}
+                className="ml-2 shrink-0" // Ensure button doesn't cause overflow
+                aria-label={isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}
+              >
+                <Star className={`h-5 w-5 ${isFlaggedForReuse ? 'fill-amber-400 text-amber-500' : 'text-muted-foreground hover:text-amber-500'}`} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </CardFooter>
     </Card>
   );
 }
+

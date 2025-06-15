@@ -6,8 +6,8 @@ import { PromptCard } from '@/components/prompts/PromptCard';
 import { mockPromptGroups, mockMemories } from '@/lib/mockData';
 import type { Prompt, PromptGroup, Memory } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star as StarIcon } from 'lucide-react'; // Renamed Star to StarIcon to avoid conflict
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -26,6 +26,8 @@ import {
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
 import { cn } from "@/lib/utils";
+
+const LOCAL_STORAGE_PROMPT_GROUPS_KEY = 'memoryWeaverPromptGroups';
 
 export default function LifeJourneyPage() {
   const [promptGroups, setPromptGroups] = useState<PromptGroup[]>([]);
@@ -60,17 +62,53 @@ export default function LifeJourneyPage() {
   }, [hostPassStatus]);
 
   const availablePromptGroups = useMemo(() => {
-    if (canAccessFullJourney) return mockPromptGroups;
+    if (canAccessFullJourney) return promptGroups; // Use state `promptGroups`
      if (hostPassStatus === 'no_pass_initiated' || hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
-        return mockPromptGroups.length > 0 ? [mockPromptGroups[0]] : [];
+        return promptGroups.length > 0 ? [promptGroups[0]] : []; // Use state `promptGroups`
      }
     return []; 
-  }, [hostPassStatus, canAccessFullJourney]);
+  }, [hostPassStatus, canAccessFullJourney, promptGroups]);
 
 
   useEffect(() => {
     setTimeout(() => {
-      setPromptGroups(mockPromptGroups); 
+      // Load prompts from localStorage or initialize from mockData
+      const storedPromptGroupsJson = localStorage.getItem(LOCAL_STORAGE_PROMPT_GROUPS_KEY);
+      let loadedPromptGroups: PromptGroup[];
+      if (storedPromptGroupsJson) {
+        try {
+          loadedPromptGroups = JSON.parse(storedPromptGroupsJson);
+          // Ensure `isFlaggedForReuse` exists on all prompts
+          loadedPromptGroups = loadedPromptGroups.map(group => ({
+            ...group,
+            prompts: group.prompts.map(prompt => ({
+              ...prompt,
+              isFlaggedForReuse: prompt.isFlaggedForReuse || false
+            }))
+          }));
+        } catch (e) {
+          console.error("Failed to parse prompt groups from localStorage, using default mocks.", e);
+          loadedPromptGroups = mockPromptGroups.map(group => ({ // Ensure mock data also has flags
+            ...group,
+            prompts: group.prompts.map(prompt => ({
+              ...prompt,
+              isFlaggedForReuse: prompt.isFlaggedForReuse || false
+            }))
+          }));
+          localStorage.setItem(LOCAL_STORAGE_PROMPT_GROUPS_KEY, JSON.stringify(loadedPromptGroups));
+        }
+      } else {
+        loadedPromptGroups = mockPromptGroups.map(group => ({ // Ensure mock data also has flags
+            ...group,
+            prompts: group.prompts.map(prompt => ({
+              ...prompt,
+              isFlaggedForReuse: prompt.isFlaggedForReuse || false
+            }))
+          }));
+        localStorage.setItem(LOCAL_STORAGE_PROMPT_GROUPS_KEY, JSON.stringify(loadedPromptGroups));
+      }
+      setPromptGroups(loadedPromptGroups);
+      
       const userMemories = mockMemories.filter(m => m.userId === user?.id);
       setMemories(userMemories);
       setIsLoading(false);
@@ -83,10 +121,10 @@ export default function LifeJourneyPage() {
     const isPromptInAvailableGroups = availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === promptId);
 
     if (!canAccessFullJourney && !isPromptInAvailableGroups) {
-        toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters.", variant: "destructive" });
+        setTimeout(() => toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters.", variant: "destructive" }), 0);
         return;
     }
-    toast({ title: "Starting New Chapter!", description: `Prompt: "${promptText}". Redirecting...`});
+    setTimeout(() => toast({ title: "Starting New Chapter!", description: `Prompt: "${promptText}". Redirecting...`}), 0);
     router.push(`/add-memory?prompt=${encodeURIComponent(promptText)}&promptId=${encodeURIComponent(promptId)}`);
   };
 
@@ -95,17 +133,38 @@ export default function LifeJourneyPage() {
     if (memoryForPrompt) {
       router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
     } else {
-      toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
+      setTimeout(() => toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" }), 0);
     }
   };
 
+  const handleToggleFlagPrompt = useCallback((promptIdToToggle: string) => {
+    setPromptGroups(prevGroups => {
+      const newGroups = prevGroups.map(group => ({
+        ...group,
+        prompts: group.prompts.map(prompt => {
+          if (prompt.id === promptIdToToggle) {
+            const newFlagStatus = !prompt.isFlaggedForReuse;
+             setTimeout(() => toast({
+              title: newFlagStatus ? "Prompt Flagged" : "Prompt Unflagged",
+              description: `"${prompt.text[currentLanguage] || prompt.text.en}" is ${newFlagStatus ? "now flagged for re-use." : "no longer flagged."}`,
+            }), 0);
+            return { ...prompt, isFlaggedForReuse: newFlagStatus };
+          }
+          return prompt;
+        })
+      }));
+      localStorage.setItem(LOCAL_STORAGE_PROMPT_GROUPS_KEY, JSON.stringify(newGroups));
+      return newGroups;
+    });
+  }, [currentLanguage]);
+
   const handleGenerateCustomChapterIdeas = async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {
-      toast({ title: "Profile Info Needed", description: "Please provide some information about yourself or your interests in the text area.", variant: "destructive" });
+      setTimeout(() => toast({ title: "Profile Info Needed", description: "Please provide some information about yourself or your interests in the text area.", variant: "destructive" }), 0);
       return;
     }
     if (!canAccessFullJourney) {
-        toast({ title: "Host Pass Required", description: "Activate or purchase a Host Pass to use AI brainstorming.", variant: "destructive" });
+        setTimeout(() => toast({ title: "Host Pass Required", description: "Activate or purchase a Host Pass to use AI brainstorming.", variant: "destructive" }), 0);
         return;
     }
     setIsLoadingChapterIdeas(true);
@@ -113,19 +172,19 @@ export default function LifeJourneyPage() {
       const profileToUse = customChapterUserProfile.trim() ? customChapterUserProfile : user?.profileInfo || '';
       const result = await generateMemoryCuesAction({ userProfile: profileToUse, currentDate: new Date().toISOString().split('T')[0], language: customChapterLanguage });
       setGeneratedChapterIdeas(result.memoryCues);
-      toast({ title: result.memoryCues.length > 0 ? "Chapter Ideas Generated!" : "No Ideas Generated" });
+      setTimeout(() => toast({ title: result.memoryCues.length > 0 ? "Chapter Ideas Generated!" : "No Ideas Generated" }), 0);
     } catch (error) {
-      toast({ title: "Error Generating Ideas", variant: "destructive" });
+      setTimeout(() => toast({ title: "Error Generating Ideas", variant: "destructive" }), 0);
     }
     setIsLoadingChapterIdeas(false);
   };
 
   const handleCustomIdeaSelected = (idea: string) => {
     if (!canAccessFullJourney) {
-        toast({ title: "Host Pass Required", description: "Activate or purchase a Host Pass to start custom chapters.", variant: "destructive" });
+        setTimeout(() => toast({ title: "Host Pass Required", description: "Activate or purchase a Host Pass to start custom chapters.", variant: "destructive" }), 0);
         return;
     }
-    toast({ title: "Custom Chapter Selected!", description: `Starting chapter: "${idea}". Redirecting...`});
+    setTimeout(() => toast({ title: "Custom Chapter Selected!", description: `Starting chapter: "${idea}". Redirecting...`}), 0);
     router.push(`/add-memory?prompt=${encodeURIComponent(idea)}`); 
     setShowCustomChapterDialog(false);
     setGeneratedChapterIdeas([]); 
@@ -212,7 +271,7 @@ export default function LifeJourneyPage() {
         </div>
         
         <div className="mb-8 p-4 bg-card/50 rounded-lg shadow">
-            <p className="text-muted-foreground">Welcome! Click a prompt to record memories or brainstorm a custom chapter. Completed chapters are marked with <CheckCircle className="inline-block h-4 w-4 text-green-500" />.</p>
+            <p className="text-muted-foreground">Welcome! Click a prompt to record memories or brainstorm a custom chapter. Completed chapters are marked with <CheckCircle className="inline-block h-4 w-4 text-green-500" />. Use the <StarIcon className="inline-block h-4 w-4 text-amber-500" /> to flag prompts for later re-use.</p>
             {!canAccessFullJourney && hostPassStatus !== 'no_pass_initiated' && (
                 <p className="text-sm text-primary mt-1">Your Host Pass has expired. Full access to all chapters and brainstorming requires an active pass.</p>
             )}
@@ -223,7 +282,7 @@ export default function LifeJourneyPage() {
 
         {(!canAccessFullJourney && (hostPassStatus === 'no_pass_initiated' || hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired')) && (
           <Alert className="mb-6 bg-primary/10 border-primary/30">
-            {hostPassStatus === 'no_pass_initiated' ? <Star className="h-5 w-5 text-primary" /> : <Zap className="h-5 w-5 text-primary" />}
+            {hostPassStatus === 'no_pass_initiated' ? <StarIcon className="h-5 w-5 text-primary" /> : <Zap className="h-5 w-5 text-primary" />}
             <AlertTitle className="font-headline text-primary">
               {hostPassStatus === 'no_pass_initiated' 
                 ? "Host Pass & Features" 
@@ -255,7 +314,7 @@ export default function LifeJourneyPage() {
                   </>
                 ) : hostPassStatus === 'no_pass_initiated' ? (
                   <>
-                    <Star className="mr-2 h-4 w-4" />
+                    <StarIcon className="mr-2 h-4 w-4" />
                     {hostPassButtonText}
                   </>
                 ) : (
@@ -290,7 +349,6 @@ export default function LifeJourneyPage() {
                   {group.prompts.map((prompt) => {
                     const isCompleted = completedPromptIds.has(prompt.id);
                     const memoryForPrompt = memories.find(m => m.promptId === prompt.id);
-                    const isPromptActionable = canAccessFullJourney || availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === prompt.id) || isCompleted;
                     
                     return (
                       <PromptCard
@@ -299,8 +357,10 @@ export default function LifeJourneyPage() {
                         promptText={prompt.text[currentLanguage] || prompt.text.en}
                         isCompleted={isCompleted}
                         memoryId={memoryForPrompt?.id}
+                        isFlaggedForReuse={prompt.isFlaggedForReuse || false}
                         onStartChapter={handleStartChapter}
                         onViewEditChapter={handleViewEditChapter}
+                        onToggleFlagPrompt={handleToggleFlagPrompt}
                       />
                     );
                   })}
