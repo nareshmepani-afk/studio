@@ -27,7 +27,7 @@ export default function RequestsPage() {
           <HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
           <h1 className="font-headline text-3xl mb-2">Access Denied</h1>
           <p className="text-muted-foreground mb-6">
-            This page is only accessible in Host mode.
+            This page is only accessible in Host mode. Please switch to Host mode in the Navbar to view incoming memory requests.
           </p>
           <Link href="/timeline" passHref>
             <Button variant="outline">Go to Timeline</Button>

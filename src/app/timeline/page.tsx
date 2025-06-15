@@ -91,14 +91,15 @@ export default function TimelinePage() {
       if (userMode === 'host') {
         setMemories(loadedMemories);
         setCurrentStreak(5); // Mock streak
-      } else if (userMode === 'guest') { // Removed canGuestViewSharedMemories check here, will control display later
-        setMemories(loadedMemories.slice(0, 2)); // Guests see only first two mock memories
+        setPendingRequestCount(mockHostPendingRequests.length); // Update pending request count for host
+      } else if (userMode === 'guest') { 
+        setMemories(loadedMemories.slice(0, 2)); 
+        setPendingRequestCount(0); // Guests don't have incoming requests in this context
       } else {
         setMemories([]);
+        setPendingRequestCount(0);
       }
       setIsLoading(false);
-      if (userMode === 'host') setPendingRequestCount(mockHostPendingRequests.length);
-      else setPendingRequestCount(0);
     }, 500);
     return () => clearTimeout(timer);
   }, [userMode, setPendingRequestCount]);
