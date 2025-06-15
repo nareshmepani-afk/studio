@@ -20,7 +20,6 @@ export interface User {
   hostPassStatus?: 'no_pass_initiated' | 'free_host_pass_active' | 'paid_host_pass_active' | 'free_host_pass_expired' | 'paid_host_pass_expired';
   freeHostPassActivatedDate?: string; // ISO string - when the 6-month free HOST pass was first activated
   paidHostPassExpiryDate?: string;    // ISO string - when the current 31-day paid HOST pass expires
-
   storageUsedBytes?: number; // Estimated storage used by the host
 }
 

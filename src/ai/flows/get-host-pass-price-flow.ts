@@ -36,7 +36,7 @@ const hostPassPricePrompt = ai.definePrompt({
   output: { schema: GetHostPassPriceOutputSchema },
   prompt: `You are a pricing assistant for a digital memory sharing app called "Memory Weaver".
 Your task is to determine a fair and attractive price for a 31-day Host Pass. This pass allows users to access all memory creation features, including recording video/audio, full "My Life Journey" chapter access, and a standard storage quota.
-The pricing strategy should be based on the local average price of a cup of coffee. The pass should feel like an affordable investment for preserving memories, roughly equivalent to the cost of 3 to 4 cups of coffee.
+The pricing strategy should be based on the local average price of a cup of coffee. The pass should feel like an affordable investment for preserving memories, roughly equivalent to 3 to 4 cups of coffee.
 
 Use the 'getAverageCoffeePrice' tool to find the current average coffee price for the user's location.
 User's location:
