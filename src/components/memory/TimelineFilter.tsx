@@ -5,18 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { memoryCategoriesList, type MemoryCategory } from '@/types';
-import { ListFilter, Search, Layers } from 'lucide-react';
+import { ListFilter, Search, Layers, Archive } from 'lucide-react'; // Added Archive icon
 
 interface TimelineFilterProps {
   onSortChange: (sortBy: 'date-desc' | 'date-asc' | 'title-asc' | 'title-desc') => void;
   onCategoryFilterChange: (category: MemoryCategory | 'all') => void;
+  onLegacyFilterChange: (legacyStatus: 'all' | 'legacy' | 'non-legacy') => void; // New prop
   onSearchChange: (searchTerm: string) => void;
 }
 
-export function TimelineFilter({ onSortChange, onCategoryFilterChange, onSearchChange }: TimelineFilterProps) {
+export function TimelineFilter({ onSortChange, onCategoryFilterChange, onLegacyFilterChange, onSearchChange }: TimelineFilterProps) {
   return (
     <div className="mb-8 p-4 bg-card rounded-lg shadow sticky top-16 z-40">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
         <div>
           <label htmlFor="search-memories" className="block text-sm font-medium text-muted-foreground mb-1">Search</label>
           <div className="relative">
@@ -59,7 +60,22 @@ export function TimelineFilter({ onSortChange, onCategoryFilterChange, onSearchC
             </SelectContent>
           </Select>
         </div>
+        <div>
+          <label htmlFor="legacy-filter" className="block text-sm font-medium text-muted-foreground mb-1">Legacy Chest</label>
+          <Select onValueChange={(value) => onLegacyFilterChange(value as 'all' | 'legacy' | 'non-legacy')} defaultValue="all">
+            <SelectTrigger id="legacy-filter">
+              <Archive className="mr-2 h-4 w-4 text-muted-foreground" />
+              <SelectValue placeholder="Filter Legacy Chest..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Memories</SelectItem>
+              <SelectItem value="legacy">Legacy Chest Only</SelectItem>
+              <SelectItem value="non-legacy">Not in Legacy Chest</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
   );
 }
+

@@ -7,9 +7,9 @@ import { TimelineFilter } from '@/components/memory/TimelineFilter';
 import { Button } from '@/components/ui/button';
 import { mockMemories } from '@/lib/mockData';
 import type { Memory, MemoryCategory } from '@/types';
-import { PlusCircle, Film, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift, Loader2, Info, Award } from 'lucide-react';
+import { PlusCircle, Film, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift, Loader2, Info, Award, Archive } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -21,6 +21,7 @@ export default function TimelinePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortCriteria, setSortCriteria] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc'>('date-desc');
   const [categoryFilter, setCategoryFilter] = useState<MemoryCategory | 'all'>('all');
+  const [legacyFilter, setLegacyFilter] = useState<'all' | 'legacy' | 'non-legacy'>('all'); // New state
   const [isLoading, setIsLoading] = useState(true);
   const [currentStreak, setCurrentStreak] = useState(0);
 
@@ -28,16 +29,13 @@ export default function TimelinePage() {
     user, 
     setPendingRequestCount, 
     userMode, 
-    // Guest Pass
     activateFreeGuestPass, 
     purchasePaidGuestPass, 
     checkAndUpdateGuestPassStatus,
     guestPassPriceDetails,
     fetchGuestPassPrice,
     isFetchingGuestPassPrice,
-    // Host Pass
     hostPassStatus, 
-    // Shared memory notifications
     setHasNewSharedMemories, 
     hasNewSharedMemories,
     markSharedMemoryAsViewed,
@@ -69,11 +67,27 @@ export default function TimelinePage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      // Load memories from localStorage or fallback to mockMemories
+      const storedMemoriesJson = localStorage.getItem('mockMemories');
+      let loadedMemories: Memory[] = mockMemories; // Fallback
+      if (storedMemoriesJson) {
+        try {
+          loadedMemories = JSON.parse(storedMemoriesJson);
+        } catch (e) {
+          console.error("Failed to parse memories from localStorage, using default mocks.", e);
+        }
+      } else {
+        // If nothing in localStorage, initialize it with mockMemories
+        localStorage.setItem('mockMemories', JSON.stringify(mockMemories));
+      }
+
+
       if (userMode === 'host') {
-        setMemories(mockMemories); 
+        setMemories(loadedMemories); 
         setCurrentStreak(5); 
       } else if (userMode === 'guest' && canGuestViewSharedMemories) {
-        setMemories(mockMemories.slice(0, 2)); 
+        // Guests see a subset for demo purposes; in real app, this would be fetched based on shares
+        setMemories(loadedMemories.slice(0, 2)); 
       } else {
         setMemories([]);
       }
@@ -96,8 +110,32 @@ export default function TimelinePage() {
     return () => clearTimeout(notificationSimulationTimer);
   }, [userMode, user, hasNewSharedMemories, setHasNewSharedMemories, checkIfGuestHasUnviewedMemories]);
 
-  const handleEditMemory = (memory: Memory) => console.log('Edit memory:', memory);
-  const handleDeleteMemory = (memoryId: string) => setMemories(prevMemories => prevMemories.filter(m => m.id !== memoryId));
+  const handleEditMemory = (memory: Memory) => console.log('Edit memory:', memory); // Placeholder
+  
+  const handleDeleteMemory = (memoryId: string) => {
+    setMemories(prevMemories => {
+        const updatedMemories = prevMemories.filter(m => m.id !== memoryId);
+        localStorage.setItem('mockMemories', JSON.stringify(updatedMemories));
+        return updatedMemories;
+    });
+    toast({ title: "Memory Deleted", description: "The memory has been removed."});
+  };
+
+  const handleToggleLegacyStatus = useCallback((memoryId: string) => {
+    setMemories(prevMemories => {
+      const updatedMemories = prevMemories.map(mem => 
+        mem.id === memoryId ? { ...mem, isLegacy: !mem.isLegacy } : mem
+      );
+      localStorage.setItem('mockMemories', JSON.stringify(updatedMemories));
+      const toggledMemory = updatedMemories.find(mem => mem.id === memoryId);
+      toast({
+        title: toggledMemory?.isLegacy ? "Added to Legacy Chest" : "Removed from Legacy Chest",
+        description: `"${toggledMemory?.title}" status updated.`,
+      });
+      return updatedMemories;
+    });
+  }, []);
+
   const handleCreateMontage = () => toast({ title: "Feature Coming Soon", description: "AI Memory Montages will be available later." });
 
   const filteredAndSortedMemories = useMemo(() => {
@@ -115,6 +153,9 @@ export default function TimelinePage() {
     if (categoryFilter !== 'all') {
       result = result.filter(memory => memory.category === categoryFilter);
     }
+    if (legacyFilter !== 'all') {
+      result = result.filter(memory => legacyFilter === 'legacy' ? memory.isLegacy : !memory.isLegacy);
+    }
     result.sort((a, b) => {
       switch (sortCriteria) {
         case 'date-asc': return new Date(a.date).getTime() - new Date(b.date).getTime();
@@ -125,7 +166,7 @@ export default function TimelinePage() {
       }
     });
     return result;
-  }, [memories, searchTerm, sortCriteria, categoryFilter]);
+  }, [memories, searchTerm, sortCriteria, categoryFilter, legacyFilter]);
 
   if (isLoading) return (<AuthenticatedPageWrapper><div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4"><Loader2 className="h-12 w-12 animate-spin text-primary mb-4" /><h2 className="text-2xl font-headline mb-2">Loading Memories...</h2></div></AuthenticatedPageWrapper>);
   
@@ -204,6 +245,7 @@ export default function TimelinePage() {
           onSortChange={setSortCriteria} 
           onSearchChange={setSearchTerm}
           onCategoryFilterChange={setCategoryFilter} 
+          onLegacyFilterChange={setLegacyFilter} // Pass new handler
         />
 
         {userMode === 'guest' && !canGuestViewSharedMemories && filteredAndSortedMemories.length === 0 && (<div className="text-center py-12 bg-card shadow-lg rounded-lg p-8"><CalendarClock className="mx-auto h-16 w-16 text-primary mb-6" /><h2 className="font-headline text-3xl mb-3">Activate Guest Access</h2><p className="text-muted-foreground mb-8 max-w-md mx-auto">{guestAccessPlaceholderMessage}</p></div>)}
@@ -214,7 +256,16 @@ export default function TimelinePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredAndSortedMemories.map((memory) => {
               const isUnreadInGuestMode = userMode === 'guest' && user?.viewedSharedMemoryIds ? !user.viewedSharedMemoryIds.includes(memory.id) : false;
-              return (<MemoryCard key={memory.id} memory={memory} onEdit={userMode === 'host' ? handleEditMemory : undefined} onDelete={userMode === 'host' ? handleDeleteMemory : undefined} isUnread={userMode === 'guest' ? isUnreadInGuestMode : undefined} onMarkAsViewed={userMode === 'guest' ? markSharedMemoryAsViewed : undefined} userMode={userMode} />);
+              return (<MemoryCard 
+                          key={memory.id} 
+                          memory={memory} 
+                          onEdit={userMode === 'host' ? handleEditMemory : undefined} 
+                          onDelete={userMode === 'host' ? handleDeleteMemory : undefined} 
+                          onToggleLegacyStatus={userMode === 'host' ? handleToggleLegacyStatus : undefined} // Pass handler
+                          isUnread={userMode === 'guest' ? isUnreadInGuestMode : undefined} 
+                          onMarkAsViewed={userMode === 'guest' ? markSharedMemoryAsViewed : undefined} 
+                          userMode={userMode} 
+                      />);
             })}
           </div>
         )}
@@ -222,3 +273,4 @@ export default function TimelinePage() {
     </AuthenticatedPageWrapper>
   );
 }
+

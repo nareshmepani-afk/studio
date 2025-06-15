@@ -23,18 +23,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ShareDialog } from './ShareDialog';
 import { useState, useRef, useEffect } from 'react';
-import { toast } from '@/hooks/use-toast';
+// Removed toast import from here as it was unused and handleAddToLegacyChest logic moved to parent
 
 interface MemoryCardProps {
   memory: Memory;
   onEdit?: (memory: Memory) => void;
   onDelete?: (memoryId: string) => void;
-  isUnread?: boolean; // For guest mode, to indicate if the shared memory is new
-  onMarkAsViewed?: (memoryId: string) => void; // For guest mode, to mark as viewed
-  userMode?: UserMode; // To determine if actions like edit/delete are available
+  onToggleLegacyStatus?: (memoryId: string) => void; // New prop
+  isUnread?: boolean;
+  onMarkAsViewed?: (memoryId: string) => void;
+  userMode?: UserMode;
 }
 
-export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed, userMode }: MemoryCardProps) {
+export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isUnread, onMarkAsViewed, userMode }: MemoryCardProps) {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -101,16 +102,14 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
   const canPerformActions = userMode === 'host' && onEdit && onDelete;
   const locationString = [memory.location, memory.country].filter(Boolean).join(', ');
 
-  const handleAddToLegacyChest = () => {
-    // In a full implementation, this would toggle memory.isLegacy and update data
-    toast({
-        title: "Feature Coming Soon",
-        description: `${memory.isLegacy ? "Removing from" : "Adding to"} Legacy Chest will be functional in a future update.`,
-    });
+  const handleLegacyToggle = () => {
+    if (userMode === 'host' && onToggleLegacyStatus) {
+      onToggleLegacyStatus(memory.id);
+    }
   };
 
   const LegacyIcon = memory.isLegacy ? CheckSquare : Archive;
-  const legacyTooltipText = memory.isLegacy ? "In Legacy Chest (Coming Soon)" : "Add to Legacy Chest (Coming Soon)";
+  const legacyTooltipText = memory.isLegacy ? "Remove from Legacy Chest" : "Add to Legacy Chest";
 
   return (
     <>
@@ -185,11 +184,11 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
         </CardContent>
         <CardFooter className="flex justify-between items-center pt-4">
           <div>
-             {userMode === 'host' && (
+             {userMode === 'host' && onToggleLegacyStatus && (
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={handleAddToLegacyChest} aria-label={legacyTooltipText}>
+                            <Button variant="ghost" size="icon" onClick={handleLegacyToggle} aria-label={legacyTooltipText}>
                                 <LegacyIcon className={`h-4 w-4 ${memory.isLegacy ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`} />
                             </Button>
                         </TooltipTrigger>
@@ -275,3 +274,4 @@ export function MemoryCard({ memory, onEdit, onDelete, isUnread, onMarkAsViewed,
     </>
   );
 }
+
