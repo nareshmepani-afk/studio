@@ -89,6 +89,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           prevUser.countryOfBirth !== updatedUserArg.countryOfBirth ||
           prevUser.city !== updatedUserArg.city ||
           prevUser.townArea !== updatedUserArg.townArea ||
+          prevUser.profileInfo !== updatedUserArg.profileInfo ||
           prevUser.sharedAccessStatus !== updatedUserArg.sharedAccessStatus ||
           prevUser.freePassActivatedDate !== updatedUserArg.freePassActivatedDate ||
           prevUser.paidPassExpiryDate !== updatedUserArg.paidPassExpiryDate ||
@@ -156,6 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkIfGuestHasUnviewedMemories = useCallback(() => {
     if (!user) return false;
+    // Mock: considers the first two memories in mockData as potentially "shared"
     const potentialSharedMemories = mockMemories.slice(0, 2); 
     if (potentialSharedMemories.length === 0) return false;
     const viewedIds = user.viewedSharedMemoryIds || [];
@@ -219,9 +221,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Failed to fetch guest pass price:", error);
       
       setGuestPassPriceDetails({
-        passPrice: 7.99, 
-        currency: 'GBP', 
-        coffeePrice: 3.50, 
+        passPrice: (user?.countryOfBirth?.toLowerCase() === 'uk' || user?.city?.toLowerCase() === 'london') ? 7.99 : 9.99,
+        currency: (user?.countryOfBirth?.toLowerCase() === 'uk' || user?.city?.toLowerCase() === 'london') ? 'GBP' : 'USD',
+        coffeePrice: (user?.countryOfBirth?.toLowerCase() === 'uk' || user?.city?.toLowerCase() === 'london') ? 3.50 : 3.00,
         justification: 'Enjoy a month of shared memories with our standard access pass.',
       });
     } finally {
@@ -244,9 +246,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Failed to fetch host pass price:", error);
       setHostPassPriceDetails({
-        passPrice: 12.99, 
-        currency: 'GBP', 
-        coffeePrice: 3.50, 
+        passPrice: (user?.countryOfBirth?.toLowerCase() === 'uk' || user?.city?.toLowerCase() === 'london') ? 12.99 : 14.99,
+        currency: (user?.countryOfBirth?.toLowerCase() === 'uk' || user?.city?.toLowerCase() === 'london') ? 'GBP' : 'USD',
+        coffeePrice: (user?.countryOfBirth?.toLowerCase() === 'uk' || user?.city?.toLowerCase() === 'london') ? 3.50 : 3.00,
         justification: 'Unlock a full month of memory creation tools and preserve your precious moments.',
       });
     } finally {
@@ -274,7 +276,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 catch(e) { console.error("Error parsing mockMemories for initial calculation:", e); userMems = mockMemories.filter(mem => mem.userId === storedUserData.id); }
             } else {
                 userMems = mockMemories.filter(mem => mem.userId === storedUserData.id);
-                // If mockMemories is the source, save it to localStorage
                 localStorage.setItem('mockMemories', JSON.stringify(mockMemories));
             }
             initialStorageUsedBytes = userMems.reduce((acc, memory) => {
@@ -376,7 +377,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       hostPassStatus: currentUserData.hostPassStatus || 'no_pass_initiated',
       freeHostPassActivatedDate: currentUserData.freeHostPassActivatedDate,
       paidHostPassExpiryDate: currentUserData.paidHostPassExpiryDate,
-      storageUsedBytes: currentUserData.storageUsedBytes || 0, // Ensure initialized
+      storageUsedBytes: currentUserData.storageUsedBytes || 0,
     };
     updateUserInStateAndStorage(finalUser); 
     setIsAuthenticated(true);
@@ -495,7 +496,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const updatedUser = { ...user, viewedSharedMemoryIds: [...currentViewedIds, memoryId] };
         updateUserInStateAndStorage(updatedUser);
         
-        if (userMode === 'host') {
+        if (userMode === 'host') { // If host is viewing something (e.g. testing), we still check against their own "unread" state for guest mode
           setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
         }
       }

@@ -19,8 +19,9 @@ export async function getPassPriceAction(input: GetPassPriceInput): Promise<GetP
     return {
       passPrice: fallbackCurrency === 'GBP' ? 7.99 : 9.99, // Fallback price
       currency: fallbackCurrency,
-      coffeePrice: 0,
+      coffeePrice: 0, // In fallback, we may not have this, or could use a default
       justification: 'Enjoy a month of shared memories with our standard access pass.',
     };
   }
 }
+
