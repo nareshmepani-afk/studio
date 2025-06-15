@@ -6,7 +6,7 @@ import { PromptCard } from '@/components/prompts/PromptCard';
 import { mockPromptGroups, mockMemories } from '@/lib/mockData';
 import type { Prompt, PromptGroup, Memory } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star as StarIcon } from 'lucide-react'; 
+import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star as StarIcon, Info } from 'lucide-react'; 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
@@ -263,15 +263,17 @@ export default function LifeJourneyPage() {
           </div>
         </div>
         
-        <div className="mb-8 p-4 bg-card/50 rounded-lg shadow">
-            <p className="text-muted-foreground">Welcome! Click a prompt to record memories or brainstorm a custom chapter. Completed chapters are marked with <CheckCircle className="inline-block h-4 w-4 text-green-500" />. Use the <StarIcon className="inline-block h-4 w-4 text-amber-500" /> to flag prompts for later re-use.</p>
-            {!canAccessFullJourney && hostPassStatus !== 'no_pass_initiated' && (
-                <p className="text-sm text-primary mt-1">Your Host Pass has expired. Full access to all chapters and brainstorming requires an active pass.</p>
-            )}
-             {hostPassStatus === 'no_pass_initiated' && !canAccessFullJourney && (
-                <p className="text-sm text-primary mt-1">Activate your 6-month free Host Pass to unlock all chapters and features!</p>
-            )}
-        </div>
+        <Alert className="mb-8 bg-secondary/50 border-secondary/20 shadow">
+          <Info className="h-5 w-5 text-secondary-foreground" />
+          <AlertTitle className="font-headline text-secondary-foreground">Welcome to Your Life Journey!</AlertTitle>
+          <AlertDescription className="text-secondary-foreground/80 space-y-1.5">
+            <p>This is where you can explore guided chapters to record your life story. Click on a prompt below to start recording your memory for that chapter.</p>
+            <p>Completed chapters are marked with a <CheckCircle className="inline-block h-4 w-4 text-green-500" />. You can view or edit these at any time.</p>
+            <p>Use the <StarIcon className="inline-block h-4 w-4 text-amber-500" /> icon on a prompt to flag it for later re-use or if it particularly resonates with you.</p>
+            <p>Full access to all chapter groups and the "Brainstorm Custom Chapter" feature requires an active Host Pass. If your pass is inactive, you'll only see the first chapter group.</p>
+          </AlertDescription>
+        </Alert>
+
 
         {(!canAccessFullJourney && (hostPassStatus === 'no_pass_initiated' || hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired')) && (
           <Alert className="mb-6 bg-primary/10 border-primary/30">
