@@ -62,7 +62,7 @@ export function Navbar() {
         <div className="container flex h-16 items-center">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Link href={logoHref} className="mr-6 flex items-center space-x-2">
+              <Link href={logoHref} className="mr-6 flex items-center space-x-2" aria-label="Memory Weaver Homepage">
                 <Film className="h-6 w-6 text-primary ml-2" /> 
                 <span className="font-headline text-xl font-bold">Memory Weaver</span>
               </Link>
@@ -97,7 +97,7 @@ export function Navbar() {
                       <Link href="/requests" className={`${navLinkClass} ${pathname === '/requests' ? activeNavLinkClass : ''}`}>
                         <BellRing className="mr-1.5 h-4 w-4" /> Requests
                         {pendingRequestCount > 0 && (
-                            <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-destructive-foreground bg-destructive rounded-full">
+                            <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-destructive-foreground bg-destructive rounded-full" aria-live="polite">
                                 {pendingRequestCount}
                             </span>
                         )}
@@ -124,10 +124,19 @@ export function Navbar() {
           <div className={`flex items-center space-x-4 ${isAuthenticated ? '' : 'ml-auto'}`}>
             {isAuthenticated && user ? (
               <>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2" role="radiogroup" aria-label="User mode selector">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Label className="text-sm text-muted-foreground cursor-pointer flex items-center" onClick={() => setUserMode('host')}>
+                      <Label 
+                        htmlFor="user-mode-switch" 
+                        className="text-sm text-muted-foreground cursor-pointer flex items-center" 
+                        onClick={() => setUserMode('host')}
+                        aria-label="Switch to Host mode"
+                        role="radio"
+                        aria-checked={userMode === 'host'}
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setUserMode('host');}}
+                      >
                         <UserCog className={`h-4 w-4 mr-1 ${userMode === 'host' ? 'text-primary' : ''}`} /> Host
                       </Label>
                     </TooltipTrigger>
@@ -148,13 +157,22 @@ export function Navbar() {
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Label className="text-sm text-muted-foreground cursor-pointer flex items-center relative" onClick={() => setUserMode('guest')}>
+                      <Label 
+                        htmlFor="user-mode-switch" 
+                        className="text-sm text-muted-foreground cursor-pointer flex items-center relative" 
+                        onClick={() => setUserMode('guest')}
+                        aria-label="Switch to Guest mode"
+                        role="radio"
+                        aria-checked={userMode === 'guest'}
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setUserMode('guest');}}
+                      >
                         <Users className={`h-4 w-4 mr-1 ${userMode === 'guest' ? 'text-primary' : ''}`} /> Guest
                         {userMode === 'host' && hasNewSharedMemories && (
                           <span
                             className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-destructive ring-1 ring-background"
                             style={{ transform: 'translate(60%, -40%)' }}
-                            aria-label="New shared memories"
+                            aria-label="New shared memories notification"
                           />
                         )}
                       </Label>
@@ -166,9 +184,9 @@ export function Navbar() {
                 {pendingRequestCount > 0 && userMode === 'host' && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="relative lg:hidden" onClick={() => router.push('/requests')}>
+                      <Button variant="ghost" size="icon" className="relative lg:hidden" onClick={() => router.push('/requests')} aria-label={`View ${pendingRequestCount} pending memory requests`}>
                         <BellRing className="h-5 w-5" />
-                        <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-destructive-foreground transform translate-x-1/2 -translate-y-1/2 bg-destructive rounded-full">
+                        <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-destructive-foreground transform translate-x-1/2 -translate-y-1/2 bg-destructive rounded-full" aria-hidden="true">
                           {pendingRequestCount}
                         </span>
                       </Button>
@@ -180,7 +198,7 @@ export function Navbar() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                        <Button variant="ghost" className="relative h-8 w-8 rounded-full" aria-label="User account and settings">
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={avatarSrcToAttempt} alt={user.name || user.email} />
                             <AvatarFallback>

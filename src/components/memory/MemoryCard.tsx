@@ -202,7 +202,7 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={() => onEdit(memory)} aria-label="Edit memory">
+                    <Button variant="ghost" size="icon" onClick={() => onEdit(memory)} aria-label={`Edit memory: ${memory.title}`}>
                       <Edit3 className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -215,7 +215,7 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={() => setShowShareDialog(true)} aria-label="Share memory">
+                        <Button variant="ghost" size="icon" onClick={() => setShowShareDialog(true)} aria-label={`Share memory: ${memory.title}`}>
                             <Share2 className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
@@ -225,7 +225,7 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" disabled aria-label="Collaborate on memory">
+                        <Button variant="ghost" size="icon" disabled aria-label={`Collaborate on memory: ${memory.title} (Coming Soon)`}>
                             <Users2 className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
@@ -240,7 +240,7 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
                   <TooltipTrigger asChild>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" aria-label="Delete memory">
+                        <Button variant="ghost" size="icon" aria-label={`Delete memory: ${memory.title}`}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </AlertDialogTrigger>

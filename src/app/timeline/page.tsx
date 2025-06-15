@@ -296,7 +296,7 @@ export default function TimelinePage() {
                   <TooltipTrigger asChild>
                     <span>
                       <Link href={addMemoryButtonDisabled ? "#" : "/add-memory"} passHref legacyBehavior>
-                        <Button disabled={addMemoryButtonDisabled} aria-disabled={addMemoryButtonDisabled} onClick={(e) => { if(addMemoryButtonDisabled) { e.preventDefault(); toast({title: "Host Pass Required", description: addMemoryTooltipContent, variant: "destructive"});} }}>
+                        <Button disabled={addMemoryButtonDisabled} aria-disabled={addMemoryButtonDisabled} onClick={(e) => { if(addMemoryButtonDisabled) { e.preventDefault(); toast({title: "Host Pass Required", description: addMemoryTooltipContent, variant: "destructive"});} }} aria-label={addMemoryTooltipContent}>
                           <PlusCircle className="mr-2 h-5 w-5" /> Add New Memory
                         </Button>
                       </Link>
