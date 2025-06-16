@@ -5,7 +5,6 @@ import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageW
 import { MemoryCard } from '@/components/memory/MemoryCard';
 import { TimelineFilter } from '@/components/memory/TimelineFilter';
 import { Button } from '@/components/ui/button';
-import { mockMemories } from '@/lib/mockData';
 import type { Memory, MemoryCategory } from '@/types';
 import { PlusCircle, Film, Users, ShieldCheck, ShieldOff, CalendarClock, ShoppingCart, Gift, Loader2, Info, Award, Archive } from 'lucide-react';
 import Link from 'next/link';
@@ -16,6 +15,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { format, parseISO, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
+import { db } from '@/lib/firebase';
+import { collection, query, where, orderBy, onSnapshot, doc, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore';
 
 export default function TimelinePage() {
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -24,25 +25,25 @@ export default function TimelinePage() {
   const [categoryFilter, setCategoryFilter] = useState<MemoryCategory | 'all'>('all');
   const [legacyFilter, setLegacyFilter] = useState<'all' | 'legacy' | 'non-legacy'>('all');
   const [isLoading, setIsLoading] = useState(true);
-  const [currentStreak, setCurrentStreak] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0); // Mock streak for now
 
   const {
     user,
-    setPendingRequestCount,
+    setPendingRequestCount, // Kept for UI, actual logic needs backend
     userMode,
     activateFreeGuestPass,
     purchasePaidGuestPass,
-    checkAndUpdateGuestPassStatus,
     guestPassPriceDetails,
     fetchGuestPassPrice,
     isFetchingGuestPassPrice,
     hostPassStatus,
-    setHasNewSharedMemories,
-    hasNewSharedMemories,
-    markSharedMemoryAsViewed,
-    checkIfGuestHasUnviewedMemories,
+    setHasNewSharedMemories, // Kept for UI
+    hasNewSharedMemories, // Kept for UI
+    markSharedMemoryAsViewed, // Firestore update needed for this
+    checkIfGuestHasUnviewedMemories, // Firestore query needed
   } = useAuth();
 
+  // Mock requests, as this requires a backend/sharing mechanism
   const mockHostPendingRequests = [
     { id: 'req1', text: 'Tell us about your first pet!', user: 'Guest123' },
     { id: 'req2', text: 'What was your favorite childhood vacation?', user: 'Guest456' },
@@ -55,12 +56,10 @@ export default function TimelinePage() {
   const canHostCreateMemories = useMemo(() => {
     return hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
   }, [hostPassStatus]);
-
+  
   const isViewingLegacyChest = useMemo(() => legacyFilter === 'legacy', [legacyFilter]);
 
-
   useEffect(() => {
-    // Fetch guest pass price if in guest mode and pass is not active or price details are missing
     if (userMode === 'guest' && user &&
         (user.sharedAccessStatus === 'free_pass_expired' || 
          user.sharedAccessStatus === 'paid_pass_expired' || 
@@ -69,88 +68,98 @@ export default function TimelinePage() {
         fetchGuestPassPrice();
       }
     }
-    // AuthContext now handles initial pass status checks on load, so only need to fetch price here if conditions are met.
   }, [userMode, user, fetchGuestPassPrice, isFetchingGuestPassPrice, guestPassPriceDetails]);
 
-
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const storedMemoriesJson = localStorage.getItem('mockMemories');
-      let loadedMemories: Memory[] = [];
-      if (storedMemoriesJson) {
-        try {
-          loadedMemories = JSON.parse(storedMemoriesJson);
-        } catch (e) {
-          console.error("Failed to parse memories from localStorage, using default mocks.", e);
-          loadedMemories = mockMemories;
-          localStorage.setItem('mockMemories', JSON.stringify(loadedMemories));
-        }
-      } else {
-        loadedMemories = mockMemories;
-        localStorage.setItem('mockMemories', JSON.stringify(loadedMemories));
-      }
+    if (!user) {
+      setIsLoading(false);
+      setMemories([]);
+      return;
+    }
 
+    setIsLoading(true);
+    // For guest mode, we'll show the host's memories for now.
+    // True sharing logic would involve a different query (e.g., memories shared *with* the guest user).
+    const memoriesColRef = collection(db, "users", user.id, "memories");
+    
+    // Build query based on sort order for now. Filtering will be client-side.
+    let q = query(memoriesColRef, orderBy('date', sortCriteria.startsWith('date-') ? (sortCriteria.endsWith('desc') ? 'desc' : 'asc') : 'desc'));
+    // Firestore doesn't allow ordering by a different field than the one used in a range filter.
+    // If title sort is primary, we'd fetch all and sort client-side, or use more complex indexing.
+    // For now, primary sort is by date. Client-side sort can refine title.
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const fetchedMemories = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+        // Ensure date is a string, Firestore Timestamps might need conversion if stored differently
+        date: (docSnap.data().date as Timestamp)?.toDate ? (docSnap.data().date as Timestamp).toDate().toISOString() : docSnap.data().date as string,
+        createdAt: (docSnap.data().createdAt as Timestamp)?.toDate ? (docSnap.data().createdAt as Timestamp).toDate().toISOString() : undefined,
+        updatedAt: (docSnap.data().updatedAt as Timestamp)?.toDate ? (docSnap.data().updatedAt as Timestamp).toDate().toISOString() : undefined,
+
+      })) as Memory[];
+      setMemories(fetchedMemories);
+      setIsLoading(false);
       if (userMode === 'host') {
-        setMemories(loadedMemories);
-        setCurrentStreak(5); // Mock streak
-        setPendingRequestCount(mockHostPendingRequests.length); // Update pending request count for host
-      } else if (userMode === 'guest') { 
-        setMemories(loadedMemories.slice(0, 2)); 
-        setPendingRequestCount(0); // Guests don't have incoming requests in this context
+        setPendingRequestCount(mockHostPendingRequests.length); // Mock
       } else {
-        setMemories([]);
         setPendingRequestCount(0);
       }
+    }, (error) => {
+      console.error("Error fetching memories from Firestore:", error);
+      toast({ title: "Error Loading Memories", description: "Could not fetch memories.", variant: "destructive" });
       setIsLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [userMode, setPendingRequestCount]);
+    });
+
+    return () => unsubscribe();
+  }, [user, userMode, setPendingRequestCount, sortCriteria]);
+
 
   useEffect(() => {
     let notificationSimulationTimer: NodeJS.Timeout;
     if (userMode === 'host' && user && !hasNewSharedMemories) {
-      notificationSimulationTimer = setTimeout(() => {
-        if (userMode === 'host' && user && !hasNewSharedMemories && checkIfGuestHasUnviewedMemories()) {
-            setHasNewSharedMemories(true);
-        }
-      }, 7000); // Simulates a delay before "notifying" host
+      // This simulation will be replaced by actual logic checking shared memories in Firestore
+      // notificationSimulationTimer = setTimeout(() => {
+      //   if (userMode === 'host' && user && !hasNewSharedMemories && checkIfGuestHasUnviewedMemories()) {
+      //       setHasNewSharedMemories(true);
+      //   }
+      // }, 7000); 
     }
     return () => clearTimeout(notificationSimulationTimer);
   }, [userMode, user, hasNewSharedMemories, setHasNewSharedMemories, checkIfGuestHasUnviewedMemories]);
 
-  const handleEditMemory = (memory: Memory) => console.log('Edit memory:', memory); // Mock, redirect in actual app
 
-  const handleDeleteMemory = useCallback((memoryId: string) => {
-    setMemories(prevMemories => {
-        const updatedMemories = prevMemories.filter(m => m.id !== memoryId);
-        localStorage.setItem('mockMemories', JSON.stringify(updatedMemories));
-        return updatedMemories;
-    });
-    setTimeout(() => {
-      toast({ title: "Memory Deleted", description: "The memory has been removed."});
-    }, 0);
-  }, [setMemories]);
+  const handleDeleteMemory = useCallback(async (memoryId: string) => {
+    if (!user) return;
+    try {
+      const memoryDocRef = doc(db, "users", user.id, "memories", memoryId);
+      await deleteDoc(memoryDocRef);
+      toast({ title: "Memory Deleted", description: "The memory has been removed from Firestore."});
+      // No need to manually update state, onSnapshot will do it.
+    } catch (error) {
+      console.error("Error deleting memory from Firestore:", error);
+      toast({ title: "Delete Failed", variant: "destructive" });
+    }
+  }, [user]);
 
-  const handleToggleLegacyStatus = useCallback((memoryId: string) => {
-    let toggledMemory: Memory | undefined;
-    setMemories(prevMemories => {
-      const updatedMemories = prevMemories.map(mem =>
-        mem.id === memoryId ? { ...mem, isLegacy: !mem.isLegacy } : mem
-      );
-      localStorage.setItem('mockMemories', JSON.stringify(updatedMemories));
-      toggledMemory = updatedMemories.find(mem => mem.id === memoryId);
-      return updatedMemories;
-    });
+  const handleToggleLegacyStatus = useCallback(async (memoryId: string) => {
+    if (!user) return;
+    const memoryToUpdate = memories.find(mem => mem.id === memoryId);
+    if (!memoryToUpdate) return;
 
-    setTimeout(() => {
-      if (toggledMemory) {
-        toast({
-          title: toggledMemory.isLegacy ? "Added to Legacy Chest" : "Removed from Legacy Chest",
-          description: `"${toggledMemory.title}" status updated.`,
-        });
-      }
-    }, 0);
-  }, [setMemories]);
+    try {
+      const memoryDocRef = doc(db, "users", user.id, "memories", memoryId);
+      await updateDoc(memoryDocRef, { isLegacy: !memoryToUpdate.isLegacy });
+      toast({
+        title: !memoryToUpdate.isLegacy ? "Added to Legacy Chest" : "Removed from Legacy Chest",
+        description: `"${memoryToUpdate.title}" status updated in Firestore.`,
+      });
+      // No need to manually update state, onSnapshot will do it.
+    } catch (error) {
+      console.error("Error updating legacy status in Firestore:", error);
+      toast({ title: "Update Failed", variant: "destructive" });
+    }
+  }, [user, memories]);
 
   const handleCreateMontage = () => {
     setTimeout(() => {
@@ -159,7 +168,7 @@ export default function TimelinePage() {
   }
 
   const filteredAndSortedMemories = useMemo(() => {
-    let result = memories;
+    let result = memories; // Already sorted by date from Firestore query (primary sort)
     if (searchTerm) {
       result = result.filter(memory =>
         memory.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -176,19 +185,41 @@ export default function TimelinePage() {
     if (legacyFilter !== 'all') {
       result = result.filter(memory => legacyFilter === 'legacy' ? memory.isLegacy === true : memory.isLegacy !== true);
     }
-    result.sort((a, b) => {
-      switch (sortCriteria) {
-        case 'date-asc': return new Date(a.date).getTime() - new Date(b.date).getTime();
-        case 'date-desc': return new Date(b.date).getTime() - new Date(a.date).getTime();
-        case 'title-asc': return a.title.localeCompare(b.title);
-        case 'title-desc': return b.title.localeCompare(a.title);
-        default: return 0;
-      }
-    });
+
+    // Secondary sort (e.g., by title if date is primary from Firestore)
+    if (sortCriteria.startsWith('title-')) {
+      result.sort((a, b) => {
+        if (sortCriteria === 'title-asc') return a.title.localeCompare(b.title);
+        if (sortCriteria === 'title-desc') return b.title.localeCompare(a.title);
+        return 0;
+      });
+    }
+    // If sortCriteria is date-based, Firestore already handled it.
     return result;
   }, [memories, searchTerm, sortCriteria, categoryFilter, legacyFilter]);
 
-  if (isLoading) return (<AuthenticatedPageWrapper><div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4"><Loader2 className="h-12 w-12 animate-spin text-primary mb-4" /><h2 className="text-2xl font-headline mb-2">Loading Memories...</h2></div></AuthenticatedPageWrapper>);
+  if (isLoading && !user) { // Initial load before user is determined
+    return (
+      <AuthenticatedPageWrapper>
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+          <h2 className="text-2xl font-headline mb-2">Initializing...</h2>
+        </div>
+      </AuthenticatedPageWrapper>
+    );
+  }
+  
+  if (isLoading && user) { // User determined, loading memories
+     return (
+      <AuthenticatedPageWrapper>
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+          <h2 className="text-2xl font-headline mb-2">Loading Memories...</h2>
+        </div>
+      </AuthenticatedPageWrapper>
+    );
+  }
+
 
   const renderGuestPurchaseButton = () => {
     let buttonText = "Purchase 31-Day Guest Pass";
@@ -337,7 +368,7 @@ export default function TimelinePage() {
           </div>
         )}
         
-        {isViewingLegacyChest && userMode === 'host' && filteredAndSortedMemories.length === 0 && (
+        {isViewingLegacyChest && userMode === 'host' && filteredAndSortedMemories.length === 0 && !isLoading && (
           <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
             <Archive className="mx-auto h-16 w-16 text-primary mb-6" />
             <h2 className="font-headline text-3xl mb-3">Your Legacy Chest is Empty</h2>
@@ -347,7 +378,7 @@ export default function TimelinePage() {
           </div>
         )}
 
-        {!isViewingLegacyChest && userMode === 'guest' && canGuestViewSharedMemories && filteredAndSortedMemories.length === 0 && (
+        {!isViewingLegacyChest && userMode === 'guest' && canGuestViewSharedMemories && filteredAndSortedMemories.length === 0 && !isLoading && (
           <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
             <Users className="mx-auto h-16 w-16 text-primary mb-6" />
             <h2 className="font-headline text-3xl mb-3">Nothing Shared Yet</h2>
@@ -355,7 +386,7 @@ export default function TimelinePage() {
           </div>
         )}
         
-        {!isViewingLegacyChest && userMode === 'host' && filteredAndSortedMemories.length === 0 && (
+        {!isViewingLegacyChest && userMode === 'host' && filteredAndSortedMemories.length === 0 && !isLoading && (
           <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
             <Film className="mx-auto h-16 w-16 text-primary mb-6" />
             <h2 className="font-headline text-3xl mb-3">Welcome to Memory Weaver!</h2>
@@ -368,14 +399,14 @@ export default function TimelinePage() {
           </div>
         )}
 
-        {((userMode === 'host') || (userMode === 'guest' && canGuestViewSharedMemories)) && filteredAndSortedMemories.length > 0 && (
+        {((userMode === 'host') || (userMode === 'guest' && canGuestViewSharedMemories)) && filteredAndSortedMemories.length > 0 && !isLoading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredAndSortedMemories.map((memory) => {
               const isUnreadInGuestMode = userMode === 'guest' && user?.viewedSharedMemoryIds ? !user.viewedSharedMemoryIds.includes(memory.id) : false;
               return (<MemoryCard
                           key={memory.id}
                           memory={memory}
-                          onEdit={userMode === 'host' ? handleEditMemory : undefined}
+                          onEdit={userMode === 'host' ? (mem) => router.push(`/add-memory?editMemoryId=${mem.id}`) : undefined}
                           onDelete={userMode === 'host' ? handleDeleteMemory : undefined}
                           onToggleLegacyStatus={userMode === 'host' ? handleToggleLegacyStatus : undefined}
                           isUnread={userMode === 'guest' ? isUnreadInGuestMode : undefined}
@@ -389,4 +420,3 @@ export default function TimelinePage() {
     </AuthenticatedPageWrapper>
   );
 }
-

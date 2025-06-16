@@ -1,4 +1,6 @@
 
+import type { Timestamp } from 'firebase/firestore';
+
 export interface User {
   id: string;
   email: string;
@@ -63,6 +65,8 @@ export interface Memory {
   isLegacy?: boolean; // For designating memories for the Legacy Chest
   promptId?: string; // ID of the prompt this memory fulfills
   category?: MemoryCategory;
+  createdAt?: Timestamp; // Firestore Timestamp for when the memory was created
+  updatedAt?: Timestamp; // Firestore Timestamp for when the memory was last updated
 }
 
 export interface PromptText {

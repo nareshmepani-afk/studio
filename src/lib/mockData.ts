@@ -2,91 +2,93 @@
 import type { Memory, Prompt, PromptGroup, MediaAttachment, EmotionTag, MemoryCategory } from '@/types';
 import { memoryCategoriesList } from '@/types'; // Import the categories list
 
-const videoPlaceholderUrl = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"; // A real video for testing trim
-const audioPlaceholderUrl = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3"; // A real audio for testing
+// const videoPlaceholderUrl = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"; // A real video for testing trim
+// const audioPlaceholderUrl = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3"; // A real audio for testing
 
-export const mockMemories: Memory[] = [
-  {
-    id: '1',
-    title: 'Trip to the Mountains (Video)',
-    date: '2023-07-15T10:00:00.000Z',
-    description: 'A wonderful weekend getaway with breathtaking views and challenging hikes. This video is trimmed.',
-    emotionTags: ['Happy', 'Excitement', 'Peace'],
-    userId: '1',
-    location: 'Swiss Alps',
-    country: 'Switzerland',
-    mediaAttachments: [{
-        id: 'media1-1',
-        type: 'video',
-        url: videoPlaceholderUrl,
-        filename: 'mountain_trip.mp4',
-        startTime: 5, // Start at 5 seconds
-        endTime: 15,   // End at 15 seconds
-        duration: 596, // Actual duration of BigBuckBunny is ~596s
-        size: 5 * 1024 * 1024, // Approx 5MB for the sample segment
-    }],
-    imageUrl: 'https://placehold.co/600x400.png', // Fallback or cover image
-    isLegacy: true, // Marked for Legacy Chest
-    promptId: 'p1', // Linked to "A Child of Two Worlds"
-    category: 'Travel',
-  },
-  {
-    id: '2',
-    title: 'Family Reunion 2023 (Full Audio)',
-    date: '2023-12-23T18:30:00.000Z',
-    description: 'Gathered with the whole family for the holidays. So much food and laughter! This is a full audio.',
-    emotionTags: ['Joy', 'Love', 'Nostalgia'],
-    userId: '1',
-    location: 'Grandma\'s House, Devon',
-    country: 'UK',
-    mediaAttachments: [{
-        id: 'media2-1',
-        type: 'audio',
-        url: audioPlaceholderUrl,
-        filename: 'family_reunion.mp3',
-        duration: 2, // Actual duration of t-rex-roar is ~2s
-        size: 45 * 1024, // Approx 45KB
-    }],
-    imageUrl: 'https://placehold.co/600x400.png',
-    isLegacy: false,
-    promptId: 'p2', // Linked to "The House I Grew Up In"
-    category: 'Family',
-  },
-  {
-    id: '3',
-    title: 'Project Alpha Launch (Untrimmed Video)',
-    date: '2024-01-20T14:00:00.000Z',
-    description: 'Successfully launched Project Alpha after months of hard work. Proud of the team! This video plays in full.',
-    emotionTags: ['Gratitude', 'Excitement'],
-    userId: '1',
-    // No location/country for this one
-    mediaAttachments: [{
-        id: 'media3-1',
-        type: 'video',
-        url: videoPlaceholderUrl, // Using same video for variety
-        filename: 'project_alpha.mp4',
-        duration: 596,
-        size: 5 * 1024 * 1024, // Approx 5MB for the sample segment
-        // No startTime or endTime, so should play full
-    }],
-    imageUrl: 'https://placehold.co/600x400.png',
-    isLegacy: true, // Also marked for Legacy Chest
-    category: 'Work',
-  },
-  {
-    id: '4',
-    title: 'Learning to Bake Sourdough',
-    date: '2023-04-10T09:00:00.000Z',
-    description: 'My journey into the world of sourdough. Many failed attempts but finally got a good loaf!',
-    emotionTags: ['Reflective', 'Hope', 'Funny'],
-    imageUrl: 'https://placehold.co/600x400.png', // No media attachment for this one
-    userId: '1',
-    location: 'Home Kitchen',
-    country: 'UK',
-    isLegacy: false,
-    category: 'Hobbies',
-  },
-];
+// export const mockMemories: Memory[] = [
+//   {
+//     id: '1',
+//     title: 'Trip to the Mountains (Video)',
+//     date: '2023-07-15T10:00:00.000Z',
+//     description: 'A wonderful weekend getaway with breathtaking views and challenging hikes. This video is trimmed.',
+//     emotionTags: ['Happy', 'Excitement', 'Peace'],
+//     userId: '1', // This will be replaced by actual Firebase user ID
+//     location: 'Swiss Alps',
+//     country: 'Switzerland',
+//     mediaAttachments: [{
+//         id: 'media1-1',
+//         type: 'video',
+//         url: videoPlaceholderUrl,
+//         filename: 'mountain_trip.mp4',
+//         startTime: 5, // Start at 5 seconds
+//         endTime: 15,   // End at 15 seconds
+//         duration: 596, // Actual duration of BigBuckBunny is ~596s
+//         size: 5 * 1024 * 1024, // Approx 5MB for the sample segment
+//     }],
+//     imageUrl: 'https://placehold.co/600x400.png', // Fallback or cover image
+//     isLegacy: true, // Marked for Legacy Chest
+//     promptId: 'p1', // Linked to "A Child of Two Worlds"
+//     category: 'Travel',
+//   },
+//   {
+//     id: '2',
+//     title: 'Family Reunion 2023 (Full Audio)',
+//     date: '2023-12-23T18:30:00.000Z',
+//     description: 'Gathered with the whole family for the holidays. So much food and laughter! This is a full audio.',
+//     emotionTags: ['Joy', 'Love', 'Nostalgia'],
+//     userId: '1', // This will be replaced by actual Firebase user ID
+//     location: 'Grandma\'s House, Devon',
+//     country: 'UK',
+//     mediaAttachments: [{
+//         id: 'media2-1',
+//         type: 'audio',
+//         url: audioPlaceholderUrl,
+//         filename: 'family_reunion.mp3',
+//         duration: 2, // Actual duration of t-rex-roar is ~2s
+//         size: 45 * 1024, // Approx 45KB
+//     }],
+//     imageUrl: 'https://placehold.co/600x400.png',
+//     isLegacy: false,
+//     promptId: 'p2', // Linked to "The House I Grew Up In"
+//     category: 'Family',
+//   },
+//   {
+//     id: '3',
+//     title: 'Project Alpha Launch (Untrimmed Video)',
+//     date: '2024-01-20T14:00:00.000Z',
+//     description: 'Successfully launched Project Alpha after months of hard work. Proud of the team! This video plays in full.',
+//     emotionTags: ['Gratitude', 'Excitement'],
+//     userId: '1', // This will be replaced by actual Firebase user ID
+//     mediaAttachments: [{
+//         id: 'media3-1',
+//         type: 'video',
+//         url: videoPlaceholderUrl, // Using same video for variety
+//         filename: 'project_alpha.mp4',
+//         duration: 596,
+//         size: 5 * 1024 * 1024, // Approx 5MB for the sample segment
+//     }],
+//     imageUrl: 'https://placehold.co/600x400.png',
+//     isLegacy: true, // Also marked for Legacy Chest
+//     category: 'Work',
+//   },
+//   {
+//     id: '4',
+//     title: 'Learning to Bake Sourdough',
+//     date: '2023-04-10T09:00:00.000Z',
+//     description: 'My journey into the world of sourdough. Many failed attempts but finally got a good loaf!',
+//     emotionTags: ['Reflective', 'Hope', 'Funny'],
+//     imageUrl: 'https://placehold.co/600x400.png', // No media attachment for this one
+//     userId: '1', // This will be replaced by actual Firebase user ID
+//     location: 'Home Kitchen',
+//     country: 'UK',
+//     isLegacy: false,
+//     category: 'Hobbies',
+//   },
+// ];
+// mockMemories is now obsolete as data comes from Firestore.
+// Keeping it commented out for reference or potential future seeding logic.
+export const mockMemories: Memory[] = [];
+
 
 export const mockPromptGroups: PromptGroup[] = [
   {
@@ -103,7 +105,7 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'બે દુનિયાનું બાળક – તમારું જન્મસ્થળ, કુટુંબના મૂળ, સાંસ્કૃતિક પ્રભાવો',
         },
         isFlaggedForReuse: false,
-        userId: '1',
+        // userId will be determined by auth context
       },
       {
         id: 'p2',
@@ -112,7 +114,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'હું જે ઘરમાં મોટો થયો – દૈનિક જીવન, પર્યાવરણ, પ્રથમ યાદો',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p3',
@@ -121,7 +122,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'નિર્દોષતા અને જિજ્ઞાસા – શાળાના દિવસો, પ્રારંભિક સપના, આશ્ચર્યની ક્ષણો',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p4',
@@ -130,7 +130,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'ભાઈ, બહેન કે મિત્રોના પડઘા – તમે મળેલા મુખ્ય લોકો પાસેથી યાદો અને પાઠ',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p5',
@@ -139,7 +138,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'નુકશાનનો આકાર – યુવાનીમાં દુઃખ અને પડકારો સાથે પ્રથમ મુલાકાત',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
     ],
   },
@@ -157,7 +155,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'ક્રોસરોડ્સ અને પસંદગીઓ – કિશોરાવસ્થા, ઓળખ, પ્રારંભિક દ્વિધાઓ',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p7',
@@ -166,7 +163,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'કઠિન રીતે શીખવું – ભૂલો, માર્ગદર્શન, માર્ગદર્શકો, આત્મ-શોધ',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p8',
@@ -175,7 +171,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'અંદર અને બહારની મુસાફરી – પ્રવાસ, શિક્ષણ અને મુખ્ય વ્યક્તિગત અનુભવો',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p9',
@@ -184,7 +179,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'એક વ્યક્તિ બની રહી છે – પુખ્તાવસ્થામાં પ્રવેશ, વાસ્તવિકતાનો સામનો કરવો, તમારું સ્થાન બનાવવું',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
     ],
   },
@@ -202,7 +196,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'જીવન સાથે પ્રેમમાં પડવું – પ્રેમ, લગ્ન અને વાલીપણું',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p11',
@@ -211,7 +204,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'બાળકોનો જન્મ – તમારા બાળકનું આગમન અને માતાપિતા તરીકે તમારું પરિવર્તન',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p12',
@@ -220,7 +212,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'પકડી રાખવું, જવા દેવું – જીવનના પડકારો: નાણાકીય, ભાવનાત્મક અને આધ્યાત્મિક',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p13',
@@ -229,7 +220,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'અગ્નિપરીક્ષા – ઊંડા સંઘર્ષની ક્ષણો અને તમે ફરીથી કેવી રીતે ઉભા થયા',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p14',
@@ -238,7 +228,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'અદ્રશ્યમાં વિશ્વાસ – આધ્યાત્મિક જાગૃતિ, માન્યતાઓ અને અંદરથી માર્ગદર્શન',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
     ],
   },
@@ -256,7 +245,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'ઘામાંથી શાણપણ – પીડા, પસ્તાવો અને ઉપચારમાંથી શીખેલા પાઠ',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p16',
@@ -265,7 +253,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'જેઓ જોઈ રહ્યા છે તેમને પત્રો – જીવન સલાહ, અન્યોના વિકાસ પર પ્રતિબિંબ અને તમારો ગર્વ',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p17',
@@ -274,7 +261,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'મારી સાથે વાતચીત – ફિલોસોફી, શંકાઓ, રમૂજ અને વિરોધાભાસ',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p18',
@@ -283,7 +269,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'અરીસામાં વ્યક્તિ – પ્રમાણિક સ્વ-મૂલ્યાંકન: ટેવો, આનંદ અને પસ્તાવો',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p19',
@@ -292,7 +277,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'શાંત વિજયો – નાની, અદ્રશ્ય ક્ષણો જેણે તમારા આત્માને આકાર આપ્યો',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
     ],
   },
@@ -310,7 +294,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'આગળ શું છે – હજુ સિદ્ધ કરવાના સપના, આગામી પેઢી માટે આશાઓ',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p21',
@@ -319,7 +302,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'જો હું ફરીથી કરી શકું – તમે શું પુનરાવર્તન કરશો અથવા બદલશો તેના પર પ્રતિબિંબ',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p22',
@@ -328,7 +310,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'સત્ય સાથેનો મારો અંતિમ પ્રયોગ – તમારું સત્ય, મૂલ્યો અને આધ્યાત્મિક સ્પષ્ટતા વ્યાખ્યાયિત કરવી',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p23',
@@ -337,7 +318,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'વાર્તા ચાલુ રહે છે – વારસો, કુટુંબ અને અજ્ઞાત પર એક આશાસ્પદ નોંધ',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'p24',
@@ -346,7 +326,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'સમય યાત્રા, પ્રતિબિંબ — જૂની એન્ટ્રીઓની ફરી મુલાકાત લેવા અને તેના પર પ્રતિબિંબિત કરવા માટેના રીમાઇન્ડર્સ',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
     ],
   },
@@ -364,7 +343,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'દાદા-દાદી અથવા કોઈ વડીલની વહાલી યાદ શેર કરો.',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'fs2',
@@ -373,7 +351,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'એવી કઈ પારિવારિક પરંપરા છે જે પેઢીઓથી ચાલી આવી રહી છે?',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'fs3',
@@ -382,7 +359,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'તમારા પરિવાર પર અસર કરનાર કોઈ મહત્વપૂર્ણ ઐતિહાસિક ઘટનાનું વર્ણન કરો.',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'fs4',
@@ -391,7 +367,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'તમારા માતાપિતા અથવા વાલીઓએ તમારામાં કયા મૂલ્યો રોપ્યા?',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
       {
         id: 'fs5',
@@ -400,7 +375,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'તમે જે પૂર્વજની પ્રશંસા કરો છો તેમના વિશે એક વાર્તા કહો.',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
        {
         id: 'fs6',
@@ -409,7 +383,6 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'તમારા બાળકો અથવા પૌત્ર-પૌત્રીઓ માટે ભવિષ્યમાં સાંભળવા માટે એક સંદેશ રેકોર્ડ કરો.',
         },
         isFlaggedForReuse: false,
-        userId: '1',
       },
     ]
   }

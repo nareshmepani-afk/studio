@@ -3,16 +3,17 @@
 
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { MemoryForm } from '@/components/memory/MemoryForm';
-import type { Memory } from '@/types';
+import type { Memory, MediaAttachment } from '@/types';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { mockMemories } from '@/lib/mockData';
 import { Loader2, Star, Zap } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, addDoc, updateDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 export default function AddMemoryPage() {
   const router = useRouter();
@@ -36,98 +37,101 @@ export default function AddMemoryPage() {
   const isCreatingNew = !editMemoryId;
 
   useEffect(() => {
-    if (editMemoryId) {
-      setIsLoadingMemory(true);
-      setTimeout(() => {
-        const foundMemory = mockMemories.find(m => m.id === editMemoryId && m.userId === user?.id);
-        if (foundMemory) {
-          setMemoryToEdit(foundMemory);
-        } else {
-          toast({ title: "Memory not found", description: "Could not load the memory for editing.", variant: "destructive" });
-          router.push('/timeline'); 
+    const loadMemory = async () => {
+      if (editMemoryId && user) {
+        setIsLoadingMemory(true);
+        try {
+          const memoryDocRef = doc(db, "users", user.id, "memories", editMemoryId);
+          const memorySnap = await getDoc(memoryDocRef);
+          if (memorySnap.exists()) {
+            const memoryData = memorySnap.data() as Omit<Memory, 'id'>;
+            setMemoryToEdit({ id: memorySnap.id, ...memoryData });
+          } else {
+            toast({ title: "Memory not found", description: "Could not load the memory for editing from Firestore.", variant: "destructive" });
+            router.push('/timeline');
+          }
+        } catch (error) {
+          console.error("Error fetching memory from Firestore:", error);
+          toast({ title: "Error Loading Memory", description: "Failed to fetch memory details.", variant: "destructive" });
+          router.push('/timeline');
+        } finally {
+          setIsLoadingMemory(false);
         }
+      } else {
         setIsLoadingMemory(false);
-      }, 300);
-    } else {
-      setIsLoadingMemory(false);
-      setMemoryToEdit(undefined); 
-    }
-  }, [editMemoryId, user?.id, router]);
+        setMemoryToEdit(undefined);
+      }
+    };
 
-  const handleSubmit = async (memoryData: Omit<Memory, 'id' | 'userId'>, mediaFileToUpload?: File) => {
+    if (user) { // Only load memory if user is available
+      loadMemory();
+    } else if (!authLoading) { // If auth is done loading and no user, no memory to load
+       setIsLoadingMemory(false);
+       setMemoryToEdit(undefined);
+    }
+  }, [editMemoryId, user, router, authLoading]);
+
+  const handleSubmit = async (
+    memoryData: Omit<Memory, 'id' | 'userId' | 'createdAt' | 'updatedAt'> & { promptId?: string },
+    mediaFileToUpload?: File // This file is for upload to Storage, not for Firestore directly
+  ) => {
     if (!user) {
       toast({ title: "Authentication Error", description: "You must be logged in to add or edit a memory.", variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
 
-    let finalMemoryData: Memory;
-
-    if (memoryToEdit) { 
-      finalMemoryData = {
-        ...memoryToEdit, 
-        ...memoryData, 
-        userId: user.id,
-        promptId: promptIdFromQuery || memoryToEdit.promptId, 
-      };
-    } else { 
-      finalMemoryData = {
-        ...memoryData,
-        id: Date.now().toString(),
-        userId: user.id,
-        promptId: promptIdFromQuery || undefined, 
-      };
-    }
-    
-    if (mediaFileToUpload && finalMemoryData.mediaAttachments && finalMemoryData.mediaAttachments.length > 0) {
-      finalMemoryData.mediaAttachments[0].url = `mock_uploaded_url/${mediaFileToUpload.name}`; 
-      finalMemoryData.mediaAttachments[0].filename = mediaFileToUpload.name;
-      if (!finalMemoryData.mediaAttachments[0].size) { 
-        finalMemoryData.mediaAttachments[0].size = mediaFileToUpload.size;
+    // MediaAttachments will be handled differently now.
+    // For now, we just store the metadata. Actual file upload to Firebase Storage will be a separate step.
+    let processedMediaAttachments: MediaAttachment[] | undefined = memoryData.mediaAttachments;
+    if (mediaFileToUpload && processedMediaAttachments && processedMediaAttachments.length > 0) {
+      // We'll store metadata. The URL will be updated after successful upload to Firebase Storage.
+      processedMediaAttachments[0].url = `placeholder_for_storage_upload/${mediaFileToUpload.name}`;
+      processedMediaAttachments[0].filename = mediaFileToUpload.name;
+      if (!processedMediaAttachments[0].size) {
+        processedMediaAttachments[0].size = mediaFileToUpload.size;
       }
-    } else if (memoryData.mediaAttachments && memoryData.mediaAttachments.length > 0 && !finalMemoryData.mediaAttachments?.[0]?.size && mediaFileToUpload?.size) {
-       if (finalMemoryData.mediaAttachments && finalMemoryData.mediaAttachments.length > 0) {
-        finalMemoryData.mediaAttachments[0].size = mediaFileToUpload.size;
-       }
+    } else if (memory?.mediaAttachments && memory.mediaAttachments.length > 0 && !mediaFileToUpload) {
+      // Preserve existing media if no new file uploaded
+      processedMediaAttachments = memory.mediaAttachments;
     }
 
-    let existingMemories: Memory[] = [];
-    const storedMemoriesJson = localStorage.getItem('mockMemories'); 
-    if (storedMemoriesJson) {
-        try { existingMemories = JSON.parse(storedMemoriesJson); } catch (e) { console.error(e); }
-    } else { 
-        existingMemories = mockMemories; 
-    }
 
-    if (editMemoryId) {
-        const index = existingMemories.findIndex(m => m.id === editMemoryId);
-        if (index !== -1) {
-            existingMemories[index] = finalMemoryData;
-        } else { 
-            existingMemories.push(finalMemoryData);
-        }
-    } else {
-        existingMemories.push(finalMemoryData);
-    }
-    localStorage.setItem('mockMemories', JSON.stringify(existingMemories)); 
-    
-    const mockIndex = mockMemories.findIndex(m => m.id === finalMemoryData.id);
-    if (mockIndex !== -1) mockMemories[mockIndex] = finalMemoryData; else mockMemories.push(finalMemoryData);
+    const dataToSave: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'> & { userId: string; updatedAt: Timestamp; createdAt?: Timestamp } = {
+      ...memoryData,
+      mediaAttachments: processedMediaAttachments,
+      userId: user.id,
+      promptId: promptIdFromQuery || memoryData.promptId || memoryToEdit?.promptId || undefined,
+      updatedAt: serverTimestamp() as Timestamp,
+    };
 
-    await calculateAndUpdateStorageUsage(user.id);
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      if (memoryToEdit && editMemoryId) {
+        // Update existing memory in Firestore
+        const memoryDocRef = doc(db, "users", user.id, "memories", editMemoryId);
+        await updateDoc(memoryDocRef, dataToSave);
+        toast({ title: "Memory Updated!", description: `"${dataToSave.title}" has been saved.` });
+      } else {
+        // Add new memory to Firestore
+        const memoriesColRef = collection(db, "users", user.id, "memories");
+        dataToSave.createdAt = serverTimestamp() as Timestamp;
+        await addDoc(memoriesColRef, dataToSave);
+        toast({ title: "Memory Added!", description: `"${dataToSave.title}" has been saved.` });
+      }
 
-    setIsSubmitting(false);
-    toast({
-      title: memoryToEdit ? "Memory Updated!" : "Memory Added!",
-      description: `"${finalMemoryData.title}" has been saved.`,
-    });
-    
-    if (finalMemoryData.promptId) {
+      await calculateAndUpdateStorageUsage(user.id); // This might need adjustment based on how media sizes are tracked with Firebase Storage
+
+      if (promptIdFromQuery || memoryData.promptId || memoryToEdit?.promptId) {
         router.push('/prompts');
-    } else {
+      } else {
         router.push('/timeline');
+      }
+    } catch (error) {
+      console.error("Error saving memory to Firestore:", error);
+      toast({ title: "Save Failed", description: "Could not save memory to the database.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
