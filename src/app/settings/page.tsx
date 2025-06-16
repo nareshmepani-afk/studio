@@ -6,14 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import type { User } from '@/types';
 import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types'; 
-import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, AlertTriangle, Star, Zap, RotateCcw } from 'lucide-react';
+import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, Star, Zap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
 import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths } from 'date-fns';
@@ -41,18 +40,17 @@ export default function SettingsPage() {
     activateFreeHostPass,
     purchasePaidHostPass,
     checkAndUpdateHostPassStatus,
-    hostPassStatus, // Direct use from context
-    hostPassPriceDetails,
+    hostPassStatus, 
+    hostPassPriceDetails: authHostPassPriceDetails, // Renamed to avoid conflict with local var if any
     fetchHostPassPrice,
     isFetchingHostPassPrice: isFetchingAuthHostPassPrice,
-    resetHostPassForTesting,
     storageQuotaBytes, 
     calculateAndUpdateStorageUsage,
   } = useAuth();
   const router = useRouter(); 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [profileInfo, setProfileInfo] = useState('');
+  // profileInfo state removed
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -68,7 +66,6 @@ export default function SettingsPage() {
   const [townArea, setTownArea] = useState('');
   
   useEffect(() => {
-    // Call these once when the component mounts and user data is available
     if (user) {
       checkAndUpdateGuestPassStatus();
       checkAndUpdateHostPassStatus();
@@ -79,21 +76,21 @@ export default function SettingsPage() {
         }
       }
       if (user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired' || user.hostPassStatus === 'no_pass_initiated') {
-         if (!isFetchingAuthHostPassPrice && !hostPassPriceDetails) {
+         if (!isFetchingAuthHostPassPrice && !authHostPassPriceDetails) { // use renamed prop
            fetchHostPassPrice();
          }
       }
       calculateAndUpdateStorageUsage(user.id);
     }
   }, [
-    user, // Rerun if user object changes significantly
+    user, 
     checkAndUpdateGuestPassStatus, 
     checkAndUpdateHostPassStatus, 
     fetchGuestPassPrice, 
     fetchHostPassPrice, 
     calculateAndUpdateStorageUsage,
     isFetchingGuestPassPrice, guestPassPriceDetails, 
-    isFetchingAuthHostPassPrice, hostPassPriceDetails
+    isFetchingAuthHostPassPrice, authHostPassPriceDetails // use renamed prop
   ]);
 
 
@@ -116,7 +113,7 @@ export default function SettingsPage() {
     if (user) {
       setName(user.name || '');
       setEmail(user.email || '');
-      setProfileInfo(user.profileInfo || '');
+      // profileInfo state and setter removed
       setAvatarPreviewUrl(null); 
 
       if (user.dateOfBirth && isValid(parseISO(user.dateOfBirth))) {
@@ -168,7 +165,7 @@ export default function SettingsPage() {
     }
     const updatedUser: User = {
       ...user, id: user.id, name: name, email: email, avatarUrl: finalAvatarUrlToSave, 
-      profileInfo: profileInfo || undefined,
+      profileInfo: user.profileInfo, // Keep existing profileInfo from user object
       dateOfBirth: finalDateOfBirth, countryOfBirth: countryOfBirth || undefined, city: city || undefined, townArea: townArea || undefined,
       sharedAccessStatus: user.sharedAccessStatus, freePassActivatedDate: user.freePassActivatedDate, paidPassExpiryDate: user.paidPassExpiryDate,
       hostPassStatus: user.hostPassStatus, freeHostPassActivatedDate: user.freeHostPassActivatedDate, paidHostPassExpiryDate: user.paidHostPassExpiryDate, 
@@ -240,10 +237,10 @@ export default function SettingsPage() {
   const renderHostPurchaseButton = () => {
     let buttonText = "Purchase 31-Day Host Pass";
     let priceString = "";
-    if (isFetchingAuthHostPassPrice) { // Use alias here
+    if (isFetchingAuthHostPassPrice) { 
         buttonText = "Fetching price...";
-    } else if (hostPassPriceDetails) {
-        priceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
+    } else if (authHostPassPriceDetails) { // use renamed prop
+        priceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: authHostPassPriceDetails.currency }).format(authHostPassPriceDetails.passPrice)})`;
         buttonText += priceString;
     } else {
          buttonText += ` (£12.99 - Mock)`; 
@@ -251,8 +248,8 @@ export default function SettingsPage() {
 
     const button = (<Button onClick={purchasePaidHostPass} variant="default" size="sm" disabled={isFetchingAuthHostPassPrice}>{isFetchingAuthHostPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}{buttonText}</Button>);
     
-    if (hostPassPriceDetails && !isFetchingAuthHostPassPrice && hostPassPriceDetails.justification) {
-       return (<TooltipProvider><div className="flex flex-col items-start space-y-1">{button}<Tooltip><TooltipTrigger asChild><span className="text-xs text-muted-foreground flex items-center cursor-default mt-1"><Info className="h-3 w-3 mr-1" /> {hostPassPriceDetails.justification}</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{hostPassPriceDetails.justification} (Based on avg coffee: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
+    if (authHostPassPriceDetails && !isFetchingAuthHostPassPrice && authHostPassPriceDetails.justification) { // use renamed prop
+       return (<TooltipProvider><div className="flex flex-col items-start space-y-1">{button}<Tooltip><TooltipTrigger asChild><span className="text-xs text-muted-foreground flex items-center cursor-default mt-1"><Info className="h-3 w-3 mr-1" /> {authHostPassPriceDetails.justification}</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{authHostPassPriceDetails.justification} (Based on avg coffee: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: authHostPassPriceDetails.currency }).format(authHostPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
     }
     return button;
   };
@@ -261,15 +258,15 @@ export default function SettingsPage() {
     if (!user) return null;
     let statusText = ""; let actionContent = null;
     let currentPriceString = "";
-    if (hostPassPriceDetails && !isFetchingAuthHostPassPrice) {
-        currentPriceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
+    if (authHostPassPriceDetails && !isFetchingAuthHostPassPrice) { // use renamed prop
+        currentPriceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: authHostPassPriceDetails.currency }).format(authHostPassPriceDetails.passPrice)})`;
     } else if (isFetchingAuthHostPassPrice) {
         currentPriceString = "(fetching price...)";
     } else {
          currentPriceString = "(approx. £12.99 - Mock)"; 
     }
 
-    switch (hostPassStatus) { // Use direct hostPassStatus from context
+    switch (hostPassStatus) { 
         case 'no_pass_initiated': 
           statusText = "Activate your free host pass to begin creating memories and access all features."; 
           actionContent = (<Button onClick={activateFreeHostPass} variant="default" size="sm"><Star className="mr-2 h-4 w-4" /> Activate 6-Month Free Host Pass</Button>); 
@@ -293,17 +290,7 @@ export default function SettingsPage() {
       <div className="mt-2 space-y-2">
         <p className="text-sm text-muted-foreground">{statusText}</p>
         {actionContent}
-        <div className="mt-3 border-t pt-3">
-            <p className="text-xs text-muted-foreground mb-1">For Testing: Current `hostPassStatus`: <code className="font-mono bg-muted p-1 rounded">{hostPassStatus || 'N/A'}</code></p>
-            <Button 
-              onClick={resetHostPassForTesting} 
-              variant="outline" 
-              size="sm" 
-              className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            >
-              <RotateCcw className="mr-2 h-4 w-4" /> Reset Host Pass (For Testing)
-            </Button>
-        </div>
+        {/* Testing elements removed */}
       </div>
     );
   };
@@ -332,7 +319,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-1"><Label htmlFor="name">Name</Label><Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your Name" /></div>
                 <div className="space-y-1"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" disabled /><p className="text-xs text-muted-foreground">Email cannot be changed in this demo.</p></div>
-                <div className="space-y-1"><Label htmlFor="profileInfo">Profile Info (for AI Chapter Ideas)</Label><Textarea id="profileInfo" value={profileInfo} onChange={(e) => setProfileInfo(e.target.value)} placeholder="e.g., Lived in Paris during the 90s, passionate about jazz music and gardening. Traveled extensively in South East Asia." rows={3} /><p className="text-xs text-muted-foreground">This helps AI generate more relevant chapter ideas for you on the 'My Life Journey' page.</p></div>
+                {/* Profile Info Textarea removed */}
               </CardContent>
             </Card>
             <Card>
