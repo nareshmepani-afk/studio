@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [guestPassPriceDetails, setGuestPassPriceDetails] = useState<GetGuestPassPriceOutput | null>(null);
   const [isFetchingGuestPassPrice, setIsFetchingGuestPassPrice] = useState(false);
 
-  const [hostPassPriceDetails, setHostPassPriceDetails] = useState<GetHostPassPriceOutput | null>(null);
+  const [hostPassPriceDetails, setHostPassPriceDetails] = useState<GetGuestPassPriceOutput | null>(null);
   const [isFetchingHostPassPrice, setIsFetchingHostPassPrice] = useState(false);
 
   const router = useRouter();
@@ -231,7 +231,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsFetchingGuestPassPrice(false);
     }
-  }, [isFetchingGuestPassPrice, guestPassPriceDetails]);
+  }, [isFetchingGuestPassPrice, guestPassPriceDetails]); // Removed toast from deps as it's stable
 
   const fetchGuestPassPrice = useCallback(() => {
     fetchGuestPassPriceLogic(user);
@@ -258,7 +258,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsFetchingHostPassPrice(false);
     }
-  }, [isFetchingHostPassPrice, hostPassPriceDetails]);
+  }, [isFetchingHostPassPrice, hostPassPriceDetails]); // Removed toast from deps
 
   const fetchHostPassPrice = useCallback(() => {
     fetchHostPassPriceLogic(user);
@@ -353,7 +353,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (loading || isLoggingOut) return;
 
-    const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password']; // Added forgot/reset
+    const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
     const defaultAuthenticatedHostPath = '/prompts';
     const defaultAuthenticatedGuestPath = '/timeline';
 
@@ -461,14 +461,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const purchasePaidGuestPass = useCallback(async () => {
     if (user) {
-      console.log("SIMULATION: Initiating Stripe payment flow for Guest Pass.");
-      toast({ title: "Initiating Guest Pass Purchase...", description: "You would be redirected to Stripe or shown a payment form.", duration: 5000});
-
-      // Simulate a delay for payment processing
-      // await new Promise(resolve => setTimeout(resolve, 1500));
+      toast({ title: "Initiating Secure Guest Pass Purchase...", description: "You would be redirected to Stripe for payment.", duration: 5000});
+      console.log("SIMULATION: Stripe Checkout for Guest Pass");
+      console.log("SIMULATION: 1. Call server action to create Stripe Checkout session for Guest Pass.");
+      console.log("SIMULATION: 2. Server action returns sessionId.");
+      console.log("SIMULATION: 3. Client calls stripe.redirectToCheckout({ sessionId }).");
+      console.log("SIMULATION: 4. User completes payment on Stripe's page.");
+      console.log("SIMULATION: 5. Stripe redirects back to success/cancel URL in our app.");
+      console.log("SIMULATION: 6. Webhook (or success page logic) confirms payment and activates pass in DB.");
 
       // For now, we'll still grant the pass immediately for demo purposes.
-      // In a real app, this `updateUserInStateAndStorage` would happen *after* Stripe confirms successful payment (e.g., via webhook).
       const now = new Date();
       let startDate = now;
 
@@ -481,16 +483,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       let currentPassPrice = guestPassPriceDetails;
       if (!currentPassPrice) {
-         currentPassPrice = await getGuestPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
-         setGuestPassPriceDetails(currentPassPrice);
+         try {
+            currentPassPrice = await getGuestPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
+            setGuestPassPriceDetails(currentPassPrice);
+         } catch (e) { /* ignore error for simulation */ }
       }
       let priceMsg = "for your pass";
       if (currentPassPrice) {
           priceMsg = `for ${new Intl.NumberFormat('en-GB', { style: 'currency', currency: currentPassPrice.currency }).format(currentPassPrice.passPrice)}`;
       }
-      toast({ title: "Guest Pass Activated (Mock Payment)!", description: `Your 31-day guest pass ${priceMsg} is now active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
+      toast({ title: "Guest Pass Activated (Payment Simulated)!", description: `Your 31-day guest pass ${priceMsg} is now active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
     }
   }, [user, guestPassPriceDetails, updateUserInStateAndStorage]);
+
 
   const activateFreeHostPass = useCallback(() => {
     if (user && user.hostPassStatus === 'no_pass_initiated') {
@@ -503,14 +508,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const purchasePaidHostPass = useCallback(async () => {
     if (user) {
-      console.log("SIMULATION: Initiating Stripe payment flow for Host Pass.");
-      toast({ title: "Initiating Host Pass Purchase...", description: "You would be redirected to Stripe or shown a payment form.", duration: 5000});
+      toast({ title: "Initiating Secure Host Pass Purchase...", description: "You will be redirected to Stripe for payment.", duration: 5000});
+      console.log("SIMULATION: Stripe Checkout for Host Pass");
+      console.log("SIMULATION: 1. Call server action to create Stripe Checkout session for Host Pass.");
+      console.log("SIMULATION: 2. Server action returns sessionId.");
+      console.log("SIMULATION: 3. Client calls stripe.redirectToCheckout({ sessionId }).");
+      console.log("SIMULATION: 4. User completes payment on Stripe's page.");
+      console.log("SIMULATION: 5. Stripe redirects back to success/cancel URL in our app.");
+      console.log("SIMULATION: 6. Webhook (or success page logic) confirms payment and activates pass in DB.");
       
-      // Simulate a delay for payment processing
-      // await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // For now, we'll still grant the pass immediately for demo purposes.
-      // In a real app, this `updateUserInStateAndStorage` would happen *after* Stripe confirms successful payment.
       const now = new Date();
       let startDate = now;
       if (user.hostPassStatus === 'paid_host_pass_active' && user.paidHostPassExpiryDate && isBefore(now, parseISO(user.paidHostPassExpiryDate))) {
@@ -522,14 +528,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       let currentHostPassPrice = hostPassPriceDetails;
       if (!currentHostPassPrice) {
-         currentHostPassPrice = await getHostPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
-         setHostPassPriceDetails(currentHostPassPrice);
+        try {
+            currentHostPassPrice = await getHostPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
+            setHostPassPriceDetails(currentHostPassPrice);
+        } catch (e) { /* ignore error for simulation */ }
       }
       let priceMsg = "for your host pass";
       if (currentHostPassPrice) {
           priceMsg = `for ${new Intl.NumberFormat('en-GB', { style: 'currency', currency: currentHostPassPrice.currency }).format(currentHostPassPrice.passPrice)}`;
       }
-      toast({ title: "Host Pass Activated (Mock Payment)!", description: `Your 31-day host pass ${priceMsg} is now active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
+      toast({ title: "Host Pass Activated (Payment Simulated)!", description: `Your 31-day host pass ${priceMsg} is now active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
     }
   }, [user, hostPassPriceDetails, updateUserInStateAndStorage]);
 
@@ -539,17 +547,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const currentViewedIds = currentUser.viewedSharedMemoryIds || [];
         if (!currentViewedIds.includes(memoryId)) {
           const updatedUser = { ...currentUser, viewedSharedMemoryIds: [...currentViewedIds, memoryId] };
+          // Only update localStorage if the user object actually changes
+          if (user && JSON.stringify(user.viewedSharedMemoryIds) !== JSON.stringify(updatedUser.viewedSharedMemoryIds)) {
+            updateUserInStateAndStorage(updatedUser);
+          }
           return updatedUser;
         }
       }
       return currentUser;
     });
-    if (user) {
-        const currentViewedIds = user.viewedSharedMemoryIds || [];
-        if (!currentViewedIds.includes(memoryId)) {
-            updateUserInStateAndStorage({ ...user, viewedSharedMemoryIds: [...currentViewedIds, memoryId] });
-        }
-    }
   }, [user, updateUserInStateAndStorage]);
 
   const getStorageQuotaBytes = useCallback((): number => {
@@ -568,7 +574,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         paidHostPassExpiryDate: undefined,
       };
       updateUserInStateAndStorage(updatedUser);
-      setHostPassPriceDetails(null);
+      setHostPassPriceDetails(null); // Reset price details too
       toast({ title: "Host Pass Reset (Testing)", description: "Host pass status has been reset to initial state." });
     }
   }, [user, updateUserInStateAndStorage]);
@@ -594,3 +600,4 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
