@@ -2,25 +2,18 @@
 "use server";
 
 import { z } from "zod";
+import { auth } from "@/lib/firebase"; // Import Firebase auth
+import { sendPasswordResetEmail } from "firebase/auth";
 
 const RequestPasswordResetInputSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
-  recaptchaToken: z.string().min(1, { message: "reCAPTCHA verification failed." }),
+  // recaptchaToken: z.string().min(1, { message: "reCAPTCHA verification failed." }), // reCAPTCHA removed for this step
 });
 
 interface RequestPasswordResetOutput {
   success: boolean;
   message: string;
 }
-
-// This is a mock action. In a real app, you would:
-// 1. Validate input (done with Zod).
-// 2. Verify reCAPTCHA token with Google's API using your RECAPTCHA_SECRET_KEY.
-// 3. Check if a user exists with this email in your database.
-// 4. Generate a secure, unique, and time-limited password reset token.
-// 5. Store the token hashed in the database, associated with the user's ID and an expiry date.
-// 6. Construct a password reset URL (e.g., yourdomain.com/reset-password?token=THE_TOKEN).
-// 7. Use an email service (like SendGrid) to send the reset link to the user's email.
 
 export async function requestPasswordResetAction(
   input: z.infer<typeof RequestPasswordResetInputSchema>
@@ -31,45 +24,31 @@ export async function requestPasswordResetAction(
       return { success: false, message: validation.error.errors.map(e => e.message).join(" ") || "Invalid input." };
     }
 
-    const { email, recaptchaToken } = validation.data;
+    const { email } = validation.data;
 
-    // Simulate reCAPTCHA verification
-    console.log(`SIMULATION: Verifying reCAPTCHA token: ${recaptchaToken}`);
-    // In a real app:
+    // In a real app with reCAPTCHA:
     // const recaptchaVerified = await verifyRecaptcha(recaptchaToken, process.env.RECAPTCHA_SECRET_KEY);
     // if (!recaptchaVerified) {
     //   return { success: false, message: "reCAPTCHA verification failed. Please try again." };
     // }
-    console.log("SIMULATION: reCAPTCHA token considered valid for this mock.");
-
-
-    // Simulate checking if user exists (in a real app, query your database)
-    console.log(`Password reset requested for email: ${email}`);
-
-    // Simulate token generation
-    const mockToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    const mockResetLink = `/reset-password?token=${mockToken}`;
-
-    console.log(`SIMULATION:
-      - User existence check for ${email} (assumed positive for demo).
-      - Generated mock reset token: ${mockToken}
-      - Constructed mock reset link: ${mockResetLink}
-      - IF SENDGRID WAS CONFIGURED, an email would be sent to ${email} with this link.
-    `);
-
-    // In a real app, you'd now call your SendGrid (or other email service) function here
-    // await sendPasswordResetEmail(email, mockResetLink);
+    
+    await sendPasswordResetEmail(auth, email);
 
     return {
       success: true,
-      message: "If an account with this email exists, instructions to reset your password have been (notionally) sent. Please check your inbox (this is a simulation).",
+      message: "If an account with this email exists, a password reset link has been sent. Please check your inbox.",
     };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error in requestPasswordResetAction:", error);
+    // Firebase often throws errors with codes, e.g., 'auth/user-not-found'
+    // For a better UX, you might not want to reveal if an email exists or not.
+    // So, often a generic success message is returned regardless, unless it's a clear input validation error.
+    // However, for this specific error, Firebase handles not finding the user gracefully by default (doesn't error out).
+    // If other errors occur, they will be caught here.
     return {
       success: false,
-      message: "An unexpected error occurred while processing your request. Please try again.",
+      message: error.message || "An unexpected error occurred while processing your request. Please try again.",
     };
   }
 }

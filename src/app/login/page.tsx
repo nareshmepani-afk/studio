@@ -8,34 +8,46 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { Film } from 'lucide-react'; // Changed from BookOpenText
+import { Film, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Navbar } from '@/components/layout/Navbar'; // Import Navbar
+import { Navbar } from '@/components/layout/Navbar';
+import { toast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  const { login, loading: authLoading } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    // In a real app, you'd validate and call an API
-    login(email); // Mock login just uses email for now, redirects via AuthContext
+    setIsSubmitting(true);
+    try {
+      await login(email, password);
+      // AuthContext will handle redirection
+    } catch (error) {
+      // Error is already toasted in AuthContext, no need to double toast
+      console.error("Login page submit error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const isLoading = authLoading || isSubmitting;
 
   return (
     <div className="flex min-h-screen flex-col bg-secondary">
-      <Navbar /> {/* Add Navbar here */}
+      <Navbar />
       <div className="flex flex-grow flex-col items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-xl">
           <CardHeader className="text-center">
             <div className="inline-flex justify-center items-center mb-4">
-              <Film className="h-10 w-10 text-primary" /> {/* Changed Icon */}
+              <Film className="h-10 w-10 text-primary" />
             </div>
             <CardTitle className="font-headline text-3xl">Welcome Back</CardTitle>
             <CardDescription>Sign in to continue to Memory Weaver</CardDescription>
@@ -52,6 +64,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={isLoading}
                     suppressHydrationWarning={true}
                   />
                 </div>
@@ -72,24 +85,26 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    disabled={isLoading}
                     suppressHydrationWarning={true}
                   />
                 </div>
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Login
                 </Button>
               </form>
             ) : (
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-20 mb-1" /> {/* Label */}
-                  <Skeleton className="h-10 w-full" />   {/* Input */}
+                  <Skeleton className="h-4 w-20 mb-1" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-20 mb-1" /> {/* Label */}
-                  <Skeleton className="h-10 w-full" />   {/* Input */}
+                  <Skeleton className="h-4 w-20 mb-1" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
-                <Skeleton className="h-10 w-full" />       {/* Button */}
+                <Skeleton className="h-10 w-full" />
               </div>
             )}
             <p className="mt-6 text-center text-sm text-muted-foreground">

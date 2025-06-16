@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 function ResetPasswordFormComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get('token');
+  const token = searchParams.get('token'); // This will be the oobCode from Firebase email link
 
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -47,9 +47,10 @@ function ResetPasswordFormComponent() {
       setError("No reset token found. Please use the link from your email.");
       return;
     }
-    if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters long.");
-      toast({ title: "Password Too Short", description: "Password must be at least 8 characters long.", variant: "destructive" });
+    // Firebase password minimum is 6 characters
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      toast({ title: "Password Too Short", description: "Password must be at least 6 characters long.", variant: "destructive" });
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -59,15 +60,15 @@ function ResetPasswordFormComponent() {
     }
 
     setIsLoading(true);
-    // Simulate obtaining reCAPTCHA token
-    const mockRecaptchaToken = "mock-recaptcha-token-for-reset-" + Date.now();
+    // ReCAPTCHA simulation removed for this step
+    // const mockRecaptchaToken = "mock-recaptcha-token-for-reset-" + Date.now();
 
     try {
       const result = await resetPasswordAction({ 
         token, 
         newPassword, 
-        confirmPassword, 
-        recaptchaToken: mockRecaptchaToken 
+        confirmPassword,
+        // recaptchaToken: mockRecaptchaToken // Removed
       });
       if (result.success) {
         setSuccess(true);
@@ -139,7 +140,7 @@ function ResetPasswordFormComponent() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="new-password">New Password</Label>
+        <Label htmlFor="new-password">New Password (min. 6 characters)</Label>
         <Input
           id="new-password"
           type="password"
@@ -202,9 +203,11 @@ export default function ResetPasswordPage() {
             }>
               <ResetPasswordFormComponent />
             </Suspense>
+            {/* Removed reCAPTCHA note as it's not implemented yet in this step
             <p className="mt-4 text-xs text-center text-muted-foreground">
               This site is protected by reCAPTCHA (simulated).
             </p>
+            */}
             <p className="mt-6 text-center text-sm text-muted-foreground">
               Remembered your password?{' '}
               <Link href="/login" className="font-medium text-primary hover:underline">

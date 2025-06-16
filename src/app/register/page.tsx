@@ -8,40 +8,61 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { Film } from 'lucide-react'; // Changed from BookOpenText
+import { Film, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Navbar } from '@/components/layout/Navbar'; // Import Navbar
-
+import { Navbar } from '@/components/layout/Navbar';
+import { toast } from '@/hooks/use-toast';
 
 export default function RegisterPage() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const { login } = useAuth(); // Using login for mock registration for now
+  const { register, loading: authLoading } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (password !== confirmPassword) {
-      alert("Passwords don't match!"); // Simple validation
+      toast({ title: "Passwords Mismatch", description: "Passwords do not match.", variant: "destructive" });
       return;
     }
-    // In a real app, you'd call a registration API
-    login(email); // Mock registration uses login flow, redirects via AuthContext
+    if (password.length < 6) {
+        toast({ title: "Password Too Short", description: "Password must be at least 6 characters.", variant: "destructive" });
+        return;
+    }
+    if (!name.trim()) {
+        toast({ title: "Name Required", description: "Please enter your name.", variant: "destructive" });
+        return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await register(name, email, password);
+      // AuthContext will handle redirection
+    } catch (error) {
+      // Error is already toasted in AuthContext
+      console.error("Register page submit error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+  
+  const isLoading = authLoading || isSubmitting;
 
   return (
     <div className="flex min-h-screen flex-col bg-secondary">
-      <Navbar /> {/* Add Navbar here */}
+      <Navbar />
       <div className="flex flex-grow flex-col items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-xl">
           <CardHeader className="text-center">
             <div className="inline-flex justify-center items-center mb-4">
-              <Film className="h-10 w-10 text-primary" /> {/* Changed Icon */}
+              <Film className="h-10 w-10 text-primary" />
             </div>
             <CardTitle className="font-headline text-3xl">Create Account</CardTitle>
             <CardDescription>Join Memory Weaver and start preserving your moments</CardDescription>
@@ -49,6 +70,19 @@ export default function RegisterPage() {
           <CardContent>
             {hasMounted ? (
               <form onSubmit={handleSubmit} className="space-y-6" suppressHydrationWarning={true}>
+                <div className="space-y-2" suppressHydrationWarning={true}>
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Your Full Name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    suppressHydrationWarning={true}
+                  />
+                </div>
                 <div className="space-y-2" suppressHydrationWarning={true}>
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -58,11 +92,12 @@ export default function RegisterPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={isLoading}
                     suppressHydrationWarning={true}
                   />
                 </div>
                 <div className="space-y-2" suppressHydrationWarning={true}>
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Password (min. 6 characters)</Label>
                   <Input
                     id="password"
                     type="password"
@@ -70,6 +105,7 @@ export default function RegisterPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    disabled={isLoading}
                     suppressHydrationWarning={true}
                   />
                 </div>
@@ -82,28 +118,34 @@ export default function RegisterPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
+                    disabled={isLoading}
                     suppressHydrationWarning={true}
                   />
                 </div>
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Sign Up
                 </Button>
               </form>
             ) : (
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-20 mb-1" /> {/* Label */}
-                  <Skeleton className="h-10 w-full" />   {/* Input */}
+                  <Skeleton className="h-4 w-24 mb-1" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-20 mb-1" /> {/* Label */}
-                  <Skeleton className="h-10 w-full" />   {/* Input */}
+                  <Skeleton className="h-4 w-20 mb-1" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-32 mb-1" /> {/* Label for Confirm Password */}
-                  <Skeleton className="h-10 w-full" />   {/* Input */}
+                  <Skeleton className="h-4 w-20 mb-1" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
-                <Skeleton className="h-10 w-full" />       {/* Button */}
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32 mb-1" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+                <Skeleton className="h-10 w-full" />
               </div>
             )}
             <p className="mt-6 text-center text-sm text-muted-foreground">
@@ -123,5 +165,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-    
