@@ -80,6 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
   const initialLoadDone = useRef(false);
+  const justLoggedOut = useRef(false);
 
 
   const updateUserProfileInFirestore = useCallback(async (userId: string, updates: Partial<User>) => {
@@ -248,8 +249,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             storageUsedBytes: dbUser.storageUsedBytes || 0,
           };
         } else {
-          // This case should ideally be handled during registration.
-          // If a Firebase user exists but no Firestore doc, create one.
           appUserInitial = {
             id: firebaseUser.uid,
             email: firebaseUser.email || "",
@@ -259,29 +258,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             viewedSharedMemoryIds: [],
             storageUsedBytes: 0,
           };
-          // setDoc won't be awaited here to speed up initial load
-          setDoc(userDocRef, { ...appUserInitial, createdAt: serverTimestamp() });
+          await setDoc(userDocRef, { ...appUserInitial, createdAt: serverTimestamp() });
         }
 
-        // Check and update pass status (important for immediate UI)
         const appUserWithPassStatus = await checkAndUpdatePassStatus(appUserInitial);
-
-        // Set essential user state and clear loading
         setUser(appUserWithPassStatus);
         setIsAuthenticated(true);
-        setLoading(false); // **Moved setLoading(false) here**
+        setLoading(false); // Set loading false once essential user data is ready
 
-        // Post-load asynchronous updates
+        // Defer non-critical updates
         checkIfGuestHasUnviewedMemories().then(hasUnviewed => {
           setHasNewSharedMemoriesState(hasUnviewed);
         });
-        calculateAndUpdateStorageUsage(appUserWithPassStatus.id); // This will update user state internally
+        calculateAndUpdateStorageUsage(appUserWithPassStatus.id);
 
       } else {
+        // User is logged out
+        if (pathname !== '/') { // Only push if not already on homepage
+            router.push('/');
+        }
+        justLoggedOut.current = true; // Signal that a logout just occurred
+
         setUser(null);
         setIsAuthenticated(false);
         setHasNewSharedMemoriesState(false);
-        setLoading(false); // Also set loading false if no user
+        setLoading(false);
       }
 
       if (!initialLoadDone.current) {
@@ -289,7 +290,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     return () => unsubscribe();
-  }, [checkAndUpdatePassStatus, checkIfGuestHasUnviewedMemories, calculateAndUpdateStorageUsage]);
+  }, [checkAndUpdatePassStatus, checkIfGuestHasUnviewedMemories, calculateAndUpdateStorageUsage, router, pathname]);
 
 
   useEffect(() => {
@@ -306,18 +307,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const targetPath = userMode === 'host' ? defaultAuthenticatedHostPath : defaultAuthenticatedGuestPath;
         if (pathname !== targetPath) {
             router.push(targetPath);
-            return; 
+            return;
         }
       }
-    } else { 
-      if (!publicPaths.includes(pathname)) {
+    } else {
+      if (justLoggedOut.current) {
+        justLoggedOut.current = false; // Reset the flag
+        // If we just logged out, the onAuthStateChanged listener should have already pushed to '/'
+        // So, we don't redirect to /login here.
+      } else if (!publicPaths.includes(pathname)) {
         if (pathname !== '/login') {
             router.push('/login');
-            return; 
+            return;
         }
       }
     }
 
+    // Price fetching logic (can run after redirection logic)
     if (isAuthenticated && user) {
       if (userMode === 'host') {
         if ((user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired' || user.hostPassStatus === 'no_pass_initiated') && !isFetchingHostPassPrice && !hostPassPriceDetails) {
@@ -335,25 +341,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isFetchingHostPassPrice, hostPassPriceDetails]);
 
   const login = useCallback(async (email: string, password: string): Promise<void> => {
-    setLoading(true); // Keep setLoading(true) here for the login button's loading state
+    setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast({ title: "Login Successful", description: "Welcome back!" });
-      // setLoading(false) is handled by onAuthStateChanged
     } catch (error: any) {
       console.error("Login error:", error);
       toast({ title: "Login Failed", description: error.message || "Invalid email or password.", variant: "destructive" });
-      setLoading(false); // Set loading false on error
+      setLoading(false);
       throw error;
     }
   }, []);
 
   const register = useCallback(async (name: string, email: string, password: string): Promise<void> => {
-    setLoading(true); // Keep setLoading(true) here
+    setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
-      const newUserProfile: Omit<User, 'id'> & { createdAt: any } = { 
+      const newUserProfile: Omit<User, 'id'> & { createdAt: any } = {
         email: firebaseUser.email || "",
         name: name,
         sharedAccessStatus: 'no_pass_initiated',
@@ -364,33 +369,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
       await setDoc(doc(db, "users", firebaseUser.uid), newUserProfile);
       toast({ title: "Registration Successful", description: "Welcome! Your account has been created." });
-      // setLoading(false) is handled by onAuthStateChanged
     } catch (error: any) {
       console.error("Registration error:", error);
       toast({ title: "Registration Failed", description: error.message || "Could not create account.", variant: "destructive" });
-      setLoading(false); // Set loading false on error
+      setLoading(false);
       throw error;
     }
   }, []);
 
 
   const logout = useCallback(async () => {
-    setLoading(true);
+    // setLoading(true); // No longer setting loading true here, onAuthStateChanged will handle it
     try {
       await firebaseSignOut(auth);
-      // State will be reset by onAuthStateChanged listener
+      // onAuthStateChanged will handle setting user to null, isAuthenticated to false,
+      // and redirecting to '/' via router.push('/') and justLoggedOut.current flag.
       setPendingRequestCountState(0);
-      setUserModeState('host');
-      setGuestPassPriceDetails(null);
+      setUserModeState('host'); // Reset to default mode
+      setGuestPassPriceDetails(null); // Reset price details
       setHostPassPriceDetails(null);
-      router.push('/');
+      // router.push('/') is now handled in onAuthStateChanged
     } catch (error) {
       console.error("Logout error:", error);
       toast({ title: "Logout Failed", variant: "destructive" });
-      setLoading(false); // Ensure loading is false on error
+      // setLoading(false); // No longer setting loading false here
     }
-    // setLoading(false) is handled by onAuthStateChanged
-  }, [router]);
+  }, []);
 
   const setPendingRequestCount = useCallback((count: number) => { setPendingRequestCountState(count); }, []);
   const handleModeChange = useCallback((newMode: UserMode) => { setUserModeState(newMode); }, []);
@@ -408,16 +412,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const purchasePaidGuestPass = useCallback(async () => {
     if (user) {
-      toast({ title: "Initiating Guest Pass Purchase (Simulated)...", description: "Payment processing is mocked.", duration: 5000});
-      const now = new Date(); let startDate = now;
-      if (user.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate && isBefore(now, parseISO(user.paidPassExpiryDate))) { startDate = parseISO(user.paidPassExpiryDate); }
-      const newExpiryDate = addDays(startDate, 31);
-      const updates: Partial<User> = { sharedAccessStatus: 'paid_pass_active', paidPassExpiryDate: newExpiryDate.toISOString() };
-      await updateUserProfileInFirestore(user.id, updates);
-      let currentPassPrice = guestPassPriceDetails;
-      if (!currentPassPrice) { try { currentPassPrice = await getGuestPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' }); setGuestPassPriceDetails(currentPassPrice); } catch (e) { /* ignore */ } }
-      let priceMsg = "for your pass"; if (currentPassPrice) { priceMsg = `for ${new Intl.NumberFormat('en-GB', { style: 'currency', currency: currentPassPrice.currency }).format(currentPassPrice.passPrice)}`; }
-      toast({ title: "Guest Pass Activated (Payment Simulated)!", description: `Your 31-day guest pass ${priceMsg} is now active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
+        toast({ title: "Initiating Guest Pass Purchase...", description: "Secure payment starting (Simulated for now).", duration: 3000 });
+        console.log("Simulating Stripe Checkout for Guest Pass...");
+        console.log("1. Call server action to create Stripe Checkout session.");
+        console.log("2. Redirect user to Stripe Checkout page.");
+        console.log("3. Stripe calls webhook on successful payment.");
+        console.log("4. Webhook updates user's pass status in Firestore.");
+
+        // Mock activation for testing
+        const now = new Date(); let startDate = now;
+        if (user.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate && isBefore(now, parseISO(user.paidPassExpiryDate))) { startDate = parseISO(user.paidPassExpiryDate); }
+        const newExpiryDate = addDays(startDate, 31);
+        const updates: Partial<User> = { sharedAccessStatus: 'paid_pass_active', paidPassExpiryDate: newExpiryDate.toISOString() };
+        await updateUserProfileInFirestore(user.id, updates);
+        let currentPassPrice = guestPassPriceDetails;
+        if (!currentPassPrice) { try { currentPassPrice = await getGuestPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' }); setGuestPassPriceDetails(currentPassPrice); } catch (e) { /* ignore */ } }
+        let priceMsg = "for your pass"; if (currentPassPrice) { priceMsg = `for ${new Intl.NumberFormat('en-GB', { style: 'currency', currency: currentPassPrice.currency }).format(currentPassPrice.passPrice)}`; }
+        toast({ title: "Guest Pass Activated (Payment Simulated)!", description: `Your 31-day guest pass ${priceMsg} is now active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
     }
   }, [user, guestPassPriceDetails, updateUserProfileInFirestore]);
 
@@ -432,7 +443,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const purchasePaidHostPass = useCallback(async () => {
     if (user) {
-      toast({ title: "Initiating Host Pass Purchase (Simulated)...", description: "Payment processing is mocked.", duration: 5000});
+      toast({ title: "Initiating Host Pass Purchase...", description: "Secure payment starting (Simulated for now).", duration: 3000 });
+      console.log("Simulating Stripe Checkout for Host Pass...");
+      console.log("1. Call server action to create Stripe Checkout session.");
+      console.log("2. Redirect user to Stripe Checkout page.");
+      console.log("3. Stripe calls webhook on successful payment.");
+      console.log("4. Webhook updates user's pass status in Firestore.");
+
+      // Mock activation for testing
       const now = new Date(); let startDate = now;
       if (user.hostPassStatus === 'paid_host_pass_active' && user.paidHostPassExpiryDate && isBefore(now, parseISO(user.paidHostPassExpiryDate))) { startDate = parseISO(user.paidHostPassExpiryDate); }
       const newExpiryDate = addDays(startDate, 31);
@@ -444,6 +462,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Host Pass Activated (Payment Simulated)!", description: `Your 31-day host pass ${priceMsg} is now active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
     }
   }, [user, hostPassPriceDetails, updateUserProfileInFirestore]);
+
 
   const markSharedMemoryAsViewed = useCallback(async (memoryId: string) => {
     if (user) {
@@ -460,7 +479,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (user) {
       const updates: Partial<User> = { hostPassStatus: 'no_pass_initiated', freeHostPassActivatedDate: undefined, paidHostPassExpiryDate: undefined };
       await updateUserProfileInFirestore(user.id, updates);
-      setHostPassPriceDetails(null); 
+      setHostPassPriceDetails(null);
       toast({ title: "Host Pass Reset (Testing)", description: "Host pass status has been reset." });
     }
   }, [user, updateUserProfileInFirestore]);
@@ -485,3 +504,4 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
