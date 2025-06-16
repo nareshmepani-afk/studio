@@ -56,6 +56,8 @@ export default function TimelinePage() {
     return hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
   }, [hostPassStatus]);
 
+  const isViewingLegacyChest = useMemo(() => legacyFilter === 'legacy', [legacyFilter]);
+
 
   useEffect(() => {
     // Fetch guest pass price if in guest mode and pass is not active or price details are missing
@@ -200,7 +202,7 @@ export default function TimelinePage() {
          buttonText += ` (£7.99 - Mock)`;
     }
     
-    const button = (<Button onClick={purchasePaidGuestPass} className="mt-2 sm:mt-0 sm:ml-2 w-full sm:w-auto" disabled={isFetchingGuestPassPrice}>{isFetchingGuestPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}{buttonText}</Button>);
+    const button = (<Button onClick={purchasePaidGuestPass} className="mt-2 sm:mt-0 sm:ml-2 w-full sm:w-auto" disabled={isFetchingGuestPassPrice} aria-label={buttonText}>{isFetchingGuestPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}{buttonText}</Button>);
     
     if (guestPassPriceDetails && !isFetchingGuestPassPrice && guestPassPriceDetails.justification) {
       return (<TooltipProvider><div className="flex flex-col sm:flex-row items-start sm:items-center mt-2">{button}<Tooltip><TooltipTrigger asChild><span className="mt-1 sm:mt-0 sm:ml-2 text-xs text-muted-foreground flex items-center cursor-default"><Info className="h-3 w-3 mr-1" /> {guestPassPriceDetails.justification}</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{guestPassPriceDetails.justification} (Based on avg coffee: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
@@ -240,7 +242,7 @@ export default function TimelinePage() {
       title = "Welcome, Guest!";
       description = "To view memories shared with you by hosts, please activate your complimentary 6-month free Guest Pass.";
       actionContent = (
-        <Button onClick={activateFreeGuestPass} className="mt-3 w-full sm:w-auto">
+        <Button onClick={activateFreeGuestPass} className="mt-3 w-full sm:w-auto" aria-label="Activate Free Guest Pass">
           <Gift className="mr-2 h-5 w-5" /> Activate Free Guest Pass
         </Button>
       );
@@ -290,7 +292,7 @@ export default function TimelinePage() {
           {userMode === 'host' && (
             <div className="flex items-center space-x-2 sm:space-x-4">
               {currentStreak > 0 && (<TooltipProvider><Tooltip><TooltipTrigger asChild><div className="flex items-center text-sm text-primary font-medium p-2 rounded-md bg-primary/10"><Award className="mr-1.5 h-5 w-5" /><span>{currentStreak} Day Streak!</span></div></TooltipTrigger><TooltipContent><p>Recorded memories for {currentStreak} days. Keep it up!</p></TooltipContent></Tooltip></TooltipProvider>)}
-              <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={handleCreateMontage} aria-label="Create AI Memory Montage"><Film className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>Create AI Memory Montage (Soon)</p></TooltipContent></Tooltip></TooltipProvider>
+              <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="outline" size="icon" onClick={handleCreateMontage} aria-label="Create AI Memory Montage (Coming Soon)"><Film className="h-5 w-5" /></Button></TooltipTrigger><TooltipContent><p>Create AI Memory Montage (Soon)</p></TooltipContent></Tooltip></TooltipProvider>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -308,6 +310,16 @@ export default function TimelinePage() {
             </div>
           )}
         </div>
+        
+        {isViewingLegacyChest && userMode === 'host' && (
+          <Alert className="mb-6 bg-secondary/50 border-secondary-darker shadow">
+            <Archive className="h-5 w-5 text-secondary-foreground" />
+            <AlertTitle className="font-headline text-secondary-foreground">Your Legacy Chest</AlertTitle>
+            <AlertDescription className="text-secondary-foreground/80">
+              You are viewing memories you've marked for your Legacy Chest. These are special moments preserved for the future.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {renderGuestModeAccessUI()}
         <TimelineFilter
@@ -324,20 +336,32 @@ export default function TimelinePage() {
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">{guestAccessPlaceholderMessage}</p>
           </div>
         )}
-        {userMode === 'guest' && canGuestViewSharedMemories && filteredAndSortedMemories.length === 0 && (
+        
+        {isViewingLegacyChest && userMode === 'host' && filteredAndSortedMemories.length === 0 && (
+          <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
+            <Archive className="mx-auto h-16 w-16 text-primary mb-6" />
+            <h2 className="font-headline text-3xl mb-3">Your Legacy Chest is Empty</h2>
+            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+              Mark important memories with the <Archive className="inline-block h-4 w-4 mx-1" /> icon on their cards to add them to your Legacy Chest.
+            </p>
+          </div>
+        )}
+
+        {!isViewingLegacyChest && userMode === 'guest' && canGuestViewSharedMemories && filteredAndSortedMemories.length === 0 && (
           <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
             <Users className="mx-auto h-16 w-16 text-primary mb-6" />
             <h2 className="font-headline text-3xl mb-3">Nothing Shared Yet</h2>
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">When memories are shared with you, they appear here.</p>
           </div>
         )}
-        {userMode === 'host' && filteredAndSortedMemories.length === 0 && (
+        
+        {!isViewingLegacyChest && userMode === 'host' && filteredAndSortedMemories.length === 0 && (
           <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
             <Film className="mx-auto h-16 w-16 text-primary mb-6" />
             <h2 className="font-headline text-3xl mb-3">Welcome to Memory Weaver!</h2>
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">Record your life’s moments. If you need a Host Pass, check Settings.</p>
             <Link href={addMemoryButtonDisabled ? "/settings" : "/add-memory"} passHref>
-              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground" aria-label={addMemoryButtonDisabled ? "Go to Settings to activate Host Pass" : "Record your first memory"}>
                 <PlusCircle className="mr-2 h-5 w-5" />{addMemoryButtonDisabled ? "Go to Settings" : "Record First Memory"}
               </Button>
             </Link>
