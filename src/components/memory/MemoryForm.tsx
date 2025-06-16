@@ -139,7 +139,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
   const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null); // This URL is owned by MemoryForm
   const [mediaToInitializeRecorder, setMediaToInitializeRecorder] = useState<MediaForRecorderInit | undefined>(undefined);
 
-  const promptIdFromQuery = searchParams.get('promptId');
+  const promptIdFromQuery = useMemo(() => searchParams.get('promptId'), [searchParams]);
+  const promptTextFromUrl = useMemo(() => {
+      const text = searchParams.get('prompt');
+      return text ? decodeURIComponent(text) : '';
+  }, [searchParams]);
 
   useEffect(() => {
     if (memory) {
@@ -187,13 +191,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
         setCurrentMedia(null); setCurrentMediaPreviewUrl(null); setMediaToInitializeRecorder(undefined);
       }
     } else {
-      const promptTextFromUrl = searchParams.get('prompt');
-      setTitle(promptTextFromUrl ? decodeURIComponent(promptTextFromUrl) : '');
+      setTitle(promptTextFromUrl || '');
       setLocation(''); setCountry('United Kingdom'); setDescription(''); setSelectedEmotionTags([]); setSelectedCategory(memoryCategoriesList[0]);
       setSelectedYear(getInitialDateComponent('year')); setSelectedMonth(getInitialDateComponent('month')); setSelectedDay(getInitialDateComponent('day'));
       setCurrentMedia(null); setCurrentMediaPreviewUrl(null); setMediaToInitializeRecorder(undefined);
     }
-  }, [memory, searchParams, getInitialDateComponent]);
+  }, [memory, promptTextFromUrl, getInitialDateComponent]);
 
 
   const daysInSelectedMonth = useMemo(() => {
