@@ -9,8 +9,7 @@ export async function generateMemoryCuesAction(input: GenerateMemoryCuesInput): 
     return result;
   } catch (error) {
     console.error("Error generating memory cues:", error);
-    // Return a structured error or rethrow, depending on how you want to handle it client-side
-    // For now, returning an empty array of cues on error.
-    return { memoryCues: [] };
+    // Re-throw the error to be caught by the client-side handler
+    throw error;
   }
 }

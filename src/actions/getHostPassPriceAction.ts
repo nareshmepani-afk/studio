@@ -9,17 +9,8 @@ export async function getHostPassPriceAction(input: GetHostPassPriceInput): Prom
     return result;
   } catch (error) {
     console.error("Error in getHostPassPriceAction:", error);
-    // Provide a default/fallback pricing in case of AI error
-    let fallbackCurrency = 'USD';
-    if (input.city?.toLowerCase() === 'london' && (input.country?.toLowerCase() === 'uk' || input.country?.toLowerCase() === 'united kingdom')) {
-        fallbackCurrency = 'GBP';
-    }
-
-    return {
-      passPrice: fallbackCurrency === 'GBP' ? 12.99 : 14.99, // Fallback price
-      currency: fallbackCurrency,
-      coffeePrice: fallbackCurrency === 'GBP' ? 3.50 : 3.00, // Mock coffee price
-      justification: 'Unlock a full month of memory creation tools and preserve your precious moments.',
-    };
+    // Re-throw the error to be caught by the client-side handler
+    // Fallback logic will be handled in AuthContext or the calling component
+    throw error;
   }
 }

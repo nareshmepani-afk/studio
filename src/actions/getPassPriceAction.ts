@@ -9,19 +9,8 @@ export async function getPassPriceAction(input: GetPassPriceInput): Promise<GetP
     return result;
   } catch (error) {
     console.error("Error in getPassPriceAction:", error);
-    // Provide a default/fallback pricing in case of AI error
-    // Determine currency based on input, or default if not possible
-    let fallbackCurrency = 'USD';
-    if (input.city?.toLowerCase() === 'london' && (input.country?.toLowerCase() === 'uk' || input.country?.toLowerCase() === 'united kingdom')) {
-        fallbackCurrency = 'GBP';
-    }
-
-    return {
-      passPrice: fallbackCurrency === 'GBP' ? 7.99 : 9.99, // Fallback price
-      currency: fallbackCurrency,
-      coffeePrice: 0, // In fallback, we may not have this, or could use a default
-      justification: 'Enjoy a month of shared memories with our standard access pass.',
-    };
+    // Re-throw the error to be caught by the client-side handler
+    // Fallback logic will be handled in AuthContext or the calling component
+    throw error;
   }
 }
-
