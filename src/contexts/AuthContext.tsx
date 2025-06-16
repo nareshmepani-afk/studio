@@ -39,7 +39,7 @@ interface AuthContextType {
 
   activateFreeGuestPass: () => void;
   purchasePaidGuestPass: () => Promise<void>;
-  checkAndUpdateGuestPassStatus: () => void; 
+  checkAndUpdateGuestPassStatus: () => void;
   hasNewSharedMemories: boolean;
   setHasNewSharedMemories: (status: boolean) => void;
   markSharedMemoryAsViewed: (memoryId: string) => Promise<void>;
@@ -50,7 +50,7 @@ interface AuthContextType {
 
   activateFreeHostPass: () => void;
   purchasePaidHostPass: () => Promise<void>;
-  checkAndUpdateHostPassStatus: () => void; 
+  checkAndUpdateHostPassStatus: () => void;
   hostPassStatus: User['hostPassStatus'];
   hostPassPriceDetails: GetHostPassPriceOutput | null;
   fetchHostPassPrice: () => Promise<void>;
@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userDocRef = doc(db, "users", userId);
     try {
       await updateDoc(userDocRef, { ...updates, lastUpdated: serverTimestamp() });
-      setUser(prevUser => prevUser ? { ...prevUser, ...updates } : null); 
+      setUser(prevUser => prevUser ? { ...prevUser, ...updates } : null);
     } catch (error) {
       console.error("Error updating user profile in Firestore:", error);
       toast({ title: "Update Failed", description: "Could not save profile changes.", variant: "destructive" });
@@ -161,12 +161,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         hostStatusChanged = true;
       }
     }
-    
+
     if (guestStatusChanged || hostStatusChanged) {
         const updatesToSave: Partial<User> = {};
         if (guestStatusChanged) updatesToSave.sharedAccessStatus = updatedUser.sharedAccessStatus;
         if (hostStatusChanged) updatesToSave.hostPassStatus = updatedUser.hostPassStatus;
-        
+
         await updateUserProfileInFirestore(currentUser.id, updatesToSave);
     }
     return updatedUser;
@@ -175,14 +175,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const checkAndUpdateGuestPassStatus = useCallback(async () => {
     if (user) {
       const updatedUser = await checkAndUpdatePassStatus(user);
-      setUser(updatedUser); 
+      setUser(updatedUser);
     }
   }, [user, checkAndUpdatePassStatus]);
 
   const checkAndUpdateHostPassStatus = useCallback(async () => {
      if (user) {
       const updatedUser = await checkAndUpdatePassStatus(user);
-      setUser(updatedUser); 
+      setUser(updatedUser);
     }
   }, [user, checkAndUpdatePassStatus]);
 
@@ -281,31 +281,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
   useEffect(() => {
-    if (loading || !initialLoadDone.current) return;
+    if (loading || !initialLoadDone.current) {
+      return;
+    }
 
     const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
     const defaultAuthenticatedHostPath = '/prompts';
     const defaultAuthenticatedGuestPath = '/timeline';
 
+    // Handle redirects first
     if (isAuthenticated) {
-      if (user) { 
-        if (userMode === 'host') {
-            if ((user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired' || user.hostPassStatus === 'no_pass_initiated') && !isFetchingHostPassPrice && !hostPassPriceDetails) {
-              fetchHostPassPrice();
-            }
-        } else if (userMode === 'guest') {
-            if ((user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated') && !isFetchingGuestPassPrice && !guestPassPriceDetails) {
-              fetchGuestPassPrice();
-            }
-        }
-      }
       if (publicPaths.includes(pathname)) {
         const targetPath = userMode === 'host' ? defaultAuthenticatedHostPath : defaultAuthenticatedGuestPath;
-        router.push(targetPath);
+        if (pathname !== targetPath) {
+            router.push(targetPath);
+            return; // Exit after a redirect to prevent further logic in this effect run
+        }
       }
-    } else {
+    } else { // Not authenticated
       if (!publicPaths.includes(pathname)) {
-        router.push('/login');
+        if (pathname !== '/login') {
+            router.push('/login');
+            return; // Exit after a redirect
+        }
+      }
+    }
+
+    // If no redirect happened, proceed with other logic (like fetching prices)
+    if (isAuthenticated && user) {
+      if (userMode === 'host') {
+        if ((user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired' || user.hostPassStatus === 'no_pass_initiated') && !isFetchingHostPassPrice && !hostPassPriceDetails) {
+          fetchHostPassPrice();
+        }
+      } else if (userMode === 'guest') {
+        if ((user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated') && !isFetchingGuestPassPrice && !guestPassPriceDetails) {
+          fetchGuestPassPrice();
+        }
       }
     }
   }, [isAuthenticated, loading, pathname, router, userMode, user,
@@ -321,8 +332,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error: any) {
       console.error("Login error:", error);
       toast({ title: "Login Failed", description: error.message || "Invalid email or password.", variant: "destructive" });
-      setLoading(false); 
-      throw error; 
+      setLoading(false);
+      throw error;
     }
   }, []);
 
@@ -356,15 +367,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await firebaseSignOut(auth);
       setPendingRequestCountState(0);
-      setUserModeState('host'); 
+      setUserModeState('host');
       setGuestPassPriceDetails(null);
       setHostPassPriceDetails(null);
-      router.push('/'); 
+      router.push('/');
     } catch (error) {
       console.error("Logout error:", error);
       toast({ title: "Logout Failed", variant: "destructive" });
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   }, [router]);
 
@@ -436,7 +447,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (user) {
       const updates: Partial<User> = { hostPassStatus: 'no_pass_initiated', freeHostPassActivatedDate: undefined, paidHostPassExpiryDate: undefined };
       await updateUserProfileInFirestore(user.id, updates);
-      setHostPassPriceDetails(null);
+      setHostPassPriceDetails(null); // Reset price details as well
       toast({ title: "Host Pass Reset (Testing)", description: "Host pass status has been reset." });
     }
   }, [user, updateUserProfileInFirestore]);
