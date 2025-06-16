@@ -180,7 +180,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (newStatus !== currentUser.sharedAccessStatus) {
         const updatedUser = { ...currentUser, sharedAccessStatus: newStatus };
-        // localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser)); // Handled by updateUserInStateAndStorage if called from login/update functions
         return updatedUser;
       }
       return currentUser;
@@ -205,7 +204,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       if (newStatus !== currentUser.hostPassStatus) {
         const updatedUser = { ...currentUser, hostPassStatus: newStatus };
-        // localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser)); // Handled by updateUserInStateAndStorage
         return updatedUser;
       }
       return currentUser;
@@ -267,7 +265,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [user, fetchHostPassPriceLogic]);
 
 
-  // Effect for initial load from localStorage
   useEffect(() => {
     setLoading(true);
     const storedUserJson = localStorage.getItem('memoryWeaverUser');
@@ -325,7 +322,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   }, []);
 
-  // Effect for updates when user, loading state, or userMode changes
   useEffect(() => {
     if (!loading && user) {
       checkAndUpdateGuestPassStatus();
@@ -354,12 +350,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isFetchingHostPassPrice, hostPassPriceDetails
   ]);
 
-
-  // Effect for handling routing based on authentication state
   useEffect(() => {
     if (loading || isLoggingOut) return;
 
-    const publicPaths = ['/', '/login', '/register'];
+    const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password']; // Added forgot/reset
     const defaultAuthenticatedHostPath = '/prompts';
     const defaultAuthenticatedGuestPath = '/timeline';
 
@@ -467,6 +461,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const purchasePaidGuestPass = useCallback(async () => {
     if (user) {
+      console.log("SIMULATION: Initiating Stripe payment flow for Guest Pass.");
+      toast({ title: "Initiating Guest Pass Purchase...", description: "You would be redirected to Stripe or shown a payment form.", duration: 5000});
+
+      // Simulate a delay for payment processing
+      // await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // For now, we'll still grant the pass immediately for demo purposes.
+      // In a real app, this `updateUserInStateAndStorage` would happen *after* Stripe confirms successful payment (e.g., via webhook).
       const now = new Date();
       let startDate = now;
 
@@ -486,7 +488,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (currentPassPrice) {
           priceMsg = `for ${new Intl.NumberFormat('en-GB', { style: 'currency', currency: currentPassPrice.currency }).format(currentPassPrice.passPrice)}`;
       }
-      toast({ title: "Guest Pass Purchased (Mock)!", description: `Your 31-day guest pass ${priceMsg} is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
+      toast({ title: "Guest Pass Activated (Mock Payment)!", description: `Your 31-day guest pass ${priceMsg} is now active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
     }
   }, [user, guestPassPriceDetails, updateUserInStateAndStorage]);
 
@@ -501,6 +503,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const purchasePaidHostPass = useCallback(async () => {
     if (user) {
+      console.log("SIMULATION: Initiating Stripe payment flow for Host Pass.");
+      toast({ title: "Initiating Host Pass Purchase...", description: "You would be redirected to Stripe or shown a payment form.", duration: 5000});
+      
+      // Simulate a delay for payment processing
+      // await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // For now, we'll still grant the pass immediately for demo purposes.
+      // In a real app, this `updateUserInStateAndStorage` would happen *after* Stripe confirms successful payment.
       const now = new Date();
       let startDate = now;
       if (user.hostPassStatus === 'paid_host_pass_active' && user.paidHostPassExpiryDate && isBefore(now, parseISO(user.paidHostPassExpiryDate))) {
@@ -519,7 +529,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (currentHostPassPrice) {
           priceMsg = `for ${new Intl.NumberFormat('en-GB', { style: 'currency', currency: currentHostPassPrice.currency }).format(currentHostPassPrice.passPrice)}`;
       }
-      toast({ title: "Host Pass Purchased (Mock)!", description: `Your 31-day host pass ${priceMsg} is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
+      toast({ title: "Host Pass Activated (Mock Payment)!", description: `Your 31-day host pass ${priceMsg} is now active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
     }
   }, [user, hostPassPriceDetails, updateUserInStateAndStorage]);
 
