@@ -2,7 +2,7 @@
 "use client";
 
 import type { User, UserMode, Memory as MemoryType } from '@/types';
-import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types'; 
+import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types';
 import React, { createContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
@@ -41,11 +41,11 @@ interface AuthContextType {
   activateFreeHostPass: () => void;
   purchasePaidHostPass: () => Promise<void>;
   checkAndUpdateHostPassStatus: () => void;
-  hostPassStatus: User['hostPassStatus']; 
+  hostPassStatus: User['hostPassStatus'];
   hostPassPriceDetails: GetHostPassPriceOutput | null;
   fetchHostPassPrice: () => Promise<void>;
   isFetchingHostPassPrice: boolean;
-  resetHostPassForTesting: () => void; 
+  resetHostPassForTesting: () => void;
 
   // Storage related
   storageQuotaBytes: number;
@@ -80,7 +80,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (prevUser && !updatedUserArg) {
         significantChange = true;
       } else if (prevUser && updatedUserArg) {
-        // Compare key fields that affect UI or logic
         if (
           prevUser.name !== updatedUserArg.name ||
           prevUser.email !== updatedUserArg.email ||
@@ -97,7 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           prevUser.freeHostPassActivatedDate !== updatedUserArg.freeHostPassActivatedDate ||
           prevUser.paidHostPassExpiryDate !== updatedUserArg.paidHostPassExpiryDate ||
           prevUser.storageUsedBytes !== updatedUserArg.storageUsedBytes ||
-          JSON.stringify(prevUser.viewedSharedMemoryIds) !== JSON.stringify(updatedUserArg.viewedSharedMemoryIds) // Array comparison
+          JSON.stringify(prevUser.viewedSharedMemoryIds) !== JSON.stringify(updatedUserArg.viewedSharedMemoryIds)
         ) {
           significantChange = true;
         }
@@ -123,10 +122,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         userMemories = JSON.parse(storedMemoriesJson).filter((mem: MemoryType) => mem.userId === userId);
       } catch (e) {
         console.error("Error parsing memories for storage calculation:", e);
-        userMemories = mockMemories.filter(mem => mem.userId === userId); 
+        userMemories = mockMemories.filter(mem => mem.userId === userId);
       }
     } else {
-      userMemories = mockMemories.filter(mem => mem.userId === userId); 
+      userMemories = mockMemories.filter(mem => mem.userId === userId);
       localStorage.setItem('mockMemories', JSON.stringify(mockMemories));
     }
 
@@ -140,7 +139,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       return acc;
     }, 0);
-    
+
     setUser(prevUser => {
       if (prevUser && prevUser.id === userId) {
         if (prevUser.storageUsedBytes !== usedBytes) {
@@ -156,7 +155,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkIfGuestHasUnviewedMemories = useCallback(() => {
     if (!user) return false;
-    const potentialSharedMemories = mockMemories.slice(0, 2); 
+    const potentialSharedMemories = mockMemories.slice(0, 2);
     if (potentialSharedMemories.length === 0) return false;
     const viewedIds = user.viewedSharedMemoryIds || [];
     return potentialSharedMemories.some(mem => !viewedIds.includes(mem.id));
@@ -178,16 +177,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           newStatus = 'paid_pass_expired';
         }
       }
-      
+
       if (newStatus !== currentUser.sharedAccessStatus) {
         const updatedUser = { ...currentUser, sharedAccessStatus: newStatus };
-        localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser));
+        // localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser)); // Handled by updateUserInStateAndStorage if called from login/update functions
         return updatedUser;
       }
       return currentUser;
     });
   }, []);
-  
+
   const checkAndUpdateHostPassStatus = useCallback(() => {
     setUser(currentUser => {
       if (!currentUser) return null;
@@ -195,7 +194,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const now = new Date();
 
       if (currentUser.hostPassStatus === 'free_host_pass_active' && currentUser.freeHostPassActivatedDate) {
-        const freeHostPassEndDate = addMonths(parseISO(currentUser.freeHostPassActivatedDate), 6); 
+        const freeHostPassEndDate = addMonths(parseISO(currentUser.freeHostPassActivatedDate), 6);
         if (isBefore(freeHostPassEndDate, now)) {
           newStatus = 'free_host_pass_expired';
         }
@@ -206,7 +205,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       if (newStatus !== currentUser.hostPassStatus) {
         const updatedUser = { ...currentUser, hostPassStatus: newStatus };
-        localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser));
+        // localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser)); // Handled by updateUserInStateAndStorage
         return updatedUser;
       }
       return currentUser;
@@ -214,64 +213,68 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
 
-  const fetchGuestPassPriceLogic = useCallback(async () => {
-    if (isFetchingGuestPassPrice || guestPassPriceDetails) return; 
+  const fetchGuestPassPriceLogic = useCallback(async (currentUser: User | null) => {
+    if (isFetchingGuestPassPrice || guestPassPriceDetails) return;
     setIsFetchingGuestPassPrice(true);
     try {
-      const cityForPrice = user?.city || 'London';
-      const countryForPrice = user?.countryOfBirth || 'UK'; 
+      const cityForPrice = currentUser?.city || 'London';
+      const countryForPrice = currentUser?.countryOfBirth || 'UK';
       const priceData = await getGuestPassPriceAction({ city: cityForPrice, country: countryForPrice });
       setGuestPassPriceDetails(priceData);
     } catch (error) {
       console.error("Failed to fetch guest pass price:", error);
       setGuestPassPriceDetails({
-        passPrice: (user?.countryOfBirth?.toLowerCase() === 'uk' || user?.city?.toLowerCase() === 'london') ? 7.99 : 9.99,
-        currency: (user?.countryOfBirth?.toLowerCase() === 'uk' || user?.city?.toLowerCase() === 'london') ? 'GBP' : 'USD',
-        coffeePrice: (user?.countryOfBirth?.toLowerCase() === 'uk' || user?.city?.toLowerCase() === 'london') ? 3.50 : 3.00,
+        passPrice: (currentUser?.countryOfBirth?.toLowerCase() === 'uk' || currentUser?.city?.toLowerCase() === 'london') ? 7.99 : 9.99,
+        currency: (currentUser?.countryOfBirth?.toLowerCase() === 'uk' || currentUser?.city?.toLowerCase() === 'london') ? 'GBP' : 'USD',
+        coffeePrice: (currentUser?.countryOfBirth?.toLowerCase() === 'uk' || currentUser?.city?.toLowerCase() === 'london') ? 3.50 : 3.00,
         justification: 'Enjoy a month of shared memories with our standard access pass.',
       });
     } finally {
       setIsFetchingGuestPassPrice(false);
     }
-  }, [isFetchingGuestPassPrice, guestPassPriceDetails, user?.city, user?.countryOfBirth]);
+  }, [isFetchingGuestPassPrice, guestPassPriceDetails]); // Removed user from here, pass as arg
 
-  const fetchGuestPassPriceRef = useRef(fetchGuestPassPriceLogic);
-  useEffect(() => { fetchGuestPassPriceRef.current = fetchGuestPassPriceLogic; }, [fetchGuestPassPriceLogic]);
-  const fetchGuestPassPrice = useCallback(async () => fetchGuestPassPriceRef.current(), []);
-  
-  const fetchHostPassPriceLogic = useCallback(async () => {
-    if (isFetchingHostPassPrice || hostPassPriceDetails) return; 
+  const fetchGuestPassPrice = useCallback(() => {
+    // This function now correctly uses the 'user' state from the outer scope for its logic
+    // The fetchGuestPassPriceLogic will be called with the current user
+    fetchGuestPassPriceLogic(user);
+  }, [user, fetchGuestPassPriceLogic]);
+
+
+  const fetchHostPassPriceLogic = useCallback(async (currentUser: User | null) => {
+    if (isFetchingHostPassPrice || hostPassPriceDetails) return;
     setIsFetchingHostPassPrice(true);
     try {
-      const cityForPrice = user?.city || 'London';
-      const countryForPrice = user?.countryOfBirth || 'UK';
+      const cityForPrice = currentUser?.city || 'London';
+      const countryForPrice = currentUser?.countryOfBirth || 'UK';
       const priceData = await getHostPassPriceAction({ city: cityForPrice, country: countryForPrice });
       setHostPassPriceDetails(priceData);
     } catch (error) {
       console.error("Failed to fetch host pass price:", error);
       setHostPassPriceDetails({
-        passPrice: (user?.countryOfBirth?.toLowerCase() === 'uk' || user?.city?.toLowerCase() === 'london') ? 12.99 : 14.99,
-        currency: (user?.countryOfBirth?.toLowerCase() === 'uk' || user?.city?.toLowerCase() === 'london') ? 'GBP' : 'USD',
-        coffeePrice: (user?.countryOfBirth?.toLowerCase() === 'uk' || user?.city?.toLowerCase() === 'london') ? 3.50 : 3.00,
+        passPrice: (currentUser?.countryOfBirth?.toLowerCase() === 'uk' || currentUser?.city?.toLowerCase() === 'london') ? 12.99 : 14.99,
+        currency: (currentUser?.countryOfBirth?.toLowerCase() === 'uk' || currentUser?.city?.toLowerCase() === 'london') ? 'GBP' : 'USD',
+        coffeePrice: (currentUser?.countryOfBirth?.toLowerCase() === 'uk' || currentUser?.city?.toLowerCase() === 'london') ? 3.50 : 3.00,
         justification: 'Unlock a full month of memory creation tools and preserve your precious moments.',
       });
     } finally {
       setIsFetchingHostPassPrice(false);
     }
-  }, [isFetchingHostPassPrice, hostPassPriceDetails, user?.city, user?.countryOfBirth]);
+  }, [isFetchingHostPassPrice, hostPassPriceDetails]); // Removed user from here, pass as arg
 
-  const fetchHostPassPriceRef = useRef(fetchHostPassPriceLogic);
-  useEffect(() => { fetchHostPassPriceRef.current = fetchHostPassPriceLogic; }, [fetchHostPassPriceLogic]);
-  const fetchHostPassPrice = useCallback(async () => fetchHostPassPriceRef.current(), []);
+  const fetchHostPassPrice = useCallback(() => {
+    fetchHostPassPriceLogic(user);
+  }, [user, fetchHostPassPriceLogic]);
 
 
+  // Effect for initial load from localStorage
   useEffect(() => {
+    setLoading(true);
     const storedUserJson = localStorage.getItem('memoryWeaverUser');
     let initialUser: User | null = null;
     if (storedUserJson) {
       try {
         const storedUserData = JSON.parse(storedUserJson);
-        
         let initialStorageUsedBytes = 0;
         if (storedUserData.id) {
             const memoriesForCalcJson = localStorage.getItem('mockMemories');
@@ -290,9 +293,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 return acc;
             }, 0);
         }
-
         initialUser = {
-          id: storedUserData.id || '1', 
+          id: storedUserData.id || '1',
           email: storedUserData.email,
           name: storedUserData.name,
           avatarUrl: storedUserData.avatarUrl,
@@ -301,43 +303,65 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           city: storedUserData.city,
           townArea: storedUserData.townArea,
           profileInfo: storedUserData.profileInfo,
-          
           sharedAccessStatus: storedUserData.sharedAccessStatus || 'no_pass_initiated',
           freePassActivatedDate: storedUserData.freePassActivatedDate,
           paidPassExpiryDate: storedUserData.paidPassExpiryDate,
           viewedSharedMemoryIds: storedUserData.viewedSharedMemoryIds || [],
-          
           hostPassStatus: storedUserData.hostPassStatus || 'no_pass_initiated',
           freeHostPassActivatedDate: storedUserData.freeHostPassActivatedDate,
           paidHostPassExpiryDate: storedUserData.paidHostPassExpiryDate,
-          storageUsedBytes: initialStorageUsedBytes, 
+          storageUsedBytes: initialStorageUsedBytes,
         };
       } catch (e) {
         console.error("Failed to parse user from localStorage", e);
-        localStorage.removeItem('memoryWeaverUser'); 
+        localStorage.removeItem('memoryWeaverUser');
       }
     }
-    
+
     if (initialUser) {
-      setUser(initialUser);
+      setUser(initialUser); // This will trigger the dependent useEffect below
       setIsAuthenticated(true);
-      // Immediately check and update pass statuses upon loading the user
-      // This is wrapped in a timeout to allow initial state to settle if needed,
-      // but direct calls should also work fine as setUser in checkAndUpdate... will queue re-render.
-      setTimeout(() => {
-          checkAndUpdateGuestPassStatus();
-          checkAndUpdateHostPassStatus();
-          setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
-      }, 0);
     }
     setLoading(false);
-  }, [checkAndUpdateGuestPassStatus, checkAndUpdateHostPassStatus, checkIfGuestHasUnviewedMemories]); 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array ensures this runs only once on mount
 
+  // Effect for updates when user, loading state, or userMode changes
   useEffect(() => {
-    if (loading || isLoggingOut) return; 
+    if (!loading && user) {
+      checkAndUpdateGuestPassStatus();
+      checkAndUpdateHostPassStatus();
+      setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
+
+      if (userMode === 'host') {
+        if ((user.hostPassStatus === 'free_host_pass_expired' ||
+             user.hostPassStatus === 'paid_host_pass_expired' ||
+             user.hostPassStatus === 'no_pass_initiated') && !isFetchingHostPassPrice && !hostPassPriceDetails) {
+          fetchHostPassPrice();
+        }
+      } else if (userMode === 'guest') {
+         if ((user.sharedAccessStatus === 'free_pass_expired' ||
+             user.sharedAccessStatus === 'paid_pass_expired' ||
+             user.sharedAccessStatus === 'no_pass_initiated') && !isFetchingGuestPassPrice && !guestPassPriceDetails) {
+           fetchGuestPassPrice();
+         }
+      }
+    }
+  }, [
+      loading, user, userMode,
+      checkAndUpdateGuestPassStatus, checkAndUpdateHostPassStatus, checkIfGuestHasUnviewedMemories,
+      fetchGuestPassPrice, fetchHostPassPrice, setHasNewSharedMemoriesState,
+      isFetchingGuestPassPrice, guestPassPriceDetails, // Include these to re-evaluate price fetching logic if they change externally
+      isFetchingHostPassPrice, hostPassPriceDetails    // (though typically they change *because* of fetch calls)
+  ]);
+
+
+  // Effect for handling routing based on authentication state
+  useEffect(() => {
+    if (loading || isLoggingOut) return;
 
     const publicPaths = ['/', '/login', '/register'];
-    const defaultAuthenticatedHostPath = '/prompts'; 
+    const defaultAuthenticatedHostPath = '/prompts';
     const defaultAuthenticatedGuestPath = '/timeline';
 
     if (isAuthenticated) {
@@ -352,31 +376,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isAuthenticated, loading, pathname, router, userMode, isLoggingOut]);
 
-  
+
   useEffect(() => {
     if (isLoggingOut && (pathname === '/' || pathname === '/login' || pathname === '/register')) {
       setIsLoggingOut(false);
     }
   }, [isLoggingOut, pathname]);
 
-  const login = async (email: string) => {
+  const login = useCallback(async (email: string) => {
+    setLoading(true); // Indicate loading during login process
     const storedUserJson = localStorage.getItem('memoryWeaverUser');
     let currentUserData: Partial<User> = {};
     if (storedUserJson) {
       try {
         const parsedUser = JSON.parse(storedUserJson);
+        // Only use stored data if email matches, otherwise it's a new login or different user
         if (parsedUser.email === email) {
           currentUserData = parsedUser;
+        } else {
+          // If email doesn't match, treat as new registration for this email, clear old data potentially
+          localStorage.removeItem('memoryWeaverUser'); // Optional: clear if email doesn't match
         }
-      } catch (e) { console.error("Error parsing user data on login:", e); }
+      } catch (e) { console.error("Error parsing user data on login:", e); localStorage.removeItem('memoryWeaverUser'); }
     }
 
-    const userIdForLogin = currentUserData.id || Date.now().toString(); 
-    
+    const userIdForLogin = currentUserData.id || Date.now().toString();
+
     const finalUser: User = {
       id: userIdForLogin,
       email,
-      name: currentUserData.name || email.split('@')[0], 
+      name: currentUserData.name || email.split('@')[0],
       avatarUrl: currentUserData.avatarUrl,
       dateOfBirth: currentUserData.dateOfBirth,
       countryOfBirth: currentUserData.countryOfBirth,
@@ -392,16 +421,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       paidHostPassExpiryDate: currentUserData.paidHostPassExpiryDate,
       storageUsedBytes: currentUserData.storageUsedBytes || 0,
     };
-    updateUserInStateAndStorage(finalUser); 
+    updateUserInStateAndStorage(finalUser); // This will update the user state
     setIsAuthenticated(true);
-    setUserModeState('host'); 
-    setIsLoggingOut(false); 
-    await calculateAndUpdateStorageUsage(finalUser.id); 
-    // Initial checks after login
-    checkAndUpdateGuestPassStatus();
-    checkAndUpdateHostPassStatus();
-    setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
-  };
+    setUserModeState('host');
+    setIsLoggingOut(false);
+    await calculateAndUpdateStorageUsage(finalUser.id);
+    // Dependent useEffect will handle post-login checks like pass status and price fetching due to 'user' and 'loading' changing
+    setLoading(false);
+  }, [updateUserInStateAndStorage, calculateAndUpdateStorageUsage]);
 
   const logout = useCallback(() => {
     setIsLoggingOut(true);
@@ -409,10 +436,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsAuthenticated(false);
     setPendingRequestCountState(0);
     setHasNewSharedMemoriesState(false);
-    setUserModeState('host'); 
-    setGuestPassPriceDetails(null); 
+    setUserModeState('host');
+    setGuestPassPriceDetails(null);
     setHostPassPriceDetails(null);
-    router.push('/'); 
+    router.push('/');
   }, [router, updateUserInStateAndStorage]);
 
   const setPendingRequestCount = useCallback((count: number) => {
@@ -421,15 +448,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const handleModeChange = useCallback((newMode: UserMode) => {
     setUserModeState(newMode);
-    if (user) { // Ensure user exists before calling dependent functions
-        if (newMode === 'guest') {
-            checkAndUpdateGuestPassStatus();
-        } else { // host mode
-            checkAndUpdateHostPassStatus();
-            setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
-        }
-    }
-  }, [user, checkAndUpdateGuestPassStatus, checkAndUpdateHostPassStatus, checkIfGuestHasUnviewedMemories, setHasNewSharedMemoriesState]);
+    // The main update useEffect will re-run due to userMode change and handle necessary checks/fetches
+  }, []);
 
   const toggleUserMode = useCallback(() => {
     handleModeChange(userMode === 'host' ? 'guest' : 'host');
@@ -454,18 +474,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (user) {
       const now = new Date();
       let startDate = now;
-      
+
       if (user.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate && isBefore(now, parseISO(user.paidPassExpiryDate))) {
         startDate = parseISO(user.paidPassExpiryDate);
       }
-      const newExpiryDate = addDays(startDate, 31); 
+      const newExpiryDate = addDays(startDate, 31);
       const updatedUser: User = { ...user, sharedAccessStatus: 'paid_pass_active', paidPassExpiryDate: newExpiryDate.toISOString() };
       updateUserInStateAndStorage(updatedUser);
 
       let currentPassPrice = guestPassPriceDetails;
-      if (!currentPassPrice && !isFetchingGuestPassPrice) { 
+      if (!currentPassPrice) { // Fetch if not available, even if not actively fetching (e.g. initial load failed)
          currentPassPrice = await getGuestPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
-         setGuestPassPriceDetails(currentPassPrice);
+         setGuestPassPriceDetails(currentPassPrice); // Update local state with fetched price
       }
       let priceMsg = "for your pass";
       if (currentPassPrice) {
@@ -473,7 +493,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       toast({ title: "Guest Pass Purchased (Mock)!", description: `Your 31-day guest pass ${priceMsg} is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
     }
-  }, [user, guestPassPriceDetails, isFetchingGuestPassPrice, updateUserInStateAndStorage]);
+  }, [user, guestPassPriceDetails, updateUserInStateAndStorage]);
 
   const activateFreeHostPass = useCallback(() => {
     if (user && user.hostPassStatus === 'no_pass_initiated') {
@@ -496,7 +516,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       updateUserInStateAndStorage(updatedUser);
 
       let currentHostPassPrice = hostPassPriceDetails;
-      if (!currentHostPassPrice && !isFetchingHostPassPrice) {
+      if (!currentHostPassPrice) {
          currentHostPassPrice = await getHostPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
          setHostPassPriceDetails(currentHostPassPrice);
       }
@@ -506,7 +526,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       toast({ title: "Host Pass Purchased (Mock)!", description: `Your 31-day host pass ${priceMsg} is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
     }
-  }, [user, hostPassPriceDetails, isFetchingHostPassPrice, updateUserInStateAndStorage]);
+  }, [user, hostPassPriceDetails, updateUserInStateAndStorage]);
 
   const markSharedMemoryAsViewed = useCallback((memoryId: string) => {
     setUser(currentUser => {
@@ -514,20 +534,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const currentViewedIds = currentUser.viewedSharedMemoryIds || [];
         if (!currentViewedIds.includes(memoryId)) {
           const updatedUser = { ...currentUser, viewedSharedMemoryIds: [...currentViewedIds, memoryId] };
-          localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser));
-          setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories()); // Re-check after marking as viewed
-          return updatedUser;
+          // localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser)); // Handled by updateUserInStateAndStorage
+          // setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories()); // This will be handled by the main update useEffect
+          return updatedUser; // Return updated user for setUser
         }
       }
       return currentUser;
     });
-  }, [checkIfGuestHasUnviewedMemories, setHasNewSharedMemoriesState]);
-  
+    // Explicitly call updateUserInStateAndStorage to ensure localStorage is updated
+    // This is a bit redundant if setUser above triggers the main effect that calls it, but safer.
+    if (user) {
+        const currentViewedIds = user.viewedSharedMemoryIds || [];
+        if (!currentViewedIds.includes(memoryId)) {
+            updateUserInStateAndStorage({ ...user, viewedSharedMemoryIds: [...currentViewedIds, memoryId] });
+        }
+    }
+  }, [user, updateUserInStateAndStorage]);
+
   const getStorageQuotaBytes = useCallback((): number => {
     if (user && (user.hostPassStatus === 'free_host_pass_active' || user.hostPassStatus === 'paid_host_pass_active')) {
       return STANDARD_HOST_STORAGE_QUOTA_BYTES;
     }
-    return 0; 
+    return 0;
   }, [user]);
 
   const resetHostPassForTesting = useCallback(() => {
@@ -539,38 +567,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         paidHostPassExpiryDate: undefined,
       };
       updateUserInStateAndStorage(updatedUser);
-      setHostPassPriceDetails(null); 
+      setHostPassPriceDetails(null);
       toast({ title: "Host Pass Reset (Testing)", description: "Host pass status has been reset to initial state." });
     }
   }, [user, updateUserInStateAndStorage]);
 
-  useEffect(() => {
-    if (!loading && user) {
-      // These are now also called within the initial user loading logic for immediate effect
-      // Keeping them here as a fallback or for re-checks if user object changes externally
-      checkAndUpdateGuestPassStatus();
-      checkAndUpdateHostPassStatus();
-
-      if (userMode === 'host') {
-        setHasNewSharedMemoriesState(checkIfGuestHasUnviewedMemories());
-        if ((user.hostPassStatus === 'free_host_pass_expired' ||
-            user.hostPassStatus === 'paid_host_pass_expired' ||
-            user.hostPassStatus === 'no_pass_initiated') && !isFetchingHostPassPrice && !hostPassPriceDetails) {
-          fetchHostPassPrice();
-        }
-      } else if (userMode === 'guest') {
-         if ((user.sharedAccessStatus === 'free_pass_expired' ||
-             user.sharedAccessStatus === 'paid_pass_expired' ||
-             user.sharedAccessStatus === 'no_pass_initiated') && !isFetchingGuestPassPrice && !guestPassPriceDetails) {
-           fetchGuestPassPrice();
-         }
-      }
-    }
-  }, [loading, user, userMode, checkIfGuestHasUnviewedMemories, 
-      fetchGuestPassPrice, isFetchingGuestPassPrice, guestPassPriceDetails, checkAndUpdateGuestPassStatus,
-      fetchHostPassPrice, isFetchingHostPassPrice, hostPassPriceDetails, checkAndUpdateHostPassStatus,
-      setHasNewSharedMemoriesState 
-    ]);
 
   return (
     <AuthContext.Provider value={{
@@ -582,9 +583,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       markSharedMemoryAsViewed, checkIfGuestHasUnviewedMemories,
       guestPassPriceDetails, fetchGuestPassPrice, isFetchingGuestPassPrice,
       activateFreeHostPass, purchasePaidHostPass, checkAndUpdateHostPassStatus,
-      hostPassStatus: user?.hostPassStatus || 'no_pass_initiated', 
+      hostPassStatus: user?.hostPassStatus || 'no_pass_initiated',
       hostPassPriceDetails, fetchHostPassPrice, isFetchingHostPassPrice,
-      resetHostPassForTesting, 
+      resetHostPassForTesting,
       storageQuotaBytes: getStorageQuotaBytes(),
       calculateAndUpdateStorageUsage,
     }}>
@@ -592,4 +593,3 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-
