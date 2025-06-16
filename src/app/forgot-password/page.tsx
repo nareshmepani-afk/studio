@@ -12,12 +12,14 @@ import { Navbar } from '@/components/layout/Navbar';
 import { requestPasswordResetAction } from '@/actions/requestPasswordResetAction';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter } from 'next/navigation'; // Added useRouter
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
+  const router = useRouter(); // Initialize useRouter
 
   useEffect(() => {
     setHasMounted(true);
@@ -28,8 +30,11 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
     setSubmitted(false);
 
+    // Simulate obtaining reCAPTCHA token
+    const mockRecaptchaToken = "mock-recaptcha-token-for-" + Date.now();
+
     try {
-      const result = await requestPasswordResetAction(email);
+      const result = await requestPasswordResetAction({ email, recaptchaToken: mockRecaptchaToken });
       if (result.success) {
         toast({
           title: 'Password Reset Requested',
@@ -109,6 +114,9 @@ export default function ForgotPasswordPage() {
                 <Skeleton className="h-10 w-full" />
               </div>
             )}
+            <p className="mt-4 text-xs text-center text-muted-foreground">
+              This site is protected by reCAPTCHA (simulated).
+            </p>
             <p className="mt-6 text-center text-sm text-muted-foreground">
               Remember your password?{' '}
               <Link href="/login" className="font-medium text-primary hover:underline">

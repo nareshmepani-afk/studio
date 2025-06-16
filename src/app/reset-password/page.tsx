@@ -59,8 +59,16 @@ function ResetPasswordFormComponent() {
     }
 
     setIsLoading(true);
+    // Simulate obtaining reCAPTCHA token
+    const mockRecaptchaToken = "mock-recaptcha-token-for-reset-" + Date.now();
+
     try {
-      const result = await resetPasswordAction({ token, newPassword, confirmPassword });
+      const result = await resetPasswordAction({ 
+        token, 
+        newPassword, 
+        confirmPassword, 
+        recaptchaToken: mockRecaptchaToken 
+      });
       if (result.success) {
         setSuccess(true);
         toast({
@@ -194,6 +202,9 @@ export default function ResetPasswordPage() {
             }>
               <ResetPasswordFormComponent />
             </Suspense>
+            <p className="mt-4 text-xs text-center text-muted-foreground">
+              This site is protected by reCAPTCHA (simulated).
+            </p>
             <p className="mt-6 text-center text-sm text-muted-foreground">
               Remembered your password?{' '}
               <Link href="/login" className="font-medium text-primary hover:underline">
