@@ -36,7 +36,11 @@ export default function LifeJourneyPage() {
   const [promptGroups, setPromptGroups] = useState<PromptGroup[]>(mockPromptGroups); // Initialize with static structure
   const [completedPromptIds, setCompletedPromptIds] = useState<Set<string>>(new Set());
   const [flaggedPromptIds, setFlaggedPromptIds] = useState<Set<string>>(new Set());
-  const [isLoading, setIsLoading] = useState(true);
+  
+  const [isLoading, setIsLoading] = useState(true); // Start as true
+  const [memoriesLoaded, setMemoriesLoaded] = useState(false);
+  const [flagsLoaded, setFlagsLoaded] = useState(false);
+
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
   
@@ -72,13 +76,17 @@ export default function LifeJourneyPage() {
   // Fetch completed prompts and flagged prompts from Firestore
   useEffect(() => {
     if (!user) {
-      setIsLoading(false);
+      setMemoriesLoaded(true); // No user, so consider these "loaded"
+      setFlagsLoaded(true);
       setCompletedPromptIds(new Set());
       setFlaggedPromptIds(new Set());
       return;
     }
 
-    setIsLoading(true);
+    setIsLoading(true); // Reset loading states when user changes
+    setMemoriesLoaded(false);
+    setFlagsLoaded(false);
+
     let unsubscribeMemories: () => void = () => {};
     let unsubscribeFlags: () => void = () => {};
 
@@ -88,9 +96,11 @@ export default function LifeJourneyPage() {
     unsubscribeMemories = onSnapshot(memoriesQuery, (snapshot) => {
       const ids = new Set(snapshot.docs.map(docSnap => docSnap.data().promptId as string).filter(Boolean));
       setCompletedPromptIds(ids);
+      setMemoriesLoaded(true);
     }, (error) => {
       console.error("Error fetching completed prompts:", error);
       toast({ title: "Error loading completion status", variant: "destructive" });
+      setMemoriesLoaded(true); // Still mark as loaded to unblock UI
     });
 
     // Fetch flagged prompts from user's promptFlags subcollection
@@ -105,24 +115,26 @@ export default function LifeJourneyPage() {
         } else {
             setFlaggedPromptIds(new Set());
         }
+        setFlagsLoaded(true);
     }, (error) => {
         console.error("Error fetching flagged prompts:", error);
-        // Don't toast here, as it might be common for new users to not have this doc
+        setFlagsLoaded(true); // Still mark as loaded
     });
-
-
-    // Simulate loading of static prompt group structure
-    // Prompt text itself is static from mockPromptGroups
-    setTimeout(() => {
-        setIsLoading(false);
-    }, 300);
-
 
     return () => {
       unsubscribeMemories();
       unsubscribeFlags();
     };
   }, [user]);
+
+  // Effect to manage the overall isLoading state based on individual data loads
+  useEffect(() => {
+    if (memoriesLoaded && flagsLoaded) {
+      setIsLoading(false);
+    } else if (!user && memoriesLoaded && flagsLoaded) { // Case for no user, initial load done
+      setIsLoading(false);
+    }
+  }, [user, memoriesLoaded, flagsLoaded]);
 
 
   const handleStartChapter = (promptId: string, promptText: string) => {
