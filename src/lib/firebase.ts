@@ -2,6 +2,7 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage'; // Added
 
 console.log("Attempting to load Firebase config from environment variables...");
 console.log("Raw NEXT_PUBLIC_FIREBASE_PROJECT_ID from process.env:", process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID); // Explicit log for project ID
@@ -18,7 +19,7 @@ const firebaseConfig = {
 console.log("Firebase config object constructed:", firebaseConfig);
 
 // Check for missing essential configuration values
-const essentialConfigKeys = ['apiKey', 'authDomain', 'projectId'];
+const essentialConfigKeys = ['apiKey', 'authDomain', 'projectId', 'storageBucket']; // Added storageBucket
 const missingConfigs = essentialConfigKeys.filter(
   (key) => !firebaseConfig[key as keyof typeof firebaseConfig]
 );
@@ -55,6 +56,7 @@ if (!getApps().length) {
 
 let authInstance;
 let dbInstance;
+let storageInstance; // Added
 
 try {
   console.log("Attempting to get Auth instance...");
@@ -74,4 +76,14 @@ try {
   throw new Error(`Failed to initialize Firebase Firestore. Original error: ${(e as Error).message}`);
 }
 
-export { app, authInstance as auth, dbInstance as db };
+try {
+  console.log("Attempting to get Storage instance...");
+  storageInstance = getStorage(app); // Added
+  console.log("Storage instance retrieved successfully.");
+} catch (e) {
+  console.error("Failed to get Storage instance:", e); // Added
+  throw new Error(`Failed to initialize Firebase Storage. Original error: ${(e as Error).message}`); // Added
+}
+
+
+export { app, authInstance as auth, dbInstance as db, storageInstance as storage }; // Added storage

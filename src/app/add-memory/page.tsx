@@ -7,13 +7,14 @@ import type { Memory, MediaAttachment } from '@/types';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Loader2, Star, Zap } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase'; // Added storage
 import { doc, getDoc, addDoc, updateDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'; // Added Firebase Storage functions
 
 export default function AddMemoryPage() {
   const router = useRouter();
@@ -47,11 +48,11 @@ export default function AddMemoryPage() {
             const memoryData = memorySnap.data() as Omit<Memory, 'id'>;
             setMemoryToEdit({ id: memorySnap.id, ...memoryData });
           } else {
-            toast({ title: "Memory not found", description: "Could not load the memory for editing from Firestore.", variant: "destructive" });
+            toast({ title: "Memory not found", description: "Could not load the memory for editing.", variant: "destructive" });
             router.push('/timeline');
           }
         } catch (error) {
-          console.error("Error fetching memory from Firestore:", error);
+          console.error("Error fetching memory:", error);
           toast({ title: "Error Loading Memory", description: "Failed to fetch memory details.", variant: "destructive" });
           router.push('/timeline');
         } finally {
@@ -63,9 +64,9 @@ export default function AddMemoryPage() {
       }
     };
 
-    if (user) { // Only load memory if user is available
+    if (user) { 
       loadMemory();
-    } else if (!authLoading) { // If auth is done loading and no user, no memory to load
+    } else if (!authLoading) { 
        setIsLoadingMemory(false);
        setMemoryToEdit(undefined);
     }
@@ -73,54 +74,122 @@ export default function AddMemoryPage() {
 
   const handleSubmit = async (
     memoryData: Omit<Memory, 'id' | 'userId' | 'createdAt' | 'updatedAt'> & { promptId?: string },
-    mediaFileToUpload?: File // This file is for upload to Storage, not for Firestore directly
+    mediaFileToUpload?: File 
   ) => {
     if (!user) {
-      toast({ title: "Authentication Error", description: "You must be logged in to add or edit a memory.", variant: "destructive" });
+      toast({ title: "Authentication Error", description: "You must be logged in.", variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
 
-    // MediaAttachments will be handled differently now.
-    // For now, we just store the metadata. Actual file upload to Firebase Storage will be a separate step.
     let processedMediaAttachments: MediaAttachment[] | undefined = memoryData.mediaAttachments;
-    if (mediaFileToUpload && processedMediaAttachments && processedMediaAttachments.length > 0) {
-      // We'll store metadata. The URL will be updated after successful upload to Firebase Storage.
-      processedMediaAttachments[0].url = `placeholder_for_storage_upload/${mediaFileToUpload.name}`;
-      processedMediaAttachments[0].filename = mediaFileToUpload.name;
-      if (!processedMediaAttachments[0].size) {
-        processedMediaAttachments[0].size = mediaFileToUpload.size;
+    const oldMediaUrl = memoryToEdit?.mediaAttachments?.[0]?.url;
+
+    if (mediaFileToUpload) {
+      const filePath = `memories/${user.id}/${Date.now()}-${mediaFileToUpload.name}`;
+      const fileRef = storageRef(storage, filePath);
+      try {
+        toast({ title: "Uploading Media...", description: "Please wait while your media is being uploaded.", duration: 5000 });
+        await uploadBytes(fileRef, mediaFileToUpload);
+        const downloadURL = await getDownloadURL(fileRef);
+        
+        if (memoryData.mediaAttachments && memoryData.mediaAttachments.length > 0) {
+          processedMediaAttachments = [{
+            ...memoryData.mediaAttachments[0], // Keep existing startTime, endTime, etc.
+            url: downloadURL,
+            filename: mediaFileToUpload.name,
+            size: mediaFileToUpload.size, // Ensure size is from the new file
+          }];
+        } else { // Should ideally not happen if mediaFileToUpload is present, but as a fallback
+           processedMediaAttachments = [{
+            id: Date.now().toString(), // new media ID
+            type: mediaFileToUpload.type.startsWith('video/') ? 'video' : 'audio',
+            url: downloadURL,
+            filename: mediaFileToUpload.name,
+            size: mediaFileToUpload.size,
+            // startTime, endTime, duration would come from MediaCaptureControl via MemoryForm if it was a new recording/upload
+            // For simplicity if memoryData.mediaAttachments was empty, we might lose trim from a new recording.
+            // This path is less likely as MemoryForm should construct mediaAttachments[0] with new trim data.
+          }];
+        }
+
+        // Delete old media from Storage if it existed and is different
+        if (isCreatingNew && oldMediaUrl && oldMediaUrl !== downloadURL && oldMediaUrl.includes('firebasestorage.googleapis.com')) {
+          // This case is for when creating new, but somehow oldMediaUrl was set (should not happen often)
+           console.warn("Old media URL present when creating new memory, deleting if from storage.");
+           try {
+                const oldFileStorageRef = storageRef(storage, oldMediaUrl);
+                await deleteObject(oldFileStorageRef);
+                console.log("Old media deleted from storage (new memory context):", oldMediaUrl);
+            } catch (deleteError: any) {
+                 if (deleteError.code !== 'storage/object-not-found') {
+                    console.warn("Could not delete old media from storage (new memory context):", deleteError);
+                 }
+            }
+        } else if (!isCreatingNew && oldMediaUrl && oldMediaUrl !== downloadURL && oldMediaUrl.includes('firebasestorage.googleapis.com')) {
+          console.log("New media uploaded, deleting old media from storage:", oldMediaUrl);
+          try {
+            const oldFileStorageRef = storageRef(storage, oldMediaUrl);
+            await deleteObject(oldFileStorageRef);
+            console.log("Old media deleted from storage:", oldMediaUrl);
+          } catch (deleteError: any) {
+            if (deleteError.code !== 'storage/object-not-found') {
+                console.warn("Could not delete old media from storage:", deleteError);
+            }
+          }
+        }
+      } catch (uploadError) {
+        console.error("Error uploading media to Firebase Storage:", uploadError);
+        toast({ title: "Media Upload Failed", description: "Could not save your media file. Please try again.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
       }
-    } else if (memory?.mediaAttachments && memory.mediaAttachments.length > 0 && !mediaFileToUpload) {
-      // Preserve existing media if no new file uploaded
-      processedMediaAttachments = memory.mediaAttachments;
+    } else if (isCreatingNew && !mediaFileToUpload) {
+      // No new file for a new memory, and mediaAttachments might be undefined or empty from form
+      processedMediaAttachments = undefined;
+    } else if (!isCreatingNew && !mediaFileToUpload && memoryData.mediaAttachments === undefined && oldMediaUrl) {
+      // User explicitly cleared media for an existing memory
+      console.log("Media cleared for existing memory, deleting from storage:", oldMediaUrl);
+      processedMediaAttachments = undefined; // Mark for removal from Firestore
+      if (oldMediaUrl.includes('firebasestorage.googleapis.com')) {
+          try {
+            const oldFileStorageRef = storageRef(storage, oldMediaUrl);
+            await deleteObject(oldFileStorageRef);
+            console.log("Old media (cleared by user) deleted from storage:", oldMediaUrl);
+          } catch (deleteError: any) {
+             if (deleteError.code !== 'storage/object-not-found') {
+                console.warn("Could not delete old media (cleared by user) from storage:", deleteError);
+             }
+          }
+      }
+    } else if (!isCreatingNew && !mediaFileToUpload && memoryData.mediaAttachments && memoryToEdit?.mediaAttachments) {
+        // No new file, but existing media details might have been re-submitted (e.g. trim changed on existing storage URL)
+        // This should be handled by MemoryForm passing existing attachment data correctly.
+        // The 'processedMediaAttachments' from memoryData should be correct here.
     }
 
 
-    const dataToSave: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'> & { userId: string; updatedAt: Timestamp; createdAt?: Timestamp } = {
+    const dataToSave: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'> & { userId: string; updatedAt: Timestamp; createdAt?: Timestamp, mediaAttachments?: MediaAttachment[] } = {
       ...memoryData,
-      mediaAttachments: processedMediaAttachments,
+      mediaAttachments: processedMediaAttachments, // This can be undefined to remove it
       userId: user.id,
       promptId: promptIdFromQuery || memoryData.promptId || memoryToEdit?.promptId || undefined,
       updatedAt: serverTimestamp() as Timestamp,
     };
 
-
     try {
       if (memoryToEdit && editMemoryId) {
-        // Update existing memory in Firestore
         const memoryDocRef = doc(db, "users", user.id, "memories", editMemoryId);
         await updateDoc(memoryDocRef, dataToSave);
         toast({ title: "Memory Updated!", description: `"${dataToSave.title}" has been saved.` });
       } else {
-        // Add new memory to Firestore
         const memoriesColRef = collection(db, "users", user.id, "memories");
         dataToSave.createdAt = serverTimestamp() as Timestamp;
         await addDoc(memoriesColRef, dataToSave);
         toast({ title: "Memory Added!", description: `"${dataToSave.title}" has been saved.` });
       }
 
-      await calculateAndUpdateStorageUsage(user.id); // This might need adjustment based on how media sizes are tracked with Firebase Storage
+      await calculateAndUpdateStorageUsage(user.id);
 
       if (promptIdFromQuery || memoryData.promptId || memoryToEdit?.promptId) {
         router.push('/prompts');

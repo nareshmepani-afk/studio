@@ -14,10 +14,13 @@ import type { User } from '@/types';
 import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types'; 
 import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, Star, Zap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
+import { useState, useEffect, type FormEvent, useRef, useMemo, useCallback } from 'react';
 import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { useRouter } from 'next/navigation'; 
+import { storage, db } from '@/lib/firebase'; // Added storage
+import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'; // Added Firebase Storage functions
+import { doc, updateDoc } from 'firebase/firestore'; // For direct update if needed, though useAuth handles it
 
 const currentGlobalYear = new Date().getFullYear();
 const dobYears: number[] = Array.from({ length: 120 }, (_, i) => currentGlobalYear - i); 
@@ -29,7 +32,7 @@ const dobMonths: { value: number; label: string }[] = Array.from({ length: 12 },
 export default function SettingsPage() {
   const { 
     user, 
-    login, 
+    updateUserProfileInFirestore, // Changed from login to updateUserProfileInFirestore for clarity
     loading: authLoading, 
     activateFreeGuestPass, 
     purchasePaidGuestPass, 
@@ -41,7 +44,7 @@ export default function SettingsPage() {
     purchasePaidHostPass,
     checkAndUpdateHostPassStatus,
     hostPassStatus, 
-    hostPassPriceDetails: authHostPassPriceDetails, // Renamed to avoid conflict with local var if any
+    hostPassPriceDetails: authHostPassPriceDetails,
     fetchHostPassPrice,
     isFetchingHostPassPrice: isFetchingAuthHostPassPrice,
     storageQuotaBytes, 
@@ -50,7 +53,6 @@ export default function SettingsPage() {
   const router = useRouter(); 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  // profileInfo state removed
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -76,7 +78,7 @@ export default function SettingsPage() {
         }
       }
       if (user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired' || user.hostPassStatus === 'no_pass_initiated') {
-         if (!isFetchingAuthHostPassPrice && !authHostPassPriceDetails) { // use renamed prop
+         if (!isFetchingAuthHostPassPrice && !authHostPassPriceDetails) {
            fetchHostPassPrice();
          }
       }
@@ -90,7 +92,7 @@ export default function SettingsPage() {
     fetchHostPassPrice, 
     calculateAndUpdateStorageUsage,
     isFetchingGuestPassPrice, guestPassPriceDetails, 
-    isFetchingAuthHostPassPrice, authHostPassPriceDetails // use renamed prop
+    isFetchingAuthHostPassPrice, authHostPassPriceDetails
   ]);
 
 
@@ -113,8 +115,7 @@ export default function SettingsPage() {
     if (user) {
       setName(user.name || '');
       setEmail(user.email || '');
-      // profileInfo state and setter removed
-      setAvatarPreviewUrl(null); 
+      setAvatarPreviewUrl(user.avatarUrl || null); // Display current avatar from user object
 
       if (user.dateOfBirth && isValid(parseISO(user.dateOfBirth))) {
         const dob = parseISO(user.dateOfBirth);
@@ -134,6 +135,10 @@ export default function SettingsPage() {
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit for avatars
+        toast({ title: "Avatar Too Large", description: "Please choose an image smaller than 5MB.", variant: "destructive" });
+        return;
+      }
       setAvatarFile(file);
       const previewUrl = URL.createObjectURL(file);
       setAvatarPreviewUrl(previewUrl);
@@ -148,8 +153,53 @@ export default function SettingsPage() {
     event.preventDefault();
     if (!user) return;
     setIsSubmitting(true);
+
     let finalAvatarUrlToSave = user.avatarUrl;
-    if (avatarFile && avatarPreviewUrl) finalAvatarUrlToSave = avatarPreviewUrl; 
+    const oldAvatarUrl = user.avatarUrl; // Store old URL for potential deletion
+
+    if (avatarFile) {
+      const avatarStoragePath = `avatars/${user.id}/${Date.now()}-${avatarFile.name}`;
+      const fileRef = storageRef(storage, avatarStoragePath);
+      try {
+        await uploadBytes(fileRef, avatarFile);
+        finalAvatarUrlToSave = await getDownloadURL(fileRef);
+        console.log("Avatar uploaded, URL:", finalAvatarUrlToSave);
+
+        // Delete old avatar from Firebase Storage if it exists and is different
+        if (oldAvatarUrl && oldAvatarUrl !== finalAvatarUrlToSave && oldAvatarUrl.includes('firebasestorage.googleapis.com')) {
+          try {
+            const oldFileRef = storageRef(storage, oldAvatarUrl);
+            await deleteObject(oldFileRef);
+            console.log("Old avatar deleted from storage:", oldAvatarUrl);
+          } catch (deleteError: any) {
+            // Non-critical, so just log it
+            if (deleteError.code !== 'storage/object-not-found') {
+                 console.warn("Could not delete old avatar from storage:", deleteError);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error uploading avatar:", error);
+        toast({ title: "Avatar Upload Failed", description: "Could not save your new avatar. Please try again.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
+    } else if (avatarPreviewUrl === null && oldAvatarUrl) { 
+        // User cleared the avatar (avatarPreviewUrl is null, but avatarFile is also null, and oldAvatarUrl existed)
+        finalAvatarUrlToSave = undefined; // Set to undefined to remove it
+        if (oldAvatarUrl.includes('firebasestorage.googleapis.com')) {
+             try {
+                const oldFileRef = storageRef(storage, oldAvatarUrl);
+                await deleteObject(oldFileRef);
+                console.log("Avatar deleted by user from storage:", oldAvatarUrl);
+            } catch (deleteError: any) {
+                if (deleteError.code !== 'storage/object-not-found') {
+                    console.warn("Could not delete old avatar from storage during clearing:", deleteError);
+                }
+            }
+        }
+    }
+
 
     let finalDateOfBirth: string | undefined = undefined;
     if (dobYear && dobMonth && dobDay) {
@@ -163,29 +213,48 @@ export default function SettingsPage() {
         }
       }
     }
-    const updatedUser: User = {
-      ...user, id: user.id, name: name, email: email, avatarUrl: finalAvatarUrlToSave, 
-      profileInfo: user.profileInfo, // Keep existing profileInfo from user object
-      dateOfBirth: finalDateOfBirth, countryOfBirth: countryOfBirth || undefined, city: city || undefined, townArea: townArea || undefined,
-      sharedAccessStatus: user.sharedAccessStatus, freePassActivatedDate: user.freePassActivatedDate, paidPassExpiryDate: user.paidPassExpiryDate,
-      hostPassStatus: user.hostPassStatus, freeHostPassActivatedDate: user.freeHostPassActivatedDate, paidHostPassExpiryDate: user.paidHostPassExpiryDate, 
-      viewedSharedMemoryIds: user.viewedSharedMemoryIds || [], storageUsedBytes: user.storageUsedBytes,
+    
+    const updatedUserDetails: Partial<User> = {
+      name: name,
+      // email cannot be changed here, it's managed by Firebase Auth
+      avatarUrl: finalAvatarUrlToSave, 
+      dateOfBirth: finalDateOfBirth, 
+      countryOfBirth: countryOfBirth || undefined, 
+      city: city || undefined, 
+      townArea: townArea || undefined,
     };
-    await new Promise(resolve => setTimeout(resolve, 1000)); 
-    localStorage.setItem('memoryWeaverUser', JSON.stringify(updatedUser));
-    login(updatedUser.email); 
-    setIsSubmitting(false);
-    toast({ title: "Settings Saved!", description: "Your profile information has been updated." });
+    
+    try {
+        await updateUserProfileInFirestore(user.id, updatedUserDetails); // Use the context function
+        toast({ title: "Settings Saved!", description: "Your profile information has been updated." });
+        setAvatarFile(null); // Clear pending file after successful upload
+    } catch (error) {
+        console.error("Error saving settings:", error);
+        toast({ title: "Save Failed", description: "Could not update your settings.", variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
-  useEffect(() => { let currentPreview = avatarPreviewUrl; return () => { if (currentPreview && currentPreview.startsWith('blob:')) URL.revokeObjectURL(currentPreview); }; }, [avatarPreviewUrl]);
+  // Clean up object URL for avatar preview
+  useEffect(() => { 
+    let currentPreview = avatarPreviewUrl; 
+    return () => { 
+      if (currentPreview && currentPreview.startsWith('blob:') && currentPreview !== user?.avatarUrl) {
+        URL.revokeObjectURL(currentPreview); 
+      }
+    }; 
+  }, [avatarPreviewUrl, user?.avatarUrl]);
+
 
   if (authLoading) return (<AuthenticatedPageWrapper><div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4"><Loader2 className="h-12 w-12 animate-spin text-primary mb-4" /><h2 className="text-2xl font-headline mb-2">Loading Settings...</h2></div></AuthenticatedPageWrapper>);
   if (!user) return (<AuthenticatedPageWrapper><div className="container mx-auto py-8 px-4 text-center"><p>Please log in.</p><Button onClick={() => router.push('/login')} className="mt-4">Go to Login</Button></div></AuthenticatedPageWrapper>);
   
-  const isEffectivelyEmptyOrPlaceholderAvatar = (url?: string): boolean => (!url || url.trim() === '' || url.startsWith('blob:') || url.startsWith('https://avatar.vercel.sh/'));
-  let imageSrcForDisplay: string | undefined = avatarPreviewUrl || (user.avatarUrl && !isEffectivelyEmptyOrPlaceholderAvatar(user.avatarUrl) ? user.avatarUrl : undefined);
+  const isEffectivelyEmptyOrPlaceholderAvatar = (url?: string | null): boolean => (!url || url.trim() === '' || url.startsWith('https://avatar.vercel.sh/'));
+  let imageSrcForDisplay: string | undefined = avatarPreviewUrl && avatarPreviewUrl.startsWith('blob:') ? avatarPreviewUrl : (avatarPreviewUrl && !isEffectivelyEmptyOrPlaceholderAvatar(avatarPreviewUrl) ? avatarPreviewUrl : undefined);
+
   let showIconAsFallback = !imageSrcForDisplay;
+
 
   const renderGuestPurchaseButton = () => {
     let buttonText = "Purchase 31-Day Guest Pass";
@@ -239,7 +308,7 @@ export default function SettingsPage() {
     let priceString = "";
     if (isFetchingAuthHostPassPrice) { 
         buttonText = "Fetching price...";
-    } else if (authHostPassPriceDetails) { // use renamed prop
+    } else if (authHostPassPriceDetails) {
         priceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: authHostPassPriceDetails.currency }).format(authHostPassPriceDetails.passPrice)})`;
         buttonText += priceString;
     } else {
@@ -248,7 +317,7 @@ export default function SettingsPage() {
 
     const button = (<Button onClick={purchasePaidHostPass} variant="default" size="sm" disabled={isFetchingAuthHostPassPrice}>{isFetchingAuthHostPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}{buttonText}</Button>);
     
-    if (authHostPassPriceDetails && !isFetchingAuthHostPassPrice && authHostPassPriceDetails.justification) { // use renamed prop
+    if (authHostPassPriceDetails && !isFetchingAuthHostPassPrice && authHostPassPriceDetails.justification) { 
        return (<TooltipProvider><div className="flex flex-col items-start space-y-1">{button}<Tooltip><TooltipTrigger asChild><span className="text-xs text-muted-foreground flex items-center cursor-default mt-1"><Info className="h-3 w-3 mr-1" /> {authHostPassPriceDetails.justification}</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{authHostPassPriceDetails.justification} (Based on avg coffee: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: authHostPassPriceDetails.currency }).format(authHostPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
     }
     return button;
@@ -258,7 +327,7 @@ export default function SettingsPage() {
     if (!user) return null;
     let statusText = ""; let actionContent = null;
     let currentPriceString = "";
-    if (authHostPassPriceDetails && !isFetchingAuthHostPassPrice) { // use renamed prop
+    if (authHostPassPriceDetails && !isFetchingAuthHostPassPrice) { 
         currentPriceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: authHostPassPriceDetails.currency }).format(authHostPassPriceDetails.passPrice)})`;
     } else if (isFetchingAuthHostPassPrice) {
         currentPriceString = "(fetching price...)";
@@ -290,7 +359,6 @@ export default function SettingsPage() {
       <div className="mt-2 space-y-2">
         <p className="text-sm text-muted-foreground">{statusText}</p>
         {actionContent}
-        {/* Testing elements removed */}
       </div>
     );
   };
@@ -315,11 +383,15 @@ export default function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-20 w-20"><AvatarImage src={imageSrcForDisplay} alt={user.name || user.email} /><AvatarFallback>{showIconAsFallback ? (<UserCircle2 className="h-12 w-12 text-muted-foreground" />) : (user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?'))}</AvatarFallback></Avatar>
-                  <div className="space-y-2"><Button type="button" variant="outline" onClick={() => avatarInputRef.current?.click()}><UploadCloud className="mr-2 h-4 w-4" /> Upload Photo</Button><input type="file" accept="image/*" ref={avatarInputRef} onChange={handleAvatarUpload} className="hidden" /><Button type="button" variant="outline" onClick={handleTakePhoto}><Camera className="mr-2 h-4 w-4" /> Take Photo</Button></div>
+                  <div className="space-y-2">
+                    <Button type="button" variant="outline" onClick={() => avatarInputRef.current?.click()}><UploadCloud className="mr-2 h-4 w-4" /> Upload Photo</Button>
+                    <input type="file" accept="image/*" ref={avatarInputRef} onChange={handleAvatarUpload} className="hidden" />
+                    <Button type="button" variant="outline" onClick={handleTakePhoto}><Camera className="mr-2 h-4 w-4" /> Take Photo</Button>
+                    {avatarPreviewUrl && <Button type="button" variant="link" size="sm" className="text-destructive" onClick={() => { setAvatarPreviewUrl(null); setAvatarFile(null); }}>Remove Avatar</Button>}
+                  </div>
                 </div>
                 <div className="space-y-1"><Label htmlFor="name">Name</Label><Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your Name" /></div>
                 <div className="space-y-1"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" disabled /><p className="text-xs text-muted-foreground">Email cannot be changed in this demo.</p></div>
-                {/* Profile Info Textarea removed */}
               </CardContent>
             </Card>
             <Card>
