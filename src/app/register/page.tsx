@@ -8,19 +8,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { Film, Loader2 } from 'lucide-react';
+import { Film, Loader2, LogOut, UserCheck } from 'lucide-react'; // Added UserCheck
 import { Skeleton } from '@/components/ui/skeleton';
 import { Navbar } from '@/components/layout/Navbar';
 import { toast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation'; // Added useRouter
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const { register, loading: authLoading, isAuthenticated } = useAuth(); // Added isAuthenticated
+  const { register, loading: authLoading, isAuthenticated, logout } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     setHasMounted(true);
@@ -55,8 +57,8 @@ export default function RegisterPage() {
   
   const isLoading = authLoading || isSubmitting;
 
-  // If still loading auth state, or component hasn't mounted, or user is already authenticated (and might be redirected), show skeleton.
-  if (authLoading || !hasMounted || (hasMounted && isAuthenticated)) {
+  if (authLoading || !hasMounted) {
+    // Show skeleton if auth state is loading or component hasn't mounted
     return (
       <div className="flex min-h-screen flex-col bg-secondary">
         <Navbar />
@@ -98,6 +100,30 @@ export default function RegisterPage() {
     );
   }
 
+  if (isAuthenticated) {
+    // Show message if user is already authenticated (AuthContext will redirect shortly)
+    return (
+      <div className="flex min-h-screen flex-col bg-secondary">
+        <Navbar />
+        <div className="flex flex-grow flex-col items-center justify-center p-4 text-center">
+          <Card className="w-full max-w-md shadow-xl p-6">
+             <UserCheck className="h-16 w-16 text-primary mx-auto mb-4" />
+            <h1 className="text-2xl font-headline mb-2">Already Logged In</h1>
+            <p className="text-muted-foreground mb-4">
+              You are already authenticated. Redirecting to your dashboard...
+            </p>
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-6" />
+            <p className="text-sm text-muted-foreground">
+              If you want to create a new account, please{' '}
+              <Button variant="link" className="p-0 h-auto" onClick={async () => { await logout(); router.push('/register'); }}>log out</Button> first.
+            </p>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // If not loading and not authenticated, show the registration form
   return (
     <div className="flex min-h-screen flex-col bg-secondary">
       <Navbar />
