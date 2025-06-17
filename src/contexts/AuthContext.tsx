@@ -258,9 +258,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
           userDocSnap = await getDoc(userDocRef);
           console.log(`AuthContext: Firestore getDoc for user ${firebaseUser.uid} successful. Exists: ${userDocSnap.exists()}`);
-        } catch (error) {
+        } catch (error: any) {
           console.error(`AuthContext: Firestore getDoc FAILED for user ${firebaseUser.uid}:`, error);
-          toast({ title: "Profile Load Error", description: "Could not load your profile data. Please check your connection and try again.", variant: "destructive", duration: 10000 });
+          let description = "Could not load your profile data. Please check your connection and try again.";
+          if (error.code === 'permission-denied') {
+            description = "Permission denied when trying to load your profile. Please check Firestore security rules.";
+          } else if (error.message) {
+            description = `Error loading profile: ${error.message}. Check connection and Firebase setup.`;
+          }
+          toast({ title: "Profile Load Error", description, variant: "destructive", duration: 10000 });
           setUser(null);
           setIsAuthenticated(false);
           setLoading(false); // Ensure loading is false on critical error
@@ -325,37 +331,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsAuthenticated(true);
         console.log("AuthContext: User set, isAuthenticated set to true. Current user state:", appUserWithPassStatus);
         
-        // Defer non-critical updates and setLoading
         checkIfGuestHasUnviewedMemories().then(hasUnviewed => {
           setHasNewSharedMemoriesState(hasUnviewed);
         });
         calculateAndUpdateStorageUsage(appUserWithPassStatus.id);
-        setLoading(false);
-        console.log("AuthContext: setLoading(false) after user profile processing.");
+        
         if (!initialLoadDone.current) {
-          console.log("AuthContext: Initial load done (authenticated user).");
           initialLoadDone.current = true;
         }
+        setLoading(false); // Moved setLoading to after all initial async ops for the user
+        console.log("AuthContext: setLoading(false) after user profile processing.");
 
       } else {
-        // User is logged out or not yet logged in for this session
-        console.log("AuthContext: onAuthStateChanged triggered. Firebase user is null.");
+        console.log("AuthContext: onAuthStateChanged - Firebase user is null.");
         setUser(null);
         setIsAuthenticated(false);
-        setHasNewSharedMemoriesState(false); // Reset this on logout/no user
-        setLoading(false);
-        console.log("AuthContext: setLoading(false) after onAuthStateChanged(null) processing.");
+        setHasNewSharedMemoriesState(false);
         if (!initialLoadDone.current) {
-          console.log("AuthContext: Initial load done (unauthenticated user or user logged out).");
           initialLoadDone.current = true;
         }
+        setLoading(false);
+        console.log("AuthContext: setLoading(false) for null user.");
       }
     });
     return () => {
       console.log("AuthContext: Unsubscribing from onAuthStateChanged listener.");
       unsubscribe();
     }
-  }, [checkAndUpdatePassStatus, checkIfGuestHasUnviewedMemories, calculateAndUpdateStorageUsage, router, pathname]);
+  }, [checkAndUpdatePassStatus, checkIfGuestHasUnviewedMemories, calculateAndUpdateStorageUsage]);
 
 
   useEffect(() => {
@@ -366,7 +369,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
-    const defaultAuthenticatedHostPath = '/prompts';
+    const defaultAuthenticatedHostPath = '/prompts'; // Changed from /timeline for host
     const defaultAuthenticatedGuestPath = '/timeline';
 
     if (isAuthenticated) {
@@ -380,8 +383,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } else { 
       if (justLoggedOut.current) {
-        console.log("AuthContext: Not authenticated, but justLoggedOut is true. Resetting flag and skipping redirect to /login. Current path should be '/' due to logout().");
-        justLoggedOut.current = false; 
+        console.log("AuthContext: Not authenticated, but justLoggedOut is true. Resetting flag. Pathname should be '/' due to logout().");
+        justLoggedOut.current = false; // Reset flag
+        // No redirect here, logout function handles redirect to '/'
       } else if (!publicPaths.includes(pathname)) {
         console.log(`AuthContext: Unauthenticated user on protected path '${pathname}'. Redirecting to '/login'.`);
         if (pathname !== '/login') { 
@@ -414,6 +418,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await signInWithEmailAndPassword(auth, email, password);
       console.log(`AuthContext: Login successful for ${email}. onAuthStateChanged will handle user state.`);
       toast({ title: "Login Successful", description: "Welcome back!" });
+      // setLoading(false) will be handled by onAuthStateChanged
     } catch (error: any) {
       console.error("AuthContext: Login error:", error);
       toast({ title: "Login Failed", description: error.message || "Invalid email or password.", variant: "destructive" });
@@ -441,10 +446,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await setDoc(doc(db, "users", firebaseUser.uid), newUserProfile);
       console.log(`AuthContext: Firestore profile created for ${firebaseUser.uid}. onAuthStateChanged will handle user state.`);
       toast({ title: "Registration Successful", description: "Welcome! Your account has been created." });
+      // setLoading(false) will be handled by onAuthStateChanged
     } catch (error: any) {
       console.error("AuthContext: Registration error:", error);
       toast({ title: "Registration Failed", description: error.message || "Could not create account.", variant: "destructive" });
       const currentUser = auth.currentUser;
+      // Ensure loading is set to false if user creation fails and onAuthStateChanged doesn't pick up the new user
       if (!currentUser || currentUser.email !== email) {
         setLoading(false);
       }
@@ -465,6 +472,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setGuestPassPriceDetails(null);
       setHostPassPriceDetails(null);
       // setUser(null) and setIsAuthenticated(false) will be handled by onAuthStateChanged
+      // setLoading(false) will also be handled by onAuthStateChanged
     } catch (error) {
       console.error("AuthContext: Logout error:", error);
       toast({ title: "Logout Failed", variant: "destructive" });
@@ -545,7 +553,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log(`AuthContext: Resetting HOST pass for testing for user ${user.id}.`);
       const updates: Partial<User> = { hostPassStatus: 'no_pass_initiated', freeHostPassActivatedDate: undefined, paidHostPassExpiryDate: undefined };
       await updateUserProfileInFirestore(user.id, updates);
-      setHostPassPriceDetails(null);
+      setHostPassPriceDetails(null); // Reset price details as well
       toast({ title: "Host Pass Reset (Testing)", description: "Host pass status has been reset." });
     }
   }, [user, updateUserProfileInFirestore]);
