@@ -18,7 +18,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const { register, loading: authLoading } = useAuth();
+  const { register, loading: authLoading, isAuthenticated } = useAuth(); // Added isAuthenticated
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
 
@@ -44,7 +44,7 @@ export default function RegisterPage() {
     setIsSubmitting(true);
     try {
       await register(name, email, password);
-      // AuthContext will handle redirection
+      // AuthContext will handle redirection if successful
     } catch (error) {
       // Error is already toasted in AuthContext
       console.error("Register page submit error:", error);
@@ -55,7 +55,8 @@ export default function RegisterPage() {
   
   const isLoading = authLoading || isSubmitting;
 
-  if (!hasMounted || authLoading) {
+  // If still loading auth state, or component hasn't mounted, or user is already authenticated (and might be redirected), show skeleton.
+  if (authLoading || !hasMounted || (hasMounted && isAuthenticated)) {
     return (
       <div className="flex min-h-screen flex-col bg-secondary">
         <Navbar />
@@ -65,31 +66,31 @@ export default function RegisterPage() {
               <div className="inline-flex justify-center items-center mb-4">
                 <Skeleton className="h-10 w-10 rounded-full" />
               </div>
-              <Skeleton className="h-8 w-3/4 mx-auto mb-2" />
-              <Skeleton className="h-4 w-1/2 mx-auto" />
+              <Skeleton className="h-8 w-3/4 mx-auto mb-2" /> {/* CardTitle */}
+              <Skeleton className="h-4 w-1/2 mx-auto" /> {/* CardDescription */}
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-24 mb-1" />
-                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-4 w-24 mb-1" /> {/* Label */}
+                  <Skeleton className="h-10 w-full" /> {/* Input */}
                 </div>
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-20 mb-1" />
-                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-4 w-20 mb-1" /> {/* Label */}
+                  <Skeleton className="h-10 w-full" /> {/* Input */}
                 </div>
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-20 mb-1" />
-                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-4 w-20 mb-1" /> {/* Label */}
+                  <Skeleton className="h-10 w-full" /> {/* Input */}
                 </div>
                 <div className="space-y-2">
-                  <Skeleton className="h-4 w-32 mb-1" />
-                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-4 w-32 mb-1" /> {/* Label */}
+                  <Skeleton className="h-10 w-full" /> {/* Input */}
                 </div>
-                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" /> {/* Button */}
               </div>
-               <Skeleton className="mt-6 h-4 w-3/4 mx-auto" />
-               <Skeleton className="mt-4 h-3 w-1/2 mx-auto" />
+               <Skeleton className="mt-6 h-4 w-3/4 mx-auto" /> {/* Link to Login */}
+               <Skeleton className="mt-4 h-3 w-1/2 mx-auto" /> {/* Link to Homepage */}
             </CardContent>
           </Card>
         </div>
