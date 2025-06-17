@@ -21,7 +21,7 @@ import {
   signOut as firebaseSignOut,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 
 
 interface AuthContextType {
@@ -64,6 +64,7 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  console.log("AuthProvider: Mounting or re-rendering.");
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
@@ -84,21 +85,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 
   const updateUserProfileInFirestore = useCallback(async (userId: string, updates: Partial<User>) => {
-    if (!userId) return;
+    if (!userId) {
+      console.warn("updateUserProfileInFirestore: userId is null or undefined. Skipping update.");
+      return;
+    }
     const userDocRef = doc(db, "users", userId);
+    console.log(`AuthContext: Attempting to update user profile in Firestore for user ${userId} at path ${userDocRef.path} with updates:`, updates);
     try {
       await updateDoc(userDocRef, { ...updates, lastUpdated: serverTimestamp() });
+      console.log(`AuthContext: User profile updated successfully in Firestore for user ${userId}.`);
       setUser(prevUser => prevUser ? { ...prevUser, ...updates } : null);
     } catch (error) {
-      console.error("Error updating user profile in Firestore:", error);
-      // Avoid toasting for every background update unless critical
-      // toast({ title: "Update Failed", description: "Could not save profile changes.", variant: "destructive" });
+      console.error(`AuthContext: Error updating user profile in Firestore for user ${userId}:`, error);
     }
   }, []);
 
 
   const calculateAndUpdateStorageUsage = useCallback(async (userId: string) => {
-    if (!userId) return;
+    if (!userId) {
+      console.warn("calculateAndUpdateStorageUsage: userId is null or undefined. Skipping calculation.");
+      return;
+    }
+    console.log(`AuthContext: Calculating storage usage for user ${userId}...`);
     try {
         const memoriesColRef = collection(db, "users", userId, "memories");
         const q = query(memoriesColRef);
@@ -110,53 +118,66 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 usedBytes += (att.size || 0);
             });
         });
+        console.log(`AuthContext: Calculated storage for ${userId}: ${usedBytes} bytes.`);
 
         setUser(prevUser => {
           if (prevUser && prevUser.id === userId && prevUser.storageUsedBytes !== usedBytes) {
+            console.log(`AuthContext: Updating storageUsedBytes in Firestore for ${userId} from ${prevUser.storageUsedBytes} to ${usedBytes}.`);
             updateUserProfileInFirestore(userId, { storageUsedBytes: usedBytes });
             return { ...prevUser, storageUsedBytes: usedBytes };
           }
           return prevUser;
         });
     } catch (error) {
-        console.error("Error calculating storage usage from Firestore:", error);
+        console.error(`AuthContext: Error calculating storage usage from Firestore for user ${userId}:`, error);
     }
   }, [updateUserProfileInFirestore]);
 
 
   const checkIfGuestHasUnviewedMemories = useCallback(async (): Promise<boolean> => {
-    if (!user || userMode !== 'guest') return false;
+    if (!user || userMode !== 'guest') {
+      // console.log("AuthContext: checkIfGuestHasUnviewedMemories - Not a guest or no user. Returning false.");
+      return false;
+    }
     // Placeholder: Real logic would query Firestore for memories shared *to* this user.
+    console.log("AuthContext: checkIfGuestHasUnviewedMemories - Placeholder, returning false.");
     return false;
   }, [user, userMode]);
 
   const checkAndUpdatePassStatus = useCallback(async (currentUser: User): Promise<User> => {
+    console.log("AuthContext: Checking and updating pass status for user:", currentUser.id);
     let updatedUser = { ...currentUser };
     const now = new Date();
     let guestStatusChanged = false;
     let hostStatusChanged = false;
 
+    // Guest Pass Check
     if (updatedUser.sharedAccessStatus === 'free_pass_active' && updatedUser.freePassActivatedDate) {
       if (isBefore(addMonths(parseISO(updatedUser.freePassActivatedDate), 6), now)) {
         updatedUser.sharedAccessStatus = 'free_pass_expired';
         guestStatusChanged = true;
+        console.log(`AuthContext: Guest free pass for ${currentUser.id} expired.`);
       }
     } else if (updatedUser.sharedAccessStatus === 'paid_pass_active' && updatedUser.paidPassExpiryDate) {
       if (isBefore(parseISO(updatedUser.paidPassExpiryDate), now)) {
         updatedUser.sharedAccessStatus = 'paid_pass_expired';
         guestStatusChanged = true;
+        console.log(`AuthContext: Guest paid pass for ${currentUser.id} expired.`);
       }
     }
 
+    // Host Pass Check
     if (updatedUser.hostPassStatus === 'free_host_pass_active' && updatedUser.freeHostPassActivatedDate) {
       if (isBefore(addMonths(parseISO(updatedUser.freeHostPassActivatedDate), 6), now)) {
         updatedUser.hostPassStatus = 'free_host_pass_expired';
         hostStatusChanged = true;
+        console.log(`AuthContext: Host free pass for ${currentUser.id} expired.`);
       }
     } else if (updatedUser.hostPassStatus === 'paid_host_pass_active' && updatedUser.paidHostPassExpiryDate) {
       if (isBefore(parseISO(updatedUser.paidHostPassExpiryDate), now)) {
         updatedUser.hostPassStatus = 'paid_host_pass_expired';
         hostStatusChanged = true;
+        console.log(`AuthContext: Host paid pass for ${currentUser.id} expired.`);
       }
     }
 
@@ -165,14 +186,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (guestStatusChanged) updatesToSave.sharedAccessStatus = updatedUser.sharedAccessStatus;
         if (hostStatusChanged) updatesToSave.hostPassStatus = updatedUser.hostPassStatus;
 
-        // Perform the update without awaiting it here if it's not critical for the immediate user object state
-        updateUserProfileInFirestore(currentUser.id, updatesToSave);
+        console.log(`AuthContext: Pass status changed for ${currentUser.id}. Updating Firestore with:`, updatesToSave);
+        await updateUserProfileInFirestore(currentUser.id, updatesToSave); // Await this critical update
     }
-    return updatedUser; // Return the potentially modified user object for immediate use
+    return updatedUser;
   }, [updateUserProfileInFirestore]);
 
   const checkAndUpdateGuestPassStatus = useCallback(async () => {
     if (user) {
+      // console.log("AuthContext: Manually called checkAndUpdateGuestPassStatus for user:", user.id);
       const updatedUser = await checkAndUpdatePassStatus(user);
       setUser(updatedUser);
     }
@@ -180,6 +202,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkAndUpdateHostPassStatus = useCallback(async () => {
      if (user) {
+      // console.log("AuthContext: Manually called checkAndUpdateHostPassStatus for user:", user.id);
       const updatedUser = await checkAndUpdatePassStatus(user);
       setUser(updatedUser);
     }
@@ -188,14 +211,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchGuestPassPriceLogic = useCallback(async (currentUserForPrice: User | null) => {
     if (isFetchingGuestPassPrice || guestPassPriceDetails) return;
+    console.log("AuthContext: Attempting to fetch GUEST pass price...");
     setIsFetchingGuestPassPrice(true);
     try {
       const cityForPrice = currentUserForPrice?.city || 'London';
       const countryForPrice = currentUserForPrice?.countryOfBirth || 'UK';
       const priceData = await getGuestPassPriceAction({ city: cityForPrice, country: countryForPrice });
       setGuestPassPriceDetails(priceData);
+      console.log("AuthContext: GUEST pass price fetched:", priceData);
     } catch (error) {
-      console.error("Failed to fetch guest pass price:", error);
+      console.error("AuthContext: Failed to fetch GUEST pass price:", error);
       toast({ title: "AI Pricing Unavailable", description: "Could not fetch dynamic pricing for Guest Pass. Using standard rates.", variant: "default", duration: 7000 });
       setGuestPassPriceDetails({passPrice: (currentUserForPrice?.countryOfBirth?.toLowerCase() === 'uk' || currentUserForPrice?.city?.toLowerCase() === 'london') ? 7.99 : 9.99, currency: (currentUserForPrice?.countryOfBirth?.toLowerCase() === 'uk' || currentUserForPrice?.city?.toLowerCase() === 'london') ? 'GBP' : 'USD', coffeePrice: (currentUserForPrice?.countryOfBirth?.toLowerCase() === 'uk' || currentUserForPrice?.city?.toLowerCase() === 'london') ? 3.50 : 3.00, justification: 'Enjoy a month of shared memories with our standard access pass.'});
     } finally { setIsFetchingGuestPassPrice(false); }
@@ -205,14 +230,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchHostPassPriceLogic = useCallback(async (currentUserForPrice: User | null) => {
     if (isFetchingHostPassPrice || hostPassPriceDetails) return;
+    console.log("AuthContext: Attempting to fetch HOST pass price...");
     setIsFetchingHostPassPrice(true);
     try {
       const cityForPrice = currentUserForPrice?.city || 'London';
       const countryForPrice = currentUserForPrice?.countryOfBirth || 'UK';
       const priceData = await getHostPassPriceAction({ city: cityForPrice, country: countryForPrice });
       setHostPassPriceDetails(priceData);
+      console.log("AuthContext: HOST pass price fetched:", priceData);
     } catch (error) {
-      console.error("Failed to fetch host pass price:", error);
+      console.error("AuthContext: Failed to fetch HOST pass price:", error);
       toast({ title: "AI Pricing Unavailable", description: "Could not fetch dynamic pricing for Host Pass. Using standard rates.", variant: "default", duration: 7000 });
       setHostPassPriceDetails({ passPrice: (currentUserForPrice?.countryOfBirth?.toLowerCase() === 'uk' || currentUserForPrice?.city?.toLowerCase() === 'london') ? 12.99 : 14.99, currency: (currentUserForPrice?.countryOfBirth?.toLowerCase() === 'uk' || currentUserForPrice?.city?.toLowerCase() === 'london') ? 'GBP' : 'USD', coffeePrice: (currentUserForPrice?.countryOfBirth?.toLowerCase() === 'uk' || currentUserForPrice?.city?.toLowerCase() === 'london') ? 3.50 : 3.00, justification: 'Unlock a full month of memory creation tools and preserve your precious moments.'});
     } finally { setIsFetchingHostPassPrice(false); }
@@ -221,14 +248,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchHostPassPrice = useCallback(() => { fetchHostPassPriceLogic(user); }, [user, fetchHostPassPriceLogic]);
 
   useEffect(() => {
+    console.log("AuthContext: Setting up onAuthStateChanged listener.");
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      console.log("AuthContext: onAuthStateChanged triggered. Firebase user:", firebaseUser ? firebaseUser.uid : 'null');
       if (firebaseUser) {
         const userDocRef = doc(db, "users", firebaseUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
+        console.log(`AuthContext: Firebase user detected (${firebaseUser.uid}). Attempting to get user document from Firestore at path: ${userDocRef.path}`);
+        let userDocSnap;
+        try {
+          userDocSnap = await getDoc(userDocRef);
+          console.log(`AuthContext: Firestore getDoc for user ${firebaseUser.uid} successful. Exists: ${userDocSnap.exists()}`);
+        } catch (error) {
+          console.error(`AuthContext: Firestore getDoc FAILED for user ${firebaseUser.uid}:`, error);
+          toast({ title: "Profile Load Error", description: "Could not load your profile data. Please check your connection and try again.", variant: "destructive", duration: 10000 });
+          setUser(null);
+          setIsAuthenticated(false);
+          setLoading(false); // Ensure loading is false on critical error
+          return; // Stop further processing for this user
+        }
+        
         let appUserInitial: User;
 
         if (userDocSnap.exists()) {
           const dbUser = userDocSnap.data();
+          console.log(`AuthContext: User document exists for ${firebaseUser.uid}. Data:`, dbUser);
           appUserInitial = {
             id: firebaseUser.uid,
             email: firebaseUser.email || dbUser.email,
@@ -249,6 +292,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             storageUsedBytes: dbUser.storageUsedBytes || 0,
           };
         } else {
+          console.log(`AuthContext: User document does NOT exist for ${firebaseUser.uid}. Creating new profile.`);
           appUserInitial = {
             id: firebaseUser.uid,
             email: firebaseUser.email || "",
@@ -258,13 +302,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             viewedSharedMemoryIds: [],
             storageUsedBytes: 0,
           };
-          await setDoc(userDocRef, { ...appUserInitial, createdAt: serverTimestamp() });
+          try {
+            await setDoc(userDocRef, { ...appUserInitial, createdAt: serverTimestamp() });
+            console.log(`AuthContext: New user profile created in Firestore for ${firebaseUser.uid}.`);
+          } catch (error) {
+            console.error(`AuthContext: Firestore setDoc FAILED for new user ${firebaseUser.uid}:`, error);
+            // Handle critical error - user might be "authenticated" by Firebase Auth but profile creation failed
+            setUser(null);
+            setIsAuthenticated(false);
+            setLoading(false);
+            return;
+          }
         }
 
         const appUserWithPassStatus = await checkAndUpdatePassStatus(appUserInitial);
         setUser(appUserWithPassStatus);
         setIsAuthenticated(true);
+        console.log("AuthContext: User set, isAuthenticated set to true. Current user state:", appUserWithPassStatus);
         setLoading(false); // Set loading false once essential user data is ready
+        console.log("AuthContext: setLoading(false) after user profile processing.");
+
 
         // Defer non-critical updates
         checkIfGuestHasUnviewedMemories().then(hasUnviewed => {
@@ -274,27 +331,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       } else {
         // User is logged out
-        if (pathname !== '/') { // Only push if not already on homepage
-            router.push('/');
+        console.log("AuthContext: Firebase user is null (logged out).");
+        if (pathname !== '/') {
+          console.log("AuthContext: User logged out, current path is not '/'. Pushing to '/'." );
+          router.push('/');
         }
-        justLoggedOut.current = true; // Signal that a logout just occurred
+        justLoggedOut.current = true;
 
         setUser(null);
         setIsAuthenticated(false);
         setHasNewSharedMemoriesState(false);
         setLoading(false);
+        console.log("AuthContext: setLoading(false) after logout processing.");
       }
 
       if (!initialLoadDone.current) {
+        console.log("AuthContext: Initial load done.");
         initialLoadDone.current = true;
       }
     });
-    return () => unsubscribe();
-  }, [checkAndUpdatePassStatus, checkIfGuestHasUnviewedMemories, calculateAndUpdateStorageUsage, router, pathname]);
+    return () => {
+      console.log("AuthContext: Unsubscribing from onAuthStateChanged listener.");
+      unsubscribe();
+    }
+  }, [checkAndUpdatePassStatus, checkIfGuestHasUnviewedMemories, calculateAndUpdateStorageUsage, router, pathname]); // Added router and pathname as dependencies
 
 
   useEffect(() => {
+    console.log("AuthContext: Route protection useEffect running. isAuthenticated:", isAuthenticated, "loading:", loading, "pathname:", pathname, "initialLoadDone:", initialLoadDone.current, "justLoggedOut:", justLoggedOut.current);
     if (loading || !initialLoadDone.current) {
+      console.log("AuthContext: Route protection useEffect - still loading or initial load not done. Skipping.");
       return;
     }
 
@@ -305,32 +371,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (isAuthenticated) {
       if (publicPaths.includes(pathname)) {
         const targetPath = userMode === 'host' ? defaultAuthenticatedHostPath : defaultAuthenticatedGuestPath;
+        console.log(`AuthContext: Authenticated user on public path '${pathname}'. Redirecting to '${targetPath}'.`);
         if (pathname !== targetPath) {
-            router.push(targetPath);
-            return;
+          router.push(targetPath);
+          return; // Exit early after redirect
         }
       }
-    } else {
+    } else { // Not authenticated
       if (justLoggedOut.current) {
-        justLoggedOut.current = false; // Reset the flag
-        // If we just logged out, the onAuthStateChanged listener should have already pushed to '/'
-        // So, we don't redirect to /login here.
+        console.log("AuthContext: Not authenticated, but justLoggedOut is true. Resetting flag and skipping redirect to /login.");
+        justLoggedOut.current = false; // Reset flag
       } else if (!publicPaths.includes(pathname)) {
+        console.log(`AuthContext: Unauthenticated user on protected path '${pathname}'. Redirecting to '/login'.`);
         if (pathname !== '/login') {
-            router.push('/login');
-            return;
+          router.push('/login');
+          return; // Exit early after redirect
         }
       }
     }
 
-    // Price fetching logic (can run after redirection logic)
+    // Price fetching logic (can run after redirection logic if no redirect occurred)
     if (isAuthenticated && user) {
       if (userMode === 'host') {
         if ((user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired' || user.hostPassStatus === 'no_pass_initiated') && !isFetchingHostPassPrice && !hostPassPriceDetails) {
+          // console.log("AuthContext: Fetching host pass price.");
           fetchHostPassPrice();
         }
       } else if (userMode === 'guest') {
         if ((user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated') && !isFetchingGuestPassPrice && !guestPassPriceDetails) {
+          // console.log("AuthContext: Fetching guest pass price.");
           fetchGuestPassPrice();
         }
       }
@@ -341,58 +410,70 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isFetchingHostPassPrice, hostPassPriceDetails]);
 
   const login = useCallback(async (email: string, password: string): Promise<void> => {
+    console.log(`AuthContext: Attempting login for email: ${email}`);
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      console.log(`AuthContext: Login successful for ${email}. onAuthStateChanged will handle user state.`);
+      // onAuthStateChanged will handle setting user, isAuthenticated, and loading state
       toast({ title: "Login Successful", description: "Welcome back!" });
     } catch (error: any) {
-      console.error("Login error:", error);
+      console.error("AuthContext: Login error:", error);
       toast({ title: "Login Failed", description: error.message || "Invalid email or password.", variant: "destructive" });
-      setLoading(false);
+      setLoading(false); // Ensure loading is false on login failure
       throw error;
     }
   }, []);
 
   const register = useCallback(async (name: string, email: string, password: string): Promise<void> => {
+    console.log(`AuthContext: Attempting registration for email: ${email}`);
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
-      const newUserProfile: Omit<User, 'id'> & { createdAt: any } = {
+      console.log(`AuthContext: Firebase user created via Auth: ${firebaseUser.uid}. Creating Firestore profile.`);
+      const newUserProfile: Omit<User, 'id'> & { createdAt: Timestamp } = {
         email: firebaseUser.email || "",
         name: name,
         sharedAccessStatus: 'no_pass_initiated',
         hostPassStatus: 'no_pass_initiated',
         viewedSharedMemoryIds: [],
         storageUsedBytes: 0,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp() as Timestamp
       };
       await setDoc(doc(db, "users", firebaseUser.uid), newUserProfile);
+      console.log(`AuthContext: Firestore profile created for ${firebaseUser.uid}. onAuthStateChanged will handle user state.`);
+      // onAuthStateChanged will handle setting user, isAuthenticated, and loading state
       toast({ title: "Registration Successful", description: "Welcome! Your account has been created." });
     } catch (error: any) {
-      console.error("Registration error:", error);
+      console.error("AuthContext: Registration error:", error);
       toast({ title: "Registration Failed", description: error.message || "Could not create account.", variant: "destructive" });
-      setLoading(false);
+      // Reset loading state here only if registration fully fails, as onAuthStateChanged might not fire or might fire with null
+      const currentUser = auth.currentUser;
+      if (!currentUser || currentUser.email !== email) {
+        setLoading(false);
+      }
       throw error;
     }
   }, []);
 
 
   const logout = useCallback(async () => {
-    // setLoading(true); // No longer setting loading true here, onAuthStateChanged will handle it
+    console.log("AuthContext: Attempting logout.");
+    // setLoading(true); // Let onAuthStateChanged handle loading states to avoid flicker
     try {
       await firebaseSignOut(auth);
+      console.log("AuthContext: firebaseSignOut successful. onAuthStateChanged will handle state updates and redirection.");
       // onAuthStateChanged will handle setting user to null, isAuthenticated to false,
       // and redirecting to '/' via router.push('/') and justLoggedOut.current flag.
       setPendingRequestCountState(0);
-      setUserModeState('host'); // Reset to default mode
-      setGuestPassPriceDetails(null); // Reset price details
+      setUserModeState('host');
+      setGuestPassPriceDetails(null);
       setHostPassPriceDetails(null);
-      // router.push('/') is now handled in onAuthStateChanged
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error("AuthContext: Logout error:", error);
       toast({ title: "Logout Failed", variant: "destructive" });
-      // setLoading(false); // No longer setting loading false here
+      // setLoading(false); // Ensure loading is false on logout failure if onAuthStateChanged doesn't cover it
     }
   }, []);
 
@@ -403,23 +484,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const activateFreeGuestPass = useCallback(async () => {
     if (user && user.sharedAccessStatus === 'no_pass_initiated') {
+      console.log(`AuthContext: Activating free GUEST pass for user ${user.id}.`);
       const now = new Date();
       const updates: Partial<User> = { sharedAccessStatus: 'free_pass_active', freePassActivatedDate: now.toISOString() };
       await updateUserProfileInFirestore(user.id, updates);
       toast({ title: "Free Guest Pass Activated!", description: `Your 6-month free access to shared memories starts now. Ends ${format(addMonths(now, 6), 'PPP')}.`, duration: 7000 });
-    }
+    } else { console.warn("AuthContext: activateFreeGuestPass - Conditions not met (user null or pass not 'no_pass_initiated').");}
   }, [user, updateUserProfileInFirestore]);
 
   const purchasePaidGuestPass = useCallback(async () => {
     if (user) {
+        console.log(`AuthContext: Simulating purchase of paid GUEST pass for user ${user.id}.`);
         toast({ title: "Initiating Guest Pass Purchase...", description: "Secure payment starting (Simulated for now).", duration: 3000 });
-        console.log("Simulating Stripe Checkout for Guest Pass...");
-        console.log("1. Call server action to create Stripe Checkout session.");
-        console.log("2. Redirect user to Stripe Checkout page.");
-        console.log("3. Stripe calls webhook on successful payment.");
-        console.log("4. Webhook updates user's pass status in Firestore.");
-
-        // Mock activation for testing
         const now = new Date(); let startDate = now;
         if (user.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate && isBefore(now, parseISO(user.paidPassExpiryDate))) { startDate = parseISO(user.paidPassExpiryDate); }
         const newExpiryDate = addDays(startDate, 31);
@@ -429,28 +505,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!currentPassPrice) { try { currentPassPrice = await getGuestPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' }); setGuestPassPriceDetails(currentPassPrice); } catch (e) { /* ignore */ } }
         let priceMsg = "for your pass"; if (currentPassPrice) { priceMsg = `for ${new Intl.NumberFormat('en-GB', { style: 'currency', currency: currentPassPrice.currency }).format(currentPassPrice.passPrice)}`; }
         toast({ title: "Guest Pass Activated (Payment Simulated)!", description: `Your 31-day guest pass ${priceMsg} is now active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
-    }
+    } else { console.warn("AuthContext: purchasePaidGuestPass - User is null.");}
   }, [user, guestPassPriceDetails, updateUserProfileInFirestore]);
 
   const activateFreeHostPass = useCallback(async () => {
     if (user && user.hostPassStatus === 'no_pass_initiated') {
+      console.log(`AuthContext: Activating free HOST pass for user ${user.id}.`);
       const now = new Date();
       const updates: Partial<User> = { hostPassStatus: 'free_host_pass_active', freeHostPassActivatedDate: now.toISOString() };
       await updateUserProfileInFirestore(user.id, updates);
       toast({ title: "Free Host Pass Activated!", description: `Your 6-month free host pass starts now. Ends ${format(addMonths(now, 6), 'PPP')}.`, duration: 7000 });
-    }
+    } else { console.warn("AuthContext: activateFreeHostPass - Conditions not met (user null or pass not 'no_pass_initiated').");}
   }, [user, updateUserProfileInFirestore]);
 
   const purchasePaidHostPass = useCallback(async () => {
     if (user) {
+      console.log(`AuthContext: Simulating purchase of paid HOST pass for user ${user.id}.`);
       toast({ title: "Initiating Host Pass Purchase...", description: "Secure payment starting (Simulated for now).", duration: 3000 });
-      console.log("Simulating Stripe Checkout for Host Pass...");
-      console.log("1. Call server action to create Stripe Checkout session.");
-      console.log("2. Redirect user to Stripe Checkout page.");
-      console.log("3. Stripe calls webhook on successful payment.");
-      console.log("4. Webhook updates user's pass status in Firestore.");
-
-      // Mock activation for testing
       const now = new Date(); let startDate = now;
       if (user.hostPassStatus === 'paid_host_pass_active' && user.paidHostPassExpiryDate && isBefore(now, parseISO(user.paidHostPassExpiryDate))) { startDate = parseISO(user.paidHostPassExpiryDate); }
       const newExpiryDate = addDays(startDate, 31);
@@ -460,7 +531,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!currentHostPassPrice) { try { currentHostPassPrice = await getHostPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' }); setHostPassPriceDetails(currentHostPassPrice); } catch (e) { /* ignore */ } }
       let priceMsg = "for your host pass"; if (currentHostPassPrice) { priceMsg = `for ${new Intl.NumberFormat('en-GB', { style: 'currency', currency: currentHostPassPrice.currency }).format(currentHostPassPrice.passPrice)}`; }
       toast({ title: "Host Pass Activated (Payment Simulated)!", description: `Your 31-day host pass ${priceMsg} is now active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
-    }
+    } else { console.warn("AuthContext: purchasePaidHostPass - User is null.");}
   }, [user, hostPassPriceDetails, updateUserProfileInFirestore]);
 
 
@@ -477,6 +548,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetHostPassForTesting = useCallback(async () => {
     if (user) {
+      console.log(`AuthContext: Resetting HOST pass for testing for user ${user.id}.`);
       const updates: Partial<User> = { hostPassStatus: 'no_pass_initiated', freeHostPassActivatedDate: undefined, paidHostPassExpiryDate: undefined };
       await updateUserProfileInFirestore(user.id, updates);
       setHostPassPriceDetails(null);
@@ -504,4 +576,3 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-

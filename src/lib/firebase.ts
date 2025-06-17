@@ -1,7 +1,9 @@
 
-import { initializeApp, getApps, getApp } from 'firebase/app';
+import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+
+console.log("Attempting to load Firebase config from environment variables...");
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,6 +14,8 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+console.log("Firebase config object constructed:", firebaseConfig);
+
 // Check for missing essential configuration values
 const essentialConfigKeys = ['apiKey', 'authDomain', 'projectId'];
 const missingConfigs = essentialConfigKeys.filter(
@@ -20,31 +24,53 @@ const missingConfigs = essentialConfigKeys.filter(
 
 if (missingConfigs.length > 0) {
   console.error(
-    `FIREBASE CONFIGURATION ERROR: The following essential Firebase configuration values are missing or undefined: ${missingConfigs.join(', ')}. ` +
+    `FIREBASE CONFIGURATION ERROR: The following essential Firebase configuration values are missing or undefined in .env: ${missingConfigs.join(', ')}. ` +
     "Please ensure all NEXT_PUBLIC_FIREBASE_... variables are correctly set in your .env file. " +
     "If you've recently updated the .env file, you MUST RESTART your Next.js development server (e.g., stop and re-run 'npm run dev') for the changes to take effect."
   );
-  // It's often good to throw an error here to stop further execution if config is critically missing
-  // For now, allowing Firebase to throw its own more specific error after this log.
+  // Throwing an error here can help halt execution if config is critically missing
+  // throw new Error(`Firebase configuration failed: Missing ${missingConfigs.join(', ')}`);
+} else {
+  console.log("All essential Firebase config keys seem to be present.");
 }
 
 // Initialize Firebase
-let app;
+let app: FirebaseApp;
+
 if (!getApps().length) {
+  console.log("No Firebase apps initialized yet. Calling initializeApp().");
   try {
     app = initializeApp(firebaseConfig);
+    console.log("Firebase app initialized successfully:", app.name);
   } catch (e) {
-    console.error("Firebase initialization failed:", e);
-    // Re-throw or handle as appropriate for your app's error strategy
-    // This helps ensure the app doesn't proceed with a broken Firebase instance.
+    console.error("Firebase initializeApp() FAILED:", e);
     throw new Error(`Firebase initialization failed. Original error: ${(e as Error).message}`);
   }
 } else {
+  console.log("Firebase app already exists. Calling getApp().");
   app = getApp();
+  console.log("Existing Firebase app retrieved:", app.name);
 }
 
-const auth = getAuth(app);
-const db = getFirestore(app);
+let authInstance;
+let dbInstance;
 
-export { app, auth, db };
+try {
+  console.log("Attempting to get Auth instance...");
+  authInstance = getAuth(app);
+  console.log("Auth instance retrieved successfully.");
+} catch (e) {
+  console.error("Failed to get Auth instance:", e);
+  throw new Error(`Failed to initialize Firebase Auth. Original error: ${(e as Error).message}`);
+}
 
+try {
+  console.log("Attempting to get Firestore instance...");
+  dbInstance = getFirestore(app);
+  console.log("Firestore instance retrieved successfully.");
+} catch (e) {
+  console.error("Failed to get Firestore instance:", e);
+  throw new Error(`Failed to initialize Firebase Firestore. Original error: ${(e as Error).message}`);
+}
+
+export { app, authInstance as auth, dbInstance as db };
