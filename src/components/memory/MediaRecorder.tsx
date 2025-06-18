@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, Video, StopCircle, UploadCloud, RotateCcw, CheckCircle, AlertTriangle, Film, Waves, Loader2, ShieldAlert, BookOpen } from 'lucide-react';
+import { Mic, Video, StopCircle, UploadCloud, RotateCcw, CheckCircle, AlertTriangle, Film, Waves, Loader2, ShieldAlert, BookOpen, Timer } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
@@ -66,6 +66,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   const [showTeleprompter, setShowTeleprompter] = useState(false);
   const [currentTeleprompterScript, setCurrentTeleprompterScript] = useState<string | null>(null);
 
+  const [currentRecordingDuration, setCurrentRecordingDuration] = useState(0);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   const canRecordOrUpload = hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
 
   useEffect(() => { latestTrimValuesRef.current = { startTime, endTime }; }, [startTime, endTime]);
@@ -92,14 +95,33 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     }
   }, []);
 
-  // Effect to manage the live video feed
+  // Effect to manage the live video feed and recording timer
   useEffect(() => {
-    if (isRecording && mediaType === 'video' && stream && liveVideoRef.current) {
-      liveVideoRef.current.srcObject = stream;
-      liveVideoRef.current.play().catch(e => console.warn("Live video play interrupted:", e));
-    } else if (liveVideoRef.current) {
-      liveVideoRef.current.srcObject = null; // Clear srcObject when not recording video
+    if (isRecording) {
+      if (mediaType === 'video' && stream && liveVideoRef.current) {
+        liveVideoRef.current.srcObject = stream;
+        liveVideoRef.current.play().catch(e => console.warn("Live video play interrupted:", e));
+      }
+      setCurrentRecordingDuration(0); // Reset timer
+      if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = setInterval(() => {
+        setCurrentRecordingDuration(prev => prev + 1);
+      }, 1000);
+    } else {
+      if (liveVideoRef.current) {
+        liveVideoRef.current.srcObject = null; // Clear srcObject when not recording video
+      }
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+      }
     }
+    return () => {
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+      }
+    };
   }, [stream, isRecording, mediaType]);
 
 
@@ -511,7 +533,17 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         )}
 
         {isRecording && mediaType === 'video' && (<video ref={liveVideoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />)}
-        {isRecording && (<div className="text-center space-y-2"><p className="text-sm text-primary animate-pulse">{mediaType === 'video' ? 'Video' : 'Audio'} Recording...</p><Button onClick={handleStopRecording} variant="destructive" className="w-full md:w-auto" aria-label="Stop recording"><StopCircle className="mr-2 h-4 w-4" /> Stop</Button></div>)}
+        {isRecording && (
+            <div className="text-center space-y-2">
+                <div className="flex items-center justify-center text-sm text-primary animate-pulse">
+                    <Timer className="mr-2 h-4 w-4" />
+                    {mediaType === 'video' ? 'Video' : 'Audio'} Recording: {formatSecondsToTime(currentRecordingDuration)}
+                </div>
+                <Button onClick={handleStopRecording} variant="destructive" className="w-full md:w-auto" aria-label="Stop recording">
+                    <StopCircle className="mr-2 h-4 w-4" /> Stop
+                </Button>
+            </div>
+        )}
 
         {internalPreviewUrl && !isRecording && mediaType && (
           <div className="space-y-4">
