@@ -35,6 +35,7 @@ export default function AddMemoryPage() {
 
   const editMemoryId = searchParams.get('editMemoryId');
   const promptIdFromQuery = searchParams.get('promptId');
+  const customPromptTextFromQuery = searchParams.get('prompt'); // For custom chapter ideas
   const isCreatingNew = !editMemoryId;
 
   useEffect(() => {
@@ -100,22 +101,17 @@ export default function AddMemoryPage() {
             filename: mediaFileToUpload.name,
             size: mediaFileToUpload.size, // Ensure size is from the new file
           }];
-        } else { // Should ideally not happen if mediaFileToUpload is present, but as a fallback
+        } else { 
            processedMediaAttachments = [{
-            id: Date.now().toString(), // new media ID
+            id: Date.now().toString(), 
             type: mediaFileToUpload.type.startsWith('video/') ? 'video' : 'audio',
             url: downloadURL,
             filename: mediaFileToUpload.name,
             size: mediaFileToUpload.size,
-            // startTime, endTime, duration would come from MediaCaptureControl via MemoryForm if it was a new recording/upload
-            // For simplicity if memoryData.mediaAttachments was empty, we might lose trim from a new recording.
-            // This path is less likely as MemoryForm should construct mediaAttachments[0] with new trim data.
           }];
         }
 
-        // Delete old media from Storage if it existed and is different
         if (isCreatingNew && oldMediaUrl && oldMediaUrl !== downloadURL && oldMediaUrl.includes('firebasestorage.googleapis.com')) {
-          // This case is for when creating new, but somehow oldMediaUrl was set (should not happen often)
            console.warn("Old media URL present when creating new memory, deleting if from storage.");
            try {
                 const oldFileStorageRef = storageRef(storage, oldMediaUrl);
@@ -145,12 +141,10 @@ export default function AddMemoryPage() {
         return;
       }
     } else if (isCreatingNew && !mediaFileToUpload) {
-      // No new file for a new memory, and mediaAttachments might be undefined or empty from form
       processedMediaAttachments = undefined;
     } else if (!isCreatingNew && !mediaFileToUpload && memoryData.mediaAttachments === undefined && oldMediaUrl) {
-      // User explicitly cleared media for an existing memory
       console.log("Media cleared for existing memory, deleting from storage:", oldMediaUrl);
-      processedMediaAttachments = undefined; // Mark for removal from Firestore
+      processedMediaAttachments = undefined; 
       if (oldMediaUrl.includes('firebasestorage.googleapis.com')) {
           try {
             const oldFileStorageRef = storageRef(storage, oldMediaUrl);
@@ -162,18 +156,18 @@ export default function AddMemoryPage() {
              }
           }
       }
-    } else if (!isCreatingNew && !mediaFileToUpload && memoryData.mediaAttachments && memoryToEdit?.mediaAttachments) {
-        // No new file, but existing media details might have been re-submitted (e.g. trim changed on existing storage URL)
-        // This should be handled by MemoryForm passing existing attachment data correctly.
-        // The 'processedMediaAttachments' from memoryData should be correct here.
     }
 
 
-    const dataToSave: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'> & { userId: string; updatedAt: Timestamp; createdAt?: Timestamp, mediaAttachments?: MediaAttachment[] } = {
+    // Prioritize promptId from the form data (MemoryForm now handles this)
+    // Fallback to query, then existing memory.
+    const finalPromptId = memoryData.promptId || promptIdFromQuery || memoryToEdit?.promptId || undefined;
+
+    const dataToSave: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'> & { userId: string; updatedAt: Timestamp; createdAt?: Timestamp, mediaAttachments?: MediaAttachment[], promptId?: string } = {
       ...memoryData,
-      mediaAttachments: processedMediaAttachments, // This can be undefined to remove it
+      mediaAttachments: processedMediaAttachments, 
       userId: user.id,
-      promptId: promptIdFromQuery || memoryData.promptId || memoryToEdit?.promptId || undefined,
+      promptId: finalPromptId,
       updatedAt: serverTimestamp() as Timestamp,
     };
 
@@ -191,7 +185,7 @@ export default function AddMemoryPage() {
 
       await calculateAndUpdateStorageUsage(user.id);
 
-      if (promptIdFromQuery || memoryData.promptId || memoryToEdit?.promptId) {
+      if (finalPromptId) {
         router.push('/prompts');
       } else {
         router.push('/timeline');
@@ -289,6 +283,8 @@ export default function AddMemoryPage() {
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
           memory={memoryToEdit}
+          initialPromptId={promptIdFromQuery ? decodeURIComponent(promptIdFromQuery) : undefined}
+          initialCustomPromptText={customPromptTextFromQuery ? decodeURIComponent(customPromptTextFromQuery) : undefined}
         />
       </div>
     </AuthenticatedPageWrapper>

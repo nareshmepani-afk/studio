@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/carousel";
 import { formatSecondsToTime } from '@/lib/utils';
 import { countryOptions } from '@/lib/constants';
+import { mockPromptGroups } from '@/lib/mockData';
 
 
 interface MemoryFormProps {
@@ -35,33 +36,32 @@ interface MemoryFormProps {
     mediaFileToUpload?: File
   ) => void;
   isSubmitting?: boolean;
+  initialPromptId?: string; 
+  initialCustomPromptText?: string; 
 }
 
-// Type for data received from MediaCaptureControl's onMediaReady
 type MediaFromRecorder = {
   file: File;
   type: 'video' | 'audio';
   startTime?: number;
   endTime?: number;
-  duration: number; // Original total duration of the file
+  duration: number; 
   size: number;
 };
 
-// Type for MemoryForm's internal state for the current media
 type CurrentMediaData = {
-  file: File; // Can be the original file or a placeholder for existing media
+  file: File; 
   type: 'video' | 'audio';
   startTime?: number;
   endTime?: number;
-  duration: number; // Original total duration of the file/media
+  duration: number; 
   size: number;
 };
 
-// Type for initializing MediaCaptureControl
 type MediaForRecorderInit = {
-  file?: File; // Optional: if we want to pass the file back for re-init
+  file?: File; 
   type: 'video' | 'audio';
-  previewUrl: string; // URL for MCC to display (can be MemoryForm's blob or a persistent URL)
+  previewUrl: string; 
   startTime?: number;
   endTime?: number;
   duration: number;
@@ -81,15 +81,15 @@ const SLIDE_INDEX_MEDIA = 1;
 const SLIDE_INDEX_PREVIEW = 2;
 const TOTAL_SLIDES = 3;
 
-export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting }: MemoryFormProps) {
+export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting, initialPromptId, initialCustomPromptText }: MemoryFormProps) {
   const { user, hostPassStatus } = useAuth();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams(); // Keep for other potential params, though specific prompt text/id is now via props
   const router = useRouter();
   const isEditing = !!memory;
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const yearSelectRef = useRef<HTMLButtonElement>(null); // Ref for the year SelectTrigger
+  const yearSelectRef = useRef<HTMLButtonElement>(null); 
 
   const step1AnchorRef = useRef<HTMLDivElement>(null);
   const step2AnchorRef = useRef<HTMLDivElement>(null);
@@ -136,14 +136,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
 
 
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
-  const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null); // This URL is owned by MemoryForm
+  const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null); 
   const [mediaToInitializeRecorder, setMediaToInitializeRecorder] = useState<MediaForRecorderInit | undefined>(undefined);
-
-  const promptIdFromQuery = useMemo(() => searchParams.get('promptId'), [searchParams]);
-  const promptTextFromUrl = useMemo(() => {
-      const text = searchParams.get('prompt');
-      return text ? decodeURIComponent(text) : '';
-  }, [searchParams]);
 
   useEffect(() => {
     if (memory) {
@@ -190,13 +184,20 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       } else {
         setCurrentMedia(null); setCurrentMediaPreviewUrl(null); setMediaToInitializeRecorder(undefined);
       }
-    } else {
-      setTitle(promptTextFromUrl || '');
+    } else { // New memory
+      let determinedInitialTitle = '';
+      if (initialCustomPromptText) { // For custom chapters from brainstorm
+        determinedInitialTitle = initialCustomPromptText;
+      } else if (initialPromptId) { // For Life Journey prompts
+        const foundPrompt = mockPromptGroups.flatMap(g => g.prompts).find(p => p.id === initialPromptId);
+        determinedInitialTitle = foundPrompt ? foundPrompt.text.en : ''; // Default to English for pre-fill
+      }
+      setTitle(determinedInitialTitle);
       setLocation(''); setCountry('United Kingdom'); setDescription(''); setSelectedEmotionTags([]); setSelectedCategory(memoryCategoriesList[0]);
       setSelectedYear(getInitialDateComponent('year')); setSelectedMonth(getInitialDateComponent('month')); setSelectedDay(getInitialDateComponent('day'));
       setCurrentMedia(null); setCurrentMediaPreviewUrl(null); setMediaToInitializeRecorder(undefined);
     }
-  }, [memory, promptTextFromUrl, getInitialDateComponent]);
+  }, [memory, initialPromptId, initialCustomPromptText, getInitialDateComponent]);
 
 
   const daysInSelectedMonth = useMemo(() => {
@@ -375,14 +376,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
         mediaAttachmentsForSubmission = []; 
     }
+    
+    const finalPromptIdToSave = initialPromptId || memory?.promptId || undefined;
 
     onSubmit(
       { title, date: finalDate.toISOString(), description, emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForSubmission,
         location: location || undefined, country: country || undefined, category: selectedCategory, 
-        promptId: promptIdFromQuery || memory?.promptId || undefined, },
+        promptId: finalPromptIdToSave },
       mediaFileToUpload
     );
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, selectedCategory, promptIdFromQuery, selectedEmotionTags, isEditing]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, selectedCategory, initialPromptId, selectedEmotionTags, isEditing]);
 
 
   const handleActionButtonClick = useCallback(() => {
@@ -421,7 +424,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     return undefined;
   }, [currentMedia, currentMediaPreviewUrl]);
 
-  const currentPromptIdForTeleprompter = promptIdFromQuery || memory?.promptId;
+  const currentPromptIdForTeleprompter = initialPromptId || memory?.promptId;
 
   let mockMemoryForPreview: Memory | undefined = undefined;
   if (currentSlide === SLIDE_INDEX_PREVIEW) {
@@ -439,7 +442,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
       description: description.trim() || "No description provided.", emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForPreview,
       location: location.trim() || undefined, country: country.trim() || undefined, category: selectedCategory,
       userId: user?.id || 'preview-user-id',
-      promptId: promptIdFromQuery || memory?.promptId, isLegacy: memory?.isLegacy || false,
+      promptId: initialPromptId || memory?.promptId, isLegacy: memory?.isLegacy || false,
     };
   }
 
@@ -512,3 +515,4 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting 
     </form>
   );
 }
+
