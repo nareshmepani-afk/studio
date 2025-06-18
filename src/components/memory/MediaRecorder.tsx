@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from '@/components/ui/button';
@@ -182,6 +183,12 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       const recorder = new window.MediaRecorder(currentStreamForRecording); mediaRecorderRef.current = recorder;
       recorder.ondataavailable = (event) => { if (event.data.size > 0) recordedChunks.current.push(event.data); };
       recorder.onstop = () => {
+        if (recordedChunks.current.length === 0) {
+          setTimeout(() => toast({ variant: 'destructive', title: 'No Data Recorded', description: 'The recording seems to be empty. Please try again, ensuring your microphone/camera is active.', duration: 7000 }), 0);
+          cleanupStream(stream); setStream(null); setIsRecording(false);
+          return;
+        }
+
         const mime = type === 'video' ? 'video/webm' : 'audio/webm';
         const blob = new Blob(recordedChunks.current, { type: mime });
         const file = new File([blob], `recording.${type === 'video' ? 'webm' : 'ogg'}`, { type: mime });
@@ -554,3 +561,5 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     </Card>
   );
 }
+
+    
