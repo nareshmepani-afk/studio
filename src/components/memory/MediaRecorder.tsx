@@ -81,7 +81,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     } catch (error) {
       console.error('Error accessing media devices:', error);
       setHasCameraPermission(false);
-      setTimeout(() => toast({ variant: 'destructive', title: 'Permissions Denied', description: `Please enable ${type === 'video' ? 'camera and microphone' : 'microphone'} permissions in your browser settings to use this feature. You may need to refresh the page.` }), 0);
+      setTimeout(() => toast({ variant: 'destructive', title: 'Permissions Denied', description: `Please enable ${type === 'video' ? 'camera and microphone' : 'microphone'} permissions in your browser settings to use this feature. You may need to refresh the page.`, duration: 7000 }), 0);
       return null;
     }
   }, []);
@@ -108,7 +108,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         setCurrentRecordingDuration(prev => prev + 1);
       }, 1000);
     } else {
-      if (liveVideoRef.current) {
+      if (liveVideoRef.current && liveVideoRef.current.srcObject) {
+        (liveVideoRef.current.srcObject as MediaStream)?.getTracks().forEach(track => track.stop());
         liveVideoRef.current.srcObject = null; // Clear srcObject when not recording video
       }
       if (recordingIntervalRef.current) {
@@ -173,11 +174,11 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setRecordedFile(null); setInternalPreviewUrl(null); setMediaType(type); setStartTime(0); setEndTime(0); setMediaDuration(0); setMediaSize(0);
     latestTrimValuesRef.current = { startTime: 0, endTime: 0 }; recordedChunks.current = [];
     
-    cleanupStream(stream); 
+    cleanupStream(stream); // Clean up any previous stream
     const currentStreamForRecording = await getPermissions(type);
     
     if (!currentStreamForRecording) {
-      setIsRecording(false); 
+      setIsRecording(false); // Ensure isRecording is false if permissions fail
       return;
     }
     if (!currentStreamForRecording.active) {
@@ -187,8 +188,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       return;
     }
 
-    setStream(currentStreamForRecording); 
-    setMediaType(type); 
+    setStream(currentStreamForRecording); // Set the new stream state *before* trying to use it in MediaRecorder
+    setMediaType(type); // Also set mediaType state here
     
     let scriptKey = promptIdForTeleprompter;
     if (!scriptKey && chapterTitleForTeleprompter) {
@@ -213,6 +214,13 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
         const mime = type === 'video' ? 'video/webm' : 'audio/webm';
         const blob = new Blob(recordedChunks.current, { type: mime });
+
+        if (blob.size < 1024) { // Check if blob size is too small (e.g., < 1KB)
+          setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Recorded data is too small or corrupted. Please try a longer recording.', duration: 7000 }), 0);
+          cleanupStream(stream); setStream(null); setIsRecording(false); recordedChunks.current = [];
+          return;
+        }
+
         const file = new File([blob], `recording.${type === 'video' ? 'webm' : 'ogg'}`, { type: mime });
         
         if (!checkStorageQuota(file.size)) { 
@@ -269,8 +277,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stop(); // onstop will handle cleanup
     } else {
+      // If not actively recording but stop is called, ensure cleanup
       setIsRecording(false);
       cleanupStream(stream);
       setStream(null);
@@ -489,9 +498,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
 
   useEffect(() => { 
-    const currentStream = stream; 
+    const currentStreamToCleanup = stream; 
     return () => {
-      cleanupStream(currentStream);
+      cleanupStream(currentStreamToCleanup);
       if (internalPreviewUrl && internalPreviewUrl.startsWith('blob:') && internalPreviewUrl !== initialMedia?.previewUrl) {
         URL.revokeObjectURL(internalPreviewUrl);
       }
