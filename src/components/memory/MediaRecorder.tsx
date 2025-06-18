@@ -32,8 +32,8 @@ const SAMPLE_AUDIO_URL = "https://interactive-examples.mdn.mozilla.net/media/cc0
 const MAX_TRIMMED_VIDEO_DURATION_SECONDS = 120;
 const MAX_TRIMMED_AUDIO_DURATION_SECONDS = 300;
 
-const MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_VIDEO_DURATION_SECONDS + 60; // 3 minutes
-const MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_AUDIO_DURATION_SECONDS + 60; // 6 minutes
+const MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_VIDEO_DURATION_SECONDS + 60; 
+const MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_AUDIO_DURATION_SECONDS + 60;
 
 
 export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, promptIdForTeleprompter, chapterTitleForTeleprompter }: MediaCaptureControlProps) {
@@ -71,6 +71,12 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
   useEffect(() => { latestTrimValuesRef.current = { startTime, endTime }; }, [startTime, endTime]);
 
+  const cleanupStreamTracks = useCallback((streamToClean: MediaStream | null) => {
+    if (streamToClean) {
+      streamToClean.getTracks().forEach(track => track.stop());
+    }
+  }, []);
+  
   const getPermissions = useCallback(async (type: 'video' | 'audio'): Promise<MediaStream | null> => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
@@ -84,19 +90,13 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     }
   }, []);
 
-  const cleanupStreamTracks = useCallback((streamToClean: MediaStream | null) => {
-    if (streamToClean) {
-      streamToClean.getTracks().forEach(track => track.stop());
-    }
-  }, []);
 
   useEffect(() => {
-    let currentStreamForFeed = streamForVideoFeed;
     let currentLiveVideoElement = liveVideoRef.current;
 
-    if (isRecording && mediaType === 'video' && currentStreamForFeed && currentLiveVideoElement) {
-      if(currentLiveVideoElement.srcObject !== currentStreamForFeed) {
-        currentLiveVideoElement.srcObject = currentStreamForFeed;
+    if (isRecording && mediaType === 'video' && streamForVideoFeed && currentLiveVideoElement) {
+      if(currentLiveVideoElement.srcObject !== streamForVideoFeed) {
+        currentLiveVideoElement.srcObject = streamForVideoFeed;
       }
       currentLiveVideoElement.play().catch(e => console.warn("Live video play interrupted:", e));
 
@@ -106,24 +106,35 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         setCurrentRecordingDuration(prev => prev + 1);
       }, 1000);
 
-    } else if (!isRecording) {
+    } else if (!isRecording) { // This runs when isRecording becomes false
       if (currentLiveVideoElement && currentLiveVideoElement.srcObject) {
         cleanupStreamTracks(currentLiveVideoElement.srcObject as MediaStream);
         currentLiveVideoElement.srcObject = null;
+      }
+      if (streamForVideoFeed) { // Also ensure global stream state is cleaned up if this effect is responsible
+        cleanupStreamTracks(streamForVideoFeed);
+        setStreamForVideoFeed(null);
       }
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
       }
     }
-
+    // This cleanup in useEffect is for when the component unmounts or dependencies change leading to re-run
     return () => {
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
       }
-      if (currentStreamForFeed && isRecording) { 
-        cleanupStreamTracks(currentStreamForFeed);
+      // The stream used by liveVideoRef (which is streamForVideoFeed) should be cleaned up
+      // if isRecording was true and now changes, or if component unmounts while recording.
+      if (currentLiveVideoElement && currentLiveVideoElement.srcObject) {
+         cleanupStreamTracks(currentLiveVideoElement.srcObject as MediaStream);
+         currentLiveVideoElement.srcObject = null;
+      }
+      // Also ensure the stream in state is cleaned if component unmounts
+      if (streamForVideoFeed) {
+        cleanupStreamTracks(streamForVideoFeed);
       }
     };
   }, [isRecording, mediaType, streamForVideoFeed, cleanupStreamTracks]);
@@ -167,17 +178,18 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setRecordedFile(null); setInternalPreviewUrl(null); setMediaType(type); setStartTime(0); setEndTime(0); setMediaDuration(0); setMediaSize(0);
     latestTrimValuesRef.current = { startTime: 0, endTime: 0 }; recordedChunks.current = [];
 
+    // Cleanup any existing global stream before getting new permissions
     cleanupStreamTracks(streamForVideoFeed); 
     const streamForNewRecording = await getPermissions(type);
 
     if (!streamForNewRecording || !streamForNewRecording.active) {
       cleanupStreamTracks(streamForNewRecording); 
-      setStreamForVideoFeed(null);
+      setStreamForVideoFeed(null); // Ensure global stream is null if permission failed
       return;
     }
 
-    setStreamForVideoFeed(streamForNewRecording); 
-    setMediaType(type); 
+    setStreamForVideoFeed(streamForNewRecording); // Set the new stream for live feed
+    // No need to setMediaType here, it's already set at the beginning of this function
 
     let scriptKey = promptIdForTeleprompter;
     if (!scriptKey && chapterTitleForTeleprompter) {
@@ -194,36 +206,26 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       const preferredVideoMimeTypes = [
         'video/webm;codecs=vp8,opus',
         'video/webm;codecs=vp9,opus',
-        'video/webm;codecs=h264,opus', // Less common for webm but some might support
-        'video/mp4;codecs=avc1.42E01E,mp4a.40.2', // For MP4 if supported
-        'video/webm', // Generic webm
+        'video/webm;codecs=h264,opus',
+        'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+        'video/webm',
       ];
       const preferredAudioMimeTypes = [
         'audio/webm;codecs=opus',
         'audio/ogg;codecs=opus',
-        'audio/mp4', // M4A if supported
-        'audio/webm', // Generic webm audio
+        'audio/mp4',
+        'audio/webm',
       ];
 
       let selectedMimeType = '';
       if (type === 'video') {
-        for (const mime of preferredVideoMimeTypes) {
-          if (MediaRecorder.isTypeSupported(mime)) {
-            selectedMimeType = mime;
-            break;
-          }
-        }
+        for (const mime of preferredVideoMimeTypes) { if (MediaRecorder.isTypeSupported(mime)) { selectedMimeType = mime; break; } }
       } else if (type === 'audio') {
-         for (const mime of preferredAudioMimeTypes) {
-          if (MediaRecorder.isTypeSupported(mime)) {
-            selectedMimeType = mime;
-            break;
-          }
-        }
+         for (const mime of preferredAudioMimeTypes) { if (MediaRecorder.isTypeSupported(mime)) { selectedMimeType = mime; break; } }
       }
       
       const recorderOptions = selectedMimeType ? { mimeType: selectedMimeType } : undefined;
-      console.log(`Attempting to use MediaRecorder with options:`, recorderOptions || "Browser default");
+      console.log(`Attempting to use MediaRecorder with options:`, recorderOptions || "Browser default for " + type);
 
       const recorder = new window.MediaRecorder(streamForNewRecording, recorderOptions);
       mediaRecorderRef.current = recorder;
@@ -236,18 +238,17 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
         if (currentRecordedChunks.length === 0) {
           setTimeout(() => toast({ variant: 'destructive', title: 'No Data Recorded', description: 'The recording seems to be empty. Please try again, ensuring your microphone/camera is active.', duration: 7000 }), 0);
-          cleanupStreamTracks(streamForNewRecording); // Clean the specific stream
+          cleanupStreamTracks(streamForNewRecording);
           setStreamForVideoFeed(null);
-          setIsRecording(false);
-          mediaRecorderRef.current = null;
+          setIsRecording(false); // Update state
+          mediaRecorderRef.current = null; // Null out the recorder instance
           setShowTeleprompter(false); setCurrentTeleprompterScript(null);
           return;
         }
         
-        const blobMimeType = mediaRecorderRef.current?.mimeType || (type === 'video' ? 'video/webm' : 'audio/webm');
+        const blobMimeType = mediaRecorderRef.current?.mimeType || (type === 'video' ? selectedMimeType || 'video/webm' : selectedMimeType || 'audio/webm');
         const blob = new Blob(currentRecordedChunks, { type: blobMimeType });
         console.log("Blob created:", {size: blob.size, type: blob.type});
-
 
         if (blob.size < 1024) { 
           setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Recorded data is too small or corrupted. Please try a longer recording.', duration: 7000 }), 0);
@@ -286,12 +287,14 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
             }
             console.error("MediaRecorder onloadedmetadata: Duration is invalid. Read value:", newDuration);
             setTimeout(() => toast({ variant: 'destructive', title: 'Recording Processing Error', description: errorDescription, duration: 8000 }), 0);
-            cleanupStreamTracks(streamForNewRecording);
-            setStreamForVideoFeed(null);
-            setIsRecording(false);
-            mediaRecorderRef.current = null;
-            setShowTeleprompter(false); setCurrentTeleprompterScript(null);
-            return;
+            
+            cleanupStreamTracks(streamForNewRecording); 
+            setStreamForVideoFeed(null); 
+            setIsRecording(false);       
+            mediaRecorderRef.current = null; 
+            setShowTeleprompter(false);
+            setCurrentTeleprompterScript(null);
+            return; 
           }
 
           const currentMaxRawDuration = type === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS : MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS;
@@ -326,6 +329,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         tempMediaElement.onerror = (ev) => {
             URL.revokeObjectURL(url);
             console.error(`MediaRecorder tempMediaElement.onerror: Failed to load metadata for ${type}. Blob URL might be invalid or media corrupted. Size: ${blob.size}, Type: ${blob.type}`, ev);
+            
             cleanupStreamTracks(streamForNewRecording);
             setStreamForVideoFeed(null);
             setIsRecording(false);
@@ -337,12 +341,12 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
       recorder.onerror = (event) => {
         console.error('MediaRecorder error:', event);
-        cleanupStreamTracks(streamForNewRecording);
-        setStreamForVideoFeed(null);
+        cleanupStreamTracks(streamForNewRecording); // Clean the specific stream used by this recorder
+        setStreamForVideoFeed(null); // Also clear the global stream if it was this one
         setShowTeleprompter(false);
         setCurrentTeleprompterScript(null);
-        setIsRecording(false);
-        mediaRecorderRef.current = null;
+        setIsRecording(false); // Set recording state to false
+        mediaRecorderRef.current = null; // Null out the recorder instance
         setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Something went wrong during recording. Please try again.' }), 0);
       };
       recorder.start();
@@ -363,13 +367,19 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop(); 
-    } else if (isRecording) { // If recorder already stopped but state not updated
+      // isRecording will be set to false in the onstop handler after processing
+    } else if (isRecording) { 
+        // This case handles if recorder.stop() was somehow missed or state is inconsistent
+        cleanupStreamTracks(streamForVideoFeed); // streamForVideoFeed should hold the current recording stream
+        setStreamForVideoFeed(null);
         setIsRecording(false); 
+        mediaRecorderRef.current = null;
         setShowTeleprompter(false);
         setCurrentTeleprompterScript(null);
-        cleanupStreamTracks(streamForVideoFeed); 
-        setStreamForVideoFeed(null);
-        mediaRecorderRef.current = null;
+        if (recordingIntervalRef.current) {
+          clearInterval(recordingIntervalRef.current);
+          recordingIntervalRef.current = null;
+        }
     }
   };
 
@@ -527,13 +537,14 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   const handleDiscardMedia = (showToast = true) => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.stop(); 
+      // isRecording will be set to false in onstop handler
     } else {
+      // If not actively recording, clean up any residual global stream
       cleanupStreamTracks(streamForVideoFeed);
       setStreamForVideoFeed(null);
+      if (isRecording) setIsRecording(false); // Ensure state consistency if somehow missed
     }
-    if (isRecording) setIsRecording(false); 
-    mediaRecorderRef.current = null;
-
+    
     revokeCurrentInternalPreviewUrl();
 
     setRecordedFile(null);
@@ -555,6 +566,11 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     onDiscard();
     if (showToast) setTimeout(() => toast({ title: "Media Discarded" }), 0);
     setShowTeleprompter(false); setCurrentTeleprompterScript(null);
+    if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+    }
+    setCurrentRecordingDuration(0);
   };
 
   useEffect(() => {
@@ -578,14 +594,18 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
 
   useEffect(() => {
-    let streamToCleanOnUnmount = streamForVideoFeed;
+    // Main stream cleanup for component unmount.
+    // Specific recording streams are cleaned up in their respective handlers (onstop, onerror).
+    // The global streamForVideoFeed (used for live preview) is cleaned by the isRecording useEffect.
+    // This primarily catches the case where internalPreviewUrl is a blob URL that needs revoking.
+    const currentInternalUrl = internalPreviewUrl;
+    const initialPreview = initialMedia?.previewUrl;
     return () => {
-      cleanupStreamTracks(streamToCleanOnUnmount);
-      if (internalPreviewUrl && internalPreviewUrl.startsWith('blob:') && internalPreviewUrl !== initialMedia?.previewUrl) {
-        URL.revokeObjectURL(internalPreviewUrl);
+      if (currentInternalUrl && currentInternalUrl.startsWith('blob:') && currentInternalUrl !== initialPreview) {
+        URL.revokeObjectURL(currentInternalUrl);
       }
     };
-  }, [streamForVideoFeed, internalPreviewUrl, cleanupStreamTracks, initialMedia?.previewUrl]);
+  }, [internalPreviewUrl, initialMedia?.previewUrl]);
 
   useEffect(() => {
     const mediaElement = mediaType === 'video' ? videoRef.current : audioPreviewRef.current;
@@ -681,3 +701,4 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   );
 }
 
+    
