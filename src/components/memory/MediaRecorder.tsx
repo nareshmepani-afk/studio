@@ -123,7 +123,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         recordingIntervalRef.current = null;
       }
       // This cleanup is important if the component unmounts while recording
-      if (currentStreamForFeed && isRecording) {
+      if (currentStreamForFeed && isRecording) { // Check isRecording React state here
         cleanupStreamTracks(currentStreamForFeed);
       }
     };
@@ -168,17 +168,17 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setRecordedFile(null); setInternalPreviewUrl(null); setMediaType(type); setStartTime(0); setEndTime(0); setMediaDuration(0); setMediaSize(0);
     latestTrimValuesRef.current = { startTime: 0, endTime: 0 }; recordedChunks.current = [];
 
-    cleanupStreamTracks(streamForVideoFeed); // Clean up any previous stream
+    cleanupStreamTracks(streamForVideoFeed); 
     const streamForNewRecording = await getPermissions(type);
 
     if (!streamForNewRecording || !streamForNewRecording.active) {
-      cleanupStreamTracks(streamForNewRecording); // Clean up the potentially problematic stream
+      cleanupStreamTracks(streamForNewRecording); 
       setStreamForVideoFeed(null);
       return;
     }
 
-    setStreamForVideoFeed(streamForNewRecording); // Set the new stream for the live feed
-    setMediaType(type); // Set media type for UI updates
+    setStreamForVideoFeed(streamForNewRecording); 
+    setMediaType(type); 
 
     let scriptKey = promptIdForTeleprompter;
     if (!scriptKey && chapterTitleForTeleprompter) {
@@ -202,11 +202,11 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         setCurrentTeleprompterScript(null);
 
         const currentRecordedChunks = recordedChunks.current;
-        recordedChunks.current = []; // Clear chunks for next recording
+        recordedChunks.current = []; 
 
         if (currentRecordedChunks.length === 0) {
           setTimeout(() => toast({ variant: 'destructive', title: 'No Data Recorded', description: 'The recording seems to be empty. Please try again, ensuring your microphone/camera is active.', duration: 7000 }), 0);
-          cleanupStreamTracks(streamForVideoFeed); // Use the streamForVideoFeed state which was set at start
+          cleanupStreamTracks(streamForNewRecording);
           setStreamForVideoFeed(null);
           setIsRecording(false);
           mediaRecorderRef.current = null;
@@ -216,9 +216,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         const blobMimeType = type === 'video' ? 'video/webm' : 'audio/webm';
         const blob = new Blob(currentRecordedChunks, { type: blobMimeType });
 
-        if (blob.size < 1024) { // Check for very small blob size
+        if (blob.size < 1024) { 
           setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Recorded data is too small or corrupted. Please try a longer recording.', duration: 7000 }), 0);
-          cleanupStreamTracks(streamForVideoFeed);
+          cleanupStreamTracks(streamForNewRecording);
           setStreamForVideoFeed(null);
           setIsRecording(false);
           mediaRecorderRef.current = null;
@@ -228,7 +228,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         const file = new File([blob], `recording.${type === 'video' ? 'webm' : 'webm'}`, { type: blob.type });
 
         if (!checkStorageQuota(file.size)) {
-          cleanupStreamTracks(streamForVideoFeed);
+          cleanupStreamTracks(streamForNewRecording);
           setStreamForVideoFeed(null);
           setIsRecording(false);
           mediaRecorderRef.current = null;
@@ -251,7 +251,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
             }
             console.error("MediaRecorder onloadedmetadata: Duration is invalid. Read value:", newDuration);
             setTimeout(() => toast({ variant: 'destructive', title: 'Recording Processing Error', description: errorDescription, duration: 8000 }), 0);
-            cleanupStreamTracks(streamForVideoFeed);
+            cleanupStreamTracks(streamForNewRecording);
             setStreamForVideoFeed(null);
             setIsRecording(false);
             mediaRecorderRef.current = null;
@@ -263,7 +263,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
           if (newDuration > currentMaxRawDuration) {
             setTimeout(() => toast({ variant: 'destructive', title: `${type.charAt(0).toUpperCase() + type.slice(1)} Too Long`, description: `Recording is ${formatSecondsToTime(newDuration)}. Maximum allowed is ${formatSecondsToTime(currentMaxRawDuration)} (including trim buffer). Please re-record a shorter segment.`, duration: 10000 }), 0);
-            cleanupStreamTracks(streamForVideoFeed);
+            cleanupStreamTracks(streamForNewRecording);
             setStreamForVideoFeed(null);
             setIsRecording(false);
             mediaRecorderRef.current = null;
@@ -279,7 +279,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
           } else {
             setTimeout(() => toast({ title: "Recording Complete!", description: `Duration: ${formatSecondsToTime(newDuration)}.` }),0);
           }
-          cleanupStreamTracks(streamForVideoFeed); // Clean up after successful processing
+          cleanupStreamTracks(streamForNewRecording); 
           setStreamForVideoFeed(null);
           setIsRecording(false);
           mediaRecorderRef.current = null;
@@ -288,7 +288,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         tempMediaElement.onerror = () => {
             URL.revokeObjectURL(url);
             console.error(`MediaRecorder tempMediaElement.onerror: Failed to load metadata for ${type}. Blob URL might be invalid or media corrupted. Size: ${blob.size}, Type: ${blob.type}`);
-            cleanupStreamTracks(streamForVideoFeed);
+            cleanupStreamTracks(streamForNewRecording);
             setStreamForVideoFeed(null);
             setIsRecording(false);
             mediaRecorderRef.current = null;
@@ -298,7 +298,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
       recorder.onerror = (event) => {
         console.error('MediaRecorder error:', event);
-        cleanupStreamTracks(streamForVideoFeed);
+        cleanupStreamTracks(streamForNewRecording);
         setStreamForVideoFeed(null);
         setShowTeleprompter(false);
         setCurrentTeleprompterScript(null);
@@ -307,15 +307,15 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Something went wrong during recording. Please try again.' }), 0);
       };
       recorder.start();
-      setIsRecording(true); // Set isRecording true after successfully starting
+      setIsRecording(true); 
       setTimeout(() => toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` }),0);
     } catch (err) {
       console.error("Error initializing MediaRecorder:", err);
-      cleanupStreamTracks(streamForNewRecording); // Clean up if start fails
+      cleanupStreamTracks(streamForNewRecording); 
       setStreamForVideoFeed(null);
       setShowTeleprompter(false);
       setCurrentTeleprompterScript(null);
-      setIsRecording(false); // Ensure isRecording is false if setup failed
+      setIsRecording(false); 
       mediaRecorderRef.current = null;
       setTimeout(() => toast({ variant: 'destructive', title: 'Recording Setup Failed', description: 'Could not start recording. Check device compatibility or permissions.' }), 0);
     }
@@ -323,20 +323,18 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop(); // This will trigger onstop or onerror for the recorder
+      mediaRecorderRef.current.stop(); 
+      // setIsRecording(false) is now primarily handled in onstop/onerror
     } else {
-      // This case might occur if the UI state is desynced or stop is called unexpectedly.
-      console.warn("handleStopRecording called but MediaRecorder not in 'recording' state. Current state:", mediaRecorderRef.current?.state, "isRecording (React state):", isRecording);
-      if (isRecording) { // If React state thinks it's recording, force UI reset.
-          setIsRecording(false);
+      if (isRecording) { 
+          setIsRecording(false); // Force UI reset if React state is desynced
           setShowTeleprompter(false);
           setCurrentTeleprompterScript(null);
-          cleanupStreamTracks(streamForVideoFeed);
+          cleanupStreamTracks(streamForVideoFeed); // Use the state variable here as streamForNewRecording is out of scope
           setStreamForVideoFeed(null);
           mediaRecorderRef.current = null;
       }
     }
-    // Note: setShowTeleprompter and setCurrentTeleprompterScript are now primarily handled in onstop/onerror
   };
 
   const handleVideoLoadedMetadata = (event: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement, Event>) => {
@@ -488,19 +486,16 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       let toastDesc = isTrimmed ? `Existing media trim updated: ${formatSecondsToTime(currentStartTime)} to ${formatSecondsToTime(currentEndTime)}.` : (mediaDuration > 0 ? "Existing media used in full." : "Existing media re-selected.");
        setTimeout(() => toast({ title: "Media Updated", description: toastDesc, icon: <CheckCircle className="h-4 w-4" /> }), 0);
     } else { setTimeout(() => toast({ title: "Media Not Ready", variant: "destructive" }), 0); }
-    // setShowTeleprompter(false); setCurrentTeleprompterScript(null); // Already handled in stop/discard
   };
 
   const handleDiscardMedia = (showToast = true) => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop(); // This will trigger onstop, which handles cleanup
+      mediaRecorderRef.current.stop(); 
     } else {
-      // If no active recording, just reset UI states
       cleanupStreamTracks(streamForVideoFeed);
       setStreamForVideoFeed(null);
     }
-    // Common reset logic after recorder stop or if no recording
-    if (isRecording) setIsRecording(false); // Ensure recording state is false
+    if (isRecording) setIsRecording(false); 
     mediaRecorderRef.current = null;
 
     revokeCurrentInternalPreviewUrl();
@@ -649,3 +644,4 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     </Card>
   );
 }
+
