@@ -12,35 +12,36 @@ import { Loader2, Star, Zap } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { db, storage } from '@/lib/firebase'; // Added storage
+import { db, storage } from '@/lib/firebase';
 import { doc, getDoc, addDoc, updateDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'; // Added Firebase Storage functions
+import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 export default function AddMemoryPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { 
-    user, 
+  const {
+    user,
     calculateAndUpdateStorageUsage,
     hostPassStatus,
     activateFreeHostPass,
     purchasePaidHostPass,
     hostPassPriceDetails,
-    isFetchingHostPassPrice: isFetchingAuthHostPassPrice, 
-    loading: authLoading 
+    isFetchingHostPassPrice: isFetchingAuthHostPassPrice,
+    loading: authLoading
   } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [memoryToEdit, setMemoryToEdit] = useState<Memory | undefined>(undefined);
-  const [isLoadingMemory, setIsLoadingMemory] = useState(true);
+  const [isLoadingMemory, setIsLoadingMemory] = useState(true); // Default to true
 
   const editMemoryId = searchParams.get('editMemoryId');
   const promptIdFromQuery = searchParams.get('promptId');
-  const customPromptTextFromQuery = searchParams.get('prompt'); // For custom chapter ideas
+  const customPromptTextFromQuery = searchParams.get('prompt');
   const isCreatingNew = !editMemoryId;
 
   useEffect(() => {
-    const loadMemory = async () => {
+    const loadOrCreateMemoryState = async () => {
       if (editMemoryId && user) {
+        // We have an ID and a user, attempt to load the memory for editing
         setIsLoadingMemory(true);
         try {
           const memoryDocRef = doc(db, "users", user.id, "memories", editMemoryId);
@@ -51,31 +52,40 @@ export default function AddMemoryPage() {
           } else {
             toast({ title: "Memory not found", description: "Could not load the memory for editing.", variant: "destructive" });
             router.push('/timeline');
+            setMemoryToEdit(undefined); // Explicitly undefined on not found
           }
         } catch (error) {
           console.error("Error fetching memory:", error);
           toast({ title: "Error Loading Memory", description: "Failed to fetch memory details.", variant: "destructive" });
           router.push('/timeline');
+          setMemoryToEdit(undefined); // Explicitly undefined on error
         } finally {
           setIsLoadingMemory(false);
         }
-      } else {
-        setIsLoadingMemory(false);
+      } else if (!editMemoryId && user) {
+        // No editMemoryId, but we have a user: this is for a new memory.
+        // Set memoryToEdit to undefined and stop loading.
         setMemoryToEdit(undefined);
+        setIsLoadingMemory(false);
+      } else if (!user && !authLoading) {
+        // No user, and authentication is not loading anymore.
+        // This implies the user is not logged in.
+        setMemoryToEdit(undefined);
+        setIsLoadingMemory(false);
+        // AuthenticatedPageWrapper should handle redirection if user is not authenticated.
       }
+      // If !user && authLoading is true, we wait for auth state to resolve.
+      // isLoadingMemory remains true until one of the above conditions is met.
     };
 
-    if (user) { 
-      loadMemory();
-    } else if (!authLoading) { 
-       setIsLoadingMemory(false);
-       setMemoryToEdit(undefined);
-    }
-  }, [editMemoryId, user, router, authLoading]);
+    loadOrCreateMemoryState();
+
+  }, [editMemoryId, user, authLoading, router]);
+
 
   const handleSubmit = async (
     memoryData: Omit<Memory, 'id' | 'userId' | 'createdAt' | 'updatedAt'> & { promptId?: string },
-    mediaFileToUpload?: File 
+    mediaFileToUpload?: File
   ) => {
     if (!user) {
       toast({ title: "Authentication Error", description: "You must be logged in.", variant: "destructive" });
@@ -93,17 +103,17 @@ export default function AddMemoryPage() {
         toast({ title: "Uploading Media...", description: "Please wait while your media is being uploaded.", duration: 5000 });
         await uploadBytes(fileRef, mediaFileToUpload);
         const downloadURL = await getDownloadURL(fileRef);
-        
+
         if (memoryData.mediaAttachments && memoryData.mediaAttachments.length > 0) {
           processedMediaAttachments = [{
-            ...memoryData.mediaAttachments[0], // Keep existing startTime, endTime, etc.
+            ...memoryData.mediaAttachments[0],
             url: downloadURL,
             filename: mediaFileToUpload.name,
-            size: mediaFileToUpload.size, // Ensure size is from the new file
+            size: mediaFileToUpload.size,
           }];
-        } else { 
+        } else {
            processedMediaAttachments = [{
-            id: Date.now().toString(), 
+            id: Date.now().toString(),
             type: mediaFileToUpload.type.startsWith('video/') ? 'video' : 'audio',
             url: downloadURL,
             filename: mediaFileToUpload.name,
@@ -144,7 +154,7 @@ export default function AddMemoryPage() {
       processedMediaAttachments = undefined;
     } else if (!isCreatingNew && !mediaFileToUpload && memoryData.mediaAttachments === undefined && oldMediaUrl) {
       console.log("Media cleared for existing memory, deleting from storage:", oldMediaUrl);
-      processedMediaAttachments = undefined; 
+      processedMediaAttachments = undefined;
       if (oldMediaUrl.includes('firebasestorage.googleapis.com')) {
           try {
             const oldFileStorageRef = storageRef(storage, oldMediaUrl);
@@ -158,14 +168,11 @@ export default function AddMemoryPage() {
       }
     }
 
-
-    // Prioritize promptId from the form data (MemoryForm now handles this)
-    // Fallback to query, then existing memory.
     const finalPromptId = memoryData.promptId || promptIdFromQuery || memoryToEdit?.promptId || undefined;
 
     const dataToSave: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'> & { userId: string; updatedAt: Timestamp; createdAt?: Timestamp, mediaAttachments?: MediaAttachment[], promptId?: string } = {
       ...memoryData,
-      mediaAttachments: processedMediaAttachments, 
+      mediaAttachments: processedMediaAttachments,
       userId: user.id,
       promptId: finalPromptId,
       updatedAt: serverTimestamp() as Timestamp,
@@ -237,10 +244,10 @@ export default function AddMemoryPage() {
         priceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
         buttonText += priceString;
       } else {
-         buttonText += ` (£12.99 - Mock)`; 
+         buttonText += ` (£12.99 - Mock)`;
       }
     }
-  
+
     return (
       <AuthenticatedPageWrapper>
         <div className="container mx-auto py-8 px-4 flex flex-col items-center justify-center min-h-[calc(100vh-12rem)]">
@@ -279,7 +286,7 @@ export default function AddMemoryPage() {
     <AuthenticatedPageWrapper>
       <div className="container mx-auto py-8 px-4">
         <MemoryForm
-          key={memoryToEdit?.id || 'new-memory-form'} 
+          key={memoryToEdit?.id || initialPromptIdFromQuery || 'new-memory-form'} // Key updated to better handle transitions
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
           memory={memoryToEdit}
@@ -290,4 +297,3 @@ export default function AddMemoryPage() {
     </AuthenticatedPageWrapper>
   );
 }
-    
