@@ -254,11 +254,12 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
             setInternalPreviewUrl(newObjectUrlForPreview);
             setMediaType(type); 
             setMediaSize(file.size);
-            setRawPreviewReady(true); // Enable raw preview mode
+            // These will be set after user accepts the raw preview
             setMediaDuration(0); 
             setStartTime(0);
             setEndTime(0);
             latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
+            setRawPreviewReady(true); 
         });
 
         setTimeout(() => toast({ title: "Recording Complete!", description: "Preview your raw recording and click 'Accept Recording' to proceed." }), 0);
@@ -296,7 +297,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         cleanupAndFinalizeRecording(streamForVideoFeed);
     }
   };
-
 
   const handleAcceptRawRecording = () => {
     const mediaElement = mediaType === 'video' ? videoRef.current : audioPreviewRef.current;
@@ -345,9 +345,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       console.warn("Raw Preview Accept: Initial duration read is invalid:", initialDuration, ". Will try again after short delay.");
       setTimeout(() => {
         let delayedDuration = mediaElement.duration;
-        console.log("Raw Preview Accept: Duration after 200ms delay:", delayedDuration);
+        console.log("Raw Preview Accept: Duration after 500ms delay:", delayedDuration);
         processDuration(delayedDuration);
-      }, 200);
+      }, 500); // Increased delay
     } else {
       processDuration(initialDuration);
     }
