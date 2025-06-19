@@ -88,15 +88,13 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     });
 
     mediaRecorderRef.current = null;
-    // Do not hide teleprompter here automatically, let user control it or hide on discard/new recording.
-    // setCurrentTeleprompterScript(null); // Only clear script if recording is fully discarded or new one starts
+    setIsRecording(false); // Set recording state to false
 
     if (recordingIntervalRef.current) {
       clearInterval(recordingIntervalRef.current);
       recordingIntervalRef.current = null;
     }
     setCurrentRecordingDuration(0);
-    setIsRecording(false); // Set recording state to false
   }, [cleanupStreamTracks]);
 
 
@@ -251,20 +249,19 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         const file = new File([blob], `recording.${blob.type.split('/')[1]?.split(';')[0] || 'bin'}`, { type: blob.type });
         const newObjectUrlForPreview = URL.createObjectURL(blob);
 
-        requestAnimationFrame(() => { // Defer state updates
+        requestAnimationFrame(() => {
             setRecordedFile(file);
             setInternalPreviewUrl(newObjectUrlForPreview);
             setMediaType(type); 
             setMediaSize(file.size);
             setRawPreviewReady(true); // Enable raw preview mode
-            // Duration related states (mediaDuration, startTime, endTime) will be set after user accepts raw recording
             setMediaDuration(0); 
             setStartTime(0);
             setEndTime(0);
             latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
         });
 
-        setTimeout(() => toast({ title: "Recording Complete!", description: "Preview your recording and click 'Accept Recording' to proceed with trimming." }), 0);
+        setTimeout(() => toast({ title: "Recording Complete!", description: "Preview your raw recording and click 'Accept Recording' to proceed." }), 0);
         cleanupAndFinalizeRecording(streamForNewRecording); 
       };
 
@@ -274,7 +271,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Something went wrong during recording. Please try again.' }), 0);
       };
 
-      recorder.start(1000); // Use timeslice for ondataavailable events
+      recorder.start(1000); 
       setIsRecording(true);
       setTimeout(() => toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` }),0);
 
@@ -295,11 +292,11 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop();
-      // isRecording will be set to false within the recorder.onstop handler via cleanupAndFinalizeRecording
-    } else if (isRecording) { // Fallback if recorder state is somehow not "recording" but UI thinks it is
+    } else if (isRecording) { 
         cleanupAndFinalizeRecording(streamForVideoFeed);
     }
   };
+
 
   const handleAcceptRawRecording = () => {
     const mediaElement = mediaType === 'video' ? videoRef.current : audioPreviewRef.current;
@@ -307,46 +304,58 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       toast({variant: 'destructive', title: 'Preview Error', description: 'No media to accept.'});
       return;
     }
-
-    const newDuration = mediaElement.duration;
-
-    if (isFinite(newDuration) && newDuration > 0) {
+  
+    const processDuration = (durationValue: number) => {
+      if (isFinite(durationValue) && durationValue > 0) {
         const currentMaxRawDuration = mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS : MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS;
         const currentMaxTrimmedDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
-
-        if (newDuration > currentMaxRawDuration) {
-            setTimeout(() => toast({ variant: 'destructive', title: `${mediaType === 'video' ? 'Video' : 'Audio'} Too Long`, description: `Recording is ${formatSecondsToTime(newDuration)}. Maximum allowed is ${formatSecondsToTime(currentMaxRawDuration)}. Please re-record or upload a shorter segment.`, duration: 10000 }), 0);
-            handleDiscardMedia(false); // Discard and reset
-            return;
+  
+        if (durationValue > currentMaxRawDuration) {
+          setTimeout(() => toast({ variant: 'destructive', title: `${mediaType === 'video' ? 'Video' : 'Audio'} Too Long`, description: `Recording is ${formatSecondsToTime(durationValue)}. Maximum allowed is ${formatSecondsToTime(currentMaxRawDuration)}. Please re-record or upload a shorter segment.`, duration: 10000 }), 0);
+          handleDiscardMedia(false); // Discard and reset
+          return;
         }
         
-        setMediaDuration(newDuration);
-        setEndTime(newDuration);
+        setMediaDuration(durationValue);
+        setEndTime(durationValue);
         setStartTime(0);
-        latestTrimValuesRef.current = { startTime: 0, endTime: newDuration };
+        latestTrimValuesRef.current = { startTime: 0, endTime: durationValue };
         mediaElement.currentTime = 0;
         setRawPreviewReady(false); // Move out of raw preview mode
-
-        if (newDuration > currentMaxTrimmedDuration) {
-            setTimeout(() => toast({ title: "Media Ready for Trimming", description: `Your ${formatSecondsToTime(newDuration)} ${mediaType} needs to be trimmed to ${formatSecondsToTime(currentMaxTrimmedDuration)} or less.`, duration: 10000, icon: <AlertTriangle className="h-4 w-4 text-amber-500" /> }), 0);
+  
+        if (durationValue > currentMaxTrimmedDuration) {
+          setTimeout(() => toast({ title: "Media Ready for Trimming", description: `Your ${formatSecondsToTime(durationValue)} ${mediaType} needs to be trimmed to ${formatSecondsToTime(currentMaxTrimmedDuration)} or less.`, duration: 10000, icon: <AlertTriangle className="h-4 w-4 text-amber-500" /> }), 0);
         } else {
-            setTimeout(() => toast({ title: "Media Accepted", description: `Duration: ${formatSecondsToTime(newDuration)}. You can now trim or use the media.` }), 0);
+          setTimeout(() => toast({ title: "Media Accepted", description: `Duration: ${formatSecondsToTime(durationValue)}. You can now trim or use the media.` }), 0);
         }
-    } else {
+      } else {
         let errorDescription = 'Failed to read valid duration from the recording. It might be incomplete or corrupted.';
-        if (newDuration === Infinity) {
-            errorDescription = 'The recording\'s duration could not be determined (reported as infinite). This can happen with very short or interrupted recordings. Please try again.';
+        if (durationValue === Infinity) {
+          errorDescription = 'The recording\'s duration could not be determined (reported as infinite). This can happen with very short or interrupted recordings. Please try again.';
         }
-        console.error("Raw Preview Accept onloadedmetadata: Duration is invalid. Read value:", newDuration);
+        console.error("Raw Preview Accept onloadedmetadata: Duration is invalid. Read value:", durationValue);
         setTimeout(() => toast({ variant: 'destructive', title: 'Recording Processing Error', description: errorDescription, duration: 8000 }), 0);
         handleDiscardMedia(false); // Discard and reset
+      }
+    };
+  
+    let initialDuration = mediaElement.duration;
+  
+    if (!isFinite(initialDuration) || initialDuration <= 0) {
+      console.warn("Raw Preview Accept: Initial duration read is invalid:", initialDuration, ". Will try again after short delay.");
+      setTimeout(() => {
+        let delayedDuration = mediaElement.duration;
+        console.log("Raw Preview Accept: Duration after 200ms delay:", delayedDuration);
+        processDuration(delayedDuration);
+      }, 200);
+    } else {
+      processDuration(initialDuration);
     }
   };
 
 
-  // This handles loading existing media (from initialMedia prop) or media uploaded via file input
   const handleVideoLoadedMetadata = (event: React.SyntheticEvent<HTMLVideoElement | HTMLAudioElement, Event>) => {
-    if (rawPreviewReady) return; // Don't process if in raw preview mode, let handleAcceptRawRecording do it.
+    if (rawPreviewReady) return; 
     
     const currentTarget = event.currentTarget;
     const newDuration = currentTarget.duration;
@@ -363,8 +372,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
             }
             
             setMediaDuration(newDuration);
-            // If it's from an uploaded file or initial media, and we haven't set trim times yet.
-            // If it's a re-load of existing media due to discard, it should use initialMedia's trim times
             if (!recordedFile && initialMedia && initialMedia.previewUrl === internalPreviewUrl) {
                  const initStartTime = initialMedia.startTime || 0;
                  const initEndTime = initialMedia.endTime !== undefined ? initialMedia.endTime : newDuration;
@@ -396,8 +403,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
             handleDiscardMedia(false);
         }
     } else if (initialMedia && initialMedia.previewUrl === currentTarget.src && mediaDuration === 0 && initialMedia.duration) {
-        // This block handles the case where `initialMedia` is loaded, especially if `internalPreviewUrl` was set directly
-        // to `initialMedia.previewUrl` and `handleVideoLoadedMetadata` fires before other states related to `internalPreviewUrl` might be set up.
         const initialLoadedDuration = initialMedia.duration;
         const initialLoadedEndTime = initialMedia.endTime !== undefined ? initialMedia.endTime : initialLoadedDuration;
         setMediaDuration(initialLoadedDuration);
@@ -426,7 +431,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
       const newObjectUrlForPreview = URL.createObjectURL(file);
       
-      requestAnimationFrame(() => { // Defer state updates
+      requestAnimationFrame(() => {
           setRecordedFile(file);
           setInternalPreviewUrl(newObjectUrlForPreview);
           setMediaType(fileType);
@@ -435,7 +440,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
           setStartTime(0);
           setEndTime(0);
           latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
-          setRawPreviewReady(true); // Go to raw preview for uploaded files too
+          setRawPreviewReady(true); 
       });
       
       setTimeout(() => toast({ title: "File Uploaded", description: `${file.name}. Preview and accept to proceed.` }), 0);
@@ -465,7 +470,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
       const newInternalBlobUrl = URL.createObjectURL(blob);
       
-      requestAnimationFrame(() => { // Defer state updates
+      requestAnimationFrame(() => { 
           setRecordedFile(file);
           setInternalPreviewUrl(newInternalBlobUrl);
           setMediaType(type);
@@ -474,7 +479,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
           setStartTime(0);
           setEndTime(0);
           latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
-          setRawPreviewReady(true); // Go to raw preview for samples
+          setRawPreviewReady(true);
       });
       
       setTimeout(() => toast({ title: `Sample ${type} loaded`, description: `${filename}. Preview and accept to proceed.` }), 0);
@@ -523,7 +528,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       };
       mediaRecorderRef.current.stop();
     } else { 
-      cleanupAndFinalizeRecording(streamForVideoFeed); // Ensure recording state is false even if no active recorder
+      cleanupAndFinalizeRecording(streamForVideoFeed); 
       performDiscardReset(showToast);
     }
   };
@@ -546,9 +551,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setMediaSize(initSize);
   
     recordedChunks.current = []; 
-    setRawPreviewReady(false); // Ensure raw preview mode is exited
-    setShowTeleprompter(false); // Hide prompter on discard
-    setCurrentTeleprompterScript(null); // Clear script on discard
+    setRawPreviewReady(false);
+    setShowTeleprompter(false); 
+    setCurrentTeleprompterScript(null);
     onDiscard(); 
     if (showToast) setTimeout(() => toast({ title: "Media Discarded" }), 0);
   };
@@ -571,7 +576,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
     setIsRecording(false);
     setRecordedFile(null);
-    setRawPreviewReady(false); // Not in raw preview for initial media
+    setRawPreviewReady(false); 
     setShowTeleprompter(false); 
     setCurrentTeleprompterScript(null);
   }, [initialMedia]);
@@ -587,9 +592,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     };
   }, [internalPreviewUrl, initialMedia?.previewUrl]);
 
-  // This useEffect is for managing the trimming player behavior (seek to start/end on pause/play)
   useEffect(() => {
-    if (rawPreviewReady) return; // Don't apply trimming logic during raw preview
+    if (rawPreviewReady) return; 
     const mediaElement = mediaType === 'video' ? videoRef.current : audioPreviewRef.current;
     if (!mediaElement || !internalPreviewUrl || !(mediaDuration > 0)) return;
     const getPlaybackStartTime = () => latestTrimValuesRef.current.startTime; const getPlaybackEndTime = () => latestTrimValuesRef.current.endTime;
@@ -644,23 +648,19 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
             </div>
         )}
 
-        {/* Main Preview and Trimming Section */}
         {internalPreviewUrl && !isRecording && mediaType && (
           <div className="space-y-4">
-            {/* Player */}
             {mediaType === 'video' ? (
                 <video ref={videoRef} src={internalPreviewUrl} controls className="w-full aspect-video rounded-md bg-muted object-cover" onLoadedMetadata={rawPreviewReady ? undefined : handleVideoLoadedMetadata} key={internalPreviewUrl} preload="metadata"/>
             ) : (
                 <audio ref={audioPreviewRef} src={internalPreviewUrl} controls className="w-full" onLoadedMetadata={rawPreviewReady ? undefined : handleVideoLoadedMetadata} key={internalPreviewUrl} preload="metadata"/>
             )}
 
-            {/* Info during raw preview or after acceptance */}
             <p className="text-sm font-medium">Media: <span className="text-primary">{recordedFile?.name || (initialMedia?.previewUrl === internalPreviewUrl ? "Existing media" : 'Recorded Media')}</span>
-              {rawPreviewReady && (<span className="text-muted-foreground"> (Raw Preview - Click Accept to Trim)</span>)}
+              {rawPreviewReady && (<span className="text-muted-foreground"> (Raw Preview)</span>)}
               {!rawPreviewReady && mediaDuration > 0 && ` (Full: ${formatSecondsToTime(mediaDuration)})`}
             </p>
 
-            {/* Raw Preview Actions */}
             {rawPreviewReady && (
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                 <Button onClick={handleAcceptRawRecording} className="w-full sm:w-auto flex-1" aria-label="Accept this recording and proceed to trimming"><PlayCircle className="mr-2 h-4 w-4" /> Accept Recording</Button>
@@ -668,7 +668,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
               </div>
             )}
 
-            {/* Trimming UI (shown after raw preview is accepted and duration is valid) */}
             {!rawPreviewReady && mediaDuration > 0 && (
               <div className="space-y-3 pt-2">
                 <div className="flex justify-between text-sm"><span className="text-green-500">Start: {formatSecondsToTime(startTime)}</span><span className="text-red-500">End: {formatSecondsToTime(endTime)}</span></div>
@@ -678,7 +677,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
               </div>
             )}
 
-            {/* Main Action Buttons (Use Media / Discard for trimmed/initial media) */}
             {!rawPreviewReady && (
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                 <Button onClick={handleUseMedia} className="w-full sm:w-auto flex-1" disabled={!mediaType || mediaDuration === 0 || !canRecordOrUpload} aria-label="Use this media"><CheckCircle className="mr-2 h-4 w-4" /> Use Media</Button>
@@ -686,7 +684,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
               </div>
             )}
              
-            {/* Load Sample Buttons (Always available if media is present but not recording) */}
             <div className="mt-6 pt-4 border-t"><p className="text-sm text-muted-foreground mb-2 text-center">Or, load a different sample:</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-2"><Button onClick={() => handleLoadSampleMedia('video')} variant="secondary" size="sm" disabled={isLoadingSample || !canRecordOrUpload} aria-label="Load different sample video">{isLoadingSample && sampleLoadingType === 'video' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}Load Sample Video</Button><Button onClick={() => handleLoadSampleMedia('audio')} variant="secondary" size="sm" disabled={isLoadingSample || !canRecordOrUpload} aria-label="Load different sample audio">{isLoadingSample && sampleLoadingType === 'audio' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Waves className="mr-2 h-4 w-4" />}Load Sample Audio</Button></div></div>
           </div>
         )}
