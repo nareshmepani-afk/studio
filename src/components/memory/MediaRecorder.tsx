@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, Video, StopCircle, UploadCloud, RotateCcw, CheckCircle, AlertTriangle, Film, Waves, Loader2, ShieldAlert, BookOpen, Timer, PlayCircle, PauseCircle } from 'lucide-react';
+import { Mic, Video, StopCircle, UploadCloud, RotateCcw, CheckCircle, AlertTriangle, Film, Waves, Loader2, ShieldAlert, BookOpen, Timer, PlayCircle, PauseCircle, Eye, EyeOff } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
@@ -88,15 +88,15 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     });
 
     mediaRecorderRef.current = null;
-    setShowTeleprompter(false);
-    setCurrentTeleprompterScript(null);
+    // Do not hide teleprompter here automatically, let user control it or hide on discard/new recording.
+    // setCurrentTeleprompterScript(null); // Only clear script if recording is fully discarded or new one starts
 
     if (recordingIntervalRef.current) {
       clearInterval(recordingIntervalRef.current);
       recordingIntervalRef.current = null;
     }
     setCurrentRecordingDuration(0);
-    setIsRecording(false);
+    setIsRecording(false); // Set recording state to false
   }, [cleanupStreamTracks]);
 
 
@@ -182,6 +182,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
     recordedChunks.current = []; 
     setRawPreviewReady(false);
+    setShowTeleprompter(false); 
+    setCurrentTeleprompterScript(null);
 
     cleanupStreamTracks(streamForVideoFeed); 
     const streamForNewRecording = await getPermissions(type);
@@ -203,7 +205,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     }
     const script = scriptKey ? teleprompterScripts[scriptKey] : null;
     if (script) { setCurrentTeleprompterScript(script); setShowTeleprompter(true); }
-    else { setCurrentTeleprompterScript(defaultTeleprompterFallbackScript); setShowTeleprompter(true); }
+    else if (type === 'video') { setCurrentTeleprompterScript(defaultTeleprompterFallbackScript); setShowTeleprompter(true); }
+
 
     let selectedMimeType = '';
     try {
@@ -223,7 +226,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
       recorder.onstop = () => {
         const currentRecordedChunksCopy = [...recordedChunks.current];
-        // recordedChunks.current = []; // Clear after this use, already done at start of recording
+        recordedChunks.current = []; 
 
         if (currentRecordedChunksCopy.length === 0) {
           setTimeout(() => toast({ variant: 'destructive', title: 'No Data Recorded', description: 'The recording seems to be empty. Please try again, ensuring your microphone/camera is active.', duration: 7000 }), 0);
@@ -248,12 +251,13 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         const file = new File([blob], `recording.${blob.type.split('/')[1]?.split(';')[0] || 'bin'}`, { type: blob.type });
         const newObjectUrlForPreview = URL.createObjectURL(blob);
 
-        requestAnimationFrame(() => {
+        requestAnimationFrame(() => { // Defer state updates
             setRecordedFile(file);
             setInternalPreviewUrl(newObjectUrlForPreview);
             setMediaType(type); 
             setMediaSize(file.size);
             setRawPreviewReady(true); // Enable raw preview mode
+            // Duration related states (mediaDuration, startTime, endTime) will be set after user accepts raw recording
             setMediaDuration(0); 
             setStartTime(0);
             setEndTime(0);
@@ -270,7 +274,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Something went wrong during recording. Please try again.' }), 0);
       };
 
-      recorder.start(1000); 
+      recorder.start(1000); // Use timeslice for ondataavailable events
       setIsRecording(true);
       setTimeout(() => toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` }),0);
 
@@ -292,7 +296,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop();
       // isRecording will be set to false within the recorder.onstop handler via cleanupAndFinalizeRecording
-    } else if (isRecording) { 
+    } else if (isRecording) { // Fallback if recorder state is somehow not "recording" but UI thinks it is
         cleanupAndFinalizeRecording(streamForVideoFeed);
     }
   };
@@ -392,6 +396,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
             handleDiscardMedia(false);
         }
     } else if (initialMedia && initialMedia.previewUrl === currentTarget.src && mediaDuration === 0 && initialMedia.duration) {
+        // This block handles the case where `initialMedia` is loaded, especially if `internalPreviewUrl` was set directly
+        // to `initialMedia.previewUrl` and `handleVideoLoadedMetadata` fires before other states related to `internalPreviewUrl` might be set up.
         const initialLoadedDuration = initialMedia.duration;
         const initialLoadedEndTime = initialMedia.endTime !== undefined ? initialMedia.endTime : initialLoadedDuration;
         setMediaDuration(initialLoadedDuration);
@@ -415,10 +421,12 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       setRecordedFile(null); setInternalPreviewUrl(null);
       cleanupStreamTracks(streamForVideoFeed); setStreamForVideoFeed(null);
       setRawPreviewReady(false);
+      setShowTeleprompter(false); 
+      setCurrentTeleprompterScript(null);
 
       const newObjectUrlForPreview = URL.createObjectURL(file);
       
-      requestAnimationFrame(() => {
+      requestAnimationFrame(() => { // Defer state updates
           setRecordedFile(file);
           setInternalPreviewUrl(newObjectUrlForPreview);
           setMediaType(fileType);
@@ -427,9 +435,10 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
           setStartTime(0);
           setEndTime(0);
           latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
+          setRawPreviewReady(true); // Go to raw preview for uploaded files too
       });
       
-      setTimeout(() => toast({ title: "File Uploaded", description: `${file.name}. Processing metadata...` }), 0);
+      setTimeout(() => toast({ title: "File Uploaded", description: `${file.name}. Preview and accept to proceed.` }), 0);
       event.target.value = '';
     }
   };
@@ -441,6 +450,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setRecordedFile(null); setInternalPreviewUrl(null);
     cleanupStreamTracks(streamForVideoFeed); setStreamForVideoFeed(null);
     setRawPreviewReady(false);
+    setShowTeleprompter(false); 
+    setCurrentTeleprompterScript(null);
 
     const sampleUrl = type === 'video' ? SAMPLE_VIDEO_URL : SAMPLE_AUDIO_URL;
     const filename = type === 'video' ? 'sample_video.mp4' : 'sample_audio.mp3';
@@ -454,7 +465,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
       const newInternalBlobUrl = URL.createObjectURL(blob);
       
-      requestAnimationFrame(() => {
+      requestAnimationFrame(() => { // Defer state updates
           setRecordedFile(file);
           setInternalPreviewUrl(newInternalBlobUrl);
           setMediaType(type);
@@ -463,9 +474,10 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
           setStartTime(0);
           setEndTime(0);
           latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
+          setRawPreviewReady(true); // Go to raw preview for samples
       });
       
-      setTimeout(() => toast({ title: `Sample ${type} loaded`, description: `${filename}. Processing metadata...` }), 0);
+      setTimeout(() => toast({ title: `Sample ${type} loaded`, description: `${filename}. Preview and accept to proceed.` }), 0);
     } catch (error) {
       console.error(`Error loading sample ${type}:`, error);
       setTimeout(() => toast({ variant: 'destructive', title: `Failed to Load Sample ${type.charAt(0).toUpperCase() + type.slice(1)}` }), 0);
@@ -511,7 +523,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       };
       mediaRecorderRef.current.stop();
     } else { 
-      cleanupAndFinalizeRecording(streamForVideoFeed);
+      cleanupAndFinalizeRecording(streamForVideoFeed); // Ensure recording state is false even if no active recorder
       performDiscardReset(showToast);
     }
   };
@@ -535,6 +547,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   
     recordedChunks.current = []; 
     setRawPreviewReady(false); // Ensure raw preview mode is exited
+    setShowTeleprompter(false); // Hide prompter on discard
+    setCurrentTeleprompterScript(null); // Clear script on discard
     onDiscard(); 
     if (showToast) setTimeout(() => toast({ title: "Media Discarded" }), 0);
   };
@@ -558,6 +572,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setIsRecording(false);
     setRecordedFile(null);
     setRawPreviewReady(false); // Not in raw preview for initial media
+    setShowTeleprompter(false); 
+    setCurrentTeleprompterScript(null);
   }, [initialMedia]);
 
 
@@ -614,9 +630,17 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
                     <Timer className="mr-2 h-4 w-4" />
                     {mediaType === 'video' ? 'Video' : 'Audio'} Recording: {formatSecondsToTime(currentRecordingDuration)}
                 </div>
-                <Button onClick={handleStopRecording} variant="destructive" className="w-full md:w-auto" aria-label="Stop recording">
-                    <StopCircle className="mr-2 h-4 w-4" /> Stop
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                    <Button onClick={handleStopRecording} variant="destructive" className="w-full sm:w-auto" aria-label="Stop recording">
+                        <StopCircle className="mr-2 h-4 w-4" /> Stop
+                    </Button>
+                    {currentTeleprompterScript && (
+                        <Button variant="outline" onClick={() => setShowTeleprompter(prev => !prev)} className="w-full sm:w-auto" aria-label={showTeleprompter ? "Hide recording cue" : "Show recording cue"}>
+                            {showTeleprompter ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                            {showTeleprompter ? "Hide Cue" : "Show Cue"}
+                        </Button>
+                    )}
+                </div>
             </div>
         )}
 
@@ -632,7 +656,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
             {/* Info during raw preview or after acceptance */}
             <p className="text-sm font-medium">Media: <span className="text-primary">{recordedFile?.name || (initialMedia?.previewUrl === internalPreviewUrl ? "Existing media" : 'Recorded Media')}</span>
-              {rawPreviewReady && mediaDuration === 0 && (<span className="text-muted-foreground"> (Raw Preview)</span>)}
+              {rawPreviewReady && (<span className="text-muted-foreground"> (Raw Preview - Click Accept to Trim)</span>)}
               {!rawPreviewReady && mediaDuration > 0 && ` (Full: ${formatSecondsToTime(mediaDuration)})`}
             </p>
 
@@ -679,12 +703,12 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
                   "fixed top-4 right-4 bottom-auto left-auto translate-x-0 translate-y-0", 
                   "bg-background/90 backdrop-blur-sm shadow-xl rounded-lg border border-border/50"
                 )}
-                onInteractOutside={(e) => e.preventDefault()} // Prevent closing on outside click if modal is false
+                onInteractOutside={(e) => e.preventDefault()} 
               >
                   <DialogHeader>
                       <DialogTitle className="font-headline text-lg flex items-center"><BookOpen className="mr-2 h-4 w-4 text-primary" />Recording Cue</DialogTitle>
                       <DialogDescription className="text-xs">
-                          Scroll through your talking points.
+                          Scroll through your talking points. You can hide/show this with the button under the timer.
                       </DialogDescription>
                   </DialogHeader>
                   <ScrollArea className="flex-grow py-2 pr-2 my-1 border-y">
