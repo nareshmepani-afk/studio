@@ -88,7 +88,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     });
 
     mediaRecorderRef.current = null;
-    setIsRecording(false); // Set recording state to false
+    setIsRecording(false); 
 
     if (recordingIntervalRef.current) {
       clearInterval(recordingIntervalRef.current);
@@ -651,9 +651,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         {internalPreviewUrl && !isRecording && mediaType && (
           <div className="space-y-4">
             {mediaType === 'video' ? (
-                <video ref={videoRef} src={internalPreviewUrl} controls className="w-full aspect-video rounded-md bg-muted object-cover" onLoadedMetadata={rawPreviewReady ? undefined : handleVideoLoadedMetadata} key={internalPreviewUrl} preload="metadata"/>
+                <video ref={videoRef} src={internalPreviewUrl} controls className="w-full aspect-video rounded-md bg-muted object-cover" onLoadedMetadata={handleVideoLoadedMetadata} key={internalPreviewUrl} preload="metadata"/>
             ) : (
-                <audio ref={audioPreviewRef} src={internalPreviewUrl} controls className="w-full" onLoadedMetadata={rawPreviewReady ? undefined : handleVideoLoadedMetadata} key={internalPreviewUrl} preload="metadata"/>
+                <audio ref={audioPreviewRef} src={internalPreviewUrl} controls className="w-full" onLoadedMetadata={handleVideoLoadedMetadata} key={internalPreviewUrl} preload="metadata"/>
             )}
 
             <p className="text-sm font-medium">Media: <span className="text-primary">{recordedFile?.name || (initialMedia?.previewUrl === internalPreviewUrl ? "Existing media" : 'Recorded Media')}</span>
@@ -721,5 +721,4 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     </Card>
   );
 }
-
     
