@@ -32,7 +32,7 @@ const SAMPLE_AUDIO_URL = "https://interactive-examples.mdn.mozilla.net/media/cc0
 const MAX_TRIMMED_VIDEO_DURATION_SECONDS = 120;
 const MAX_TRIMMED_AUDIO_DURATION_SECONDS = 300;
 
-const MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_VIDEO_DURATION_SECONDS + 60; 
+const MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_VIDEO_DURATION_SECONDS + 60;
 const MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_AUDIO_DURATION_SECONDS + 60;
 
 
@@ -76,7 +76,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       streamToClean.getTracks().forEach(track => track.stop());
     }
   }, []);
-  
+
   const getPermissions = useCallback(async (type: 'video' | 'audio'): Promise<MediaStream | null> => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
@@ -106,32 +106,27 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         setCurrentRecordingDuration(prev => prev + 1);
       }, 1000);
 
-    } else if (!isRecording) { 
+    } else if (!isRecording) {
       if (currentLiveVideoElement && currentLiveVideoElement.srcObject) {
-        cleanupStreamTracks(currentLiveVideoElement.srcObject as MediaStream);
-        currentLiveVideoElement.srcObject = null;
+         cleanupStreamTracks(currentLiveVideoElement.srcObject as MediaStream);
+         currentLiveVideoElement.srcObject = null;
       }
-      if (streamForVideoFeed) { 
-        cleanupStreamTracks(streamForVideoFeed);
-        setStreamForVideoFeed(null);
-      }
+      // StreamForVideoFeed is cleaned up by the recording logic itself when it's done.
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
       }
     }
-    
+
     return () => {
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
       }
+      // Ensure live video element stream is stopped if component unmounts while recording
       if (currentLiveVideoElement && currentLiveVideoElement.srcObject) {
          cleanupStreamTracks(currentLiveVideoElement.srcObject as MediaStream);
          currentLiveVideoElement.srcObject = null;
-      }
-      if (streamForVideoFeed) {
-        cleanupStreamTracks(streamForVideoFeed);
       }
     };
   }, [isRecording, mediaType, streamForVideoFeed, cleanupStreamTracks]);
@@ -173,19 +168,19 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
     revokeCurrentInternalPreviewUrl();
     setRecordedFile(null); setInternalPreviewUrl(null); setMediaType(type); setStartTime(0); setEndTime(0); setMediaDuration(0); setMediaSize(0);
-    latestTrimValuesRef.current = { startTime: 0, endTime: 0 }; 
+    latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
     recordedChunks.current = []; // Initialize/clear chunks for the new recording
 
-    cleanupStreamTracks(streamForVideoFeed); 
+    cleanupStreamTracks(streamForVideoFeed);
     const streamForNewRecording = await getPermissions(type);
 
     if (!streamForNewRecording || !streamForNewRecording.active) {
-      cleanupStreamTracks(streamForNewRecording); 
-      setStreamForVideoFeed(null); 
+      cleanupStreamTracks(streamForNewRecording);
+      setStreamForVideoFeed(null);
       return;
     }
 
-    setStreamForVideoFeed(streamForNewRecording); 
+    setStreamForVideoFeed(streamForNewRecording);
 
     let scriptKey = promptIdForTeleprompter;
     if (!scriptKey && chapterTitleForTeleprompter) {
@@ -202,21 +197,21 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       const preferredVideoMimeTypes = ['video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=h264,opus', 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/webm'];
       const preferredAudioMimeTypes = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/webm'];
       let selectedMimeType = '';
-      if (type === 'video') { for (const mime of preferredVideoMimeTypes) { if (MediaRecorder.isTypeSupported(mime)) { selectedMimeType = mime; break; } } } 
+      if (type === 'video') { for (const mime of preferredVideoMimeTypes) { if (MediaRecorder.isTypeSupported(mime)) { selectedMimeType = mime; break; } } }
       else if (type === 'audio') { for (const mime of preferredAudioMimeTypes) { if (MediaRecorder.isTypeSupported(mime)) { selectedMimeType = mime; break; } } }
-      
+
       const recorderOptions = selectedMimeType ? { mimeType: selectedMimeType } : undefined;
-      console.log(`Attempting to use MediaRecorder with options:`, recorderOptions || "Browser default for " + type);
+      console.log(`Attempting to use MediaRecorder with options: `, recorderOptions || "Browser default for " + type);
 
       const recorder = new window.MediaRecorder(streamForNewRecording, recorderOptions);
       mediaRecorderRef.current = recorder;
-      recordedChunks.current = []; // Explicitly clear chunks before starting
+      // recordedChunks.current = []; // Already cleared above
 
       recorder.ondataavailable = (event) => { if (event.data.size > 0) recordedChunks.current.push(event.data); };
 
       recorder.onstop = () => {
-        const currentRecordedChunks = [...recordedChunks.current]; // Copy before clearing
-        recordedChunks.current = []; 
+        const currentRecordedChunks = [...recordedChunks.current];
+        recordedChunks.current = [];
 
         if (currentRecordedChunks.length === 0) {
           setTimeout(() => toast({ variant: 'destructive', title: 'No Data Recorded', description: 'The recording seems to be empty. Please try again, ensuring your microphone/camera is active.', duration: 7000 }), 0);
@@ -225,7 +220,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
             const blob = new Blob(currentRecordedChunks, { type: blobMimeType });
             console.log("Blob created from chunks:", {size: blob.size, type: blob.type});
 
-            if (blob.size < 1024) { 
+            if (blob.size < 1024) {
               setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Recorded data is too small or corrupted. Please try a longer recording.', duration: 7000 }), 0);
             } else if (!checkStorageQuota(blob.size)) {
               // Storage quota check
@@ -235,10 +230,12 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
               const tempMediaElement = document.createElement(type);
               tempMediaElement.preload = "metadata";
               tempMediaElement.src = url;
+              tempMediaElement.load();
+
 
               tempMediaElement.onloadedmetadata = () => {
                 const newDuration = tempMediaElement.duration;
-                URL.revokeObjectURL(url); 
+                setTimeout(() => URL.revokeObjectURL(url), 100); // Delay revoke slightly
 
                 let errorDescription = 'Failed to read valid duration from recording. Media might be incomplete or corrupted.';
                 if (!isFinite(newDuration) || newDuration <= 0) {
@@ -247,16 +244,14 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
                   }
                   console.error("MediaRecorder onloadedmetadata: Duration is invalid. Read value:", newDuration);
                   setTimeout(() => toast({ variant: 'destructive', title: 'Recording Processing Error', description: errorDescription, duration: 8000 }), 0);
-                  // No further processing
                 } else {
                   const currentMaxRawDuration = type === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS : MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS;
                   const currentMaxTrimmedDuration = type === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
 
                   if (newDuration > currentMaxRawDuration) {
                     setTimeout(() => toast({ variant: 'destructive', title: `${type.charAt(0).toUpperCase() + type.slice(1)} Too Long`, description: `Recording is ${formatSecondsToTime(newDuration)}. Maximum allowed is ${formatSecondsToTime(currentMaxRawDuration)} (including trim buffer). Please re-record a shorter segment.`, duration: 10000 }), 0);
-                    // No further processing
                   } else {
-                    const newObjectUrlForPreview = URL.createObjectURL(blob);
+                    const newObjectUrlForPreview = URL.createObjectURL(blob); // Create a new URL for long-term preview
                     setRecordedFile(file); setInternalPreviewUrl(newObjectUrlForPreview); setMediaDuration(newDuration); setMediaSize(file.size);
                     setStartTime(0); setEndTime(newDuration); latestTrimValuesRef.current = { startTime: 0, endTime: newDuration };
 
@@ -269,7 +264,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
                 }
               };
               tempMediaElement.onerror = (ev) => {
-                  URL.revokeObjectURL(url);
+                  setTimeout(() => URL.revokeObjectURL(url), 100); // Delay revoke slightly
                   console.error(`MediaRecorder tempMediaElement.onerror: Failed to load metadata for ${type}. Blob URL might be invalid or media corrupted. Size: ${blob.size}, Type: ${blob.type}`, ev);
                   setTimeout(() => toast({ variant: 'destructive', title: 'Media Loading Error', description: `Could not load the recorded ${type} for processing. It might be corrupted or in an unsupported format.`, duration: 7000 }), 0);
               };
@@ -282,49 +277,56 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
           if (prevStream === streamForNewRecording) return null;
           return prevStream;
         });
-        setIsRecording(false);       
-        mediaRecorderRef.current = null; 
+        setIsRecording(false);
+        mediaRecorderRef.current = null;
         setShowTeleprompter(false);
         setCurrentTeleprompterScript(null);
+        if (recordingIntervalRef.current) { clearInterval(recordingIntervalRef.current); recordingIntervalRef.current = null; }
+        setCurrentRecordingDuration(0);
       };
 
       recorder.onerror = (event) => {
         console.error('MediaRecorder error:', event);
-        cleanupStreamTracks(streamForNewRecording); 
+        cleanupStreamTracks(streamForNewRecording);
         setStreamForVideoFeed(prevStream => {
           if (prevStream === streamForNewRecording) return null;
           return prevStream;
         });
         setShowTeleprompter(false);
         setCurrentTeleprompterScript(null);
-        setIsRecording(false); 
-        mediaRecorderRef.current = null; 
+        setIsRecording(false);
+        mediaRecorderRef.current = null;
+        if (recordingIntervalRef.current) { clearInterval(recordingIntervalRef.current); recordingIntervalRef.current = null; }
+        setCurrentRecordingDuration(0);
         setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Something went wrong during recording. Please try again.' }), 0);
       };
-      
+
       recorder.start(1000); // Start with a 1-second timeslice
-      setIsRecording(true); 
+      setIsRecording(true);
       setTimeout(() => toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` }),0);
 
     } catch (err) {
       console.error("Error initializing MediaRecorder:", err);
-      cleanupStreamTracks(streamForNewRecording); 
+      cleanupStreamTracks(streamForNewRecording);
       setStreamForVideoFeed(null);
       setShowTeleprompter(false);
       setCurrentTeleprompterScript(null);
-      setIsRecording(false); 
+      setIsRecording(false);
       mediaRecorderRef.current = null;
+      if (recordingIntervalRef.current) { clearInterval(recordingIntervalRef.current); recordingIntervalRef.current = null; }
+      setCurrentRecordingDuration(0);
       setTimeout(() => toast({ variant: 'destructive', title: 'Recording Setup Failed', description: 'Could not start recording. Check device compatibility or permissions.' }), 0);
     }
   };
 
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop(); 
-    } else if (isRecording) { 
-        cleanupStreamTracks(streamForVideoFeed); 
+      mediaRecorderRef.current.stop();
+      // setIsRecording will be set to false in the recorder.onstop handler
+    } else if (isRecording) { // Fallback if somehow recorderRef is null but isRecording is true
+        cleanupStreamTracks(streamForVideoFeed);
         setStreamForVideoFeed(null);
-        setIsRecording(false); 
+        setIsRecording(false);
         mediaRecorderRef.current = null;
         setShowTeleprompter(false);
         setCurrentTeleprompterScript(null);
@@ -332,6 +334,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
           clearInterval(recordingIntervalRef.current);
           recordingIntervalRef.current = null;
         }
+        setCurrentRecordingDuration(0);
     }
   };
 
@@ -361,10 +364,14 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       cleanupStreamTracks(streamForVideoFeed); setStreamForVideoFeed(null);
 
       const url = URL.createObjectURL(file);
-      const tempMediaElement = document.createElement(fileType); tempMediaElement.src = url;
+      const tempMediaElement = document.createElement(fileType);
+      tempMediaElement.preload = "metadata";
+      tempMediaElement.src = url;
+      tempMediaElement.load();
+
       tempMediaElement.onloadedmetadata = () => {
         const newDuration = tempMediaElement.duration;
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 100);
 
         if (!isFinite(newDuration) || newDuration <= 0) {
           setTimeout(() => toast({ variant: 'destructive', title: 'File Error', description: 'Could not determine a valid duration for the uploaded file. It might be corrupted or unsupported.', duration: 7000 }), 0);
@@ -390,7 +397,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         }
       };
       tempMediaElement.onerror = () => {
-        URL.revokeObjectURL(url); event.target.value = '';
+        setTimeout(() => URL.revokeObjectURL(url), 100); event.target.value = '';
         setTimeout(() => toast({ title: "Error Loading File", description: "Could not load the uploaded file. It might be corrupted or an unsupported format.", variant: "destructive" }),0);
       };
     }
@@ -415,12 +422,14 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
       const tempMediaElement = document.createElement(type);
       const tempUrl = URL.createObjectURL(blob);
-      tempMediaElement.src = tempUrl;
       tempMediaElement.preload = "metadata";
+      tempMediaElement.src = tempUrl;
+      tempMediaElement.load();
+
 
       tempMediaElement.onloadedmetadata = () => {
         const actualDuration = tempMediaElement.duration;
-        URL.revokeObjectURL(tempUrl);
+        setTimeout(() => URL.revokeObjectURL(tempUrl), 100);
 
         if (!isFinite(actualDuration) || actualDuration <= 0) {
           setTimeout(() => toast({ variant: 'destructive', title: 'Sample Error', description: 'Could not determine a valid duration for the sample media.', duration: 7000 }), 0);
@@ -446,7 +455,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         }
       };
       tempMediaElement.onerror = () => {
-        URL.revokeObjectURL(tempUrl); handleDiscardMedia(false);
+        setTimeout(() => URL.revokeObjectURL(tempUrl), 100); handleDiscardMedia(false);
         setTimeout(() => toast({ title: "Error Loading Sample", description: "Could not load the sample media.", variant: "destructive" }),0);
       };
     } catch (error) {
@@ -488,13 +497,13 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
   const handleDiscardMedia = (showToast = true) => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop(); 
+      mediaRecorderRef.current.stop();
     } else {
       cleanupStreamTracks(streamForVideoFeed);
       setStreamForVideoFeed(null);
-      if (isRecording) setIsRecording(false); 
+      if (isRecording) setIsRecording(false);
     }
-    
+
     revokeCurrentInternalPreviewUrl();
 
     setRecordedFile(null);
@@ -646,6 +655,5 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     </Card>
   );
 }
-    
 
     
