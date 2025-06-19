@@ -286,7 +286,7 @@ export default function AddMemoryPage() {
     <AuthenticatedPageWrapper>
       <div className="container mx-auto py-8 px-4">
         <MemoryForm
-          key={memoryToEdit?.id || initialPromptIdFromQuery || 'new-memory-form'} // Key updated to better handle transitions
+          key={memoryToEdit?.id || promptIdFromQuery || 'new-memory-form'}
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
           memory={memoryToEdit}
