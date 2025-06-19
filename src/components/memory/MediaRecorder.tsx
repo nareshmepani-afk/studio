@@ -12,7 +12,7 @@ import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatSecondsToTime } from '@/lib/utils';
+import { formatSecondsToTime, cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { mockPromptGroups } from '@/lib/mockData';
@@ -67,7 +67,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   const [currentRecordingDuration, setCurrentRecordingDuration] = useState(0);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  const [rawPreviewReady, setRawPreviewReady] = useState(false); // New state for raw preview
+  const [rawPreviewReady, setRawPreviewReady] = useState(false);
 
   const canRecordOrUpload = hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
 
@@ -96,7 +96,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       recordingIntervalRef.current = null;
     }
     setCurrentRecordingDuration(0);
-    setIsRecording(false); // This is crucial for resetting UI state correctly
+    setIsRecording(false);
   }, [cleanupStreamTracks]);
 
 
@@ -223,7 +223,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
       recorder.onstop = () => {
         const currentRecordedChunksCopy = [...recordedChunks.current];
-        // recordedChunks.current = []; // Clear after this use
+        // recordedChunks.current = []; // Clear after this use, already done at start of recording
 
         if (currentRecordedChunksCopy.length === 0) {
           setTimeout(() => toast({ variant: 'destructive', title: 'No Data Recorded', description: 'The recording seems to be empty. Please try again, ensuring your microphone/camera is active.', duration: 7000 }), 0);
@@ -254,7 +254,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
             setMediaType(type); 
             setMediaSize(file.size);
             setRawPreviewReady(true); // Enable raw preview mode
-            // Duration, startTime, endTime will be set after user accepts the raw preview
             setMediaDuration(0); 
             setStartTime(0);
             setEndTime(0);
@@ -334,7 +333,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         if (newDuration === Infinity) {
             errorDescription = 'The recording\'s duration could not be determined (reported as infinite). This can happen with very short or interrupted recordings. Please try again.';
         }
-        console.error("Main Preview onloadedmetadata: Duration is invalid. Read value:", newDuration);
+        console.error("Raw Preview Accept onloadedmetadata: Duration is invalid. Read value:", newDuration);
         setTimeout(() => toast({ variant: 'destructive', title: 'Recording Processing Error', description: errorDescription, duration: 8000 }), 0);
         handleDiscardMedia(false); // Discard and reset
     }
@@ -626,9 +625,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
           <div className="space-y-4">
             {/* Player */}
             {mediaType === 'video' ? (
-                <video ref={videoRef} src={internalPreviewUrl} controls className="w-full aspect-video rounded-md bg-muted object-cover" onLoadedMetadata={handleVideoLoadedMetadata} key={internalPreviewUrl} preload="metadata"/>
+                <video ref={videoRef} src={internalPreviewUrl} controls className="w-full aspect-video rounded-md bg-muted object-cover" onLoadedMetadata={rawPreviewReady ? undefined : handleVideoLoadedMetadata} key={internalPreviewUrl} preload="metadata"/>
             ) : (
-                <audio ref={audioPreviewRef} src={internalPreviewUrl} controls className="w-full" onLoadedMetadata={handleVideoLoadedMetadata} key={internalPreviewUrl} preload="metadata"/>
+                <audio ref={audioPreviewRef} src={internalPreviewUrl} controls className="w-full" onLoadedMetadata={rawPreviewReady ? undefined : handleVideoLoadedMetadata} key={internalPreviewUrl} preload="metadata"/>
             )}
 
             {/* Info during raw preview or after acceptance */}
@@ -669,23 +668,30 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         )}
 
         {showTeleprompter && currentTeleprompterScript && (
-          <Dialog open={showTeleprompter} onOpenChange={(isOpen) => {
+          <Dialog modal={false} open={showTeleprompter} onOpenChange={(isOpen) => {
               if (!isOpen) {
                   setShowTeleprompter(false);
               }
           }}>
-              <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
+              <DialogContent 
+                className={cn(
+                  "sm:max-w-md max-h-[70vh] flex flex-col", 
+                  "fixed top-4 right-4 bottom-auto left-auto translate-x-0 translate-y-0", 
+                  "bg-background/90 backdrop-blur-sm shadow-xl rounded-lg border border-border/50"
+                )}
+                onInteractOutside={(e) => e.preventDefault()} // Prevent closing on outside click if modal is false
+              >
                   <DialogHeader>
-                      <DialogTitle className="font-headline text-xl flex items-center"><BookOpen className="mr-2 h-5 w-5 text-primary" />Recording Cue</DialogTitle>
-                      <DialogDescription>
-                          Use the points below as a guide. You can scroll through the text.
+                      <DialogTitle className="font-headline text-lg flex items-center"><BookOpen className="mr-2 h-4 w-4 text-primary" />Recording Cue</DialogTitle>
+                      <DialogDescription className="text-xs">
+                          Scroll through your talking points.
                       </DialogDescription>
                   </DialogHeader>
-                  <ScrollArea className="flex-grow py-4 pr-2 my-2 border-y">
+                  <ScrollArea className="flex-grow py-2 pr-2 my-1 border-y">
                       <p className="text-sm whitespace-pre-line">{currentTeleprompterScript}</p>
                   </ScrollArea>
-                  <DialogFooter>
-                      <Button variant="outline" onClick={() => setShowTeleprompter(false)} aria-label="Close teleprompter">Close Prompter</Button>
+                  <DialogFooter className="pt-2">
+                      <Button variant="outline" size="sm" onClick={() => setShowTeleprompter(false)} aria-label="Close teleprompter">Close Prompter</Button>
                   </DialogFooter>
               </DialogContent>
           </Dialog>
@@ -695,3 +701,4 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   );
 }
 
+    
