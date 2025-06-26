@@ -16,6 +16,7 @@ import { formatSecondsToTime, cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { mockPromptGroups } from '@/lib/mockData';
+import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 
 
 interface MediaCaptureControlProps {
@@ -34,6 +35,12 @@ const MAX_TRIMMED_AUDIO_DURATION_SECONDS = 300;
 
 const MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_VIDEO_DURATION_SECONDS + 60; 
 const MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_AUDIO_DURATION_SECONDS + 60; 
+
+// FFmpeg setup
+const ffmpeg = createFFmpeg({
+  log: true,
+  corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js',
+});
 
 
 /**
@@ -118,6 +125,48 @@ function getMediaDuration(mediaFile: File): Promise<number> {
     });
 }
 
+/**
+ * Gets media duration using FFmpeg.wasm as a fallback.
+ * @param {Blob} mediaBlob The media Blob to analyze.
+ * @returns {Promise<number>} A Promise resolving with the duration in seconds.
+ */
+async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
+    try {
+        if (!ffmpeg.isLoaded()) {
+            await ffmpeg.load();
+        }
+        const fileName = `input-${Date.now()}.${mediaBlob.type.split('/')[1] || 'tmp'}`;
+        ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
+        
+        let stderr = "";
+        ffmpeg.setLogger(({ type, message }) => {
+            if (type === 'fferr') {
+                stderr += message + "\n";
+            }
+        });
+        
+        await ffmpeg.run('-i', fileName);
+        
+        ffmpeg.FS('unlink', fileName);
+        
+        const durationMatch = stderr.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
+        if (durationMatch) {
+            const hours = parseInt(durationMatch[1], 10);
+            const minutes = parseInt(durationMatch[2], 10);
+            const seconds = parseInt(durationMatch[3], 10);
+            const milliseconds = parseInt(durationMatch[4], 10) * 10;
+            const totalSeconds = hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+            return totalSeconds;
+        }
+
+        throw new Error("FFmpeg could not parse video duration from logs.");
+
+    } catch (error) {
+        console.error("Error in getDurationWithFFmpeg:", error);
+        throw error; // Re-throw to be caught by the caller
+    }
+}
+
 
 export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, promptIdForTeleprompter, chapterTitleForTeleprompter }: MediaCaptureControlProps) {
   const { user, storageQuotaBytes, hostPassStatus } = useAuth();
@@ -152,6 +201,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   
   const [rawPreviewReady, setRawPreviewReady] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationStatusText, setVerificationStatusText] = useState('');
 
   const canRecordOrUpload = hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
 
@@ -388,22 +438,21 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
   const handleAcceptRawRecording = async () => {
     if (!recordedFile || !mediaType) {
-      setTimeout(() => toast({variant: 'destructive', title: 'Preview Error', description: 'No media file to accept.'}), 0);
-      return;
+        setTimeout(() => toast({variant: 'destructive', title: 'Preview Error', description: 'No media file to accept.'}), 0);
+        return;
     }
-    
+
     setIsVerifying(true);
-    
-    try {
-        const durationValue = await getMediaDuration(recordedFile);
-        
+    setVerificationStatusText('Verifying...');
+
+    const processDuration = (durationValue: number) => {
         const currentMaxRawDuration = mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS : MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS;
         const currentMaxTrimmedDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
-
+    
         if (durationValue > currentMaxRawDuration) {
-          setTimeout(() => toast({ variant: 'destructive', title: `${mediaType === 'video' ? 'Video' : 'Audio'} Too Long`, description: `Recording is ${formatSecondsToTime(durationValue)}. Maximum allowed is ${formatSecondsToTime(currentMaxRawDuration)}. Please re-record or upload a shorter segment.`, duration: 10000 }), 0);
-          handleDiscardMedia(false);
-          return;
+            setTimeout(() => toast({ variant: 'destructive', title: `${mediaType === 'video' ? 'Video' : 'Audio'} Too Long`, description: `Recording is ${formatSecondsToTime(durationValue)}. Maximum allowed is ${formatSecondsToTime(currentMaxRawDuration)}. Please re-record or upload a shorter segment.`, duration: 10000 }), 0);
+            handleDiscardMedia(false);
+            return;
         }
         
         setMediaDuration(durationValue);
@@ -411,19 +460,36 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         setStartTime(0);
         latestTrimValuesRef.current = { startTime: 0, endTime: durationValue };
         setRawPreviewReady(false);
-
+    
         if (durationValue > currentMaxTrimmedDuration) {
-          setTimeout(() => toast({ title: "Media Ready for Trimming", description: `Your ${formatSecondsToTime(durationValue)} ${mediaType} needs to be trimmed to ${formatSecondsToTime(currentMaxTrimmedDuration)} or less.`, duration: 10000, icon: <AlertTriangle className="h-4 w-4 text-amber-500" /> }), 0);
+            setTimeout(() => toast({ title: "Media Ready for Trimming", description: `Your ${formatSecondsToTime(durationValue)} ${mediaType} needs to be trimmed to ${formatSecondsToTime(currentMaxTrimmedDuration)} or less.`, duration: 10000, icon: <AlertTriangle className="h-4 w-4 text-amber-500" /> }), 0);
         } else {
-          setTimeout(() => toast({ title: "Media Verified", description: `Duration: ${formatSecondsToTime(durationValue)}. You can now trim or use the media.` }), 0);
+            setTimeout(() => toast({ title: "Media Verified", description: `Duration: ${formatSecondsToTime(durationValue)}. You can now trim or use the media.` }), 0);
         }
+    };
 
-    } catch (error: any) {
-        console.error("Error accepting raw recording:", error.message);
-        setTimeout(() => toast({ variant: 'destructive', title: 'Recording Processing Error', description: `Could not determine media duration. The file may be corrupted or in an unsupported format. Error: ${error.message}`, duration: 8000 }), 0);
-        handleDiscardMedia(false);
+    try {
+        const duration = await getMediaDuration(recordedFile);
+        processDuration(duration);
+    } catch (nativeError: any) {
+        console.warn("Native duration check failed, falling back to FFmpeg:", nativeError.message);
+        if (nativeError.message.includes('Invalid duration')) {
+            setVerificationStatusText('Analyzing media... (this may take a moment)');
+            try {
+                const ffmpegDuration = await getDurationWithFFmpeg(recordedFile);
+                processDuration(ffmpegDuration);
+            } catch (ffmpegError: any) {
+                console.error("FFmpeg duration check also failed:", ffmpegError.message);
+                setTimeout(() => toast({ variant: 'destructive', title: 'Media Processing Failed', description: 'Could not determine the media duration even with advanced analysis. The file may be corrupted.', duration: 8000 }), 0);
+                handleDiscardMedia(false);
+            }
+        } else {
+            setTimeout(() => toast({ variant: 'destructive', title: 'Media Processing Error', description: `Could not determine media duration. Error: ${nativeError.message}`, duration: 8000 }), 0);
+            handleDiscardMedia(false);
+        }
     } finally {
         setIsVerifying(false);
+        setVerificationStatusText('');
     }
   };
 
@@ -679,7 +745,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                 <Button onClick={handleAcceptRawRecording} className="w-full sm:w-auto flex-1" aria-label="Accept this recording and proceed to trimming" disabled={isVerifying}>
                   {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
-                  {isVerifying ? 'Verifying...' : 'Accept Recording'}
+                  {verificationStatusText || 'Accept Recording'}
                 </Button>
                 <Button onClick={() => handleDiscardMedia(true)} variant="outline" className="w-full sm:w-auto flex-1" aria-label="Discard current recording and re-do" disabled={isVerifying}><RotateCcw className="mr-2 h-4 w-4" /> Discard & Re-do</Button>
               </div>
