@@ -40,6 +40,7 @@ const MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_AUDIO_DURATION_SECO
  * Gets the duration of a video/audio Blob.
  * @param {File} mediaFile The media File to check.
  * @returns {Promise<number>} A Promise that resolves with the media duration in seconds.
+ * Rejects if duration is invalid (Infinity, NaN, or error).
  */
 const getMediaDuration = (mediaFile: File): Promise<number> => {
   return new Promise((resolve, reject) => {
@@ -60,25 +61,30 @@ const getMediaDuration = (mediaFile: File): Promise<number> => {
     };
 
     mediaElement.onloadedmetadata = () => {
+      cleanup();
+      // Check for valid duration
       if (mediaElement.duration && Number.isFinite(mediaElement.duration) && mediaElement.duration > 0) {
         resolve(mediaElement.duration);
       } else {
+        // If duration is Infinity, NaN, or 0, it's problematic
+        console.warn(`Invalid duration determined: ${mediaElement.duration}. Media might be corrupted or unsupported.`);
         reject(new Error(`Invalid duration determined: ${mediaElement.duration}`));
       }
-      cleanup();
     };
 
     mediaElement.onerror = () => {
-      const error = mediaElement.error;
-      console.error("Error loading media for duration check:", error);
-      reject(new Error(`Failed to load media metadata. Code: ${error?.code}, Message: ${error?.message}`));
       cleanup();
+      const error = mediaElement.error;
+      console.error("Error loading media metadata:", error);
+      reject(new Error(`Failed to load media metadata. Code: ${error?.code}, Message: ${error?.message}`));
     };
     
+    // Set a timeout in case onloadedmetadata never fires
     timeoutId = setTimeout(() => {
         if (mediaElement.readyState < 1) { // HAVE_NOTHING
-             reject(new Error("Timeout while trying to get media duration."));
+             console.error("Timeout: onloadedmetadata did not fire for media Blob.");
              cleanup();
+             reject(new Error("Timeout while trying to get media duration."));
         }
     }, 5000); // 5 second timeout
 
@@ -263,8 +269,13 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       const preferredVideoMimeTypes = ['video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=h264,opus', 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/webm'];
       const preferredAudioMimeTypes = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/webm'];
       
-      if (type === 'video') { for (const mime of preferredVideoMimeTypes) { if (MediaRecorder.isTypeSupported(mime)) { selectedMimeType = mime; break; } } }
-      else if (type === 'audio') { for (const mime of preferredAudioMimeTypes) { if (MediaRecorder.isTypeSupported(mime)) { selectedMimeType = mime; break; } } }
+      const typesToTest = type === 'video' ? preferredVideoMimeTypes : preferredAudioMimeTypes;
+      for (const mime of typesToTest) {
+          if (MediaRecorder.isTypeSupported(mime)) {
+              selectedMimeType = mime;
+              break;
+          }
+      }
 
       const recorderOptions = selectedMimeType ? { mimeType: selectedMimeType } : undefined;
       console.log(`Attempting to use MediaRecorder with options: `, recorderOptions || "Browser default for " + type);
@@ -394,7 +405,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   };
 
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!checkHostPass()) { event.target.value = ''; return; }
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
