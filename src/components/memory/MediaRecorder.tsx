@@ -37,44 +37,50 @@ const MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_AUDIO_DURATION_SECO
 
 
 /**
- * Gets the duration of a video/audio Blob or File.
+ * Gets the duration of a video/audio Blob.
  * @param {File} mediaFile The media File to check.
  * @returns {Promise<number>} A Promise that resolves with the media duration in seconds.
  */
 const getMediaDuration = (mediaFile: File): Promise<number> => {
   return new Promise((resolve, reject) => {
+    if (!mediaFile || mediaFile.size === 0) {
+      return reject(new Error("Media file is empty."));
+    }
     const isVideo = mediaFile.type.startsWith('video/');
     const mediaElement = document.createElement(isVideo ? 'video' : 'audio');
     mediaElement.preload = 'metadata';
 
     const objectUrl = URL.createObjectURL(mediaFile);
+    let timeoutId: NodeJS.Timeout;
 
     const cleanup = () => {
       clearTimeout(timeoutId);
       URL.revokeObjectURL(objectUrl);
-      mediaElement.remove(); // Clean up the element from memory
+      mediaElement.remove();
     };
 
     mediaElement.onloadedmetadata = () => {
-      cleanup();
-      if (isFinite(mediaElement.duration) && mediaElement.duration > 0) {
+      if (mediaElement.duration && Number.isFinite(mediaElement.duration) && mediaElement.duration > 0) {
         resolve(mediaElement.duration);
       } else {
         reject(new Error(`Invalid duration determined: ${mediaElement.duration}`));
       }
+      cleanup();
     };
 
     mediaElement.onerror = () => {
       const error = mediaElement.error;
       console.error("Error loading media for duration check:", error);
-      cleanup();
       reject(new Error(`Failed to load media metadata. Code: ${error?.code}, Message: ${error?.message}`));
+      cleanup();
     };
     
-    const timeoutId = setTimeout(() => {
-        cleanup();
-        reject(new Error("Timeout while trying to get media duration."));
-    }, 5000); // 5 second timeout, generous for local files
+    timeoutId = setTimeout(() => {
+        if (mediaElement.readyState < 1) { // HAVE_NOTHING
+             reject(new Error("Timeout while trying to get media duration."));
+             cleanup();
+        }
+    }, 5000); // 5 second timeout
 
     mediaElement.src = objectUrl;
   });
@@ -311,10 +317,10 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         cleanupAndFinalizeRecording(streamForNewRecording); 
       };
 
-      recorder.onerror = (event) => {
+      recorder.onerror = (event: any) => {
         console.error('MediaRecorder error:', event);
         cleanupAndFinalizeRecording(streamForNewRecording); 
-        setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Something went wrong during recording. Please try again.' }), 0);
+        setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: event.error?.message || 'Something went wrong during recording. Please try again.' }), 0);
       };
 
       recorder.start(1000); 
@@ -698,5 +704,3 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     </Card>
   );
 }
-
-    
