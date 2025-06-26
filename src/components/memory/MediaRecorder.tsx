@@ -37,60 +37,86 @@ const MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_AUDIO_DURATION_SECO
 
 
 /**
- * Gets the duration of a video/audio Blob.
+ * Gets the duration of a video/audio Blob with robust error handling and logging.
  * @param {File} mediaFile The media File to check.
  * @returns {Promise<number>} A Promise that resolves with the media duration in seconds.
  * Rejects if duration is invalid (Infinity, NaN, or error).
  */
-const getMediaDuration = (mediaFile: File): Promise<number> => {
-  return new Promise((resolve, reject) => {
-    if (!mediaFile || mediaFile.size === 0) {
-      return reject(new Error("Media file is empty."));
-    }
-    const isVideo = mediaFile.type.startsWith('video/');
-    const mediaElement = document.createElement(isVideo ? 'video' : 'audio');
-    mediaElement.preload = 'metadata';
-
-    const objectUrl = URL.createObjectURL(mediaFile);
-    let timeoutId: NodeJS.Timeout;
-
-    const cleanup = () => {
-      clearTimeout(timeoutId);
-      URL.revokeObjectURL(objectUrl);
-      mediaElement.remove();
-    };
-
-    mediaElement.onloadedmetadata = () => {
-      cleanup();
-      // Check for valid duration
-      if (mediaElement.duration && Number.isFinite(mediaElement.duration) && mediaElement.duration > 0) {
-        resolve(mediaElement.duration);
-      } else {
-        // If duration is Infinity, NaN, or 0, it's problematic
-        console.warn(`Invalid duration determined: ${mediaElement.duration}. Media might be corrupted or unsupported.`);
-        reject(new Error(`Invalid duration determined: ${mediaElement.duration}`));
-      }
-    };
-
-    mediaElement.onerror = () => {
-      cleanup();
-      const error = mediaElement.error;
-      console.error("Error loading media metadata:", error);
-      reject(new Error(`Failed to load media metadata. Code: ${error?.code}, Message: ${error?.message}`));
-    };
-    
-    // Set a timeout in case onloadedmetadata never fires
-    timeoutId = setTimeout(() => {
-        if (mediaElement.readyState < 1) { // HAVE_NOTHING
-             console.error("Timeout: onloadedmetadata did not fire for media Blob.");
-             cleanup();
-             reject(new Error("Timeout while trying to get media duration."));
+function getMediaDuration(mediaFile: File): Promise<number> {
+    return new Promise((resolve, reject) => {
+        if (!mediaFile || mediaFile.size === 0) {
+            return reject(new Error("Media file is empty."));
         }
-    }, 5000); // 5 second timeout
+        const isVideo = mediaFile.type.startsWith('video/');
+        const mediaElement = document.createElement(isVideo ? 'video' : 'audio');
+        mediaElement.preload = 'metadata';
 
-    mediaElement.src = objectUrl;
-  });
-};
+        let timeoutId: NodeJS.Timeout;
+
+        // --- Event Listeners for Debugging ---
+        mediaElement.onloadedmetadata = () => {
+            clearTimeout(timeoutId);
+
+            console.log('--- onloadedmetadata triggered ---');
+            console.log('mediaElement.duration:', mediaElement.duration);
+            console.log('mediaElement.readyState:', mediaElement.readyState);
+            console.log('mediaElement.networkState:', mediaElement.networkState);
+            console.log('mediaElement.error:', mediaElement.error);
+
+            const duration = mediaElement.duration;
+            if (Number.isFinite(duration) && duration > 0) {
+                console.log(`Media duration successfully found: ${duration} seconds`);
+                resolve(duration);
+            } else {
+                const errorMsg = `Invalid duration determined: ${duration}. mediaElement.error: ${mediaElement.error ? mediaElement.error.message : 'None'}`;
+                console.error('getMediaDuration ERROR:', errorMsg);
+                reject(new Error(errorMsg));
+            }
+            URL.revokeObjectURL(mediaElement.src);
+        };
+
+        mediaElement.onerror = (e) => {
+            clearTimeout(timeoutId);
+            console.error('--- mediaElement.onerror triggered ---');
+            console.error('mediaElement.error object:', mediaElement.error);
+            console.error('Event:', e);
+            URL.revokeObjectURL(mediaElement.src);
+            reject(new Error(`Failed to load media metadata for duration check: ${mediaElement.error?.message || 'Unknown error'}`));
+        };
+
+        mediaElement.onabort = () => {
+            clearTimeout(timeoutId);
+            console.warn('--- mediaElement.onabort triggered --- Media loading was aborted.');
+            URL.revokeObjectURL(mediaElement.src);
+            reject(new Error("Video metadata loading aborted."));
+        };
+
+        mediaElement.onstalled = () => {
+            console.warn('--- mediaElement.onstalled triggered --- Media data is unexpectedly not available.');
+        };
+
+        mediaElement.oncanplaythrough = () => {
+            console.log('--- mediaElement.oncanplaythrough triggered ---');
+        };
+
+        mediaElement.onwaiting = () => {
+            console.log('--- mediaElement.onwaiting triggered --- Video is waiting for data.');
+        };
+
+        timeoutId = setTimeout(() => {
+            if (mediaElement.readyState < 1) { // HAVE_NOTHING
+                console.error("Timeout: onloadedmetadata did not fire for media Blob within 5s.");
+                console.log('Timeout - mediaElement.readyState:', mediaElement.readyState);
+                console.log('Timeout - mediaElement.networkState:', mediaElement.networkState);
+                URL.revokeObjectURL(mediaElement.src);
+                reject(new Error("Timeout: Failed to load video metadata for duration."));
+            }
+        }, 5000); // 5 seconds timeout
+
+        mediaElement.src = URL.createObjectURL(mediaFile);
+        console.log('Attempting to load mediaBlob for duration check...');
+    });
+}
 
 
 export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, promptIdForTeleprompter, chapterTitleForTeleprompter }: MediaCaptureControlProps) {
@@ -366,12 +392,11 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       return;
     }
     
-    setIsVerifying(true); // Show loading state
+    setIsVerifying(true);
     
     try {
         const durationValue = await getMediaDuration(recordedFile);
         
-        // Success path
         const currentMaxRawDuration = mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS : MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS;
         const currentMaxTrimmedDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
 
@@ -385,7 +410,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         setEndTime(durationValue);
         setStartTime(0);
         latestTrimValuesRef.current = { startTime: 0, endTime: durationValue };
-        setRawPreviewReady(false); // Move to trimming view
+        setRawPreviewReady(false);
 
         if (durationValue > currentMaxTrimmedDuration) {
           setTimeout(() => toast({ title: "Media Ready for Trimming", description: `Your ${formatSecondsToTime(durationValue)} ${mediaType} needs to be trimmed to ${formatSecondsToTime(currentMaxTrimmedDuration)} or less.`, duration: 10000, icon: <AlertTriangle className="h-4 w-4 text-amber-500" /> }), 0);
@@ -394,13 +419,11 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         }
 
     } catch (error: any) {
-        // Failure path
-        console.error("Error getting media duration:", error.message);
-        const errorDescription = `The recording's duration could not be determined. The file may be corrupted or in a format the browser cannot process. Please try recording again. Error: ${error.message}`;
-        setTimeout(() => toast({ variant: 'destructive', title: 'Recording Processing Error', description: errorDescription, duration: 8000 }), 0);
+        console.error("Error accepting raw recording:", error.message);
+        setTimeout(() => toast({ variant: 'destructive', title: 'Recording Processing Error', description: `Could not determine media duration. The file may be corrupted or in an unsupported format. Error: ${error.message}`, duration: 8000 }), 0);
         handleDiscardMedia(false);
     } finally {
-        setIsVerifying(false); // Hide loading state
+        setIsVerifying(false);
     }
   };
 
