@@ -18,8 +18,6 @@ import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/te
 import { mockPromptGroups } from '@/lib/mockData';
 import type { MediaAttachment } from '@/types';
 
-// FFmpeg instance is no longer a global variable to prevent SSR issues.
-
 // Maximum duration constants (in seconds)
 const MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS = 300; // 5 minutes for raw recording
 const MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS = 600; // 10 minutes for raw recording
@@ -50,70 +48,14 @@ interface MediaCaptureControlProps {
 }
 
 /**
- * Gets the duration of a video/audio Blob with robust error handling and logging.
- * Returns null if the duration is invalid or an error occurs.
- * @param {File} mediaFile The media File to check.
- * @returns {Promise<number|null>} A Promise that resolves with the media duration in seconds, or null on failure.
- */
-function getMediaDuration(mediaFile: File): Promise<number | null> {
-    return new Promise((resolve) => {
-        if (!mediaFile || mediaFile.size === 0) {
-            console.error("getMediaDuration ERROR: Media file is empty.");
-            return resolve(null);
-        }
-        const isVideo = mediaFile.type.startsWith('video/');
-        const mediaElement = document.createElement(isVideo ? 'video' : 'audio');
-        mediaElement.preload = 'metadata';
-
-        let timeoutId: NodeJS.Timeout;
-
-        // --- Event Listeners for Debugging ---
-        mediaElement.onloadedmetadata = () => {
-            clearTimeout(timeoutId);
-
-            console.log('--- onloadedmetadata triggered ---');
-            console.log('mediaElement.duration:', mediaElement.duration);
-            console.log('mediaElement.readyState:', mediaElement.readyState);
-
-            const duration = mediaElement.duration;
-            if (Number.isFinite(duration) && duration > 0) {
-                console.log(`Media duration successfully found: ${duration} seconds`);
-                resolve(duration);
-            } else {
-                const errorMsg = `Invalid duration determined: ${duration}. mediaElement.error: ${mediaElement.error ? mediaElement.error.message : 'None'}`;
-                console.error('getMediaDuration ERROR:', errorMsg);
-                resolve(null);
-            }
-            URL.revokeObjectURL(mediaElement.src);
-        };
-
-        mediaElement.onerror = (e) => {
-            clearTimeout(timeoutId);
-            console.error('getMediaDuration ERROR: videoElement.onerror triggered.', mediaElement.error);
-            URL.revokeObjectURL(mediaElement.src);
-            resolve(null);
-        };
-        
-        timeoutId = setTimeout(() => {
-            if (mediaElement.readyState < 1) { // HAVE_NOTHING
-                console.error("getMediaDuration ERROR: Timeout: onloadedmetadata did not fire for media Blob within 5s.");
-                URL.revokeObjectURL(mediaElement.src);
-                resolve(null);
-            }
-        }, 5000); // 5 seconds timeout
-
-        mediaElement.src = URL.createObjectURL(mediaFile);
-    });
-}
-
-/**
- * Gets media duration using FFmpeg.wasm as a fallback.
+ * Gets media duration using the robust FFmpeg.wasm library.
+ * This is the primary method for duration checking to avoid browser inconsistencies.
  * @param {Blob} mediaBlob The media Blob to analyze.
  * @returns {Promise<number>} A Promise resolving with the duration in seconds.
  */
 async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     try {
-        // Hide the module name in a variable to prevent server-side build/analysis
+        // Use dynamic import to ensure FFmpeg is only loaded on the client-side
         const moduleName = '@ffmpeg/ffmpeg';
         const { createFFmpeg, fetchFile } = await import(/* webpackIgnore: true */ moduleName);
 
@@ -136,11 +78,13 @@ async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
             }
         });
         
+        // This FFmpeg command just reads the file info without transcoding. It's fast.
         await ffmpeg.run('-i', fileName);
         
+        // FFmpeg's output for -i is written to stderr.
         const durationMatch = stderr.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
         
-        ffmpeg.FS('unlink', fileName);
+        ffmpeg.FS('unlink', fileName); // Clean up the virtual file system
 
         if (durationMatch) {
             const hours = parseInt(durationMatch[1], 10);
@@ -151,10 +95,10 @@ async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
             return totalSeconds;
         }
 
-        throw new Error("FFmpeg could not parse video duration from logs.");
+        throw new Error("FFmpeg could not parse video duration from its log output.");
 
     } catch (error) {
-        console.error("Error in getDurationWithFFmpeg:", error);
+        console.error("Error getting duration with FFmpeg:", error);
         throw error; // Re-throw to be caught by the caller
     }
 }
@@ -428,6 +372,29 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     }
   };
 
+  const processDuration = (durationValue: number) => {
+      const currentMaxRawDuration = mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS : MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS;
+      const currentMaxTrimmedDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
+  
+      if (durationValue > currentMaxRawDuration) {
+          setTimeout(() => toast({ variant: 'destructive', title: `${mediaType === 'video' ? 'Video' : 'Audio'} Too Long`, description: `Recording is ${formatSecondsToTime(durationValue)}. Maximum allowed is ${formatSecondsToTime(currentMaxRawDuration)}. Please re-record or upload a shorter segment.`, duration: 10000 }), 0);
+          handleDiscardMedia(false);
+          return;
+      }
+      
+      setMediaDuration(durationValue);
+      setEndTime(durationValue);
+      setStartTime(0);
+      latestTrimValuesRef.current = { startTime: 0, endTime: durationValue };
+      setRawPreviewReady(false);
+  
+      if (durationValue > currentMaxTrimmedDuration) {
+          setTimeout(() => toast({ title: "Media Ready for Trimming", description: `Your ${formatSecondsToTime(durationValue)} ${mediaType} needs to be trimmed to ${formatSecondsToTime(currentMaxTrimmedDuration)} or less.`, duration: 10000, icon: <AlertTriangle className="h-4 w-4 text-amber-500" /> }), 0);
+      } else {
+          setTimeout(() => toast({ title: "Media Verified", description: `Duration: ${formatSecondsToTime(durationValue)}. You can now trim or use the media.` }), 0);
+      }
+  };
+
   const handleAcceptRawRecording = async () => {
     if (!recordedFile || !mediaType) {
         setTimeout(() => toast({variant: 'destructive', title: 'Preview Error', description: 'No media file to accept.'}), 0);
@@ -435,65 +402,20 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     }
 
     setIsVerifying(true);
-    setVerificationStatusText('Verifying media...');
+    setVerificationStatusText('Analyzing media... (this may take a moment)');
 
-    const processDuration = (durationValue: number) => {
-        const currentMaxRawDuration = mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS : MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS;
-        const currentMaxTrimmedDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
-    
-        if (durationValue > currentMaxRawDuration) {
-            setTimeout(() => toast({ variant: 'destructive', title: `${mediaType === 'video' ? 'Video' : 'Audio'} Too Long`, description: `Recording is ${formatSecondsToTime(durationValue)}. Maximum allowed is ${formatSecondsToTime(currentMaxRawDuration)}. Please re-record or upload a shorter segment.`, duration: 10000 }), 0);
-            handleDiscardMedia(false);
-            return;
-        }
-        
-        setMediaDuration(durationValue);
-        setEndTime(durationValue);
-        setStartTime(0);
-        latestTrimValuesRef.current = { startTime: 0, endTime: durationValue };
-        setRawPreviewReady(false);
-    
-        if (durationValue > currentMaxTrimmedDuration) {
-            setTimeout(() => toast({ title: "Media Ready for Trimming", description: `Your ${formatSecondsToTime(durationValue)} ${mediaType} needs to be trimmed to ${formatSecondsToTime(currentMaxTrimmedDuration)} or less.`, duration: 10000, icon: <AlertTriangle className="h-4 w-4 text-amber-500" /> }), 0);
-        } else {
-            setTimeout(() => toast({ title: "Media Verified", description: `Duration: ${formatSecondsToTime(durationValue)}. You can now trim or use the media.` }), 0);
-        }
-    };
-
-    // --- Start new verification logic ---
-    let duration: number | null = null;
-    
-    // Attempt 1: Native Method
-    duration = await getMediaDuration(recordedFile);
-
-    // Attempt 2: FFmpeg Fallback
-    if (duration === null) {
-      console.warn("Native duration check failed, falling back to FFmpeg.");
-      setVerificationStatusText('Analyzing media... (this may take a moment)');
-      try {
-        duration = await getDurationWithFFmpeg(recordedFile);
-      } catch (ffmpegError: any) {
-        console.error("FFmpeg fallback duration check also failed:", ffmpegError.message);
-        setTimeout(() => toast({ variant: 'destructive', title: 'Media Processing Failed', description: 'Could not determine the media duration even with advanced analysis. The file may be corrupted.', duration: 8000 }), 0);
-        handleDiscardMedia(false);
-        setIsVerifying(false);
-        setVerificationStatusText('');
-        return; // Exit here
-      }
-    }
-
-    // --- Success or Failure ---
-    if (duration !== null) {
+    try {
+      // Directly use the robust FFmpeg method.
+      const duration = await getDurationWithFFmpeg(recordedFile);
       processDuration(duration);
-    } else {
-        // This case should only be reached if native check fails and FFmpeg fallback is also disabled or fails in an unexpected way
-        console.error("Both native and fallback duration checks failed.");
-        handleDiscardMedia(false);
+    } catch (error: any) {
+      console.error("FFmpeg duration check failed:", error.message);
+      setTimeout(() => toast({ variant: 'destructive', title: 'Media Processing Failed', description: 'Could not determine the media duration. The file may be corrupted or in an unsupported format.', duration: 8000 }), 0);
+      handleDiscardMedia(false);
+    } finally {
+      setIsVerifying(false);
+      setVerificationStatusText('');
     }
-
-    setIsVerifying(false);
-    setVerificationStatusText('');
-     // --- End new verification logic ---
   };
 
 
@@ -807,3 +729,5 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     </Card>
   );
 }
+
+    
