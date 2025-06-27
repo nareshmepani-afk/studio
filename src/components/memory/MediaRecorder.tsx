@@ -1,7 +1,6 @@
 
 "use client";
 
-import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, Video, StopCircle, UploadCloud, RotateCcw, CheckCircle, AlertTriangle, Film, Waves, Loader2, ShieldAlert, BookOpen, Timer, PlayCircle, PauseCircle, Eye, EyeOff } from 'lucide-react';
@@ -18,19 +17,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { mockPromptGroups } from '@/lib/mockData';
 import type { MediaAttachment } from '@/types';
-
-// Use next/dynamic to create a component/module that will only be loaded on the client side.
-// This is critical to prevent SSR errors with browser-only libraries like FFmpeg.
-const FFmpegModulePromise = dynamic(() => import('@/lib/ffmpeg'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center p-4">
-      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      <p className="text-sm text-muted-foreground">Loading video tools...</p>
-    </div>
-  ),
-});
-
 
 // Maximum duration constants (in seconds)
 const MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS = 300; // 5 minutes for raw recording
@@ -103,21 +89,15 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
   // Effect to load the FFmpeg module once on client-side mount
   useEffect(() => {
-      FFmpegModulePromise
+    import('@/lib/ffmpeg')
           .then(module => {
               setFfmpegApi(module);
               console.log("Dynamically loaded FFmpeg module promise resolved.");
           })
           .catch(error => {
               console.error("Failed to resolve dynamic FFmpeg module promise:", error);
-              toast({
-                  variant: 'destructive',
-                  title: 'Video Tools Failed to Load',
-                  description: 'The necessary video processing tools could not be loaded. Please try refreshing the page.',
-                  duration: 10000
-              });
           });
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []);
 
   useEffect(() => { latestTrimValuesRef.current = { startTime, endTime }; }, [startTime, endTime]);
 
@@ -219,6 +199,44 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       URL.revokeObjectURL(internalPreviewUrl);
     }
   }, [internalPreviewUrl, initialMedia?.previewUrl]);
+
+  const performDiscardReset = useCallback((showToast: boolean) => {
+    revokeCurrentInternalPreviewUrl();
+    setRecordedFile(null);
+    setInternalPreviewUrl(initialMedia?.previewUrl || null);
+    setMediaType(initialMedia?.type || null);
+  
+    const initStartTime = initialMedia?.startTime || 0;
+    const initDuration = initialMedia?.duration || 0;
+    const initEndTime = initialMedia?.endTime !== undefined ? initialMedia.endTime : initDuration;
+    const initSize = initialMedia?.size || 0;
+  
+    setStartTime(initStartTime);
+    setEndTime(initEndTime);
+    latestTrimValuesRef.current = { startTime: initStartTime, endTime: initEndTime };
+    setMediaDuration(initDuration);
+    setMediaSize(initSize);
+  
+    recordedChunks.current = []; 
+    setRawPreviewReady(false);
+    setShowTeleprompter(false); 
+    setCurrentTeleprompterScript(null);
+    onDiscard(); 
+    if (showToast) setTimeout(() => toast({ title: "Media Discarded" }), 0);
+  }, [initialMedia, onDiscard, revokeCurrentInternalPreviewUrl]);
+
+  const handleDiscardMedia = useCallback((showToast = true) => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.onstop = () => { 
+        cleanupAndFinalizeRecording(streamForVideoFeed); 
+        performDiscardReset(showToast);
+      };
+      mediaRecorderRef.current.stop();
+    } else { 
+      cleanupAndFinalizeRecording(streamForVideoFeed); 
+      performDiscardReset(showToast);
+    }
+  }, [cleanupAndFinalizeRecording, performDiscardReset, streamForVideoFeed]);
 
   const handleStartRecording = async (type: 'video' | 'audio') => {
     if (isRecording || !checkHostPass()) return;
@@ -373,47 +391,14 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       }
   };
   
-  const performDiscardReset = useCallback((showToast: boolean) => {
-    revokeCurrentInternalPreviewUrl();
-    setRecordedFile(null);
-    setInternalPreviewUrl(initialMedia?.previewUrl || null);
-    setMediaType(initialMedia?.type || null);
-  
-    const initStartTime = initialMedia?.startTime || 0;
-    const initDuration = initialMedia?.duration || 0;
-    const initEndTime = initialMedia?.endTime !== undefined ? initialMedia.endTime : initDuration;
-    const initSize = initialMedia?.size || 0;
-  
-    setStartTime(initStartTime);
-    setEndTime(initEndTime);
-    latestTrimValuesRef.current = { startTime: initStartTime, endTime: initEndTime };
-    setMediaDuration(initDuration);
-    setMediaSize(initSize);
-  
-    recordedChunks.current = []; 
-    setRawPreviewReady(false);
-    setShowTeleprompter(false); 
-    setCurrentTeleprompterScript(null);
-    onDiscard(); 
-    if (showToast) setTimeout(() => toast({ title: "Media Discarded" }), 0);
-  }, [initialMedia, onDiscard, revokeCurrentInternalPreviewUrl]);
-
-  const handleDiscardMedia = useCallback((showToast = true) => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.onstop = () => { 
-        cleanupAndFinalizeRecording(streamForVideoFeed); 
-        performDiscardReset(showToast);
-      };
-      mediaRecorderRef.current.stop();
-    } else { 
-      cleanupAndFinalizeRecording(streamForVideoFeed); 
-      performDiscardReset(showToast);
-    }
-  }, [cleanupAndFinalizeRecording, performDiscardReset, streamForVideoFeed]);
-
   const handleAcceptRawRecording = useCallback(async () => {
     if (!recordedFile) {
       toast({variant: 'destructive', title: 'Preview Error', description: 'No media file to accept.'});
+      return;
+    }
+
+    if (!ffmpegApi) {
+      toast({variant: 'destructive', title: 'Tools Not Ready', description: 'Video processing tools are still loading. Please try again in a moment.'});
       return;
     }
 
@@ -421,13 +406,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setVerificationStatusText('Analyzing media... (this may take a moment)');
 
     try {
-      if (!ffmpegApi) {
-        throw new Error("FFmpeg module not yet available.");
-      }
-
       const duration = await ffmpegApi.getDurationWithFFmpeg(recordedFile);
       processDuration(duration);
-
     } catch (error) {
       console.error("Error getting media duration with FFmpeg:", error);
       toast({ variant: 'destructive', title: 'Recording Processing Error', description: `Could not verify media. The file might be corrupted. Error: ${(error as Error).message}`, duration: 8000 });
@@ -710,3 +690,5 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     </Card>
   );
 }
+
+    
