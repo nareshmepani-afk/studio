@@ -36,11 +36,21 @@ const MAX_TRIMMED_AUDIO_DURATION_SECONDS = 300;
 const MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_VIDEO_DURATION_SECONDS + 60; 
 const MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_AUDIO_DURATION_SECONDS + 60; 
 
-// FFmpeg setup
-const ffmpeg = createFFmpeg({
-  log: true,
-  corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js',
-});
+// FFmpeg instance will be loaded on demand to prevent Next.js build errors
+let ffmpegInstance: any = null;
+
+async function getFFmpeg() {
+  if (ffmpegInstance === null) {
+    ffmpegInstance = createFFmpeg({ 
+      log: true,
+      corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js',
+     });
+  }
+  if (!ffmpegInstance.isLoaded()) {
+    await ffmpegInstance.load();
+  }
+  return ffmpegInstance;
+}
 
 
 /**
@@ -132,22 +142,18 @@ function getMediaDuration(mediaFile: File): Promise<number> {
  */
 async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     try {
-        if (!ffmpeg.isLoaded()) {
-            await ffmpeg.load();
-        }
+        const ffmpeg = await getFFmpeg();
         const fileName = `input-${Date.now()}.${mediaBlob.type.split('/')[1] || 'tmp'}`;
         ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
         
         let stderr = "";
-        ffmpeg.setLogger(({ type, message }) => {
+        ffmpeg.setLogger(({ type, message }: {type: string, message: string}) => {
             if (type === 'fferr') {
                 stderr += message + "\n";
             }
         });
         
         await ffmpeg.run('-i', fileName);
-        
-        ffmpeg.FS('unlink', fileName);
         
         const durationMatch = stderr.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
         if (durationMatch) {
@@ -156,9 +162,11 @@ async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
             const seconds = parseInt(durationMatch[3], 10);
             const milliseconds = parseInt(durationMatch[4], 10) * 10;
             const totalSeconds = hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+            ffmpeg.FS('unlink', fileName);
             return totalSeconds;
         }
 
+        ffmpeg.FS('unlink', fileName);
         throw new Error("FFmpeg could not parse video duration from logs.");
 
     } catch (error) {
@@ -473,18 +481,13 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         processDuration(duration);
     } catch (nativeError: any) {
         console.warn("Native duration check failed, falling back to FFmpeg:", nativeError.message);
-        if (nativeError.message.includes('Invalid duration')) {
-            setVerificationStatusText('Analyzing media... (this may take a moment)');
-            try {
-                const ffmpegDuration = await getDurationWithFFmpeg(recordedFile);
-                processDuration(ffmpegDuration);
-            } catch (ffmpegError: any) {
-                console.error("FFmpeg duration check also failed:", ffmpegError.message);
-                setTimeout(() => toast({ variant: 'destructive', title: 'Media Processing Failed', description: 'Could not determine the media duration even with advanced analysis. The file may be corrupted.', duration: 8000 }), 0);
-                handleDiscardMedia(false);
-            }
-        } else {
-            setTimeout(() => toast({ variant: 'destructive', title: 'Media Processing Error', description: `Could not determine media duration. Error: ${nativeError.message}`, duration: 8000 }), 0);
+        setVerificationStatusText('Analyzing media... (this may take a moment)');
+        try {
+            const ffmpegDuration = await getDurationWithFFmpeg(recordedFile);
+            processDuration(ffmpegDuration);
+        } catch (ffmpegError: any) {
+            console.error("FFmpeg duration check also failed:", ffmpegError.message);
+            setTimeout(() => toast({ variant: 'destructive', title: 'Media Processing Failed', description: 'Could not determine the media duration even with advanced analysis. The file may be corrupted.', duration: 8000 }), 0);
             handleDiscardMedia(false);
         }
     } finally {
@@ -804,3 +807,5 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     </Card>
   );
 }
+
+    
