@@ -51,14 +51,15 @@ interface MediaCaptureControlProps {
 
 /**
  * Gets the duration of a video/audio Blob with robust error handling and logging.
+ * Returns null if the duration is invalid or an error occurs.
  * @param {File} mediaFile The media File to check.
- * @returns {Promise<number>} A Promise that resolves with the media duration in seconds.
- * Rejects if duration is invalid (Infinity, NaN, or error).
+ * @returns {Promise<number|null>} A Promise that resolves with the media duration in seconds, or null on failure.
  */
-function getMediaDuration(mediaFile: File): Promise<number> {
-    return new Promise((resolve, reject) => {
+function getMediaDuration(mediaFile: File): Promise<number | null> {
+    return new Promise((resolve) => {
         if (!mediaFile || mediaFile.size === 0) {
-            return reject(new Error("Media file is empty."));
+            console.error("getMediaDuration ERROR: Media file is empty.");
+            return resolve(null);
         }
         const isVideo = mediaFile.type.startsWith('video/');
         const mediaElement = document.createElement(isVideo ? 'video' : 'audio');
@@ -73,8 +74,6 @@ function getMediaDuration(mediaFile: File): Promise<number> {
             console.log('--- onloadedmetadata triggered ---');
             console.log('mediaElement.duration:', mediaElement.duration);
             console.log('mediaElement.readyState:', mediaElement.readyState);
-            console.log('mediaElement.networkState:', mediaElement.networkState);
-            console.log('mediaElement.error:', mediaElement.error);
 
             const duration = mediaElement.duration;
             if (Number.isFinite(duration) && duration > 0) {
@@ -83,51 +82,27 @@ function getMediaDuration(mediaFile: File): Promise<number> {
             } else {
                 const errorMsg = `Invalid duration determined: ${duration}. mediaElement.error: ${mediaElement.error ? mediaElement.error.message : 'None'}`;
                 console.error('getMediaDuration ERROR:', errorMsg);
-                reject(new Error(errorMsg));
+                resolve(null);
             }
             URL.revokeObjectURL(mediaElement.src);
         };
 
         mediaElement.onerror = (e) => {
             clearTimeout(timeoutId);
-            console.error('--- mediaElement.onerror triggered ---');
-            console.error('mediaElement.error object:', mediaElement.error);
-            console.error('Event:', e);
+            console.error('getMediaDuration ERROR: videoElement.onerror triggered.', mediaElement.error);
             URL.revokeObjectURL(mediaElement.src);
-            reject(new Error(`Failed to load media metadata for duration check: ${mediaElement.error?.message || 'Unknown error'}`));
+            resolve(null);
         };
-
-        mediaElement.onabort = () => {
-            clearTimeout(timeoutId);
-            console.warn('--- mediaElement.onabort triggered --- Media loading was aborted.');
-            URL.revokeObjectURL(mediaElement.src);
-            reject(new Error("Video metadata loading aborted."));
-        };
-
-        mediaElement.onstalled = () => {
-            console.warn('--- mediaElement.onstalled triggered --- Media data is unexpectedly not available.');
-        };
-
-        mediaElement.oncanplaythrough = () => {
-            console.log('--- mediaElement.oncanplaythrough triggered ---');
-        };
-
-        mediaElement.onwaiting = () => {
-            console.log('--- mediaElement.onwaiting triggered --- Video is waiting for data.');
-        };
-
+        
         timeoutId = setTimeout(() => {
             if (mediaElement.readyState < 1) { // HAVE_NOTHING
-                console.error("Timeout: onloadedmetadata did not fire for media Blob within 5s.");
-                console.log('Timeout - mediaElement.readyState:', mediaElement.readyState);
-                console.log('Timeout - mediaElement.networkState:', mediaElement.networkState);
+                console.error("getMediaDuration ERROR: Timeout: onloadedmetadata did not fire for media Blob within 5s.");
                 URL.revokeObjectURL(mediaElement.src);
-                reject(new Error("Timeout: Failed to load video metadata for duration."));
+                resolve(null);
             }
         }, 5000); // 5 seconds timeout
 
         mediaElement.src = URL.createObjectURL(mediaFile);
-        console.log('Attempting to load mediaBlob for duration check...');
     });
 }
 
@@ -460,7 +435,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     }
 
     setIsVerifying(true);
-    setVerificationStatusText('Verifying...');
+    setVerificationStatusText('Verifying media...');
 
     const processDuration = (durationValue: number) => {
         const currentMaxRawDuration = mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS : MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS;
@@ -485,24 +460,40 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         }
     };
 
-    try {
-        const duration = await getMediaDuration(recordedFile);
-        processDuration(duration);
-    } catch (nativeError: any) {
-        console.warn("Native duration check failed, falling back to FFmpeg:", nativeError.message);
-        setVerificationStatusText('Analyzing media... (this may take a moment)');
-        try {
-            const ffmpegDuration = await getDurationWithFFmpeg(recordedFile);
-            processDuration(ffmpegDuration);
-        } catch (ffmpegError: any) {
-            console.error("FFmpeg duration check also failed:", ffmpegError.message);
-            setTimeout(() => toast({ variant: 'destructive', title: 'Media Processing Failed', description: 'Could not determine the media duration even with advanced analysis. The file may be corrupted.', duration: 8000 }), 0);
-            handleDiscardMedia(false);
-        }
-    } finally {
+    // --- Start new verification logic ---
+    let duration: number | null = null;
+    
+    // Attempt 1: Native Method
+    duration = await getMediaDuration(recordedFile);
+
+    // Attempt 2: FFmpeg Fallback
+    if (duration === null) {
+      console.warn("Native duration check failed, falling back to FFmpeg.");
+      setVerificationStatusText('Analyzing media... (this may take a moment)');
+      try {
+        duration = await getDurationWithFFmpeg(recordedFile);
+      } catch (ffmpegError: any) {
+        console.error("FFmpeg fallback duration check also failed:", ffmpegError.message);
+        setTimeout(() => toast({ variant: 'destructive', title: 'Media Processing Failed', description: 'Could not determine the media duration even with advanced analysis. The file may be corrupted.', duration: 8000 }), 0);
+        handleDiscardMedia(false);
         setIsVerifying(false);
         setVerificationStatusText('');
+        return; // Exit here
+      }
     }
+
+    // --- Success or Failure ---
+    if (duration !== null) {
+      processDuration(duration);
+    } else {
+        // This case should only be reached if native check fails and FFmpeg fallback is also disabled or fails in an unexpected way
+        console.error("Both native and fallback duration checks failed.");
+        handleDiscardMedia(false);
+    }
+
+    setIsVerifying(false);
+    setVerificationStatusText('');
+     // --- End new verification logic ---
   };
 
 
