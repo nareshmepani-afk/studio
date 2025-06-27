@@ -47,64 +47,6 @@ interface MediaCaptureControlProps {
   chapterTitleForTeleprompter?: string;
 }
 
-/**
- * Gets media duration using the robust FFmpeg.wasm library.
- * This is the primary method for duration checking to avoid browser inconsistencies.
- * @param {Blob} mediaBlob The media Blob to analyze.
- * @returns {Promise<number | null>} A Promise resolving with the duration in seconds, or null on failure.
- */
-async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number | null> {
-    try {
-        // Use dynamic import to ensure FFmpeg is only loaded on the client-side
-        const moduleName = '@ffmpeg/ffmpeg';
-        const { createFFmpeg, fetchFile } = await import(/* webpackIgnore: true */ moduleName);
-
-        const ffmpeg = createFFmpeg({
-            log: true,
-            corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js',
-        });
-        
-        if (!ffmpeg.isLoaded()) {
-            await ffmpeg.load();
-        }
-
-        const fileName = `input-${Date.now()}.${mediaBlob.type.split('/')[1] || 'tmp'}`;
-        await ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
-        
-        let stderr = "";
-        ffmpeg.setLogger(({ type, message }: {type: string, message: string}) => {
-            if (type === 'fferr') {
-                stderr += message + "\n";
-            }
-        });
-        
-        // This FFmpeg command just reads the file info without transcoding. It's fast.
-        await ffmpeg.run('-i', fileName);
-        
-        // FFmpeg's output for -i is written to stderr.
-        const durationMatch = stderr.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
-        
-        ffmpeg.FS('unlink', fileName); // Clean up the virtual file system
-
-        if (durationMatch) {
-            const hours = parseInt(durationMatch[1], 10);
-            const minutes = parseInt(durationMatch[2], 10);
-            const seconds = parseInt(durationMatch[3], 10);
-            const milliseconds = parseInt(durationMatch[4], 10) * 10;
-            const totalSeconds = hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
-            return totalSeconds;
-        }
-
-        throw new Error("FFmpeg could not parse video duration from its log output.");
-
-    } catch (error) {
-        console.error("Error getting duration with FFmpeg:", error);
-        toast({ title: "Media Analysis Failed", description: "Could not analyze media with the fallback engine.", variant: "destructive" });
-        return null;
-    }
-}
-
-
 export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, promptIdForTeleprompter, chapterTitleForTeleprompter }: MediaCaptureControlProps) {
   const { user, storageQuotaBytes, hostPassStatus } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
@@ -396,7 +338,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       }
   };
 
-  const handleAcceptRawRecording = async () => {
+  const handleAcceptRawRecording = useCallback(async () => {
     if (!recordedFile || !mediaType) {
         setTimeout(() => toast({variant: 'destructive', title: 'Preview Error', description: 'No media file to accept.'}), 0);
         return;
@@ -405,18 +347,20 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setIsVerifying(true);
     setVerificationStatusText('Analyzing media... (this may take a moment)');
 
-    const duration = await getDurationWithFFmpeg(recordedFile);
-    
-    if (duration !== null && isFinite(duration) && duration > 0) {
-      processDuration(duration);
-    } else {
-      toast({ variant: 'destructive', title: 'Media Processing Failed', description: 'Could not determine the media duration, even with the analysis engine. The file may be corrupted.', duration: 8000 });
-      handleDiscardMedia(false);
+    try {
+        // Dynamically import the FFmpeg function only when needed
+        const { getDurationWithFFmpeg } = await import('@/lib/ffmpeg');
+        const duration = await getDurationWithFFmpeg(recordedFile);
+        processDuration(duration);
+    } catch (error) {
+        console.error("Error getting media duration with FFmpeg:", error);
+        setTimeout(() => toast({ variant: 'destructive', title: 'Recording Processing Error', description: `Could not verify media. The file might be corrupted. Error: ${(error as Error).message}`, duration: 8000 }), 0);
+        handleDiscardMedia(false);
     }
 
     setIsVerifying(false);
     setVerificationStatusText('');
-  };
+  }, [recordedFile, mediaType]);
 
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -525,19 +469,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     } else { setTimeout(() => toast({ title: "Media Not Ready", description: "Please record or upload valid media before proceeding.", variant: "destructive" }), 0); }
   };
 
-  const handleDiscardMedia = (showToast = true) => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.onstop = () => { 
-        cleanupAndFinalizeRecording(streamForVideoFeed); 
-        performDiscardReset(showToast);
-      };
-      mediaRecorderRef.current.stop();
-    } else { 
-      cleanupAndFinalizeRecording(streamForVideoFeed); 
-      performDiscardReset(showToast);
-    }
-  };
-  
   const performDiscardReset = (showToast: boolean) => {
     revokeCurrentInternalPreviewUrl();
     setRecordedFile(null);
@@ -562,7 +493,19 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     onDiscard(); 
     if (showToast) setTimeout(() => toast({ title: "Media Discarded" }), 0);
   };
-
+  
+  const handleDiscardMedia = useCallback((showToast = true) => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.onstop = () => { 
+        cleanupAndFinalizeRecording(streamForVideoFeed); 
+        performDiscardReset(showToast);
+      };
+      mediaRecorderRef.current.stop();
+    } else { 
+      cleanupAndFinalizeRecording(streamForVideoFeed); 
+      performDiscardReset(showToast);
+    }
+  }, [cleanupAndFinalizeRecording, initialMedia, onDiscard, revokeCurrentInternalPreviewUrl, streamForVideoFeed]);
 
   useEffect(() => {
     setMediaType(initialMedia?.type || null);
