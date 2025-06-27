@@ -1,6 +1,7 @@
 
 "use client";
 
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, Video, StopCircle, UploadCloud, RotateCcw, CheckCircle, AlertTriangle, Film, Waves, Loader2, ShieldAlert, BookOpen, Timer, PlayCircle, PauseCircle, Eye, EyeOff } from 'lucide-react';
@@ -17,6 +18,19 @@ import { useAuth } from '@/hooks/useAuth';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { mockPromptGroups } from '@/lib/mockData';
 import type { MediaAttachment } from '@/types';
+
+// Use next/dynamic to create a component/module that will only be loaded on the client side.
+// This is critical to prevent SSR errors with browser-only libraries like FFmpeg.
+const FFmpegModulePromise = dynamic(() => import('@/lib/ffmpeg'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center p-4">
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      <p className="text-sm text-muted-foreground">Loading video tools...</p>
+    </div>
+  ),
+});
+
 
 // Maximum duration constants (in seconds)
 const MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS = 300; // 5 minutes for raw recording
@@ -83,6 +97,27 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   const [verificationStatusText, setVerificationStatusText] = useState('');
 
   const canRecordOrUpload = hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
+
+  // State to hold the dynamically loaded FFmpeg module
+  const [ffmpegApi, setFfmpegApi] = useState<typeof import('@/lib/ffmpeg') | null>(null);
+
+  // Effect to load the FFmpeg module once on client-side mount
+  useEffect(() => {
+      FFmpegModulePromise
+          .then(module => {
+              setFfmpegApi(module);
+              console.log("Dynamically loaded FFmpeg module promise resolved.");
+          })
+          .catch(error => {
+              console.error("Failed to resolve dynamic FFmpeg module promise:", error);
+              toast({
+                  variant: 'destructive',
+                  title: 'Video Tools Failed to Load',
+                  description: 'The necessary video processing tools could not be loaded. Please try refreshing the page.',
+                  duration: 10000
+              });
+          });
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   useEffect(() => { latestTrimValuesRef.current = { startTime, endTime }; }, [startTime, endTime]);
 
@@ -339,8 +374,14 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   };
 
   const handleAcceptRawRecording = useCallback(async () => {
-    if (!recordedFile || !mediaType) {
+    if (!recordedFile) {
         setTimeout(() => toast({variant: 'destructive', title: 'Preview Error', description: 'No media file to accept.'}), 0);
+        return;
+    }
+
+    if (!ffmpegApi) {
+        console.error("FFmpeg module not yet loaded.");
+        toast({ variant: "destructive", title: "Video processing tools not ready.", description: "Please try again in a moment."});
         return;
     }
 
@@ -348,9 +389,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setVerificationStatusText('Analyzing media... (this may take a moment)');
 
     try {
-        // Dynamically import the FFmpeg function only when needed
-        const { getDurationWithFFmpeg } = await import('@/lib/ffmpeg');
-        const duration = await getDurationWithFFmpeg(recordedFile);
+        const duration = await ffmpegApi.getDurationWithFFmpeg(recordedFile);
         processDuration(duration);
     } catch (error) {
         console.error("Error getting media duration with FFmpeg:", error);
@@ -360,7 +399,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
     setIsVerifying(false);
     setVerificationStatusText('');
-  }, [recordedFile, mediaType]);
+  }, [recordedFile, mediaType, checkStorageQuota, handleDiscardMedia, ffmpegApi]);
 
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -611,9 +650,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
             {rawPreviewReady && (
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                <Button onClick={handleAcceptRawRecording} className="w-full sm:w-auto flex-1" aria-label="Accept this recording and proceed to trimming" disabled={isVerifying}>
+                <Button onClick={handleAcceptRawRecording} className="w-full sm:w-auto flex-1" aria-label="Accept this recording and proceed to trimming" disabled={isVerifying || !ffmpegApi}>
                   {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
-                  {verificationStatusText || 'Accept Recording'}
+                  {!ffmpegApi ? "Loading tools..." : (verificationStatusText || 'Accept Recording')}
                 </Button>
                 <Button onClick={() => handleDiscardMedia(true)} variant="outline" className="w-full sm:w-auto flex-1" aria-label="Discard current recording and re-do" disabled={isVerifying}><RotateCcw className="mr-2 h-4 w-4" /> Discard & Re-do</Button>
               </div>
