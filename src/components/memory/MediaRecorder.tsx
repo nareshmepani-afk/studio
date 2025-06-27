@@ -372,29 +372,66 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
           setTimeout(() => toast({ title: "Media Verified", description: `Duration: ${formatSecondsToTime(durationValue)}. You can now trim or use the media.` }), 0);
       }
   };
+  
+  const performDiscardReset = useCallback((showToast: boolean) => {
+    revokeCurrentInternalPreviewUrl();
+    setRecordedFile(null);
+    setInternalPreviewUrl(initialMedia?.previewUrl || null);
+    setMediaType(initialMedia?.type || null);
+  
+    const initStartTime = initialMedia?.startTime || 0;
+    const initDuration = initialMedia?.duration || 0;
+    const initEndTime = initialMedia?.endTime !== undefined ? initialMedia.endTime : initDuration;
+    const initSize = initialMedia?.size || 0;
+  
+    setStartTime(initStartTime);
+    setEndTime(initEndTime);
+    latestTrimValuesRef.current = { startTime: initStartTime, endTime: initEndTime };
+    setMediaDuration(initDuration);
+    setMediaSize(initSize);
+  
+    recordedChunks.current = []; 
+    setRawPreviewReady(false);
+    setShowTeleprompter(false); 
+    setCurrentTeleprompterScript(null);
+    onDiscard(); 
+    if (showToast) setTimeout(() => toast({ title: "Media Discarded" }), 0);
+  }, [initialMedia, onDiscard, revokeCurrentInternalPreviewUrl]);
+
+  const handleDiscardMedia = useCallback((showToast = true) => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.onstop = () => { 
+        cleanupAndFinalizeRecording(streamForVideoFeed); 
+        performDiscardReset(showToast);
+      };
+      mediaRecorderRef.current.stop();
+    } else { 
+      cleanupAndFinalizeRecording(streamForVideoFeed); 
+      performDiscardReset(showToast);
+    }
+  }, [cleanupAndFinalizeRecording, performDiscardReset, streamForVideoFeed]);
 
   const handleAcceptRawRecording = useCallback(async () => {
     if (!recordedFile) {
-        setTimeout(() => toast({variant: 'destructive', title: 'Preview Error', description: 'No media file to accept.'}), 0);
-        return;
-    }
-
-    if (!ffmpegApi) {
-        console.error("FFmpeg module not yet loaded.");
-        toast({ variant: "destructive", title: "Video processing tools not ready.", description: "Please try again in a moment."});
-        return;
+      toast({variant: 'destructive', title: 'Preview Error', description: 'No media file to accept.'});
+      return;
     }
 
     setIsVerifying(true);
     setVerificationStatusText('Analyzing media... (this may take a moment)');
 
     try {
-        const duration = await ffmpegApi.getDurationWithFFmpeg(recordedFile);
-        processDuration(duration);
+      if (!ffmpegApi) {
+        throw new Error("FFmpeg module not yet available.");
+      }
+
+      const duration = await ffmpegApi.getDurationWithFFmpeg(recordedFile);
+      processDuration(duration);
+
     } catch (error) {
-        console.error("Error getting media duration with FFmpeg:", error);
-        setTimeout(() => toast({ variant: 'destructive', title: 'Recording Processing Error', description: `Could not verify media. The file might be corrupted. Error: ${(error as Error).message}`, duration: 8000 }), 0);
-        handleDiscardMedia(false);
+      console.error("Error getting media duration with FFmpeg:", error);
+      toast({ variant: 'destructive', title: 'Recording Processing Error', description: `Could not verify media. The file might be corrupted. Error: ${(error as Error).message}`, duration: 8000 });
+      handleDiscardMedia(false);
     }
 
     setIsVerifying(false);
@@ -507,44 +544,6 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
        setTimeout(() => toast({ title: "Media Updated", description: toastDesc, icon: <CheckCircle className="h-4 w-4" /> }), 0);
     } else { setTimeout(() => toast({ title: "Media Not Ready", description: "Please record or upload valid media before proceeding.", variant: "destructive" }), 0); }
   };
-
-  const performDiscardReset = (showToast: boolean) => {
-    revokeCurrentInternalPreviewUrl();
-    setRecordedFile(null);
-    setInternalPreviewUrl(initialMedia?.previewUrl || null);
-    setMediaType(initialMedia?.type || null);
-  
-    const initStartTime = initialMedia?.startTime || 0;
-    const initDuration = initialMedia?.duration || 0;
-    const initEndTime = initialMedia?.endTime !== undefined ? initialMedia.endTime : initDuration;
-    const initSize = initialMedia?.size || 0;
-  
-    setStartTime(initStartTime);
-    setEndTime(initEndTime);
-    latestTrimValuesRef.current = { startTime: initStartTime, endTime: initEndTime };
-    setMediaDuration(initDuration);
-    setMediaSize(initSize);
-  
-    recordedChunks.current = []; 
-    setRawPreviewReady(false);
-    setShowTeleprompter(false); 
-    setCurrentTeleprompterScript(null);
-    onDiscard(); 
-    if (showToast) setTimeout(() => toast({ title: "Media Discarded" }), 0);
-  };
-  
-  const handleDiscardMedia = useCallback((showToast = true) => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.onstop = () => { 
-        cleanupAndFinalizeRecording(streamForVideoFeed); 
-        performDiscardReset(showToast);
-      };
-      mediaRecorderRef.current.stop();
-    } else { 
-      cleanupAndFinalizeRecording(streamForVideoFeed); 
-      performDiscardReset(showToast);
-    }
-  }, [cleanupAndFinalizeRecording, initialMedia, onDiscard, revokeCurrentInternalPreviewUrl, streamForVideoFeed]);
 
   useEffect(() => {
     setMediaType(initialMedia?.type || null);
