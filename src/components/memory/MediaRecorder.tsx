@@ -16,31 +16,13 @@ import { formatSecondsToTime, cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { mockPromptGroups } from '@/lib/mockData';
-import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
-
-
-interface MediaCaptureControlProps {
-  onMediaReady: (mediaData: { file: File; type: 'video' | 'audio'; startTime?: number; endTime?: number, duration: number, size: number }) => void;
-  onDiscard: () => void;
-  initialMedia?: { type: 'video' | 'audio'; previewUrl: string; startTime?: number; endTime?: number, duration: number, size: number };
-  promptIdForTeleprompter?: string;
-  chapterTitleForTeleprompter?: string;
-}
-
-const SAMPLE_VIDEO_URL = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-const SAMPLE_AUDIO_URL = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3";
-
-const MAX_TRIMMED_VIDEO_DURATION_SECONDS = 120;
-const MAX_TRIMMED_AUDIO_DURATION_SECONDS = 300;
-
-const MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_VIDEO_DURATION_SECONDS + 60; 
-const MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS = MAX_TRIMMED_AUDIO_DURATION_SECONDS + 60; 
 
 // FFmpeg instance will be loaded on demand to prevent Next.js build errors
 let ffmpegInstance: any = null;
 
 async function getFFmpeg() {
   if (ffmpegInstance === null) {
+    const { createFFmpeg } = await import('@ffmpeg/ffmpeg');
     ffmpegInstance = createFFmpeg({ 
       log: true,
       corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js',
@@ -142,6 +124,7 @@ function getMediaDuration(mediaFile: File): Promise<number> {
  */
 async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     try {
+        const { fetchFile } = await import('@ffmpeg/ffmpeg'); // Dynamic import for fetchFile
         const ffmpeg = await getFFmpeg();
         const fileName = `input-${Date.now()}.${mediaBlob.type.split('/')[1] || 'tmp'}`;
         ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
@@ -454,7 +437,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setVerificationStatusText('Verifying...');
 
     const processDuration = (durationValue: number) => {
-        const currentMaxRawDuration = mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS : MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS;
+        const currentMaxRawDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
         const currentMaxTrimmedDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
     
         if (durationValue > currentMaxRawDuration) {
@@ -541,7 +524,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setShowTeleprompter(false); 
     setCurrentTeleprompterScript(null);
 
-    const sampleUrl = type === 'video' ? SAMPLE_VIDEO_URL : SAMPLE_AUDIO_URL;
+    const sampleUrl = type === 'video' ? "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" : "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3";
     const filename = type === 'video' ? 'sample_video.mp4' : 'sample_audio.mp3';
     const mimeType = type === 'video' ? 'video/mp4' : 'audio/mpeg';
     try {
@@ -807,5 +790,3 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     </Card>
   );
 }
-
-    
