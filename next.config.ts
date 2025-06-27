@@ -36,6 +36,24 @@ const nextConfig: NextConfig = {
         "https://6000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev",
     ],
   },
+  webpack: (config, { isServer }) => {
+    // Rule for .wasm files.
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: "asset/resource",
+    });
+
+    // Fallbacks for node modules.
+    if (!isServer) {
+      config.resolve.fallback = {
+        fs: false,
+        path: false,
+        crypto: false,
+      };
+    }
+
+    return config;
+  },
 };
 
 export default nextConfig;
