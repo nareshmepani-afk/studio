@@ -16,24 +16,38 @@ import { formatSecondsToTime, cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { mockPromptGroups } from '@/lib/mockData';
+import type { MediaAttachment } from '@/types';
 
-// FFmpeg instance will be loaded on demand to prevent Next.js build errors
-let ffmpegInstance: any = null;
+// FFmpeg instance is no longer a global variable to prevent SSR issues.
 
-async function getFFmpeg() {
-  if (ffmpegInstance === null) {
-    const { createFFmpeg } = await import('@ffmpeg/ffmpeg');
-    ffmpegInstance = createFFmpeg({ 
-      log: true,
-      corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js',
-     });
-  }
-  if (!ffmpegInstance.isLoaded()) {
-    await ffmpegInstance.load();
-  }
-  return ffmpegInstance;
+// Maximum duration constants (in seconds)
+const MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS = 300; // 5 minutes for raw recording
+const MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS = 600; // 10 minutes for raw recording
+const MAX_TRIMMED_VIDEO_DURATION_SECONDS = 180; // 3 minutes for final trimmed video
+const MAX_TRIMMED_AUDIO_DURATION_SECONDS = 300; // 5 minutes for final trimmed audio
+
+
+interface MediaCaptureControlProps {
+  onMediaReady: (media: {
+    file: File;
+    type: 'video' | 'audio';
+    startTime?: number;
+    endTime?: number;
+    duration: number;
+    size: number;
+  }) => void;
+  onDiscard: () => void;
+  initialMedia?: {
+    type: 'video' | 'audio';
+    previewUrl: string;
+    startTime?: number;
+    endTime?: number;
+    duration: number;
+    size: number;
+  };
+  promptIdForTeleprompter?: string;
+  chapterTitleForTeleprompter?: string;
 }
-
 
 /**
  * Gets the duration of a video/audio Blob with robust error handling and logging.
@@ -124,10 +138,21 @@ function getMediaDuration(mediaFile: File): Promise<number> {
  */
 async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     try {
-        const { fetchFile } = await import('@ffmpeg/ffmpeg'); // Dynamic import for fetchFile
-        const ffmpeg = await getFFmpeg();
+        // Hide the module name in a variable to prevent server-side build/analysis
+        const moduleName = '@ffmpeg/ffmpeg';
+        const { createFFmpeg, fetchFile } = await import(/* webpackIgnore: true */ moduleName);
+
+        const ffmpeg = createFFmpeg({
+            log: true,
+            corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js',
+        });
+        
+        if (!ffmpeg.isLoaded()) {
+            await ffmpeg.load();
+        }
+
         const fileName = `input-${Date.now()}.${mediaBlob.type.split('/')[1] || 'tmp'}`;
-        ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
+        await ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
         
         let stderr = "";
         ffmpeg.setLogger(({ type, message }: {type: string, message: string}) => {
@@ -139,17 +164,18 @@ async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
         await ffmpeg.run('-i', fileName);
         
         const durationMatch = stderr.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
+        
+        ffmpeg.FS('unlink', fileName);
+
         if (durationMatch) {
             const hours = parseInt(durationMatch[1], 10);
             const minutes = parseInt(durationMatch[2], 10);
             const seconds = parseInt(durationMatch[3], 10);
             const milliseconds = parseInt(durationMatch[4], 10) * 10;
             const totalSeconds = hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
-            ffmpeg.FS('unlink', fileName);
             return totalSeconds;
         }
 
-        ffmpeg.FS('unlink', fileName);
         throw new Error("FFmpeg could not parse video duration from logs.");
 
     } catch (error) {
@@ -437,7 +463,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setVerificationStatusText('Verifying...');
 
     const processDuration = (durationValue: number) => {
-        const currentMaxRawDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
+        const currentMaxRawDuration = mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS : MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS;
         const currentMaxTrimmedDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
     
         if (durationValue > currentMaxRawDuration) {
