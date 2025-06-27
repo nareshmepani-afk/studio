@@ -51,9 +51,9 @@ interface MediaCaptureControlProps {
  * Gets media duration using the robust FFmpeg.wasm library.
  * This is the primary method for duration checking to avoid browser inconsistencies.
  * @param {Blob} mediaBlob The media Blob to analyze.
- * @returns {Promise<number>} A Promise resolving with the duration in seconds.
+ * @returns {Promise<number | null>} A Promise resolving with the duration in seconds, or null on failure.
  */
-async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
+async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number | null> {
     try {
         // Use dynamic import to ensure FFmpeg is only loaded on the client-side
         const moduleName = '@ffmpeg/ffmpeg';
@@ -99,7 +99,8 @@ async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
 
     } catch (error) {
         console.error("Error getting duration with FFmpeg:", error);
-        throw error; // Re-throw to be caught by the caller
+        toast({ title: "Media Analysis Failed", description: "Could not analyze media with the fallback engine.", variant: "destructive" });
+        return null;
     }
 }
 
@@ -404,18 +405,17 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     setIsVerifying(true);
     setVerificationStatusText('Analyzing media... (this may take a moment)');
 
-    try {
-      // Directly use the robust FFmpeg method.
-      const duration = await getDurationWithFFmpeg(recordedFile);
+    const duration = await getDurationWithFFmpeg(recordedFile);
+    
+    if (duration !== null && isFinite(duration) && duration > 0) {
       processDuration(duration);
-    } catch (error: any) {
-      console.error("FFmpeg duration check failed:", error.message);
-      setTimeout(() => toast({ variant: 'destructive', title: 'Media Processing Failed', description: 'Could not determine the media duration. The file may be corrupted or in an unsupported format.', duration: 8000 }), 0);
+    } else {
+      toast({ variant: 'destructive', title: 'Media Processing Failed', description: 'Could not determine the media duration, even with the analysis engine. The file may be corrupted.', duration: 8000 });
       handleDiscardMedia(false);
-    } finally {
-      setIsVerifying(false);
-      setVerificationStatusText('');
     }
+
+    setIsVerifying(false);
+    setVerificationStatusText('');
   };
 
 
@@ -729,5 +729,3 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     </Card>
   );
 }
-
-    
