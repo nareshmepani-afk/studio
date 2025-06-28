@@ -1,3 +1,4 @@
+
 // src/lib/ffmpeg.ts
 import type { FFmpeg } from '@ffmpeg/ffmpeg';
 
@@ -33,7 +34,9 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 
   isLoading = true;
   try {
+    // Dynamically import the necessary functions here, inside the client-side function call.
     const { createFFmpeg } = await import('@ffmpeg/ffmpeg');
+
     ffmpeg = createFFmpeg({
       log: true, // Keep this for debugging FFmpeg's internal operations
       // --- CRITICAL: Path to ffmpeg-core.js ---
@@ -98,7 +101,9 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   } finally {
       // Clean up the virtual file system and the logger
       try {
-          ffmpegInstance.FS('unlink', fileName);
+          if (ffmpegInstance.FS('readdir', '/').includes(fileName)) {
+            ffmpegInstance.FS('unlink', fileName);
+          }
       } catch (e) {
           console.warn(`Could not unlink file ${fileName} from FFmpeg FS, it might not exist.`);
       }
