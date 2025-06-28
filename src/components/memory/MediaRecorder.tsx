@@ -85,17 +85,17 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   const canRecordOrUpload = hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
 
   // State to hold the dynamically loaded FFmpeg module
-  const [ffmpegApi, setFfmpegApi] = useState<typeof import('@/lib/ffmpeg') | null>(null);
+  const [ffmpegApi, setFfmpegApi] = useState<typeof import('../../lib/ffmpeg') | null>(null);
 
   // Effect to load the FFmpeg module once on client-side mount
   useEffect(() => {
-    import('@/lib/ffmpeg')
+    import('../../lib/ffmpeg')
           .then(module => {
               setFfmpegApi(module);
               console.log("Dynamically loaded FFmpeg module promise resolved.");
           })
           .catch(error => {
-              console.error("Failed to resolve dynamic FFmpeg module promise:", error);
+              console.error("Failed to dynamically load FFmpeg module promise:", error);
           });
   }, []);
 
@@ -396,7 +396,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       toast({variant: 'destructive', title: 'Preview Error', description: 'No media file to accept.'});
       return;
     }
-
+    
     if (!ffmpegApi) {
       toast({variant: 'destructive', title: 'Tools Not Ready', description: 'Video processing tools are still loading. Please try again in a moment.'});
       return;
@@ -630,7 +630,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
             {rawPreviewReady && (
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                 <Button onClick={handleAcceptRawRecording} className="w-full sm:w-auto flex-1" aria-label="Accept this recording and proceed to trimming" disabled={isVerifying || !ffmpegApi}>
-                  {isVerifying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+                  {isVerifying || !ffmpegApi ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
                   {!ffmpegApi ? "Loading tools..." : (verificationStatusText || 'Accept Recording')}
                 </Button>
                 <Button onClick={() => handleDiscardMedia(true)} variant="outline" className="w-full sm:w-auto flex-1" aria-label="Discard current recording and re-do" disabled={isVerifying}><RotateCcw className="mr-2 h-4 w-4" /> Discard & Re-do</Button>
@@ -690,5 +690,3 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     </Card>
   );
 }
-
-    
