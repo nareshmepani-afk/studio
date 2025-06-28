@@ -47,6 +47,12 @@ const nextConfig: NextConfig = {
       },
     });
 
+    // Add a rule to handle the ffmpeg-core.worker.js file
+    config.module.rules.push({
+      test: /ffmpeg-core\.worker\.js$/,
+ use: { loader: 'file-loader', options: { publicPath: '/_next/', name: 'static/media/[name].[hash].[ext]' } },
+    });
+
     // Fallbacks for node modules.
     if (!isServer) {
       config.resolve.fallback = {
