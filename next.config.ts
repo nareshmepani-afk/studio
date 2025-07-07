@@ -38,13 +38,21 @@ const nextConfig: NextConfig = {
     ],
   },
   webpack: (config, { isServer }) => {
-    // Rule to handle ffmpeg-core files specifically.
-    // This tells Webpack to treat them as assets and output them to a predictable location.
+
+    // Rule for .js and .wasm ffmpeg files (excluding the worker).
     config.module.rules.push({
-      test: /ffmpeg-core\.(js|wasm|worker\.js)$/,
+      test: /ffmpeg-core\.(js|wasm)$/,
       type: "asset/resource",
       generator: {
-        // Output these files to /_next/static/ffmpeg/ so we can have a predictable URL.
+        filename: "static/ffmpeg/[name][ext]",
+      },
+    });
+
+    // Rule for ffmpeg-core.worker.js using asset/resource with importMeta: true.
+    config.module.rules.push({
+      test: /ffmpeg-core\.worker\.js$/,
+      type: "asset/resource",
+      generator: {
         filename: "static/ffmpeg/[name][ext]",
       },
     });

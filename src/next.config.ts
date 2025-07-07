@@ -38,14 +38,26 @@ const nextConfig: NextConfig = {
     ],
   },
   webpack: (config, { isServer }) => {
-    // Rule for .wasm files.
+    if (!isServer) {
+      config.resolve.fallback = {
+        fs: false,
+        path: false,
+        crypto: false,
+        // Add other fallbacks if needed
+      };
+    }
+
+    // Rule for all ffmpeg core files
     config.module.rules.push({
-      test: /\.wasm$/,
+      test: /ffmpeg-core\.(js|wasm|worker\.js)$/,
       type: "asset/resource",
       generator: {
-        filename: "static/chunks/[name].[contenthash][ext]",
+        filename: "static/ffmpeg/[name][ext]",
       },
     });
+
+    return config;
+  },
 
     // Fallbacks for node modules.
     if (!isServer) {
