@@ -48,7 +48,7 @@ const nextConfig: NextConfig = {
       },
     });
 
-    // Rule for ffmpeg-core.worker.js using asset/resource with importMeta: true.
+    // Rule for ffmpeg-core.worker.js using asset/resource.
     config.module.rules.push({
       test: /ffmpeg-core\.worker\.js$/,
       type: "asset/resource",
