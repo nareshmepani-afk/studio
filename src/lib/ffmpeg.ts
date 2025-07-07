@@ -2,9 +2,6 @@
 // src/lib/ffmpeg.ts
 import type { FFmpeg } from '@ffmpeg/ffmpeg';
 
-// This file will contain the logic to create and manage the ffmpeg instance.
-// We will dynamically import the createFFmpeg function to avoid server-side issues.
-
 let ffmpeg: FFmpeg | null = null;
 let isLoading = false;
 
@@ -21,32 +18,32 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
           clearInterval(checkInterval);
           resolve(ffmpeg);
         }
-        // Add a timeout to prevent infinite loops
-        setTimeout(() => {
+      }, 100);
+       setTimeout(() => {
             clearInterval(checkInterval);
             if (!ffmpeg) {
                 reject(new Error("FFmpeg loading timed out."));
             }
-        }, 15000); // 15 second timeout
-      }, 100);
+        }, 15000);
     });
   }
 
   isLoading = true;
   try {
-    // Dynamically import the necessary functions here, inside the client-side function call.
-    const { createFFmpeg } = await import('@ffmpeg/ffmpeg');
+    // Dynamically import the createFFmpeg function to prevent SSR issues.
+    const { createFFmpeg, fetchFile } = await import('@ffmpeg/ffmpeg');
 
     ffmpeg = createFFmpeg({
-      log: true, // Keep this for debugging FFmpeg's internal operations
-      // --- CRITICAL: Path to ffmpeg-core.js ---
-      // You MUST copy 'ffmpeg-core.js', 'ffmpeg-core.wasm', 'ffmpeg-core.worker.js'
-      // from 'node_modules/@ffmpeg/core/dist/' into your 'public/ffmpeg/' folder.
-      corePath: '/ffmpeg/ffmpeg-core.js', // This path is relative to your /public directory
+      log: true,
+      // Provide explicit paths to the core, wasm, and worker files.
+      // These paths correspond to the output location defined in next.config.ts's webpack rule.
+      corePath: `/_next/static/ffmpeg/ffmpeg-core.js`,
+      wasmPath: `/_next/static/ffmpeg/ffmpeg-core.wasm`,
+      workerPath: `/_next/static/ffmpeg/ffmpeg-core.worker.js`,
     });
 
-    await ffmpeg.load(); // Load the WASM modules
-    console.log("FFmpeg core loaded successfully in getFFmpegInstance.");
+    await ffmpeg.load();
+    console.log("FFmpeg core loaded successfully.");
     return ffmpeg;
   } catch (error) {
     console.error("Failed to load FFmpeg core in getFFmpegInstance:", error);

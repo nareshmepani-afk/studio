@@ -38,12 +38,14 @@ const nextConfig: NextConfig = {
     ],
   },
   webpack: (config, { isServer }) => {
-    // Rule for .wasm files.
+    // Rule to handle ffmpeg-core files specifically.
+    // This tells Webpack to treat them as assets and output them to a predictable location.
     config.module.rules.push({
-      test: /\.wasm$/,
+      test: /ffmpeg-core\.(js|wasm|worker\.js)$/,
       type: "asset/resource",
       generator: {
-        filename: "static/chunks/[name].[contenthash][ext]",
+        // Output these files to /_next/static/ffmpeg/ so we can have a predictable URL.
+        filename: "static/ffmpeg/[name][ext]",
       },
     });
 
