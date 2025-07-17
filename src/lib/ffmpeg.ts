@@ -35,9 +35,9 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 
     ffmpeg = createFFmpeg({
       log: true,
-      corePath: '/static/ffmpeg/ffmpeg-core.js',
-      workerPath: '/static/ffmpeg/ffmpeg-core.worker.js',
-      wasmPath: '/static/ffmpeg/ffmpeg-core.wasm',
+      corePath: '/ffmpeg/ffmpeg-core.js',
+      workerPath: '/ffmpeg/ffmpeg-core.worker.js',
+      wasmPath: '/ffmpeg/ffmpeg-core.wasm',
     });
 
     await ffmpeg.load();

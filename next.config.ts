@@ -39,23 +39,6 @@ const nextConfig: NextConfig = {
   },
   webpack: (config, { isServer }) => {
 
-    // Rule for .js and .wasm ffmpeg files (excluding the worker).
-    config.module.rules.push({
-      test: /ffmpeg-core\.(js|wasm)$/,
-      type: "asset/resource",
-      generator: {
-        filename: "static/ffmpeg/[name][ext]",
-      },
-    });
-
-    // Rule for ffmpeg-core.worker.js using asset/resource.
-    config.module.rules.push({
-      test: /ffmpeg-core\.worker\.js$/,
-      type: "asset/resource",
-      generator: {
-        filename: "static/ffmpeg/[name][ext]",
-      },
-    });
 
     // Fallbacks for node modules.
     if (!isServer) {
