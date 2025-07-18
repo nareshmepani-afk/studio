@@ -84,18 +84,16 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
   const canRecordOrUpload = hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
 
-  // State to hold the dynamically loaded FFmpeg module
   const [ffmpegApi, setFfmpegApi] = useState<typeof import('../../lib/ffmpeg') | null>(null);
 
-  // Effect to load the FFmpeg module once on client-side mount
   useEffect(() => {
     import('../../lib/ffmpeg')
           .then(module => {
               setFfmpegApi(module);
-              console.log("Dynamically loaded FFmpeg module promise resolved.");
+              console.log("Dynamically loaded FFmpeg module.");
           })
           .catch(error => {
-              console.error("Failed to dynamically load FFmpeg module promise:", error);
+              console.error("Failed to dynamically load FFmpeg module:", error);
           });
   }, []);
 
@@ -559,7 +557,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   }, [internalPreviewUrl, initialMedia?.previewUrl]);
 
   useEffect(() => {
-    if (rawPreviewReady) return; // Trimming logic only applies after raw preview is accepted
+    if (rawPreviewReady) return; 
     const mediaElement = mediaType === 'video' ? videoRef.current : audioPreviewRef.current;
     if (!mediaElement || !internalPreviewUrl || !(mediaDuration > 0)) return;
     const getPlaybackStartTime = () => latestTrimValuesRef.current.startTime; const getPlaybackEndTime = () => latestTrimValuesRef.current.endTime;
