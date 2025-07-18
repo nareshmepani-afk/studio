@@ -29,8 +29,10 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 
   isLoading = true;
   try {
+    // This dynamic import is still useful to avoid loading this heavy script on every page.
     const { createFFmpeg } = await import('@ffmpeg/ffmpeg');
 
+    // These paths MUST match the output paths in next.config.ts
     ffmpeg = createFFmpeg({
       log: true,
       corePath: '/static/ffmpeg/ffmpeg-core.js',
@@ -58,9 +60,15 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   let logOutput = "";
 
   try {
-      if (ffmpegInstance.FS('readdir', '/').includes(fileName)) {
-          ffmpegInstance.FS('unlink', fileName);
+      // Check if file exists and delete it to prevent errors on re-runs
+      try {
+        if (ffmpegInstance.FS('readdir', '/').includes(fileName)) {
+            ffmpegInstance.FS('unlink', fileName);
+        }
+      } catch (e) {
+        // FS might not be ready, or directory doesn't exist. Ignore.
       }
+      
       await ffmpegInstance.FS('writeFile', fileName, await fetchFile(mediaBlob));
       
       ffmpegInstance.setLogger(({ type, message }) => {
@@ -69,7 +77,8 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
           }
       });
       
-      await ffmpegInstance.run('-i', fileName);
+      // Use -v error and -f null to get metadata without transcoding
+      await ffmpegInstance.run('-i', fileName, '-f', 'null', '-');
 
       const durationMatch = logOutput.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
       
@@ -92,7 +101,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
             ffmpegInstance.FS('unlink', fileName);
           }
       } catch (e) {
-          console.warn(`Could not unlink file ${fileName} from FFmpeg FS, it might not exist.`);
+          // Ignore cleanup errors
       }
       ffmpegInstance.setLogger(() => {});
   }

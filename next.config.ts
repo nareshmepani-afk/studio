@@ -55,10 +55,6 @@ const nextConfig: NextConfig = {
       },
     });
 
-    config.module.rules.push({
-      test: /\.js$/,
-      resolve: { fullySpecified: false }
-    });
     // Fallbacks for node modules.
     if (!isServer) {
       config.resolve.fallback = {
