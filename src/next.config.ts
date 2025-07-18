@@ -39,7 +39,6 @@ const nextConfig: NextConfig = {
   },
   webpack: (config, { isServer }) => {
 
-    // Rule for .js and .wasm ffmpeg files (excluding the worker).
     config.module.rules.push({
       test: /ffmpeg-core\.(js|wasm)$/,
       type: "asset/resource",
@@ -48,32 +47,14 @@ const nextConfig: NextConfig = {
       },
     });
 
-    // Rule for ffmpeg-core.worker.js using asset/resource with importMeta: true.
-    // This is the critical fix for the `new URL(..., import.meta.url)` issue.
     config.module.rules.push({
       test: /ffmpeg-core\.worker\.js$/,
       type: "asset/resource",
       generator: {
         filename: "static/ffmpeg/[name][ext]",
-        importMeta: true, // Explicitly handle import.meta.url
       },
     });
 
-    // Rule for ffmpeg-core.worker.js using asset/resource with importMeta: true.
-    // This is the critical fix for the `new URL(..., import.meta.url)` issue.
-    config.module.rules.push({
-      test: /ffmpeg-core\.worker\.js$/,
-      type: "asset/resource",
-      generator: {
-        filename: "static/ffmpeg/[name][ext]",
-        path: false,
-        crypto: false,
-      };
-    }
-
-    return config;
-  },
-};
     // Fallbacks for node modules.
     if (!isServer) {
       config.resolve.fallback = {
@@ -82,5 +63,9 @@ const nextConfig: NextConfig = {
         crypto: false,
       };
     }
+
+    return config;
+  },
+};
 
 export default nextConfig;

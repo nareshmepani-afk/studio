@@ -24,7 +24,7 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
             if (!ffmpeg) {
                 reject(new Error("FFmpeg loading timed out."));
             }
-        }, 15000);
+        }, 30000); // Increased timeout for slower networks
     });
   }
 
@@ -36,10 +36,11 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
     ffmpeg = createFFmpeg({
       log: true,
       // Explicitly provide paths to the core files.
-      // These files must be copied from node_modules/@ffmpeg/core/dist to the public/ffmpeg folder.
-      corePath: '/ffmpeg/ffmpeg-core.js',
-      workerPath: '/ffmpeg/ffmpeg-core.worker.js',
-      wasmPath: '/ffmpeg/ffmpeg-core.wasm',
+      // These files are copied to the /public/ffmpeg folder.
+      // Webpack handles serving them from /_next/static/ffmpeg
+      corePath: '/static/ffmpeg/ffmpeg-core.js',
+      workerPath: '/static/ffmpeg/ffmpeg-core.worker.js',
+      wasmPath: '/static/ffmpeg/ffmpeg-core.wasm',
     });
 
     await ffmpeg.load();
@@ -67,6 +68,9 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   let logOutput = "";
 
   try {
+      if (ffmpegInstance.FS('readdir', '/').includes(fileName)) {
+          ffmpegInstance.FS('unlink', fileName);
+      }
       await ffmpegInstance.FS('writeFile', fileName, await fetchFile(mediaBlob));
       
       ffmpegInstance.setLogger(({ type, message }) => {
