@@ -59,10 +59,13 @@ const nextConfig: NextConfig = {
       },
     });
 
-    // Fallbacks for node modules.
-    if (!isServer) {
-      config.resolve.fallback = {
-        fs: false,
+    // Rule for ffmpeg-core.worker.js using asset/resource with importMeta: true.
+    // This is the critical fix for the `new URL(..., import.meta.url)` issue.
+    config.module.rules.push({
+      test: /ffmpeg-core\.worker\.js$/,
+      type: "asset/resource",
+      generator: {
+        filename: "static/ffmpeg/[name][ext]",
         path: false,
         crypto: false,
       };
@@ -71,5 +74,13 @@ const nextConfig: NextConfig = {
     return config;
   },
 };
+    // Fallbacks for node modules.
+    if (!isServer) {
+      config.resolve.fallback = {
+        fs: false,
+        path: false,
+        crypto: false,
+      };
+    }
 
 export default nextConfig;
