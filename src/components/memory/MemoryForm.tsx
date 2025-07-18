@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { MediaCaptureControl } from './MediaRecorder';
 import { MemoryCard } from './MemoryCard';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -27,7 +26,15 @@ import {
 import { formatSecondsToTime } from '@/lib/utils';
 import { countryOptions } from '@/lib/constants';
 import { mockPromptGroups } from '@/lib/mockData';
+import dynamic from 'next/dynamic';
 
+const MediaCaptureControl = dynamic(
+  () => import('./MediaRecorder').then((mod) => mod.MediaCaptureControl),
+  { 
+    ssr: false,
+    loading: () => <div className="flex items-center justify-center h-48"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+  }
+);
 
 interface MemoryFormProps {
   memory?: Memory;
@@ -471,7 +478,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
               <CardHeader><CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>{!(currentMedia && currentMediaPreviewUrl) && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}</CardHeader>
               <CardContent>
                   <MediaCaptureControl
-                      key={`${hostPassStatus}-${initialMediaForRecorderProp?.previewUrl || 'new'}-${initialMediaForRecorderProp?.startTime?.toString() || 's0'}-${initialMediaForRecorderProp?.endTime?.toString() || 'e0'}`}
+                      key={`${hostPassStatus}-${initialMediaForRecorderProp?.previewUrl || 'new'}-${initialMediaForRecorderProp?.startTime?.toString() || 's0'}-${initialMediaForRecorder_prop?.endTime?.toString() || 'e0'}`}
                       onMediaReady={handleMediaReady}
                       onDiscard={handleMediaDiscardFromChild}
                       initialMedia={initialMediaForRecorderProp}

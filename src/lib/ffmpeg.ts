@@ -2,6 +2,7 @@
 // src/lib/ffmpeg.ts
 import type { FFmpeg } from '@ffmpeg/ffmpeg';
 
+import { toBlobURL } from '@ffmpeg/util'; // Import toBlobURL
 let ffmpeg: FFmpeg | null = null;
 let isLoading = false;
 
@@ -32,10 +33,13 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
     // This dynamic import is still useful to avoid loading this heavy script on every page.
     const { createFFmpeg } = await import('@ffmpeg/ffmpeg');
 
-    // These paths MUST match the output paths in next.config.ts
+    // Use document.location.origin to get the base URL of your application
+    // The files are located in the public/ffmpeg/ directory
+    const baseURL = `${document.location.origin}/ffmpeg`;
+
     ffmpeg = createFFmpeg({
       log: true,
-      corePath: '/static/ffmpeg/ffmpeg-core.js',
+      corePath: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
       workerPath: '/static/ffmpeg/ffmpeg-core.worker.js',
       wasmPath: '/static/ffmpeg/ffmpeg-core.wasm',
     });
