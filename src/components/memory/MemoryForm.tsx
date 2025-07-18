@@ -374,7 +374,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         size: currentMedia.size,
       }];
     } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
-        mediaAttachmentsForSubmission = []; 
+        mediaAttachmentsForSubmission = undefined; 
     }
     
     const finalPromptIdToSave = initialPromptId || memory?.promptId || undefined;
@@ -470,28 +470,14 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             <Card className="w-full">
               <CardHeader><CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>{!(currentMedia && currentMediaPreviewUrl) && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}</CardHeader>
               <CardContent>
-                  {currentMedia && currentMediaPreviewUrl ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between"><p className="text-sm font-medium flex items-center"><Paperclip className="mr-2 h-5 w-5 inline-block" />Attached Media</p></div>
-                      <p className="text-sm text-muted-foreground">Type: {currentMedia.type}</p>
-                      <p className="text-sm text-muted-foreground">Filename: {currentMedia.file.name}</p>
-                      {currentMedia.type === 'video' && (<video ref={videoPreviewRef} src={currentMediaPreviewUrl} controls className="w-full aspect-video rounded-md mt-2 bg-muted object-cover" key={currentMediaPreviewUrl} preload="metadata"/>)}
-                      {currentMedia.type === 'audio' && (<audio ref={audioPreviewRef} src={currentMediaPreviewUrl} controls className="w-full mt-2" key={currentMediaPreviewUrl} preload="metadata"/>)}
-                      <p className="text-sm text-muted-foreground mt-1">Duration: {formatSecondsToTime(currentMedia.duration)}</p>
-                      {currentMedia.startTime !== undefined && <p className="text-sm text-muted-foreground">Trim Start: {formatSecondsToTime(currentMedia.startTime)}</p>}
-                      {(currentMedia.endTime !== undefined && currentMedia.duration !== undefined && Math.abs(currentMedia.duration - currentMedia.endTime) > 0.01) && <p className="text-sm text-muted-foreground">Trim End: {formatSecondsToTime(currentMedia.endTime)}</p>}
-                      <Button variant="outline" type="button" onClick={handleMediaDiscardInForm} className="w-full mt-2">Change Media or Re-trim</Button>
-                    </div>
-                  ) : (
-                    <MediaCaptureControl
-                        key={`${hostPassStatus}-${initialMediaForRecorderProp?.previewUrl || 'new'}-${initialMediaForRecorderProp?.startTime?.toString() || 's0'}-${initialMediaForRecorderProp?.endTime?.toString() || 'e0'}`}
-                        onMediaReady={handleMediaReady}
-                        onDiscard={handleMediaDiscardFromChild}
-                        initialMedia={initialMediaForRecorderProp}
-                        promptIdForTeleprompter={currentPromptIdForTeleprompter}
-                        chapterTitleForTeleprompter={title}
-                    />
-                  )}
+                  <MediaCaptureControl
+                      key={`${hostPassStatus}-${initialMediaForRecorderProp?.previewUrl || 'new'}-${initialMediaForRecorderProp?.startTime?.toString() || 's0'}-${initialMediaForRecorderProp?.endTime?.toString() || 'e0'}`}
+                      onMediaReady={handleMediaReady}
+                      onDiscard={handleMediaDiscardFromChild}
+                      initialMedia={initialMediaForRecorderProp}
+                      promptIdForTeleprompter={currentPromptIdForTeleprompter}
+                      chapterTitleForTeleprompter={title}
+                  />
               </CardContent>
             </Card>
           </CarouselItem>
@@ -515,4 +501,3 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     </form>
   );
 }
-
