@@ -35,6 +35,8 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 
     ffmpeg = createFFmpeg({
       log: true,
+      // Explicitly provide paths to the core files.
+      // These files must be copied from node_modules/@ffmpeg/core/dist to the public/ffmpeg folder.
       corePath: '/ffmpeg/ffmpeg-core.js',
       workerPath: '/ffmpeg/ffmpeg-core.worker.js',
       wasmPath: '/ffmpeg/ffmpeg-core.wasm',
