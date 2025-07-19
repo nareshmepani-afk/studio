@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  transpilePackages: ['@ffmpeg/ffmpeg'],
   images: {
     remotePatterns: [
       {
