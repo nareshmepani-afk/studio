@@ -17,6 +17,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { mockPromptGroups } from '@/lib/mockData';
 import type { MediaAttachment } from '@/types';
+import { getFFmpegInstance, getDurationWithFFmpeg, trimMediaWithFFmpeg } from '@/lib/ffmpeg';
+
 
 // Maximum duration constants (in seconds)
 const MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS = 300; // 5 minutes for raw recording
@@ -79,22 +81,32 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   const [rawPreviewReady, setRawPreviewReady] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [verificationStatusText, setVerificationStatusText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatusText, setProcessingStatusText] = useState('');
 
   const canRecordOrUpload = hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
 
-  const [ffmpegApi, setFfmpegApi] = useState<typeof import('../../lib/ffmpeg') | null>(null);
+  const [isFFmpegReady, setIsFFmpegReady] = useState(false);
 
   useEffect(() => {
-    import('../../lib/ffmpeg')
-          .then(module => {
-              setFfmpegApi(module);
-              console.log("Dynamically loaded FFmpeg module.");
-          })
-          .catch(error => {
-              console.error("Failed to dynamically load FFmpeg module:", error);
-          });
+    // Preload FFmpeg as soon as the component mounts
+    setProcessingStatusText('Initializing media tools...');
+    getFFmpegInstance()
+      .then(() => {
+        setIsFFmpegReady(true);
+        setProcessingStatusText('');
+        console.log("FFmpeg is ready for use in MediaRecorder.");
+      })
+      .catch(error => {
+        console.error("FFmpeg failed to initialize in MediaRecorder:", error);
+        toast({
+          title: "Media Tools Failed",
+          description: "Could not load media processing tools. Trimming may be unavailable.",
+          variant: "destructive",
+          duration: 10000,
+        });
+        setProcessingStatusText('Media tools failed to load');
+      });
   }, []);
 
   useEffect(() => { latestTrimValuesRef.current = { startTime, endTime }; }, [startTime, endTime]);
@@ -395,16 +407,16 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       return;
     }
     
-    if (!ffmpegApi) {
+    if (!isFFmpegReady) {
       toast({variant: 'destructive', title: 'Tools Not Ready', description: 'Video processing tools are still loading. Please try again in a moment.'});
       return;
     }
 
-    setIsVerifying(true);
-    setVerificationStatusText('Analyzing media... (this may take a moment)');
+    setIsProcessing(true);
+    setProcessingStatusText('Analyzing media... (this may take a moment)');
 
     try {
-      const duration = await ffmpegApi.getDurationWithFFmpeg(recordedFile);
+      const duration = await getDurationWithFFmpeg(recordedFile);
       processDuration(duration);
     } catch (error) {
       console.error("Error getting media duration with FFmpeg:", error);
@@ -412,9 +424,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       handleDiscardMedia(false);
     }
 
-    setIsVerifying(false);
-    setVerificationStatusText('');
-  }, [recordedFile, mediaType, checkStorageQuota, handleDiscardMedia, ffmpegApi]);
+    setIsProcessing(false);
+    setProcessingStatusText('');
+  }, [recordedFile, mediaType, checkStorageQuota, handleDiscardMedia, isFFmpegReady]);
 
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -492,35 +504,68 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
     } finally { setIsLoadingSample(false); setSampleLoadingType(null); }
   };
 
-  const handleUseMedia = () => {
-    if (!checkHostPass()) return;
-    const currentStartTime = latestTrimValuesRef.current.startTime; const currentEndTime = latestTrimValuesRef.current.endTime;
-    if (currentStartTime > currentEndTime && currentEndTime > 0) { setTimeout(() => toast({ title: "Invalid Trim: Start after End", variant: "destructive" }), 0); return; }
-    if (currentStartTime === currentEndTime && currentStartTime >= 0 && mediaDuration > 0 ) { setTimeout(() => toast({ title: "Invalid Trim: Start equals End, or zero duration segment", variant: "destructive" }), 0); return; }
-    if (currentEndTime > mediaDuration && mediaDuration > 0) { setTimeout(() => toast({ title: "Invalid End Time", description: `End (${formatSecondsToTime(currentEndTime)}) > duration (${formatSecondsToTime(mediaDuration)}).`, variant: "destructive" }), 0); return; }
-
+  const handleUseMedia = async () => {
+    if (!checkHostPass() || !isFFmpegReady) {
+      if (!isFFmpegReady) toast({ title: "Media Tools Not Ready", description: "Please wait for media tools to initialize.", variant: "destructive" });
+      return;
+    }
+  
+    const currentStartTime = latestTrimValuesRef.current.startTime;
+    const currentEndTime = latestTrimValuesRef.current.endTime;
+  
+    if (currentStartTime >= currentEndTime && currentEndTime > 0) {
+      toast({ title: "Invalid Trim: Start time must be before end time", variant: "destructive" });
+      return;
+    }
+    if (currentEndTime > mediaDuration && mediaDuration > 0) {
+      toast({ title: "Invalid End Time", description: `End (${formatSecondsToTime(currentEndTime)}) > duration (${formatSecondsToTime(mediaDuration)}).`, variant: "destructive" });
+      return;
+    }
+  
     const selectedSegmentDuration = currentEndTime - currentStartTime;
     const currentMaxTrimmedDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
-
+  
     if (selectedSegmentDuration > currentMaxTrimmedDuration) {
-      setTimeout(() => toast({ title: `Trimmed ${mediaType} Exceeds Limit`, description: `Selected segment is ${formatSecondsToTime(selectedSegmentDuration)}. Max allowed is ${formatSecondsToTime(currentMaxTrimmedDuration)}. Please trim further.`, variant: "destructive", duration: 10000 }), 0); return;
+      toast({ title: `Trimmed ${mediaType} Exceeds Limit`, description: `Selected segment is ${formatSecondsToTime(selectedSegmentDuration)}. Max allowed is ${formatSecondsToTime(currentMaxTrimmedDuration)}. Please trim further.`, variant: "destructive", duration: 10000 });
+      return;
     }
-    if (selectedSegmentDuration <= 0 && mediaDuration > 0) {
-       setTimeout(() => toast({ title: "Invalid Trim", description: "Selected segment has zero or negative duration. Please adjust trim.", variant: "destructive" }), 0); return;
+  
+    if (!recordedFile) {
+      toast({ title: "No Media File", description: "Please record or upload media first.", variant: "destructive" });
+      return;
     }
-
-    if (recordedFile && mediaType && (mediaDuration > 0 || (mediaDuration === 0 && currentStartTime === 0 && currentEndTime ===0) )) {
-      onMediaReady({ file: recordedFile, type: mediaType, startTime: currentStartTime, endTime: currentEndTime, duration: mediaDuration, size: mediaSize });
-      const isTrimmed = (currentStartTime > 0.01) || (mediaDuration && Math.abs(currentEndTime - mediaDuration) > 0.01 && currentEndTime < mediaDuration);
-      let toastDesc = isTrimmed ? `Media selected, trimmed: ${formatSecondsToTime(currentStartTime)} to ${formatSecondsToTime(currentEndTime)}.` : "Media selected.";
-      setTimeout(() => toast({ title: "Media Ready", description: toastDesc, icon: <CheckCircle className="h-4 w-4" /> }), 0);
-    } else if (!recordedFile && initialMedia && mediaType) {
-      const placeholderFile = new File([], initialMedia.previewUrl.split('/').pop() || "existing_media_placeholder", {type: mediaType === "video" ? "video/mp4" : "audio/mp3"});
-      onMediaReady({ file: placeholderFile, type: mediaType, startTime: currentStartTime, endTime: currentEndTime, duration: mediaDuration, size: mediaSize });
-      const isTrimmed = (currentStartTime > 0.01) || (mediaDuration && Math.abs(currentEndTime - mediaDuration) > 0.01 && currentEndTime < mediaDuration);
-      let toastDesc = isTrimmed ? `Existing media trim updated: ${formatSecondsToTime(currentStartTime)} to ${formatSecondsToTime(currentEndTime)}.` : (mediaDuration > 0 ? "Existing media used in full." : "Existing media re-selected.");
-       setTimeout(() => toast({ title: "Media Updated", description: toastDesc, icon: <CheckCircle className="h-4 w-4" /> }), 0);
-    } else { setTimeout(() => toast({ title: "Media Not Ready", description: "Please record or upload valid media before proceeding.", variant: "destructive" }), 0); }
+  
+    setIsProcessing(true);
+    try {
+      setProcessingStatusText('Trimming media...');
+      const trimmedBlob = await trimMediaWithFFmpeg(recordedFile, currentStartTime, currentEndTime);
+      setProcessingStatusText('Verifying trimmed media...');
+      const newDuration = await getDurationWithFFmpeg(trimmedBlob);
+  
+      if (!checkStorageQuota(trimmedBlob.size)) {
+        return; // checkStorageQuota shows its own toast
+      }
+  
+      const newFile = new File([trimmedBlob], `trimmed_${recordedFile.name}`, { type: trimmedBlob.type });
+  
+      onMediaReady({
+        file: newFile,
+        type: mediaType!,
+        startTime: 0, // After trimming, the new media starts at 0
+        endTime: newDuration,
+        duration: newDuration,
+        size: newFile.size,
+      });
+  
+      toast({ title: "Media Trimmed and Ready!", description: `Final duration: ${formatSecondsToTime(newDuration)}.`, icon: <CheckCircle className="h-4 w-4" /> });
+  
+    } catch (error) {
+      console.error("Error during media processing:", error);
+      toast({ title: "Processing Failed", description: "Could not trim the media. Please try again.", variant: "destructive" });
+    } finally {
+      setIsProcessing(false);
+      setProcessingStatusText('');
+    }
   };
 
   useEffect(() => {
@@ -627,11 +672,11 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
             {rawPreviewReady && (
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                <Button onClick={handleAcceptRawRecording} className="w-full sm:w-auto flex-1" aria-label="Accept this recording and proceed to trimming" disabled={isVerifying || !ffmpegApi}>
-                  {isVerifying || !ffmpegApi ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
-                  {!ffmpegApi ? "Loading tools..." : (verificationStatusText || 'Accept Recording')}
+                <Button onClick={handleAcceptRawRecording} className="w-full sm:w-auto flex-1" aria-label="Accept this recording and proceed to trimming" disabled={isProcessing || !isFFmpegReady}>
+                  {isProcessing || !isFFmpegReady ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+                  {!isFFmpegReady ? "Loading tools..." : (processingStatusText || 'Accept Recording')}
                 </Button>
-                <Button onClick={() => handleDiscardMedia(true)} variant="outline" className="w-full sm:w-auto flex-1" aria-label="Discard current recording and re-do" disabled={isVerifying}><RotateCcw className="mr-2 h-4 w-4" /> Discard & Re-do</Button>
+                <Button onClick={() => handleDiscardMedia(true)} variant="outline" className="w-full sm:w-auto flex-1" aria-label="Discard current recording and re-do" disabled={isProcessing}><RotateCcw className="mr-2 h-4 w-4" /> Discard & Re-do</Button>
               </div>
             )}
 
@@ -646,8 +691,11 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
             {!rawPreviewReady && (
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                <Button onClick={handleUseMedia} className="w-full sm:w-auto flex-1" disabled={!mediaType || mediaDuration === 0 || !canRecordOrUpload} aria-label="Use this media"><CheckCircle className="mr-2 h-4 w-4" /> Use Media</Button>
-                <Button onClick={() => handleDiscardMedia(true)} variant="outline" className="w-full sm:w-auto flex-1" aria-label="Discard current media and re-do"><RotateCcw className="mr-2 h-4 w-4" /> Discard & Re-do</Button>
+                <Button onClick={handleUseMedia} className="w-full sm:w-auto flex-1" disabled={isProcessing || !mediaType || !recordedFile || mediaDuration === 0 || !canRecordOrUpload || !isFFmpegReady} aria-label="Trim and Use this Media">
+                  {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />} 
+                  {processingStatusText || 'Trim & Use Media'}
+                </Button>
+                <Button onClick={() => handleDiscardMedia(true)} variant="outline" className="w-full sm:w-auto flex-1" aria-label="Discard current media and re-do" disabled={isProcessing}><RotateCcw className="mr-2 h-4 w-4" /> Discard & Re-do</Button>
               </div>
             )}
              

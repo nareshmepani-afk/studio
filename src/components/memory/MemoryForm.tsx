@@ -478,7 +478,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
               <CardHeader><CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>{!(currentMedia && currentMediaPreviewUrl) && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}</CardHeader>
               <CardContent>
                   <MediaCaptureControl
-                      key={`${hostPassStatus}-${initialMediaForRecorderProp?.previewUrl || 'new'}-${initialMediaForRecorderProp?.startTime?.toString() || 's0'}-${initialMediaForRecorderProp?.endTime?.toString() || 'e0'}`}
+                      key={`${hostPassStatus}-${initialMediaForRecorderProp?.previewUrl || 'new'}`}
                       onMediaReady={handleMediaReady}
                       onDiscard={handleMediaDiscardFromChild}
                       initialMedia={initialMediaForRecorderProp}

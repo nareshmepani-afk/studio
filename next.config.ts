@@ -37,23 +37,6 @@ const nextConfig: NextConfig = {
   //  ],
   //},
   webpack: (config, { isServer }) => {
-
-    config.module.rules.push({
-      test: /ffmpeg-core\.(js|wasm)$/,
-      type: "asset/resource",
-      generator: {
-        filename: "static/ffmpeg/[name][ext]",
-      },
-    });
-
-    config.module.rules.push({
-      test: /ffmpeg-core\.worker\.js$/,
-      type: "asset/resource",
-      generator: {
-        filename: "static/ffmpeg/[name][ext]",
-      },
-    });
-
     // Fallbacks for node modules.
     if (!isServer) {
       config.resolve.fallback = {
