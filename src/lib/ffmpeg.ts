@@ -1,10 +1,9 @@
 // src/lib/ffmpeg.ts
-// This file handles loading ffmpeg.wasm from a CDN and providing helper functions.
+// This file handles loading self-hosted ffmpeg.wasm files and providing helper functions.
 
 // Define a minimal interface for the parts of FFmpeg we use
-// This avoids needing a full type definition for the CDN-loaded script
 interface FFmpeg {
-  load: () => Promise<void>;
+  load: (config: any) => Promise<void>;
   FS: (method: 'writeFile' | 'readFile' | 'unlink', ...args: any[]) => any;
   run: (...args: string[]) => Promise<void>;
   setLogger: (logger: ({ type, message }: { type: string; message: string; }) => void) => void;
@@ -21,26 +20,26 @@ declare global {
   }
 }
 
-const FFMPEG_CDN_URL = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js';
+const FFMPEG_SCRIPT_URL = '/ffmpeg/ffmpeg.min.js'; // Path to self-hosted script in /public
 let ffmpegInstance: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
-// Function to load the FFmpeg script from the CDN
+// Function to load the FFmpeg script from the /public directory
 function loadFFmpegScript(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (window.FFmpeg) {
       console.log("FFmpeg script already loaded.");
       return resolve();
     }
-    console.log("Loading FFmpeg script from CDN...");
+    console.log("Loading FFmpeg script from local public path...");
     const script = document.createElement('script');
-    script.src = FFMPEG_CDN_URL;
+    script.src = FFMPEG_SCRIPT_URL;
     script.onload = () => {
-      console.log("FFmpeg script loaded successfully from CDN.");
+      console.log("FFmpeg script loaded successfully from local public path.");
       resolve();
     };
     script.onerror = () => {
-      console.error("Failed to load FFmpeg script from CDN.");
+      console.error("Failed to load FFmpeg script from local public path. Ensure ffmpeg.min.js is in /public/ffmpeg/.");
       reject(new Error('Failed to load FFmpeg script.'));
     };
     document.head.appendChild(script);
@@ -61,17 +60,21 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       await loadFFmpegScript();
       
       const { createFFmpeg } = window.FFmpeg;
+      // All paths are relative to the root of the public directory
       const ffmpeg = createFFmpeg({
-        // No need to specify corePath etc. when loaded from this CDN version
+        corePath: '/ffmpeg/ffmpeg-core.js',
         log: true,
       });
 
-      await ffmpeg.load();
-      console.log("FFmpeg core loaded and initialized.");
+      await ffmpeg.load({
+         workerPath: '/ffmpeg/ffmpeg-core.worker.js',
+         wasmPath: '/ffmpeg/ffmpeg-core.wasm'
+      });
+      console.log("FFmpeg core loaded and initialized from self-hosted files.");
       ffmpegInstance = ffmpeg;
       resolve(ffmpegInstance);
     } catch (error) {
-      console.error("Error initializing FFmpeg:", error);
+      console.error("Error initializing self-hosted FFmpeg:", error);
       ffmpegLoadingPromise = null;
       reject(error);
     }
