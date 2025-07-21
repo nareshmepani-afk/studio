@@ -1,3 +1,4 @@
+
 // src/lib/ffmpeg.ts
 // This file handles loading self-hosted ffmpeg.wasm files and providing helper functions.
 
@@ -62,11 +63,13 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       const { createFFmpeg } = window.FFmpeg;
       // All paths are relative to the root of the public directory
       const ffmpeg = createFFmpeg({
-        corePath: '/ffmpeg/ffmpeg-core.js',
-        log: true,
+        // Do NOT include `log: true` in production, it's very verbose.
+        // log: true,
       });
 
       await ffmpeg.load({
+         // These paths must match the location in your /public directory
+         corePath: '/ffmpeg/ffmpeg-core.js',
          workerPath: '/ffmpeg/ffmpeg-core.worker.js',
          wasmPath: '/ffmpeg/ffmpeg-core.wasm'
       });
