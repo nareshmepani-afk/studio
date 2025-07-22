@@ -18,6 +18,7 @@ import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/te
 import { mockPromptGroups } from '@/lib/mockData';
 import type { MediaAttachment } from '@/types';
 import { getFFmpegInstance, getDurationWithFFmpeg, trimMediaWithFFmpeg } from '@/lib/ffmpeg';
+import useScript from '@/hooks/useScript'; // Import the hook
 
 
 // Maximum duration constants (in seconds)
@@ -79,26 +80,36 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
   const [currentRecordingDuration, setCurrentRecordingDuration] = useState(0);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const [rawPreviewReady, setRawPreviewReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatusText, setProcessingStatusText] = useState('');
 
   const canRecordOrUpload = hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
 
-  const [isFFmpegReady, setIsFFmpegReady] = useState(false);
+  // Use the hook to load the FFmpeg script from CDN
+  const ffmpegScriptLoaded = useScript('https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js');
+  const [isFFmpegInstanceReady, setIsFFmpegInstanceReady] = useState(false);
+
 
   useEffect(() => {
-    // Preload FFmpeg as soon as the component mounts
+    // Only attempt to get the FFmpeg instance if the script is loaded
+    if (!ffmpegScriptLoaded) {
+        setProcessingStatusText('Loading media tools script...');
+        setIsFFmpegInstanceReady(false);
+        return;
+    }
+    if (isFFmpegInstanceReady) return; // Prevent re-initialization
+
     setProcessingStatusText('Initializing media tools...');
     getFFmpegInstance()
       .then(() => {
-        setIsFFmpegReady(true);
+        setIsFFmpegInstanceReady(true);
         setProcessingStatusText('');
-        console.log("FFmpeg is ready for use in MediaRecorder.");
+        console.log("FFmpeg instance is ready for use in MediaRecorder.");
       })
       .catch(error => {
-        console.error("FFmpeg failed to initialize in MediaRecorder:", error);
+        console.error("FFmpeg instance failed to initialize in MediaRecorder:", error.message, error.stack);
         toast({
           title: "Media Tools Failed",
           description: "Could not load media processing tools. Trimming may be unavailable.",
@@ -106,8 +117,10 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
           duration: 10000,
         });
         setProcessingStatusText('Media tools failed to load');
+        setIsFFmpegInstanceReady(false); // Ensure state is false on failure
       });
-  }, []);
+  }, [ffmpegScriptLoaded, isFFmpegInstanceReady]);
+
 
   useEffect(() => { latestTrimValuesRef.current = { startTime, endTime }; }, [startTime, endTime]);
 
@@ -407,7 +420,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
       return;
     }
     
-    if (!isFFmpegReady) {
+    if (!isFFmpegInstanceReady) {
       toast({variant: 'destructive', title: 'Tools Not Ready', description: 'Video processing tools are still loading. Please try again in a moment.'});
       return;
     }
@@ -426,7 +439,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
     setIsProcessing(false);
     setProcessingStatusText('');
-  }, [recordedFile, mediaType, checkStorageQuota, handleDiscardMedia, isFFmpegReady]);
+  }, [recordedFile, mediaType, checkStorageQuota, handleDiscardMedia, isFFmpegInstanceReady]);
 
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -505,8 +518,8 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   };
 
   const handleUseMedia = async () => {
-    if (!checkHostPass() || !isFFmpegReady) {
-      if (!isFFmpegReady) toast({ title: "Media Tools Not Ready", description: "Please wait for media tools to initialize.", variant: "destructive" });
+    if (!checkHostPass() || !isFFmpegInstanceReady) {
+      if (!isFFmpegInstanceReady) toast({ title: "Media Tools Not Ready", description: "Please wait for media tools to initialize.", variant: "destructive" });
       return;
     }
   
@@ -614,6 +627,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   }, [internalPreviewUrl, mediaType, mediaDuration, videoRef, audioPreviewRef, startTime, rawPreviewReady]);
 
   const currentFinalMaxDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
+  const isReady = isFFmpegInstanceReady && canRecordOrUpload;
 
   return (
     <Card>
@@ -624,15 +638,15 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
         {!internalPreviewUrl && !isRecording && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-             <Button onClick={() => handleStartRecording('video')} variant="outline" className="w-full py-6" disabled={isRecording || hasCameraPermission === false || !canRecordOrUpload} aria-label="Start video recording"><Video className="mr-2 h-5 w-5" /> Start Video</Button>
-             <Button onClick={() => handleStartRecording('audio')} variant="outline" className="w-full py-6" disabled={isRecording || hasCameraPermission === false || !canRecordOrUpload} aria-label="Start audio recording"><Mic className="mr-2 h-5 w-5" /> Start Audio</Button>
+             <Button onClick={() => handleStartRecording('video')} variant="outline" className="w-full py-6" disabled={!isReady || isRecording || hasCameraPermission === false} aria-label="Start video recording"><Video className="mr-2 h-5 w-5" /> Start Video</Button>
+             <Button onClick={() => handleStartRecording('audio')} variant="outline" className="w-full py-6" disabled={!isReady || isRecording || hasCameraPermission === false} aria-label="Start audio recording"><Mic className="mr-2 h-5 w-5" /> Start Audio</Button>
             <div className="md:col-span-3">
               <Label htmlFor="media-upload" className="sr-only">Upload media file</Label>
               <div className="flex items-center justify-center w-full">
-                <label htmlFor="media-upload" className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg ${canRecordOrUpload ? 'cursor-pointer bg-muted hover:bg-secondary' : 'bg-muted/50 cursor-not-allowed'}`}><div className="flex flex-col items-center justify-center pt-5 pb-6"><UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" /><p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or D&D</p><p className="text-xs text-muted-foreground">Video (max {formatSecondsToTime(MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS)}) / Audio (max {formatSecondsToTime(MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS)})</p></div><Input id="media-upload" type="file" className="hidden" onChange={handleFileUpload} accept="video/*,audio/*" disabled={isRecording || !canRecordOrUpload} aria-label="Upload video or audio file" /></label>
+                <label htmlFor="media-upload" className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg ${isReady ? 'cursor-pointer bg-muted hover:bg-secondary' : 'bg-muted/50 cursor-not-allowed'}`}><div className="flex flex-col items-center justify-center pt-5 pb-6"><UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" /><p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or D&D</p><p className="text-xs text-muted-foreground">Video (max {formatSecondsToTime(MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS)}) / Audio (max {formatSecondsToTime(MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS)})</p></div><Input id="media-upload" type="file" className="hidden" onChange={handleFileUpload} accept="video/*,audio/*" disabled={!isReady || isRecording} aria-label="Upload video or audio file" /></label>
               </div>
             </div>
-            <div className="md:col-span-3 pt-2 border-t"><p className="text-sm text-muted-foreground mb-2 text-center">Or, load a sample to test:</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-2"><Button onClick={() => handleLoadSampleMedia('video')} variant="secondary" size="sm" disabled={isLoadingSample || !canRecordOrUpload} aria-label="Load sample video">{isLoadingSample && sampleLoadingType === 'video' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}Sample Video</Button><Button onClick={() => handleLoadSampleMedia('audio')} variant="secondary" size="sm" disabled={isLoadingSample || !canRecordOrUpload} aria-label="Load sample audio">{isLoadingSample && sampleLoadingType === 'audio' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Waves className="mr-2 h-4 w-4" />}Sample Audio</Button></div></div>
+            <div className="md:col-span-3 pt-2 border-t"><p className="text-sm text-muted-foreground mb-2 text-center">Or, load a sample to test:</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-2"><Button onClick={() => handleLoadSampleMedia('video')} variant="secondary" size="sm" disabled={!isReady || isLoadingSample} aria-label="Load sample video">{isLoadingSample && sampleLoadingType === 'video' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}Sample Video</Button><Button onClick={() => handleLoadSampleMedia('audio')} variant="secondary" size="sm" disabled={!isReady || isLoadingSample} aria-label="Load sample audio">{isLoadingSample && sampleLoadingType === 'audio' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Waves className="mr-2 h-4 w-4" />}Sample Audio</Button></div></div>
           </div>
         )}
 
@@ -672,9 +686,9 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
             {rawPreviewReady && (
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                <Button onClick={handleAcceptRawRecording} className="w-full sm:w-auto flex-1" aria-label="Accept this recording and proceed to trimming" disabled={isProcessing || !isFFmpegReady}>
-                  {isProcessing || !isFFmpegReady ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
-                  {!isFFmpegReady ? "Loading tools..." : (processingStatusText || 'Accept Recording')}
+                <Button onClick={handleAcceptRawRecording} className="w-full sm:w-auto flex-1" aria-label="Accept this recording and proceed to trimming" disabled={isProcessing || !isFFmpegInstanceReady}>
+                  {isProcessing || !isFFmpegInstanceReady ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+                  {!isFFmpegInstanceReady ? "Loading tools..." : (processingStatusText || 'Accept Recording')}
                 </Button>
                 <Button onClick={() => handleDiscardMedia(true)} variant="outline" className="w-full sm:w-auto flex-1" aria-label="Discard current recording and re-do" disabled={isProcessing}><RotateCcw className="mr-2 h-4 w-4" /> Discard & Re-do</Button>
               </div>
@@ -691,7 +705,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
 
             {!rawPreviewReady && (
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                <Button onClick={handleUseMedia} className="w-full sm:w-auto flex-1" disabled={isProcessing || !mediaType || !recordedFile || mediaDuration === 0 || !canRecordOrUpload || !isFFmpegReady} aria-label="Trim and Use this Media">
+                <Button onClick={handleUseMedia} className="w-full sm:w-auto flex-1" disabled={isProcessing || !mediaType || !recordedFile || mediaDuration === 0 || !canRecordOrUpload || !isFFmpegInstanceReady} aria-label="Trim and Use this Media">
                   {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />} 
                   {processingStatusText || 'Trim & Use Media'}
                 </Button>
@@ -699,7 +713,7 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
               </div>
             )}
              
-            <div className="mt-6 pt-4 border-t"><p className="text-sm text-muted-foreground mb-2 text-center">Or, load a different sample:</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-2"><Button onClick={() => handleLoadSampleMedia('video')} variant="secondary" size="sm" disabled={isLoadingSample || !canRecordOrUpload} aria-label="Load different sample video">{isLoadingSample && sampleLoadingType === 'video' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}Load Sample Video</Button><Button onClick={() => handleLoadSampleMedia('audio')} variant="secondary" size="sm" disabled={isLoadingSample || !canRecordOrUpload} aria-label="Load different sample audio">{isLoadingSample && sampleLoadingType === 'audio' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Waves className="mr-2 h-4 w-4" />}Load Sample Audio</Button></div></div>
+            <div className="mt-6 pt-4 border-t"><p className="text-sm text-muted-foreground mb-2 text-center">Or, load a different sample:</p><div className="grid grid-cols-1 sm:grid-cols-2 gap-2"><Button onClick={() => handleLoadSampleMedia('video')} variant="secondary" size="sm" disabled={!isReady || isLoadingSample} aria-label="Load different sample video">{isLoadingSample && sampleLoadingType === 'video' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Film className="mr-2 h-4 w-4" />}Load Sample Video</Button><Button onClick={() => handleLoadSampleMedia('audio')} variant="secondary" size="sm" disabled={!isReady || isLoadingSample} aria-label="Load different sample audio">{isLoadingSample && sampleLoadingType === 'audio' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Waves className="mr-2 h-4 w-4" />}Load Sample Audio</Button></div></div>
           </div>
         )}
 
