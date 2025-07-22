@@ -1,3 +1,4 @@
+
 // src/lib/ffmpeg.ts
 // This file handles loading ffmpeg.wasm files from a CDN and providing helper functions.
 
@@ -196,7 +197,7 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
         const data = ffmpeg.FS('readFile', outputFilename);
         const trimmedBlob = new Blob([data.buffer], { type: mediaBlob.type });
 
-        console.log(`Media successfully trimmed. New size: ${(trimmedBlob.size / (1024*1024)).toFixed(2)} MB`);
+        console.log("Media successfully trimmed. New size: " + (trimmedBlob.size / (1024*1024)).toFixed(2) + " MB");
         return trimmedBlob;
     } catch (error) {
         console.error("Error trimming media with FFmpeg:", error.message, error.stack);
