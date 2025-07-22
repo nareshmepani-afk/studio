@@ -629,6 +629,17 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
   const currentFinalMaxDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
   const isReady = isFFmpegInstanceReady && canRecordOrUpload;
 
+  useEffect(() => {
+    console.log("MediaRecorder button status check:", {
+      isFFmpegInstanceReady,
+      canRecordOrUpload,
+      isReady,
+      isRecording,
+      hasCameraPermission,
+      isButtonDisabled: !isReady || isRecording || hasCameraPermission === false,
+    });
+  }, [isFFmpegInstanceReady, canRecordOrUpload, isReady, isRecording, hasCameraPermission]);
+
   return (
     <Card>
       <CardHeader><CardTitle className="font-headline text-lg">Record or Upload Media</CardTitle></CardHeader>
