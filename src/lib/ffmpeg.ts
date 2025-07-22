@@ -58,13 +58,13 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
          // These paths point to the CDN URLs
          corePath: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
          workerPath: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript'),
-         wasmPath: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+         wasmPath: await toBlobURL(`${baseURL}/ffmpeg-core.wasm', 'application/wasm'),
       });
       console.log("FFmpeg core loaded and initialized from CDN.");
       ffmpegInstance = ffmpeg;
       resolve(ffmpegInstance);
     } catch (error) {
-      console.error("Error initializing FFmpeg from CDN:", error);
+      console.error("Error initializing FFmpeg from CDN:", error.message, error.stack);
       ffmpegLoadingPromise = null;
       reject(error);
     }
@@ -125,7 +125,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
       const centiseconds = parseInt(durationMatch[4], 10);
       return hours * 3600 + minutes * 60 + seconds + centiseconds / 100;
     } else {
-       console.error("FFmpeg output did not contain duration information. Full log:", logOutput);
+       console.error("FFmpeg output did not contain duration information. Full log:", logOutput, "Error:", error.message, error.stack);
        // Attempt to parse duration from a different pattern if the first fails
        const alternativeDurationMatch = logOutput.match(/Duration: (d+).(d+)/);
        if (alternativeDurationMatch) {
