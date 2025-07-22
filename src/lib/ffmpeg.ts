@@ -1,6 +1,5 @@
-
 // src/lib/ffmpeg.ts
-// This file handles loading self-hosted ffmpeg.wasm files and providing helper functions.
+// This file handles loading ffmpeg.wasm files from a CDN and providing helper functions.
 
 // Define a minimal interface for the parts of FFmpeg we use
 interface FFmpeg {
@@ -12,40 +11,23 @@ interface FFmpeg {
 }
 
 // Augment the window interface to declare the FFmpeg property
+// This ensures TypeScript knows about the global FFmpeg object
 declare global {
   interface Window {
     FFmpeg: {
       createFFmpeg: (options: any) => FFmpeg;
-      fetchFile: (data: Blob | string) => Promise<Uint8Array>;
+      fetchFile: (data: Blob | string | Uint8Array) => Promise<Uint8Array>; // Updated fetchFile type
+      // Add other properties if you use them directly from window.FFmpeg
     };
   }
 }
 
-const FFMPEG_SCRIPT_URL = '/ffmpeg/ffmpeg.min.js'; // Path to self-hosted script in /public
+// Declare the global FFmpeg object for use within the file
+declare const FFmpeg: Window['FFmpeg'];
+
+
 let ffmpegInstance: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
-
-// Function to load the FFmpeg script from the /public directory
-function loadFFmpegScript(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (window.FFmpeg) {
-      console.log("FFmpeg script already loaded.");
-      return resolve();
-    }
-    console.log("Loading FFmpeg script from local public path...");
-    const script = document.createElement('script');
-    script.src = FFMPEG_SCRIPT_URL;
-    script.onload = () => {
-      console.log("FFmpeg script loaded successfully from local public path.");
-      resolve();
-    };
-    script.onerror = () => {
-      console.error("Failed to load FFmpeg script from local public path. Ensure ffmpeg.min.js is in /public/ffmpeg/.");
-      reject(new Error('Failed to load FFmpeg script.'));
-    };
-    document.head.appendChild(script);
-  });
-}
 
 // Main function to get a loaded FFmpeg instance
 export async function getFFmpegInstance(): Promise<FFmpeg> {
@@ -58,26 +40,31 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 
   ffmpegLoadingPromise = new Promise(async (resolve, reject) => {
     try {
-      await loadFFmpegScript();
-      
-      const { createFFmpeg } = window.FFmpeg;
-      // All paths are relative to the root of the public directory
+      // Check if FFmpeg is available globally (loaded by script tag)
+      if (typeof FFmpeg === 'undefined') {
+        throw new Error("FFmpeg script not loaded from CDN. Ensure the script tag is included in your HTML.");
+      }
+
+      const { createFFmpeg, toBlobURL } = FFmpeg;
+      // Using unpkg CDN for ffmpeg/core
+      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+
       const ffmpeg = createFFmpeg({
         // Do NOT include `log: true` in production, it's very verbose.
         // log: true,
       });
 
       await ffmpeg.load({
-         // These paths must match the location in your /public directory
-         corePath: '/ffmpeg/ffmpeg-core.js',
-         workerPath: '/ffmpeg/ffmpeg-core.worker.js',
-         wasmPath: '/ffmpeg/ffmpeg-core.wasm'
+         // These paths point to the CDN URLs
+         corePath: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+         workerPath: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript'),
+         wasmPath: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
       });
-      console.log("FFmpeg core loaded and initialized from self-hosted files.");
+      console.log("FFmpeg core loaded and initialized from CDN.");
       ffmpegInstance = ffmpeg;
       resolve(ffmpegInstance);
     } catch (error) {
-      console.error("Error initializing self-hosted FFmpeg:", error);
+      console.error("Error initializing FFmpeg from CDN:", error);
       ffmpegLoadingPromise = null;
       reject(error);
     }
@@ -86,26 +73,51 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
   return ffmpegLoadingPromise;
 }
 
+// Export fetchFile from the global FFmpeg object for use in other functions
+export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8Array> => {
+    if (typeof FFmpeg === 'undefined' || !FFmpeg.fetchFile) {
+        throw new Error("FFmpeg script not loaded or fetchFile not available.");
+    }
+    return FFmpeg.fetchFile(data);
+};
+
+
 export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   const ffmpeg = await getFFmpegInstance();
-  const { fetchFile } = window.FFmpeg;
-
+  // fetchFile is now exported directly from this module, which uses the global FFmpeg
   const fileName = `input.${mediaBlob.type.split('/')[1]?.split(';')[0] || 'tmp'}`;
   let logOutput = "";
 
   try {
     ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
-    
+
     ffmpeg.setLogger(({ type, message }) => {
       if (type === 'fferr') {
-        logOutput += message + "\n";
+        logOutput += message + "
+";
       }
     });
-    
-    await ffmpeg.run('-i', fileName, '-f', 'null', '-');
 
-    const durationMatch = logOutput.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
-    
+    // Capture stderr output to parse duration
+    // Redirect stderr to stdout and then pipe to a file, then read the file
+    // This is a more robust way to capture stderr than relying on setLogger
+    const stderrFileName = 'stderr.log';
+    await ffmpeg.run('-i', fileName, '-f', 'null', '-', '-v', 'quiet', '-stats_log_level', 'info'); // -v quiet and -stats_log_level info might give cleaner output
+
+    // We need to figure out how to get the stderr output when running in this environment
+    // The previous implementation relied on setLogger which might not capture all info
+    // Let's try running without piping to null and see if setLogger captures Duration
+     logOutput = ""; // Reset logOutput for the actual run
+     ffmpeg.setLogger(({ type, message }) => {
+       if (type === 'fferr' || type === 'ffout') { // Capture both stderr and stdout
+         logOutput += message + "
+";
+       }
+     });
+    await ffmpeg.run('-i', fileName); // Run with -i to get metadata
+
+    const durationMatch = logOutput.match(/Duration: (d{2}):(d{2}):(d{2}).(d{2})/);
+
     if (durationMatch) {
       const hours = parseInt(durationMatch[1], 10);
       const minutes = parseInt(durationMatch[2], 10);
@@ -113,21 +125,25 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
       const centiseconds = parseInt(durationMatch[4], 10);
       return hours * 3600 + minutes * 60 + seconds + centiseconds / 100;
     } else {
-      console.error("FFmpeg output did not contain duration information. Full log:", logOutput);
+       console.error("FFmpeg output did not contain duration information. Full log:", logOutput);
+       // Attempt to parse duration from a different pattern if the first fails
+       const alternativeDurationMatch = logOutput.match(/Duration: (d+).(d+)/);
+       if (alternativeDurationMatch) {
+           return parseInt(alternativeDurationMatch[1], 10) + parseInt(alternativeDurationMatch[2], 10) / 100;
+       }
       throw new Error("Could not parse duration from FFmpeg output.");
     }
   } finally {
     try {
       ffmpeg.FS('unlink', fileName);
     } catch (e) { /* Ignore cleanup errors */ }
-    ffmpeg.setLogger(() => {});
+    ffmpeg.setLogger(() => {}); // Reset logger
   }
 }
 
 export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, endTime: number): Promise<Blob> {
     const ffmpeg = await getFFmpegInstance();
-    const { fetchFile } = window.FFmpeg;
-
+    // fetchFile is now exported directly from this module
     const inputFilename = `input_trim.${mediaBlob.type.split('/')[1]?.split(';')[0] || 'tmp'}`;
     const outputFilename = `output_trim.${mediaBlob.type.split('/')[1]?.split(';')[0] || 'tmp'}`;
 
@@ -136,6 +152,13 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
 
         const duration = endTime - startTime;
 
+        // Ensure duration is not negative or zero
+        if (duration <= 0) {
+            throw new Error("End time must be after start time for trimming.");
+        }
+
+        // Using -c copy for speed, but it might not be frame accurate depending on keyframes
+        // If frame-accuracy is critical, remove -c copy (will be slower due to re-encoding)
         await ffmpeg.run(
             '-ss', startTime.toString(), // Start time
             '-i', inputFilename,         // Input file
