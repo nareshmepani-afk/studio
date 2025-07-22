@@ -85,7 +85,15 @@ export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8
 export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   const ffmpeg = await getFFmpegInstance();
   // fetchFile is now exported directly from this module, which uses the global FFmpeg
-  const fileName = `input.${mediaBlob.type.split('/')[1]?.split(';')[0] || 'tmp'}`;
+  let fileExtension = 'tmp';
+  const mimeParts = mediaBlob.type.split('/');
+  if (mimeParts.length > 1) {
+    const subParts = mimeParts[1].split(';');
+    if (subParts.length > 0) {
+      fileExtension = subParts[0];
+    }
+  }
+  const fileName = `input.${fileExtension}`;
   let logOutput = "";
 
   try {
@@ -116,7 +124,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
      });
     await ffmpeg.run('-i', fileName); // Run with -i to get metadata
 
-    const durationMatch = logOutput.match(/Duration: (d{2}):(d{2}):(d{2}).(d{2})/);
+    const durationMatch = logOutput.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
 
     if (durationMatch) {
       const hours = parseInt(durationMatch[1], 10);
@@ -125,9 +133,9 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
       const centiseconds = parseInt(durationMatch[4], 10);
       return hours * 3600 + minutes * 60 + seconds + centiseconds / 100;
     } else {
-       console.error("FFmpeg output did not contain duration information. Full log:", logOutput, "Error:", error.message, error.stack);
+       console.error("FFmpeg output did not contain duration information. Full log:", logOutput, "Error: Could not parse duration."); // Removed error.message, error.stack as it's not a caught error here.
        // Attempt to parse duration from a different pattern if the first fails
-       const alternativeDurationMatch = logOutput.match(/Duration: (d+).(d+)/);
+       const alternativeDurationMatch = logOutput.match(/Duration: (\d+)\.(\d+)/);
        if (alternativeDurationMatch) {
            return parseInt(alternativeDurationMatch[1], 10) + parseInt(alternativeDurationMatch[2], 10) / 100;
        }
@@ -144,8 +152,26 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
 export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, endTime: number): Promise<Blob> {
     const ffmpeg = await getFFmpegInstance();
     // fetchFile is now exported directly from this module
-    const inputFilename = `input_trim.${mediaBlob.type.split('/')[1]?.split(';')[0] || 'tmp'}`;
-    const outputFilename = `output_trim.${mediaBlob.type.split('/')[1]?.split(';')[0] || 'tmp'}`;
+    let inputFilenameExtension = 'tmp';
+    const inputMimeParts = mediaBlob.type.split('/');
+    if (inputMimeParts.length > 1) {
+      const inputSubParts = inputMimeParts[1].split(';');
+      if (inputSubParts.length > 0) {
+        inputFilenameExtension = inputSubParts[0];
+      }
+    }
+    const inputFilename = `input_trim.${inputFilenameExtension}`;
+
+    let outputFilenameExtension = 'tmp';
+    const outputMimeParts = mediaBlob.type.split('/');
+    if (outputMimeParts.length > 1) {
+      const outputSubParts = outputMimeParts[1].split(';');
+      if (outputSubParts.length > 0) {
+        outputFilenameExtension = outputSubParts[0];
+      }
+    }
+    const outputFilename = `output_trim.${outputFilenameExtension}`;
+
 
     try {
         ffmpeg.FS('writeFile', inputFilename, await fetchFile(mediaBlob));
@@ -172,6 +198,9 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
 
         console.log(`Media successfully trimmed. New size: ${(trimmedBlob.size / (1024*1024)).toFixed(2)} MB`);
         return trimmedBlob;
+    } catch (error) {
+        console.error("Error trimming media with FFmpeg:", error.message, error.stack);
+        throw error;
     } finally {
         try {
             ffmpeg.FS('unlink', inputFilename);
