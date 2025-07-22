@@ -59,7 +59,7 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
          // These paths point to the CDN URLs
          corePath: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
          workerPath: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript'),
-         wasmPath: await toBlobURL(`${baseURL}/ffmpeg-core.wasm', 'application/wasm'),
+         wasmPath: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
       });
       console.log("FFmpeg core loaded and initialized from CDN.");
       ffmpegInstance = ffmpeg;
@@ -102,8 +102,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
 
     ffmpeg.setLogger(({ type, message }) => {
       if (type === 'fferr') {
-        logOutput += message + "
-";
+        logOutput += message + "\n";
       }
     });
 
@@ -119,13 +118,12 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
      logOutput = ""; // Reset logOutput for the actual run
      ffmpeg.setLogger(({ type, message }) => {
        if (type === 'fferr' || type === 'ffout') { // Capture both stderr and stdout
-         logOutput += message + "
-";
+         logOutput += message + "\n";
        }
      });
     await ffmpeg.run('-i', fileName); // Run with -i to get metadata
 
-    const durationMatch = logOutput.match(/Duration: (d{2}):(d{2}):(d{2}).(d{2})/);
+    const durationMatch = logOutput.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
 
     if (durationMatch) {
       const hours = parseInt(durationMatch[1], 10);
@@ -136,7 +134,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     } else {
        console.error("FFmpeg output did not contain duration information. Full log:", logOutput, "Error: Could not parse duration."); // Removed error.message, error.stack as it's not a caught error here.
        // Attempt to parse duration from a different pattern if the first fails
-       const alternativeDurationMatch = logOutput.match(/Duration: (d+).(d+)/);
+       const alternativeDurationMatch = logOutput.match(/Duration: (\d+)\.(\d+)/);
        if (alternativeDurationMatch) {
            return parseInt(alternativeDurationMatch[1], 10) + parseInt(alternativeDurationMatch[2], 10) / 100;
        }
