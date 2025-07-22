@@ -31,23 +31,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  //experimental: {
-  //  allowedDevOrigins: [
-  //      "https://6000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev",
-  //  ],
-  //},
-  webpack: (config, { isServer }) => {
-    // Fallbacks for node modules.
-    if (!isServer) {
-      config.resolve.fallback = {
-        fs: false,
-        path: false,
-        crypto: false,
-      };
-    }
-
-    return config;
-  },
 };
 
 export default nextConfig;
