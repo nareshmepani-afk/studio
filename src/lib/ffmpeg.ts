@@ -93,7 +93,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
       fileExtension = subParts[0];
     }
   }
-  const fileName = `input.${fileExtension}`;
+  const fileName = 'input.' + fileExtension;
   let logOutput = "";
 
   try {
@@ -124,7 +124,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
      });
     await ffmpeg.run('-i', fileName); // Run with -i to get metadata
 
-    const durationMatch = logOutput.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
+    const durationMatch = logOutput.match(/Duration: (d{2}):(d{2}):(d{2}).(d{2})/);
 
     if (durationMatch) {
       const hours = parseInt(durationMatch[1], 10);
@@ -135,7 +135,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     } else {
        console.error("FFmpeg output did not contain duration information. Full log:", logOutput, "Error: Could not parse duration."); // Removed error.message, error.stack as it's not a caught error here.
        // Attempt to parse duration from a different pattern if the first fails
-       const alternativeDurationMatch = logOutput.match(/Duration: (\d+)\.(\d+)/);
+       const alternativeDurationMatch = logOutput.match(/Duration: (d+).(d+)/);
        if (alternativeDurationMatch) {
            return parseInt(alternativeDurationMatch[1], 10) + parseInt(alternativeDurationMatch[2], 10) / 100;
        }
@@ -160,7 +160,7 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
         inputFilenameExtension = inputSubParts[0];
       }
     }
-    const inputFilename = `input_trim.${inputFilenameExtension}`;
+    const inputFilename = 'input_trim.' + inputFilenameExtension;
 
     let outputFilenameExtension = 'tmp';
     const outputMimeParts = mediaBlob.type.split('/');
@@ -170,7 +170,7 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
         outputFilenameExtension = outputSubParts[0];
       }
     }
-    const outputFilename = `output_trim.${outputFilenameExtension}`;
+    const outputFilename = 'output_trim.' + outputFilenameExtension;
 
 
     try {
