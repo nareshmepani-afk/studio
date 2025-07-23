@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from '@/components/ui/button';
@@ -647,3 +648,131 @@ export function MediaCaptureControl({ onMediaReady, onDiscard, initialMedia, pro
         {!canRecordOrUpload && (<Alert variant="destructive"><ShieldAlert className="h-4 w-4" /><AlertTitle>Host Pass Required</AlertTitle><AlertDescription>An active Host Pass is needed to record or upload new media. Please check your pass status in Settings.</AlertDescription></Alert>)}
 
         {!internalPreviewUrl && !isRecording && (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button onClick={() => handleStartRecording('video')} className="flex-1" disabled={!isReady || isRecording || hasCameraPermission === false}>
+                <Video className="mr-2" /> Start Video
+              </Button>
+              <Button onClick={() => handleStartRecording('audio')} className="flex-1" disabled={!isReady || isRecording || hasCameraPermission === false}>
+                <Mic className="mr-2" /> Start Audio
+              </Button>
+            </div>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">Or</span>
+              </div>
+            </div>
+            <div className="flex flex-col items-center justify-center w-full">
+                <Label htmlFor="media-upload" className={cn(
+                    "flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-secondary",
+                    !isReady && "cursor-not-allowed opacity-50"
+                )}>
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                        <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or D&D</p>
+                        <p className="text-xs text-muted-foreground">Video (max 5:00.0) / Audio (max 10:00.0)</p>
+                    </div>
+                    <Input id="media-upload" type="file" className="hidden" onChange={handleFileUpload} accept="video/*,audio/*" disabled={!isReady} />
+                </Label>
+            </div> 
+            <div className="text-center text-xs text-muted-foreground pt-1">
+                Or, load a sample to test:
+                <Button variant="link" size="sm" onClick={() => handleLoadSampleMedia('video')} disabled={isLoadingSample || !isReady} className="text-xs h-auto px-1 py-0">{isLoadingSample && sampleLoadingType==='video' ? <Loader2 className="mr-1 h-3 w-3 animate-spin"/> : null}Sample Video</Button>
+                <Button variant="link" size="sm" onClick={() => handleLoadSampleMedia('audio')} disabled={isLoadingSample || !isReady} className="text-xs h-auto px-1 py-0">{isLoadingSample && sampleLoadingType==='audio' ? <Loader2 className="mr-1 h-3 w-3 animate-spin"/> : null}Sample Audio</Button>
+            </div>
+          </div>
+        )}
+
+        {(isRecording || (mediaType === 'video' && internalPreviewUrl)) && (
+            <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
+                <video ref={isRecording ? liveVideoRef : videoRef} src={isRecording ? undefined : internalPreviewUrl || ''} autoPlay={isRecording} muted={isRecording} playsInline controls={!isRecording} className="w-full h-full object-contain" />
+                {isRecording && (
+                    <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-xs flex items-center">
+                        <Timer className="h-3 w-3 mr-1 text-red-500 animate-pulse" />
+                        {formatSecondsToTime(currentRecordingDuration)} / {formatSecondsToTime(mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS : MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS)}
+                    </div>
+                )}
+            </div>
+        )}
+        
+        {showTeleprompter && isRecording && (
+          <Dialog open={showTeleprompter} onOpenChange={setShowTeleprompter}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader><DialogTitle className="font-headline text-lg flex items-center"><BookOpen className="mr-2 h-5 w-5"/>Teleprompter</DialogTitle><DialogDescription>Use these talking points to guide your recording.</DialogDescription></DialogHeader>
+              <ScrollArea className="h-72 w-full rounded-md border p-4">
+                 <p className="whitespace-pre-wrap">{currentTeleprompterScript}</p>
+              </ScrollArea>
+              <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowTeleprompter(false)}>Close Prompter</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+        
+        {isRecording && (
+          <Button onClick={handleStopRecording} className="w-full" variant="destructive"><StopCircle className="mr-2"/> Stop Recording</Button>
+        )}
+        
+        {internalPreviewUrl && !isRecording && (
+          <div className="space-y-4">
+            {mediaType === 'audio' && (
+              <div className="p-4 bg-muted rounded-md">
+                <audio ref={audioPreviewRef} src={internalPreviewUrl} controls className="w-full" />
+              </div>
+            )}
+            
+            {rawPreviewReady ? (
+                 <div className="flex flex-col sm:flex-row gap-2">
+                    <Button onClick={handleAcceptRawRecording} className="flex-1" disabled={isProcessing}><CheckCircle className="mr-2"/>{isProcessing ? <><Loader2 className="mr-2 animate-spin"/>{processingStatusText || 'Accepting...'}</> : `Accept ${mediaType === 'video' ? 'Video' : 'Audio'}`}</Button>
+                    <Button onClick={() => handleDiscardMedia()} className="flex-1" variant="outline"><RotateCcw className="mr-2"/>Discard & Restart</Button>
+                 </div>
+            ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label>Trim Your {mediaType}</Label>
+                    <Slider
+                        min={0}
+                        max={mediaDuration}
+                        step={0.1}
+                        value={[startTime, endTime]}
+                        onValueChange={(value) => {
+                          if (Array.isArray(value)) {
+                            setStartTime(value[0]);
+                            setEndTime(value[1]);
+                          }
+                        }}
+                        disabled={isProcessing}
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Start: {formatSecondsToTime(startTime)}</span>
+                        <span>End: {formatSecondsToTime(endTime)}</span>
+                    </div>
+                    <div className="text-center text-sm font-medium">
+                        Selected Duration: {formatSecondsToTime(endTime - startTime)}
+                        {((endTime - startTime) > currentFinalMaxDuration) &&
+                          <span className="text-destructive ml-2">(exceeds {formatSecondsToTime(currentFinalMaxDuration)} max)</span>
+                        }
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button onClick={handleUseMedia} className="flex-1" disabled={isProcessing}>
+                      {isProcessing ? <><Loader2 className="mr-2 animate-spin"/>{processingStatusText || 'Processing...'}</> : <><CheckCircle className="mr-2"/>Use Trimmed Media</>}
+                    </Button>
+                    <Button onClick={() => handleDiscardMedia()} className="flex-1" variant="outline" disabled={isProcessing}>
+                      <RotateCcw className="mr-2"/> Discard & Restart
+                    </Button>
+                  </div>
+                </>
+            )}
+          </div>
+        )}
+        
+      </CardContent>
+    </Card>
+  );
+}
+
+    
