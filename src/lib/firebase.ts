@@ -1,6 +1,5 @@
-
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeAuth, getAuth, browserLocalPersistence, type Auth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -49,15 +48,19 @@ if (!getApps().length) {
   console.log("Existing Firebase app retrieved. Name:", app.name, "Project ID from options:", app.options.projectId);
 }
 
-let authInstance;
+let authInstance: Auth;
 let dbInstance;
 let storageInstance;
 
 try {
-  authInstance = getAuth(app);
-} catch (e) {
-  console.error("Failed to get Auth instance:", e);
-  throw new Error(`Failed to initialize Firebase Auth. Original error: ${(e as Error).message}`);
+  // Use initializeAuth with browserLocalPersistence to fix the i18n error
+  authInstance = initializeAuth(app, {
+    persistence: browserLocalPersistence
+  });
+} catch (error) {
+    // If initializeAuth fails (e.g., already initialized), fall back to getAuth
+    console.warn("initializeAuth failed, falling back to getAuth. Error:", (error as Error).message);
+    authInstance = getAuth(app);
 }
 
 try {
