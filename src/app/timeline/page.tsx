@@ -106,15 +106,13 @@ export default function TimelinePage() {
         setPendingRequestCount(0);
       }
     }, (error) => {
-      console.error("Firestore Listen Error:", error); // Keep the original log for context
+      console.error("Firestore Listen Error:", error); // Log the full error object
       console.error("Error message:", error.message); // Log the error message
       console.error("Error name:", error.name);     // Log the error name
-      // Attempt to log Firestore specific codes if available
       if ((error as any).code) {
-        console.error("Error code:", (error as any).code);
+        console.error("Error code:", (error as any).code); // Log Firebase specific codes if available
       }
       console.error("Error stack:", error.stack);   // Log the stack trace
-
       toast({ title: "Error Loading Memories", description: "Could not fetch memories.", variant: "destructive" });
       setIsLoading(false);
     });
