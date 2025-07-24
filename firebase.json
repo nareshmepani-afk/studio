@@ -15,5 +15,10 @@
         ]
       }
     ]
+  },
+  "apphosting": {
+    "memory-weaver-8rk9t": {
+      "location": "us-central1"
+    }
   }
 }
