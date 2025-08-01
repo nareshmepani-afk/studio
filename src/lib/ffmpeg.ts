@@ -26,12 +26,9 @@ let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
 // --- Configuration for loading FFmpeg files ---
 // Set this to true to attempt loading from CDN first, false to load locally.
-// Based on debugging, local loading is recommended for stability.
 const LOAD_FFMPEG_FROM_CDN = false; // Set to false to load locally
 const CDN_BASE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-// Update this path to match where you placed the files in your public directory
-const LOCAL_FFMPEG_PATH = '/ffmpeg'; // Assuming files are in public/ffmpeg
-// ------------------------------------------------
+const LOCAL_FFMPEG_PATH = '/ffmpeg'; // Files are in public/ffmpeg
 
 
 // Main function to get a loaded FFmpeg instance
@@ -48,60 +45,53 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
   console.log("getFFmpegInstance: Initiating FFmpeg load.");
   ffmpegLoadingPromise = new Promise(async (resolve, reject) => {
     try {
-      let ffmpeg: FFmpeg;
+        const ffmpegScriptUrl = LOAD_FFMPEG_FROM_CDN 
+            ? `${CDN_BASE_URL}/ffmpeg.js`
+            : `${LOCAL_FFMPEG_PATH}/ffmpeg.js`;
 
-      if (LOAD_FFMPEG_FROM_CDN) {
-        console.log(`getFFmpegInstance: Attempting to load FFmpeg script from CDN: ${CDN_BASE_URL}/ffmpeg.js`);
-         // Dynamically import the FFmpeg script from CDN
-        await import(/* webpackIgnore: true */ `${CDN_BASE_URL}/ffmpeg.js`);
+        // Check if script is already on the page
+        if (!document.querySelector(`script[src="${ffmpegScriptUrl}"]`)) {
+            console.log(`getFFmpegInstance: Loading main FFmpeg script from ${ffmpegScriptUrl}`);
+            const script = document.createElement('script');
+            script.src = ffmpegScriptUrl;
+            script.async = true;
+            document.head.appendChild(script);
 
-        if (typeof window.FFmpeg === 'undefined') {
-            throw new Error("FFmpeg script failed to load from CDN or window.FFmpeg is not defined.");
+            await new Promise((resolveScript, rejectScript) => {
+                script.onload = resolveScript;
+                script.onerror = () => rejectScript(new Error(`Failed to load FFmpeg script from ${ffmpegScriptUrl}`));
+            });
         }
+        
+        // Wait for window.FFmpeg to be defined
+        await new Promise<void>((resolveWait) => {
+            const interval = setInterval(() => {
+                if (typeof window.FFmpeg !== 'undefined') {
+                    clearInterval(interval);
+                    resolveWait();
+                }
+            }, 100);
+        });
 
         const { createFFmpeg } = window.FFmpeg;
-         ffmpeg = createFFmpeg({
+        const ffmpeg = createFFmpeg({
            // log: true, // Enable for detailed debugging
-         });
+        });
+        
+        const corePath = LOAD_FFMPEG_FROM_CDN ? `${CDN_BASE_URL}/ffmpeg-core.js` : `${LOCAL_FFMPEG_PATH}/ffmpeg-core.js`;
+        console.log(`getFFmpegInstance: Loading FFmpeg core using corePath: ${corePath}`);
 
-        console.log(`getFFmpegInstance: Loading FFmpeg core from CDN using corePath: ${CDN_BASE_URL}/ffmpeg-core.js`);
         await ffmpeg.load({
-           corePath: `${CDN_BASE_URL}/ffmpeg-core.js`,
-           workerPath: `${CDN_BASE_URL}/ffmpeg-core.worker.js`,
-           wasmPath: `${CDN_BASE_URL}/ffmpeg-core.wasm`,
+           corePath: corePath,
+           // workerPath and wasmPath are resolved relative to corePath by default, so not strictly needed if in the same folder
+           workerPath: LOAD_FFMPEG_FROM_CDN ? `${CDN_BASE_URL}/ffmpeg-core.worker.js` : `${LOCAL_FFMPEG_PATH}/ffmpeg-core.worker.js`,
+           wasmPath: LOAD_FFMPEG_FROM_CDN ? `${CDN_BASE_URL}/ffmpeg-core.wasm` : `${LOCAL_FFMPEG_PATH}/ffmpeg-core.wasm`,
         });
 
-      } else { // Load locally
-        console.log(`getFFmpegInstance: Attempting to load FFmpeg script locally from: ${LOCAL_FFMPEG_PATH}/ffmpeg.js`);
-        // Dynamically import the FFmpeg script locally - this might require bundler configuration
-        // For simplicity with Next.js static assets, we assume window.FFmpeg will be made available by the script tag.
-        // The useScript hook handles adding the main ffmpeg.js tag.
-
-        if (typeof window.FFmpeg === 'undefined') {
-             // This should ideally be handled by the useScript hook ensuring the script is loaded first.
-             // Adding a safeguard check, but the hook's loaded state is the primary signal.
-             console.warn("getFFmpegInstance: window.FFmpeg is undefined when attempting local load. Ensure useScript loaded the main script.");
-              // Optionally wait for the useScript loaded state here if needed, or rely on the useEffect in MediaRecorder.
-              // For now, we proceed assuming the script tag is or will be handled externally.
-        }
-
-        const { createFFmpeg } = window.FFmpeg; // Still rely on global FFmpeg from the script tag
-         ffmpeg = createFFmpeg({
-           // log: true, // Enable for detailed debugging
-         });
-
-        console.log(`getFFmpegInstance: Loading FFmpeg core locally using corePath: ${LOCAL_FFMPEG_PATH}/ffmpeg-core.js`);
-        await ffmpeg.load({
-           corePath: `${LOCAL_FFMPEG_PATH}/ffmpeg-core.js`,
-           workerPath: `${LOCAL_FFMPEG_PATH}/ffmpeg-core.worker.js`,
-           wasmPath: `${LOCAL_FFMPEG_PATH}/ffmpeg-core.wasm`,
-        });
-      }
-
-      console.log("getFFmpegInstance: FFmpeg core loaded and initialized successfully.");
-      ffmpegInstance = ffmpeg;
-      ffmpegLoadingPromise = null; // Reset promise on success
-      resolve(ffmpegInstance);
+        console.log("getFFmpegInstance: FFmpeg core loaded and initialized successfully.");
+        ffmpegInstance = ffmpeg;
+        ffmpegLoadingPromise = null; // Reset promise on success
+        resolve(ffmpegInstance);
     } catch (error) {
       console.error("getFFmpegInstance: Error initializing FFmpeg:", error);
       ffmpegInstance = null; // Ensure instance is null on error
@@ -110,7 +100,7 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
     }
   });
 
-  return ffmmpegLoadingPromise;
+  return ffmpegLoadingPromise;
 }
 
 export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8Array> => {
@@ -118,7 +108,6 @@ export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8
     await getFFmpegInstance(); // This will ensure ffmpegInstance is available
     
     if (typeof window.FFmpeg === 'undefined' || !window.FFmpeg.fetchFile) {
-         // This case should ideally not be reached if getFFmpegInstance resolves successfully
          throw new Error("FFmpeg script or fetchFile is not available after getFFmpegInstance.");
     }
 
@@ -149,8 +138,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
     ffmpeg.setLogger(({ type, message }) => {
       if (type === 'fferr' || type === 'ffout') {
-        logOutput += message + "
-";
+        logOutput += message + "\n";
       }
     });
 
@@ -158,7 +146,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     await ffmpeg.run('-i', fileName);
 
     console.log("getDurationWithFFmpeg: Parsing FFmpeg log output.");
-    const durationMatch = logOutput.match(/Duration: (d{2}):(d{2}):(d{2}).(d{2})/);
+    const durationMatch = logOutput.match(/Duration: (\d{2}):(\d{2}):(\d{2}).(\d{2})/);
 
     if (durationMatch) {
       const hours = parseInt(durationMatch[1], 10);
@@ -169,7 +157,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
       return hours * 3600 + minutes * 60 + seconds + centiseconds / 100;
     } else {
        console.warn("getDurationWithFFmpeg: Could not parse H:M:S.cs duration, trying alternative. Full log:", logOutput);
-       const alternativeDurationMatch = logOutput.match(/Duration: (d+.d+)/);
+       const alternativeDurationMatch = logOutput.match(/Duration: (\d+.\d+)/);
        if (alternativeDurationMatch) {
            console.log("getDurationWithFFmpeg: Duration parsed (seconds).");
            return parseFloat(alternativeDurationMatch[1]);
