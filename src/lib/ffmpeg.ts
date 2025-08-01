@@ -1,6 +1,5 @@
-
 // src/lib/ffmpeg.ts
-// This file handles loading ffmpeg.wasm files from a CDN and providing helper functions.
+// This file handles loading ffmpeg.wasm files locally or from a CDN and providing helper functions.
 
 // Define a minimal interface for the parts of FFmpeg we use
 interface FFmpeg {
@@ -25,62 +24,115 @@ declare global {
 let ffmpegInstance: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
+// --- Configuration for loading FFmpeg files ---
+// Set this to true to attempt loading from CDN first, false to load locally.
+// Based on debugging, local loading is recommended for stability.
+const LOAD_FFMPEG_FROM_CDN = false; // Set to false to load locally
+const CDN_BASE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+// Update this path to match where you placed the files in your public directory
+const LOCAL_FFMPEG_PATH = '/ffmpeg'; // Assuming files are in public/ffmpeg
+// ------------------------------------------------
+
+
 // Main function to get a loaded FFmpeg instance
 export async function getFFmpegInstance(): Promise<FFmpeg> {
   if (ffmpegInstance && ffmpegInstance.isLoaded()) {
+    console.log("getFFmpegInstance: FFmpeg instance already loaded.");
     return ffmpegInstance;
   }
   if (ffmpegLoadingPromise) {
+    console.log("getFFmpegInstance: FFmpeg loading already in progress.");
     return ffmpegLoadingPromise;
   }
 
+  console.log("getFFmpegInstance: Initiating FFmpeg load.");
   ffmpegLoadingPromise = new Promise(async (resolve, reject) => {
     try {
-      // Dynamically import the FFmpeg script
-      await import(/* webpackIgnore: true */ 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js');
-      
-      if (typeof window.FFmpeg === 'undefined') {
-        throw new Error("FFmpeg script failed to load from CDN.");
+      let ffmpeg: FFmpeg;
+
+      if (LOAD_FFMPEG_FROM_CDN) {
+        console.log(`getFFmpegInstance: Attempting to load FFmpeg script from CDN: ${CDN_BASE_URL}/ffmpeg.js`);
+         // Dynamically import the FFmpeg script from CDN
+        await import(/* webpackIgnore: true */ `${CDN_BASE_URL}/ffmpeg.js`);
+
+        if (typeof window.FFmpeg === 'undefined') {
+            throw new Error("FFmpeg script failed to load from CDN or window.FFmpeg is not defined.");
+        }
+
+        const { createFFmpeg } = window.FFmpeg;
+         ffmpeg = createFFmpeg({
+           // log: true, // Enable for detailed debugging
+         });
+
+        console.log(`getFFmpegInstance: Loading FFmpeg core from CDN using corePath: ${CDN_BASE_URL}/ffmpeg-core.js`);
+        await ffmpeg.load({
+           corePath: `${CDN_BASE_URL}/ffmpeg-core.js`,
+           workerPath: `${CDN_BASE_URL}/ffmpeg-core.worker.js`,
+           wasmPath: `${CDN_BASE_URL}/ffmpeg-core.wasm`,
+        });
+
+      } else { // Load locally
+        console.log(`getFFmpegInstance: Attempting to load FFmpeg script locally from: ${LOCAL_FFMPEG_PATH}/ffmpeg.js`);
+        // Dynamically import the FFmpeg script locally - this might require bundler configuration
+        // For simplicity with Next.js static assets, we assume window.FFmpeg will be made available by the script tag.
+        // The useScript hook handles adding the main ffmpeg.js tag.
+
+        if (typeof window.FFmpeg === 'undefined') {
+             // This should ideally be handled by the useScript hook ensuring the script is loaded first.
+             // Adding a safeguard check, but the hook's loaded state is the primary signal.
+             console.warn("getFFmpegInstance: window.FFmpeg is undefined when attempting local load. Ensure useScript loaded the main script.");
+              // Optionally wait for the useScript loaded state here if needed, or rely on the useEffect in MediaRecorder.
+              // For now, we proceed assuming the script tag is or will be handled externally.
+        }
+
+        const { createFFmpeg } = window.FFmpeg; // Still rely on global FFmpeg from the script tag
+         ffmpeg = createFFmpeg({
+           // log: true, // Enable for detailed debugging
+         });
+
+        console.log(`getFFmpegInstance: Loading FFmpeg core locally using corePath: ${LOCAL_FFMPEG_PATH}/ffmpeg-core.js`);
+        await ffmpeg.load({
+           corePath: `${LOCAL_FFMPEG_PATH}/ffmpeg-core.js`,
+           workerPath: `${LOCAL_FFMPEG_PATH}/ffmpeg-core.worker.js`,
+           wasmPath: `${LOCAL_FFMPEG_PATH}/ffmpeg-core.wasm`,
+        });
       }
 
-      const { createFFmpeg } = window.FFmpeg;
-      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-
-      const ffmpeg = createFFmpeg({
-        // log: true, // Enable for detailed debugging
-      });
-
-      await ffmpeg.load({
-         corePath: `${baseURL}/ffmpeg-core.js`,
-         workerPath: `${baseURL}/ffmpeg-core.worker.js`,
-         wasmPath: `${baseURL}/ffmpeg-core.wasm`,
-      });
-      console.log("FFmpeg core loaded and initialized from CDN.");
+      console.log("getFFmpegInstance: FFmpeg core loaded and initialized successfully.");
       ffmpegInstance = ffmpeg;
+      ffmpegLoadingPromise = null; // Reset promise on success
       resolve(ffmpegInstance);
     } catch (error) {
-      console.error("Error initializing FFmpeg from CDN:", error);
+      console.error("getFFmpegInstance: Error initializing FFmpeg:", error);
+      ffmpegInstance = null; // Ensure instance is null on error
       ffmpegLoadingPromise = null;
       reject(error);
     }
   });
 
-  return ffmpegLoadingPromise;
+  return ffmmpegLoadingPromise;
 }
 
 export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8Array> => {
+    // Ensure FFmpeg is loaded before fetching files
+    await getFFmpegInstance(); // This will ensure ffmpegInstance is available
+    
     if (typeof window.FFmpeg === 'undefined' || !window.FFmpeg.fetchFile) {
-        // Attempt to load FFmpeg if not available
-        await getFFmpegInstance();
-        if (typeof window.FFmpeg === 'undefined' || !window.FFmpeg.fetchFile) {
-            throw new Error("FFmpeg script not loaded or fetchFile not available after attempting to load.");
-        }
+         // This case should ideally not be reached if getFFmpegInstance resolves successfully
+         throw new Error("FFmpeg script or fetchFile is not available after getFFmpegInstance.");
     }
+
     return window.FFmpeg.fetchFile(data);
+};
+
+// Helper function to check if the main ffmpeg.js script is available globally
+export const isFFmpegScriptLoaded = (): boolean => {
+  return typeof window !== 'undefined' && typeof window.FFmpeg !== 'undefined';
 };
 
 export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   const ffmpeg = await getFFmpegInstance();
+  console.log("getDurationWithFFmpeg: Calculating duration.");
   let fileExtension = 'tmp';
   const mimeParts = mediaBlob.type.split('/');
   if (mimeParts.length > 1) {
@@ -93,41 +145,52 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   let logOutput = "";
 
   try {
+    console.log("getDurationWithFFmpeg: Writing file to FFmpeg FS.", fileName);
     ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
     ffmpeg.setLogger(({ type, message }) => {
       if (type === 'fferr' || type === 'ffout') {
-        logOutput += message + "\n";
+        logOutput += message + "
+";
       }
     });
 
+    console.log("getDurationWithFFmpeg: Running FFmpeg command for duration.");
     await ffmpeg.run('-i', fileName);
 
-    const durationMatch = logOutput.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
+    console.log("getDurationWithFFmpeg: Parsing FFmpeg log output.");
+    const durationMatch = logOutput.match(/Duration: (d{2}):(d{2}):(d{2}).(d{2})/);
 
     if (durationMatch) {
       const hours = parseInt(durationMatch[1], 10);
       const minutes = parseInt(durationMatch[2], 10);
       const seconds = parseInt(durationMatch[3], 10);
       const centiseconds = parseInt(durationMatch[4], 10);
+      console.log("getDurationWithFFmpeg: Duration parsed (H:M:S.cs).");
       return hours * 3600 + minutes * 60 + seconds + centiseconds / 100;
     } else {
-       console.warn("Could not parse H:M:S.cs duration, trying alternative. Full log:", logOutput);
-       const alternativeDurationMatch = logOutput.match(/Duration: (\d+\.\d+)/);
+       console.warn("getDurationWithFFmpeg: Could not parse H:M:S.cs duration, trying alternative. Full log:", logOutput);
+       const alternativeDurationMatch = logOutput.match(/Duration: (d+.d+)/);
        if (alternativeDurationMatch) {
+           console.log("getDurationWithFFmpeg: Duration parsed (seconds).");
            return parseFloat(alternativeDurationMatch[1]);
        }
-      throw new Error("Could not parse duration from FFmpeg output.");
+      throw new Error("getDurationWithFFmpeg: Could not parse duration from FFmpeg output.");
     }
+  } catch (error) {
+    console.error("getDurationWithFFmpeg: Error getting duration:", error);
+    throw error;
   } finally {
     try {
+      console.log("getDurationWithFFmpeg: Cleaning up FFmpeg FS.");
       ffmpeg.FS('unlink', fileName);
-    } catch (e) { /* Ignore cleanup errors */ }
+    } catch (e) { /* Ignore cleanup errors */ console.warn("getDurationWithFFmpeg: Cleanup failed for", fileName, e);}
     ffmpeg.setLogger(() => {});
   }
 }
 
 export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, endTime: number): Promise<Blob> {
     const ffmpeg = await getFFmpegInstance();
+    console.log("trimMediaWithFFmpeg: Trimming media.");
     let inputFilenameExtension = 'tmp';
     const inputMimeParts = mediaBlob.type.split('/');
     if (inputMimeParts.length > 1) {
@@ -140,12 +203,14 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
     const outputFilename = 'output_trim.' + inputFilenameExtension;
 
     try {
+        console.log("trimMediaWithFFmpeg: Writing input file to FFmpeg FS.", inputFilename);
         ffmpeg.FS('writeFile', inputFilename, await fetchFile(mediaBlob));
         const duration = endTime - startTime;
         if (duration <= 0) {
-            throw new Error("End time must be after start time for trimming.");
+            throw new Error("trimMediaWithFFmpeg: End time must be after start time for trimming.");
         }
         
+        console.log("trimMediaWithFFmpeg: Running FFmpeg trim command.", '-ss', startTime.toString(), '-i', inputFilename, '-t', duration.toString(), '-c', 'copy', outputFilename);
         await ffmpeg.run(
             '-ss', startTime.toString(),
             '-i', inputFilename,
@@ -154,16 +219,19 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
             outputFilename
         );
 
+        console.log("trimMediaWithFFmpeg: Reading output file from FFmpeg FS.", outputFilename);
         const data = ffmpeg.FS('readFile', outputFilename);
         const trimmedBlob = new Blob([data.buffer], { type: mediaBlob.type });
+        console.log("trimMediaWithFFmpeg: Trimming complete.");
         return trimmedBlob;
     } catch (error) {
-        console.error("Error trimming media with FFmpeg:", error);
+        console.error("trimMediaWithFFmpeg: Error trimming media:", error);
         throw error;
     } finally {
         try {
+            console.log("trimMediaWithFFmpeg: Cleaning up FFmpeg FS.", inputFilename, outputFilename);
             ffmpeg.FS('unlink', inputFilename);
             ffmpeg.FS('unlink', outputFilename);
-        } catch(e) { /* Ignore cleanup errors */ }
+        } catch(e) { /* Ignore cleanup errors */ console.warn("trimMediaWithFFmpeg: Cleanup failed for", inputFilename, outputFilename, e);}
     }
 }
