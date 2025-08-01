@@ -10,7 +10,6 @@ interface PromptCardProps {
   promptId: string;
   promptText: string;
   isCompleted: boolean;
-  memoryId?: string; // ID of the memory if this prompt is completed
   isFlaggedForReuse: boolean; // New prop
   onStartChapter: (promptId: string, promptText: string) => void;
   onViewEditChapter: (promptId: string) => void;
@@ -21,7 +20,6 @@ export function PromptCard({
   promptId,
   promptText,
   isCompleted,
-  memoryId,
   isFlaggedForReuse,
   onStartChapter,
   onViewEditChapter,
@@ -29,7 +27,7 @@ export function PromptCard({
 }: PromptCardProps) {
 
   const handleAction = () => {
-    if (isCompleted && memoryId) {
+    if (isCompleted) {
       onViewEditChapter(promptId);
     } else {
       onStartChapter(promptId, promptText);
@@ -96,4 +94,3 @@ export function PromptCard({
     </Card>
   );
 }
-

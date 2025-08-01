@@ -27,7 +27,7 @@ import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
 import { cn } from "@/lib/utils";
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 
 // Use a different key for Firestore-backed prompt flags if needed, or integrate into user document
 const FIRESTORE_USER_PROMPT_FLAGS_COLLECTION = 'userPromptFlags'; 
@@ -38,8 +38,6 @@ export default function LifeJourneyPage() {
   const [flaggedPromptIds, setFlaggedPromptIds] = useState<Set<string>>(new Set());
   
   const [isLoading, setIsLoading] = useState(true); // Start as true
-  const [memoriesLoaded, setMemoriesLoaded] = useState(false);
-  const [flagsLoaded, setFlagsLoaded] = useState(false);
 
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
@@ -76,65 +74,45 @@ export default function LifeJourneyPage() {
   // Fetch completed prompts and flagged prompts from Firestore
   useEffect(() => {
     if (!user) {
-      setMemoriesLoaded(true); // No user, so consider these "loaded"
-      setFlagsLoaded(true);
+      setIsLoading(false);
       setCompletedPromptIds(new Set());
       setFlaggedPromptIds(new Set());
       return;
     }
 
-    setIsLoading(true); // Reset loading states when user changes
-    setMemoriesLoaded(false);
-    setFlagsLoaded(false);
+    const fetchPromptData = async () => {
+        setIsLoading(true);
+        try {
+            // Fetch completed prompts based on memories
+            const memoriesColRef = collection(db, "users", user.id, "memories");
+            const memoriesQuery = query(memoriesColRef, where("promptId", "!=", null));
+            const memoriesSnapshot = await getDocs(memoriesQuery);
+            const ids = new Set(memoriesSnapshot.docs.map(docSnap => docSnap.data().promptId as string).filter(Boolean));
+            setCompletedPromptIds(ids);
 
-    let unsubscribeMemories: () => void = () => {};
-    let unsubscribeFlags: () => void = () => {};
-
-    // Fetch completed prompts based on memories
-    const memoriesColRef = collection(db, "users", user.id, "memories");
-    const memoriesQuery = query(memoriesColRef, where("promptId", "!=", null));
-    unsubscribeMemories = onSnapshot(memoriesQuery, (snapshot) => {
-      const ids = new Set(snapshot.docs.map(docSnap => docSnap.data().promptId as string).filter(Boolean));
-      setCompletedPromptIds(ids);
-      setMemoriesLoaded(true);
-    }, (error) => {
-      console.error("Error fetching completed prompts:", error);
-      toast({ title: "Error loading completion status", variant: "destructive" });
-      setMemoriesLoaded(true); // Still mark as loaded to unblock UI
-    });
-
-    // Fetch flagged prompts from user's promptFlags subcollection
-    const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, user.id);
-    unsubscribeFlags = onSnapshot(promptFlagsDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            const flaggedIdsFromDb = Object.entries(data)
-                .filter(([_, value]) => value === true)
-                .map(([key, _]) => key);
-            setFlaggedPromptIds(new Set(flaggedIdsFromDb));
-        } else {
-            setFlaggedPromptIds(new Set());
+            // Fetch flagged prompts from user's promptFlags subcollection
+            const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, user.id);
+            const docSnap = await getDoc(promptFlagsDocRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const flaggedIdsFromDb = Object.entries(data)
+                    .filter(([_, value]) => value === true)
+                    .map(([key, _]) => key);
+                setFlaggedPromptIds(new Set(flaggedIdsFromDb));
+            } else {
+                setFlaggedPromptIds(new Set());
+            }
+        } catch (error) {
+            console.error("Error fetching prompt data:", error);
+            toast({ title: "Error loading Life Journey data", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
         }
-        setFlagsLoaded(true);
-    }, (error) => {
-        console.error("Error fetching flagged prompts:", error);
-        setFlagsLoaded(true); // Still mark as loaded
-    });
-
-    return () => {
-      unsubscribeMemories();
-      unsubscribeFlags();
     };
-  }, [user]);
 
-  // Effect to manage the overall isLoading state based on individual data loads
-  useEffect(() => {
-    if (memoriesLoaded && flagsLoaded) {
-      setIsLoading(false);
-    } else if (!user && memoriesLoaded && flagsLoaded) { // Case for no user, initial load done
-      setIsLoading(false);
-    }
-  }, [user, memoriesLoaded, flagsLoaded]);
+    fetchPromptData();
+
+  }, [user]);
 
 
   const handleStartChapter = (promptId: string, promptText: string) => {
@@ -150,28 +128,17 @@ export default function LifeJourneyPage() {
 
   const handleViewEditChapter = async (promptId: string) => {
     if (!user) return;
-    // Find the memory associated with this promptId from Firestore
-    // This is slightly inefficient if many memories exist, could optimize if needed.
     const memoriesColRef = collection(db, "users", user.id, "memories");
     const q = query(memoriesColRef, where("promptId", "==", promptId));
     
     try {
-      const snapshot = await onSnapshot(q, (querySnapshot) => {
-        if (!querySnapshot.empty) {
-          const memoryDoc = querySnapshot.docs[0];
-          router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryDoc.id)}&promptId=${encodeURIComponent(promptId)}`);
-        } else {
-          toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
-        }
-      });
-      // Detach listener after first result or handle errors appropriately if it's a long-lived listener.
-      // For a simple navigation, a getDocs might be better if not needing real-time updates here.
-      // For simplicity here, we assume one-time fetch for navigation.
-      // To make it truly one-time, replace onSnapshot with getDocs(q) and process snapshot.docs[0].
-      // Example with getDocs:
-      // const querySnapshot = await getDocs(q);
-      // if (!querySnapshot.empty) { /* ... */ }
-
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const memoryDoc = querySnapshot.docs[0];
+        router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryDoc.id)}&promptId=${encodeURIComponent(promptId)}`);
+      } else {
+        toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
+      }
     } catch (error) {
       console.error("Error finding memory for prompt:", error);
       toast({ title: "Error", description: "Could not retrieve memory details.", variant: "destructive" });
@@ -185,7 +152,7 @@ export default function LifeJourneyPage() {
     const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, user.id);
     try {
         await setDoc(promptFlagsDocRef, { [promptIdToToggle]: newFlagStatus }, { merge: true });
-        // Optimistically update UI, onSnapshot will confirm
+        
         setFlaggedPromptIds(prev => {
             const newSet = new Set(prev);
             if (newFlagStatus) newSet.add(promptIdToToggle);
@@ -396,8 +363,6 @@ export default function LifeJourneyPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {group.prompts.map((prompt) => {
                     const isCompleted = completedPromptIds.has(prompt.id);
-                    // Finding memoryId for completed prompts for View/Edit would require another query or passing full memory objects.
-                    // For now, handleViewEditChapter will query Firestore for the specific memory.
                     const isFlagged = flaggedPromptIds.has(prompt.id);
                     
                     return (
@@ -406,10 +371,9 @@ export default function LifeJourneyPage() {
                         promptId={prompt.id}
                         promptText={prompt.text[currentLanguage] || prompt.text.en}
                         isCompleted={isCompleted}
-                        // memoryId is not directly passed here as it's not readily available without complex state management
                         isFlaggedForReuse={isFlagged}
                         onStartChapter={handleStartChapter}
-                        onViewEditChapter={handleViewEditChapter} // This will find the memoryId
+                        onViewEditChapter={handleViewEditChapter}
                         onToggleFlagPrompt={handleToggleFlagPrompt}
                       />
                     );
