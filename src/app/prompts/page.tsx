@@ -68,6 +68,32 @@ export default function LifeJourneyPage() {
     return [promptGroups[0]];
   }, [canAccessFullJourney, promptGroups]);
 
+  const handleToggleFlagPrompt = useCallback(async (promptIdToToggle: string) => {
+    if (!user) return;
+    const newFlagStatus = !flaggedPromptIds.has(promptIdToToggle);
+    
+    const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, user.id);
+    try {
+        await setDoc(promptFlagsDocRef, { [promptIdToToggle]: newFlagStatus }, { merge: true });
+        
+        setFlaggedPromptIds(prev => {
+            const newSet = new Set(prev);
+            if (newFlagStatus) newSet.add(promptIdToToggle);
+            else newSet.delete(promptIdToToggle);
+            return newSet;
+        });
+        
+        const promptText = mockPromptGroups.flatMap(g => g.prompts).find(p => p.id === promptIdToToggle)?.text[currentLanguage] || "This prompt";
+        toast({
+            title: newFlagStatus ? "Prompt Flagged" : "Prompt Unflagged",
+            description: `"${promptText}" is ${newFlagStatus ? "now flagged." : "no longer flagged."}`,
+        });
+    } catch (error) {
+        console.error("Error updating prompt flag in Firestore:", error);
+        toast({ title: "Flagging Error", variant: "destructive" });
+    }
+  }, [user, flaggedPromptIds, currentLanguage]);
+
   useEffect(() => {
     const userId = user?.id;
     if (!userId) {
@@ -137,33 +163,6 @@ export default function LifeJourneyPage() {
       toast({ title: "Error", description: "Could not retrieve memory details.", variant: "destructive" });
     }
   };
-
-  const handleToggleFlagPrompt = useCallback(async (promptIdToToggle: string) => {
-    if (!user) return;
-    const newFlagStatus = !flaggedPromptIds.has(promptIdToToggle);
-    
-    const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, user.id);
-    try {
-        await setDoc(promptFlagsDocRef, { [promptIdToToggle]: newFlagStatus }, { merge: true });
-        
-        setFlaggedPromptIds(prev => {
-            const newSet = new Set(prev);
-            if (newFlagStatus) newSet.add(promptIdToToggle);
-            else newSet.delete(promptIdToToggle);
-            return newSet;
-        });
-        
-        const promptText = mockPromptGroups.flatMap(g => g.prompts).find(p => p.id === promptIdToToggle)?.text[currentLanguage] || "This prompt";
-        toast({
-            title: newFlagStatus ? "Prompt Flagged" : "Prompt Unflagged",
-            description: `"${promptText}" is ${newFlagStatus ? "now flagged." : "no longer flagged."}`,
-        });
-    } catch (error) {
-        console.error("Error updating prompt flag in Firestore:", error);
-        toast({ title: "Flagging Error", variant: "destructive" });
-    }
-  }, [user, flaggedPromptIds, currentLanguage]);
-
 
   const handleGenerateCustomChapterIdeas = async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {
