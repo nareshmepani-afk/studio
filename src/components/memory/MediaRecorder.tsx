@@ -17,7 +17,6 @@ import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/te
 import { mockPromptGroups } from '@/lib/mockData';
 import type { MediaAttachment } from '@/types';
 import { getFFmpegInstance, getDurationWithFFmpeg, trimMediaWithFFmpeg } from '@/lib/ffmpeg';
-import useScript from '@/hooks/useScript';
 
 // Maximum duration constants (in seconds)
 const MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS = 300; // 5 minutes for raw recording
@@ -91,26 +90,17 @@ export function MediaCaptureControl({
   const canRecordOrUpload =
     hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
 
-  // Use the hook to load the FFmpeg script from CDN
-  const ffmpegScriptLoaded = useScript('https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js');
   const [isFFmpegInstanceReady, setIsFFmpegInstanceReady] = useState(false);
 
   useEffect(() => {
-    if (!ffmpegScriptLoaded) {
-      setProcessingStatusText('Loading media tools script...');
-      setIsFFmpegInstanceReady(false);
-      return;
-    }
-    if (isFFmpegInstanceReady) return; // Prevent re-initialization
     setProcessingStatusText('Initializing media tools...');
     getFFmpegInstance()
       .then(() => {
         setIsFFmpegInstanceReady(true);
         setProcessingStatusText('');
-        console.log("FFmpeg instance is ready for use in MediaRecorder.");
       })
       .catch(error => {
-        console.error("FFmpeg instance failed to initialize in MediaRecorder:", error.message, error.stack);
+        console.error("FFmpeg instance failed to initialize in MediaRecorder:", error);
         toast({
           title: "Media Tools Failed",
           description: "Could not load media processing tools. Trimming may be unavailable.",
@@ -118,9 +108,8 @@ export function MediaCaptureControl({
           duration: 10000,
         });
         setProcessingStatusText('Media tools failed to load');
-        setIsFFmpegInstanceReady(false);
       });
-  }, [ffmpegScriptLoaded, isFFmpegInstanceReady]);
+  }, []);
 
   useEffect(() => { latestTrimValuesRef.current = { startTime, endTime }; }, [startTime, endTime]);
 
@@ -295,7 +284,6 @@ export function MediaCaptureControl({
         }
       }
       const recorderOptions = selectedMimeType ? { mimeType: selectedMimeType } : undefined;
-      console.log(`Attempting to use MediaRecorder with options: `, recorderOptions || "Browser default for " + type);
       const recorder = new window.MediaRecorder(streamForNewRecording, recorderOptions);
       mediaRecorderRef.current = recorder;
       recorder.ondataavailable = (event) => { if (event.data.size > 0) recordedChunks.current.push(event.data); };
@@ -309,7 +297,6 @@ export function MediaCaptureControl({
         }
         const blobMimeTypeToUse = mediaRecorderRef.current?.mimeType || (type === 'video' ? (selectedMimeType || 'video/webm') : (selectedMimeType || 'audio/webm'));
         const blob = new Blob(currentRecordedChunksCopy, { type: blobMimeTypeToUse });
-        console.log("Blob created from chunks:", {size: blob.size, type: blob.type});
         if (blob.size < 1024) {
           setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Recorded data is too small or corrupted. Please try a longer recording.', duration: 7000 }), 0);
           cleanupAndFinalizeRecording(streamForNewRecording);
@@ -571,17 +558,6 @@ export function MediaCaptureControl({
 
   const currentFinalMaxDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
   const isReady = isFFmpegInstanceReady && canRecordOrUpload;
-
-  useEffect(() => {
-    console.log("MediaRecorder button status check:", {
-      isFFmpegInstanceReady,
-      canRecordOrUpload,
-      isReady,
-      isRecording,
-      hasCameraPermission,
-      isButtonDisabled: !isReady || isRecording || hasCameraPermission === false,
-    });
-  }, [isFFmpegInstanceReady, canRecordOrUpload, isReady, isRecording, hasCameraPermission]);
 
   return (
     <Card>

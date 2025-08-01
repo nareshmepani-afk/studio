@@ -1,4 +1,3 @@
-
 // src/lib/ffmpeg.ts
 // This file handles loading ffmpeg.wasm files from a CDN and providing helper functions.
 
@@ -18,21 +17,16 @@ declare global {
     FFmpeg: {
       createFFmpeg: (options: any) => FFmpeg;
       fetchFile: (data: Blob | string | Uint8Array) => Promise<Uint8Array>; // Updated fetchFile type
-      // Add other properties if you use them directly from window.FFmpeg
     };
   }
 }
-
-// Declare the global FFmpeg object for use within the file
-declare const FFmpeg: Window['FFmpeg'];
-
 
 let ffmpegInstance: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
 // Main function to get a loaded FFmpeg instance
 export async function getFFmpegInstance(): Promise<FFmpeg> {
-  if (ffmpegInstance) {
+  if (ffmpegInstance && ffmpegInstance.isLoaded()) {
     return ffmpegInstance;
   }
   if (ffmpegLoadingPromise) {
@@ -41,22 +35,21 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 
   ffmpegLoadingPromise = new Promise(async (resolve, reject) => {
     try {
-      // Check if FFmpeg is available globally (loaded by script tag)
-      if (typeof FFmpeg === 'undefined') {
-        throw new Error("FFmpeg script not loaded from CDN. Ensure the script tag is included in your HTML.");
+      // Dynamically import the FFmpeg script
+      await import(/* webpackIgnore: true */ 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js');
+      
+      if (typeof window.FFmpeg === 'undefined') {
+        throw new Error("FFmpeg script failed to load from CDN.");
       }
 
-      const { createFFmpeg, toBlobURL } = FFmpeg;
-      // Using unpkg CDN for ffmpeg/core
+      const { createFFmpeg, toBlobURL } = window.FFmpeg;
       const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
 
       const ffmpeg = createFFmpeg({
-        // Do NOT include `log: true` in production, it's very verbose.
-        // log: true,
+        // log: true, // Enable for detailed debugging
       });
 
       await ffmpeg.load({
-         // These paths point to the CDN URLs
          corePath: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
          workerPath: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript'),
          wasmPath: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
@@ -65,7 +58,7 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       ffmpegInstance = ffmpeg;
       resolve(ffmpegInstance);
     } catch (error) {
-      console.error("Error initializing FFmpeg from CDN:", error.message, error.stack);
+      console.error("Error initializing FFmpeg from CDN:", error);
       ffmpegLoadingPromise = null;
       reject(error);
     }
@@ -74,18 +67,15 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
   return ffmpegLoadingPromise;
 }
 
-// Export fetchFile from the global FFmpeg object for use in other functions
 export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8Array> => {
-    if (typeof FFmpeg === 'undefined' || !FFmpeg.fetchFile) {
+    if (typeof window.FFmpeg === 'undefined' || !window.FFmpeg.fetchFile) {
         throw new Error("FFmpeg script not loaded or fetchFile not available.");
     }
-    return FFmpeg.fetchFile(data);
+    return window.FFmpeg.fetchFile(data);
 };
-
 
 export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   const ffmpeg = await getFFmpegInstance();
-  // fetchFile is now exported directly from this module, which uses the global FFmpeg
   let fileExtension = 'tmp';
   const mimeParts = mediaBlob.type.split('/');
   if (mimeParts.length > 1) {
@@ -99,29 +89,13 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
 
   try {
     ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
-
     ffmpeg.setLogger(({ type, message }) => {
-      if (type === 'fferr') {
+      if (type === 'fferr' || type === 'ffout') {
         logOutput += message + "\n";
       }
     });
 
-    // Capture stderr output to parse duration
-    // Redirect stderr to stdout and then pipe to a file, then read the file
-    // This is a more robust way to capture stderr than relying on setLogger
-    const stderrFileName = 'stderr.log';
-    await ffmpeg.run('-i', fileName, '-f', 'null', '-', '-v', 'quiet', '-stats_log_level', 'info'); // -v quiet and -stats_log_level info might give cleaner output
-
-    // We need to figure out how to get the stderr output when running in this environment
-    // The previous implementation relied on setLogger which might not capture all info
-    // Let's try running without piping to null and see if setLogger captures Duration
-     logOutput = ""; // Reset logOutput for the actual run
-     ffmpeg.setLogger(({ type, message }) => {
-       if (type === 'fferr' || type === 'ffout') { // Capture both stderr and stdout
-         logOutput += message + "\n";
-       }
-     });
-    await ffmpeg.run('-i', fileName); // Run with -i to get metadata
+    await ffmpeg.run('-i', fileName);
 
     const durationMatch = logOutput.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
 
@@ -132,11 +106,10 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
       const centiseconds = parseInt(durationMatch[4], 10);
       return hours * 3600 + minutes * 60 + seconds + centiseconds / 100;
     } else {
-       console.error("FFmpeg output did not contain duration information. Full log:", logOutput, "Error: Could not parse duration."); // Removed error.message, error.stack as it's not a caught error here.
-       // Attempt to parse duration from a different pattern if the first fails
-       const alternativeDurationMatch = logOutput.match(/Duration: (\d+)\.(\d+)/);
+       console.warn("Could not parse H:M:S.cs duration, trying alternative. Full log:", logOutput);
+       const alternativeDurationMatch = logOutput.match(/Duration: (\d+\.\d+)/);
        if (alternativeDurationMatch) {
-           return parseInt(alternativeDurationMatch[1], 10) + parseInt(alternativeDurationMatch[2], 10) / 100;
+           return parseFloat(alternativeDurationMatch[1]);
        }
       throw new Error("Could not parse duration from FFmpeg output.");
     }
@@ -144,13 +117,12 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     try {
       ffmpeg.FS('unlink', fileName);
     } catch (e) { /* Ignore cleanup errors */ }
-    ffmpeg.setLogger(() => {}); // Reset logger
+    ffmpeg.setLogger(() => {});
   }
 }
 
 export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, endTime: number): Promise<Blob> {
     const ffmpeg = await getFFmpegInstance();
-    // fetchFile is now exported directly from this module
     let inputFilenameExtension = 'tmp';
     const inputMimeParts = mediaBlob.type.split('/');
     if (inputMimeParts.length > 1) {
@@ -160,45 +132,28 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
       }
     }
     const inputFilename = 'input_trim.' + inputFilenameExtension;
-
-    let outputFilenameExtension = 'tmp';
-    const outputMimeParts = mediaBlob.type.split('/');
-    if (outputMimeParts.length > 1) {
-      const outputSubParts = outputMimeParts[1].split(';');
-      if (outputSubParts.length > 0) {
-        outputFilenameExtension = outputSubParts[0];
-      }
-    }
-    const outputFilename = 'output_trim.' + outputFilenameExtension;
-
+    const outputFilename = 'output_trim.' + inputFilenameExtension;
 
     try {
         ffmpeg.FS('writeFile', inputFilename, await fetchFile(mediaBlob));
-
         const duration = endTime - startTime;
-
-        // Ensure duration is not negative or zero
         if (duration <= 0) {
             throw new Error("End time must be after start time for trimming.");
         }
-
-        // Using -c copy for speed, but it might not be frame accurate depending on keyframes
-        // If frame-accuracy is critical, remove -c copy (will be slower due to re-encoding)
+        
         await ffmpeg.run(
-            '-ss', startTime.toString(), // Start time
-            '-i', inputFilename,         // Input file
-            '-t', duration.toString(),   // Duration of the trim
-            '-c', 'copy',                // Copy codecs to avoid re-encoding (fast)
+            '-ss', startTime.toString(),
+            '-i', inputFilename,
+            '-t', duration.toString(),
+            '-c', 'copy',
             outputFilename
         );
 
         const data = ffmpeg.FS('readFile', outputFilename);
         const trimmedBlob = new Blob([data.buffer], { type: mediaBlob.type });
-
-        console.log("Media successfully trimmed. New size: " + (trimmedBlob.size / (1024*1024)).toFixed(2) + " MB");
         return trimmedBlob;
     } catch (error) {
-        console.error("Error trimming media with FFmpeg:", error.message, error.stack);
+        console.error("Error trimming media with FFmpeg:", error);
         throw error;
     } finally {
         try {
