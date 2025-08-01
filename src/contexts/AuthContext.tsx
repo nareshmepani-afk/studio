@@ -241,8 +241,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchHostPassPrice = useCallback(() => { fetchHostPassPriceLogic(user); }, [user, fetchHostPassPriceLogic]);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+  const onAuthChange = useCallback(async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         const userDocRef = doc(db, "users", firebaseUser.uid);
         let userDocSnap;
@@ -300,7 +299,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             storageUsedBytes: 0,
           };
           try {
-            // Ensure we only write if the current auth user is the one we're creating the doc for
             if (auth.currentUser && auth.currentUser.uid === firebaseUser.uid) {
               await setDoc(userDocRef, { ...appUserInitial, createdAt: serverTimestamp() });
             } else {
@@ -318,21 +316,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         
-        // Only proceed if current auth state matches firebaseUser, important for pass status updates
         if (auth.currentUser && auth.currentUser.uid === firebaseUser.uid) {
             const appUserWithPassStatus = await checkAndUpdatePassStatus(appUserInitial);
             setUser(appUserWithPassStatus);
             setIsAuthenticated(true);
             
-            // This is non-critical and doesn't affect the user object, so it's safe to run
             checkIfGuestHasUnviewedMemories().then(hasUnviewed => {
               setHasNewSharedMemoriesState(hasUnviewed);
             });
 
-            // This can cause a re-render, but it's a one-off calculation on load
             calculateAndUpdateStorageUsage(appUserWithPassStatus.id);
         } else {
-             // This case handles a rapid auth state change; treat as if logged out for this specific run
             setUser(null);
             setIsAuthenticated(false);
             setHasNewSharedMemoriesState(false);
@@ -353,11 +347,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         setLoading(false);
       }
-    });
+  }, [checkAndUpdatePassStatus, checkIfGuestHasUnviewedMemories, calculateAndUpdateStorageUsage]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, onAuthChange);
     return () => {
       unsubscribe();
     }
-  }, [checkAndUpdatePassStatus, checkIfGuestHasUnviewedMemories, calculateAndUpdateStorageUsage]);
+  }, [onAuthChange]);
 
 
   useEffect(() => {
@@ -424,18 +421,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         storageUsedBytes: 0,
         createdAt: serverTimestamp() as Timestamp
       };
-      // The setDoc operation will be guarded by security rules.
-      // onAuthStateChanged will pick up the new user and attempt to load/create their profile.
-      // We rely on onAuthStateChanged to handle the profile creation if it doesn't exist.
-      // This avoids a race condition if setDoc here is slower than onAuthStateChanged triggering.
-      // If onAuthStateChanged finds no doc, it will create one.
+      
       toast({ title: "Registration Successful", description: "Welcome! Your account has been created." });
     } catch (error: any) {
       console.error("AuthContext: Registration error:", error);
       toast({ title: "Registration Failed", description: error.message || "Could not create account.", variant: "destructive" });
-      // Ensure loading is false if register fails before onAuthStateChanged completes for the new user
       const currentUser = auth.currentUser;
-      if (!currentUser || currentUser.email !== email) { // If auth state didn't change to this new user
+      if (!currentUser || currentUser.email !== email) { 
         setLoading(false);
       }
       throw error;
@@ -446,8 +438,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = useCallback(async () => {
     try {
       await firebaseSignOut(auth);
-      // onAuthStateChanged will handle setting user to null, isAuthenticated to false,
-      // and subsequent redirection via the useEffect for route protection.
       justLoggedOut.current = true;
       router.push('/');
       setPendingRequestCountState(0);
@@ -554,5 +544,3 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-
-    

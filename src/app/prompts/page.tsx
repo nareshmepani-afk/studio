@@ -29,15 +29,14 @@ import { cn } from "@/lib/utils";
 import { db } from '@/lib/firebase';
 import { collection, query, where, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 
-// Use a different key for Firestore-backed prompt flags if needed, or integrate into user document
 const FIRESTORE_USER_PROMPT_FLAGS_COLLECTION = 'userPromptFlags'; 
 
 export default function LifeJourneyPage() {
-  const [promptGroups, setPromptGroups] = useState<PromptGroup[]>(mockPromptGroups); // Initialize with static structure
+  const [promptGroups, setPromptGroups] = useState<PromptGroup[]>(mockPromptGroups);
   const [completedPromptIds, setCompletedPromptIds] = useState<Set<string>>(new Set());
   const [flaggedPromptIds, setFlaggedPromptIds] = useState<Set<string>>(new Set());
   
-  const [isLoading, setIsLoading] = useState(true); // Start as true
+  const [isLoading, setIsLoading] = useState(true);
 
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
@@ -48,7 +47,7 @@ export default function LifeJourneyPage() {
     purchasePaidHostPass, 
     activateFreeHostPass, 
     hostPassPriceDetails, 
-    isFetchingHostPassPrice: isFetchingAuthHostPassPrice,
+    isFetchingHostPassPrice,
     hostPassStatus 
   } = useAuth(); 
 
@@ -57,9 +56,7 @@ export default function LifeJourneyPage() {
   const [customChapterLanguage, setCustomChapterLanguage] = useState<'en' | 'gu'>('en');
   const [generatedChapterIdeas, setGeneratedChapterIdeas] = useState<string[]>([]);
   const [isLoadingChapterIdeas, setIsLoadingChapterIdeas] = useState(false);
-
-  const isActuallyFetchingHostPassPrice = isFetchingAuthHostPassPrice;
-
+  
   useEffect(() => { if (user?.profileInfo) setCustomChapterUserProfile(user.profileInfo); }, [user?.profileInfo]);
 
   const canAccessFullJourney = useMemo(() => {
@@ -68,12 +65,12 @@ export default function LifeJourneyPage() {
 
   const availablePromptGroups = useMemo(() => {
     if (canAccessFullJourney || promptGroups.length === 0) return promptGroups;
-    return [promptGroups[0]]; // Show only first group if pass not active
+    return [promptGroups[0]];
   }, [canAccessFullJourney, promptGroups]);
 
-  // Fetch completed prompts and flagged prompts from Firestore
   useEffect(() => {
-    if (!user) {
+    const userId = user?.id;
+    if (!userId) {
       setIsLoading(false);
       setCompletedPromptIds(new Set());
       setFlaggedPromptIds(new Set());
@@ -83,15 +80,13 @@ export default function LifeJourneyPage() {
     const fetchPromptData = async () => {
         setIsLoading(true);
         try {
-            // Fetch completed prompts based on memories
-            const memoriesColRef = collection(db, "users", user.id, "memories");
+            const memoriesColRef = collection(db, "users", userId, "memories");
             const memoriesQuery = query(memoriesColRef, where("promptId", "!=", null));
             const memoriesSnapshot = await getDocs(memoriesQuery);
             const ids = new Set(memoriesSnapshot.docs.map(docSnap => docSnap.data().promptId as string).filter(Boolean));
             setCompletedPromptIds(ids);
 
-            // Fetch flagged prompts from user's promptFlags subcollection
-            const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, user.id);
+            const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, userId);
             const docSnap = await getDoc(promptFlagsDocRef);
             if (docSnap.exists()) {
                 const data = docSnap.data();
@@ -111,9 +106,7 @@ export default function LifeJourneyPage() {
     };
 
     fetchPromptData();
-
-  }, [user]);
-
+  }, [user?.id]); // Depend only on user ID for re-fetching data.
 
   const handleStartChapter = (promptId: string, promptText: string) => {
     const isPromptInAvailableGroups = availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === promptId);
@@ -123,7 +116,7 @@ export default function LifeJourneyPage() {
         return;
     }
     setTimeout(() => toast({ title: "Starting New Chapter!", description: `Prompt: "${promptText}". Redirecting...`}), 0);
-    router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`); // Removed prompt text from query
+    router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
   };
 
   const handleViewEditChapter = async (promptId: string) => {
@@ -199,25 +192,24 @@ export default function LifeJourneyPage() {
         return;
     }
     setTimeout(() => toast({ title: "Custom Chapter Selected!", description: `Starting chapter: "${idea}". Redirecting...`}), 0);
-    // For custom ideas, we don't have a promptId, just the text
     router.push(`/add-memory?prompt=${encodeURIComponent(idea)}`); 
     setShowCustomChapterDialog(false);
     setGeneratedChapterIdeas([]); 
   };
 
-  const handleHostPassAction = () => {
+  const handleHostPassAction = useCallback(() => {
     if (hostPassStatus === 'no_pass_initiated') {
       activateFreeHostPass();
     } else if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
       purchasePaidHostPass();
     }
-  };
+  }, [hostPassStatus, activateFreeHostPass, purchasePaidHostPass]);
   
   let hostPassButtonText = "Activate 6-Month Free Host Pass";
   let hostPassPriceString = ""; 
   if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
     hostPassButtonText = "Purchase Host Pass"; 
-    if (isActuallyFetchingHostPassPrice) {
+    if (isFetchingHostPassPrice) {
         hostPassButtonText = "Fetching price...";
     } else if (hostPassPriceDetails) {
         hostPassPriceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
@@ -320,9 +312,9 @@ export default function LifeJourneyPage() {
                   "mt-3 bg-primary hover:bg-primary/90 text-primary-foreground w-fit",
                   hostPassStatus === 'no_pass_initiated' && "px-4"
                 )}
-                disabled={isActuallyFetchingHostPassPrice && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired')}
+                disabled={isFetchingHostPassPrice && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired')}
               >
-                {isActuallyFetchingHostPassPrice && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') ? (
+                {isFetchingHostPassPrice && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     {hostPassButtonText}
