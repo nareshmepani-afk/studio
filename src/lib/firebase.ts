@@ -4,8 +4,6 @@ import { initializeAuth, getAuth, browserLocalPersistence, type Auth } from 'fir
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
-console.log("Attempting to load Firebase config from environment variables...");
-
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -15,50 +13,19 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-console.log("Firebase config object constructed. Project ID:", firebaseConfig.projectId);
-
-// Check for missing essential configuration values
-const essentialConfigKeys = ['apiKey', 'authDomain', 'projectId', 'storageBucket'];
-const missingConfigs = essentialConfigKeys.filter(
-  (key) => !firebaseConfig[key as keyof typeof firebaseConfig]
-);
-
-if (missingConfigs.length > 0) {
-  console.error(
-    `FIREBASE CONFIGURATION ERROR: The following essential Firebase configuration values are missing or undefined in .env: ${missingConfigs.join(', ')}. ` +
-    "Please ensure all NEXT_PUBLIC_FIREBASE_... variables are correctly set in your .env file. " +
-    "If you've recently updated the .env file, you MUST RESTART your Next.js development server for the changes to take effect."
-  );
-}
-
-// Singleton pattern to initialize and get Firebase services
-const getFirebaseServices = () => {
-  let app: FirebaseApp;
-  if (!getApps().length) {
-    console.log("No Firebase apps initialized yet. Calling initializeApp().");
-    try {
-      app = initializeApp(firebaseConfig);
-      console.log("Firebase app initialized successfully. Name:", app.name, "Project ID from options:", app.options.projectId);
-    } catch (e) {
-      console.error("Firebase initializeApp() FAILED:", e);
-      throw new Error(`Firebase initialization failed. Original error: ${(e as Error).message}`);
-    }
-  } else {
-    console.log("Firebase app already exists. Calling getApp().");
-    app = getApp();
-    console.log("Existing Firebase app retrieved. Name:", app.name, "Project ID from options:", app.options.projectId);
+// This function ensures Firebase is initialized only once.
+const getFirebaseApp = (): FirebaseApp => {
+  if (getApps().length === 0) {
+    return initializeApp(firebaseConfig);
   }
-
-  const auth = initializeAuth(app, {
-    persistence: browserLocalPersistence
-  });
-  
-  const db = getFirestore(app);
-  const storage = getStorage(app);
-
-  return { app, auth, db, storage };
+  return getApp();
 };
 
-// Export the initialized services
-const { app, auth, db, storage } = getFirebaseServices();
+const app = getFirebaseApp();
+const auth = initializeAuth(app, {
+  persistence: browserLocalPersistence
+});
+const db = getFirestore(app);
+const storage = getStorage(app);
+
 export { app, auth, db, storage };

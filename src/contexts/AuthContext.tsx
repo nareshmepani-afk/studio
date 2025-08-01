@@ -84,7 +84,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateUserProfileInFirestore = useCallback(async (userId: string, updates: Partial<User>) => {
     if (!userId) {
-      console.warn("AuthContext: updateUserProfileInFirestore called with null/undefined userId. Skipping update.");
       return;
     }
     const userDocRef = doc(db, "users", userId);
@@ -99,7 +98,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const calculateAndUpdateStorageUsage = useCallback(async (userId: string) => {
     if (!userId) {
-      console.warn("AuthContext: calculateAndUpdateStorageUsage called with null/undefined userId. Skipping calculation.");
       return;
     }
     try {
@@ -166,7 +164,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [updateUserProfileInFirestore]);
 
   const onAuthChange = useCallback(async (firebaseUser: FirebaseUser | null) => {
-      setLoading(true);
       if (firebaseUser) {
         const userDocRef = doc(db, "users", firebaseUser.uid);
         let userDocSnap;
@@ -175,7 +172,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } catch (error: any) {
           console.error(`AuthContext: Firestore getDoc FAILED for user ${firebaseUser.uid}:`, error);
           toast({ title: "Profile Load Error", description: `Error loading profile: ${error.message}. Check connection and Firebase setup.`, variant: "destructive", duration: 10000 });
-          setUser(null); setIsAuthenticated(false); setLoading(false);
+          setUser(null); setIsAuthenticated(false);
           return;
         }
         
@@ -207,14 +204,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const appUserWithPassStatus = await checkAndUpdatePassStatus(appUserInitial);
         setUser(appUserWithPassStatus);
         setIsAuthenticated(true);
-        calculateAndUpdateStorageUsage(appUserWithPassStatus.id);
         
       } else {
         setUser(null);
         setIsAuthenticated(false);
       }
       setLoading(false);
-  }, [checkAndUpdatePassStatus, calculateAndUpdateStorageUsage]);
+  }, [checkAndUpdatePassStatus]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, onAuthChange);
@@ -260,7 +256,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = useCallback(async (name: string, email: string, password: string): Promise<void> => {
     setLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Now that user is created, create their document in Firestore.
+      const userDocRef = doc(db, "users", userCredential.user.uid);
+      const appUserInitial: User = {
+        id: userCredential.user.uid,
+        email: email,
+        name: name,
+        sharedAccessStatus: 'no_pass_initiated',
+        hostPassStatus: 'no_pass_initiated',
+        viewedSharedMemoryIds: [],
+        storageUsedBytes: 0,
+      };
+      await setDoc(userDocRef, { ...appUserInitial, createdAt: serverTimestamp() });
+
       toast({ title: "Registration Successful", description: "Welcome! Your account has been created." });
     } catch (error: any) {
       console.error("AuthContext: Registration error:", error);
