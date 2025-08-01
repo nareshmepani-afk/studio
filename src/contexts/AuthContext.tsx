@@ -184,8 +184,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const updatesToSave: Partial<User> = {};
         if (guestStatusChanged) updatesToSave.sharedAccessStatus = updatedUser.sharedAccessStatus;
         if (hostStatusChanged) updatesToSave.hostPassStatus = updatedUser.hostPassStatus;
-        // updateUserProfileInFirestore will be called only if auth.currentUser matches currentUser.id
-        await updateUserProfileInFirestore(currentUser.id, updatesToSave);
+        // This check is now crucial: Only update if the user in context is still the one from the auth state
+        if (auth.currentUser && auth.currentUser.uid === currentUser.id) {
+           await updateUserProfileInFirestore(currentUser.id, updatesToSave);
+        }
     }
     return updatedUser;
   }, [updateUserProfileInFirestore]);
@@ -322,9 +324,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUser(appUserWithPassStatus);
             setIsAuthenticated(true);
             
+            // This is non-critical and doesn't affect the user object, so it's safe to run
             checkIfGuestHasUnviewedMemories().then(hasUnviewed => {
               setHasNewSharedMemoriesState(hasUnviewed);
             });
+
+            // This can cause a re-render, but it's a one-off calculation on load
             calculateAndUpdateStorageUsage(appUserWithPassStatus.id);
         } else {
              // This case handles a rapid auth state change; treat as if logged out for this specific run
@@ -360,7 +365,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
+    const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/cdn-test', '/ffmpeg-test'];
     const defaultAuthenticatedHostPath = '/prompts';
     const defaultAuthenticatedGuestPath = '/timeline';
 
@@ -549,3 +554,5 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
+    
