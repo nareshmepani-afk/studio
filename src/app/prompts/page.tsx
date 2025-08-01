@@ -98,41 +98,39 @@ export default function LifeJourneyPage() {
     const userId = user?.id;
     if (!userId) {
       setIsLoading(false);
-      setCompletedPromptIds(new Set());
-      setFlaggedPromptIds(new Set());
       return;
     }
 
     const fetchPromptData = async () => {
-        setIsLoading(true);
-        try {
-            const memoriesColRef = collection(db, "users", userId, "memories");
-            const memoriesQuery = query(memoriesColRef, where("promptId", "!=", null));
-            const memoriesSnapshot = await getDocs(memoriesQuery);
-            const ids = new Set(memoriesSnapshot.docs.map(docSnap => docSnap.data().promptId as string).filter(Boolean));
-            setCompletedPromptIds(ids);
+      setIsLoading(true);
+      try {
+        const memoriesColRef = collection(db, "users", userId, "memories");
+        const memoriesQuery = query(memoriesColRef, where("promptId", "!=", null));
+        const memoriesSnapshot = await getDocs(memoriesQuery);
+        const ids = new Set(memoriesSnapshot.docs.map(docSnap => docSnap.data().promptId as string).filter(Boolean));
+        setCompletedPromptIds(ids);
 
-            const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, userId);
-            const docSnap = await getDoc(promptFlagsDocRef);
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                const flaggedIdsFromDb = Object.entries(data)
-                    .filter(([_, value]) => value === true)
-                    .map(([key, _]) => key);
-                setFlaggedPromptIds(new Set(flaggedIdsFromDb));
-            } else {
-                setFlaggedPromptIds(new Set());
-            }
-        } catch (error) {
-            console.error("Error fetching prompt data:", error);
-            toast({ title: "Error loading Life Journey data", variant: "destructive" });
-        } finally {
-            setIsLoading(false);
+        const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, userId);
+        const docSnap = await getDoc(promptFlagsDocRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const flaggedIdsFromDb = Object.entries(data)
+            .filter(([_, value]) => value === true)
+            .map(([key, _]) => key);
+          setFlaggedPromptIds(new Set(flaggedIdsFromDb));
+        } else {
+          setFlaggedPromptIds(new Set());
         }
+      } catch (error) {
+        console.error("Error fetching prompt data:", error);
+        toast({ title: "Error loading Life Journey data", variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchPromptData();
-  }, [user?.id]); // Depend only on user ID for re-fetching data.
+  }, [user?.id]);
 
   const handleStartChapter = (promptId: string, promptText: string) => {
     const isPromptInAvailableGroups = availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === promptId);
