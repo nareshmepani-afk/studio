@@ -16,7 +16,7 @@ import { format, parseISO, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { collection, query, where, orderBy, onSnapshot, doc, deleteDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, deleteDoc, updateDoc, Timestamp, getDocs } from 'firebase/firestore';
 
 export default function TimelinePage() {
   const [memories, setMemories] = useState<Memory[]>([]);
@@ -77,47 +77,38 @@ export default function TimelinePage() {
       return;
     }
 
-    setIsLoading(true);
-    // For guest mode, we'll show the host's memories for now.
-    // True sharing logic would involve a different query (e.g., memories shared *with* the guest user).
-    const memoriesColRef = collection(db, "users", user.id, "memories");
+    const fetchMemories = async () => {
+      setIsLoading(true);
+      try {
+        const memoriesColRef = collection(db, "users", user.id, "memories");
+        let q = query(memoriesColRef, orderBy('date', sortCriteria.startsWith('date-') ? (sortCriteria.endsWith('desc') ? 'desc' : 'asc') : 'desc'));
+        
+        const snapshot = await getDocs(q);
+
+        const fetchedMemories = snapshot.docs.map(docSnap => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+          date: (docSnap.data().date as Timestamp)?.toDate ? (docSnap.data().date as Timestamp).toDate().toISOString() : docSnap.data().date as string,
+          createdAt: (docSnap.data().createdAt as Timestamp)?.toDate ? (docSnap.data().createdAt as Timestamp).toDate().toISOString() : undefined,
+          updatedAt: (docSnap.data().updatedAt as Timestamp)?.toDate ? (docSnap.data().updatedAt as Timestamp).toDate().toISOString() : undefined,
+        })) as Memory[];
+        
+        setMemories(fetchedMemories);
+        if (userMode === 'host') {
+          setPendingRequestCount(mockHostPendingRequests.length); // Mock
+        } else {
+          setPendingRequestCount(0);
+        }
+      } catch (error) {
+        console.error("Firestore getDocs Error:", error);
+        toast({ title: "Error Loading Memories", description: "Could not fetch memories.", variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    // Build query based on sort order for now. Filtering will be client-side.
-    let q = query(memoriesColRef, orderBy('date', sortCriteria.startsWith('date-') ? (sortCriteria.endsWith('desc') ? 'desc' : 'asc') : 'desc'));
-    // Firestore doesn't allow ordering by a different field than the one used in a range filter.
-    // If title sort is primary, we'd fetch all and sort client-side, or use more complex indexing.
-    // For now, primary sort is by date. Client-side sort can refine title.
+    fetchMemories();
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedMemories = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-        // Ensure date is a string, Firestore Timestamps might need conversion if stored differently
-        date: (docSnap.data().date as Timestamp)?.toDate ? (docSnap.data().date as Timestamp).toDate().toISOString() : docSnap.data().date as string,
-        createdAt: (docSnap.data().createdAt as Timestamp)?.toDate ? (docSnap.data().createdAt as Timestamp).toDate().toISOString() : undefined,
-        updatedAt: (docSnap.data().updatedAt as Timestamp)?.toDate ? (docSnap.data().updatedAt as Timestamp).toDate().toISOString() : undefined,
-
-      })) as Memory[];
-      setMemories(fetchedMemories);
-      setIsLoading(false);
-      if (userMode === 'host') {
-        setPendingRequestCount(mockHostPendingRequests.length); // Mock
-      } else {
-        setPendingRequestCount(0);
-      }
-    }, (error) => {
-      console.error("Firestore Listen Error:", error); // Log the full error object
-      console.error("Error message:", error.message); // Log the error message
-      console.error("Error name:", error.name);     // Log the error name
-      if ((error as any).code) {
-        console.error("Error code:", (error as any).code); // Log Firebase specific codes if available
-      }
-      console.error("Error stack:", error.stack);   // Log the stack trace
-      toast({ title: "Error Loading Memories", description: "Could not fetch memories.", variant: "destructive" });
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
   }, [user, userMode, setPendingRequestCount, sortCriteria]);
 
 
@@ -141,7 +132,7 @@ export default function TimelinePage() {
       const memoryDocRef = doc(db, "users", user.id, "memories", memoryId);
       await deleteDoc(memoryDocRef);
       toast({ title: "Memory Deleted", description: "The memory has been removed from Firestore."});
-      // No need to manually update state, onSnapshot will do it.
+      setMemories(prev => prev.filter(m => m.id !== memoryId));
     } catch (error) {
       console.error("Error deleting memory from Firestore:", error);
       toast({ title: "Delete Failed", variant: "destructive" });
@@ -153,14 +144,15 @@ export default function TimelinePage() {
     const memoryToUpdate = memories.find(mem => mem.id === memoryId);
     if (!memoryToUpdate) return;
 
+    const newLegacyStatus = !memoryToUpdate.isLegacy;
     try {
       const memoryDocRef = doc(db, "users", user.id, "memories", memoryId);
-      await updateDoc(memoryDocRef, { isLegacy: !memoryToUpdate.isLegacy });
+      await updateDoc(memoryDocRef, { isLegacy: newLegacyStatus });
       toast({
-        title: !memoryToUpdate.isLegacy ? "Added to Legacy Chest" : "Removed from Legacy Chest",
+        title: newLegacyStatus ? "Added to Legacy Chest" : "Removed from Legacy Chest",
         description: `"${memoryToUpdate.title}" status updated in Firestore.`,
       });
-      // No need to manually update state, onSnapshot will do it.
+      setMemories(prev => prev.map(m => m.id === memoryId ? {...m, isLegacy: newLegacyStatus} : m));
     } catch (error) {
       console.error("Error updating legacy status in Firestore:", error);
       toast({ title: "Update Failed", variant: "destructive" });
@@ -426,3 +418,5 @@ export default function TimelinePage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    
