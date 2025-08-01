@@ -1,3 +1,4 @@
+
 // src/lib/ffmpeg.ts
 // This file handles loading ffmpeg.wasm files from a CDN and providing helper functions.
 
@@ -16,7 +17,7 @@ declare global {
   interface Window {
     FFmpeg: {
       createFFmpeg: (options: any) => FFmpeg;
-      fetchFile: (data: Blob | string | Uint8Array) => Promise<Uint8Array>; // Updated fetchFile type
+      fetchFile: (data: Blob | string | Uint8Array) => Promise<Uint8Array>;
     };
   }
 }
@@ -42,7 +43,7 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
         throw new Error("FFmpeg script failed to load from CDN.");
       }
 
-      const { createFFmpeg, toBlobURL } = window.FFmpeg;
+      const { createFFmpeg } = window.FFmpeg;
       const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
 
       const ffmpeg = createFFmpeg({
@@ -50,9 +51,9 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       });
 
       await ffmpeg.load({
-         corePath: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-         workerPath: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript'),
-         wasmPath: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+         corePath: `${baseURL}/ffmpeg-core.js`,
+         workerPath: `${baseURL}/ffmpeg-core.worker.js`,
+         wasmPath: `${baseURL}/ffmpeg-core.wasm`,
       });
       console.log("FFmpeg core loaded and initialized from CDN.");
       ffmpegInstance = ffmpeg;
@@ -69,7 +70,11 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 
 export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8Array> => {
     if (typeof window.FFmpeg === 'undefined' || !window.FFmpeg.fetchFile) {
-        throw new Error("FFmpeg script not loaded or fetchFile not available.");
+        // Attempt to load FFmpeg if not available
+        await getFFmpegInstance();
+        if (typeof window.FFmpeg === 'undefined' || !window.FFmpeg.fetchFile) {
+            throw new Error("FFmpeg script not loaded or fetchFile not available after attempting to load.");
+        }
     }
     return window.FFmpeg.fetchFile(data);
 };
