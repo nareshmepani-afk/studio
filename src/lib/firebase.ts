@@ -1,8 +1,8 @@
 
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { initializeAuth, getAuth, browserLocalPersistence, type Auth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 console.log("Attempting to load Firebase config from environment variables...");
 
@@ -31,51 +31,34 @@ if (missingConfigs.length > 0) {
   );
 }
 
-// Initialize Firebase
-let app: FirebaseApp;
-
-if (!getApps().length) {
-  console.log("No Firebase apps initialized yet. Calling initializeApp().");
-  try {
-    app = initializeApp(firebaseConfig);
-    console.log("Firebase app initialized successfully. Name:", app.name, "Project ID from options:", app.options.projectId);
-  } catch (e) {
-    console.error("Firebase initializeApp() FAILED:", e);
-    throw new Error(`Firebase initialization failed. Original error: ${(e as Error).message}`);
+// Singleton pattern to initialize and get Firebase services
+const getFirebaseServices = () => {
+  let app: FirebaseApp;
+  if (!getApps().length) {
+    console.log("No Firebase apps initialized yet. Calling initializeApp().");
+    try {
+      app = initializeApp(firebaseConfig);
+      console.log("Firebase app initialized successfully. Name:", app.name, "Project ID from options:", app.options.projectId);
+    } catch (e) {
+      console.error("Firebase initializeApp() FAILED:", e);
+      throw new Error(`Firebase initialization failed. Original error: ${(e as Error).message}`);
+    }
+  } else {
+    console.log("Firebase app already exists. Calling getApp().");
+    app = getApp();
+    console.log("Existing Firebase app retrieved. Name:", app.name, "Project ID from options:", app.options.projectId);
   }
-} else {
-  console.log("Firebase app already exists. Calling getApp().");
-  app = getApp();
-  console.log("Existing Firebase app retrieved. Name:", app.name, "Project ID from options:", app.options.projectId);
-}
 
-let authInstance: Auth;
-let dbInstance;
-let storageInstance;
-
-try {
-  // Use initializeAuth with browserLocalPersistence to fix the i18n error
-  authInstance = initializeAuth(app, {
+  const auth = initializeAuth(app, {
     persistence: browserLocalPersistence
   });
-} catch (error) {
-    // If initializeAuth fails (e.g., already initialized), fall back to getAuth
-    console.warn("initializeAuth failed, falling back to getAuth. Error:", (error as Error).message);
-    authInstance = getAuth(app);
-}
+  
+  const db = getFirestore(app);
+  const storage = getStorage(app);
 
-try {
-  dbInstance = getFirestore(app);
-} catch (e) {
-  console.error("Failed to get Firestore instance:", e);
-  throw new Error(`Failed to initialize Firebase Firestore. Original error: ${(e as Error).message}`);
-}
+  return { app, auth, db, storage };
+};
 
-try {
-  storageInstance = getStorage(app);
-} catch (e) {
-  console.error("Failed to get Storage instance:", e);
-  throw new Error(`Failed to initialize Firebase Storage. Original error: ${(e as Error).message}`);
-}
-
-export { app, authInstance as auth, dbInstance as db, storageInstance as storage };
+// Export the initialized services
+const { app, auth, db, storage } = getFirebaseServices();
+export { app, auth, db, storage };

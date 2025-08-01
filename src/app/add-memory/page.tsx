@@ -31,7 +31,7 @@ export default function AddMemoryPage() {
   } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [memoryToEdit, setMemoryToEdit] = useState<Memory | undefined>(undefined);
-  const [isLoadingMemory, setIsLoadingMemory] = useState(true); // Default to true
+  const [isLoadingMemory, setIsLoadingMemory] = useState(true);
 
   const editMemoryId = searchParams.get('editMemoryId');
   const promptIdFromQuery = searchParams.get('promptId');
@@ -41,47 +41,41 @@ export default function AddMemoryPage() {
   useEffect(() => {
     const loadOrCreateMemoryState = async () => {
       if (editMemoryId && user) {
-        // We have an ID and a user, attempt to load the memory for editing
         setIsLoadingMemory(true);
         try {
           const memoryDocRef = doc(db, "users", user.id, "memories", editMemoryId);
           const memorySnap = await getDoc(memoryDocRef);
           if (memorySnap.exists()) {
             const memoryData = memorySnap.data() as Omit<Memory, 'id'>;
-            setMemoryToEdit({ id: memorySnap.id, ...memoryData });
+            // Convert Firestore Timestamps to ISO strings for consistency
+            const convertedData = {
+              ...memoryData,
+              date: (memoryData.date as any instanceof Timestamp) ? (memoryData.date as unknown as Timestamp).toDate().toISOString() : memoryData.date,
+              createdAt: (memoryData.createdAt as any instanceof Timestamp) ? (memoryData.createdAt as unknown as Timestamp).toDate().toISOString() : memoryData.createdAt,
+              updatedAt: (memoryData.updatedAt as any instanceof Timestamp) ? (memoryData.updatedAt as unknown as Timestamp).toDate().toISOString() : memoryData.updatedAt,
+            };
+            setMemoryToEdit({ id: memorySnap.id, ...convertedData });
           } else {
             toast({ title: "Memory not found", description: "Could not load the memory for editing.", variant: "destructive" });
             router.push('/timeline');
-            setMemoryToEdit(undefined); // Explicitly undefined on not found
           }
         } catch (error) {
           console.error("Error fetching memory:", error);
           toast({ title: "Error Loading Memory", description: "Failed to fetch memory details.", variant: "destructive" });
           router.push('/timeline');
-          setMemoryToEdit(undefined); // Explicitly undefined on error
         } finally {
           setIsLoadingMemory(false);
         }
-      } else if (!editMemoryId && user) {
-        // No editMemoryId, but we have a user: this is for a new memory.
-        // Set memoryToEdit to undefined and stop loading.
+      } else {
         setMemoryToEdit(undefined);
         setIsLoadingMemory(false);
-      } else if (!user && !authLoading) {
-        // No user, and authentication is not loading anymore.
-        // This implies the user is not logged in.
-        setMemoryToEdit(undefined);
-        setIsLoadingMemory(false);
-        // AuthenticatedPageWrapper should handle redirection if user is not authenticated.
       }
-      // If !user && authLoading is true, we wait for auth state to resolve.
-      // isLoadingMemory remains true until one of the above conditions is met.
     };
 
-    loadOrCreateMemoryState();
-
+    if (!authLoading) {
+      loadOrCreateMemoryState();
+    }
   }, [editMemoryId, user, authLoading, router]);
-
 
   const handleSubmit = async (
     memoryData: Omit<Memory, 'id' | 'userId' | 'createdAt' | 'updatedAt'> & { promptId?: string },
@@ -101,8 +95,8 @@ export default function AddMemoryPage() {
       const fileRef = storageRef(storage, filePath);
       try {
         toast({ title: "Uploading Media...", description: "Please wait while your media is being uploaded.", duration: 5000 });
-        await uploadBytes(fileRef, mediaFileToUpload);
-        const downloadURL = await getDownloadURL(fileRef);
+        const uploadTask = await uploadBytes(fileRef, mediaFileToUpload);
+        const downloadURL = await getDownloadURL(uploadTask.ref);
 
         if (memoryData.mediaAttachments && memoryData.mediaAttachments.length > 0) {
           processedMediaAttachments = [{
@@ -120,24 +114,11 @@ export default function AddMemoryPage() {
             size: mediaFileToUpload.size,
           }];
         }
-
-        if (isCreatingNew && oldMediaUrl && oldMediaUrl !== downloadURL && oldMediaUrl.includes('firebasestorage.googleapis.com')) {
-           console.warn("Old media URL present when creating new memory, deleting if from storage.");
-           try {
-                const oldFileStorageRef = storageRef(storage, oldMediaUrl);
-                await deleteObject(oldFileStorageRef);
-                console.log("Old media deleted from storage (new memory context):", oldMediaUrl);
-            } catch (deleteError: any) {
-                 if (deleteError.code !== 'storage/object-not-found') {
-                    console.warn("Could not delete old media from storage (new memory context):", deleteError);
-                 }
-            }
-        } else if (!isCreatingNew && oldMediaUrl && oldMediaUrl !== downloadURL && oldMediaUrl.includes('firebasestorage.googleapis.com')) {
-          console.log("New media uploaded, deleting old media from storage:", oldMediaUrl);
+        
+        if (oldMediaUrl && oldMediaUrl !== downloadURL && oldMediaUrl.includes('firebasestorage.googleapis.com')) {
           try {
             const oldFileStorageRef = storageRef(storage, oldMediaUrl);
             await deleteObject(oldFileStorageRef);
-            console.log("Old media deleted from storage:", oldMediaUrl);
           } catch (deleteError: any) {
             if (deleteError.code !== 'storage/object-not-found') {
                 console.warn("Could not delete old media from storage:", deleteError);
@@ -150,32 +131,29 @@ export default function AddMemoryPage() {
         setIsSubmitting(false);
         return;
       }
-    } else if (isCreatingNew && !mediaFileToUpload) {
-      processedMediaAttachments = undefined;
-    } else if (!isCreatingNew && !mediaFileToUpload && memoryData.mediaAttachments === undefined && oldMediaUrl) {
-      console.log("Media cleared for existing memory, deleting from storage:", oldMediaUrl);
+    } else if (!mediaFileToUpload && memoryData.mediaAttachments === undefined && oldMediaUrl) {
       processedMediaAttachments = undefined;
       if (oldMediaUrl.includes('firebasestorage.googleapis.com')) {
-          try {
-            const oldFileStorageRef = storageRef(storage, oldMediaUrl);
-            await deleteObject(oldFileStorageRef);
-            console.log("Old media (cleared by user) deleted from storage:", oldMediaUrl);
-          } catch (deleteError: any) {
-             if (deleteError.code !== 'storage/object-not-found') {
-                console.warn("Could not delete old media (cleared by user) from storage:", deleteError);
-             }
-          }
+        try {
+          const oldFileStorageRef = storageRef(storage, oldMediaUrl);
+          await deleteObject(oldFileStorageRef);
+        } catch (deleteError: any) {
+           if (deleteError.code !== 'storage/object-not-found') {
+              console.warn("Could not delete old media (cleared by user) from storage:", deleteError);
+           }
+        }
       }
     }
 
     const finalPromptId = memoryData.promptId || promptIdFromQuery || memoryToEdit?.promptId || undefined;
 
-    const dataToSave: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'> & { userId: string; updatedAt: Timestamp; createdAt?: Timestamp, mediaAttachments?: MediaAttachment[], promptId?: string } = {
+    const dataToSave: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'> & { userId: string; updatedAt: any; createdAt?: any, mediaAttachments?: MediaAttachment[], promptId?: string, date: any } = {
       ...memoryData,
       mediaAttachments: processedMediaAttachments,
       userId: user.id,
       promptId: finalPromptId,
-      updatedAt: serverTimestamp() as Timestamp,
+      date: Timestamp.fromDate(new Date(memoryData.date)),
+      updatedAt: serverTimestamp(),
     };
 
     try {
@@ -185,18 +163,14 @@ export default function AddMemoryPage() {
         toast({ title: "Memory Updated!", description: `"${dataToSave.title}" has been saved.` });
       } else {
         const memoriesColRef = collection(db, "users", user.id, "memories");
-        dataToSave.createdAt = serverTimestamp() as Timestamp;
+        dataToSave.createdAt = serverTimestamp();
         await addDoc(memoriesColRef, dataToSave);
         toast({ title: "Memory Added!", description: `"${dataToSave.title}" has been saved.` });
       }
 
       await calculateAndUpdateStorageUsage(user.id);
 
-      if (finalPromptId) {
-        router.push('/prompts');
-      } else {
-        router.push('/timeline');
-      }
+      router.push(finalPromptId ? '/prompts' : '/timeline');
     } catch (error) {
       console.error("Error saving memory to Firestore:", error);
       toast({ title: "Save Failed", description: "Could not save memory to the database.", variant: "destructive" });
