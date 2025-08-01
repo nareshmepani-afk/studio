@@ -1,3 +1,4 @@
+
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { initializeAuth, getAuth, browserLocalPersistence, type Auth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
