@@ -379,20 +379,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         isRedirectingFromAuthGuard.current = false;
       }
-
-      // Fetch pass prices if conditions met
-      if (user) {
-        if (userMode === 'host') {
-          if ((user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired' || user.hostPassStatus === 'no_pass_initiated') && !isFetchingHostPassPrice && !hostPassPriceDetails) {
-            fetchHostPassPrice();
-          }
-        } else if (userMode === 'guest') {
-          if ((user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated') && !isFetchingGuestPassPrice && !guestPassPriceDetails) {
-            fetchGuestPassPrice();
-          }
-        }
-      }
-
     } else { 
       isRedirectingFromAuthGuard.current = false;
       if (justLoggedOut.current) {
@@ -404,10 +390,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     }
-  }, [isAuthenticated, loading, pathname, router, userMode, user,
-      fetchGuestPassPrice, fetchHostPassPrice,
-      isFetchingGuestPassPrice, guestPassPriceDetails,
-      isFetchingHostPassPrice, hostPassPriceDetails]);
+  }, [isAuthenticated, loading, pathname, router, userMode]);
 
   const login = useCallback(async (email: string, password: string): Promise<void> => {
     setLoading(true);
@@ -566,4 +549,3 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-

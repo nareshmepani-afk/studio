@@ -69,9 +69,7 @@ export default function SettingsPage() {
   
   useEffect(() => {
     if (user) {
-      checkAndUpdateGuestPassStatus();
-      checkAndUpdateHostPassStatus();
-      
+      // Pass statuses are now checked on login, so we just need to fetch prices if needed.
       if (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated') {
         if (!isFetchingGuestPassPrice && !guestPassPriceDetails) {
           fetchGuestPassPrice();
@@ -82,15 +80,12 @@ export default function SettingsPage() {
            fetchHostPassPrice();
          }
       }
-      calculateAndUpdateStorageUsage(user.id);
+      // calculateAndUpdateStorageUsage(user.id); // This might be better called on timeline/add-memory pages
     }
   }, [
-    user, 
-    checkAndUpdateGuestPassStatus, 
-    checkAndUpdateHostPassStatus, 
+    user,
     fetchGuestPassPrice, 
-    fetchHostPassPrice, 
-    calculateAndUpdateStorageUsage,
+    fetchHostPassPrice,
     isFetchingGuestPassPrice, guestPassPriceDetails, 
     isFetchingAuthHostPassPrice, authHostPassPriceDetails
   ]);
@@ -441,4 +436,3 @@ export default function SettingsPage() {
     </AuthenticatedPageWrapper>
   );
 }
-    
