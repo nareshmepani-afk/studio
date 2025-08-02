@@ -67,29 +67,9 @@ export default function SettingsPage() {
   const [city, setCity] = useState('');
   const [townArea, setTownArea] = useState('');
   
-  useEffect(() => {
-    if (user) {
-      // Pass statuses are now checked on login, so we just need to fetch prices if needed.
-      if (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired' || user.sharedAccessStatus === 'no_pass_initiated') {
-        if (!isFetchingGuestPassPrice && !guestPassPriceDetails) {
-          fetchGuestPassPrice();
-        }
-      }
-      if (user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired' || user.hostPassStatus === 'no_pass_initiated') {
-         if (!isFetchingAuthHostPassPrice && !authHostPassPriceDetails) {
-           fetchHostPassPrice();
-         }
-      }
-      // calculateAndUpdateStorageUsage(user.id); // This might be better called on timeline/add-memory pages
-    }
-  }, [
-    user,
-    fetchGuestPassPrice, 
-    fetchHostPassPrice,
-    isFetchingGuestPassPrice, guestPassPriceDetails, 
-    isFetchingAuthHostPassPrice, authHostPassPriceDetails
-  ]);
-
+  // REMOVED: Redundant useEffect that was causing re-render loops.
+  // The logic for fetching prices should be triggered by UI interaction or
+  // a more stable condition within the context itself, not on every user object change.
 
   const daysInSelectedDobMonth = useMemo(() => {
     if (dobYear && dobMonth) {
