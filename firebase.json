@@ -1,6 +1,11 @@
-
 {
   "hosting": {
+    "public": "public",  // <--- ADDED THIS LINE
+    "ignore": [          // <--- ADDED THIS SECTION
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "headers": [
       {
         "source": "**",
