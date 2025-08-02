@@ -42,6 +42,7 @@ export default function LifeJourneyPage() {
     hostPassPriceDetails, 
     isFetchingHostPassPrice,
     hostPassStatus,
+    memories, // Destructure memories correctly
     completedPromptIds,
     flaggedPromptIds,
     isDataLoading,
@@ -93,13 +94,14 @@ export default function LifeJourneyPage() {
 
   const handleViewEditChapter = useCallback(async (promptId: string) => {
     if (!user) return;
-    const memoryForPrompt = user.memories.find(m => m.promptId === promptId);
+    // Correctly use the `memories` array from useAuth, not `user.memories`
+    const memoryForPrompt = memories.find(m => m.promptId === promptId);
     if (memoryForPrompt) {
       router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
     } else {
       toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
     }
-  }, [user, router]);
+  }, [user, memories, router]);
 
   const handleGenerateCustomChapterIdeas = useCallback(async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {
