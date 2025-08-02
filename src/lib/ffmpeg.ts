@@ -27,7 +27,7 @@ let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
 // --- Configuration for loading FFmpeg files ---
 // Set this to true to attempt loading from CDN first, false to load locally.
-const LOAD_FFMPEG_FROM_CDN = false; // Set to false to load locally
+const LOAD_FFMPEG_FROM_CDN = true; // Set to true to load from CDN for diagnostics
 const CDN_BASE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
 const LOCAL_FFMPEG_PATH = '/ffmpeg'; // Files are in public/ffmpeg
 
