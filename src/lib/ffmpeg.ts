@@ -1,3 +1,4 @@
+
 // src/lib/ffmpeg.ts
 // This file handles loading ffmpeg.wasm files locally or from a CDN and providing helper functions.
 
@@ -223,3 +224,5 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
         } catch(e) { /* Ignore cleanup errors */ console.warn("trimMediaWithFFmpeg: Cleanup failed for", inputFilename, outputFilename, e);}
     }
 }
+
+    
