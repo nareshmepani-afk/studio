@@ -54,6 +54,7 @@ interface AuthContextType {
   completedPromptIds: Set<string>;
   flaggedPromptIds: Set<string>;
   isDataLoading: boolean;
+  markSharedMemoryAsViewed: (memoryId: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -64,7 +65,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userMode, setUserModeState] = useState<UserMode>('host');
   
   const [pendingRequestCount, setPendingRequestCountState] = useState<number>(0);
-  const [hasNewSharedMemories, setHasNewSharedMemoriesState] = useState(false); // Retained for future use
   const [guestPassPriceDetails, setGuestPassPriceDetails] = useState<GetGuestPassPriceOutput | null>(null);
   const [isFetchingGuestPassPrice, setIsFetchingGuestPassPrice] = useState(false);
   const [hostPassPriceDetails, setHostPassPriceDetails] = useState<GetHostPassPriceOutput | null>(null);
@@ -78,39 +78,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // --- Listener and State Management ---
+  const updateUserProfileInFirestore = useCallback(async (userId: string, updates: Partial<User>) => {
+    const userDocRef = doc(db, "users", userId);
+    try {
+      await updateDoc(userDocRef, { ...updates, lastUpdated: serverTimestamp() });
+    } catch (error: any) {
+      console.error(`AuthContext: Error updating user profile in Firestore for user ${userId}:`, error);
+      throw error;
+    }
+  }, []);
 
+  // --- Listener and State Management ---
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         const userDocRef = doc(db, "users", firebaseUser.uid);
-        // This onSnapshot listener will handle ALL user document updates.
-        const userUnsubscribe = onSnapshot(userDocRef, async (userDocSnap) => {
+        const unsubscribeUser = onSnapshot(userDocRef, async (userDocSnap) => {
           if (userDocSnap.exists()) {
             let dbUser = userDocSnap.data() as User;
-            
-            // Check for and apply pass status updates if needed
             const now = new Date();
             let updatesToSave: Partial<User> = {};
+
+            // Check and update pass statuses only if necessary
             if (dbUser.sharedAccessStatus === 'free_pass_active' && dbUser.freePassActivatedDate && isBefore(addMonths(parseISO(dbUser.freePassActivatedDate), 6), now)) {
               updatesToSave.sharedAccessStatus = 'free_pass_expired';
-            } else if (dbUser.sharedAccessStatus === 'paid_pass_active' && dbUser.paidPassExpiryDate && isBefore(parseISO(dbUser.paidPassExpiryDate), now)) {
+            }
+            if (dbUser.sharedAccessStatus === 'paid_pass_active' && dbUser.paidPassExpiryDate && isBefore(parseISO(dbUser.paidPassExpiryDate), now)) {
               updatesToSave.sharedAccessStatus = 'paid_pass_expired';
             }
             if (dbUser.hostPassStatus === 'free_host_pass_active' && dbUser.freeHostPassActivatedDate && isBefore(addMonths(parseISO(dbUser.freeHostPassActivatedDate), 6), now)) {
               updatesToSave.hostPassStatus = 'free_host_pass_expired';
-            } else if (dbUser.hostPassStatus === 'paid_host_pass_active' && dbUser.paidHostPassExpiryDate && isBefore(parseISO(dbUser.paidHostPassExpiryDate), now)) {
+            }
+            if (dbUser.hostPassStatus === 'paid_host_pass_active' && dbUser.paidHostPassExpiryDate && isBefore(parseISO(dbUser.paidHostPassExpiryDate), now)) {
               updatesToSave.hostPassStatus = 'paid_host_pass_expired';
             }
 
+            // Only write to Firestore if a status has changed, breaking the loop.
             if (Object.keys(updatesToSave).length > 0) {
               await updateDoc(userDocRef, { ...updatesToSave, lastUpdated: serverTimestamp() });
-              // The listener will re-fire with the updated data, so we don't need to set state here.
+              // The listener will re-fire with the updated data, so we don't need to setUser here.
             } else {
               setUser({ ...dbUser, id: firebaseUser.uid, email: firebaseUser.email || dbUser.email });
             }
+
           } else {
-            // Create user doc if it doesn't exist (first registration)
             const newUser: User = {
               id: firebaseUser.uid, email: firebaseUser.email!, name: firebaseUser.displayName || "New User",
               sharedAccessStatus: 'no_pass_initiated', hostPassStatus: 'no_pass_initiated', viewedSharedMemoryIds: [], storageUsedBytes: 0,
@@ -118,53 +129,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             await setDoc(userDocRef, { ...newUser, createdAt: serverTimestamp() });
             setUser(newUser);
           }
+          setLoading(false);
         });
-        setLoading(false);
-        return () => userUnsubscribe();
+        return () => unsubscribeUser();
       } else {
         setUser(null);
+        setMemories([]);
+        setCompletedPromptIds(new Set());
+        setFlaggedPromptIds(new Set());
         setLoading(false);
+        setIsDataLoading(false);
       }
     });
-    return () => unsubscribe();
-  }, []);
+    return () => unsubscribeAuth();
+  }, [updateUserProfileInFirestore]);
 
+  // Data fetching listeners that depend on user.id
   useEffect(() => {
-    let memoriesUnsubscribe: Unsubscribe | undefined;
-    let promptsUnsubscribe: Unsubscribe | undefined;
-
-    if (user?.id) {
-      setIsDataLoading(true);
-      const memoriesQuery = query(collection(db, "users", user.id, "memories"), orderBy('date', 'desc'));
-      memoriesUnsubscribe = onSnapshot(memoriesQuery, (snapshot) => {
-        const fetchedMemories = snapshot.docs.map(docSnap => {
-          const data = docSnap.data();
-          return {
-            id: docSnap.id, ...data,
-            date: (data.date as Timestamp)?.toDate ? (data.date as Timestamp).toDate().toISOString() : data.date,
-          } as MemoryType;
-        });
-        setMemories(fetchedMemories);
-        setCompletedPromptIds(new Set(fetchedMemories.map(m => m.promptId).filter(Boolean) as string[]));
-        setIsDataLoading(false);
-      }, (error) => { console.error("Error listening to memories:", error); setIsDataLoading(false); });
-
-      const promptFlagsDocRef = doc(db, 'userPromptFlags', user.id);
-      promptsUnsubscribe = onSnapshot(promptFlagsDocRef, (docSnap) => {
-        setFlaggedPromptIds(new Set(Object.entries(docSnap.data() || {}).filter(([, v]) => v === true).map(([k]) => k)));
-      }, (error) => console.error("Error listening to prompt flags:", error));
-      
-    } else {
-      setMemories([]); setCompletedPromptIds(new Set()); setFlaggedPromptIds(new Set()); setIsDataLoading(false);
+    if (!user?.id) {
+      setIsDataLoading(false);
+      return;
     }
+    
+    setIsDataLoading(true);
+
+    const memoriesQuery = query(collection(db, "users", user.id, "memories"), orderBy('date', 'desc'));
+    const unsubscribeMemories = onSnapshot(memoriesQuery, (snapshot) => {
+      const fetchedMemories = snapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id, ...data,
+          date: (data.date as Timestamp)?.toDate ? (data.date as Timestamp).toDate().toISOString() : data.date,
+        } as MemoryType;
+      });
+      setMemories(fetchedMemories);
+      setCompletedPromptIds(new Set(fetchedMemories.map(m => m.promptId).filter(Boolean) as string[]));
+      setIsDataLoading(false); // Set to false after initial fetch
+    }, (error) => { console.error("Error listening to memories:", error); setIsDataLoading(false); });
+
+    const promptFlagsDocRef = doc(db, 'userPromptFlags', user.id);
+    const unsubscribePrompts = onSnapshot(promptFlagsDocRef, (docSnap) => {
+      setFlaggedPromptIds(new Set(Object.entries(docSnap.data() || {}).filter(([, v]) => v === true).map(([k]) => k)));
+    }, (error) => console.error("Error listening to prompt flags:", error));
+    
     return () => {
-      if (memoriesUnsubscribe) memoriesUnsubscribe();
-      if (promptsUnsubscribe) promptsUnsubscribe();
+      unsubscribeMemories();
+      unsubscribePrompts();
     };
-  }, [user?.id]); // Depend only on user.id
+  }, [user?.id]);
+
 
   // --- Navigation Logic ---
-
   useEffect(() => {
     if (loading) return;
     const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
@@ -202,7 +217,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = useCallback(async () => {
     try {
       await firebaseSignOut(auth);
-      // State reset is handled by onAuthStateChanged
       setUserModeState('host');
       setGuestPassPriceDetails(null);
       setHostPassPriceDetails(null);
@@ -212,16 +226,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [router]);
   
-  const updateUserProfileInFirestore = useCallback(async (userId: string, updates: Partial<User>) => {
-    const userDocRef = doc(db, "users", userId);
-    try {
-      await updateDoc(userDocRef, { ...updates, lastUpdated: serverTimestamp() });
-    } catch (error: any) {
-      console.error(`AuthContext: Error updating user profile in Firestore for user ${userId}:`, error);
-      throw error;
-    }
-  }, []);
-
   const activateFreeGuestPass = useCallback(async () => {
     if (user && user.sharedAccessStatus === 'no_pass_initiated') {
       const now = new Date();
@@ -303,16 +307,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [isFetchingHostPassPrice, hostPassPriceDetails, user]);
   
   useEffect(() => {
-    if (user && userMode === 'guest') {
+    if (user && userMode === 'guest' && (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired')) {
         fetchGuestPassPrice();
-    } else if (user && userMode === 'host') {
+    } else if (user && userMode === 'host' && (user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired')) {
         fetchHostPassPrice();
     }
   }, [user, userMode, fetchGuestPassPrice, fetchHostPassPrice]);
 
 
   // --- Final Context Value ---
-
   const contextValue = useMemo(() => ({
       isAuthenticated: !!user,
       user,
@@ -331,16 +334,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       completedPromptIds,
       flaggedPromptIds,
       isDataLoading,
-      // Deprecated/stubbed functions removed for clarity
-      setHasNewSharedMemories: () => {},
       markSharedMemoryAsViewed,
   }), [
       user, loading, pendingRequestCount, userMode,
       guestPassPriceDetails, isFetchingGuestPassPrice, hostPassPriceDetails, isFetchingHostPassPrice,
       memories, completedPromptIds, flaggedPromptIds, isDataLoading,
       login, register, logout, activateFreeGuestPass, purchasePaidGuestPass,
-      markSharedMemoryAsViewed, fetchGuestPassPrice, activateFreeHostPass, purchasePaidHostPass,
-      fetchHostPassPrice, getStorageQuotaBytes,
+      markSharedMemoryAsViewed, activateFreeHostPass, purchasePaidHostPass,
+      getStorageQuotaBytes,
       calculateAndUpdateStorageUsage, updateUserProfileInFirestore
   ]);
 
