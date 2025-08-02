@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>FFmpeg Local Test</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+  <h1>FFmpeg Local Loading Test</h1>
+  <p>Checking if ffmpeg.js and ffmpeg-core.* files load correctly from the local path.</p>
+
+  <script src="/ffmpeg/ffmpeg.js"></script>
+
+  <script>
+    console.log("Attempting to initialize FFmpeg...");
+
+    // Use a function to wait for window.FFmpeg to be available
+    async function initializeFFmpeg() {
+      console.log("Waiting for window.FFmpeg...");
+      while (typeof window.FFmpeg === 'undefined') {
+        await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms
+      }
+      console.log("window.FFmpeg is available.");
+
+      try {
+        const { createFFmpeg } = window.FFmpeg;
+
+        // Assuming ffmpeg-core files are in public/ffmpeg/
+        const LOCAL_FFMPEG_PATH = '/ffmpeg';
+
+        console.log(`Attempting to create and load FFmpeg instance from corePath: ${LOCAL_FFMPEG_PATH}/ffmpeg-core.js`);
+
+        const ffmpeg = createFFmpeg({
+          // log: true, // Uncomment for detailed FFmpeg logs
+        });
+
+        await ffmpeg.load({
+          corePath: `${LOCAL_FFMPEG_PATH}/ffmpeg-core.js`,
+          workerPath: `${LOCAL_FFMPEG_PATH}/ffmpeg-core.worker.js`,
+          wasmPath: `${LOCAL_FFMPEG_PATH}/ffmpeg-core.wasm`,
+        });
+
+        console.log("FFmpeg instance loaded successfully from local files!");
+        // You can now use the ffmpeg instance here if needed for more tests
+        // console.log("FFmpeg instance:", ffmpeg);
+
+      } catch (error) {
+        console.error("Error loading FFmpeg instance from local files:", error);
+      }
+    }
+
+    // Start the initialization process
+    initializeFFmpeg();
+
+  </script>
+
+</body>
+</html>
