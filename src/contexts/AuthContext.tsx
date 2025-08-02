@@ -20,7 +20,7 @@ import {
   signOut as firebaseSignOut,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, where, Timestamp, onSnapshot, Unsubscribe, orderBy } from 'firebase/firestore';
 
 
 interface AuthContextType {
@@ -59,6 +59,12 @@ interface AuthContextType {
   storageQuotaBytes: number;
   calculateAndUpdateStorageUsage: (userId: string) => Promise<void>;
   updateUserProfileInFirestore: (userId: string, updates: Partial<User>) => Promise<void>;
+  
+  // New properties for centralized data
+  memories: MemoryType[];
+  completedPromptIds: Set<string>;
+  flaggedPromptIds: Set<string>;
+  isDataLoading: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -76,10 +82,85 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const [hostPassPriceDetails, setHostPassPriceDetails] = useState<GetHostPassPriceOutput | null>(null);
   const [isFetchingHostPassPrice, setIsFetchingHostPassPrice] = useState(false);
+  
+  // New state for centralized data
+  const [memories, setMemories] = useState<MemoryType[]>([]);
+  const [completedPromptIds, setCompletedPromptIds] = useState<Set<string>>(new Set());
+  const [flaggedPromptIds, setFlaggedPromptIds] = useState<Set<string>>(new Set());
+  const [isDataLoading, setIsDataLoading] = useState(true);
+
 
   const router = useRouter();
   const pathname = usePathname();
   const isRedirectingFromAuthGuard = useRef(false);
+
+  // Centralize Firestore listeners
+  useEffect(() => {
+    let memoriesUnsubscribe: Unsubscribe | undefined;
+    let promptsUnsubscribe: Unsubscribe | undefined;
+
+    if (user?.id) {
+      setIsDataLoading(true);
+
+      // Listener for memories
+      const memoriesQuery = query(collection(db, "users", user.id, "memories"), orderBy('date', 'desc'));
+      memoriesUnsubscribe = onSnapshot(memoriesQuery, (snapshot) => {
+        const fetchedMemories = snapshot.docs.map(docSnap => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+          date: (docSnap.data().date as Timestamp)?.toDate ? (docSnap.data().date as Timestamp).toDate().toISOString() : docSnap.data().date as string,
+          createdAt: (docSnap.data().createdAt as Timestamp)?.toDate ? (docSnap.data().createdAt as Timestamp).toDate().toISOString() : undefined,
+          updatedAt: (docSnap.data().updatedAt as Timestamp)?.toDate ? (docSnap.data().updatedAt as Timestamp).toDate().toISOString() : undefined,
+        })) as MemoryType[];
+        setMemories(fetchedMemories);
+
+        const promptIds = new Set(fetchedMemories.map(m => m.promptId).filter(Boolean) as string[]);
+        setCompletedPromptIds(promptIds);
+        
+        // This is a good place to also update storage usage if needed
+        // calculateAndUpdateStorageUsage(user.id);
+      }, (error) => {
+        console.error("Error listening to memories:", error);
+        toast({ title: "Error Loading Memories", variant: "destructive" });
+      });
+
+      // Listener for prompt flags
+      const promptFlagsDocRef = doc(db, 'userPromptFlags', user.id);
+      promptsUnsubscribe = onSnapshot(promptFlagsDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const flaggedIdsFromDb = Object.entries(data)
+            .filter(([_, value]) => value === true)
+            .map(([key, _]) => key);
+          setFlaggedPromptIds(new Set(flaggedIdsFromDb));
+        } else {
+          setFlaggedPromptIds(new Set());
+        }
+      }, (error) => {
+        console.error("Error listening to prompt flags:", error);
+        toast({ title: "Error Loading Journey Flags", variant: "destructive" });
+      });
+      
+      setIsDataLoading(false);
+
+    } else {
+      // No user, clear data
+      setMemories([]);
+      setCompletedPromptIds(new Set());
+      setFlaggedPromptIds(new Set());
+      setIsDataLoading(false);
+    }
+
+    // Cleanup function
+    return () => {
+      if (memoriesUnsubscribe) {
+        memoriesUnsubscribe();
+      }
+      if (promptsUnsubscribe) {
+        promptsUnsubscribe();
+      }
+    };
+  }, [user?.id]);
 
 
   const updateUserProfileInFirestore = useCallback(async (userId: string, updates: Partial<User>) => {
@@ -164,6 +245,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [updateUserProfileInFirestore]);
 
   const onAuthChange = useCallback(async (firebaseUser: FirebaseUser | null) => {
+      setLoading(true);
       if (firebaseUser) {
         const userDocRef = doc(db, "users", firebaseUser.uid);
         let userDocSnap;
@@ -173,6 +255,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.error(`AuthContext: Firestore getDoc FAILED for user ${firebaseUser.uid}:`, error);
           toast({ title: "Profile Load Error", description: `Error loading profile: ${error.message}. Check connection and Firebase setup.`, variant: "destructive", duration: 10000 });
           setUser(null); setIsAuthenticated(false);
+          setLoading(false);
           return;
         }
         
@@ -406,7 +489,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       resetHostPassForTesting,
       storageQuotaBytes: getStorageQuotaBytes(),
       calculateAndUpdateStorageUsage,
-      updateUserProfileInFirestore
+      updateUserProfileInFirestore,
+      memories,
+      completedPromptIds,
+      flaggedPromptIds,
+      isDataLoading,
     }}>
       {children}
     </AuthContext.Provider>

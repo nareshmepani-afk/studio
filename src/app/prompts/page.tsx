@@ -4,7 +4,6 @@
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { PromptCard } from '@/components/prompts/PromptCard';
 import { mockPromptGroups } from '@/lib/mockData'; // mockPromptGroups remains for structure
-import type { Prompt, PromptGroup, Memory } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star as StarIcon, Info } from 'lucide-react'; 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -27,17 +26,13 @@ import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
 import { cn } from "@/lib/utils";
 import { db } from '@/lib/firebase';
-import { collection, query, where, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 
 const FIRESTORE_USER_PROMPT_FLAGS_COLLECTION = 'userPromptFlags'; 
 
 export default function LifeJourneyPage() {
-  const [promptGroups, setPromptGroups] = useState<PromptGroup[]>(mockPromptGroups);
-  const [completedPromptIds, setCompletedPromptIds] = useState<Set<string>>(new Set());
-  const [flaggedPromptIds, setFlaggedPromptIds] = useState<Set<string>>(new Set());
+  const [promptGroups, setPromptGroups] = useState<typeof mockPromptGroups>(mockPromptGroups);
   
-  const [isLoading, setIsLoading] = useState(true);
-
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
   
@@ -48,7 +43,10 @@ export default function LifeJourneyPage() {
     activateFreeHostPass, 
     hostPassPriceDetails, 
     isFetchingHostPassPrice,
-    hostPassStatus 
+    hostPassStatus,
+    completedPromptIds,
+    flaggedPromptIds,
+    isDataLoading,
   } = useAuth(); 
 
   const [showCustomChapterDialog, setShowCustomChapterDialog] = useState(false);
@@ -76,13 +74,6 @@ export default function LifeJourneyPage() {
     try {
         await setDoc(promptFlagsDocRef, { [promptIdToToggle]: newFlagStatus }, { merge: true });
         
-        setFlaggedPromptIds(prev => {
-            const newSet = new Set(prev);
-            if (newFlagStatus) newSet.add(promptIdToToggle);
-            else newSet.delete(promptIdToToggle);
-            return newSet;
-        });
-        
         const promptText = mockPromptGroups.flatMap(g => g.prompts).find(p => p.id === promptIdToToggle)?.text[currentLanguage] || "This prompt";
         toast({
             title: newFlagStatus ? "Prompt Flagged" : "Prompt Unflagged",
@@ -93,44 +84,6 @@ export default function LifeJourneyPage() {
         toast({ title: "Flagging Error", variant: "destructive" });
     }
   }, [user, flaggedPromptIds, currentLanguage]);
-
-  useEffect(() => {
-    const userId = user?.id;
-    if (!userId) {
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchPromptData = async () => {
-      setIsLoading(true);
-      try {
-        const memoriesColRef = collection(db, "users", userId, "memories");
-        const memoriesQuery = query(memoriesColRef, where("promptId", "!=", null));
-        const memoriesSnapshot = await getDocs(memoriesQuery);
-        const ids = new Set(memoriesSnapshot.docs.map(docSnap => docSnap.data().promptId as string).filter(Boolean));
-        setCompletedPromptIds(ids);
-
-        const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, userId);
-        const docSnap = await getDoc(promptFlagsDocRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          const flaggedIdsFromDb = Object.entries(data)
-            .filter(([_, value]) => value === true)
-            .map(([key, _]) => key);
-          setFlaggedPromptIds(new Set(flaggedIdsFromDb));
-        } else {
-          setFlaggedPromptIds(new Set());
-        }
-      } catch (error) {
-        console.error("Error fetching prompt data:", error);
-        toast({ title: "Error loading Life Journey data", variant: "destructive" });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPromptData();
-  }, [user?.id]);
 
   const handleStartChapter = (promptId: string, promptText: string) => {
     const isPromptInAvailableGroups = availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === promptId);
@@ -145,20 +98,13 @@ export default function LifeJourneyPage() {
 
   const handleViewEditChapter = async (promptId: string) => {
     if (!user) return;
-    const memoriesColRef = collection(db, "users", user.id, "memories");
-    const q = query(memoriesColRef, where("promptId", "==", promptId));
     
-    try {
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        const memoryDoc = querySnapshot.docs[0];
-        router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryDoc.id)}&promptId=${encodeURIComponent(promptId)}`);
-      } else {
-        toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
-      }
-    } catch (error) {
-      console.error("Error finding memory for prompt:", error);
-      toast({ title: "Error", description: "Could not retrieve memory details.", variant: "destructive" });
+    const memoryForPrompt = user.memories.find(m => m.promptId === promptId);
+
+    if (memoryForPrompt) {
+      router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
+    } else {
+      toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
     }
   };
 
@@ -233,7 +179,7 @@ export default function LifeJourneyPage() {
     );
   }
 
-  if (isLoading) {
+  if (isDataLoading) {
     return (
       <AuthenticatedPageWrapper>
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">

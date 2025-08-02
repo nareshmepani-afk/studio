@@ -16,20 +16,20 @@ import { format, parseISO, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
-import { collection, query, where, orderBy, onSnapshot, doc, deleteDoc, updateDoc, Timestamp, getDocs } from 'firebase/firestore';
+import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 
 export default function TimelinePage() {
-  const [memories, setMemories] = useState<Memory[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortCriteria, setSortCriteria] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc'>('date-desc');
   const [categoryFilter, setCategoryFilter] = useState<MemoryCategory | 'all'>('all');
   const [legacyFilter, setLegacyFilter] = useState<'all' | 'legacy' | 'non-legacy'>('all');
-  const [isLoading, setIsLoading] = useState(true);
   const [currentStreak, setCurrentStreak] = useState(0); // Mock streak for now
+  const router = useRouter();
 
   const {
     user,
-    setPendingRequestCount, // Kept for UI, actual logic needs backend
+    setPendingRequestCount,
     userMode,
     activateFreeGuestPass,
     purchasePaidGuestPass,
@@ -37,10 +37,12 @@ export default function TimelinePage() {
     fetchGuestPassPrice,
     isFetchingGuestPassPrice,
     hostPassStatus,
-    setHasNewSharedMemories, // Kept for UI
-    hasNewSharedMemories, // Kept for UI
-    markSharedMemoryAsViewed, // Firestore update needed for this
-    checkIfGuestHasUnviewedMemories, // Firestore query needed
+    setHasNewSharedMemories,
+    hasNewSharedMemories,
+    markSharedMemoryAsViewed,
+    checkIfGuestHasUnviewedMemories,
+    memories,
+    isDataLoading,
   } = useAuth();
 
   // Mock requests, as this requires a backend/sharing mechanism
@@ -71,45 +73,14 @@ export default function TimelinePage() {
   }, [userMode, user, fetchGuestPassPrice, isFetchingGuestPassPrice, guestPassPriceDetails]);
 
   useEffect(() => {
-    if (!user) {
-      setIsLoading(false);
-      setMemories([]);
-      return;
-    }
-
-    const fetchMemories = async () => {
-      setIsLoading(true);
-      try {
-        const memoriesColRef = collection(db, "users", user.id, "memories");
-        let q = query(memoriesColRef, orderBy('date', sortCriteria.startsWith('date-') ? (sortCriteria.endsWith('desc') ? 'desc' : 'asc') : 'desc'));
-        
-        const snapshot = await getDocs(q);
-
-        const fetchedMemories = snapshot.docs.map(docSnap => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-          date: (docSnap.data().date as Timestamp)?.toDate ? (docSnap.data().date as Timestamp).toDate().toISOString() : docSnap.data().date as string,
-          createdAt: (docSnap.data().createdAt as Timestamp)?.toDate ? (docSnap.data().createdAt as Timestamp).toDate().toISOString() : undefined,
-          updatedAt: (docSnap.data().updatedAt as Timestamp)?.toDate ? (docSnap.data().updatedAt as Timestamp).toDate().toISOString() : undefined,
-        })) as Memory[];
-        
-        setMemories(fetchedMemories);
+    if (user) {
         if (userMode === 'host') {
           setPendingRequestCount(mockHostPendingRequests.length); // Mock
         } else {
           setPendingRequestCount(0);
         }
-      } catch (error) {
-        console.error("Firestore getDocs Error:", error);
-        toast({ title: "Error Loading Memories", description: "Could not fetch memories.", variant: "destructive" });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchMemories();
-
-  }, [user, userMode, setPendingRequestCount, sortCriteria]);
+    }
+  }, [user, userMode, setPendingRequestCount]);
 
 
   useEffect(() => {
@@ -128,16 +99,20 @@ export default function TimelinePage() {
 
   const handleDeleteMemory = useCallback(async (memoryId: string) => {
     if (!user) return;
+    const originalMemories = memories;
+    // Optimistic deletion
+    // setMemories(prev => prev.filter(m => m.id !== memoryId));
     try {
       const memoryDocRef = doc(db, "users", user.id, "memories", memoryId);
       await deleteDoc(memoryDocRef);
-      toast({ title: "Memory Deleted", description: "The memory has been removed from Firestore."});
-      setMemories(prev => prev.filter(m => m.id !== memoryId));
+      toast({ title: "Memory Deleted", description: "The memory has been removed."});
     } catch (error) {
       console.error("Error deleting memory from Firestore:", error);
       toast({ title: "Delete Failed", variant: "destructive" });
+      // Revert optimistic deletion
+      // setMemories(originalMemories);
     }
-  }, [user]);
+  }, [user, memories]);
 
   const handleToggleLegacyStatus = useCallback(async (memoryId: string) => {
     if (!user) return;
@@ -145,17 +120,20 @@ export default function TimelinePage() {
     if (!memoryToUpdate) return;
 
     const newLegacyStatus = !memoryToUpdate.isLegacy;
+    // Optimistic update
+    // setMemories(prev => prev.map(m => m.id === memoryId ? {...m, isLegacy: newLegacyStatus} : m));
     try {
       const memoryDocRef = doc(db, "users", user.id, "memories", memoryId);
       await updateDoc(memoryDocRef, { isLegacy: newLegacyStatus });
       toast({
         title: newLegacyStatus ? "Added to Legacy Chest" : "Removed from Legacy Chest",
-        description: `"${memoryToUpdate.title}" status updated in Firestore.`,
+        description: `"${memoryToUpdate.title}" status updated.`,
       });
-      setMemories(prev => prev.map(m => m.id === memoryId ? {...m, isLegacy: newLegacyStatus} : m));
     } catch (error) {
       console.error("Error updating legacy status in Firestore:", error);
       toast({ title: "Update Failed", variant: "destructive" });
+      // Revert optimistic update
+      // setMemories(prev => prev.map(m => m.id === memoryId ? {...m, isLegacy: !newLegacyStatus} : m));
     }
   }, [user, memories]);
 
@@ -166,7 +144,7 @@ export default function TimelinePage() {
   }
 
   const filteredAndSortedMemories = useMemo(() => {
-    let result = memories; // Already sorted by date from Firestore query (primary sort)
+    let result = [...memories];
     if (searchTerm) {
       result = result.filter(memory =>
         memory.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -184,39 +162,26 @@ export default function TimelinePage() {
       result = result.filter(memory => legacyFilter === 'legacy' ? memory.isLegacy === true : memory.isLegacy !== true);
     }
 
-    // Secondary sort (e.g., by title if date is primary from Firestore)
-    if (sortCriteria.startsWith('title-')) {
-      result.sort((a, b) => {
-        if (sortCriteria === 'title-asc') return a.title.localeCompare(b.title);
-        if (sortCriteria === 'title-desc') return b.title.localeCompare(a.title);
-        return 0;
-      });
-    }
-    // If sortCriteria is date-based, Firestore already handled it.
+    result.sort((a, b) => {
+      if (sortCriteria === 'title-asc') return a.title.localeCompare(b.title);
+      if (sortCriteria === 'title-desc') return b.title.localeCompare(a.title);
+      if (sortCriteria === 'date-asc') return new Date(a.date).getTime() - new Date(b.date).getTime();
+      // Default is 'date-desc'
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
     return result;
   }, [memories, searchTerm, sortCriteria, categoryFilter, legacyFilter]);
 
-  if (isLoading && !user) { // Initial load before user is determined
+  if (isDataLoading) {
     return (
-      <AuthenticatedPageWrapper>
-        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <h2 className="text-2xl font-headline mb-2">Initializing...</h2>
-        </div>
-      </AuthenticatedPageWrapper>
-    );
-  }
-  
-  if (isLoading && user) { // User determined, loading memories
-     return (
-      <AuthenticatedPageWrapper>
-        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <h2 className="text-2xl font-headline mb-2">Loading Memories...</h2>
-        </div>
-      </AuthenticatedPageWrapper>
-    );
-  }
+     <AuthenticatedPageWrapper>
+       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
+         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+         <h2 className="text-2xl font-headline mb-2">Loading Memories...</h2>
+       </div>
+     </AuthenticatedPageWrapper>
+   );
+ }
 
 
   const renderGuestPurchaseButton = () => {
@@ -366,7 +331,7 @@ export default function TimelinePage() {
           </div>
         )}
         
-        {isViewingLegacyChest && userMode === 'host' && filteredAndSortedMemories.length === 0 && !isLoading && (
+        {isViewingLegacyChest && userMode === 'host' && filteredAndSortedMemories.length === 0 && !isDataLoading && (
           <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
             <Archive className="mx-auto h-16 w-16 text-primary mb-6" />
             <h2 className="font-headline text-3xl mb-3">Your Legacy Chest is Empty</h2>
@@ -376,7 +341,7 @@ export default function TimelinePage() {
           </div>
         )}
 
-        {!isViewingLegacyChest && userMode === 'guest' && canGuestViewSharedMemories && filteredAndSortedMemories.length === 0 && !isLoading && (
+        {!isViewingLegacyChest && userMode === 'guest' && canGuestViewSharedMemories && filteredAndSortedMemories.length === 0 && !isDataLoading && (
           <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
             <Users className="mx-auto h-16 w-16 text-primary mb-6" />
             <h2 className="font-headline text-3xl mb-3">Nothing Shared Yet</h2>
@@ -384,7 +349,7 @@ export default function TimelinePage() {
           </div>
         )}
         
-        {!isViewingLegacyChest && userMode === 'host' && filteredAndSortedMemories.length === 0 && !isLoading && (
+        {!isViewingLegacyChest && userMode === 'host' && filteredAndSortedMemories.length === 0 && !isDataLoading && (
           <div className="text-center py-12 bg-card shadow-lg rounded-lg p-8">
             <Film className="mx-auto h-16 w-16 text-primary mb-6" />
             <h2 className="font-headline text-3xl mb-3">Welcome to Memory Weaver!</h2>
@@ -397,7 +362,7 @@ export default function TimelinePage() {
           </div>
         )}
 
-        {((userMode === 'host') || (userMode === 'guest' && canGuestViewSharedMemories)) && filteredAndSortedMemories.length > 0 && !isLoading && (
+        {((userMode === 'host') || (userMode === 'guest' && canGuestViewSharedMemories)) && filteredAndSortedMemories.length > 0 && !isDataLoading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredAndSortedMemories.map((memory) => {
               const isUnreadInGuestMode = userMode === 'guest' && user?.viewedSharedMemoryIds ? !user.viewedSharedMemoryIds.includes(memory.id) : false;
@@ -418,5 +383,3 @@ export default function TimelinePage() {
     </AuthenticatedPageWrapper>
   );
 }
-
-    
