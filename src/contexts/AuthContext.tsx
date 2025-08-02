@@ -92,6 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userDocRef = doc(db, "users", userId);
     try {
       await updateDoc(userDocRef, { ...updates, lastUpdated: serverTimestamp() });
+      setUser(prevUser => prevUser ? { ...prevUser, ...updates } : null);
     } catch (error: any) {
       console.error(`AuthContext: Error updating user profile in Firestore for user ${userId}:`, error);
       throw error;
@@ -116,11 +117,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (Object.keys(updatesToSave).length > 0) {
-        await updateUserProfileInFirestore(currentUser.id, updatesToSave);
+        // This function now only performs the DB update. The local state (user) will be updated by the updateUserProfileInFirestore function.
+        await updateDoc(doc(db, "users", currentUser.id), { ...updatesToSave, lastUpdated: serverTimestamp() });
         return { ...updatedUser, ...updatesToSave };
     }
     return updatedUser;
-  }, [updateUserProfileInFirestore]);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -167,14 +169,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         setMemories(fetchedMemories);
         setCompletedPromptIds(new Set(fetchedMemories.map(m => m.promptId).filter(Boolean) as string[]));
-      }, (error) => console.error("Error listening to memories:", error));
+        setIsDataLoading(false); // Move here to signal data is ready
+      }, (error) => {
+        console.error("Error listening to memories:", error);
+        setIsDataLoading(false);
+      });
 
       const promptFlagsDocRef = doc(db, 'userPromptFlags', user.id);
       promptsUnsubscribe = onSnapshot(promptFlagsDocRef, (docSnap) => {
         setFlaggedPromptIds(new Set(Object.entries(docSnap.data() || {}).filter(([, v]) => v === true).map(([k]) => k)));
       }, (error) => console.error("Error listening to prompt flags:", error));
       
-      setIsDataLoading(false);
     } else {
       setMemories([]); setCompletedPromptIds(new Set()); setFlaggedPromptIds(new Set()); setIsDataLoading(false);
     }
@@ -183,7 +188,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (memoriesUnsubscribe) memoriesUnsubscribe();
       if (promptsUnsubscribe) promptsUnsubscribe();
     };
-  }, [user?.id]);
+  }, [user?.id]); // Depend only on user.id
 
   useEffect(() => {
     if (loading) return;
@@ -322,8 +327,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, updateUserProfileInFirestore]);
   
-  const checkAndUpdateGuestPassStatus = useCallback(() => { if (user) checkAndUpdatePassStatus(user); }, [user, checkAndUpdatePassStatus]);
-  const checkAndUpdateHostPassStatus = useCallback(() => { if (user) checkAndUpdatePassStatus(user); }, [user, checkAndUpdatePassStatus]);
+  const checkAndUpdateGuestPassStatus = useCallback(() => { if (user) checkAndUpdatePassStatus(user).then(setUser); }, [user, checkAndUpdatePassStatus]);
+  const checkAndUpdateHostPassStatus = useCallback(() => { if (user) checkAndUpdatePassStatus(user).then(setUser); }, [user, checkAndUpdatePassStatus]);
   const checkIfGuestHasUnviewedMemories = useCallback(async (): Promise<boolean> => { return false; }, []);
   const setPendingRequestCount = useCallback((count: number) => { setPendingRequestCountState(count); }, []);
   const toggleUserMode = useCallback(() => { setUserModeState(p => p === 'host' ? 'guest' : 'host'); }, []);
@@ -354,7 +359,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       user, loading, pendingRequestCount, userMode, hasNewSharedMemories, 
       guestPassPriceDetails, isFetchingGuestPassPrice, hostPassPriceDetails, isFetchingHostPassPrice,
       memories, completedPromptIds, flaggedPromptIds, isDataLoading,
-      login, register, logout, setPendingRequestCount, toggleUserMode, setUserModeState,
+      login, register, logout, setPendingRequestCount, toggleUserMode, 
       activateFreeGuestPass, purchasePaidGuestPass, checkAndUpdateGuestPassStatus,
       setHasNewSharedMemories, markSharedMemoryAsViewed, checkIfGuestHasUnviewedMemories,
       fetchGuestPassPrice, activateFreeHostPass, purchasePaidHostPass, checkAndUpdateHostPassStatus,
