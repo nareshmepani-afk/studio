@@ -55,5 +55,21 @@
 
   </script>
 
+  <script>
+    // Add a delayed check to see if window.FFmpeg becomes available
+    setTimeout(() => {
+      console.log("Delayed check: Checking for window.FFmpeg after 2 seconds...");
+      if (typeof window.FFmpeg !== 'undefined') {
+        console.log("Delayed check: window.FFmpeg IS defined.");
+      } else {
+        console.error("Delayed check: window.FFmpeg IS NOT defined.");
+        // Optionally, try to access other potential global variables or properties
+        // that the script might set to see if any part of it executed.
+        // For example, you could look for properties on the global window object
+        // that seem related to FFmpeg based on the script's content if you inspect it.
+      }
+    }, 2000); // 2-second delay
+  </script>
+
 </body>
 </html>
