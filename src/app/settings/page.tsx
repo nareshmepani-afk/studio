@@ -14,7 +14,7 @@ import type { User } from '@/types';
 import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types'; 
 import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, Star, Zap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useState, useEffect, type FormEvent, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
 import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { useRouter } from 'next/navigation'; 
@@ -36,13 +36,11 @@ export default function SettingsPage() {
     activateFreeGuestPass, 
     purchasePaidGuestPass, 
     guestPassPriceDetails,
-    fetchGuestPassPrice,
     isFetchingGuestPassPrice,
     activateFreeHostPass,
     purchasePaidHostPass,
     hostPassStatus, 
     hostPassPriceDetails: authHostPassPriceDetails,
-    fetchHostPassPrice,
     isFetchingHostPassPrice: isFetchingAuthHostPassPrice,
     storageQuotaBytes, 
   } = useAuth();

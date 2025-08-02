@@ -3,7 +3,7 @@
 
 import type { User, UserMode, Memory as MemoryType } from '@/types';
 import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types';
-import React, { createContext, useState, useEffect, ReactNode, useCallback, useRef, useMemo } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import { addMonths, addDays, isBefore, parseISO, format } from 'date-fns';
@@ -18,9 +18,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
-  type User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, where, Timestamp, onSnapshot, Unsubscribe, orderBy } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, Timestamp, onSnapshot, Unsubscribe, orderBy } from 'firebase/firestore';
 
 
 interface AuthContextType {
@@ -38,24 +37,15 @@ interface AuthContextType {
 
   activateFreeGuestPass: () => Promise<void>;
   purchasePaidGuestPass: () => Promise<void>;
-  checkAndUpdateGuestPassStatus: () => void;
-  hasNewSharedMemories: boolean;
-  setHasNewSharedMemories: (status: boolean) => void;
-  markSharedMemoryAsViewed: (memoryId: string) => Promise<void>;
-  checkIfGuestHasUnviewedMemories: () => Promise<boolean>; // Now async
   guestPassPriceDetails: GetGuestPassPriceOutput | null;
-  fetchGuestPassPrice: () => Promise<void>;
   isFetchingGuestPassPrice: boolean;
 
   activateFreeHostPass: () => Promise<void>;
   purchasePaidHostPass: () => Promise<void>;
-  checkAndUpdateHostPassStatus: () => void;
   hostPassStatus: User['hostPassStatus'];
   hostPassPriceDetails: GetHostPassPriceOutput | null;
-  fetchHostPassPrice: () => Promise<void>;
   isFetchingHostPassPrice: boolean;
-  resetHostPassForTesting: () => Promise<void>;
-
+  
   storageQuotaBytes: number;
   calculateAndUpdateStorageUsage: (userId: string) => Promise<void>;
   updateUserProfileInFirestore: (userId: string, updates: Partial<User>) => Promise<void>;
@@ -74,7 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userMode, setUserModeState] = useState<UserMode>('host');
   
   const [pendingRequestCount, setPendingRequestCountState] = useState<number>(0);
-  const [hasNewSharedMemories, setHasNewSharedMemoriesState] = useState(false);
+  const [hasNewSharedMemories, setHasNewSharedMemoriesState] = useState(false); // Retained for future use
   const [guestPassPriceDetails, setGuestPassPriceDetails] = useState<GetGuestPassPriceOutput | null>(null);
   const [isFetchingGuestPassPrice, setIsFetchingGuestPassPrice] = useState(false);
   const [hostPassPriceDetails, setHostPassPriceDetails] = useState<GetHostPassPriceOutput | null>(null);
@@ -88,69 +78,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  const updateUserProfileInFirestore = useCallback(async (userId: string, updates: Partial<User>) => {
-    const userDocRef = doc(db, "users", userId);
-    try {
-      await updateDoc(userDocRef, { ...updates, lastUpdated: serverTimestamp() });
-      setUser(prevUser => prevUser ? { ...prevUser, ...updates } : null);
-    } catch (error: any) {
-      console.error(`AuthContext: Error updating user profile in Firestore for user ${userId}:`, error);
-      throw error;
-    }
-  }, []);
-
-  const checkAndUpdatePassStatus = useCallback(async (currentUser: User): Promise<User> => {
-    let updatedUser = { ...currentUser };
-    const now = new Date();
-    let updatesToSave: Partial<User> = {};
-
-    if (updatedUser.sharedAccessStatus === 'free_pass_active' && updatedUser.freePassActivatedDate && isBefore(addMonths(parseISO(updatedUser.freePassActivatedDate), 6), now)) {
-      updatesToSave.sharedAccessStatus = 'free_pass_expired';
-    } else if (updatedUser.sharedAccessStatus === 'paid_pass_active' && updatedUser.paidPassExpiryDate && isBefore(parseISO(updatedUser.paidPassExpiryDate), now)) {
-      updatesToSave.sharedAccessStatus = 'paid_pass_expired';
-    }
-
-    if (updatedUser.hostPassStatus === 'free_host_pass_active' && updatedUser.freeHostPassActivatedDate && isBefore(addMonths(parseISO(updatedUser.freeHostPassActivatedDate), 6), now)) {
-      updatesToSave.hostPassStatus = 'free_host_pass_expired';
-    } else if (updatedUser.hostPassStatus === 'paid_host_pass_active' && updatedUser.paidHostPassExpiryDate && isBefore(parseISO(updatedUser.paidHostPassExpiryDate), now)) {
-      updatesToSave.hostPassStatus = 'paid_host_pass_expired';
-    }
-
-    if (Object.keys(updatesToSave).length > 0) {
-        // This function now only performs the DB update. The local state (user) will be updated by the updateUserProfileInFirestore function.
-        await updateDoc(doc(db, "users", currentUser.id), { ...updatesToSave, lastUpdated: serverTimestamp() });
-        return { ...updatedUser, ...updatesToSave };
-    }
-    return updatedUser;
-  }, []);
+  // --- Listener and State Management ---
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const userDocRef = doc(db, "users", firebaseUser.uid);
-        const userDocSnap = await getDoc(userDocRef);
-        
-        let appUserInitial: User;
-        if (userDocSnap.exists()) {
-          const dbUser = userDocSnap.data() as User;
-          appUserInitial = { ...dbUser, id: firebaseUser.uid, email: firebaseUser.email || dbUser.email };
-        } else {
-          appUserInitial = {
-            id: firebaseUser.uid, email: firebaseUser.email!, name: firebaseUser.displayName || "New User",
-            sharedAccessStatus: 'no_pass_initiated', hostPassStatus: 'no_pass_initiated', viewedSharedMemoryIds: [], storageUsedBytes: 0,
-          };
-          await setDoc(userDocRef, { ...appUserInitial, createdAt: serverTimestamp() });
-        }
-        
-        const userWithCheckedPasses = await checkAndUpdatePassStatus(appUserInitial);
-        setUser(userWithCheckedPasses);
+        // This onSnapshot listener will handle ALL user document updates.
+        const userUnsubscribe = onSnapshot(userDocRef, async (userDocSnap) => {
+          if (userDocSnap.exists()) {
+            let dbUser = userDocSnap.data() as User;
+            
+            // Check for and apply pass status updates if needed
+            const now = new Date();
+            let updatesToSave: Partial<User> = {};
+            if (dbUser.sharedAccessStatus === 'free_pass_active' && dbUser.freePassActivatedDate && isBefore(addMonths(parseISO(dbUser.freePassActivatedDate), 6), now)) {
+              updatesToSave.sharedAccessStatus = 'free_pass_expired';
+            } else if (dbUser.sharedAccessStatus === 'paid_pass_active' && dbUser.paidPassExpiryDate && isBefore(parseISO(dbUser.paidPassExpiryDate), now)) {
+              updatesToSave.sharedAccessStatus = 'paid_pass_expired';
+            }
+            if (dbUser.hostPassStatus === 'free_host_pass_active' && dbUser.freeHostPassActivatedDate && isBefore(addMonths(parseISO(dbUser.freeHostPassActivatedDate), 6), now)) {
+              updatesToSave.hostPassStatus = 'free_host_pass_expired';
+            } else if (dbUser.hostPassStatus === 'paid_host_pass_active' && dbUser.paidHostPassExpiryDate && isBefore(parseISO(dbUser.paidHostPassExpiryDate), now)) {
+              updatesToSave.hostPassStatus = 'paid_host_pass_expired';
+            }
+
+            if (Object.keys(updatesToSave).length > 0) {
+              await updateDoc(userDocRef, { ...updatesToSave, lastUpdated: serverTimestamp() });
+              // The listener will re-fire with the updated data, so we don't need to set state here.
+            } else {
+              setUser({ ...dbUser, id: firebaseUser.uid, email: firebaseUser.email || dbUser.email });
+            }
+          } else {
+            // Create user doc if it doesn't exist (first registration)
+            const newUser: User = {
+              id: firebaseUser.uid, email: firebaseUser.email!, name: firebaseUser.displayName || "New User",
+              sharedAccessStatus: 'no_pass_initiated', hostPassStatus: 'no_pass_initiated', viewedSharedMemoryIds: [], storageUsedBytes: 0,
+            };
+            await setDoc(userDocRef, { ...newUser, createdAt: serverTimestamp() });
+            setUser(newUser);
+          }
+        });
+        setLoading(false);
+        return () => userUnsubscribe();
       } else {
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
     return () => unsubscribe();
-  }, [checkAndUpdatePassStatus]);
+  }, []);
 
   useEffect(() => {
     let memoriesUnsubscribe: Unsubscribe | undefined;
@@ -169,11 +146,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         setMemories(fetchedMemories);
         setCompletedPromptIds(new Set(fetchedMemories.map(m => m.promptId).filter(Boolean) as string[]));
-        setIsDataLoading(false); // Move here to signal data is ready
-      }, (error) => {
-        console.error("Error listening to memories:", error);
         setIsDataLoading(false);
-      });
+      }, (error) => { console.error("Error listening to memories:", error); setIsDataLoading(false); });
 
       const promptFlagsDocRef = doc(db, 'userPromptFlags', user.id);
       promptsUnsubscribe = onSnapshot(promptFlagsDocRef, (docSnap) => {
@@ -183,12 +157,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else {
       setMemories([]); setCompletedPromptIds(new Set()); setFlaggedPromptIds(new Set()); setIsDataLoading(false);
     }
-
     return () => {
       if (memoriesUnsubscribe) memoriesUnsubscribe();
       if (promptsUnsubscribe) promptsUnsubscribe();
     };
   }, [user?.id]); // Depend only on user.id
+
+  // --- Navigation Logic ---
 
   useEffect(() => {
     if (loading) return;
@@ -200,6 +175,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       router.push('/login');
     }
   }, [user, loading, pathname, router, userMode]);
+
+  // --- Memoized Functions for Context API ---
 
   const login = useCallback(async (email: string, password: string): Promise<void> => {
     try {
@@ -213,12 +190,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const register = useCallback(async (name: string, email: string, password: string): Promise<void> => {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const userDocRef = doc(db, "users", userCredential.user.uid);
-      await setDoc(userDocRef, {
-          id: userCredential.user.uid, email, name, sharedAccessStatus: 'no_pass_initiated', hostPassStatus: 'no_pass_initiated', 
-          viewedSharedMemoryIds: [], storageUsedBytes: 0, createdAt: serverTimestamp() 
-      });
+      await createUserWithEmailAndPassword(auth, email, password);
+      // The onAuthStateChanged listener handles user document creation.
       toast({ title: "Registration Successful", description: "Welcome! Your account has been created." });
     } catch (error: any) {
       toast({ title: "Registration Failed", description: error.message || "Could not create account.", variant: "destructive" });
@@ -229,7 +202,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = useCallback(async () => {
     try {
       await firebaseSignOut(auth);
-      setUser(null);
+      // State reset is handled by onAuthStateChanged
       setUserModeState('host');
       setGuestPassPriceDetails(null);
       setHostPassPriceDetails(null);
@@ -239,27 +212,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [router]);
   
-  const fetchGuestPassPrice = useCallback(async () => {
-    if (isFetchingGuestPassPrice || guestPassPriceDetails || !user) return;
-    setIsFetchingGuestPassPrice(true);
+  const updateUserProfileInFirestore = useCallback(async (userId: string, updates: Partial<User>) => {
+    const userDocRef = doc(db, "users", userId);
     try {
-      const priceData = await getGuestPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
-      setGuestPassPriceDetails(priceData);
-    } catch (error) {
-      console.error("AuthContext: Failed to fetch GUEST pass price:", error);
-    } finally { setIsFetchingGuestPassPrice(false); }
-  }, [isFetchingGuestPassPrice, guestPassPriceDetails, user]);
-
-  const fetchHostPassPrice = useCallback(async () => {
-    if (isFetchingHostPassPrice || hostPassPriceDetails || !user) return;
-    setIsFetchingHostPassPrice(true);
-    try {
-      const priceData = await getHostPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
-      setHostPassPriceDetails(priceData);
-    } catch (error) {
-      console.error("AuthContext: Failed to fetch HOST pass price:", error);
-    } finally { setIsFetchingHostPassPrice(false); }
-  }, [isFetchingHostPassPrice, hostPassPriceDetails, user]);
+      await updateDoc(userDocRef, { ...updates, lastUpdated: serverTimestamp() });
+    } catch (error: any) {
+      console.error(`AuthContext: Error updating user profile in Firestore for user ${userId}:`, error);
+      throw error;
+    }
+  }, []);
 
   const activateFreeGuestPass = useCallback(async () => {
     if (user && user.sharedAccessStatus === 'no_pass_initiated') {
@@ -319,35 +280,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const getStorageQuotaBytes = useCallback((): number => (user && (user.hostPassStatus === 'free_host_pass_active' || user.hostPassStatus === 'paid_host_pass_active')) ? STANDARD_HOST_STORAGE_QUOTA_BYTES : 0, [user]);
 
-  const resetHostPassForTesting = useCallback(async () => {
-    if (user) {
-      await updateUserProfileInFirestore(user.id, { hostPassStatus: 'no_pass_initiated', freeHostPassActivatedDate: undefined, paidHostPassExpiryDate: undefined });
-      setHostPassPriceDetails(null); 
-      toast({ title: "Host Pass Reset (Testing)", description: "Host pass status has been reset." });
-    }
-  }, [user, updateUserProfileInFirestore]);
+  const fetchGuestPassPrice = useCallback(async () => {
+    if (isFetchingGuestPassPrice || guestPassPriceDetails || !user) return;
+    setIsFetchingGuestPassPrice(true);
+    try {
+      const priceData = await getGuestPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
+      setGuestPassPriceDetails(priceData);
+    } catch (error) {
+      console.error("AuthContext: Failed to fetch GUEST pass price:", error);
+    } finally { setIsFetchingGuestPassPrice(false); }
+  }, [isFetchingGuestPassPrice, guestPassPriceDetails, user]);
+
+  const fetchHostPassPrice = useCallback(async () => {
+    if (isFetchingHostPassPrice || hostPassPriceDetails || !user) return;
+    setIsFetchingHostPassPrice(true);
+    try {
+      const priceData = await getHostPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
+      setHostPassPriceDetails(priceData);
+    } catch (error) {
+      console.error("AuthContext: Failed to fetch HOST pass price:", error);
+    } finally { setIsFetchingHostPassPrice(false); }
+  }, [isFetchingHostPassPrice, hostPassPriceDetails, user]);
   
-  const checkAndUpdateGuestPassStatus = useCallback(() => { if (user) checkAndUpdatePassStatus(user).then(setUser); }, [user, checkAndUpdatePassStatus]);
-  const checkAndUpdateHostPassStatus = useCallback(() => { if (user) checkAndUpdatePassStatus(user).then(setUser); }, [user, checkAndUpdatePassStatus]);
-  const checkIfGuestHasUnviewedMemories = useCallback(async (): Promise<boolean> => { return false; }, []);
-  const setPendingRequestCount = useCallback((count: number) => { setPendingRequestCountState(count); }, []);
-  const toggleUserMode = useCallback(() => { setUserModeState(p => p === 'host' ? 'guest' : 'host'); }, []);
-  const setHasNewSharedMemories = useCallback((status: boolean) => { setHasNewSharedMemoriesState(status); }, []);
+  useEffect(() => {
+    if (user && userMode === 'guest') {
+        fetchGuestPassPrice();
+    } else if (user && userMode === 'host') {
+        fetchHostPassPrice();
+    }
+  }, [user, userMode, fetchGuestPassPrice, fetchHostPassPrice]);
+
+
+  // --- Final Context Value ---
 
   const contextValue = useMemo(() => ({
       isAuthenticated: !!user,
       user,
       login, register, logout, loading,
-      pendingRequestCount, setPendingRequestCount,
-      userMode, toggleUserMode, setUserMode: setUserModeState,
-      activateFreeGuestPass, purchasePaidGuestPass, checkAndUpdateGuestPassStatus,
-      hasNewSharedMemories, setHasNewSharedMemories,
-      markSharedMemoryAsViewed, checkIfGuestHasUnviewedMemories,
-      guestPassPriceDetails, fetchGuestPassPrice, isFetchingGuestPassPrice,
-      activateFreeHostPass, purchasePaidHostPass, checkAndUpdateHostPassStatus,
+      pendingRequestCount, setPendingRequestCount: setPendingRequestCountState,
+      userMode, toggleUserMode: () => setUserModeState(p => p === 'host' ? 'guest' : 'host'), setUserMode: setUserModeState,
+      activateFreeGuestPass, purchasePaidGuestPass,
+      guestPassPriceDetails, isFetchingGuestPassPrice,
+      activateFreeHostPass, purchasePaidHostPass,
       hostPassStatus: user?.hostPassStatus || 'no_pass_initiated',
-      hostPassPriceDetails, fetchHostPassPrice, isFetchingHostPassPrice,
-      resetHostPassForTesting,
+      hostPassPriceDetails, isFetchingHostPassPrice,
       storageQuotaBytes: getStorageQuotaBytes(),
       calculateAndUpdateStorageUsage,
       updateUserProfileInFirestore,
@@ -355,15 +331,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       completedPromptIds,
       flaggedPromptIds,
       isDataLoading,
+      // Deprecated/stubbed functions removed for clarity
+      setHasNewSharedMemories: () => {},
+      markSharedMemoryAsViewed,
   }), [
-      user, loading, pendingRequestCount, userMode, hasNewSharedMemories, 
+      user, loading, pendingRequestCount, userMode,
       guestPassPriceDetails, isFetchingGuestPassPrice, hostPassPriceDetails, isFetchingHostPassPrice,
       memories, completedPromptIds, flaggedPromptIds, isDataLoading,
-      login, register, logout, setPendingRequestCount, toggleUserMode, 
-      activateFreeGuestPass, purchasePaidGuestPass, checkAndUpdateGuestPassStatus,
-      setHasNewSharedMemories, markSharedMemoryAsViewed, checkIfGuestHasUnviewedMemories,
-      fetchGuestPassPrice, activateFreeHostPass, purchasePaidHostPass, checkAndUpdateHostPassStatus,
-      fetchHostPassPrice, resetHostPassForTesting, getStorageQuotaBytes,
+      login, register, logout, activateFreeGuestPass, purchasePaidGuestPass,
+      markSharedMemoryAsViewed, fetchGuestPassPrice, activateFreeHostPass, purchasePaidHostPass,
+      fetchHostPassPrice, getStorageQuotaBytes,
       calculateAndUpdateStorageUsage, updateUserProfileInFirestore
   ]);
 
