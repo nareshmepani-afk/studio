@@ -389,7 +389,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     onSubmit(
       { title, date: finalDate.toISOString(), description, emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForSubmission,
         location: location || undefined, country: country || undefined, category: selectedCategory, 
-        promptId: finalPromptIdToSave },
+        promptId: finalPromptIdToSave, isLegacy: memory?.isLegacy || false },
       mediaFileToUpload
     );
   }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, selectedCategory, initialPromptId, selectedEmotionTags, isEditing]);
@@ -508,3 +508,5 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     </form>
   );
 }
+
+    
