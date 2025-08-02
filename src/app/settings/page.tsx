@@ -18,9 +18,8 @@ import { useState, useEffect, type FormEvent, useRef, useMemo, useCallback } fro
 import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { useRouter } from 'next/navigation'; 
-import { storage, db } from '@/lib/firebase'; // Added storage
-import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'; // Added Firebase Storage functions
-import { doc, updateDoc } from 'firebase/firestore'; // For direct update if needed, though useAuth handles it
+import { storage } from '@/lib/firebase'; 
+import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'; 
 
 const currentGlobalYear = new Date().getFullYear();
 const dobYears: number[] = Array.from({ length: 120 }, (_, i) => currentGlobalYear - i); 
@@ -32,23 +31,20 @@ const dobMonths: { value: number; label: string }[] = Array.from({ length: 12 },
 export default function SettingsPage() {
   const { 
     user, 
-    updateUserProfileInFirestore, // Changed from login to updateUserProfileInFirestore for clarity
+    updateUserProfileInFirestore, 
     loading: authLoading, 
     activateFreeGuestPass, 
     purchasePaidGuestPass, 
-    checkAndUpdateGuestPassStatus,
     guestPassPriceDetails,
     fetchGuestPassPrice,
     isFetchingGuestPassPrice,
     activateFreeHostPass,
     purchasePaidHostPass,
-    checkAndUpdateHostPassStatus,
     hostPassStatus, 
     hostPassPriceDetails: authHostPassPriceDetails,
     fetchHostPassPrice,
     isFetchingHostPassPrice: isFetchingAuthHostPassPrice,
     storageQuotaBytes, 
-    calculateAndUpdateStorageUsage,
   } = useAuth();
   const router = useRouter(); 
   const [name, setName] = useState('');
@@ -66,10 +62,6 @@ export default function SettingsPage() {
   const [countryOfBirth, setCountryOfBirth] = useState('');
   const [city, setCity] = useState('');
   const [townArea, setTownArea] = useState('');
-  
-  // REMOVED: Redundant useEffect that was causing re-render loops.
-  // The logic for fetching prices should be triggered by UI interaction or
-  // a more stable condition within the context itself, not on every user object change.
 
   const daysInSelectedDobMonth = useMemo(() => {
     if (dobYear && dobMonth) {
@@ -90,7 +82,7 @@ export default function SettingsPage() {
     if (user) {
       setName(user.name || '');
       setEmail(user.email || '');
-      setAvatarPreviewUrl(user.avatarUrl || null); // Display current avatar from user object
+      setAvatarPreviewUrl(user.avatarUrl || null);
 
       if (user.dateOfBirth && isValid(parseISO(user.dateOfBirth))) {
         const dob = parseISO(user.dateOfBirth);
@@ -110,7 +102,7 @@ export default function SettingsPage() {
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit for avatars
+      if (file.size > 5 * 1024 * 1024) { 
         toast({ title: "Avatar Too Large", description: "Please choose an image smaller than 5MB.", variant: "destructive" });
         return;
       }
@@ -130,7 +122,7 @@ export default function SettingsPage() {
     setIsSubmitting(true);
 
     let finalAvatarUrlToSave = user.avatarUrl;
-    const oldAvatarUrl = user.avatarUrl; // Store old URL for potential deletion
+    const oldAvatarUrl = user.avatarUrl;
 
     if (avatarFile) {
       const avatarStoragePath = `avatars/${user.id}/${Date.now()}-${avatarFile.name}`;
@@ -138,16 +130,12 @@ export default function SettingsPage() {
       try {
         await uploadBytes(fileRef, avatarFile);
         finalAvatarUrlToSave = await getDownloadURL(fileRef);
-        console.log("Avatar uploaded, URL:", finalAvatarUrlToSave);
 
-        // Delete old avatar from Firebase Storage if it exists and is different
         if (oldAvatarUrl && oldAvatarUrl !== finalAvatarUrlToSave && oldAvatarUrl.includes('firebasestorage.googleapis.com')) {
           try {
             const oldFileRef = storageRef(storage, oldAvatarUrl);
             await deleteObject(oldFileRef);
-            console.log("Old avatar deleted from storage:", oldAvatarUrl);
           } catch (deleteError: any) {
-            // Non-critical, so just log it
             if (deleteError.code !== 'storage/object-not-found') {
                  console.warn("Could not delete old avatar from storage:", deleteError);
             }
@@ -160,13 +148,11 @@ export default function SettingsPage() {
         return;
       }
     } else if (avatarPreviewUrl === null && oldAvatarUrl) { 
-        // User cleared the avatar (avatarPreviewUrl is null, but avatarFile is also null, and oldAvatarUrl existed)
-        finalAvatarUrlToSave = undefined; // Set to undefined to remove it
+        finalAvatarUrlToSave = undefined;
         if (oldAvatarUrl.includes('firebasestorage.googleapis.com')) {
              try {
                 const oldFileRef = storageRef(storage, oldAvatarUrl);
                 await deleteObject(oldFileRef);
-                console.log("Avatar deleted by user from storage:", oldAvatarUrl);
             } catch (deleteError: any) {
                 if (deleteError.code !== 'storage/object-not-found') {
                     console.warn("Could not delete old avatar from storage during clearing:", deleteError);
@@ -174,7 +160,6 @@ export default function SettingsPage() {
             }
         }
     }
-
 
     let finalDateOfBirth: string | undefined = undefined;
     if (dobYear && dobMonth && dobDay) {
@@ -191,7 +176,6 @@ export default function SettingsPage() {
     
     const updatedUserDetails: Partial<User> = {
       name: name,
-      // email cannot be changed here, it's managed by Firebase Auth
       avatarUrl: finalAvatarUrlToSave, 
       dateOfBirth: finalDateOfBirth, 
       countryOfBirth: countryOfBirth || undefined, 
@@ -200,9 +184,9 @@ export default function SettingsPage() {
     };
     
     try {
-        await updateUserProfileInFirestore(user.id, updatedUserDetails); // Use the context function
+        await updateUserProfileInFirestore(user.id, updatedUserDetails);
         toast({ title: "Settings Saved!", description: "Your profile information has been updated." });
-        setAvatarFile(null); // Clear pending file after successful upload
+        setAvatarFile(null);
     } catch (error) {
         console.error("Error saving settings:", error);
         toast({ title: "Save Failed", description: "Could not update your settings.", variant: "destructive" });
@@ -211,7 +195,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Clean up object URL for avatar preview
   useEffect(() => { 
     let currentPreview = avatarPreviewUrl; 
     return () => { 
@@ -227,18 +210,14 @@ export default function SettingsPage() {
   
   const isEffectivelyEmptyOrPlaceholderAvatar = (url?: string | null): boolean => (!url || url.trim() === '' || url.startsWith('https://avatar.vercel.sh/'));
   let imageSrcForDisplay: string | undefined = avatarPreviewUrl && avatarPreviewUrl.startsWith('blob:') ? avatarPreviewUrl : (avatarPreviewUrl && !isEffectivelyEmptyOrPlaceholderAvatar(avatarPreviewUrl) ? avatarPreviewUrl : undefined);
-
   let showIconAsFallback = !imageSrcForDisplay;
-
 
   const renderGuestPurchaseButton = () => {
     let buttonText = "Purchase 31-Day Guest Pass";
-    let priceString = "";
     if (isFetchingGuestPassPrice) {
         buttonText = "Fetching price...";
     } else if (guestPassPriceDetails) {
-        priceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.passPrice)})`;
-        buttonText += priceString;
+        buttonText += ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.passPrice)})`;
     } else {
          buttonText += ` (£7.99 - Mock)`;
     }
@@ -280,12 +259,10 @@ export default function SettingsPage() {
 
   const renderHostPurchaseButton = () => {
     let buttonText = "Purchase 31-Day Host Pass";
-    let priceString = "";
     if (isFetchingAuthHostPassPrice) { 
         buttonText = "Fetching price...";
     } else if (authHostPassPriceDetails) {
-        priceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: authHostPassPriceDetails.currency }).format(authHostPassPriceDetails.passPrice)})`;
-        buttonText += priceString;
+        buttonText += ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: authHostPassPriceDetails.currency }).format(authHostPassPriceDetails.passPrice)})`;
     } else {
          buttonText += ` (£12.99 - Mock)`; 
     }
@@ -346,7 +323,6 @@ export default function SettingsPage() {
   const storageUsed = user.storageUsedBytes || 0;
   const perMemoryLimitBytes = storageQuotaBytes;
 
-
   return (
     <AuthenticatedPageWrapper>
       <div className="container mx-auto py-8 px-4">
@@ -366,7 +342,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="space-y-1"><Label htmlFor="name">Name</Label><Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your Name" /></div>
-                <div className="space-y-1"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" disabled /><p className="text-xs text-muted-foreground">Email cannot be changed in this demo.</p></div>
+                <div className="space-y-1"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" disabled /><p className="text-xs text-muted-foreground">Email cannot be changed.</p></div>
               </CardContent>
             </Card>
             <Card>

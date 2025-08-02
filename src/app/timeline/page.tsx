@@ -24,7 +24,7 @@ export default function TimelinePage() {
   const [sortCriteria, setSortCriteria] = useState<'date-desc' | 'date-asc' | 'title-asc' | 'title-desc'>('date-desc');
   const [categoryFilter, setCategoryFilter] = useState<MemoryCategory | 'all'>('all');
   const [legacyFilter, setLegacyFilter] = useState<'all' | 'legacy' | 'non-legacy'>('all');
-  const [currentStreak, setCurrentStreak] = useState(0); // Mock streak for now
+  const [currentStreak, setCurrentStreak] = useState(0); 
   const router = useRouter();
 
   const {
@@ -37,19 +37,15 @@ export default function TimelinePage() {
     fetchGuestPassPrice,
     isFetchingGuestPassPrice,
     hostPassStatus,
-    setHasNewSharedMemories,
-    hasNewSharedMemories,
     markSharedMemoryAsViewed,
-    checkIfGuestHasUnviewedMemories,
     memories,
     isDataLoading,
   } = useAuth();
 
-  // Mock requests, as this requires a backend/sharing mechanism
-  const mockHostPendingRequests = [
+  const mockHostPendingRequests = useMemo(() => [
     { id: 'req1', text: 'Tell us about your first pet!', user: 'Guest123' },
     { id: 'req2', text: 'What was your favorite childhood vacation?', user: 'Guest456' },
-  ];
+  ], []);
 
   const canGuestViewSharedMemories = useMemo(() => {
     return user?.sharedAccessStatus === 'free_pass_active' || user?.sharedAccessStatus === 'paid_pass_active';
@@ -62,46 +58,25 @@ export default function TimelinePage() {
   const isViewingLegacyChest = useMemo(() => legacyFilter === 'legacy', [legacyFilter]);
 
   useEffect(() => {
-    if (userMode === 'guest' && user &&
-        (user.sharedAccessStatus === 'free_pass_expired' || 
-         user.sharedAccessStatus === 'paid_pass_expired' || 
-         user.sharedAccessStatus === 'no_pass_initiated')) {
+    if (userMode === 'guest' && user && !canGuestViewSharedMemories) {
       if (!isFetchingGuestPassPrice && !guestPassPriceDetails) {
         fetchGuestPassPrice();
       }
     }
-  }, [userMode, user, fetchGuestPassPrice, isFetchingGuestPassPrice, guestPassPriceDetails]);
+  }, [userMode, user, fetchGuestPassPrice, isFetchingGuestPassPrice, guestPassPriceDetails, canGuestViewSharedMemories]);
 
   useEffect(() => {
     if (user) {
         if (userMode === 'host') {
-          setPendingRequestCount(mockHostPendingRequests.length); // Mock
+          setPendingRequestCount(mockHostPendingRequests.length);
         } else {
           setPendingRequestCount(0);
         }
     }
-  }, [user, userMode, setPendingRequestCount]);
-
-
-  useEffect(() => {
-    let notificationSimulationTimer: NodeJS.Timeout;
-    if (userMode === 'host' && user && !hasNewSharedMemories) {
-      // This simulation will be replaced by actual logic checking shared memories in Firestore
-      // notificationSimulationTimer = setTimeout(() => {
-      //   if (userMode === 'host' && user && !hasNewSharedMemories && checkIfGuestHasUnviewedMemories()) {
-      //       setHasNewSharedMemories(true);
-      //   }
-      // }, 7000); 
-    }
-    return () => clearTimeout(notificationSimulationTimer);
-  }, [userMode, user, hasNewSharedMemories, setHasNewSharedMemories, checkIfGuestHasUnviewedMemories]);
-
+  }, [user, userMode, setPendingRequestCount, mockHostPendingRequests]);
 
   const handleDeleteMemory = useCallback(async (memoryId: string) => {
     if (!user) return;
-    const originalMemories = memories;
-    // Optimistic deletion
-    // setMemories(prev => prev.filter(m => m.id !== memoryId));
     try {
       const memoryDocRef = doc(db, "users", user.id, "memories", memoryId);
       await deleteDoc(memoryDocRef);
@@ -109,19 +84,14 @@ export default function TimelinePage() {
     } catch (error) {
       console.error("Error deleting memory from Firestore:", error);
       toast({ title: "Delete Failed", variant: "destructive" });
-      // Revert optimistic deletion
-      // setMemories(originalMemories);
     }
-  }, [user, memories]);
+  }, [user]);
 
   const handleToggleLegacyStatus = useCallback(async (memoryId: string) => {
     if (!user) return;
     const memoryToUpdate = memories.find(mem => mem.id === memoryId);
     if (!memoryToUpdate) return;
-
     const newLegacyStatus = !memoryToUpdate.isLegacy;
-    // Optimistic update
-    // setMemories(prev => prev.map(m => m.id === memoryId ? {...m, isLegacy: newLegacyStatus} : m));
     try {
       const memoryDocRef = doc(db, "users", user.id, "memories", memoryId);
       await updateDoc(memoryDocRef, { isLegacy: newLegacyStatus });
@@ -132,27 +102,21 @@ export default function TimelinePage() {
     } catch (error) {
       console.error("Error updating legacy status in Firestore:", error);
       toast({ title: "Update Failed", variant: "destructive" });
-      // Revert optimistic update
-      // setMemories(prev => prev.map(m => m.id === memoryId ? {...m, isLegacy: !newLegacyStatus} : m));
     }
   }, [user, memories]);
 
-  const handleCreateMontage = () => {
+  const handleCreateMontage = useCallback(() => {
     setTimeout(() => {
       toast({ title: "Feature Coming Soon", description: "AI Memory Montages will be available later." });
     }, 0);
-  }
+  }, []);
 
   const filteredAndSortedMemories = useMemo(() => {
     let result = [...memories];
     if (searchTerm) {
       result = result.filter(memory =>
         memory.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        memory.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        memory.emotionTags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        memory.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        memory.country?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        memory.category?.toLowerCase().includes(searchTerm.toLowerCase())
+        memory.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     if (categoryFilter !== 'all') {
@@ -165,9 +129,10 @@ export default function TimelinePage() {
     result.sort((a, b) => {
       if (sortCriteria === 'title-asc') return a.title.localeCompare(b.title);
       if (sortCriteria === 'title-desc') return b.title.localeCompare(a.title);
-      if (sortCriteria === 'date-asc') return new Date(a.date).getTime() - new Date(b.date).getTime();
-      // Default is 'date-desc'
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      if (sortCriteria === 'date-asc') return dateA - dateB;
+      return dateB - dateA; // Default is 'date-desc'
     });
     return result;
   }, [memories, searchTerm, sortCriteria, categoryFilter, legacyFilter]);
@@ -183,15 +148,12 @@ export default function TimelinePage() {
    );
  }
 
-
   const renderGuestPurchaseButton = () => {
     let buttonText = "Purchase 31-Day Guest Pass";
-    let priceString = "";
     if (isFetchingGuestPassPrice) {
         buttonText = "Fetching price...";
     } else if (guestPassPriceDetails) {
-        priceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.passPrice)})`;
-        buttonText += priceString;
+        buttonText += ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.passPrice)})`;
     } else {
          buttonText += ` (£7.99 - Mock)`;
     }
@@ -276,7 +238,6 @@ export default function TimelinePage() {
       else if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') addMemoryTooltipContent = "Your Host Pass has expired. Renew in Settings to add memories.";
       else addMemoryTooltipContent = "An active Host Pass is required to add memories. Check Settings.";
   }
-
 
   return (
     <AuthenticatedPageWrapper>
@@ -383,5 +344,3 @@ export default function TimelinePage() {
     </AuthenticatedPageWrapper>
   );
 }
-
-    

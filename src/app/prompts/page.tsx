@@ -3,7 +3,7 @@
 
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { PromptCard } from '@/components/prompts/PromptCard';
-import { mockPromptGroups } from '@/lib/mockData'; // mockPromptGroups remains for structure
+import { mockPromptGroups } from '@/lib/mockData'; 
 import { Button } from '@/components/ui/button';
 import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star as StarIcon, Info } from 'lucide-react'; 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -31,8 +31,6 @@ import { doc, setDoc } from 'firebase/firestore';
 const FIRESTORE_USER_PROMPT_FLAGS_COLLECTION = 'userPromptFlags'; 
 
 export default function LifeJourneyPage() {
-  const [promptGroups, setPromptGroups] = useState<typeof mockPromptGroups>(mockPromptGroups);
-  
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
   
@@ -62,18 +60,16 @@ export default function LifeJourneyPage() {
   }, [hostPassStatus]);
 
   const availablePromptGroups = useMemo(() => {
-    if (canAccessFullJourney || promptGroups.length === 0) return promptGroups;
-    return [promptGroups[0]];
-  }, [canAccessFullJourney, promptGroups]);
+    if (canAccessFullJourney || mockPromptGroups.length === 0) return mockPromptGroups;
+    return [mockPromptGroups[0]];
+  }, [canAccessFullJourney]);
 
   const handleToggleFlagPrompt = useCallback(async (promptIdToToggle: string) => {
     if (!user) return;
     const newFlagStatus = !flaggedPromptIds.has(promptIdToToggle);
-    
     const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, user.id);
     try {
         await setDoc(promptFlagsDocRef, { [promptIdToToggle]: newFlagStatus }, { merge: true });
-        
         const promptText = mockPromptGroups.flatMap(g => g.prompts).find(p => p.id === promptIdToToggle)?.text[currentLanguage] || "This prompt";
         toast({
             title: newFlagStatus ? "Prompt Flagged" : "Prompt Unflagged",
@@ -85,36 +81,33 @@ export default function LifeJourneyPage() {
     }
   }, [user, flaggedPromptIds, currentLanguage]);
 
-  const handleStartChapter = (promptId: string, promptText: string) => {
+  const handleStartChapter = useCallback((promptId: string, promptText: string) => {
     const isPromptInAvailableGroups = availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === promptId);
-
     if (!canAccessFullJourney && !isPromptInAvailableGroups) {
-        setTimeout(() => toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters.", variant: "destructive" }), 0);
+        toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters.", variant: "destructive" });
         return;
     }
-    setTimeout(() => toast({ title: "Starting New Chapter!", description: `Prompt: "${promptText}". Redirecting...`}), 0);
+    toast({ title: "Starting New Chapter!", description: `Prompt: "${promptText}". Redirecting...`});
     router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
-  };
+  }, [canAccessFullJourney, availablePromptGroups, router]);
 
-  const handleViewEditChapter = async (promptId: string) => {
+  const handleViewEditChapter = useCallback(async (promptId: string) => {
     if (!user) return;
-    
     const memoryForPrompt = user.memories.find(m => m.promptId === promptId);
-
     if (memoryForPrompt) {
       router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
     } else {
       toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
     }
-  };
+  }, [user, router]);
 
-  const handleGenerateCustomChapterIdeas = async () => {
+  const handleGenerateCustomChapterIdeas = useCallback(async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {
-      setTimeout(() => toast({ title: "Profile Info Needed", description: "Please provide some information about yourself or your interests in the text area.", variant: "destructive" }), 0);
+      toast({ title: "Profile Info Needed", description: "Please provide some information about yourself or your interests in the text area.", variant: "destructive" });
       return;
     }
     if (!canAccessFullJourney) {
-        setTimeout(() => toast({ title: "Host Pass Required", description: "Activate or purchase a Host Pass to use AI brainstorming.", variant: "destructive" }), 0);
+        toast({ title: "Host Pass Required", description: "Activate or purchase a Host Pass to use AI brainstorming.", variant: "destructive" });
         return;
     }
     setIsLoadingChapterIdeas(true);
@@ -122,23 +115,23 @@ export default function LifeJourneyPage() {
       const profileToUse = customChapterUserProfile.trim() ? customChapterUserProfile : user?.profileInfo || '';
       const result = await generateMemoryCuesAction({ userProfile: profileToUse, currentDate: new Date().toISOString().split('T')[0], language: customChapterLanguage });
       setGeneratedChapterIdeas(result.memoryCues);
-      setTimeout(() => toast({ title: result.memoryCues.length > 0 ? "Chapter Ideas Generated!" : "No Ideas Generated" }), 0);
+      toast({ title: result.memoryCues.length > 0 ? "Chapter Ideas Generated!" : "No Ideas Generated" });
     } catch (error) {
-      setTimeout(() => toast({ title: "Error Generating Ideas", variant: "destructive" }), 0);
+      toast({ title: "Error Generating Ideas", variant: "destructive" });
     }
     setIsLoadingChapterIdeas(false);
-  };
+  }, [customChapterUserProfile, user?.profileInfo, canAccessFullJourney, customChapterLanguage]);
 
-  const handleCustomIdeaSelected = (idea: string) => {
+  const handleCustomIdeaSelected = useCallback((idea: string) => {
     if (!canAccessFullJourney) {
-        setTimeout(() => toast({ title: "Host Pass Required", description: "Activate or purchase a Host Pass to start custom chapters.", variant: "destructive" }), 0);
+        toast({ title: "Host Pass Required", description: "Activate or purchase a Host Pass to start custom chapters.", variant: "destructive" });
         return;
     }
-    setTimeout(() => toast({ title: "Custom Chapter Selected!", description: `Starting chapter: "${idea}". Redirecting...`}), 0);
+    toast({ title: "Custom Chapter Selected!", description: `Starting chapter: "${idea}". Redirecting...`});
     router.push(`/add-memory?prompt=${encodeURIComponent(idea)}`); 
     setShowCustomChapterDialog(false);
     setGeneratedChapterIdeas([]); 
-  };
+  }, [canAccessFullJourney, router]);
 
   const handleHostPassAction = useCallback(() => {
     if (hostPassStatus === 'no_pass_initiated') {
@@ -148,19 +141,14 @@ export default function LifeJourneyPage() {
     }
   }, [hostPassStatus, activateFreeHostPass, purchasePaidHostPass]);
   
-  let hostPassButtonText = "Activate 6-Month Free Host Pass";
-  let hostPassPriceString = ""; 
-  if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
-    hostPassButtonText = "Purchase Host Pass"; 
-    if (isFetchingHostPassPrice) {
-        hostPassButtonText = "Fetching price...";
-    } else if (hostPassPriceDetails) {
-        hostPassPriceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
-        hostPassButtonText = `Purchase Host Pass ${hostPassPriceString}`;
-    } else {
-         hostPassButtonText = `Purchase Host Pass (£12.99 - Mock)`;
+  const hostPassButtonText = useMemo(() => {
+    if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
+        if (isFetchingHostPassPrice) return "Fetching price...";
+        if (hostPassPriceDetails) return `Purchase Host Pass (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
+        return `Purchase Host Pass (£12.99 - Mock)`;
     }
-  }
+    return "Activate 6-Month Free Host Pass";
+  }, [hostPassStatus, isFetchingHostPassPrice, hostPassPriceDetails]);
 
   if (userMode === 'guest') {
     return (
@@ -230,94 +218,54 @@ export default function LifeJourneyPage() {
         </Alert>
 
 
-        {(!canAccessFullJourney && (hostPassStatus === 'no_pass_initiated' || hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired')) && (
+        {(!canAccessFullJourney) && (
           <Alert className="mb-6 bg-primary/10 border-primary/30">
             {hostPassStatus === 'no_pass_initiated' ? <StarIcon className="h-5 w-5 text-primary" /> : <Zap className="h-5 w-5 text-primary" />}
             <AlertTitle className="font-headline text-primary">
-              {hostPassStatus === 'no_pass_initiated' 
-                ? "Unlock Full Life Journey Access" 
-                : "Renew Host Pass for Full Access"}
+              {hostPassStatus === 'no_pass_initiated' ? "Unlock Full Life Journey Access" : "Renew Host Pass for Full Access"}
             </AlertTitle>
             <AlertDescription className="text-primary/80 flex flex-col items-start">
-              {hostPassStatus === 'no_pass_initiated' 
-                ? (
-                    <>
-                        <p className="w-full">Only the first chapter group is available.</p>
-                        <p className="mt-1 w-full">Activate your 6-month free Host Pass to access all chapters, AI brainstorming, and more features to continue your Life Journey.</p>
-                    </>
-                  )
-                : <p className="w-full">Your Host Pass has expired. Renew to continue accessing all Life Journey chapters and creation tools.</p>}
-              
-              <Button
-                onClick={handleHostPassAction}
-                size="sm"
-                className={cn(
-                  "mt-3 bg-primary hover:bg-primary/90 text-primary-foreground w-fit",
-                  hostPassStatus === 'no_pass_initiated' && "px-4"
-                )}
-                disabled={isFetchingHostPassPrice && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired')}
-              >
-                {isFetchingHostPassPrice && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {hostPassButtonText}
-                  </>
-                ) : hostPassStatus === 'no_pass_initiated' ? (
-                  <>
-                    <StarIcon className="mr-2 h-4 w-4" />
-                    {hostPassButtonText}
-                  </>
-                ) : (
-                  <>
-                    <Zap className="mr-2 h-4 w-4"/>
-                    {hostPassButtonText}
-                  </>
-                )}
+              <p className="w-full">{hostPassStatus === 'no_pass_initiated' 
+                ? "Only the first chapter group is available. Activate your 6-month free Host Pass to access all chapters and AI brainstorming."
+                : "Your Host Pass has expired. Renew to continue accessing all Life Journey chapters and creation tools."
+              }</p>
+              <Button onClick={handleHostPassAction} size="sm" className="mt-3" disabled={isFetchingHostPassPrice}>
+                {isFetchingHostPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (hostPassStatus === 'no_pass_initiated' ? <StarIcon className="mr-2 h-4 w-4" /> : <Zap className="mr-2 h-4 w-4"/>)}
+                {hostPassButtonText}
               </Button>
             </AlertDescription>
           </Alert>
         )}
 
-        {availablePromptGroups.length === 0 && canAccessFullJourney ? ( 
+        {availablePromptGroups.length === 0 && ( 
           <div className="text-center py-12">
             <Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> 
             <h2 className="font-headline text-2xl mb-2">No Chapters Found</h2>
             <p className="text-muted-foreground">Try brainstorming a custom chapter!</p>
           </div>
-        ) : availablePromptGroups.length === 0 && !canAccessFullJourney ? ( 
-            <div className="text-center py-12">
-                <Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> 
-                <h2 className="font-headline text-2xl mb-2">Activate Your Host Pass</h2>
-                <p className="text-muted-foreground">Activate or purchase a host pass to begin your Life Journey.</p>
-            </div>
-        ) : (
-          <div className="space-y-10">
-            {availablePromptGroups.map((group) => (
-              <section key={group.id}>
-                <h2 className="font-headline text-3xl mb-6 border-b pb-3 text-primary">{group.title[currentLanguage] || group.title.en}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {group.prompts.map((prompt) => {
-                    const isCompleted = completedPromptIds.has(prompt.id);
-                    const isFlagged = flaggedPromptIds.has(prompt.id);
-                    
-                    return (
-                      <PromptCard
-                        key={prompt.id}
-                        promptId={prompt.id}
-                        promptText={prompt.text[currentLanguage] || prompt.text.en}
-                        isCompleted={isCompleted}
-                        isFlaggedForReuse={isFlagged}
-                        onStartChapter={handleStartChapter}
-                        onViewEditChapter={handleViewEditChapter}
-                        onToggleFlagPrompt={handleToggleFlagPrompt}
-                      />
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-          </div>
         )}
+        
+        <div className="space-y-10">
+          {availablePromptGroups.map((group) => (
+            <section key={group.id}>
+              <h2 className="font-headline text-3xl mb-6 border-b pb-3 text-primary">{group.title[currentLanguage] || group.title.en}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {group.prompts.map((prompt) => (
+                  <PromptCard
+                    key={prompt.id}
+                    promptId={prompt.id}
+                    promptText={prompt.text[currentLanguage] || prompt.text.en}
+                    isCompleted={completedPromptIds.has(prompt.id)}
+                    isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
+                    onStartChapter={handleStartChapter}
+                    onViewEditChapter={handleViewEditChapter}
+                    onToggleFlagPrompt={handleToggleFlagPrompt}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
       </div>
 
       <Dialog open={showCustomChapterDialog} onOpenChange={setShowCustomChapterDialog}>
@@ -383,5 +331,3 @@ export default function LifeJourneyPage() {
     </AuthenticatedPageWrapper>
   );
 }
-
-    
