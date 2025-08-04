@@ -1,6 +1,5 @@
-
 // src/lib/ffmpeg.ts
-// This file handles loading ffmpeg.wasm files locally or from a CDN and providing helper functions.
+// This file handles loading ffmpeg.wasm files from the official CDN and providing helper functions.
 
 // Define a minimal interface for the parts of FFmpeg we use
 interface FFmpeg {
@@ -12,7 +11,6 @@ interface FFmpeg {
 }
 
 // Augment the window interface to declare the FFmpeg property
-// This ensures TypeScript knows about the global FFmpeg object
 declare global {
   interface Window {
     FFmpeg: {
@@ -25,26 +23,27 @@ declare global {
 let ffmpegInstance: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
-// --- Configuration for loading FFmpeg files ---
-// Set to true to load from CDN. This is now the permanent solution.
-const LOAD_FFMPEG_FROM_CDN = true;
+// --- Configuration for loading FFmpeg files from CDN ---
 const CDN_BASE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-const LOCAL_FFMPEG_PATH = '/ffmpeg'; // Kept for reference, but not used
 
 
-// Main function to get a loaded FFmpeg instance
+// Main function to get a loaded FFmpeg instance using a singleton pattern
 export async function getFFmpegInstance(): Promise<FFmpeg> {
+  // If instance is already loaded and ready, return it immediately.
   if (ffmpegInstance && ffmpegInstance.isLoaded()) {
     return ffmpegInstance;
   }
+  // If an instance is currently being loaded, return the existing promise.
   if (ffmpegLoadingPromise) {
     return ffmpegLoadingPromise;
   }
 
+  // Create a new loading promise. This ensures the loading process only runs once.
   ffmpegLoadingPromise = new Promise(async (resolve, reject) => {
     try {
         const ffmpegScriptUrl = `${CDN_BASE_URL}/ffmpeg.js`;
 
+        // Load the main FFmpeg script if it hasn't been loaded already
         if (!document.querySelector(`script[src="${ffmpegScriptUrl}"]`)) {
             const script = document.createElement('script');
             script.src = ffmpegScriptUrl;
@@ -57,13 +56,18 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
             });
         }
         
-        await new Promise<void>((resolveWait) => {
+        // Wait for the FFmpeg object to become available on the window
+        await new Promise<void>((resolveWait, rejectWait) => {
             const interval = setInterval(() => {
-                if (typeof window.FFmpeg !== 'undefined') {
+                if (typeof window.FFmpeg !== 'undefined' && typeof window.FFmpeg.createFFmpeg !== 'undefined') {
                     clearInterval(interval);
                     resolveWait();
                 }
             }, 100);
+            setTimeout(() => { // Add a timeout to prevent an infinite loop
+                clearInterval(interval);
+                rejectWait(new Error("FFmpeg script loaded but createFFmpeg not found on window object after timeout."));
+            }, 5000); // 5 second timeout
         });
 
         const { createFFmpeg } = window.FFmpeg;
@@ -73,17 +77,19 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
         
         const corePath = `${CDN_BASE_URL}/ffmpeg-core.js`;
 
+        // Load the core FFmpeg WASM module
         await ffmpeg.load({
            corePath: corePath,
            workerPath: `${CDN_BASE_URL}/ffmpeg-core.worker.js`,
            wasmPath: `${CDN_BASE_URL}/ffmpeg-core.wasm`,
         });
 
+        // Store the loaded instance and resolve the promise
         ffmpegInstance = ffmpeg;
         ffmpegLoadingPromise = null;
         resolve(ffmpegInstance);
     } catch (error) {
-      console.error("getFFmpegInstance: Error initializing FFmpeg from CDN:", error);
+      console.error("getFFmpegInstance: Critical error during FFmpeg initialization:", error);
       ffmpegInstance = null;
       ffmpegLoadingPromise = null;
       reject(error);
@@ -94,6 +100,7 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 }
 
 export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8Array> => {
+    // Ensure FFmpeg is loaded before trying to use fetchFile
     await getFFmpegInstance();
     
     if (typeof window.FFmpeg === 'undefined' || !window.FFmpeg.fetchFile) {
@@ -101,10 +108,6 @@ export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8
     }
 
     return window.FFmpeg.fetchFile(data);
-};
-
-export const isFFmpegScriptLoaded = (): boolean => {
-  return typeof window !== 'undefined' && typeof window.FFmpeg !== 'undefined';
 };
 
 export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
@@ -128,6 +131,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
       }
     });
 
+    // Run a minimal command to get media info
     await ffmpeg.run('-i', fileName);
 
     const durationMatch = logOutput.match(/Duration: (\d{2}):(\d{2}):(\d{2}).(\d{2})/);
@@ -152,6 +156,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     try {
       ffmpeg.FS('unlink', fileName);
     } catch (e) { /* Ignore cleanup errors */ }
+    // Reset logger to prevent memory leaks
     ffmpeg.setLogger(() => {});
   }
 }
@@ -176,6 +181,7 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
             throw new Error("trimMediaWithFFmpeg: End time must be after start time for trimming.");
         }
         
+        // Use the '-c copy' command for fast, lossless trimming
         await ffmpeg.run(
             '-ss', startTime.toString(),
             '-i', inputFilename,

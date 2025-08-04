@@ -1,57 +1,106 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>FFmpeg V5 Diagnostics</title>
-  <meta charset="utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FFmpeg Initialization V5 Diagnostics</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f0f2f5; color: #333; padding: 1em; }
+        h1 { color: #1a73e8; }
+        #log-output {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 1em;
+            margin-top: 1em;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+            border-radius: 8px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .log-error { color: #d93025; font-weight: bold; }
+        .log-success { color: #1e8e3e; font-weight: bold; }
+        .log-info { color: #5f6368; }
+        .log-step { color: #1a73e8; font-weight: bold; margin-top: 8px; display: block; }
+    </style>
 </head>
 <body>
+    <h1>FFmpeg Diagnostics - V6</h1>
+    <p>This page tests the browser's ability to load and initialize FFmpeg. The results will be displayed below.</p>
+    <div id="log-output"></div>
 
-  <h1>FFmpeg V5 Diagnostics Page</h1>
-  <p>This page tests FFmpeg loading from the CDN and provides detailed diagnostic information.</p>
+    <script>
+        const logOutputElement = document.getElementById('log-output');
 
-  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
+        function logToPage(message, type = 'info') {
+            const el = document.createElement('div');
+            el.textContent = message;
+            if (type === 'error') el.className = 'log-error';
+            else if (type === 'success') el.className = 'log-success';
+            else if (type === 'step') el.className = 'log-step';
+            else el.className = 'log-info';
+            logOutputElement.appendChild(el);
+            console.log(message); // Also log to actual console
+        }
 
-  <script>
-    console.log("V5 DIAGNOSTICS: Page loaded.");
+        async function runDiagnostics() {
+            logToPage('V6 DIAGNOSTICS: Page loaded and script started.', 'info');
 
-    async function runDiagnostics() {
-      // 1. Check for Cross-Origin Isolation
-      console.log("V5 DIAGNOSTICS: Step 1 - Checking for Cross-Origin Isolation...");
-      if (window.crossOriginIsolated) {
-        console.log("V5 DIAGNOSTICS: SUCCESS - Page IS Cross-Origin Isolated.");
-      } else {
-        console.error("V5 DIAGNOSTICS: FAILURE - Page is NOT Cross-Origin Isolated.");
-        console.error("V5 DIAGNOSTICS: This is likely the primary reason for failure. The server must send headers: 'Cross-Origin-Opener-Policy: same-origin' and 'Cross-Origin-Embedder-Policy: require-corp'");
-        // We will still attempt to load FFmpeg to see the specific error.
-      }
+            // --- Step 1: Check for Cross-Origin Isolation ---
+            logToPage('Step 1: Checking for Cross-Origin Isolation...', 'step');
+            if (window.crossOriginIsolated) {
+                logToPage('SUCCESS: Page is Cross-Origin Isolated.', 'success');
+            } else {
+                logToPage('FAILURE: Page is NOT Cross-Origin Isolated.', 'error');
+                logToPage("This is the most likely reason FFmpeg cannot run. The server must send headers: 'Cross-Origin-Opener-Policy: same-origin' and 'Cross-Origin-Embedder-Policy: require-corp'", 'error');
+            }
 
-      // 2. Check for window.FFmpeg object
-      console.log("V5 DIAGNOSTICS: Step 2 - Checking for window.FFmpeg object...");
-      if (typeof window.FFmpeg === 'undefined' || typeof window.FFmpeg.createFFmpeg === 'undefined') {
-        console.error("V5 DIAGNOSTICS: FATAL - The FFmpeg script did not define window.FFmpeg.createFFmpeg. The script may be blocked or failed to execute.");
-        return; // Stop here if the basic script didn't run
-      }
-      console.log("V5 DIAGNOSTICS: SUCCESS - window.FFmpeg.createFFmpeg is defined.");
+            // --- Step 2: Dynamically load the FFmpeg script from CDN ---
+            logToPage('Step 2: Attempting to dynamically load FFmpeg script from CDN...', 'step');
+            try {
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js';
+                script.async = true;
+                
+                await new Promise((resolve, reject) => {
+                    script.onload = resolve;
+                    script.onerror = () => reject(new Error('FFmpeg script failed to load from CDN.'));
+                    document.head.appendChild(script);
+                });
+                logToPage('SUCCESS: FFmpeg script loaded from CDN.', 'success');
+            } catch (error) {
+                logToPage(`FATAL: ${error.message}`, 'error');
+                return; // Stop if script fails to load
+            }
 
-      // 3. Attempt to initialize FFmpeg and catch specific errors
-      console.log("V5 DIAGNOSTICS: Step 3 - Attempting to initialize FFmpeg instance...");
-      try {
-        const { createFFmpeg } = window.FFmpeg;
-        const ffmpeg = createFFmpeg({ log: true }); // Enable logging for more details
+
+            // --- Step 3: Check for window.FFmpeg object ---
+            logToPage('Step 3: Checking for window.FFmpeg object after script load...', 'step');
+            if (typeof window.FFmpeg === 'undefined' || typeof window.FFmpeg.createFFmpeg === 'undefined') {
+                logToPage('FATAL: The FFmpeg script loaded but did not define window.FFmpeg.createFFmpeg. Execution was likely blocked by the browser due to the missing isolation.', 'error');
+                return; // Cannot proceed
+            } else {
+                logToPage('SUCCESS: window.FFmpeg.createFFmpeg object is defined.', 'success');
+            }
+
+            // --- Step 4: Attempt to create and load the FFmpeg core ---
+            logToPage('Step 4: Attempting to create and load FFmpeg core... (This may take a moment)', 'step');
+            try {
+                const { createFFmpeg } = window.FFmpeg;
+                const ffmpeg = createFFmpeg({ log: false }); // Disable logs to keep our output clean
+                await ffmpeg.load();
+                logToPage('SUCCESS: FFmpeg core loaded successfully!', 'success');
+                logToPage('FINAL CONCLUSION: Your browser environment appears CAPABLE of running FFmpeg!', 'success');
+            } catch (err) {
+                logToPage('FATAL: Failed during ffmpeg.load() execution.', 'error');
+                logToPage(`Error details: ${err.message}`, 'error');
+                logToPage('This usually confirms the lack of Cross-Origin Isolation is blocking the WASM module.', 'error');
+            }
+        }
         
-        console.log("V5 DIAGNOSTICS: Calling ffmpeg.load()...");
-        await ffmpeg.load();
-        
-        console.log("V5 DIAGNOSTICS: FINAL SUCCESS - FFmpeg instance loaded successfully!");
-      } catch (error) {
-        console.error("V5 DIAGNOSTICS: FATAL ERROR DURING INITIALIZATION - An error occurred in createFFmpeg() or ffmpeg.load().");
-        console.error("V5 DIAGNOSTICS: The specific error is:", error);
-      }
-    }
-
-    // Run the diagnostics after the page has had a moment to settle.
-    setTimeout(runDiagnostics, 100);
-  </script>
-
+        // Run diagnostics after the page has settled
+        setTimeout(runDiagnostics, 500);
+    </script>
 </body>
 </html>
