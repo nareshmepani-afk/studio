@@ -6,9 +6,16 @@ runConfig:
   # more instances in response to increased traffic.
   maxInstances: 1
 
-# Add or modify the headers section
+# Add or modify the headers section to explicitly serve the test file
+# with the required headers.
 headers:
-  - glob: "**" # Apply these headers to all files served by App Hosting
+  - glob: /v7-header-test.html
+    headers:
+      - key: "Cross-Origin-Embedder-Policy"
+        value: "require-corp"
+      - key: "Cross-Origin-Opener-Policy"
+        value: "same-origin"
+  - glob: "**" # Apply these headers to all other files
     headers:
       - key: "Cross-Origin-Embedder-Policy"
         value: "require-corp"
