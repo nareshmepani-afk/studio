@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>FFmpeg V5 Diagnostics</title>
+  <meta charset="utf-8">
+</head>
+<body>
+
+  <h1>FFmpeg V5 Diagnostics Page</h1>
+  <p>This page tests FFmpeg loading from the CDN and provides detailed diagnostic information.</p>
+
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"></script>
+
+  <script>
+    console.log("V5 DIAGNOSTICS: Page loaded.");
+
+    async function runDiagnostics() {
+      // 1. Check for Cross-Origin Isolation
+      console.log("V5 DIAGNOSTICS: Step 1 - Checking for Cross-Origin Isolation...");
+      if (window.crossOriginIsolated) {
+        console.log("V5 DIAGNOSTICS: SUCCESS - Page IS Cross-Origin Isolated.");
+      } else {
+        console.error("V5 DIAGNOSTICS: FAILURE - Page is NOT Cross-Origin Isolated.");
+        console.error("V5 DIAGNOSTICS: This is likely the primary reason for failure. The server must send headers: 'Cross-Origin-Opener-Policy: same-origin' and 'Cross-Origin-Embedder-Policy: require-corp'");
+        // We will still attempt to load FFmpeg to see the specific error.
+      }
+
+      // 2. Check for window.FFmpeg object
+      console.log("V5 DIAGNOSTICS: Step 2 - Checking for window.FFmpeg object...");
+      if (typeof window.FFmpeg === 'undefined' || typeof window.FFmpeg.createFFmpeg === 'undefined') {
+        console.error("V5 DIAGNOSTICS: FATAL - The FFmpeg script did not define window.FFmpeg.createFFmpeg. The script may be blocked or failed to execute.");
+        return; // Stop here if the basic script didn't run
+      }
+      console.log("V5 DIAGNOSTICS: SUCCESS - window.FFmpeg.createFFmpeg is defined.");
+
+      // 3. Attempt to initialize FFmpeg and catch specific errors
+      console.log("V5 DIAGNOSTICS: Step 3 - Attempting to initialize FFmpeg instance...");
+      try {
+        const { createFFmpeg } = window.FFmpeg;
+        const ffmpeg = createFFmpeg({ log: true }); // Enable logging for more details
+        
+        console.log("V5 DIAGNOSTICS: Calling ffmpeg.load()...");
+        await ffmpeg.load();
+        
+        console.log("V5 DIAGNOSTICS: FINAL SUCCESS - FFmpeg instance loaded successfully!");
+      } catch (error) {
+        console.error("V5 DIAGNOSTICS: FATAL ERROR DURING INITIALIZATION - An error occurred in createFFmpeg() or ffmpeg.load().");
+        console.error("V5 DIAGNOSTICS: The specific error is:", error);
+      }
+    }
+
+    // Run the diagnostics after the page has had a moment to settle.
+    setTimeout(runDiagnostics, 100);
+  </script>
+
+</body>
+</html>

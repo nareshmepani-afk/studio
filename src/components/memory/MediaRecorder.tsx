@@ -92,23 +92,32 @@ export function MediaCaptureControl({
     hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
 
   const [isFFmpegInstanceReady, setIsFFmpegInstanceReady] = useState(false);
+  const [ffmpegError, setFFmpegError] = useState<string | null>(null);
 
   useEffect(() => {
+    // This effect implements the new singleton pattern for loading FFmpeg.
+    // It runs only once when the component mounts.
+    console.log("MediaRecorder: Initializing FFmpeg...");
     setProcessingStatusText('Initializing media tools...');
     getFFmpegInstance()
       .then(() => {
+        console.log("MediaRecorder: FFmpeg instance is ready.");
         setIsFFmpegInstanceReady(true);
         setProcessingStatusText('');
+        setFFmpegError(null);
       })
       .catch(error => {
-        console.error("FFmpeg instance failed to initialize in MediaRecorder:", error);
+        const errorMessage = "Media processing tools failed to load. Trimming and duration analysis are disabled.";
+        console.error("MediaRecorder: FFmpeg instance failed to initialize:", error);
         toast({
-          title: "Media Tools Failed",
-          description: "Could not load media processing tools. Trimming may be unavailable.",
+          title: "Media Tools Unavailable",
+          description: errorMessage,
           variant: "destructive",
           duration: 10000,
         });
-        setProcessingStatusText('Media tools failed to load');
+        setProcessingStatusText('Media tools failed');
+        setFFmpegError(errorMessage);
+        setIsFFmpegInstanceReady(false);
       });
   }, []);
 
@@ -379,7 +388,12 @@ export function MediaCaptureControl({
       return;
     }
     if (!isFFmpegInstanceReady) {
-      toast({variant: 'destructive', title: 'Tools Not Ready', description: 'Video processing tools are still loading. Please try again in a moment.'});
+      // Gracefully handle FFmpeg failure
+      onMediaReady({
+        file: recordedFile, type: mediaType!,
+        startTime: 0, endTime: 0, duration: 0, size: recordedFile.size
+      });
+      toast({ title: "Using Raw Media", description: "Media processing tools are unavailable. Using the full, untrimmed media file.", icon: <CheckCircle className="h-4 w-4" /> });
       return;
     }
     setIsProcessing(true);
@@ -394,7 +408,7 @@ export function MediaCaptureControl({
     }
     setIsProcessing(false);
     setProcessingStatusText('');
-  }, [recordedFile, mediaType, checkStorageQuota, handleDiscardMedia, isFFmpegInstanceReady]);
+  }, [recordedFile, mediaType, onMediaReady, handleDiscardMedia, isFFmpegInstanceReady]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!checkHostPass()) { event.target.value = ''; return; }
@@ -464,10 +478,22 @@ export function MediaCaptureControl({
   };
 
   const handleUseMedia = async () => {
-    if (!checkHostPass() || !isFFmpegInstanceReady) {
-      if (!isFFmpegInstanceReady) toast({ title: "Media Tools Not Ready", description: "Please wait for media tools to initialize.", variant: "destructive" });
-      return;
+    if (!checkHostPass()) return;
+    
+    if (!isFFmpegInstanceReady) {
+        if (!recordedFile) {
+            toast({ title: "No Media File", description: "Please record or upload media first.", variant: "destructive" });
+            return;
+        }
+        // Gracefully handle FFmpeg failure by using the raw file
+        onMediaReady({
+            file: recordedFile, type: mediaType!,
+            startTime: 0, endTime: 0, duration: 0, size: recordedFile.size,
+        });
+        toast({ title: "Using Raw Media", description: "Media processing tools are unavailable. Using the full, untrimmed media file.", icon: <CheckCircle className="h-4 w-4" /> });
+        return;
     }
+
     const currentStartTime = latestTrimValuesRef.current.startTime;
     const currentEndTime = latestTrimValuesRef.current.endTime;
     if (currentStartTime >= currentEndTime && currentEndTime > 0) {
@@ -558,7 +584,7 @@ export function MediaCaptureControl({
   }, [internalPreviewUrl, mediaType, mediaDuration, videoRef, audioPreviewRef, startTime, rawPreviewReady]);
 
   const currentFinalMaxDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
-  const isReady = isFFmpegInstanceReady && canRecordOrUpload;
+  const isReady = canRecordOrUpload;
 
   return (
     <Card>
@@ -566,6 +592,7 @@ export function MediaCaptureControl({
       <CardContent className="space-y-4">
         {hasCameraPermission === false && (<Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Permissions Required</AlertTitle><AlertDescription>Camera/mic permissions needed. Enable in browser & refresh.</AlertDescription></Alert>)}
         {!canRecordOrUpload && (<Alert variant="destructive"><ShieldAlert className="h-4 w-4" /><AlertTitle>Host Pass Required</AlertTitle><AlertDescription>An active Host Pass is needed to record or upload new media. Please check your pass status in Settings.</AlertDescription></Alert>)}
+        {ffmpegError && (<Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Media Tools Error</AlertTitle><AlertDescription>{ffmpegError}</AlertDescription></Alert>)}
 
         {!internalPreviewUrl && !isRecording && (
           <div className="space-y-4">
@@ -664,7 +691,7 @@ export function MediaCaptureControl({
                             setEndTime(value[1]);
                           }
                         }}
-                        disabled={isProcessing}
+                        disabled={isProcessing || !isFFmpegInstanceReady}
                     />
                     <div className="flex justify-between text-xs text-muted-foreground">
                         <span>Start: {formatSecondsToTime(startTime)}</span>
@@ -672,14 +699,14 @@ export function MediaCaptureControl({
                     </div>
                     <div className="text-center text-sm font-medium">
                         Selected Duration: {formatSecondsToTime(endTime - startTime)}
-                        {((endTime - startTime) > currentFinalMaxDuration) &&
+                        {isFFmpegInstanceReady && ((endTime - startTime) > currentFinalMaxDuration) &&
                           <span className="text-destructive ml-2">(exceeds {formatSecondsToTime(currentFinalMaxDuration)} max)</span>
                         }
                     </div>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Button onClick={handleUseMedia} className="flex-1" disabled={isProcessing}>
-                      {isProcessing ? <><Loader2 className="mr-2 animate-spin"/>{processingStatusText || 'Processing...'}</> : <><CheckCircle className="mr-2"/>Use Trimmed Media</>}
+                      {isProcessing ? <><Loader2 className="mr-2 animate-spin"/>{processingStatusText || 'Processing...'}</> : <><CheckCircle className="mr-2"/>Use This Media</>}
                     </Button>
                     <Button onClick={() => handleDiscardMedia()} className="flex-1" variant="outline" disabled={isProcessing}>
                       <RotateCcw className="mr-2"/> Discard & Restart
@@ -694,5 +721,3 @@ export function MediaCaptureControl({
     </Card>
   );
 }
-
-    
