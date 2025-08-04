@@ -20,6 +20,7 @@ import {
   signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, Timestamp, onSnapshot, Unsubscribe, orderBy } from 'firebase/firestore';
+import { Loader2 } from 'lucide-react';
 
 
 interface AuthContextType {
@@ -53,15 +54,17 @@ interface AuthContextType {
   memories: MemoryType[];
   completedPromptIds: Set<string>;
   flaggedPromptIds: Set<string>;
-  isDataLoading: boolean;
+  isDataLoading: boolean; // Keep this exported for potential use, but mainly for internal logic now
   markSharedMemoryAsViewed: (memoryId: string) => Promise<void>;
+  hasNewSharedMemories: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // For initial auth check
+  const [isDataLoading, setIsDataLoading] = useState(true); // For Firestore data
   const [userMode, setUserModeState] = useState<UserMode>('host');
   
   const [pendingRequestCount, setPendingRequestCountState] = useState<number>(0);
@@ -73,7 +76,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [memories, setMemories] = useState<MemoryType[]>([]);
   const [completedPromptIds, setCompletedPromptIds] = useState<Set<string>>(new Set());
   const [flaggedPromptIds, setFlaggedPromptIds] = useState<Set<string>>(new Set());
-  const [isDataLoading, setIsDataLoading] = useState(true);
+  
+  const [hasNewSharedMemories, setHasNewSharedMemories] = useState(false);
+
 
   const router = useRouter();
   const pathname = usePathname();
@@ -92,6 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
+        // Auth state confirmed, now listen for user data.
         const userDocRef = doc(db, "users", firebaseUser.uid);
         const unsubscribeUser = onSnapshot(userDocRef, async (userDocSnap) => {
           if (userDocSnap.exists()) {
@@ -113,12 +119,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               updatesToSave.hostPassStatus = 'paid_host_pass_expired';
             }
 
-            // Only write to Firestore if a status has changed, breaking the loop.
             if (Object.keys(updatesToSave).length > 0) {
               await updateDoc(userDocRef, { ...updatesToSave, lastUpdated: serverTimestamp() });
-              // The listener will re-fire with the updated data, so we don't need to setUser here.
             } else {
-              setUser({ ...dbUser, id: firebaseUser.uid, email: firebaseUser.email || dbUser.email });
+              const fullUser = { ...dbUser, id: firebaseUser.uid, email: firebaseUser.email || dbUser.email };
+              setUser(fullUser);
+              
+              // Check for new shared memories
+              const viewedIds = new Set(fullUser.viewedSharedMemoryIds || []);
+              const hasNew = memories.some(mem => !viewedIds.has(mem.id));
+              setHasNewSharedMemories(hasNew);
             }
 
           } else {
@@ -129,7 +139,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             await setDoc(userDocRef, { ...newUser, createdAt: serverTimestamp() });
             setUser(newUser);
           }
-          setLoading(false);
+          setLoading(false); // Auth check is done
+          // Data is loaded AFTER this snapshot, so isDataLoading is handled in memories listener
         });
         return () => unsubscribeUser();
       } else {
@@ -138,11 +149,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setCompletedPromptIds(new Set());
         setFlaggedPromptIds(new Set());
         setLoading(false);
-        setIsDataLoading(false);
+        setIsDataLoading(false); // No user, so no data to load
       }
     });
     return () => unsubscribeAuth();
-  }, [updateUserProfileInFirestore]);
+  }, [updateUserProfileInFirestore, memories]);
 
   // Data fetching listeners that depend on user.id
   useEffect(() => {
@@ -164,7 +175,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       setMemories(fetchedMemories);
       setCompletedPromptIds(new Set(fetchedMemories.map(m => m.promptId).filter(Boolean) as string[]));
-      setIsDataLoading(false); // Set to false after initial fetch
+      setIsDataLoading(false); // Data loading is now complete
     }, (error) => { console.error("Error listening to memories:", error); setIsDataLoading(false); });
 
     const promptFlagsDocRef = doc(db, 'userPromptFlags', user.id);
@@ -181,7 +192,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // --- Navigation Logic ---
   useEffect(() => {
-    if (loading) return;
+    if (loading || isDataLoading) return; // Wait for all data before navigating
     const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
     const isPublic = publicPaths.some(path => pathname.startsWith(path));
     if (user && isPublic) {
@@ -189,7 +200,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else if (!user && !isPublic) {
       router.push('/login');
     }
-  }, [user, loading, pathname, router, userMode]);
+  }, [user, loading, isDataLoading, pathname, router, userMode]);
 
   // --- Memoized Functions for Context API ---
 
@@ -205,8 +216,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const register = useCallback(async (name: string, email: string, password: string): Promise<void> => {
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      // The onAuthStateChanged listener handles user document creation.
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const newUser: User = {
+          id: cred.user.uid,
+          email: email,
+          name: name,
+          sharedAccessStatus: 'no_pass_initiated',
+          hostPassStatus: 'no_pass_initiated',
+          viewedSharedMemoryIds: [],
+          storageUsedBytes: 0,
+      };
+      await setDoc(doc(db, "users", cred.user.uid), { ...newUser, createdAt: serverTimestamp() });
       toast({ title: "Registration Successful", description: "Welcome! Your account has been created." });
     } catch (error: any) {
       toast({ title: "Registration Failed", description: error.message || "Could not create account.", variant: "destructive" });
@@ -335,15 +355,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       flaggedPromptIds,
       isDataLoading,
       markSharedMemoryAsViewed,
+      hasNewSharedMemories,
   }), [
       user, loading, pendingRequestCount, userMode,
       guestPassPriceDetails, isFetchingGuestPassPrice, hostPassPriceDetails, isFetchingHostPassPrice,
-      memories, completedPromptIds, flaggedPromptIds, isDataLoading,
+      memories, completedPromptIds, flaggedPromptIds, isDataLoading, hasNewSharedMemories,
       login, register, logout, activateFreeGuestPass, purchasePaidGuestPass,
       markSharedMemoryAsViewed, activateFreeHostPass, purchasePaidHostPass,
       getStorageQuotaBytes,
       calculateAndUpdateStorageUsage, updateUserProfileInFirestore
   ]);
+  
+  // This is the new centralized loading gate. It shows a loader until BOTH auth and user data are ready.
+  if (loading || isDataLoading) {
+    return (
+       <div className="flex h-screen w-screen items-center justify-center bg-background">
+          <div className="flex flex-col items-center text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <p className="text-lg font-headline text-muted-foreground">Loading Memory Weaver...</p>
+          </div>
+       </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={contextValue}>

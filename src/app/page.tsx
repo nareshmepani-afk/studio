@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Navbar } from '@/components/layout/Navbar';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Film, ArrowRight, ListChecks, LayoutList, Share2 } from 'lucide-react'; // Updated icons
+import { Film, ArrowRight, ListChecks, LayoutList, Share2, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -55,23 +55,27 @@ export default function LandingPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // Redirection logic is now primarily handled by AuthContext after all data is loaded.
+    // This effect remains as a fallback but won't run while the context is loading.
     if (!loading && isAuthenticated) {
       router.push('/timeline');
     }
   }, [isAuthenticated, loading, router]);
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50">
-         {/* You can add a more sophisticated global loader here if needed */}
-      </div>
+  // The main loading gate is now in AuthContext, so an authenticated user will see that loader first.
+  // If they somehow land here while authenticated, the context will redirect them.
+  // Thus, we don't need a separate loading state here for the authenticated case.
+  if (isAuthenticated) {
+     return (
+       <div className="flex h-screen w-screen items-center justify-center bg-background">
+          <div className="flex flex-col items-center text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <p className="text-lg font-headline text-muted-foreground">Redirecting...</p>
+          </div>
+       </div>
     );
   }
   
-  if (isAuthenticated) {
-    return null;
-  }
-
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50">
       <Navbar />
@@ -165,4 +169,3 @@ export default function LandingPage() {
     </div>
   );
 }
-

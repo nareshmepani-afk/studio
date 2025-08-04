@@ -4,7 +4,6 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Navbar } from '@/components/layout/Navbar';
 import { ReactNode, useEffect } from 'react';
-// useRouter and usePathname are no longer needed here for redirection logic
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface AuthenticatedPageWrapperProps {
@@ -13,14 +12,10 @@ interface AuthenticatedPageWrapperProps {
 
 export function AuthenticatedPageWrapper({ children }: AuthenticatedPageWrapperProps) {
   const { isAuthenticated, loading } = useAuth();
-  // const router = useRouter(); // Removed: AuthContext now handles redirection
 
-  // Removed useEffect that was pushing to '/login'
-  // AuthContext will handle redirection if user is not authenticated and on a protected page.
-
-  if (loading || !isAuthenticated) {
-    // Show a loading state or a full-page loader
-    // This skeleton will be shown while AuthContext determines auth status and potentially redirects.
+  // The main loading gate is now in AuthContext, so we don't need to check `isAuthenticated` here.
+  // We just show a skeleton if the context itself is loading.
+  if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
         <Navbar />
@@ -39,6 +34,8 @@ export function AuthenticatedPageWrapper({ children }: AuthenticatedPageWrapperP
     );
   }
 
+  // If the user is not authenticated, AuthContext will redirect them.
+  // If they are authenticated, it's safe to render the children.
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -48,5 +45,3 @@ export function AuthenticatedPageWrapper({ children }: AuthenticatedPageWrapperP
     </div>
   );
 }
-
-    

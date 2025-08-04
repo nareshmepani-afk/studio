@@ -8,19 +8,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { Film, Loader2, UserCheck } from 'lucide-react'; // Added UserCheck
+import { Film, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Navbar } from '@/components/layout/Navbar';
 import { toast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation'; // Added useRouter
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, loading: authLoading, isAuthenticated, logout } = useAuth();
+  const { login, loading: authLoading, isAuthenticated } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
-  const router = useRouter(); // Added router
+  const router = useRouter();
 
   useEffect(() => {
     setHasMounted(true);
@@ -42,8 +42,9 @@ export default function LoginPage() {
 
   const isLoading = authLoading || isSubmitting;
 
-  if (authLoading || !hasMounted) {
-    // Show skeleton if auth state is loading or component hasn't mounted
+  // The main loading gate is now in AuthContext, so we don't need a full-screen loader here for the authenticated case.
+  // The redirection from AuthContext will handle it. We only need a skeleton for the initial mount.
+  if (!hasMounted) {
     return (
       <div className="flex min-h-screen flex-col bg-secondary">
         <Navbar />
@@ -77,30 +78,8 @@ export default function LoginPage() {
     );
   }
 
-  if (isAuthenticated) {
-    // Show message if user is already authenticated (AuthContext will redirect shortly)
-    return (
-      <div className="flex min-h-screen flex-col bg-secondary">
-        <Navbar />
-        <div className="flex flex-grow flex-col items-center justify-center p-4 text-center">
-          <Card className="w-full max-w-md shadow-xl p-6">
-             <UserCheck className="h-16 w-16 text-primary mx-auto mb-4" />
-            <h1 className="text-2xl font-headline mb-2">Already Logged In</h1>
-            <p className="text-muted-foreground mb-4">
-              You are already authenticated. Redirecting to your dashboard...
-            </p>
-            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-6" />
-            <p className="text-sm text-muted-foreground">
-              Want to use a different account? Please{' '}
-              <Button variant="link" className="p-0 h-auto" onClick={async () => { await logout(); router.push('/login'); }}>log out</Button> first.
-            </p>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  // If not loading and not authenticated, show the login form
+  // If the user is authenticated, AuthContext's loader will be showing, and then it will redirect.
+  // We can render the form because it will be replaced by the redirect before the user can interact.
   return (
     <div className="flex min-h-screen flex-col bg-secondary">
       <Navbar />

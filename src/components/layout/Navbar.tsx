@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label"
 import { LogOut, PlusCircle, Settings, BellRing, Users, UserCog, Film, History, Home, UserCircle2 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ThemeToggle } from './ThemeToggle'; // Import ThemeToggle
+import { ThemeToggle } from './ThemeToggle';
 
 export function Navbar() {
   const { isAuthenticated, user, logout, pendingRequestCount, userMode, toggleUserMode, setUserMode, hasNewSharedMemories } = useAuth();
@@ -32,8 +32,9 @@ export function Navbar() {
   const navLinkClass = "text-sm font-medium text-muted-foreground transition-colors hover:text-primary flex items-center";
   const activeNavLinkClass = "text-primary";
 
+  // Robust logoHref calculation
   let logoHref = "/";
-  if (isAuthenticated) {
+  if (isAuthenticated && user) { // Check for user object explicitly
     if (userMode === 'host') {
       logoHref = "/prompts";
     } else { // guest mode
@@ -69,11 +70,11 @@ export function Navbar() {
               </Link>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Go to {isAuthenticated ? (userMode === 'host' ? 'My Life Journey' : 'Shared Timeline') : 'Homepage'}</p>
+              <p>Go to {isAuthenticated && user ? (userMode === 'host' ? 'My Life Journey' : 'Shared Timeline') : 'Homepage'}</p>
             </TooltipContent>
           </Tooltip>
           
-          {isAuthenticated && (
+          {isAuthenticated && user && ( // Ensure user object exists before rendering nav items
             <nav className="flex flex-1 items-center space-x-4 lg:space-x-6">
               {userMode === 'host' ? (
                 <>
