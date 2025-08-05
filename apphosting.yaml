@@ -1,23 +1,9 @@
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
+# The following line is VERY IMPORTANT. It tells App Hosting to serve your Next.js application.
+# Do not remove this line.
 runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
-
-# Add or modify the headers section to explicitly serve the test file
-# with the required headers.
-headers:
-  - glob: /v7-header-test.html
-    headers:
-      - key: "Cross-Origin-Embedder-Policy"
-        value: "require-corp"
-      - key: "Cross-Origin-Opener-Policy"
-        value: "same-origin"
-  - glob: "**" # Apply these headers to all other files
-    headers:
-      - key: "Cross-Origin-Embedder-Policy"
-        value: "require-corp"
-      - key: "Cross-Origin-Opener-Policy"
-        value: "same-origin"
