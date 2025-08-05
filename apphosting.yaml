@@ -9,7 +9,7 @@ runConfig:
   maxInstances: 1
 serve:
   - path: /v7-header-test.html
-    static: /public/v7-header-test.html
+    static: public/v7-header-test.html
     headers:
       - key: Cross-Origin-Opener-Policy
         value: same-origin
