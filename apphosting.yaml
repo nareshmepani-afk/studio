@@ -7,15 +7,6 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
-serve:
-  - path: /v7-header-test.html
-    static: /v7-header-test.html
-    headers:
-      - key: Cross-Origin-Opener-Policy
-        value: same-origin
-      - key: Cross-Origin-Embedder-Policy
-        value: require-corp
-  - path: /**
-    run:
-      id: next-backend
-      entrypoint: next start
+
+# This is a basic serve rule. It will route all requests to the Next.js backend.
+serve: /**
