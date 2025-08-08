@@ -1,3 +1,4 @@
+
 // src/lib/ffmpeg.ts
 // This file handles loading ffmpeg.wasm files from the official CDN and providing helper functions.
 
@@ -41,48 +42,18 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
   // Create a new loading promise. This ensures the loading process only runs once.
   ffmpegLoadingPromise = new Promise(async (resolve, reject) => {
     try {
-        const ffmpegScriptUrl = `${CDN_BASE_URL}/ffmpeg.js`;
+        // --- NEW: Use direct dynamic imports for reliability ---
+        const { createFFmpeg } = await import(/* @vite-ignore */ 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
+        const core = await import(/* @vite-ignore */ 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js');
+        // --- END NEW ---
 
-        // Load the main FFmpeg script if it hasn't been loaded already
-        if (!document.querySelector(`script[src="${ffmpegScriptUrl}"]`)) {
-            const script = document.createElement('script');
-            script.src = ffmpegScriptUrl;
-            script.async = true;
-            document.head.appendChild(script);
-
-            await new Promise((resolveScript, rejectScript) => {
-                script.onload = resolveScript;
-                script.onerror = () => rejectScript(new Error(`Failed to load FFmpeg script from ${ffmpegScriptUrl}`));
-            });
-        }
-        
-        // Wait for the FFmpeg object to become available on the window
-        await new Promise<void>((resolveWait, rejectWait) => {
-            const interval = setInterval(() => {
-                if (typeof window.FFmpeg !== 'undefined' && typeof window.FFmpeg.createFFmpeg !== 'undefined') {
-                    clearInterval(interval);
-                    resolveWait();
-                }
-            }, 100);
-            setTimeout(() => { // Add a timeout to prevent an infinite loop
-                clearInterval(interval);
-                rejectWait(new Error("FFmpeg script loaded but createFFmpeg not found on window object after timeout."));
-            }, 5000); // 5 second timeout
-        });
-
-        const { createFFmpeg } = window.FFmpeg;
         const ffmpeg = createFFmpeg({
            // log: true, // Enable for detailed debugging
+           core, // Explicitly provide the loaded core
         });
         
-        const corePath = `${CDN_BASE_URL}/ffmpeg-core.js`;
-
-        // Load the core FFmpeg WASM module
-        await ffmpeg.load({
-           corePath: corePath,
-           workerPath: `${CDN_BASE_URL}/ffmpeg-core.worker.js`,
-           wasmPath: `${CDN_BASE_URL}/ffmpeg-core.wasm`,
-        });
+        // Load the core FFmpeg WASM module. Worker and WASM paths are relative to the core path by default.
+        await ffmpeg.load({});
 
         // Store the loaded instance and resolve the promise
         ffmpegInstance = ffmpeg;
@@ -103,11 +74,13 @@ export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8
     // Ensure FFmpeg is loaded before trying to use fetchFile
     await getFFmpegInstance();
     
-    if (typeof window.FFmpeg === 'undefined' || !window.FFmpeg.fetchFile) {
+    // fetchFile is a static method on the FFmpeg namespace, not the instance
+    const { fetchFile: ffmpegFetchFile } = await import(/* @vite-ignore */ 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
+    if (!ffmpegFetchFile) {
          throw new Error("FFmpeg script or fetchFile is not available after getFFmpegInstance.");
     }
 
-    return window.FFmpeg.fetchFile(data);
+    return ffmpegFetchFile(data);
 };
 
 export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
