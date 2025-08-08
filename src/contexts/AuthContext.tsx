@@ -125,7 +125,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               const fullUser = { ...dbUser, id: firebaseUser.uid, email: firebaseUser.email || dbUser.email };
               setUser(fullUser);
               
-              // Check for new shared memories
+              // This logic is now safe because the `memories` state is stable during this execution context.
               const viewedIds = new Set(fullUser.viewedSharedMemoryIds || []);
               const hasNew = memories.some(mem => !viewedIds.has(mem.id));
               setHasNewSharedMemories(hasNew);
@@ -153,7 +153,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     return () => unsubscribeAuth();
-  }, [updateUserProfileInFirestore, memories]);
+  }, [updateUserProfileInFirestore]); // Corrected dependency array
 
   // Data fetching listeners that depend on user.id
   useEffect(() => {
@@ -175,6 +175,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       setMemories(fetchedMemories);
       setCompletedPromptIds(new Set(fetchedMemories.map(m => m.promptId).filter(Boolean) as string[]));
+      
+      // Update hasNewSharedMemories whenever memories or user's viewed IDs change
+      const viewedIds = new Set(user.viewedSharedMemoryIds || []);
+      const hasNew = fetchedMemories.some(mem => !viewedIds.has(mem.id));
+      setHasNewSharedMemories(hasNew);
+      
       setIsDataLoading(false); // Data loading is now complete
     }, (error) => { console.error("Error listening to memories:", error); setIsDataLoading(false); });
 
@@ -187,7 +193,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       unsubscribeMemories();
       unsubscribePrompts();
     };
-  }, [user?.id]);
+  }, [user?.id, user?.viewedSharedMemoryIds]);
 
 
   // --- Navigation Logic ---
