@@ -4,7 +4,7 @@
 
 // Define a minimal interface for the parts of FFmpeg we use
 interface FFmpeg {
-  load: (config: any) => Promise<void>;
+  load: () => Promise<void>;
   FS: (method: 'writeFile' | 'readFile' | 'unlink', ...args: any[]) => any;
   run: (...args: string[]) => Promise<void>;
   setLogger: (logger: ({ type, message }: { type: string; message: string; }) => void) => void;
@@ -25,7 +25,29 @@ let ffmpegInstance: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
 // --- Configuration for loading FFmpeg files from CDN ---
-const CDN_BASE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+const FFMPEG_SCRIPT_URL = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js';
+
+// --- Client-side script loader ---
+function loadFFmpegScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+        // Only run in browser
+        if (typeof window === 'undefined') {
+            return reject(new Error("FFmpeg can only be loaded in a browser environment."));
+        }
+        
+        // If script is already there, resolve immediately
+        if (document.getElementById('ffmpeg-script')) {
+            return resolve();
+        }
+
+        const script = document.createElement('script');
+        script.id = 'ffmpeg-script';
+        script.src = FFMPEG_SCRIPT_URL;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load FFmpeg script.'));
+        document.body.appendChild(script);
+    });
+}
 
 
 // Main function to get a loaded FFmpeg instance using a singleton pattern
@@ -42,20 +64,19 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
   // Create a new loading promise. This ensures the loading process only runs once.
   ffmpegLoadingPromise = new Promise(async (resolve, reject) => {
     try {
-        // --- NEW: Use direct dynamic imports for reliability ---
-        const { createFFmpeg } = await import(/* @vite-ignore */ 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
-        const core = await import(/* @vite-ignore */ 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js');
-        // --- END NEW ---
+        await loadFFmpegScript();
+        
+        if (!window.FFmpeg || !window.FFmpeg.createFFmpeg) {
+            throw new Error("FFmpeg script loaded but createFFmpeg not found on window object.");
+        }
 
-        const ffmpeg = createFFmpeg({
-           // log: true, // Enable for detailed debugging
-           core, // Explicitly provide the loaded core
+        const ffmpeg = window.FFmpeg.createFFmpeg({
+           log: false, // Set to true for detailed debugging
+           corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
         });
         
-        // Load the core FFmpeg WASM module. Worker and WASM paths are relative to the core path by default.
-        await ffmpeg.load({});
+        await ffmpeg.load();
 
-        // Store the loaded instance and resolve the promise
         ffmpegInstance = ffmpeg;
         ffmpegLoadingPromise = null;
         resolve(ffmpegInstance);
@@ -71,16 +92,13 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 }
 
 export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8Array> => {
-    // Ensure FFmpeg is loaded before trying to use fetchFile
     await getFFmpegInstance();
     
-    // fetchFile is a static method on the FFmpeg namespace, not the instance
-    const { fetchFile: ffmpegFetchFile } = await import(/* @vite-ignore */ 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js');
-    if (!ffmpegFetchFile) {
+    if (!window.FFmpeg || !window.FFmpeg.fetchFile) {
          throw new Error("FFmpeg script or fetchFile is not available after getFFmpegInstance.");
     }
 
-    return ffmpegFetchFile(data);
+    return window.FFmpeg.fetchFile(data);
 };
 
 export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
@@ -104,7 +122,6 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
       }
     });
 
-    // Run a minimal command to get media info
     await ffmpeg.run('-i', fileName);
 
     const durationMatch = logOutput.match(/Duration: (\d{2}):(\d{2}):(\d{2}).(\d{2})/);
@@ -129,7 +146,6 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     try {
       ffmpeg.FS('unlink', fileName);
     } catch (e) { /* Ignore cleanup errors */ }
-    // Reset logger to prevent memory leaks
     ffmpeg.setLogger(() => {});
   }
 }
@@ -154,7 +170,6 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
             throw new Error("trimMediaWithFFmpeg: End time must be after start time for trimming.");
         }
         
-        // Use the '-c copy' command for fast, lossless trimming
         await ffmpeg.run(
             '-ss', startTime.toString(),
             '-i', inputFilename,
