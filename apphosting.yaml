@@ -10,3 +10,11 @@ runConfig:
 
 # This is a basic serve rule. It will route all requests to the Next.js backend.
 serve: /**
+
+headers:
+  - glob: "**"
+    headers:
+      - key: "Cross-Origin-Embedder-Policy"
+        value: "require-corp"
+      - key: "Cross-Origin-Opener-Policy"
+        value: "same-origin"
