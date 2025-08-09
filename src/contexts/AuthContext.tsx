@@ -120,15 +120,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
 
             if (Object.keys(updatesToSave).length > 0) {
-              await updateDoc(userDocRef, { ...updatesToSave, lastUpdated: serverTimestamp() });
+              await updateUserProfileInFirestore(firebaseUser.uid, { ...updatesToSave, lastUpdated: serverTimestamp() });
             } else {
               const fullUser = { ...dbUser, id: firebaseUser.uid, email: firebaseUser.email || dbUser.email };
               setUser(fullUser);
-              
-              // This logic is now safe because the `memories` state is stable during this execution context.
-              const viewedIds = new Set(fullUser.viewedSharedMemoryIds || []);
-              const hasNew = memories.some(mem => !viewedIds.has(mem.id));
-              setHasNewSharedMemories(hasNew);
             }
 
           } else {
@@ -153,7 +148,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     return () => unsubscribeAuth();
-  }, [updateUserProfileInFirestore]); // Corrected dependency array
+  }, [updateUserProfileInFirestore]);
 
   // Data fetching listeners that depend on user.id
   useEffect(() => {
