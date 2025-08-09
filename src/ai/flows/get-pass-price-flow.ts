@@ -60,9 +60,18 @@ const getPassPriceFlow = ai.defineFlow(
     const {output} = await passPricePrompt(input);
     if (!output) {
       console.error('No output from passPricePrompt for input:', input);
-      throw new Error('Failed to get a response from the pricing prompt.');
+      // Provide a default/fallback pricing in case of AI error to prevent crashes
+      let fallbackCurrency = 'USD';
+      if (input.city?.toLowerCase() === 'london' && (input.country?.toLowerCase() === 'uk' || input.country?.toLowerCase() === 'united kingdom')) {
+          fallbackCurrency = 'GBP';
+      }
+      return {
+        passPrice: fallbackCurrency === 'GBP' ? 7.99 : 9.99, // Fallback price
+        currency: fallbackCurrency,
+        coffeePrice: fallbackCurrency === 'GBP' ? 3.50 : 3.00, // Mock coffee price
+        justification: 'Enjoy a full month of shared memories, preserved just for you.',
+      };
     }
     return output;
   }
 );
-
