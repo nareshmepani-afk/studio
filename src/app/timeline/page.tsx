@@ -252,7 +252,7 @@ export default function TimelinePage() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span>
-                      <Link href={addMemoryButtonDisabled ? "#" : "/add-memory"} passHref legacyBehavior>
+                      <Link href={addMemoryButtonDisabled ? "#" : "/add-memory"}>
                         <Button disabled={addMemoryButtonDisabled} aria-disabled={addMemoryButtonDisabled} onClick={(e) => { if(addMemoryButtonDisabled) { e.preventDefault(); toast({title: "Host Pass Required", description: addMemoryTooltipContent, variant: "destructive"});} }} aria-label={addMemoryTooltipContent}>
                           <PlusCircle className="mr-2 h-5 w-5" /> Add New Memory
                         </Button>
@@ -315,7 +315,7 @@ export default function TimelinePage() {
             <Film className="mx-auto h-16 w-16 text-primary mb-6" />
             <h2 className="font-headline text-3xl mb-3">Welcome to Memory Weaver!</h2>
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">Record your life’s moments. If you need a Host Pass, check Settings.</p>
-            <Link href={addMemoryButtonDisabled ? "/settings" : "/add-memory"} passHref>
+            <Link href={addMemoryButtonDisabled ? "/settings" : "/add-memory"}>
               <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground" aria-label={addMemoryButtonDisabled ? "Go to Settings to activate Host Pass" : "Record your first memory"}>
                 <PlusCircle className="mr-2 h-5 w-5" />{addMemoryButtonDisabled ? "Go to Settings" : "Record First Memory"}
               </Button>
