@@ -1,10 +1,9 @@
-
 // src/lib/ffmpeg.ts
-// This file handles loading ffmpeg.wasm files from the official CDN and providing helper functions.
+// This file handles loading ffmpeg.wasm files via SSR Proxy and providing helper functions.
 
 // Define a minimal interface for the parts of FFmpeg we use
 interface FFmpeg {
-  load: () => Promise<void>;
+  load: (config: any) => Promise<void>;
   FS: (method: 'writeFile' | 'readFile' | 'unlink', ...args: any[]) => any;
   run: (...args: string[]) => Promise<void>;
   setLogger: (logger: ({ type, message }: { type: string; message: string; }) => void) => void;
@@ -24,31 +23,8 @@ declare global {
 let ffmpegInstance: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
-// --- Configuration for loading FFmpeg files from CDN ---
-const FFMPEG_SCRIPT_URL = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js';
-
-// --- Client-side script loader ---
-function loadFFmpegScript(): Promise<void> {
-    return new Promise((resolve, reject) => {
-        // Only run in browser
-        if (typeof window === 'undefined') {
-            return reject(new Error("FFmpeg can only be loaded in a browser environment."));
-        }
-        
-        // If script is already there, resolve immediately
-        if (document.getElementById('ffmpeg-script')) {
-            return resolve();
-        }
-
-        const script = document.createElement('script');
-        script.id = 'ffmpeg-script';
-        script.src = FFMPEG_SCRIPT_URL;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Failed to load FFmpeg script.'));
-        document.body.appendChild(script);
-    });
-}
-
+// --- Configuration for loading FFmpeg files via SSR Proxy ---
+const FFMPEG_PROXY_BASE_URL = '/api/ffmpeg';
 
 // Main function to get a loaded FFmpeg instance using a singleton pattern
 export async function getFFmpegInstance(): Promise<FFmpeg> {
@@ -64,19 +40,25 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
   // Create a new loading promise. This ensures the loading process only runs once.
   ffmpegLoadingPromise = new Promise(async (resolve, reject) => {
     try {
-        await loadFFmpegScript();
-        
-        if (!window.FFmpeg || !window.FFmpeg.createFFmpeg) {
-            throw new Error("FFmpeg script loaded but createFFmpeg not found on window object.");
+        // We expect window.FFmpeg to be defined if the core script loaded via the proxy.
+        // Check for it here before creating the instance.
+        if (typeof window.FFmpeg === 'undefined' || typeof window.FFmpeg.createFFmpeg === 'undefined') {
+             throw new Error("window.FFmpeg or window.FFmpeg.createFFmpeg is not defined before attempting createFFmpeg.");
         }
 
-        const ffmpeg = window.FFmpeg.createFFmpeg({
+        const { createFFmpeg } = window.FFmpeg;
+        const ffmpeg = createFFmpeg({
            log: false, // Set to true for detailed debugging
-           corePath: 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
         });
-        
-        await ffmpeg.load();
 
+        // Load the core FFmpeg WASM module using the proxy URL
+        await ffmpeg.load({
+           corePath: `${FFMPEG_PROXY_BASE_URL}/ffmpeg-core.js`,
+           workerPath: `${FFMPEG_PROXY_BASE_URL}/ffmpeg-core.worker.js`,
+           wasmPath: `${FFMPEG_PROXY_BASE_URL}/ffmpeg-core.wasm`,
+        });
+
+        // Store the loaded instance and resolve the promise
         ffmpegInstance = ffmpeg;
         ffmpegLoadingPromise = null;
         resolve(ffmpegInstance);
@@ -88,13 +70,18 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
     }
   });
 
+  // Since we are not manually loading the script tag anymore,
+  // we need to ensure the core FFmpeg script is loaded by the browser.
+  // The 'corePath' in ffmpeg.load() is responsible for this.
+  // The error check above will catch if window.FFmpeg isn't defined after load.
+
   return ffmpegLoadingPromise;
 }
 
 export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8Array> => {
     await getFFmpegInstance();
-    
-    if (!window.FFmpeg || !window.FFmpeg.fetchFile) {
+
+    if (typeof window.FFmpeg === 'undefined' || !window.FFmpeg.fetchFile) {
          throw new Error("FFmpeg script or fetchFile is not available after getFFmpegInstance.");
     }
 
@@ -133,7 +120,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
       const centiseconds = parseInt(durationMatch[4], 10);
       return hours * 3600 + minutes * 60 + seconds + centiseconds / 100;
     } else {
-       const alternativeDurationMatch = logOutput.match(/Duration: (\d+.\d+)/);
+       const alternativeDurationMatch = logOutput.match(/Duration: (\d+\.\d+)/);
        if (alternativeDurationMatch) {
            return parseFloat(alternativeDurationMatch[1]);
        }
@@ -169,7 +156,7 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
         if (duration <= 0) {
             throw new Error("trimMediaWithFFmpeg: End time must be after start time for trimming.");
         }
-        
+
         await ffmpeg.run(
             '-ss', startTime.toString(),
             '-i', inputFilename,
