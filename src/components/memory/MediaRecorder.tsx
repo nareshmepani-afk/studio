@@ -93,35 +93,11 @@ export function MediaCaptureControl({
 
   const [isFFmpegInstanceReady, setIsFFmpegInstanceReady] = useState(false);
   const [ffmpegError, setFFmpegError] = useState<string | null>(null);
-  const [scriptLoaded, setScriptLoaded] = useState(false);
-
+  
   useEffect(() => {
-    const scriptId = 'ffmpeg-script';
-    const existingScript = document.querySelector(`script[src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"]`);
-    if (existingScript) {
-        setScriptLoaded(true);
-    } else {
-        // Fallback if not loaded by layout.tsx for some reason
-        const script = document.createElement('script');
-        script.id = scriptId;
-        script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
-        script.async = true; // Still load async, but wait for it
-        script.onload = () => {
-            console.log("FFmpeg script loaded dynamically.");
-            setScriptLoaded(true);
-        };
-        script.onerror = () => {
-            const errorMessage = "The core FFmpeg script failed to load. Media processing features are unavailable.";
-            console.error(errorMessage);
-            setFFmpegError(errorMessage);
-        };
-        document.head.appendChild(script);
-    }
-  }, []);
-
-
-  useEffect(() => {
-    if (scriptLoaded && !isFFmpegInstanceReady && !ffmpegError) {
+    // FFmpeg instance is now loaded globally via layout.tsx
+    // This effect just initializes it for this component instance
+    if (!isFFmpegInstanceReady && !ffmpegError) {
         console.log("MediaRecorder: FFmpeg script is loaded, now initializing instance...");
         setProcessingStatusText('Initializing media tools...');
         getFFmpegInstance()
@@ -145,7 +121,7 @@ export function MediaCaptureControl({
             setIsFFmpegInstanceReady(false);
           });
     }
-  }, [scriptLoaded, isFFmpegInstanceReady, ffmpegError]);
+  }, [isFFmpegInstanceReady, ffmpegError]);
 
   useEffect(() => { latestTrimValuesRef.current = { startTime, endTime }; }, [startTime, endTime]);
 
