@@ -97,35 +97,26 @@ export function MediaCaptureControl({
 
   useEffect(() => {
     const scriptId = 'ffmpeg-script';
-    if (document.getElementById(scriptId)) {
-      setScriptLoaded(true);
-      return;
+    const existingScript = document.querySelector(`script[src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js"]`);
+    if (existingScript) {
+        setScriptLoaded(true);
+    } else {
+        // Fallback if not loaded by layout.tsx for some reason
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
+        script.async = true; // Still load async, but wait for it
+        script.onload = () => {
+            console.log("FFmpeg script loaded dynamically.");
+            setScriptLoaded(true);
+        };
+        script.onerror = () => {
+            const errorMessage = "The core FFmpeg script failed to load. Media processing features are unavailable.";
+            console.error(errorMessage);
+            setFFmpegError(errorMessage);
+        };
+        document.head.appendChild(script);
     }
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
-    script.async = true;
-    script.onload = () => {
-      console.log("FFmpeg script loaded successfully.");
-      setScriptLoaded(true);
-    };
-    script.onerror = () => {
-        const errorMessage = "The core FFmpeg script failed to load from the CDN. Media processing features are unavailable.";
-        console.error(errorMessage);
-        setFFmpegError(errorMessage);
-    };
-
-    document.head.appendChild(script);
-
-    return () => {
-      const existingScript = document.getElementById(scriptId);
-      if (existingScript) {
-        // In a strict React dev environment, this might run twice.
-        // We don't want to remove the script if another component instance is still using it.
-        // For simplicity here, we leave it. Production builds will only run this once.
-      }
-    };
   }, []);
 
 

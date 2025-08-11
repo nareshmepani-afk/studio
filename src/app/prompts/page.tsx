@@ -93,10 +93,9 @@ export default function LifeJourneyPage() {
   }, [canAccessFullJourney, availablePromptGroups, router]);
 
   const handleViewEditChapter = useCallback(async (promptId: string) => {
-    if (!user) {
-      return;
-    }
+    if (!user) return;
     
+    // Always get the freshest data at the moment of execution
     const currentMemories = getLatestMemories();
 
     const memoryForPrompt = currentMemories.find(m => m.promptId === promptId);
