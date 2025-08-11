@@ -93,22 +93,17 @@ export default function LifeJourneyPage() {
   }, [canAccessFullJourney, availablePromptGroups, router]);
 
   const handleViewEditChapter = useCallback(async (promptId: string) => {
-    console.log(`[handleViewEditChapter] Initiated for promptId: ${promptId}`);
     if (!user) {
-      console.warn('[handleViewEditChapter] Aborted: User is not available.');
       return;
     }
     
     const currentMemories = getLatestMemories();
-    console.log(`[handleViewEditChapter] User is available. Total memories loaded: ${currentMemories.length}`);
 
     const memoryForPrompt = currentMemories.find(m => m.promptId === promptId);
 
     if (memoryForPrompt) {
-      console.log(`[handleViewEditChapter] Found memory with ID: ${memoryForPrompt.id} for promptId: ${promptId}. Redirecting...`);
       router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
     } else {
-      console.error(`[handleViewEditChapter] Failed to find memory for promptId: ${promptId}. Toasting error.`);
       toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
     }
   }, [user, router, getLatestMemories]);
