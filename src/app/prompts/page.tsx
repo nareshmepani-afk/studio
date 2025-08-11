@@ -42,8 +42,7 @@ export default function LifeJourneyPage() {
     hostPassPriceDetails, 
     isFetchingHostPassPrice,
     hostPassStatus,
-    memories,
-    getLatestMemories, // <-- Get the new function
+    getLatestMemories,
     completedPromptIds,
     flaggedPromptIds,
     isDataLoading,
@@ -100,7 +99,7 @@ export default function LifeJourneyPage() {
       return;
     }
     
-    const currentMemories = getLatestMemories(); // <-- Use the new function here
+    const currentMemories = getLatestMemories();
     console.log(`[handleViewEditChapter] User is available. Total memories loaded: ${currentMemories.length}`);
 
     const memoryForPrompt = currentMemories.find(m => m.promptId === promptId);
@@ -112,7 +111,7 @@ export default function LifeJourneyPage() {
       console.error(`[handleViewEditChapter] Failed to find memory for promptId: ${promptId}. Toasting error.`);
       toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
     }
-  }, [user, router]); // <-- REMOVED getLatestMemories from dependencies
+  }, [user, router, getLatestMemories]);
 
   const handleGenerateCustomChapterIdeas = useCallback(async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {

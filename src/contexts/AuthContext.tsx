@@ -52,7 +52,7 @@ interface AuthContextType {
   updateUserProfileInFirestore: (userId: string, updates: Partial<User>) => Promise<void>;
   
   memories: MemoryType[];
-  getLatestMemories: () => MemoryType[]; // New getter function
+  getLatestMemories: () => MemoryType[];
   completedPromptIds: Set<string>;
   flaggedPromptIds: Set<string>;
   isDataLoading: boolean; 
@@ -344,7 +344,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       calculateAndUpdateStorageUsage,
       updateUserProfileInFirestore,
       memories,
-      getLatestMemories: () => memories, // Provide direct access to current state
+      getLatestMemories: () => memories,
       completedPromptIds,
       flaggedPromptIds,
       isDataLoading,
