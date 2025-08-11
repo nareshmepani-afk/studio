@@ -140,8 +140,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Data fetching listeners that depend on user.id
   useEffect(() => {
     if (!user?.id) {
-      setLoading(false);
-      setIsDataLoading(false);
+      if (!loading) { // Only set loading to false if it's not already false from auth turning null
+        setLoading(false);
+      }
+      setIsDataLoading(false); // No user, so no data to load.
       return;
     }
     
@@ -185,7 +187,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Navigation Logic
   useEffect(() => {
-    if (loading || isDataLoading) return;
+    if (loading) return; // Wait for auth and initial data load to complete.
     const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
     const isPublic = publicPaths.some(path => pathname.startsWith(path));
     if (user && isPublic) {
@@ -193,7 +195,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else if (!user && !isPublic) {
       router.push('/login');
     }
-  }, [user, loading, isDataLoading, pathname, router, userMode]);
+  }, [user, loading, pathname, router, userMode]);
 
   // Memoized Functions for Context API
 
