@@ -112,7 +112,7 @@ export default function LifeJourneyPage() {
       console.error(`[handleViewEditChapter] Failed to find memory for promptId: ${promptId}. Toasting error.`);
       toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
     }
-  }, [user, router, getLatestMemories]); // <-- Add getLatestMemories to dependencies
+  }, [user, router]); // <-- REMOVED getLatestMemories from dependencies
 
   const handleGenerateCustomChapterIdeas = useCallback(async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {
