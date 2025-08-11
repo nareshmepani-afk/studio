@@ -93,33 +93,68 @@ export function MediaCaptureControl({
 
   const [isFFmpegInstanceReady, setIsFFmpegInstanceReady] = useState(false);
   const [ffmpegError, setFFmpegError] = useState<string | null>(null);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
 
   useEffect(() => {
-    // This effect implements the new singleton pattern for loading FFmpeg.
-    // It runs only once when the component mounts.
-    console.log("MediaRecorder: Initializing FFmpeg...");
-    setProcessingStatusText('Initializing media tools...');
-    getFFmpegInstance()
-      .then(() => {
-        console.log("MediaRecorder: FFmpeg instance is ready.");
-        setIsFFmpegInstanceReady(true);
-        setProcessingStatusText('');
-        setFFmpegError(null);
-      })
-      .catch(error => {
-        const errorMessage = "Media processing tools failed to load. Trimming and duration analysis are disabled.";
-        console.error("MediaRecorder: FFmpeg instance failed to initialize:", error);
-        toast({
-          title: "Media Tools Unavailable",
-          description: errorMessage,
-          variant: "destructive",
-          duration: 10000,
-        });
-        setProcessingStatusText('Media tools failed');
+    const scriptId = 'ffmpeg-script';
+    if (document.getElementById(scriptId)) {
+      setScriptLoaded(true);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
+    script.async = true;
+    script.onload = () => {
+      console.log("FFmpeg script loaded successfully.");
+      setScriptLoaded(true);
+    };
+    script.onerror = () => {
+        const errorMessage = "The core FFmpeg script failed to load from the CDN. Media processing features are unavailable.";
+        console.error(errorMessage);
         setFFmpegError(errorMessage);
-        setIsFFmpegInstanceReady(false);
-      });
+    };
+
+    document.head.appendChild(script);
+
+    return () => {
+      const existingScript = document.getElementById(scriptId);
+      if (existingScript) {
+        // In a strict React dev environment, this might run twice.
+        // We don't want to remove the script if another component instance is still using it.
+        // For simplicity here, we leave it. Production builds will only run this once.
+      }
+    };
   }, []);
+
+
+  useEffect(() => {
+    if (scriptLoaded && !isFFmpegInstanceReady && !ffmpegError) {
+        console.log("MediaRecorder: FFmpeg script is loaded, now initializing instance...");
+        setProcessingStatusText('Initializing media tools...');
+        getFFmpegInstance()
+          .then(() => {
+            console.log("MediaRecorder: FFmpeg instance is ready.");
+            setIsFFmpegInstanceReady(true);
+            setProcessingStatusText('');
+            setFFmpegError(null);
+          })
+          .catch(error => {
+            const errorMessage = "Media processing tools failed to load. Trimming and duration analysis are disabled.";
+            console.error("MediaRecorder: FFmpeg instance failed to initialize:", error);
+            toast({
+              title: "Media Tools Unavailable",
+              description: errorMessage,
+              variant: "destructive",
+              duration: 10000,
+            });
+            setProcessingStatusText('Media tools failed');
+            setFFmpegError(errorMessage);
+            setIsFFmpegInstanceReady(false);
+          });
+    }
+  }, [scriptLoaded, isFFmpegInstanceReady, ffmpegError]);
 
   useEffect(() => { latestTrimValuesRef.current = { startTime, endTime }; }, [startTime, endTime]);
 
