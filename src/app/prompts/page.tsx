@@ -274,6 +274,7 @@ export default function LifeJourneyPage() {
                     promptText={prompt.text[currentLanguage] || prompt.text.en}
                     isCompleted={completedPromptIds.has(prompt.id)}
                     isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
+                    isLoading={isDataLoading}
                     onStartChapter={handleStartChapter}
                     onViewEditChapter={handleViewEditChapter}
                     onToggleFlagPrompt={handleToggleFlagPrompt}

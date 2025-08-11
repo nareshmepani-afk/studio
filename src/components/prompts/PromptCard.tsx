@@ -3,17 +3,18 @@
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookText, CheckCircle, Edit, Star } from 'lucide-react'; // Updated icons
+import { BookText, CheckCircle, Edit, Star, Loader2 } from 'lucide-react'; // Updated icons
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PromptCardProps {
   promptId: string;
   promptText: string;
   isCompleted: boolean;
-  isFlaggedForReuse: boolean; // New prop
+  isFlaggedForReuse: boolean;
+  isLoading?: boolean; // New prop
   onStartChapter: (promptId: string, promptText: string) => void;
   onViewEditChapter: (promptId: string) => void;
-  onToggleFlagPrompt: (promptId: string) => void; // New prop
+  onToggleFlagPrompt: (promptId: string) => void;
 }
 
 export function PromptCard({
@@ -21,12 +22,14 @@ export function PromptCard({
   promptText,
   isCompleted,
   isFlaggedForReuse,
+  isLoading = false, // Default to false
   onStartChapter,
   onViewEditChapter,
   onToggleFlagPrompt
 }: PromptCardProps) {
 
   const handleAction = () => {
+    if (isLoading) return;
     if (isCompleted) {
       onViewEditChapter(promptId);
     } else {
@@ -35,6 +38,7 @@ export function PromptCard({
   };
 
   const handleFlagToggle = (e: React.MouseEvent) => {
+    if (isLoading) return;
     e.stopPropagation(); // Prevent card action if clicking flag button
     onToggleFlagPrompt(promptId);
   };
@@ -61,8 +65,11 @@ export function PromptCard({
           size="sm"
           variant={isCompleted ? "outline" : "default"}
           className="flex-grow" // Main action button takes more space
+          disabled={isLoading}
         >
-          {isCompleted ? (
+          {isLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : isCompleted ? (
             <>
               <Edit className="mr-2 h-4 w-4" /> View / Edit Chapter
             </>
@@ -81,6 +88,7 @@ export function PromptCard({
                 onClick={handleFlagToggle}
                 className="ml-2 shrink-0" // Ensure button doesn't cause overflow
                 aria-label={isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}
+                disabled={isLoading}
               >
                 <Star className={`h-5 w-5 ${isFlaggedForReuse ? 'fill-amber-400 text-amber-500' : 'text-muted-foreground hover:text-amber-500'}`} />
               </Button>
