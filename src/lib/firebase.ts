@@ -13,19 +13,15 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// This function ensures Firebase is initialized only once.
-const getFirebaseApp = (): FirebaseApp => {
-  if (getApps().length === 0) {
-    return initializeApp(firebaseConfig);
-  }
-  return getApp();
-};
+// Initialize Firebase
+const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-const app = getFirebaseApp();
-const auth = initializeAuth(app, {
+// It's recommended to initialize auth this way to avoid re-initialization errors in Next.js
+const auth: Auth = initializeAuth(app, {
   persistence: browserLocalPersistence
 });
-const db = getFirestore(app);
-const storage = getStorage(app);
+
+const db: Firestore = getFirestore(app);
+const storage: FirebaseStorage = getStorage(app);
 
 export { app, auth, db, storage };
