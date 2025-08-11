@@ -6,7 +6,7 @@ import { PromptCard } from '@/components/prompts/PromptCard';
 import { mockPromptGroups } from '@/lib/mockData'; 
 import { Button } from '@/components/ui/button';
 import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star as StarIcon, Info } from 'lucide-react'; 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -42,11 +42,16 @@ export default function LifeJourneyPage() {
     hostPassPriceDetails, 
     isFetchingHostPassPrice,
     hostPassStatus,
-    memories, // Destructure memories correctly
+    memories,
     completedPromptIds,
     flaggedPromptIds,
     isDataLoading,
   } = useAuth(); 
+
+  const memoriesRef = useRef(memories);
+  useEffect(() => {
+    memoriesRef.current = memories;
+  }, [memories]);
 
   const [showCustomChapterDialog, setShowCustomChapterDialog] = useState(false);
   const [customChapterUserProfile, setCustomChapterUserProfile] = useState('');
@@ -98,9 +103,11 @@ export default function LifeJourneyPage() {
       console.warn('[handleViewEditChapter] Aborted: User is not available.');
       return;
     }
-    console.log(`[handleViewEditChapter] User is available. Total memories loaded: ${memories.length}`);
+    
+    const currentMemories = memoriesRef.current;
+    console.log(`[handleViewEditChapter] User is available. Total memories loaded: ${currentMemories.length}`);
 
-    const memoryForPrompt = memories.find(m => m.promptId === promptId);
+    const memoryForPrompt = currentMemories.find(m => m.promptId === promptId);
 
     if (memoryForPrompt) {
       console.log(`[handleViewEditChapter] Found memory with ID: ${memoryForPrompt.id} for promptId: ${promptId}. Redirecting...`);
@@ -109,7 +116,7 @@ export default function LifeJourneyPage() {
       console.error(`[handleViewEditChapter] Failed to find memory for promptId: ${promptId}. Toasting error.`);
       toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
     }
-  }, [user, memories, router]);
+  }, [user, router]);
 
   const handleGenerateCustomChapterIdeas = useCallback(async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {
