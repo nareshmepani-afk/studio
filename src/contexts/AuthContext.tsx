@@ -165,10 +165,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const hasNew = fetchedMemories.some(mem => !viewedIds.has(mem.id));
       setHasNewSharedMemories(hasNew);
       
+      // THIS IS THE KEY CHANGE: setLoading and setIsDataLoading only after first successful fetch
       setLoading(false); 
       setIsDataLoading(false);
     }, (error) => { 
         console.error("Error listening to memories:", error); 
+        toast({ title: "Data Error", description: "Could not load memories. Please refresh.", variant: "destructive"});
         setLoading(false);
         setIsDataLoading(false); 
     });
