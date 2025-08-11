@@ -43,15 +43,11 @@ export default function LifeJourneyPage() {
     isFetchingHostPassPrice,
     hostPassStatus,
     memories,
+    getLatestMemories, // <-- Get the new function
     completedPromptIds,
     flaggedPromptIds,
     isDataLoading,
   } = useAuth(); 
-
-  const memoriesRef = useRef(memories);
-  useEffect(() => {
-    memoriesRef.current = memories;
-  }, [memories]);
 
   const [showCustomChapterDialog, setShowCustomChapterDialog] = useState(false);
   const [customChapterUserProfile, setCustomChapterUserProfile] = useState('');
@@ -104,7 +100,7 @@ export default function LifeJourneyPage() {
       return;
     }
     
-    const currentMemories = memoriesRef.current;
+    const currentMemories = getLatestMemories(); // <-- Use the new function here
     console.log(`[handleViewEditChapter] User is available. Total memories loaded: ${currentMemories.length}`);
 
     const memoryForPrompt = currentMemories.find(m => m.promptId === promptId);
@@ -116,7 +112,7 @@ export default function LifeJourneyPage() {
       console.error(`[handleViewEditChapter] Failed to find memory for promptId: ${promptId}. Toasting error.`);
       toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
     }
-  }, [user, router]);
+  }, [user, router, getLatestMemories]); // <-- Add getLatestMemories to dependencies
 
   const handleGenerateCustomChapterIdeas = useCallback(async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {

@@ -52,6 +52,7 @@ interface AuthContextType {
   updateUserProfileInFirestore: (userId: string, updates: Partial<User>) => Promise<void>;
   
   memories: MemoryType[];
+  getLatestMemories: () => MemoryType[]; // New getter function
   completedPromptIds: Set<string>;
   flaggedPromptIds: Set<string>;
   isDataLoading: boolean; 
@@ -100,7 +101,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const userDocRef = doc(db, "users", firebaseUser.uid);
         const unsubscribeUser = onSnapshot(userDocRef, async (userDocSnap) => {
           if (userDocSnap.exists()) {
-            setUser({ id: firebaseUser.uid, ...userDocSnap.data() } as User);
+            const userData = { id: firebaseUser.uid, ...userDocSnap.data() } as User;
+            setUser(userData);
+            
+            const checkAndUpdatePassStatuses = async () => {
+                const now = new Date();
+                let updatesToSave: Partial<User> = {};
+                if (userData.sharedAccessStatus === 'free_pass_active' && userData.freePassActivatedDate && isBefore(addMonths(parseISO(userData.freePassActivatedDate), 6), now)) updatesToSave.sharedAccessStatus = 'free_pass_expired';
+                if (userData.sharedAccessStatus === 'paid_pass_active' && userData.paidPassExpiryDate && isBefore(parseISO(userData.paidPassExpiryDate), now)) updatesToSave.sharedAccessStatus = 'paid_pass_expired';
+                if (userData.hostPassStatus === 'free_host_pass_active' && userData.freeHostPassActivatedDate && isBefore(addMonths(parseISO(userData.freeHostPassActivatedDate), 6), now)) updatesToSave.hostPassStatus = 'free_host_pass_expired';
+                if (userData.hostPassStatus === 'paid_host_pass_active' && userData.paidHostPassExpiryDate && isBefore(parseISO(userData.paidHostPassExpiryDate), now)) updatesToSave.hostPassStatus = 'paid_host_pass_expired';
+                if (Object.keys(updatesToSave).length > 0) await updateUserProfileInFirestore(userData.id, updatesToSave);
+            };
+            checkAndUpdatePassStatuses();
+
           } else {
             const newUser: User = {
               id: firebaseUser.uid, email: firebaseUser.email!, name: firebaseUser.displayName || "New User",
@@ -109,8 +123,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             await setDoc(userDocRef, { ...newUser, createdAt: serverTimestamp() });
             setUser(newUser);
           }
-          // Intentionally not setting loading to false here to prevent race condition.
-          // The data fetching effect will handle setting both loading states.
         });
         return () => unsubscribeUser();
       } else {
@@ -123,11 +135,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     return () => unsubscribeAuth();
-  }, []);
+  }, [updateUserProfileInFirestore]);
 
   // Data fetching listeners that depend on user.id
   useEffect(() => {
     if (!user?.id) {
+      setLoading(false);
       setIsDataLoading(false);
       return;
     }
@@ -150,7 +163,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const hasNew = fetchedMemories.some(mem => !viewedIds.has(mem.id));
       setHasNewSharedMemories(hasNew);
       
-      // This is now the single source of truth for when all initial loading is complete.
       setLoading(false); 
       setIsDataLoading(false);
     }, (error) => { 
@@ -164,23 +176,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setFlaggedPromptIds(new Set(Object.entries(docSnap.data() || {}).filter(([, v]) => v === true).map(([k]) => k)));
     }, (error) => console.error("Error listening to prompt flags:", error));
 
-    const checkAndUpdatePassStatuses = async () => {
-        const now = new Date();
-        let updatesToSave: Partial<User> = {};
-        if (user.sharedAccessStatus === 'free_pass_active' && user.freePassActivatedDate && isBefore(addMonths(parseISO(user.freePassActivatedDate), 6), now)) updatesToSave.sharedAccessStatus = 'free_pass_expired';
-        if (user.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate && isBefore(parseISO(user.paidPassExpiryDate), now)) updatesToSave.sharedAccessStatus = 'paid_pass_expired';
-        if (user.hostPassStatus === 'free_host_pass_active' && user.freeHostPassActivatedDate && isBefore(addMonths(parseISO(user.freeHostPassActivatedDate), 6), now)) updatesToSave.hostPassStatus = 'free_host_pass_expired';
-        if (user.hostPassStatus === 'paid_host_pass_active' && user.paidHostPassExpiryDate && isBefore(parseISO(user.paidHostPassExpiryDate), now)) updatesToSave.hostPassStatus = 'paid_host_pass_expired';
-        if (Object.keys(updatesToSave).length > 0) await updateUserProfileInFirestore(user.id, updatesToSave);
-    };
-
-    checkAndUpdatePassStatuses();
-    
     return () => {
       unsubscribeMemories();
       unsubscribePrompts();
     };
-  }, [user?.id, user?.viewedSharedMemoryIds, updateUserProfileInFirestore]);
+  }, [user?.id, user?.viewedSharedMemoryIds]);
 
 
   // Navigation Logic
@@ -344,6 +344,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       calculateAndUpdateStorageUsage,
       updateUserProfileInFirestore,
       memories,
+      getLatestMemories: () => memories, // Provide direct access to current state
       completedPromptIds,
       flaggedPromptIds,
       isDataLoading,
@@ -359,7 +360,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       calculateAndUpdateStorageUsage, updateUserProfileInFirestore
   ]);
   
-  if (loading || isDataLoading) {
+  if (loading) {
     return (
        <div className="flex h-screen w-screen items-center justify-center bg-background">
           <div className="flex flex-col items-center text-center">
