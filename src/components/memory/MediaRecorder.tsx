@@ -654,7 +654,7 @@ export function MediaCaptureControl({
                 )}>
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
-                        <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or D&D</p>
+                        <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or D&amp;D</p>
                         <p className="text-xs text-muted-foreground">Video (max 5:00.0) / Audio (max 10:00.0)</p>
                     </div>
                     <Input id="media-upload" type="file" className="hidden" onChange={handleFileUpload} accept="video/*,audio/*" disabled={!isReady} />

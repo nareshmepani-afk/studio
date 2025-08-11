@@ -25,6 +25,23 @@ let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
 const CDN_BASE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
 
+// This function polls until the FFmpeg script has fully initialized on the window object.
+const waitForFFmpegReady = (timeout = 5000): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
+        clearInterval(interval);
+        resolve();
+      } else if (Date.now() - startTime > timeout) {
+        clearInterval(interval);
+        reject(new Error("window.FFmpeg.createFFmpeg did not become available in time."));
+      }
+    }, 100); // Check every 100ms
+  });
+};
+
+
 export async function getFFmpegInstance(): Promise<FFmpeg> {
   if (ffmpegInstance && ffmpegInstance.isLoaded()) {
     return ffmpegInstance;
@@ -35,9 +52,8 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 
   ffmpegLoadingPromise = new Promise(async (resolve, reject) => {
     try {
-      if (typeof window.FFmpeg === 'undefined' || typeof window.FFmpeg.createFFmpeg === 'undefined') {
-        throw new Error("FFmpeg script not loaded or failed to define window.FFmpeg. Ensure the component calling this uses the useScript hook.");
-      }
+      // First, ensure the script has loaded and the global object is ready.
+      await waitForFFmpegReady();
 
       const { createFFmpeg } = window.FFmpeg;
       const ffmpeg = createFFmpeg({ log: false });
@@ -63,9 +79,11 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 }
 
 export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8Array> => {
-    await getFFmpegInstance();
+    // No need to call getFFmpegInstance here, as it will be called by the functions that need it.
+    // We just need to ensure the global fetchFile function is available.
+    await waitForFFmpegReady();
     if (typeof window.FFmpeg === 'undefined' || !window.FFmpeg.fetchFile) {
-         throw new Error("FFmpeg script or fetchFile is not available after getFFmpegInstance.");
+         throw new Error("FFmpeg script or fetchFile is not available.");
     }
     return window.FFmpeg.fetchFile(data);
 };
