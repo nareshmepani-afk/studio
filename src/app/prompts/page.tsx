@@ -1,11 +1,10 @@
-
 "use client";
 
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { PromptCard } from '@/components/prompts/PromptCard';
-import { mockPromptGroups } from '@/lib/mockData'; 
+import { mockPromptGroups } from '@/lib/mockData';
 import { Button } from '@/components/ui/button';
-import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star as StarIcon, Info } from 'lucide-react'; 
+import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star as StarIcon, Info } from 'lucide-react';
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
@@ -23,31 +22,31 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { db } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
-const FIRESTORE_USER_PROMPT_FLAGS_COLLECTION = 'userPromptFlags'; 
+const FIRESTORE_USER_PROMPT_FLAGS_COLLECTION = 'userPromptFlags';
 
 export default function LifeJourneyPage() {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
-  
-  const { 
-    user, 
+
+  const {
+    user,
     isLoading, // Added isLoading from AuthContext
-    userMode, 
-    purchasePaidHostPass, 
-    activateFreeHostPass, 
-    hostPassPriceDetails, 
+    userMode,
+    purchasePaidHostPass,
+    activateFreeHostPass,
+    hostPassPriceDetails,
     isFetchingHostPassPrice,
     hostPassStatus,
     getLatestMemories,
     completedPromptIds,
     flaggedPromptIds,
     isDataLoading,
-  } = useAuth(); 
+  } = useAuth();
 
   const [showCustomChapterDialog, setShowCustomChapterDialog] = useState(false);
   const [customChapterUserProfile, setCustomChapterUserProfile] = useState('');
@@ -56,7 +55,7 @@ export default function LifeJourneyPage() {
   const [isLoadingChapterIdeas, setIsLoadingChapterIdeas] = useState(false);
 
   console.log(`[LifeJourneyPage] Render: isLoading=${isLoading}, isDataLoading=${isDataLoading}, user=${user ? user.id : 'null'}`);
-  
+
   useEffect(() => { if (user?.profileInfo) setCustomChapterUserProfile(user.profileInfo); }, [user?.profileInfo]);
 
   const canAccessFullJourney = useMemo(() => {
@@ -102,7 +101,7 @@ export default function LifeJourneyPage() {
         return;
     }
     console.log("[handleViewEditChapter] User is available.");
-    
+
     // Use the getter function to ensure we have the latest memories
     const currentMemories = getLatestMemories();
     console.log(`[handleViewEditChapter] Total memories loaded: ${currentMemories.length}`);
@@ -144,9 +143,9 @@ export default function LifeJourneyPage() {
         return;
     }
     toast({ title: "Custom Chapter Selected!", description: `Starting chapter: "${idea}". Redirecting...`});
-    router.push(`/add-memory?prompt=${encodeURIComponent(idea)}`); 
+    router.push(`/add-memory?prompt=${encodeURIComponent(idea)}`);
     setShowCustomChapterDialog(false);
-    setGeneratedChapterIdeas([]); 
+    setGeneratedChapterIdeas([]);
   }, [canAccessFullJourney, router]);
 
   const handleHostPassAction = useCallback(() => {
@@ -156,7 +155,7 @@ export default function LifeJourneyPage() {
       purchasePaidHostPass();
     }
   }, [hostPassStatus, activateFreeHostPass, purchasePaidHostPass]);
-  
+
   const hostPassButtonText = useMemo(() => {
     if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
         if (isFetchingHostPassPrice) return "Fetching price...";
@@ -172,6 +171,20 @@ export default function LifeJourneyPage() {
       <AuthenticatedPageWrapper>
         <div className="container mx-auto py-8 px-4 text-center">
           <HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+          <h1 className="font-headline text-3xl mb-2">Loading Life Journey...</h1> {/* Updated message */}
+          <p className="text-muted-foreground mb-6">
+            Please wait while your data is loaded.
+          </p>
+           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" /> {/* Moved loader */}
+        </div>
+      </AuthenticatedPageWrapper>
+    );
+  } else if (userMode === 'guest') { // If loaded but userMode is guest
+    console.log(`[LifeJourneyPage] Loaded, userMode is guest. Displaying guest view.`);
+    return ( // Added return here
+      <AuthenticatedPageWrapper>
+        <div className="container mx-auto py-8 px-4 text-center">
+          <HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
           <h1 className="font-headline text-3xl mb-2">Life Journey Not Available</h1>
           <p className="text-muted-foreground mb-6">
             This feature is for hosts to record their memories. Guests can view memories shared with them on the Timeline.
@@ -182,18 +195,8 @@ export default function LifeJourneyPage() {
         </div>
       </AuthenticatedPageWrapper>
     );
-  } else if (userMode === 'guest') { // If loaded but userMode is guest
-    console.log(`[LifeJourneyPage] Loaded, userMode is guest. Displaying guest view.`);
-  if (isDataLoading) {
-    return (
-      <AuthenticatedPageWrapper>
-        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <h2 className="text-2xl font-headline mb-2">Loading Life Journey...</h2>
-        </div>
-      </AuthenticatedPageWrapper>
-    );
   }
+
 
   console.log(`[LifeJourneyPage] Loaded, userMode is host and data is ready. Displaying host view.`);
 
@@ -202,7 +205,7 @@ export default function LifeJourneyPage() {
       <div className="container mx-auto py-8 px-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div className="flex items-center mb-4 md:mb-0">
-            <Film className="h-10 w-10 text-primary mr-3" /> 
+            <Film className="h-10 w-10 text-primary mr-3" />
             <h1 className="font-headline text-4xl">My Life Journey</h1>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
@@ -224,7 +227,7 @@ export default function LifeJourneyPage() {
               </div>
           </div>
         </div>
-        
+
         <Alert className="mb-8 bg-secondary/50 border-secondary/20 shadow">
           <Info className="h-5 w-5 text-secondary-foreground" />
           <AlertTitle className="font-headline text-secondary-foreground">Welcome to Your Life Journey!</AlertTitle>
@@ -244,7 +247,7 @@ export default function LifeJourneyPage() {
               {hostPassStatus === 'no_pass_initiated' ? "Unlock Full Life Journey Access" : "Renew Host Pass for Full Access"}
             </AlertTitle>
             <AlertDescription className="text-primary/80 flex flex-col items-start">
-              <p className="w-full">{hostPassStatus === 'no_pass_initiated' 
+              <p className="w-full">{hostPassStatus === 'no_pass_initiated'
                 ? "Only the first chapter group is available. Activate your 6-month free Host Pass to access all chapters and AI brainstorming."
                 : "Your Host Pass has expired. Renew to continue accessing all Life Journey chapters and creation tools."
               }</p>
@@ -256,14 +259,14 @@ export default function LifeJourneyPage() {
           </Alert>
         )}
 
-        {availablePromptGroups.length === 0 && ( 
+        {availablePromptGroups.length === 0 && (
           <div className="text-center py-12">
-            <Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" /> 
+            <Film className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
             <h2 className="font-headline text-2xl mb-2">No Chapters Found</h2>
             <p className="text-muted-foreground">Try brainstorming a custom chapter!</p>
           </div>
         )}
-        
+
         <div className="space-y-10">
           {availablePromptGroups.map((group) => (
             <section key={group.id}>
