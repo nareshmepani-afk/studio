@@ -32,6 +32,7 @@ const waitForFFmpegReady = (timeout = 10000): Promise<void> => {
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
     const interval = setInterval(() => {
+ console.log("ffmpeg.ts: Polling for window.FFmpeg. Current value:", window.FFmpeg);
       if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
         console.log("ffmpeg.ts: window.FFmpeg.createFFmpeg is available.");
         clearInterval(interval);
@@ -69,9 +70,9 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       
       console.log("ffmpeg.ts: Calling ffmpeg.load()...");
       await ffmpeg.load({
-         corePath: `${CDN_BASE_URL}/ffmpeg-core.js`,
-         workerPath: `${CDN_BASE_URL}/ffmpeg-core.worker.js`,
-         wasmPath: `${CDN_BASE_URL}/ffmpeg-core.wasm`,
+         corePath: '/ffmpeg/ffmpeg-core.js',
+         workerPath: '/ffmpeg/ffmpeg-core.worker.js',
+         wasmPath: '/ffmpeg/ffmpeg-core.wasm',
       });
       console.log("ffmpeg.ts: ffmpeg.load() completed successfully.");
 
