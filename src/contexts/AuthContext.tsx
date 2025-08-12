@@ -212,8 +212,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!loading) {
       console.log(`AuthContext: Navigation check. Path: ${pathname}, IsAuthenticated: ${!!user}.`);
       const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password']; // Added /add-memory to publicPaths
-      console.log(`AuthContext: Public paths: ${publicPaths.join(', ')}`); // Added console log
-      const isPublic = publicPaths.some(path => pathname.startsWith(path));
+      console.log(`AuthContext: Public paths: ${publicPaths.join(', ')}`);
+      const isPublic = publicPaths.includes(pathname);
       if (user && isPublic) {
         const destination = userMode === 'host' ? '/prompts' : '/timeline';
         console.log(`AuthContext: Authenticated user on public page. Redirecting to ${destination}.`);
