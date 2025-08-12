@@ -36,6 +36,7 @@ export default function LifeJourneyPage() {
   
   const { 
     user, 
+    isLoading, // Added isLoading from AuthContext
     userMode, 
     purchasePaidHostPass, 
     activateFreeHostPass, 
@@ -53,6 +54,8 @@ export default function LifeJourneyPage() {
   const [customChapterLanguage, setCustomChapterLanguage] = useState<'en' | 'gu'>('en');
   const [generatedChapterIdeas, setGeneratedChapterIdeas] = useState<string[]>([]);
   const [isLoadingChapterIdeas, setIsLoadingChapterIdeas] = useState(false);
+
+  console.log(`[LifeJourneyPage] Render: isLoading=${isLoading}, isDataLoading=${isDataLoading}, user=${user ? user.id : 'null'}`);
   
   useEffect(() => { if (user?.profileInfo) setCustomChapterUserProfile(user.profileInfo); }, [user?.profileInfo]);
 
@@ -163,7 +166,8 @@ export default function LifeJourneyPage() {
     return "Activate 6-Month Free Host Pass";
   }, [hostPassStatus, isFetchingHostPassPrice, hostPassPriceDetails]);
 
-  if (userMode === 'guest') {
+  // Render loading state if the main app load is still in progress
+  if (isLoading) {
     return (
       <AuthenticatedPageWrapper>
         <div className="container mx-auto py-8 px-4 text-center">
@@ -178,8 +182,8 @@ export default function LifeJourneyPage() {
         </div>
       </AuthenticatedPageWrapper>
     );
-  }
-
+  } else if (userMode === 'guest') { // If loaded but userMode is guest
+    console.log(`[LifeJourneyPage] Loaded, userMode is guest. Displaying guest view.`);
   if (isDataLoading) {
     return (
       <AuthenticatedPageWrapper>
@@ -190,6 +194,8 @@ export default function LifeJourneyPage() {
       </AuthenticatedPageWrapper>
     );
   }
+
+  console.log(`[LifeJourneyPage] Loaded, userMode is host and data is ready. Displaying host view.`);
 
   return (
     <AuthenticatedPageWrapper>

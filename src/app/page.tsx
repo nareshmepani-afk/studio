@@ -52,6 +52,7 @@ const features: Feature[] = [
 
 export default function LandingPage() {
   const { isAuthenticated, loading } = useAuth();
+  console.log(`LandingPage: Initial Render - isAuthenticated=${isAuthenticated}, loading=${loading}`);
   const router = useRouter();
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export default function LandingPage() {
     // This effect remains as a fallback but won't run while the context is loading.
     if (!loading && isAuthenticated) {
       router.push('/timeline');
+ console.log(`LandingPage: useEffect - isAuthenticated=${isAuthenticated}, loading=${loading}. Redirecting.`);
     }
   }, [isAuthenticated, loading, router]);
 
