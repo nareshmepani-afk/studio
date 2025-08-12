@@ -93,20 +93,25 @@ export default function LifeJourneyPage() {
   }, [canAccessFullJourney, availablePromptGroups, router]);
 
   const handleViewEditChapter = useCallback((promptId: string) => {
+    console.log(`[handleViewEditChapter] Initiated for promptId: ${promptId}`);
     if (!user) {
+        console.log("[handleViewEditChapter] User not available. Aborting.");
         return;
     }
+    console.log("[handleViewEditChapter] User is available.");
     
-    // Always get the latest memories directly from the context getter
     const currentMemories = getLatestMemories();
+    console.log(`[handleViewEditChapter] Total memories loaded: ${currentMemories.length}`);
     const memoryForPrompt = currentMemories.find(m => m.promptId === promptId);
 
     if (memoryForPrompt) {
+      console.log(`[handleViewEditChapter] Found memory with ID: ${memoryForPrompt.id} for promptId: ${promptId}. Redirecting...`);
       router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
     } else {
+      console.log(`[handleViewEditChapter] Failed to find memory for promptId: ${promptId}. Toasting error.`);
       toast({ title: "Error", description: "Could not find the recorded memory for this chapter. The data may still be loading.", variant: "destructive" });
     }
-  }, [user, router, getLatestMemories]); // router and getLatestMemories are stable, user is the key dependency
+  }, [user, router, getLatestMemories]);
 
   const handleGenerateCustomChapterIdeas = useCallback(async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {
