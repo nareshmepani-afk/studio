@@ -27,7 +27,7 @@ let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 const CDN_BASE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
 
 // This function polls until the FFmpeg script has fully initialized on the window object.
-const waitForFFmpegReady = (timeout = 5000): Promise<void> => {
+const waitForFFmpegReady = (timeout = 10000): Promise<void> => {
   console.log("ffmpeg.ts: waitForFFmpegReady() called.");
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
