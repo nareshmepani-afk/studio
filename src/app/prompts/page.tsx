@@ -100,6 +100,7 @@ export default function LifeJourneyPage() {
     }
     console.log("[handleViewEditChapter] User is available.");
     
+    // Use the getter function to ensure we have the latest memories
     const currentMemories = getLatestMemories();
     console.log(`[handleViewEditChapter] Total memories loaded: ${currentMemories.length}`);
     const memoryForPrompt = currentMemories.find(m => m.promptId === promptId);

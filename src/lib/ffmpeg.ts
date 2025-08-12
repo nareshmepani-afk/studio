@@ -28,13 +28,16 @@ const CDN_BASE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
 
 // This function polls until the FFmpeg script has fully initialized on the window object.
 const waitForFFmpegReady = (timeout = 5000): Promise<void> => {
+  console.log("ffmpeg.ts: waitForFFmpegReady() called.");
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
     const interval = setInterval(() => {
       if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
+        console.log("ffmpeg.ts: window.FFmpeg.createFFmpeg is available.");
         clearInterval(interval);
         resolve();
       } else if (Date.now() - startTime > timeout) {
+        console.error("ffmpeg.ts: Timeout waiting for FFmpeg to become ready.");
         clearInterval(interval);
         reject(new Error("window.FFmpeg.createFFmpeg did not become available in time."));
       }
@@ -44,26 +47,33 @@ const waitForFFmpegReady = (timeout = 5000): Promise<void> => {
 
 
 export async function getFFmpegInstance(): Promise<FFmpeg> {
+  console.log("ffmpeg.ts: getFFmpegInstance() called.");
   if (ffmpegInstance && ffmpegInstance.isLoaded()) {
+    console.log("ffmpeg.ts: Returning existing, loaded FFmpeg instance.");
     return ffmpegInstance;
   }
   if (ffmpegLoadingPromise) {
+    console.log("ffmpeg.ts: FFmpeg is already loading, returning existing promise.");
     return ffmpegLoadingPromise;
   }
 
+  console.log("ffmpeg.ts: No existing instance or promise. Starting new initialization.");
   ffmpegLoadingPromise = new Promise(async (resolve, reject) => {
     try {
       // First, ensure the script has loaded and the global object is ready.
       await waitForFFmpegReady();
 
       const { createFFmpeg } = window.FFmpeg;
+      console.log("ffmpeg.ts: createFFmpeg function retrieved from window. Creating instance.");
       const ffmpeg = createFFmpeg({ log: false });
       
+      console.log("ffmpeg.ts: Calling ffmpeg.load()...");
       await ffmpeg.load({
          corePath: `${CDN_BASE_URL}/ffmpeg-core.js`,
          workerPath: `${CDN_BASE_URL}/ffmpeg-core.worker.js`,
          wasmPath: `${CDN_BASE_URL}/ffmpeg-core.wasm`,
       });
+      console.log("ffmpeg.ts: ffmpeg.load() completed successfully.");
 
       ffmpegInstance = ffmpeg;
       ffmpegLoadingPromise = null;
