@@ -11,7 +11,7 @@ import type { GetPassPriceOutput as GetGuestPassPriceOutput } from '@/ai/flows/g
 import { getPassPriceAction as getGuestPassPriceAction } from '@/actions/getPassPriceAction';
 import type { GetHostPassPriceOutput } from '@/ai/flows/get-host-pass-price-flow';
 import { getHostPassPriceAction } from '@/actions/getHostPassPriceAction';
-
+import SplashScreen from '@/components/layout/SplashScreen'; 
 import { auth, db } from '@/lib/firebase';
 import {
   onAuthStateChanged,
@@ -20,7 +20,6 @@ import {
   signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, Timestamp, onSnapshot, Unsubscribe, orderBy } from 'firebase/firestore';
-import { Loader2 } from 'lucide-react';
 
 
 interface AuthContextType {
@@ -55,7 +54,7 @@ interface AuthContextType {
   completedPromptIds: Set<string>;
   flaggedPromptIds: Set<string>;
   isDataLoading: boolean; 
- isLoading: boolean; // Centralized loading state
+  loading: boolean; // Centralized loading state
   markSharedMemoryAsViewed: (memoryId: string) => Promise<void>;
   hasNewSharedMemories: boolean;
 }
@@ -64,7 +63,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Centralized loading state
+  const [loading, setIsLoading] = useState(true); // Centralized loading state for auth & initial data
   const [isDataLoading, setIsDataLoading] = useState(true); 
   const [userMode, setUserModeState] = useState<UserMode>('host');
   
@@ -80,13 +79,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const [hasNewSharedMemories, setHasNewSharedMemories] = useState(false);
 
-
   const router = useRouter();
   const pathname = usePathname();
 
   const updateUserProfileInFirestore = useCallback(async (userId: string, updates: Partial<User>) => {
     const userDocRef = doc(db, "users", userId);
-    try { console.log(`[${new Date().toISOString()}] AuthContext: Attempting to update user profile for ${userId}.`);
+    try {
+      console.log(`AuthContext: Attempting to update user profile for ${userId}.`);
       await updateDoc(userDocRef, { ...updates, lastUpdated: serverTimestamp() });
     } catch (error: any) {
       console.error(`AuthContext: Error updating user profile in Firestore for user ${userId}:`, error);
@@ -96,64 +95,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Listener and State Management
   useEffect(() => {
-    console.log(`[${new Date().toISOString()}] AuthContext: Setting up onAuthStateChanged listener.`);
-    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+    console.log("AuthContext: Setting up onAuthStateChanged listener.");
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        console.log(`[${new Date().toISOString()}] AuthContext: Auth state changed. User found with ID: ${firebaseUser.uid}`);
+        console.log(`AuthContext: Auth state changed. User found with ID: ${firebaseUser.uid}`);
         const userDocRef = doc(db, "users", firebaseUser.uid);
-        const unsubscribeUser = onSnapshot(userDocRef, async (userDocSnap) => {
-          if (userDocSnap.exists()) { console.log(`[${new Date().toISOString()}] AuthContext: User document snapshot received for ${firebaseUser.uid}.`);
-            console.log("AuthContext: User document snapshot received.");
+        
+        // Use onSnapshot to listen for real-time updates to the user document
+        const unsubscribeUser = onSnapshot(userDocRef, (userDocSnap) => {
+          if (userDocSnap.exists()) {
+            console.log(`AuthContext: User document snapshot received for ${firebaseUser.uid}.`);
             const userData = { id: firebaseUser.uid, ...userDocSnap.data() } as User;
             setUser(userData);
-            
-            const checkAndUpdatePassStatuses = async () => {
-                const now = new Date();
-                let updatesToSave: Partial<User> = {};
-                if (userData.sharedAccessStatus === 'free_pass_active' && userData.freePassActivatedDate && isBefore(addMonths(parseISO(userData.freePassActivatedDate), 6), now)) updatesToSave.sharedAccessStatus = 'free_pass_expired';
-                if (userData.sharedAccessStatus === 'paid_pass_active' && userData.paidPassExpiryDate && isBefore(parseISO(userData.paidPassExpiryDate), now)) updatesToSave.sharedAccessStatus = 'paid_pass_expired';
-                if (userData.hostPassStatus === 'free_host_pass_active' && userData.freeHostPassActivatedDate && isBefore(addMonths(parseISO(userData.freeHostPassActivatedDate), 6), now)) updatesToSave.hostPassStatus = 'free_host_pass_expired';
-                if (userData.hostPassStatus === 'paid_host_pass_active' && userData.paidHostPassExpiryDate && isBefore(parseISO(userData.paidHostPassExpiryDate), now)) updatesToSave.hostPassStatus = 'paid_host_pass_expired';
-                if (Object.keys(updatesToSave).length > 0) {
-                  console.log(`[${new Date().toISOString()}] AuthContext: Updating expired pass statuses for ${userData.id}.`, updatesToSave);
-                  await updateUserProfileInFirestore(userData.id, updatesToSave);
-                }
-            };
-            checkAndUpdatePassStatuses();
-
           } else {
-            console.log(`AuthContext: User document does not exist for UID ${firebaseUser.uid}. Creating new user document.`);
-            console.log(`[${new Date().toISOString()}] AuthContext: Creating new user document for ${firebaseUser.uid}.`);
-            const newUser: User = {
-              id: firebaseUser.uid, email: firebaseUser.email!, name: firebaseUser.displayName || "New User",
-              sharedAccessStatus: 'no_pass_initiated', hostPassStatus: 'no_pass_initiated', viewedSharedMemoryIds: [], storageUsedBytes: 0,
-            };
-            await setDoc(userDocRef, { ...newUser, createdAt: serverTimestamp() });
-            setUser(newUser);
+             // This case is unlikely if registration is handled correctly, but good for resilience.
+             console.log(`AuthContext: User document does not exist for UID ${firebaseUser.uid}. This might happen on first registration before doc is created.`);
           }
-          console.log("AuthContext: Cleaning up user document onSnapshot listener.");
-          unsubscribeUser();
-        }
+        });
+
+        // Detach the user listener when the auth state changes (e.g., on logout)
+        return () => {
+           console.log("AuthContext: Cleaning up user document onSnapshot listener.");
+           unsubscribeUser();
+        };
+
       } else {
         console.log("AuthContext: Auth state changed. No user found.");
         setUser(null);
         setMemories([]);
         setCompletedPromptIds(new Set());
         setFlaggedPromptIds(new Set());
-        console.log(`[${new Date().toISOString()}] AuthContext: No user, setting isLoading and isDataLoading to false.`);
-        setIsLoading(false); // Auth is done, no user, so stop loading.
-        setIsDataLoading(false); // No data to load.
+        setIsLoading(false); 
+        setIsDataLoading(false);
       }
     });
+
     return () => {
-      console.log(`[${new Date().toISOString()}] AuthContext: Cleaning up onAuthStateChanged listener.`);
+      console.log("AuthContext: Cleaning up onAuthStateChanged listener.");
       unsubscribeAuth();
     }
-  }, [updateUserProfileInFirestore]);
+  }, []);
 
   // Data fetching listeners that depend on user.id
   useEffect(() => {
-    if (!user?.id) { console.log(`[${new Date().toISOString()}] AuthContext: No user ID, skipping data listeners setup.`);
+    if (!user?.id) {
       if (!loading) { 
         setIsDataLoading(false);
       }
@@ -161,11 +146,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     
     console.log(`AuthContext: User ID ${user.id} found. Setting up data listeners.`);
-    console.log(`[${new Date().toISOString()}] AuthContext: User ID ${user.id} found. Setting up data listeners.`);
-    setIsDataLoading(true); console.log(`[${new Date().toISOString()}] AuthContext: Setting isDataLoading to true.`);
+    setIsDataLoading(true);
+
+    const checkAndUpdatePassStatuses = async () => {
+        const now = new Date();
+        let updatesToSave: Partial<User> = {};
+        if (user.sharedAccessStatus === 'free_pass_active' && user.freePassActivatedDate && isBefore(addMonths(parseISO(user.freePassActivatedDate), 6), now)) updatesToSave.sharedAccessStatus = 'free_pass_expired';
+        if (user.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate && isBefore(parseISO(user.paidPassExpiryDate), now)) updatesToSave.sharedAccessStatus = 'paid_pass_expired';
+        if (user.hostPassStatus === 'free_host_pass_active' && user.freeHostPassActivatedDate && isBefore(addMonths(parseISO(user.freeHostPassActivatedDate), 6), now)) updatesToSave.hostPassStatus = 'free_host_pass_expired';
+        if (user.hostPassStatus === 'paid_host_pass_active' && user.paidHostPassExpiryDate && isBefore(parseISO(user.paidHostPassExpiryDate), now)) updatesToSave.hostPassStatus = 'paid_host_pass_expired';
+        if (Object.keys(updatesToSave).length > 0) {
+          console.log(`AuthContext: Updating expired pass statuses for ${user.id}.`, updatesToSave);
+          await updateUserProfileInFirestore(user.id, updatesToSave);
+        }
+    };
+    checkAndUpdatePassStatuses();
 
     const memoriesQuery = query(collection(db, "users", user.id, "memories"), orderBy('date', 'desc'));
-    const unsubscribeMemories = onSnapshot(memoriesQuery, (snapshot) => { console.log(`[${new Date().toISOString()}] AuthContext: Memories snapshot received for user ${user.id}. ${snapshot.docs.length} documents found.`);
+    const unsubscribeMemories = onSnapshot(memoriesQuery, (snapshot) => {
       console.log(`AuthContext: Memories snapshot received. ${snapshot.docs.length} documents found.`);
       const fetchedMemories = snapshot.docs.map(docSnap => {
         const data = docSnap.data();
@@ -181,53 +179,61 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const hasNew = fetchedMemories.some(mem => !viewedIds.has(mem.id));
       setHasNewSharedMemories(hasNew);
       
-      console.log(`[${new Date().toISOString()}] AuthContext: Memories data processed for user ${user.id}. Setting isDataLoading to false.`);
+      console.log("AuthContext: Memories data processed. Setting isDataLoading to false.");
       setIsDataLoading(false); // Data is loaded
-    }, (error) => { console.error(`[${new Date().toISOString()}] AuthContext: Error listening to memories for user ${user.id}:`, error);
+    }, (error) => {
         console.error("AuthContext: Error listening to memories:", error);
         toast({ title: "Data Error", description: "Could not load memories. Please refresh.", variant: "destructive"});
-        setIsLoading(false); // Stop loading on error
         setIsDataLoading(false); 
     });
 
     const promptFlagsDocRef = doc(db, 'userPromptFlags', user.id);
-    const unsubscribePrompts = onSnapshot(promptFlagsDocRef, (docSnap) => { console.log(`[${new Date().toISOString()}] AuthContext: Prompt flags snapshot received for user ${user.id}.`);
-      console.log(`[${new Date().toISOString()}] AuthContext: Prompt flags snapshot received.`);
+    const unsubscribePrompts = onSnapshot(promptFlagsDocRef, (docSnap) => {
+      console.log("AuthContext: Prompt flags snapshot received.");
       setFlaggedPromptIds(new Set(Object.entries(docSnap.data() || {}).filter(([, v]) => v === true).map(([k]) => k)));
-    }, (error) => console.error(`[${new Date().toISOString()}] AuthContext: Error listening to prompt flags for user ${user.id}:`, error));
+    }, (error) => console.error("AuthContext: Error listening to prompt flags:", error));
 
     return () => {
-      console.log(`[${new Date().toISOString()}] AuthContext: Cleaning up data listeners for user ${user.id}.`);
+      console.log(`AuthContext: Cleaning up data listeners for user ${user.id}.`);
       unsubscribeMemories();
       unsubscribePrompts();
     };
-  }, [user?.id, user?.viewedSharedMemoryIds]);
+  }, [user?.id, user?.viewedSharedMemoryIds, updateUserProfileInFirestore, loading]);
 
 
   // Navigation Logic
   useEffect(() => {
-    if (isLoading) { console.log(`[${new Date().toISOString()}] AuthContext: Navigation check deferred - isLoading is true.`); return; }
-    console.log(`[${new Date().toISOString()}] AuthContext: Navigation check. Path: ${pathname}, IsAuthenticated: ${!!user}.`);
-    const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
-    const isPublic = publicPaths.some(path => pathname.startsWith(path));
-    if (user && isPublic) {
-      const destination = userMode === 'host' ? '/prompts' : '/timeline';
-      console.log(`[${new Date().toISOString()}] AuthContext: Authenticated user on public page. Redirecting to ${destination}.`);
-      router.push(destination);
-    } else if (!user && !isPublic) { console.log(`[${new Date().toISOString()}] AuthContext: Unauthenticated user on private page. Redirecting to /login.`);
-      console.log("AuthContext: Unauthenticated user on private page. Redirecting to /login.");
-      router.push('/login');
+    // This effect now combines loading state management with navigation
+    if (loading && !isDataLoading) {
+        setIsLoading(false);
     }
-  }, [user, loading, pathname, router, userMode]);
+    
+    // The navigation logic should only run once the loading is complete.
+    if (!loading) {
+      console.log(`AuthContext: Navigation check. Path: ${pathname}, IsAuthenticated: ${!!user}.`);
+      const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
+      const isPublic = publicPaths.some(path => pathname.startsWith(path));
+      if (user && isPublic) {
+        const destination = userMode === 'host' ? '/prompts' : '/timeline';
+        console.log(`AuthContext: Authenticated user on public page. Redirecting to ${destination}.`);
+        router.push(destination);
+      } else if (!user && !isPublic) {
+        console.log("AuthContext: Unauthenticated user on private page. Redirecting to /login.");
+        router.push('/login');
+      }
+    }
+  }, [user, loading, isDataLoading, pathname, router, userMode]);
 
   // Memoized Functions for Context API
 
   const login = useCallback(async (email: string, password: string): Promise<void> => {
     try {
-      console.log(`[${new Date().toISOString()}] AuthContext: Attempting to log in user with email: ${email}.`);
+      console.log(`AuthContext: Attempting to log in user with email: ${email}.`);
+      setIsLoading(true); // Start loading on login attempt
       await signInWithEmailAndPassword(auth, email, password);
       toast({ title: "Login Successful", description: "Welcome back!" });
     } catch (error: any) {
+      setIsLoading(false); // Stop loading on failure
       toast({ title: "Login Failed", description: error.message || "Invalid email or password.", variant: "destructive" });
       throw error;
     }
@@ -235,10 +241,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const register = useCallback(async (name: string, email: string, password: string): Promise<void> => {
     try {
-      console.log(`[${new Date().toISOString()}] AuthContext: Attempting to register user with email: ${email}.`);
+      console.log(`AuthContext: Attempting to register user with email: ${email}.`);
+      setIsLoading(true); // Start loading on register attempt
       const cred = await createUserWithEmailAndPassword(auth, email, password);
-      const newUser: User = {
-          id: cred.user.uid,
+      const newUser: Omit<User, 'id'> = {
           email: email,
           name: name,
           sharedAccessStatus: 'no_pass_initiated',
@@ -249,6 +255,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await setDoc(doc(db, "users", cred.user.uid), { ...newUser, createdAt: serverTimestamp() });
       toast({ title: "Registration Successful", description: "Welcome! Your account has been created." });
     } catch (error: any) {
+      setIsLoading(false); // Stop loading on failure
       toast({ title: "Registration Failed", description: error.message || "Could not create account.", variant: "destructive" });
       throw error;
     }
@@ -256,11 +263,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = useCallback(async () => {
     try {
-      console.log(`[${new Date().toISOString()}] AuthContext: Attempting to log out user.`);
+      console.log("AuthContext: Attempting to log out user.");
       await firebaseSignOut(auth);
       setUserModeState('host');
       setGuestPassPriceDetails(null);
       setHostPassPriceDetails(null);
+      setIsLoading(true); // Reset loading state for next login
       router.push('/');
     } catch (error: any) {
       toast({ title: "Logout Failed", variant: "destructive" });
@@ -327,7 +335,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchGuestPassPrice = useCallback(async () => {
     if (isFetchingGuestPassPrice || guestPassPriceDetails || !user) return;
-    console.log(`[${new Date().toISOString()}] AuthContext: Fetching guest pass price for user ${user.id}.`);
     setIsFetchingGuestPassPrice(true);
     try {
       const priceData = await getGuestPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
@@ -339,7 +346,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchHostPassPrice = useCallback(async () => {
     if (isFetchingHostPassPrice || hostPassPriceDetails || !user) return;
-    console.log(`[${new Date().toISOString()}] AuthContext: Fetching host pass price for user ${user.id}.`);
     setIsFetchingHostPassPrice(true);
     try {
       const priceData = await getHostPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
@@ -355,22 +361,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else if (user && userMode === 'host' && (user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired')) {
         fetchHostPassPrice();
     }
-
-    // Once both auth (user state) and data (isDataLoading) are resolved, turn off global loader
-    if (!user) {
-        console.log(`[${new Date().toISOString()}] AuthContext: User is null. Setting isLoading to false.`);
-        setIsLoading(false);
-    } else if (!isDataLoading) {
-        console.log(`[${new Date().toISOString()}] AuthContext: User exists and data is loaded. Setting isLoading to false.`);
-        setIsLoading(false);
-    }
   }, [user, userMode, fetchGuestPassPrice, fetchHostPassPrice]);
 
   // --- Final Context Value ---
   const contextValue = useMemo(() => ({
-      isAuthenticated: !!user, // This still works fine to indicate if *a* user object exists
+      isAuthenticated: !!user,
       user,
-      login, register, logout, loading,
+      login, register, logout,
       pendingRequestCount, setPendingRequestCount: setPendingRequestCountState,
       userMode, toggleUserMode: () => setUserModeState(p => p === 'host' ? 'guest' : 'host'), setUserMode: setUserModeState,
       activateFreeGuestPass, purchasePaidGuestPass,
@@ -385,11 +382,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       getLatestMemories: () => memories,
       completedPromptIds,
       flaggedPromptIds,
-      isDataLoading, // Keep this to show specific data loading states if needed later
-      isLoading, // Expose the new combined loading state
+      isDataLoading,
+      loading,
       markSharedMemoryAsViewed,
       hasNewSharedMemories,
-  }), [ // Depend on everything that goes into contextValue
+  }), [ 
       user, loading, pendingRequestCount, userMode,
       guestPassPriceDetails, isFetchingGuestPassPrice, hostPassPriceDetails, isFetchingHostPassPrice,
       memories, completedPromptIds, flaggedPromptIds, isDataLoading, hasNewSharedMemories,
@@ -399,20 +396,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       calculateAndUpdateStorageUsage, updateUserProfileInFirestore
   ]);
 
-  if (loading) {
-    return (
-       <div className="flex h-screen w-screen items-center justify-center bg-background">
-          <div className="flex flex-col items-center text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-            <p className="text-lg font-headline text-muted-foreground">Loading Memory Weaver...</p>
-          </div>
-       </div>
-    );
-  }
-
   return (
     <AuthContext.Provider value={contextValue}>
-      {children}
+      {loading ? <SplashScreen /> : children}
     </AuthContext.Provider>
   );
 };
