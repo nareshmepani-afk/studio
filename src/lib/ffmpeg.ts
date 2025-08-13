@@ -1,6 +1,6 @@
 
 // src/lib/ffmpeg.ts
-// This file handles loading ffmpeg.wasm files from the official CDN and providing helper functions.
+// This file handles loading ffmpeg.wasm files from a local path and providing helper functions.
 
 // Define a minimal interface for the parts of FFmpeg we use
 interface FFmpeg {
@@ -24,15 +24,12 @@ declare global {
 let ffmpegInstance: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
-const CDN_BASE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-
 // This function polls until the FFmpeg script has fully initialized on the window object.
 const waitForFFmpegReady = (timeout = 30000): Promise<void> => {
   console.log("ffmpeg.ts: waitForFFmpegReady() called.");
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
     const interval = setInterval(() => {
-      console.log("ffmpeg.ts: Polling for window.FFmpeg. Current value:", window.FFmpeg);
       if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
         console.log("ffmpeg.ts: window.FFmpeg.createFFmpeg is available.");
         clearInterval(interval);
@@ -68,11 +65,12 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       console.log("ffmpeg.ts: createFFmpeg function retrieved from window. Creating instance.");
       const ffmpeg = createFFmpeg({ log: false });
       
-      console.log("ffmpeg.ts: Calling ffmpeg.load() with CDN paths...");
+      const localBaseUrl = '/ffmpeg';
+      console.log(`ffmpeg.ts: Calling ffmpeg.load() with local paths from ${localBaseUrl}...`);
       await ffmpeg.load({
-         coreURL: `${CDN_BASE_URL}/ffmpeg-core.js`,
-         wasmURL: `${CDN_BASE_URL}/ffmpeg-core.wasm`,
-         workerURL: `${CDN_BASE_URL}/ffmpeg-core.worker.js`,
+         coreURL: `${localBaseUrl}/ffmpeg-core.js`,
+         wasmURL: `${localBaseUrl}/ffmpeg-core.wasm`,
+         workerURL: `${localBaseUrl}/ffmpeg-core.worker.js`,
       });
       console.log("ffmpeg.ts: ffmpeg.load() completed successfully.");
 
