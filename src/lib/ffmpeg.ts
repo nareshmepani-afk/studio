@@ -27,12 +27,12 @@ let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 const CDN_BASE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
 
 // This function polls until the FFmpeg script has fully initialized on the window object.
-const waitForFFmpegReady = (timeout = 10000): Promise<void> => {
+const waitForFFmpegReady = (timeout = 30000): Promise<void> => {
   console.log("ffmpeg.ts: waitForFFmpegReady() called.");
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
     const interval = setInterval(() => {
- console.log("ffmpeg.ts: Polling for window.FFmpeg. Current value:", window.FFmpeg);
+      console.log("ffmpeg.ts: Polling for window.FFmpeg. Current value:", window.FFmpeg);
       if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
         console.log("ffmpeg.ts: window.FFmpeg.createFFmpeg is available.");
         clearInterval(interval);
@@ -68,11 +68,11 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       console.log("ffmpeg.ts: createFFmpeg function retrieved from window. Creating instance.");
       const ffmpeg = createFFmpeg({ log: false });
       
-      console.log("ffmpeg.ts: Calling ffmpeg.load()...");
+      console.log("ffmpeg.ts: Calling ffmpeg.load() with CDN paths...");
       await ffmpeg.load({
-         corePath: '/ffmpeg/ffmpeg-core.js',
-         workerPath: '/ffmpeg/ffmpeg-core.worker.js',
-         wasmPath: '/ffmpeg/ffmpeg-core.wasm',
+         coreURL: `${CDN_BASE_URL}/ffmpeg-core.js`,
+         wasmURL: `${CDN_BASE_URL}/ffmpeg-core.wasm`,
+         workerURL: `${CDN_BASE_URL}/ffmpeg-core.worker.js`,
       });
       console.log("ffmpeg.ts: ffmpeg.load() completed successfully.");
 
@@ -91,8 +91,6 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 }
 
 export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8Array> => {
-    // No need to call getFFmpegInstance here, as it will be called by the functions that need it.
-    // We just need to ensure the global fetchFile function is available.
     await waitForFFmpegReady();
     if (typeof window.FFmpeg === 'undefined' || !window.FFmpeg.fetchFile) {
          throw new Error("FFmpeg script or fetchFile is not available.");
