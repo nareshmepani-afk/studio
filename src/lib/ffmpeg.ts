@@ -1,6 +1,6 @@
 
 // src/lib/ffmpeg.ts
-// This file handles loading ffmpeg.wasm files from a remote CDN and providing helper functions.
+// This file handles loading FFmpeg.wasm files from a local path and providing helper functions.
 
 // Define a minimal interface for the parts of FFmpeg we use
 interface FFmpeg {
