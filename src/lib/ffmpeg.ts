@@ -1,6 +1,6 @@
 
 // src/lib/ffmpeg.ts
-// This file handles loading ffmpeg.wasm files from a local path and providing helper functions.
+// This file handles loading ffmpeg.wasm files from a remote CDN and providing helper functions.
 
 // Define a minimal interface for the parts of FFmpeg we use
 interface FFmpeg {
@@ -65,14 +65,14 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       console.log("ffmpeg.ts: createFFmpeg function retrieved from window. Creating instance.");
       const ffmpeg = createFFmpeg({ log: false });
       
-      const localBaseUrl = '/ffmpeg';
-      console.log(`ffmpeg.ts: Calling ffmpeg.load() with local paths from ${localBaseUrl}...`);
+      const CDN_BASE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      console.log(`ffmpeg.ts: Calling ffmpeg.load() with remote CDN paths from ${CDN_BASE_URL}...`);
       await ffmpeg.load({
-         coreURL: `${localBaseUrl}/ffmpeg-core.js`,
-         wasmURL: `${localBaseUrl}/ffmpeg-core.wasm`,
-         workerURL: `${localBaseUrl}/ffmpeg-core.worker.js`,
+         coreURL: `${CDN_BASE_URL}/ffmpeg-core.js`,
+         wasmURL: `${CDN_BASE_URL}/ffmpeg-core.wasm`,
+         workerURL: `${CDN_BASE_URL}/ffmpeg-core.worker.js`,
       });
-      console.log("ffmpeg.ts: ffmpeg.load() completed successfully.");
+      console.log("ffmpeg.ts: ffmpeg.load() completed successfully from CDN.");
 
       ffmpegInstance = ffmpeg;
       ffmpegLoadingPromise = null;
