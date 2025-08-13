@@ -65,14 +65,14 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       console.log("ffmpeg.ts: createFFmpeg function retrieved from window. Creating instance.");
       const ffmpeg = createFFmpeg({ log: false });
       
-      const CDN_BASE_URL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-      console.log(`ffmpeg.ts: Calling ffmpeg.load() with remote CDN paths from ${CDN_BASE_URL}...`);
+      const LOCAL_BASE_URL = '/ffmpeg';
+      console.log(`ffmpeg.ts: Calling ffmpeg.load() with local paths from ${LOCAL_BASE_URL}...`);
       await ffmpeg.load({
-         coreURL: `${CDN_BASE_URL}/ffmpeg-core.js`,
-         wasmURL: `${CDN_BASE_URL}/ffmpeg-core.wasm`,
-         workerURL: `${CDN_BASE_URL}/ffmpeg-core.worker.js`,
+         coreURL: `${LOCAL_BASE_URL}/ffmpeg-core.js`,
+         wasmURL: `${LOCAL_BASE_URL}/ffmpeg-core.wasm`,
+         workerURL: `${LOCAL_BASE_URL}/ffmpeg-core.worker.js`,
       });
-      console.log("ffmpeg.ts: ffmpeg.load() completed successfully from CDN.");
+      console.log("ffmpeg.ts: ffmpeg.load() completed successfully from local paths.");
 
       ffmpegInstance = ffmpeg;
       ffmpegLoadingPromise = null;
