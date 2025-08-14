@@ -65,7 +65,7 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       console.log("ffmpeg.ts: createFFmpeg function retrieved from window. Creating instance.");
       const ffmpeg = createFFmpeg({ log: false });
       
-      const LOCAL_BASE_URL = '/ffmpeg';
+      const LOCAL_BASE_URL = '/api/ffmpeg';
       console.log(`ffmpeg.ts: Calling ffmpeg.load() with local paths from ${LOCAL_BASE_URL}...`);
       await ffmpeg.load({
          coreURL: `${LOCAL_BASE_URL}/ffmpeg-core.js`,
