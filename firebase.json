@@ -1,22 +1,15 @@
 
 {
   "hosting": {
-    "public": "public",
+    "source": ".",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
-    "rewrites": [
-      {
-        "source": "**",
-        "apphosting": "memory-weaver-8rk9t"
-      }
-    ]
-  },
-  "apphosting": {
-    "memory-weaver-8rk9t": {
-      "location": "us-central1"
+    "frameworksBackend": {
+      "id": "memory-weaver-8rk9t",
+      "region": "us-central1"
     }
   }
 }
