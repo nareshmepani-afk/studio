@@ -1,7 +1,7 @@
 
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { initializeAuth, getAuth, browserLocalPersistence, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getFirestore, type Firestore, initializeFirestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -21,7 +21,10 @@ const auth: Auth = initializeAuth(app, {
   persistence: browserLocalPersistence
 });
 
-const db: Firestore = getFirestore(app);
+// Use initializeFirestore to apply experimental settings
+const db: Firestore = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+});
 const storage: FirebaseStorage = getStorage(app);
 
 export { app, auth, db, storage };
