@@ -25,7 +25,7 @@ let ffmpegInstance: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
 // This function polls until the FFmpeg script has fully initialized on the window object.
-const waitForFFmpegReady = (timeout = 300000): Promise<void> => {
+const waitForFFmpegReady = (timeout = 60000): Promise<void> => {
   console.log("ffmpeg.ts: waitForFFmpegReady() called.");
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
