@@ -18,3 +18,5 @@ headers:
         value: "require-corp"
       - key: "Cross-Origin-Opener-Policy"
         value: "same-origin"
+      - key: "Cache-Control"
+        value: "no-cache, no-store, must-revalidate"
