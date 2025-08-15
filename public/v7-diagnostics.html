@@ -24,8 +24,9 @@
         .log-info { color: #5f6368; }
         .log-step { color: #1a73e8; font-weight: bold; margin-top: 8px; display: block; }
     </style>
-    <!-- Static script tag to load ffmpeg.js from the SSR proxy -->
-    <script src="/api/ffmpeg/ffmpeg.js"></script>
+    <!-- Static script tag to load ffmpeg.js from the SSR proxy with cache busting -->
+    <script src="/api/ffmpeg/ffmpeg.js?v=TIMESTAMP"></script>
+    <!-- Replace TIMESTAMP with a unique value for each deployment -->
 </head>
 <body>
     <h1>FFmpeg Diagnostics - V7</h1>
@@ -58,37 +59,46 @@
                 logToPage("This is the most likely reason FFmpeg cannot run. The server must send headers: 'Cross-Origin-Opener-Policy: same-origin' and 'Cross-Origin-Embedder-Policy: require-corp'", 'error');
             }
 
-            // --- Step 2: Check for window.FFmpeg object (now loaded via static tag) ---
+            // --- Step 2: Check for window.FFmpeg object after static script load (with delay) ---
             logToPage('Step 2: Checking for window.FFmpeg object after static script load...', 'step');
-            if (typeof window.FFmpeg === 'undefined' || typeof window.FFmpeg.createFFmpeg === 'undefined') {
-                logToPage('FATAL: The FFmpeg script loaded but did not define window.FFmpeg.createFFmpeg. This indicates a problem with the script itself or the environment it\'s running in.', 'error');
-                 logToPage('Ensure /api/ffmpeg/ffmpeg.js was loaded with correct Cross-Origin Isolation headers.', 'error');
-                return; // Cannot proceed
-            } else {
-                logToPage('SUCCESS: window.FFmpeg.createFFmpeg object is defined.', 'success');
-            }
 
-            // --- Step 3: Attempt to create and load the FFmpeg core ---\n // Renamed from Step 4
-            logToPage('Step 3: Attempting to create and load FFmpeg core from API route... (This may take a moment)', 'step');
-            try {
-                const { createFFmpeg } = window.FFmpeg;
-                const ffmpeg = createFFmpeg({ log: false }); // Disable logs to keep our output clean
-                await ffmpeg.load({
-                    coreURL: '/api/ffmpeg/ffmpeg-core.js',
-                    wasmURL: '/api/ffmpeg/ffmpeg-core.wasm',
-                    workerURL: '/api/ffmpeg/ffmpeg-core.worker.js',
-                });
-                logToPage('SUCCESS: FFmpeg core loaded successfully!', 'success');
-                logToPage('FINAL CONCLUSION: Your browser environment appears CAPABLE of running FFmpeg!', 'success');
-            } catch (err) {
-                logToPage('FATAL: Failed during ffmpeg.load() execution.', 'error');
-                logToPage(`Error details: ${err.message}`, 'error');
-                logToPage('This usually confirms the lack of Cross-Origin Isolation is blocking the WASM module, or a problem with loading core files from /api/ffmpeg/.', 'error');
-            }
+            // Add a small delay before checking
+            setTimeout(() => {
+                if (typeof window.FFmpeg === 'undefined' || typeof window.FFmpeg.createFFmpeg === 'undefined') {
+                    logToPage('FATAL: The FFmpeg script loaded but did not define window.FFmpeg.createFFmpeg. This indicates a problem with the script itself or the environment it\'s running in.', 'error');
+                     logToPage('Ensure /api/ffmpeg/ffmpeg.js was loaded with correct Cross-Origin Isolation headers.', 'error');
+                } else {
+                    logToPage('SUCCESS: window.FFmpeg.createFFmpeg object is defined.', 'success');
+                    // Proceed to Step 3 if successful
+                    runStep3And4();
+                }
+            }, 500); // 500ms delay
+
+           // Create a new function for Step 3 and 4
+           async function runStep3And4() {
+               // --- Step 3: Attempt to create and load the FFmpeg core ---
+               logToPage('Step 3: Attempting to create and load FFmpeg core from API route... (This may take a moment)', 'step');
+               try {
+                   const { createFFmpeg } = window.FFmpeg;
+                   const ffmpeg = createFFmpeg({ log: false });
+                   await ffmpeg.load({
+                       coreURL: '/api/ffmpeg/ffmpeg-core.js?v=TIMESTAMP', // Add cache busting
+                       wasmURL: '/api/ffmpeg/ffmpeg-core.wasm?v=TIMESTAMP', // Add cache busting
+                       workerURL: '/api/ffmpeg/ffmpeg-core.worker.js?v=TIMESTAMP', // Add cache busting
+                   });
+                   logToPage('SUCCESS: FFmpeg core loaded successfully!', 'success');
+                   logToPage('FINAL CONCLUSION: Your browser environment appears CAPABLE of running FFmpeg!', 'success');
+               } catch (err) {
+                   logToPage('FATAL: Failed during ffmpeg.load() execution.', 'error');
+                   logToPage(`Error details: ${err.message}`, 'error');
+                   logToPage('This usually confirms the lack of Cross-Origin Isolation is blocking the WASM module, or a problem with loading core files from /api/ffmpeg/.', 'error');
+               }
+           }
         }
 
-        // Run diagnostics after the page has settled
+        // Initial call to run diagnostics
         setTimeout(runDiagnostics, 500);
+
     </script>
 </body>
 </html>
