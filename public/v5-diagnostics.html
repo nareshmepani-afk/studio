@@ -61,7 +61,7 @@
             try {
                 const script = document.createElement('script');
                 script.src = '/api/ffmpeg/ffmpeg.js';
-                script.async = true;
+                // script.async = true; // Removed async to potentially ensure stricter load order
                 
                 await new Promise((resolve, reject) => {
                     script.onload = resolve;
