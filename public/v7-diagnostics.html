@@ -80,7 +80,7 @@
                logToPage('Step 3: Attempting to create and load FFmpeg core from API route... (This may take a moment)', 'step');
                try {
                    const { createFFmpeg } = window.FFmpeg;
-                   const ffmpeg = createFFmpeg({ log: false });
+                   const ffmpeg = createFFmpeg({ log: true });
                    await ffmpeg.load({
                        coreURL: '/api/ffmpeg/ffmpeg-core.js?v=2025/08/15-15:04', // Add cache busting
                        wasmURL: '/api/ffmpeg/ffmpeg-core.wasm?v=2025/08/15-15:04', // Add cache busting
