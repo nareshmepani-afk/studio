@@ -57,12 +57,11 @@
             }
 
             // --- Step 2: Dynamically load the FFmpeg script from CDN ---
-            logToPage('Step 2: Attempting to dynamically load FFmpeg script from CDN...', 'step');
+            logToPage('Step 2: Attempting to dynamically load FFmpeg script from API route...', 'step');
             try {
                 const script = document.createElement('script');
                 script.src = '/api/ffmpeg/ffmpeg.js';
                 // script.async = true; // Removed async to potentially ensure stricter load order
-                
                 await new Promise((resolve, reject) => {
                     script.onload = resolve;
                     script.onerror = () => reject(new Error('FFmpeg script failed to load from CDN.'));
