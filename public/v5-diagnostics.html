@@ -60,7 +60,7 @@
             logToPage('Step 2: Attempting to dynamically load FFmpeg script from CDN...', 'step');
             try {
                 const script = document.createElement('script');
-                script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js';
+                script.src = '/api/ffmpeg/ffmpeg.js';
                 script.async = true;
                 
                 await new Promise((resolve, reject) => {
@@ -89,7 +89,11 @@
             try {
                 const { createFFmpeg } = window.FFmpeg;
                 const ffmpeg = createFFmpeg({ log: false }); // Disable logs to keep our output clean
-                await ffmpeg.load();
+                await ffmpeg.load({
+ coreURL: '/api/ffmpeg/ffmpeg-core.js',
+ wasmURL: '/api/ffmpeg/ffmpeg-core.wasm',
+ workerURL: '/api/ffmpeg/ffmpeg-core.worker.js',
+                });
                 logToPage('SUCCESS: FFmpeg core loaded successfully!', 'success');
                 logToPage('FINAL CONCLUSION: Your browser environment appears CAPABLE of running FFmpeg!', 'success');
             } catch (err) {
