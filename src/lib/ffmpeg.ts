@@ -68,9 +68,9 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       const LOCAL_BASE_URL = '/api/ffmpeg';
       console.log(`ffmpeg.ts: Calling ffmpeg.load() with local paths from ${LOCAL_BASE_URL}...`);
       await ffmpeg.load({
- coreURL: `${LOCAL_BASE_URL}/ffmpeg-core.js?v=2025/08/16-13.00`,
- wasmURL: `${LOCAL_BASE_URL}/ffmpeg-core.wasm?v=2025/08/16-13.00`,
- workerURL: `${LOCAL_BASE_URL}/ffmpeg-core.worker.js?v=2025/08/16-13.00`,
+ coreURL: `${LOCAL_BASE_URL}/ffmpeg-core.js?v=2025/08/16-14.06`,
+ wasmURL: `${LOCAL_BASE_URL}/ffmpeg-core.wasm?v=2025/08/16-14.06`,
+ workerURL: `${LOCAL_BASE_URL}/ffmpeg-core.worker.js?v=2025/08/16-14.06`,
       });
       console.log("ffmpeg.ts: ffmpeg.load() completed successfully from local paths.");
 
