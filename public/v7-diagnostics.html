@@ -25,8 +25,7 @@
         .log-step { color: #1a73e8; font-weight: bold; margin-top: 8px; display: block; }
     </style>
     <!-- Static script tag to load ffmpeg.js from the SSR proxy with cache busting -->
-    <script src="/api/ffmpeg/ffmpeg.js?v=2025/08/15-15:04"></script>
-    <!-- Replace TIMESTAMP with a unique value for each deployment -->
+    <script src="/api/ffmpeg/ffmpeg.js?v=2025/08/16-14.06"></script>
 </head>
 <body>
     <h1>FFmpeg Diagnostics - V7</h1>
@@ -59,16 +58,16 @@
                 logToPage("This is the most likely reason FFmpeg cannot run. The server must send headers: 'Cross-Origin-Opener-Policy: same-origin' and 'Cross-Origin-Embedder-Policy: require-corp'", 'error');
             }
 
-            // --- Step 2: Check for window.FFmpeg object after static script load (with delay) ---
-            logToPage('Step 2: Checking for window.FFmpeg object after static script load...', 'step');
+            // --- Step 2: Check for window.FFmpegWASM object after static script load (with delay) ---
+            logToPage('Step 2: Checking for window.FFmpegWASM object after static script load...', 'step'); // Updated log
 
             // Add a small delay before checking
             setTimeout(() => {
-                if (typeof window.FFmpeg === 'undefined' || typeof window.FFmpeg.createFFmpeg === 'undefined') {
-                    logToPage('FATAL: The FFmpeg script loaded but did not define window.FFmpeg.createFFmpeg. This indicates a problem with the script itself or the environment it\'s running in.', 'error');
+                if (typeof window.FFmpegWASM === 'undefined' || typeof window.FFmpegWASM.createFFmpeg === 'undefined') { // Changed to FFmpegWASM
+                    logToPage('FATAL: The FFmpeg script loaded but did not define window.FFmpegWASM.createFFmpeg. This indicates a problem with the script itself or the environment it\'s running in.', 'error'); // Updated log
                      logToPage('Ensure /api/ffmpeg/ffmpeg.js was loaded with correct Cross-Origin Isolation headers.', 'error');
                 } else {
-                    logToPage('SUCCESS: window.FFmpeg.createFFmpeg object is defined.', 'success');
+                    logToPage('SUCCESS: window.FFmpegWASM.createFFmpeg object is defined.', 'success'); // Updated log
                     // Proceed to Step 3 if successful
                     runStep3And4();
                 }
@@ -79,12 +78,12 @@
                // --- Step 3: Attempt to create and load the FFmpeg core ---
                logToPage('Step 3: Attempting to create and load FFmpeg core from API route... (This may take a moment)', 'step');
                try {
-                   const { createFFmpeg } = window.FFmpeg;
+                   const { createFFmpeg } = window.FFmpegWASM; // Changed to FFmpegWASM
                    const ffmpeg = createFFmpeg({ log: true });
                    await ffmpeg.load({
-                       coreURL: '/api/ffmpeg/ffmpeg-core.js?v=2025/08/15-15:04', // Add cache busting
-                       wasmURL: '/api/ffmpeg/ffmpeg-core.wasm?v=2025/08/15-15:04', // Add cache busting
-                       workerURL: '/api/ffmpeg/ffmpeg-core.worker.js?v=2025/08/15-15:04', // Add cache busting
+                       coreURL: '/api/ffmpeg/ffmpeg-core.js?v=2025/08/16-14.06', // Updated cache busting
+                       wasmURL: '/api/ffmpeg/ffmpeg-core.wasm?v=2025/08/16-14.06', // Updated cache busting
+                       workerURL: '/api/ffmpeg/ffmpeg-core.worker.js?v=2025/08/16-14.06', // Updated cache busting
                    });
                    logToPage('SUCCESS: FFmpeg core loaded successfully!', 'success');
                    logToPage('FINAL CONCLUSION: Your browser environment appears CAPABLE of running FFmpeg!', 'success');
