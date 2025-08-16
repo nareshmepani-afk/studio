@@ -19,11 +19,11 @@ export async function GET(
     // Determine the content type based on file extension
     let contentType = 'application/octet-stream'; // Default
     if (filePath.endsWith('.js')) {
-      contentType = 'application/javascript';
+      contentType = 'application/javascript; charset=utf-8';
     } else if (filePath.endsWith('.wasm')) {
       contentType = 'application/wasm';
     } else if (filePath.endsWith('.worker.js')) {
-        contentType = 'application/javascript'; // Workers are also JS
+        contentType = 'application/javascript; charset=utf-8'; // Workers are also JS
     }
 
     // Set the necessary headers for Cross-Origin Isolation and caching
