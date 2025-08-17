@@ -25,7 +25,7 @@
         .log-step { color: #1a73e8; font-weight: bold; margin-top: 8px; display: block; }
     </style>
     <!-- Static script tag to load ffmpeg.js from the SSR proxy with cache busting -->
-    <script src="/api/ffmpeg/ffmpeg.js?v=2025/08/16-14.06"></script>
+    <script src="/api/ffmpeg/ffmpeg.js?v=2025/08/17-09.06"></script>
 </head>
 <body>
     <h1>FFmpeg Diagnostics - V7</h1>
@@ -81,9 +81,9 @@
                    const { createFFmpeg } = window.FFmpegWASM; // Changed to FFmpegWASM
                    const ffmpeg = createFFmpeg({ log: true });
                    await ffmpeg.load({
-                       coreURL: '/api/ffmpeg/ffmpeg-core.js?v=2025/08/16-14.06', // Updated cache busting
-                       wasmURL: '/api/ffmpeg/ffmpeg-core.wasm?v=2025/08/16-14.06', // Updated cache busting
-                       workerURL: '/api/ffmpeg/ffmpeg-core.worker.js?v=2025/08/16-14.06', // Updated cache busting
+                       coreURL: '/api/ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06', // Updated cache busting
+                       wasmURL: '/api/ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06', // Updated cache busting
+                       workerURL: '/api/ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06', // Updated cache busting
                    });
                    logToPage('SUCCESS: FFmpeg core loaded successfully!', 'success');
                    logToPage('FINAL CONCLUSION: Your browser environment appears CAPABLE of running FFmpeg!', 'success');
