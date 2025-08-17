@@ -1,4 +1,3 @@
-
 // src/lib/ffmpeg.ts
 // This file handles loading FFmpeg.wasm files from a local path and providing helper functions.
 
@@ -64,7 +63,7 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       const { createFFmpeg } = window.FFmpegWASM;
       console.log("ffmpeg.ts: createFFmpeg function retrieved from window.FFmpegWASM. Creating instance.");
       const ffmpeg = createFFmpeg({ log: false });
-      
+
       const LOCAL_BASE_URL = '/api/ffmpeg';
       console.log(`ffmpeg.ts: Calling ffmpeg.load() with local paths from ${LOCAL_BASE_URL}...`);
       await ffmpeg.load({
@@ -146,7 +145,7 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
         if (duration <= 0) {
             throw new Error("trimMediaWithFFmpeg: End time must be after start time for trimming.");
         }
-        
+
         await ffmpeg.run(
             '-ss', startTime.toString(),
             '-i', inputFilename,
