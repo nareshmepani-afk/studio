@@ -59,18 +59,18 @@
             }
 
             // --- Step 2: Check for window.FFmpegWASM object after static script load (with delay) ---
-            logToPage('Step 2: Checking for window.FFmpegWASM object after static script load...', 'step'); // Updated log
+            logToPage('Step 2: Checking for window.FFmpeg object after static script load...', 'step');
 
             // Add a small delay before checking
             setTimeout(() => { // Add a small delay before checking
-                if (typeof window.FFmpegWASM === 'undefined' || typeof window.FFmpegWASM.createFFmpeg === 'undefined') { // Changed to FFmpegWASM
-                    logToPage('FATAL: The FFmpeg script loaded but did not define window.FFmpegWASM.createFFmpeg. This indicates a problem with the script itself or the environment it\'s running in.', 'error'); // Updated log
+                if (typeof window.FFmpeg === 'undefined' || typeof window.FFmpeg.createFFmpeg === 'undefined') {
+                    logToPage('FATAL: The FFmpeg script loaded but did not define window.FFmpeg.createFFmpeg. This indicates a problem with the script itself or the environment it\'s running in.', 'error');
                      logToPage('Ensure /api/ffmpeg/ffmpeg.js was loaded with correct Cross-Origin Isolation headers.', 'error');
                 } else {
-                    logToPage('SUCCESS: window.FFmpegWASM.createFFmpeg object is defined.', 'success'); // Updated log
+                    logToPage('SUCCESS: window.FFmpeg.createFFmpeg object is defined.', 'success');
                     // Proceed to Step 3 if successful
                     runStep3And4();
-                                }
+                }
             }, 2000); // 2000ms delay
 
            // Create a new function for Step 3 and 4
@@ -78,7 +78,7 @@
                // --- Step 3: Attempt to create and load the FFmpeg core ---
                logToPage('Step 3: Attempting to create and load FFmpeg core from API route... (This may take a moment)', 'step');
                try {
-                   const { createFFmpeg } = window.FFmpegWASM; // Changed to FFmpegWASM
+                   const { createFFmpeg } = window.FFmpeg;
                    const ffmpeg = createFFmpeg({ log: true });
                    await ffmpeg.load({
                        coreURL: '/api/ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06', // Updated cache busting

@@ -13,9 +13,9 @@ interface FFmpeg {
 // Augment the window interface to declare the FFmpeg property
 declare global {
   interface Window {
-    FFmpegWASM: {
+    FFmpeg: {
       createFFmpeg: (options: any) => FFmpeg;
-      fetchFile?: (data: Blob | string | Uint8Array) => Promise<Uint8Array>; // fetchFile might be optional
+      fetchFile: (data: Blob | string | Uint8Array) => Promise<Uint8Array>;
     };
   }
 }
@@ -28,15 +28,15 @@ const waitForFFmpegReady = (timeout = 60000): Promise<void> => {
   console.log("ffmpeg.ts: waitForFFmpegReady() called.");
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
-    const interval = setInterval(() => { // Using setInterval for compatibility, can switch to requestAnimationFrame later if preferred
-      if (window.FFmpegWASM && typeof window.FFmpegWASM.createFFmpeg === 'function') {
-        console.log("ffmpeg.ts: window.FFmpegWASM.createFFmpeg is available.");
+    const interval = setInterval(() => {
+      if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
+        console.log("ffmpeg.ts: window.FFmpeg.createFFmpeg is available.");
         clearInterval(interval);
         resolve();
-      } else if (Date.now() - startTime > timeout) {
-        console.error("ffmpeg.ts: Timeout waiting for window.FFmpegWASM.createFFmpeg to become ready.");
+      } else if (Date.now() - startTime > timeout) { // Using setInterval for compatibility, can switch to requestAnimationFrame later if preferred
+        console.error("ffmpeg.ts: Timeout waiting for window.FFmpeg.createFFmpeg to become ready.");
         clearInterval(interval);
-        reject(new Error("window.FFmpegWASM.createFFmpeg did not become available in time."));
+        reject(new Error("window.FFmpeg.createFFmpeg did not become available in time."));
       }
     }, 100); // Check every 100ms
   });
@@ -60,8 +60,8 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       // First, ensure the script has loaded and the global object is ready.
       await waitForFFmpegReady();
 
-      const { createFFmpeg } = window.FFmpegWASM;
-      console.log("ffmpeg.ts: createFFmpeg function retrieved from window.FFmpegWASM. Creating instance.");
+      const { createFFmpeg } = window.FFmpeg;
+      console.log("ffmpeg.ts: createFFmpeg function retrieved from window.FFmpeg. Creating instance.");
       const ffmpeg = createFFmpeg({ log: false });
 
       const LOCAL_BASE_URL = '/api/ffmpeg';
@@ -89,10 +89,10 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 
 export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8Array> => {
     // No need to await waitForFFmpegReady here, getFFmpegInstance already does it
-    if (typeof window.FFmpegWASM === 'undefined' || !window.FFmpegWASM.fetchFile) {
+    if (typeof window.FFmpeg === 'undefined' || !window.FFmpeg.fetchFile) {
          throw new Error("FFmpeg script or fetchFile is not available.");
     }
-    return window.FFmpegWASM.fetchFile(data);
+    return window.FFmpeg.fetchFile(data);
 };
 
 export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
