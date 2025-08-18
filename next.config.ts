@@ -1,6 +1,7 @@
 
 import type {NextConfig} from 'next';
 
+// Forcing a new release by modifying a core config file.
 const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
