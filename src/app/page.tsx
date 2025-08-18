@@ -91,7 +91,7 @@ export default function LandingPage() {
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto">
               Weave your life's story with guided chapters, rich multimedia, and easy sharing. Preserve your legacy, one memory at a time. 
-              Start today with a complimentary 6-month Host Pass to unlock all creation features!
+              Start today with a complimentary 6-month Host Pass to unlock all creation features! Forcing a new release.
             </p>
             <div className="space-x-4">
               <Link href="/register" passHref>
