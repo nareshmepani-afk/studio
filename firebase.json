@@ -2,11 +2,6 @@
 {
   "hosting": {
     "source": ".",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
     "frameworksBackend": {
       "id": "memory-weaver-8rk9t",
       "region": "us-central1"
