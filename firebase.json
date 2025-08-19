@@ -1,6 +1,12 @@
 
 {
   "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "source": ".",
     "frameworksBackend": {
       "id": "memory-weaver-8rk9t",
