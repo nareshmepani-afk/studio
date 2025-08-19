@@ -1,0 +1,99 @@
+// This component renders the HTML content for the FFmpeg diagnostics page.
+// It is served at the /v7-diagnostics route.
+
+import { NextPage } from 'next';
+
+const DiagnosticsPage: NextPage = () => {
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FFmpeg.wasm v7 Diagnostics</title>
+  <style>
+    body { font-family: sans-serif; background: #f0f0f0; color: #333; padding: 1em; }
+    .status { padding: 0.5em; margin-bottom: 0.5em; border-radius: 4px; }
+    .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .failure { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    code { background: #e9ecef; padding: 0.2em 0.4em; border-radius: 3px; }
+    pre { background: #fff; padding: 1em; border: 1px solid #ddd; white-space: pre-wrap; word-break: break-all; }
+    h1, h2 { border-bottom: 1px solid #ccc; padding-bottom: 0.25em; }
+  </style>
+</head>
+<body>
+  <h1>FFmpeg.wasm v7 Diagnostics</h1>
+  <div id="coep-status" class="status">Testing Cross-Origin Isolation...</div>
+  <div id="ffmpeg-script-status" class="status">Testing FFmpeg script loading...</div>
+  <div id="ffmpeg-init-status" class="status">Testing FFmpeg instance creation...</div>
+
+  <h2>Console Log</h2>
+  <pre id="log-output">Logs will appear here...</pre>
+
+  <script>
+    const log = (message) => {
+      console.log(message);
+      document.getElementById('log-output').textContent += message + '\\n';
+    };
+
+    const setStatus = (elementId, success, message) => {
+      const el = document.getElementById(elementId);
+      el.textContent = message;
+      el.className = 'status ' + (success ? 'success' : 'failure');
+    };
+
+    log('Diagnostics script started.');
+
+    // 1. Check for Cross-Origin Isolation
+    if (window.crossOriginIsolated) {
+      setStatus('coep-status', true, 'SUCCESS: Page is Cross-Origin Isolated.');
+    } else {
+      setStatus('coep-status', false, 'FAILURE: Page is NOT Cross-Origin Isolated. The server must send COOP/COEP headers.');
+    }
+
+    // 2. Load and check the FFmpeg script
+    const script = document.createElement('script');
+    script.src = '/api/ffmpeg/ffmpeg.js';
+    script.onload = () => {
+      log('FFmpeg script loaded via <script> tag.');
+      if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
+        setStatus('ffmpeg-script-status', true, 'SUCCESS: FFmpeg script loaded and defined window.FFmpeg.createFFmpeg.');
+        
+        // 3. Attempt to create an FFmpeg instance
+        (async () => {
+          try {
+            log('Attempting to call createFFmpeg...');
+            const ffmpeg = window.FFmpeg.createFFmpeg({ log: true });
+            log('createFFmpeg called successfully.');
+            log('Attempting to load FFmpeg core...');
+            await ffmpeg.load();
+            log('FFmpeg core loaded successfully.');
+            setStatus('ffmpeg-init-status', true, 'SUCCESS: FFmpeg instance created and core loaded.');
+          } catch (e) {
+            log('ERROR during FFmpeg initialization: ' + e);
+            setStatus('ffmpeg-init-status', false, 'FATAL: Failed to create or load FFmpeg instance. ' + e);
+          }
+        })();
+      } else {
+        setStatus('ffmpeg-script-status', false, 'FATAL: The FFmpeg script loaded but did not define window.FFmpeg.createFFmpeg.');
+        setStatus('ffmpeg-init-status', false, 'SKIPPED: Cannot initialize FFmpeg.');
+      }
+    };
+    script.onerror = () => {
+      log('ERROR: Failed to load script from /api/ffmpeg/ffmpeg.js');
+      setStatus('ffmpeg-script-status', false, 'FATAL: Could not load the FFmpeg script. Check the network tab for a 404 or other error.');
+       setStatus('ffmpeg-init-status', false, 'SKIPPED: Script did not load.');
+    };
+    
+    document.body.appendChild(script);
+    log('Appended FFmpeg script to document.');
+
+  </script>
+</body>
+</html>
+  `;
+
+  // Using dangerouslySetInnerHTML to render the static HTML content
+  return <div dangerouslySetInnerHTML={{ __html: htmlContent }} />;
+};
+
+export default DiagnosticsPage;

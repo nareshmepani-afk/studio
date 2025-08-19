@@ -211,7 +211,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // The navigation logic should only run once the loading is complete.
     if (!loading) {
       console.log(`AuthContext: Navigation check. Path: ${pathname}, IsAuthenticated: ${!!user}.`);
-      const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password']; // Added /add-memory to publicPaths
+      const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/v7-diagnostics.html']; // Added diagnostics page
       console.log(`AuthContext: Public paths: ${publicPaths.join(', ')}`);
       const isPublic = publicPaths.includes(pathname);
       if (user && isPublic) {
