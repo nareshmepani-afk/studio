@@ -11,7 +11,7 @@ runConfig:
 # This is a basic serve rule. It will route all requests to the Next.js backend.
 serve: /**
 
-# Force a new build to clear potential caching issues.
+# Force a new build to clear potential caching issues. FINAL-2
 headers:
   - glob: "**"
     headers:
