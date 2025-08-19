@@ -28,14 +28,19 @@ const loadFFmpegScript = (): Promise<void> => {
             return resolve();
         }
         const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
+        script.src = '/api/ffmpeg/ffmpeg.js'; // Pointing to our local API route
         script.async = true;
         script.onload = () => {
-            console.log("FFmpeg UMD script loaded successfully from CDN.");
-            resolve();
+            console.log("FFmpeg UMD script loaded successfully from API route.");
+            if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
+              resolve();
+            } else {
+              console.error("FFmpeg script loaded, but createFFmpeg is not defined on window.FFmpeg.");
+              reject(new Error("FFmpeg script loaded, but not initialized correctly."));
+            }
         };
         script.onerror = () => {
-            console.error("Failed to load FFmpeg UMD script from CDN.");
+            console.error("Failed to load FFmpeg UMD script from API route.");
             reject(new Error("Failed to load FFmpeg UMD script."));
         };
         document.head.appendChild(script);
