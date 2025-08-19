@@ -1,87 +1,182 @@
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>FFmpeg.wasm v7 Diagnostics</title>
-  <style>
-    body { font-family: sans-serif; background: #f0f0f0; color: #333; padding: 1em; }
-    .status { padding: 0.5em; margin-bottom: 0.5em; border-radius: 4px; }
-    .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .failure { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    code { background: #e9ecef; padding: 0.2em 0.4em; border-radius: 3px; }
-    pre { background: #fff; padding: 1em; border: 1px solid #ddd; white-space: pre-wrap; word-break: break-all; }
-    h1, h2 { border-bottom: 1px solid #ccc; padding-bottom: 0.25em; }
-  </style>
-</head>
-<body>
-  <h1>FFmpeg.wasm v7 Diagnostics</h1>
-  <div id="coep-status" class="status">Testing Cross-Origin Isolation...</div>
-  <div id="ffmpeg-script-status" class="status">Testing FFmpeg script loading...</div>
-  <div id="ffmpeg-init-status" class="status">Testing FFmpeg instance creation...</div>
-
-  <h2>Console Log</h2>
-  <pre id="log-output">Logs will appear here...</pre>
-
-  <script>
-    const log = (message) => {
-      console.log(message);
-      document.getElementById('log-output').textContent += message + '\n';
-    };
-
-    const setStatus = (elementId, success, message) => {
-      const el = document.getElementById(elementId);
-      el.textContent = message;
-      el.className = 'status ' + (success ? 'success' : 'failure');
-    };
-
-    log('Diagnostics script started.');
-
-    // 1. Check for Cross-Origin Isolation
-    if (window.crossOriginIsolated) {
-      setStatus('coep-status', true, 'SUCCESS: Page is Cross-Origin Isolated.');
-    } else {
-      setStatus('coep-status', false, 'FAILURE: Page is NOT Cross-Origin Isolated. The server must send COOP/COEP headers.');
-    }
-
-    // 2. Load and check the FFmpeg script
-    const script = document.createElement('script');
-    script.src = '/api/ffmpeg/ffmpeg.js';
-    script.onload = () => {
-      log('FFmpeg script loaded via <script> tag.');
-      if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
-        setStatus('ffmpeg-script-status', true, 'SUCCESS: FFmpeg script loaded and defined window.FFmpeg.createFFmpeg.');
-        
-        // 3. Attempt to create an FFmpeg instance
-        (async () => {
-          try {
-            log('Attempting to call createFFmpeg...');
-            const ffmpeg = window.FFmpeg.createFFmpeg({ log: true });
-            log('createFFmpeg called successfully.');
-            log('Attempting to load FFmpeg core...');
-            await ffmpeg.load();
-            log('FFmpeg core loaded successfully.');
-            setStatus('ffmpeg-init-status', true, 'SUCCESS: FFmpeg instance created and core loaded.');
-          } catch (e) {
-            log('ERROR during FFmpeg initialization: ' + e);
-            setStatus('ffmpeg-init-status', false, 'FATAL: Failed to create or load FFmpeg instance. ' + e);
-          }
-        })();
-      } else {
-        setStatus('ffmpeg-script-status', false, 'FATAL: The FFmpeg script loaded but did not define window.FFmpeg.createFFmpeg.');
-        setStatus('ffmpeg-init-status', false, 'SKIPPED: Cannot initialize FFmpeg.');
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <title>FFmpeg.wasm Cross-Origin Isolation Diagnostics</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        line-height: 1.6;
+        padding: 2em;
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: #f4f4f4;
+        color: #333;
       }
-    };
-    script.onerror = () => {
-      log('ERROR: Failed to load script from /api/ffmpeg/ffmpeg.js');
-      setStatus('ffmpeg-script-status', false, 'FATAL: Could not load the FFmpeg script. Check the network tab for a 404 or other error.');
-       setStatus('ffmpeg-init-status', false, 'SKIPPED: Script did not load.');
-    };
-    
-    document.body.appendChild(script);
-    log('Appended FFmpeg script to document.');
+      h1 {
+        color: #1a1a1a;
+      }
+      .status {
+        padding: 0.5em 1em;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+      .success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .fatal {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .warning {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeeba;
+      }
+      code {
+        background-color: #e9ecef;
+        padding: 0.2em 0.4em;
+        border-radius: 3px;
+        font-family: 'Courier New', Courier, monospace;
+      }
+      #details {
+        margin-top: 1em;
+        padding: 1em;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>FFmpeg.wasm Cross-Origin Isolation Diagnostics</h1>
+    <p>
+      This page tests if your server is configured correctly to use FFmpeg.wasm. For FFmpeg to
+      work, this page must be in a "cross-origin isolated" state.
+    </p>
 
-  </script>
-</body>
+    <div id="status-container">
+      <h2>Overall Status: <span id="overall-status" class="status warning">PENDING</span></h2>
+    </div>
+
+    <div id="details">
+      <h3>Detailed Checks:</h3>
+      <p>
+        <strong>1. Cross-Origin Isolation Check:</strong>
+        <span id="coi-status" class="status warning">PENDING</span>
+      </p>
+      <pre id="coi-details"></pre>
+
+      <p>
+        <strong>2. FFmpeg UMD Script Load & Initialization Check:</strong>
+        <span id="ffmpeg-status" class="status warning">PENDING</span>
+      </p>
+      <pre id="ffmpeg-details"></pre>
+    </div>
+
+    <script>
+      function log(containerId, status, message) {
+        const container = document.getElementById(containerId);
+        const statusEl = document.getElementById(containerId.replace('-details', '-status'));
+        container.textContent = message;
+        statusEl.textContent = status;
+        statusEl.className = 'status ' + status.toLowerCase();
+      }
+
+      function updateOverallStatus() {
+        const coiStatus = document.getElementById('coi-status').textContent;
+        const ffmpegStatus = document.getElementById('ffmpeg-status').textContent;
+
+        const overallStatusEl = document.getElementById('overall-status');
+
+        if (coiStatus === 'FATAL' || ffmpegStatus === 'FATAL') {
+          overallStatusEl.textContent = 'FAILURE';
+          overallStatusEl.className = 'status fatal';
+        } else if (coiStatus === 'SUCCESS' && ffmpegStatus === 'SUCCESS') {
+          overallStatusEl.textContent = 'SUCCESS';
+          overallStatusEl.className = 'status success';
+        } else {
+          overallStatusEl.textContent = 'WARNING';
+          overallStatusEl.className = 'status warning';
+        }
+      }
+
+      // Check 1: Cross-Origin Isolation
+      try {
+        if (window.crossOriginIsolated) {
+          log(
+            'coi-details',
+            'SUCCESS',
+            'Page is Cross-Origin Isolated.\n- Cross-Origin-Opener-Policy: same-origin\n- Cross-Origin-Embedder-Policy: require-corp'
+          );
+        } else {
+          log(
+            'coi-details',
+            'FATAL',
+            'FAILURE: Page is NOT Cross-Origin Isolated.\nYour server MUST respond with the following two headers for this page:\n1. Cross-Origin-Opener-Policy: same-origin\n2. Cross-Origin-Embedder-Policy: require-corp\n\nThis is a requirement for using libraries that rely on SharedArrayBuffer, like FFmpeg.wasm.'
+          );
+        }
+      } catch (e) {
+        log('coi-details', 'FATAL', 'An unexpected error occurred while checking crossOriginIsolated status: ' + e.message);
+      }
+
+      // Check 2: FFmpeg UMD script loading
+      const FFMPEG_SCRIPT_PATH = './ffmpeg/ffmpeg.js?v=2025/08/17-09.06';
+
+      function testFFmpeg() {
+        if (typeof window.FFmpeg === 'undefined') {
+          log(
+            'ffmpeg-details',
+            'FATAL',
+            `FATAL: The FFmpeg script loaded but did not define window.FFmpeg. This usually means you are serving the wrong file (e.g., the 'core' build instead of the 'umd' build).\n\nCheck the contents of the script at '${FFMPEG_SCRIPT_PATH}' to ensure it is the correct UMD version.`
+          );
+          console.log('window.FFmpeg is:', window.FFmpeg);
+          return;
+        }
+
+        if (typeof window.FFmpeg.createFFmpeg !== 'function') {
+          log(
+            'ffmpeg-details',
+            'FATAL',
+            `FATAL: window.FFmpeg exists, but window.FFmpeg.createFFmpeg is not a function. The UMD script may be corrupted or an incorrect version.`
+          );
+           console.log('window.FFmpeg object:', window.FFmpeg);
+          return;
+        }
+
+        log(
+          'ffmpeg-details',
+          'SUCCESS',
+          `SUCCESS: The FFmpeg UMD script loaded correctly.\n- window.FFmpeg object is defined.\n- window.FFmpeg.createFFmpeg function is available.`
+        );
+      }
+
+      const script = document.createElement('script');
+      script.src = FFMPEG_SCRIPT_PATH;
+      script.onload = () => {
+        log('ffmpeg-details', 'PENDING', `Script at '${FFMPEG_SCRIPT_PATH}' loaded. Now checking for window.FFmpeg object...`);
+        // Use a short timeout to allow the script to fully execute and attach to window
+        setTimeout(() => {
+          testFFmpeg();
+          updateOverallStatus();
+        }, 100);
+      };
+      script.onerror = () => {
+        log(
+          'ffmpeg-details',
+          'FATAL',
+          `FATAL: Failed to load the FFmpeg script from '${FFMPEG_SCRIPT_PATH}'. Check the path and ensure the file is being served correctly by your application.`
+        );
+        updateOverallStatus();
+      };
+
+      document.body.appendChild(script);
+
+      // Final status update after the first check
+      updateOverallStatus();
+    </script>
+  </body>
 </html>
-  
