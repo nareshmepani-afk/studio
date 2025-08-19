@@ -2,6 +2,7 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
+  // This comment is added to force a new build to correctly deploy static assets.
   async headers() {
     return [
       {
