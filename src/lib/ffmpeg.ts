@@ -1,17 +1,15 @@
 
 // src/lib/ffmpeg.ts
-// This file handles loading FFmpeg.wasm files from a local path and providing helper functions.
+// This file handles loading FFmpeg.wasm and provides helper functions.
 
-// Define a minimal interface for the parts of FFmpeg we use
 interface FFmpeg {
-  load: (config: any) => Promise<void>;
+  load: () => Promise<void>;
   FS: (method: 'writeFile' | 'readFile' | 'unlink', ...args: any[]) => any;
   run: (...args: string[]) => Promise<void>;
   setLogger: (logger: ({ type, message }: { type: string; message: string; }) => void) => void;
   isLoaded: () => boolean;
 }
 
-// Augment the window interface to declare the FFmpeg property
 declare global {
   interface Window {
     FFmpeg: {
@@ -24,23 +22,24 @@ declare global {
 let ffmpegInstance: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
-// This function polls until the FFmpeg script has fully initialized on the window object.
-const waitForFFmpegReady = (timeout = 60000): Promise<void> => {
-  console.log("ffmpeg.ts: waitForFFmpegReady() called.");
-  return new Promise((resolve, reject) => {
-    const startTime = Date.now();
-    const interval = setInterval(() => {
-      if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
-        console.log("ffmpeg.ts: window.FFmpeg.createFFmpeg is available.");
-        clearInterval(interval);
-        resolve();
-      } else if (Date.now() - startTime > timeout) { // Using setInterval for compatibility, can switch to requestAnimationFrame later if preferred
-        console.error("ffmpeg.ts: Timeout waiting for window.FFmpeg.createFFmpeg to become ready.");
-        clearInterval(interval);
-        reject(new Error("window.FFmpeg.createFFmpeg did not become available in time."));
-      }
-    }, 100); // Check every 100ms
-  });
+const loadFFmpegScript = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
+            return resolve();
+        }
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
+        script.async = true;
+        script.onload = () => {
+            console.log("FFmpeg UMD script loaded successfully from CDN.");
+            resolve();
+        };
+        script.onerror = () => {
+            console.error("Failed to load FFmpeg UMD script from CDN.");
+            reject(new Error("Failed to load FFmpeg UMD script."));
+        };
+        document.head.appendChild(script);
+    });
 };
 
 
@@ -58,21 +57,15 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
   console.log("ffmpeg.ts: No existing instance or promise. Starting new initialization.");
   ffmpegLoadingPromise = new Promise(async (resolve, reject) => {
     try {
-      // First, ensure the script has loaded and the global object is ready.
-      await waitForFFmpegReady();
-
+      await loadFFmpegScript();
+      
       const { createFFmpeg } = window.FFmpeg;
       console.log("ffmpeg.ts: createFFmpeg function retrieved from window.FFmpeg. Creating instance.");
       const ffmpeg = createFFmpeg({ log: false });
 
-      const LOCAL_BASE_URL = '/api/ffmpeg';
-      console.log(`ffmpeg.ts: Calling ffmpeg.load() with local paths from ${LOCAL_BASE_URL}...`);
-      await ffmpeg.load({
- coreURL: `${LOCAL_BASE_URL}/ffmpeg-core.js?v=2025/08/17-09.06`,
- wasmURL: `${LOCAL_BASE_URL}/ffmpeg-core.wasm?v=2025/08/17-09.06`,
- workerURL: `${LOCAL_BASE_URL}/ffmpeg-core.worker.js?v=2025/08/17-09.06`,
-      });
-      console.log("ffmpeg.ts: ffmpeg.load() completed successfully from local paths.");
+      console.log(`ffmpeg.ts: Calling ffmpeg.load()`);
+      await ffmpeg.load();
+      console.log("ffmpeg.ts: ffmpeg.load() completed successfully.");
 
       ffmpegInstance = ffmpeg;
       ffmpegLoadingPromise = null;
@@ -89,9 +82,8 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 }
 
 export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8Array> => {
-    // No need to await waitForFFmpegReady here, getFFmpegInstance already does it
     if (typeof window.FFmpeg === 'undefined' || !window.FFmpeg.fetchFile) {
-         throw new Error("FFmpeg script or fetchFile is not available.");
+         await getFFmpegInstance(); // Ensure script is loaded
     }
     return window.FFmpeg.fetchFile(data);
 };
