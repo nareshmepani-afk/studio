@@ -12,12 +12,28 @@ import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatSecondsToTime, cn } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { mockPromptGroups } from '@/lib/mockData';
 import type { MediaAttachment } from '@/types';
 import { getFFmpegInstance, getDurationWithFFmpeg, trimMediaWithFFmpeg } from '@/lib/ffmpeg';
+
+// Moved from utils.ts to break circular dependency
+function formatSecondsToTime(timeInSeconds: number | undefined): string {
+  if (timeInSeconds === undefined || isNaN(timeInSeconds) || timeInSeconds < 0) return "0:00.0";
+
+  const totalSecs = Math.max(0, Number(timeInSeconds.toFixed(1)));
+
+  if (totalSecs < 60) {
+    return `0:${totalSecs.toFixed(1).padStart(4, '0')}`;
+  } else {
+    const minutes = Math.floor(totalSecs / 60);
+    const seconds = totalSecs % 60;
+    const formattedSeconds = seconds.toFixed(1);
+    return `${minutes}:${formattedSeconds.padStart(4, '0')}`;
+  }
+}
 
 // Maximum duration constants (in seconds)
 const MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS = 300; // 5 minutes for raw recording
