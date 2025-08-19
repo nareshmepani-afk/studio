@@ -1,4 +1,3 @@
-
 // src/lib/ffmpeg.ts
 // This file handles loading FFmpeg.wasm and provides helper functions.
 
@@ -22,31 +21,44 @@ declare global {
 let ffmpegInstance: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
-const loadFFmpegScript = (): Promise<void> => {
-    return new Promise((resolve, reject) => {
-        if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
-            return resolve();
-        }
-        const script = document.createElement('script');
-        script.src = '/api/ffmpeg/ffmpeg.js'; // Pointing to our local API route
-        script.async = true;
-        script.onload = () => {
-            console.log("FFmpeg UMD script loaded successfully from API route.");
-            if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
-              resolve();
-            } else {
-              console.error("FFmpeg script loaded, but createFFmpeg is not defined on window.FFmpeg.");
-              reject(new Error("FFmpeg script loaded, but not initialized correctly."));
-            }
-        };
-        script.onerror = () => {
-            console.error("Failed to load FFmpeg UMD script from API route.");
-            reject(new Error("Failed to load FFmpeg UMD script."));
-        };
-        document.head.appendChild(script);
-    });
-};
+// The official UMD build URL
+const FFMPEG_SCRIPT_URL = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
 
+const loadFFmpegScript = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    // Check if the script is already loaded and correct
+    if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
+      return resolve();
+    }
+    
+    // If a script tag with this src already exists, remove it to ensure a fresh load
+    const existingScript = document.querySelector(`script[src="${FFMPEG_SCRIPT_URL}"]`);
+    if (existingScript) {
+      existingScript.remove();
+    }
+
+    const script = document.createElement('script');
+    script.src = FFMPEG_SCRIPT_URL;
+    script.async = true;
+    
+    script.onload = () => {
+      console.log("FFmpeg UMD script loaded successfully from CDN.");
+      if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
+        resolve();
+      } else {
+        console.error("FFmpeg script loaded, but createFFmpeg is not defined on window.FFmpeg.");
+        reject(new Error("FFmpeg script loaded, but not initialized correctly."));
+      }
+    };
+    
+    script.onerror = () => {
+      console.error("Failed to load FFmpeg UMD script from CDN.");
+      reject(new Error(`Failed to load FFmpeg script from ${FFMPEG_SCRIPT_URL}.`));
+    };
+    
+    document.head.appendChild(script);
+  });
+};
 
 export async function getFFmpegInstance(): Promise<FFmpeg> {
   console.log("ffmpeg.ts: getFFmpegInstance() called.");

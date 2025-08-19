@@ -23,7 +23,6 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { formatSecondsToTime } from '@/lib/utils';
 import { countryOptions } from '@/lib/constants';
 import { mockPromptGroups } from '@/lib/mockData';
 import dynamic from 'next/dynamic';
@@ -508,5 +507,3 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     </form>
   );
 }
-
-    
