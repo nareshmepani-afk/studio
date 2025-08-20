@@ -12,8 +12,8 @@ interface FFmpeg {
 
 declare global {
   interface Window {
-    FFmpeg: {
-      createFFmpeg: (options: any) => FFmpeg;
+    FFmpegWASM: { // Updated global object name
+      createFFmpeg: (options?: any) => FFmpeg; // createFFmpeg accepts options
       fetchFile: (data: Blob | string | Uint8Array) => Promise<Uint8Array>;
     };
   }
@@ -28,14 +28,14 @@ const FFMPEG_SCRIPT_URL = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmp
 const loadFFmpegScript = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     // Check if the script is already loaded and correct
-    if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
+    if (window.FFmpegWASM && typeof window.FFmpegWASM.createFFmpeg === 'function') {
       return resolve();
     }
     
     // If a script tag with this src already exists, remove it to ensure a fresh load
     const existingScript = document.querySelector(`script[src="${FFMPEG_SCRIPT_URL}"]`);
     if (existingScript) {
-      existingScript.remove();
+ existingScript.remove();
     }
 
     const script = document.createElement('script');
@@ -44,9 +44,9 @@ const loadFFmpegScript = (): Promise<void> => {
     
     script.onload = () => {
       console.log("FFmpeg UMD script loaded successfully from CDN.");
-      if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
+      if (window.FFmpegWASM && typeof window.FFmpegWASM.createFFmpeg === 'function') {
         resolve();
-      } else {
+      } else { 
         console.error("FFmpeg script loaded, but createFFmpeg is not defined on window.FFmpeg.");
         reject(new Error("FFmpeg script loaded, but not initialized correctly."));
       }
@@ -77,7 +77,7 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
     try {
       await loadFFmpegScript();
       
-      const { createFFmpeg } = window.FFmpeg;
+      const { createFFmpeg } = window.FFmpegWASM; // Use FFmpegWASM
       console.log("ffmpeg.ts: createFFmpeg function retrieved from window.FFmpeg. Creating instance.");
       const ffmpeg = createFFmpeg({ log: false });
 
@@ -105,10 +105,10 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 }
 
 export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8Array> => {
-    if (typeof window.FFmpeg === 'undefined' || !window.FFmpeg.fetchFile) {
+    if (typeof window.FFmpegWASM === 'undefined' || !window.FFmpegWASM.fetchFile) { // Use FFmpegWASM
          await getFFmpegInstance(); // Ensure script is loaded
     }
-    return window.FFmpeg.fetchFile(data);
+    return window.FFmpegWASM.fetchFile(data); // Use FFmpegWASM
 };
 
 export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
