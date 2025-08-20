@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FFmpeg Advanced Test Page</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; margin: 20px; }
+        .log-container { border: 1px solid #ccc; padding: 15px; margin-top: 20px; background-color: #f9f9f9; }
+        .log-entry { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee; }
+        .log-entry:last-child { border-bottom: none; }
+        .log-success { color: green; font-weight: bold; }
+        .log-failure { color: red; font-weight: bold; }
+        .log-info { color: blue; }
+        h1, h2 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>FFmpeg Advanced Test Page</h1>
+    <p>This page performs detailed checks for FFmpeg loading and initialization.</p>
+    <div class="log-container">
+        <h2>Test Log</h2>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        const logElement = document.getElementById('log');
+
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry log-' + type;
+            entry.textContent = message;
+            logElement.appendChild(entry);
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        async function runTests() {
+            log('Starting FFmpeg advanced tests...', 'info');
+
+            // Test 1: Check Cross-Origin Isolation
+            log('Test 1: Checking Cross-Origin Isolation...');
+            if (window.crossOriginIsolated) {
+                log('SUCCESS: Page is Cross-Origin Isolated.', 'success');
+            } else {
+                log('FAILURE: Page is NOT Cross-Origin Isolated.', 'failure');
+                log('Cross-Origin Isolation is required for FFmpeg WASM. Ensure required headers are set.', 'info');
+            }
+
+            // Test 2: Fetch /api/ffmpeg/ffmpeg.js to check served version
+            log('Test 2: Fetching /api/ffmpeg/ffmpeg.js?v=2025/08/17-09.06 to check served content...');
+            const ffmpegApiUrl = '/api/ffmpeg/ffmpeg.js?v=2025/08/17-09.06';
+            try {
+                const response = await fetch(ffmpegApiUrl);
+                log(`Fetch status for ${ffmpegApiUrl}: ${response.status}`, 'info');
+                if (response.ok) {
+                    const text = await response.text();
+                    const snippet = text.substring(0, 200); // Log first 200 chars
+                    log(`SUCCESS: Fetched content from ${ffmpegApiUrl}. Snippet: ${snippet}...`, 'success');
+                    if (snippet.includes('exports.FFmpeg = t()') || snippet.includes('e.FFmpeg = t()')) {
+                         log('Analysis: Served file likely defines window.FFmpeg.', 'info');
+                    } else if (snippet.includes('exports.FFmpegWASM = t()') || snippet.includes('e.FFmpegWASM = t()')) {
+                         log('Analysis: Served file likely defines window.FFmpegWASM.', 'info');
+                    } else {
+                         log('Analysis: Unable to determine global object from snippet.', 'info');
+                    }
+
+                } else {
+                    log(`FAILURE: Fetch for ${ffmpegApiUrl} failed with status ${response.status}.`, 'failure');
+                }
+            } catch (error) {
+                log(`FATAL: Fetch for ${ffmpegApiUrl} failed: ${error.message}`, 'failure');
+            }
+
+            // Test 3: Dynamically load script from UNPKG and check window.FFmpeg
+            log('Test 3: Dynamically loading script from UNPKG and checking window.FFmpeg...');
+            const unpkgUrl = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
+            try {
+                const script = document.createElement('script');
+                script.src = unpkgUrl;
+                script.async = true;
+
+                await new Promise((resolve, reject) => {
+                    script.onload = () => {
+                         log(`SUCCESS: Script loaded dynamically from ${unpkgUrl}.`, 'success');
+                         resolve();
+                    };
+                    script.onerror = () => {
+                         log(`FAILURE: Script failed to load dynamically from ${unpkgUrl}.`, 'failure');
+                         reject(new Error(`Failed to load script from ${unpkgUrl}`));
+                    };
+                    document.head.appendChild(script);
+                });
+
+                log('Checking if window.FFmpeg and window.FFmpeg.createFFmpeg are defined...');
+                if (typeof window.FFmpeg !== 'undefined' && typeof window.FFmpeg.createFFmpeg === 'function') {
+                    log('SUCCESS: window.FFmpeg and window.FFmpeg.createFFmpeg are defined.', 'success');
+                } else {
+                    log('FATAL: window.FFmpeg or window.FFmpeg.createFFmpeg are NOT defined after dynamic load.', 'failure');
+                    log('This indicates the UNPKG build might not be loading/executing as expected.', 'info');
+                }
+
+            } catch (error) {
+                log(`FATAL: Error during dynamic script loading: ${error.message}`, 'failure');
+            }
+
+            // Test 4: Attempt FFmpeg instance creation (if createFFmpeg is available)
+            log('Test 4: Attempting FFmpeg instance creation...');
+            if (typeof window.FFmpeg !== 'undefined' && typeof window.FFmpeg.createFFmpeg === 'function') {
+                 try {
+                     const ffmpeg = window.FFmpeg.createFFmpeg({ log: false }); // Use a dummy coreURL for test
+                     log('SUCCESS: FFmpeg instance created successfully.', 'success');
+
+                     // Note: Actual ffmpeg.load requires real core files.
+                     // We are not attempting a full load here, just testing creation.
+
+                 } catch (error) {
+                     log(`FATAL: Failed to create FFmpeg instance: ${error.message}`, 'failure');
+                 }
+            } else {
+                 log('Skipping Test 4: window.FFmpeg.createFFmpeg not available.', 'info');
+            }
+
+
+            log('FFmpeg advanced tests finished.', 'info');
+        }
+
+        runTests();
+    </script>
+</body>
+</html>
