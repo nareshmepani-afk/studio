@@ -66,10 +66,10 @@
                 });
 
                 log('Checking if window.FFmpegWASM and window.FFmpegWASM.createFFmpeg are defined...');
-                if (typeof window.FFmpeg !== 'undefined' && typeof window.FFmpeg.createFFmpeg === 'function') {
-                    log('SUCCESS: window.FFmpeg and window.FFmpeg.createFFmpeg are defined.', 'success');
+                if (typeof window.FFmpegWASM !== 'undefined' && typeof window.FFmpegWASM.createFFmpeg === 'function') {
+                    log('SUCCESS: window.FFmpegWASM and window.FFmpegWASM.createFFmpeg are defined.', 'success');
                 } else {
-                    log('FATAL: window.FFmpeg or window.FFmpeg.createFFmpeg are NOT defined after dynamic load.', 'failure');
+                    log('FATAL: window.FFmpegWASM or window.FFmpegWASM.createFFmpeg are NOT defined after dynamic load.', 'failure');
                     log('This indicates the UNPKG build might not be loading/executing as expected.', 'info');
                 }
 
