@@ -46,7 +46,7 @@
                 log('Cross-Origin Isolation is required for FFmpeg WASM. Ensure required headers are set.', 'info');
             }
 
-            // Test 2: Dynamically load script from UNPKG and check window.FFmpeg
+            // Test 2: Dynamically load script from UNPKG and check window.FFmpegWASM
             log('Test 2: Dynamically loading script from UNPKG and checking window.FFmpeg...');
             const unpkgUrl = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
             try {
@@ -97,7 +97,7 @@
                      log(`FATAL: Failed to create FFmpegWASM instance: ${error.message}`, 'failure');
                  }
             } else {
-                 log('Skipping Test 4: window.FFmpeg.createFFmpeg not available.', 'info');
+                 log('Skipping Test 3: window.FFmpegWASM.createFFmpeg not available.', 'info');
             }
 
 
