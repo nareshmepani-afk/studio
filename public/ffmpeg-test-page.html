@@ -107,12 +107,18 @@
             log('Test 4: Attempting FFmpeg instance creation...');
             if (typeof window.FFmpeg !== 'undefined' && typeof window.FFmpeg.createFFmpeg === 'function') {
                  try {
-                     const ffmpeg = window.FFmpeg.createFFmpeg({ log: false }); // Use a dummy coreURL for test
-                     log('SUCCESS: FFmpeg instance created successfully.', 'success');
+                     // Attempt to create and load the FFmpeg instance with specified core paths
+                     log('Attempting to create and load FFmpeg instance with specified core paths...', 'info');
+                     const ffmpeg = window.FFmpeg.createFFmpeg({
+                         log: true, // Enable logging for debugging load process
+                         coreURL: '/ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
+                         wasmURL: '/ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
+                         workerURL: '/ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06',
+                     });
 
-                     // Note: Actual ffmpeg.load requires real core files.
-                     // We are not attempting a full load here, just testing creation.
+                     await ffmpeg.load(); // Attempt to load the core files
 
+                     log('SUCCESS: FFmpeg instance created and loaded successfully.', 'success');
                  } catch (error) {
                      log(`FATAL: Failed to create FFmpeg instance: ${error.message}`, 'failure');
                  }
