@@ -46,39 +46,11 @@
                 log('Cross-Origin Isolation is required for FFmpeg WASM. Ensure required headers are set.', 'info');
             }
 
-            // Test 2: Fetch /api/ffmpeg/ffmpeg.js to check served version
-            log('Test 2: Fetching /api/ffmpeg/ffmpeg.js?v=2025/08/17-09.06 to check served content...');
-            const ffmpegApiUrl = '/api/ffmpeg/ffmpeg.js?v=2025/08/17-09.06';
-            try {
-                const response = await fetch(ffmpegApiUrl);
-                log(`Fetch status for ${ffmpegApiUrl}: ${response.status}`, 'info');
-                if (response.ok) {
-                    const text = await response.text();
-                    const snippet = text.substring(0, 200); // Log first 200 chars
-                    log(`SUCCESS: Fetched content from ${ffmpegApiUrl}. Snippet: ${snippet}...`, 'success');
-                    if (snippet.includes('exports.FFmpeg = t()') || snippet.includes('e.FFmpeg = t()')) {
-                         log('Analysis: Served file likely defines window.FFmpeg.', 'info');
-                    } else if (snippet.includes('exports.FFmpegWASM = t()') || snippet.includes('e.FFmpegWASM = t()')) {
-                         log('Analysis: Served file likely defines window.FFmpegWASM.', 'info');
-                    } else {
-                         log('Analysis: Unable to determine global object from snippet.', 'info');
-                    }
-
-                } else {
-                    log(`FAILURE: Fetch for ${ffmpegApiUrl} failed with status ${response.status}.`, 'failure');
-                }
-            } catch (error) {
-                log(`FATAL: Fetch for ${ffmpegApiUrl} failed: ${error.message}`, 'failure');
-            }
-
-            // Test 3: Dynamically load script from UNPKG and check window.FFmpeg
-            log('Test 3: Dynamically loading script from UNPKG and checking window.FFmpeg...');
+            // Test 2: Dynamically load script from UNPKG and check window.FFmpeg
+            log('Test 2: Dynamically loading script from UNPKG and checking window.FFmpeg...');
             const unpkgUrl = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
             try {
                 const script = document.createElement('script');
-                script.src = unpkgUrl;
-                script.async = true;
-
                 await new Promise((resolve, reject) => {
                     script.onload = () => {
                          log(`SUCCESS: Script loaded dynamically from ${unpkgUrl}.`, 'success');
@@ -89,6 +61,8 @@
                          reject(new Error(`Failed to load script from ${unpkgUrl}`));
                     };
                     document.head.appendChild(script);
+ script.src = unpkgUrl;
+ script.async = true;
                 });
 
                 log('Checking if window.FFmpeg and window.FFmpeg.createFFmpeg are defined...');
@@ -103,8 +77,8 @@
                 log(`FATAL: Error during dynamic script loading: ${error.message}`, 'failure');
             }
 
-            // Test 4: Attempt FFmpeg instance creation (if createFFmpeg is available)
-            log('Test 4: Attempting FFmpeg instance creation...');
+            // Test 3: Attempt FFmpeg instance creation and load (if createFFmpeg is available)
+            log('Test 3: Attempting FFmpeg instance creation and load...');
             if (typeof window.FFmpeg !== 'undefined' && typeof window.FFmpeg.createFFmpeg === 'function') {
                  try {
                      // Attempt to create and load the FFmpeg instance with specified core paths
@@ -116,7 +90,7 @@
                          workerURL: '/ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06',
                      });
 
-                     await ffmpeg.load(); // Attempt to load the core files
+ await ffmpeg.load(); // Attempt to load the core files
 
                      log('SUCCESS: FFmpeg instance created and loaded successfully.', 'success');
                  } catch (error) {
