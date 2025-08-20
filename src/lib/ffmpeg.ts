@@ -82,7 +82,12 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       const ffmpeg = createFFmpeg({ log: false });
 
       console.log(`ffmpeg.ts: Calling ffmpeg.load()`);
-      await ffmpeg.load();
+      await ffmpeg.load({
+        // Specify the path to the FFmpeg core files on your hosted app
+        coreURL: '/ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
+        wasmURL: '/ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
+        workerURL: '/ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06',
+      });
       console.log("ffmpeg.ts: ffmpeg.load() completed successfully.");
 
       ffmpegInstance = ffmpeg;
