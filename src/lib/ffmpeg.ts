@@ -22,10 +22,6 @@ declare global {
 let ffmpegInstance: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
-// The official UMD build URL
-const FFMPEG_SCRIPT_URL = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
-
-const loadFFmpegScript = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     // Check if the script is already loaded and correct
     if (window.FFmpegWASM && typeof window.FFmpegWASM.createFFmpeg === 'function') {
@@ -61,7 +57,7 @@ const loadFFmpegScript = (): Promise<void> => {
   });
 };
 
-export async function getFFmpegInstance(): Promise<FFmpeg> {
+export async function getFFmpegInstance(): Promise<FFmpeg | null> {
   console.log("ffmpeg.ts: getFFmpegInstance() called.");
   if (ffmpegInstance && ffmpegInstance.isLoaded()) {
     console.log("ffmpeg.ts: Returning existing, loaded FFmpeg instance.");
@@ -74,7 +70,13 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
 
   console.log("ffmpeg.ts: No existing instance or promise. Starting new initialization.");
   ffmpegLoadingPromise = new Promise(async (resolve, reject) => {
-    try {
+    // Check if the static script tag has already loaded the FFmpegWASM object
+    if (typeof window.FFmpegWASM === 'undefined' || typeof window.FFmpegWASM.createFFmpeg !== 'function') {
+        console.error("getFFmpegInstance: window.FFmpegWASM or createFFmpeg is not defined. Ensure the static script tag is loading the library correctly.");
+        ffmpegLoadingPromise = null; // Reset promise on failure
+        return resolve(null); // Resolve with null if the library is not available
+    }
+     try {
       await loadFFmpegScript();
       
       const { createFFmpeg } = window.FFmpegWASM; // Use FFmpegWASM

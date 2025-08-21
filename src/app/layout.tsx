@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   description: 'Weave together your precious memories.',
 };
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -22,6 +23,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
+        <script src="/ffmpeg/ffmpeg.js?v=2025/08/17-09.06"></script>
       </head>
       <body className="font-body antialiased" suppressHydrationWarning={true}>
         <ThemeProvider
