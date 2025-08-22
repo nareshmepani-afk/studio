@@ -47,39 +47,9 @@
                 log('Cross-Origin Isolation is required for FFmpeg WASM. Ensure required headers are set.', 'info');
             }
 
-            // Test 2: Dynamically load script from UNPKG and check window.FFmpegWASM
-            log('Test 2: Dynamically loading script from UNPKG and checking window.FFmpeg...');
-            const unpkgUrl = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.js';
-            try {
-                const script = document.createElement('script');
-                await new Promise((resolve, reject) => {
-                    script.onload = () => {
-                         log(`SUCCESS: Script loaded dynamically from ${unpkgUrl}.`, 'success');
-                         resolve();
-                    };
-                    script.onerror = () => {
-                         log(`FAILURE: Script failed to load dynamically from ${unpkgUrl}.`, 'failure');
-                         reject(new Error(`Failed to load script from ${unpkgUrl}`));
-                    };
-                    document.head.appendChild(script);
- script.src = unpkgUrl;
- script.async = true;
-                });
-
-                log('Checking if window.FFmpegWASM and window.FFmpegWASM.createFFmpeg are defined...');
-                if (typeof window.FFmpegWASM !== 'undefined' && typeof window.FFmpegWASM.createFFmpeg === 'function') {
-                    log('SUCCESS: window.FFmpegWASM and window.FFmpegWASM.createFFmpeg are defined.', 'success');
-                } else {
-                    log('FATAL: window.FFmpegWASM or window.FFmpegWASM.createFFmpeg are NOT defined after dynamic load.', 'failure');
-                    log('This indicates the UNPKG build might not be loading/executing as expected.', 'info');
-                }
-
-            } catch (error) {
-                log(`FATAL: Error during dynamic script loading: ${error.message}`, 'failure');
-            }
-
-            // Test 3: Attempt FFmpeg instance creation and load (if createFFmpeg is available)
-            log('Test 3: Attempting FFmpegWASM instance creation and load...');
+            // Test 2: Check for window.FFmpegWASM and attempt instance creation and load
+            log('Test 2: Checking for window.FFmpegWASM and attempting instance creation and load...');
+            log('Checking if window.FFmpegWASM and window.FFmpegWASM.createFFmpeg are defined...');
             if (typeof window.FFmpegWASM !== 'undefined' && typeof window.FFmpegWASM.createFFmpeg === 'function') {
                  try {
                      // Attempt to create and load the FFmpeg instance with specified core paths
@@ -98,7 +68,7 @@
                      log(`FATAL: Failed to create FFmpegWASM instance: ${error.message}`, 'failure');
                  }
             } else {
-                 log('Skipping Test 3: window.FFmpegWASM.createFFmpeg not available.', 'info');
+                 log('Skipping Test 2: window.FFmpegWASM.createFFmpeg not available after static load.', 'info');
             }
 
 
