@@ -53,10 +53,10 @@
             try {
                  log('Checking if window.FFmpeg and window.FFmpeg.createFFmpeg are defined...');
                 // Attempt to create and load the FFmpeg instance with specified core paths
-                log('Attempting to create and load FFmpegWASM instance with specified core paths...', 'info');
-                const ffmpeg = window.FFmpegWASM.createFFmpeg({
+                log('Attempting to create and load FFmpeg instance with specified core paths...', 'info');
+                const ffmpeg = window.FFmpeg.createFFmpeg({
                     log: true, // Enable logging for debugging load process
-                    coreURL: '/ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
+ coreURL: '/ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
                     wasmURL: '/ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
                     workerURL: '/ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06',
                 });
@@ -64,7 +64,7 @@
                 await ffmpeg.load(); // Attempt to load the core files
 
                 log('SUCCESS: FFmpegWASM instance created and loaded successfully.', 'success');
-            } catch (error) {
+ } catch (error) {
                 log(`FATAL: Failed to create FFmpegWASM instance: ${error.message}`, 'failure');
             }
             log('FFmpeg advanced tests finished.', 'info');
