@@ -48,14 +48,14 @@
             }
 
             // Test 2: Check for window.FFmpegWASM and attempt instance creation and load
-            log('Test 2: Checking for window.FFmpegWASM and attempting instance creation and load...');
+            log('Test 2: Checking for window.FFmpeg and attempting instance creation and load...');
             log('Assuming ffmpeg.js is loaded via static tag from /ffmpeg/ffmpeg.js.', 'info');
-            log('Checking if window.FFmpegWASM and window.FFmpegWASM.createFFmpeg are defined...');
-            if (typeof window.FFmpegWASM !== 'undefined' && typeof window.FFmpegWASM.createFFmpeg === 'function') {
+            log('Checking if window.FFmpeg and window.FFmpeg.createFFmpeg are defined...');
+            if (typeof window.FFmpeg !== 'undefined' && typeof window.FFmpeg.createFFmpeg === 'function') {
                  try {
                      // Attempt to create and load the FFmpeg instance with specified core paths
-                     log('Attempting to create and load FFmpegWASM instance with specified core paths...', 'info');
-                     const ffmpeg = window.FFmpegWASM.createFFmpeg({
+                     log('Attempting to create and load FFmpeg instance with specified core paths...', 'info');
+                     const ffmpeg = window.FFmpeg.createFFmpeg({
                          log: true, // Enable logging for debugging load process
                          coreURL: '/ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
                          wasmURL: '/ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
@@ -68,8 +68,8 @@
                  } catch (error) {
                      log(`FATAL: Failed to create FFmpegWASM instance: ${error.message}`, 'failure');
                  }
-            } else {
-                 log('Skipping Test 2: window.FFmpegWASM.createFFmpeg not available after static load.', 'info');
+            } else { 
+                 log('Skipping Test 2: window.FFmpeg.createFFmpeg not available after static load.', 'info');
             }
 
 
