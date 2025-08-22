@@ -15,7 +15,7 @@
         h1, h2 { color: #333; }
     </style>
 </head>
-<script type="module" src="/ffmpeg/ffmpeg.js?v=2025/08/17-09.06"></script>
+<script src="/ffmpeg/ffmpeg.js?v=2025/08/17-09.06"></script>
 <body>
     <h1>FFmpeg Advanced Test Page</h1>
     <p>This page performs detailed checks for FFmpeg loading and initialization.</p>
@@ -48,13 +48,13 @@
             }
 
             // Test 2: Check for window.FFmpegWASM and attempt instance creation and load
-            log('Test 2: Checking for window.FFmpeg and attempting instance creation and load...');
+            log('Test 2: Checking for window.FFmpegWASM and attempting instance creation and load...');
             log('Assuming ffmpeg.js is loaded via static tag from /ffmpeg/ffmpeg.js.', 'info');
             try {
-                 log('Checking if window.FFmpeg and window.FFmpeg.createFFmpeg are defined...');
+                 log('Checking if window.FFmpegWASM and window.FFmpegWASM.createFFmpeg are defined...');
                 // Attempt to create and load the FFmpeg instance with specified core paths
-                log('Attempting to create and load FFmpeg instance with specified core paths...', 'info');
-                const ffmpeg = window.FFmpeg.createFFmpeg({
+                log('Attempting to create and load FFmpegWASM instance with specified core paths...', 'info');
+                const ffmpeg = window.FFmpegWASM.createFFmpeg({
                     log: true, // Enable logging for debugging load process
                     coreURL: '/ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
                     wasmURL: '/ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
