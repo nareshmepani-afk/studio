@@ -49,6 +49,7 @@
 
             // Test 2: Check for window.FFmpegWASM and attempt instance creation and load
             log('Test 2: Checking for window.FFmpegWASM and attempting instance creation and load...');
+            log('Assuming ffmpeg.js is loaded via static tag from /ffmpeg/ffmpeg.js.', 'info');
             log('Checking if window.FFmpegWASM and window.FFmpegWASM.createFFmpeg are defined...');
             if (typeof window.FFmpegWASM !== 'undefined' && typeof window.FFmpegWASM.createFFmpeg === 'function') {
                  try {
