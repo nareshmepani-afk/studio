@@ -47,11 +47,11 @@
                 log('Cross-Origin Isolation is required for FFmpeg WASM. Ensure required headers are set.', 'info');
             }
 
-            // Test 2: Check for window.FFmpegWASM and attempt instance creation and load
-            log('Test 2: Checking for window.FFmpegWASM and attempting instance creation and load...');
+            // Test 2: Check for window.FFmpeg and attempting instance creation and load
+            log('Test 2: Checking for window.FFmpeg and attempting instance creation and load...');
             log('Assuming ffmpeg.js is loaded via static tag from /ffmpeg/ffmpeg.js.', 'info');
             try {
-                 log('Checking if window.FFmpegWASM and window.FFmpegWASM.createFFmpeg are defined...');
+                 log('Checking if window.FFmpeg and window.FFmpeg.createFFmpeg are defined...');
                 // Attempt to create and load the FFmpeg instance with specified core paths
                 log('Attempting to create and load FFmpegWASM instance with specified core paths...', 'info');
                 const ffmpeg = window.FFmpegWASM.createFFmpeg({
