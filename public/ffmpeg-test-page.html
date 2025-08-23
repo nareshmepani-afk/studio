@@ -63,9 +63,9 @@
 
                 await ffmpeg.load(); // Attempt to load the core files
 
-                log('SUCCESS: FFmpegWASM instance created and loaded successfully.', 'success');
+                log('SUCCESS: FFmpeg instance created and loaded successfully.', 'success');
  } catch (error) {
-                log(`FATAL: Failed to create FFmpegWASM instance: ${error.message}`, 'failure');
+                log(`FATAL: Failed to create FFmpeg instance: ${error.message}`, 'failure');
             }
             log('FFmpeg advanced tests finished.', 'info');
         }
