@@ -15,17 +15,18 @@
         h1, h2 { color: #333; }
     </style>
 </head>
+<body>
+    <h1>FFmpeg Advanced Test Page</h1>
+
     <div class="log-container">
         <h2>Test Log</h2>
         <div id="log"></div>
     </div>
 
     <script type="module">
+        // The import statement is correct, as long as you have placed
+        // the main FFmpeg library file (index.js) at /ffmpeg/ffmpeg.js
         import { createFFmpeg } from '/ffmpeg/ffmpeg.js';
-
-        // Adding fetchFile import based on previous code and potential need
-        // Although not used in runTests currently, it's good practice if it was intended
-        import { fetchFile } from '/ffmpeg/ffmpeg.js';
 
         const logElement = document.getElementById('log');
 
@@ -39,42 +40,47 @@
             console.log(`[${type.toUpperCase()}] ${message}`);
         }
         
-        // Optional: Add a window.onerror handler for uncaught errors
         window.onerror = function(message, source, lineno, colno, error) {
             log(`[UNCAUGHT ERROR] ${message} at ${source}:${lineno}:${colno}`, 'failure');
             console.error(error);
         };
 
         async function runTests() {
+            log('Test 1: Checking for Cross-Origin Isolation...');
             if (window.crossOriginIsolated) {
                 log('SUCCESS: Page is Cross-Origin Isolated.', 'success');
             } else {
                 log('FAILURE: Page is NOT Cross-Origin Isolated.', 'failure');
                 log('Cross-Origin Isolation is required for FFmpeg WASM. Ensure required headers are set.', 'info');
             }
-            log('Test 2: Attempting FFmpeg instance creation and load...'); // Test 2: Attempting FFmpeg instance creation and load
+
+            log('Test 2: Attempting FFmpeg instance creation and load...');
             try {
-                 if (typeof createFFmpeg !== 'function') {
+                if (typeof createFFmpeg !== 'function') {
                     throw new Error('createFFmpeg function is not available. Ensure ffmpeg.js is loaded as a module.');
                 }
-
+                
+                // The coreURL, wasmURL, and workerURL should point to the files you downloaded.
+                // The version number is optional but harmless.
                 const ffmpeg = createFFmpeg({
-                    log: true, // Enable logging for debugging
- coreURL: '/ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
+                    log: true, 
+                    coreURL: '/ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
                     wasmURL: '/ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
-                    workerURL: '/ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06', // Attempt to create and load the FFmpeg instance with specified core paths
+                    workerURL: '/ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06',
                 });
 
-                await ffmpeg.load(); // Attempt to load the core files
+                log('Attempting to load FFmpeg core files...');
+                await ffmpeg.load();
 
-                log('SUCCESS: FFmpeg instance created and loaded successfully.', 'success'); // Log success
+                log('SUCCESS: FFmpeg instance created and loaded successfully.', 'success');
             } catch (error) {
                 log(`FATAL: Failed to create FFmpeg instance: ${error.message}`, 'failure');
             }
             log('FFmpeg advanced tests finished.', 'info');
         }
 
-        runTests();
+        // Wait for the window to fully load before running tests
+        window.addEventListener('DOMContentLoaded', runTests);
     </script>
 </body>
 </html>
