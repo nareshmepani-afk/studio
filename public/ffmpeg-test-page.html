@@ -15,10 +15,6 @@
         h1, h2 { color: #333; }
     </style>
 </head>
-<body>
-    <script type="module" src="/ffmpeg/ffmpeg.js?v=2025/08/17-09.06"></script>
-    <h1>FFmpeg Advanced Test Page</h1>
-    <p>This page performs detailed checks for FFmpeg loading and initialization.</p>
     <div class="log-container">
         <h2>Test Log</h2>
         <div id="log"></div>
@@ -26,6 +22,10 @@
 
     <script type="module">
         import { createFFmpeg } from '/ffmpeg/ffmpeg.js';
+
+        // Adding fetchFile import based on previous code and potential need
+        // Although not used in runTests currently, it's good practice if it was intended
+        import { fetchFile } from '/ffmpeg/ffmpeg.js';
 
         const logElement = document.getElementById('log');
 
@@ -38,11 +38,14 @@
             }
             console.log(`[${type.toUpperCase()}] ${message}`);
         }
+        
+        // Optional: Add a window.onerror handler for uncaught errors
+        window.onerror = function(message, source, lineno, colno, error) {
+            log(`[UNCAUGHT ERROR] ${message} at ${source}:${lineno}:${colno}`, 'failure');
+            console.error(error);
+        };
 
         async function runTests() {
-            log('Starting FFmpeg advanced tests...', 'info');
-
-            log('Test 1: Checking Cross-Origin Isolation...'); // Test 1: Check Cross-Origin Isolation
             if (window.crossOriginIsolated) {
                 log('SUCCESS: Page is Cross-Origin Isolated.', 'success');
             } else {
@@ -50,10 +53,8 @@
                 log('Cross-Origin Isolation is required for FFmpeg WASM. Ensure required headers are set.', 'info');
             }
             log('Test 2: Attempting FFmpeg instance creation and load...'); // Test 2: Attempting FFmpeg instance creation and load
-
-            log('Attempting to create and load FFmpeg instance with specified core paths...', 'info'); // Attempt to create and load the FFmpeg instance with specified core paths
             try {
-                if (typeof createFFmpeg !== 'function') {
+                 if (typeof createFFmpeg !== 'function') {
                     throw new Error('createFFmpeg function is not available. Ensure ffmpeg.js is loaded as a module.');
                 }
 
@@ -61,7 +62,7 @@
                     log: true, // Enable logging for debugging
  coreURL: '/ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
                     wasmURL: '/ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
-                    workerURL: '/ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06',
+                    workerURL: '/ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06', // Attempt to create and load the FFmpeg instance with specified core paths
                 });
 
                 await ffmpeg.load(); // Attempt to load the core files
