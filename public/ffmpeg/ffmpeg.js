@@ -1,1 +1,1 @@
-Couldn't find the requested file /dist/esm/ffmpeg.js in @ffmpeg/ffmpeg.
+export * from "./classes.js";
