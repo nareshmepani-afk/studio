@@ -24,9 +24,8 @@
     </div>
 
     <script type="module">
-        // The import statement is correct, as long as you have placed
-        // the main FFmpeg library file (index.js) at /ffmpeg/ffmpeg.js
-        import { createFFmpeg } from '/ffmpeg/ffmpeg.js';
+        // The import statement has been updated to use a relative path.
+        import createFFmpeg from './ffmpeg/ffmpeg.js';
 
         const logElement = document.getElementById('log');
 
@@ -60,13 +59,11 @@
                     throw new Error('createFFmpeg function is not available. Ensure ffmpeg.js is loaded as a module.');
                 }
                 
-                // The coreURL, wasmURL, and workerURL should point to the files you downloaded.
-                // The version number is optional but harmless.
                 const ffmpeg = createFFmpeg({
                     log: true, 
-                    coreURL: '/ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
-                    wasmURL: '/ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
-                    workerURL: '/ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06',
+                    coreURL: './ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
+                    wasmURL: './ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
+                    workerURL: './ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06',
                 });
 
                 log('Attempting to load FFmpeg core files...');
@@ -79,7 +76,6 @@
             log('FFmpeg advanced tests finished.', 'info');
         }
 
-        // Wait for the window to fully load before running tests
         window.addEventListener('DOMContentLoaded', runTests);
     </script>
 </body>
