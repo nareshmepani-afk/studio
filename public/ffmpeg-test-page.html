@@ -25,17 +25,15 @@
     </div>
 
     <!-- 
-      Based on our research, the 'ffmpeg.js' file is an ES module
-      that does not export anything. Its purpose is to attach the
-      'createFFmpeg' function to the global 'window' object.
-      
-      Therefore, we must load it with a regular <script> tag and
-      NOT with 'type="module"'.
-    -->
-    <script src="./ffmpeg/ffmpeg.js"></script>
+      Based on the console error, we now know that 'ffmpeg.js' is an ES module.
+      Therefore, we MUST use 'type="module"' to load it correctly.
 
-    <!-- The rest of our code will now run in a separate script tag. -->
-    <script>
+      We will now try to import the 'createFFmpeg' function as a default export,
+      which is the most common pattern for a single-function module.
+    -->
+    <script type="module">
+        import createFFmpeg from './ffmpeg/ffmpeg.js';
+
         const logElement = document.getElementById('log');
 
         function log(message, type = 'info') {
@@ -64,12 +62,8 @@
 
             log('Test 2: Attempting FFmpeg instance creation and load...');
             try {
-                // Now, we check for 'createFFmpeg' on the global window object.
-                if (typeof window.createFFmpeg !== 'function') {
-                    throw new Error('createFFmpeg function is not available on the global window object. The script may not have loaded correctly.');
-                }
-                
-                const ffmpegInstance = window.createFFmpeg({
+                // We are now attempting to call the function directly from our default import.
+                const ffmpegInstance = createFFmpeg({
                     log: true, 
                     coreURL: './ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
                     wasmURL: './ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
