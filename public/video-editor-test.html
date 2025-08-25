@@ -46,14 +46,12 @@
         <video id="trimmed-video-output" width="640" height="480" controls></video>
     </div>
 
-    <!-- Script tag for FFmpeg.js -->
-    <!-- Ensure the path is correct relative to this HTML file -->
-    <!-- Loading as a module now -->
-    <script type="module" src="/ffmpeg/ffmpeg.js"></script>
+    <!-- The main application script, now correctly marked as a module -->
+    <script type="module">
+        // Import FFmpeg from the module
+        import { FFmpeg, fetchFile } from '/ffmpeg/ffmpeg.js';
 
-    <script>
-        // JavaScript logic will be added here later
-        // This script will now also be a module
+        // Get references to all the HTML elements
         const videoPreview = document.getElementById('video-preview');
         const startRecordingButton = document.getElementById('start-recording');
         const stopRecordingButton = document.getElementById('stop-recording');
@@ -66,20 +64,16 @@
         let recordedChunks = [];
         let ffmpeg; // Variable to hold the FFmpeg instance
         
-        // Import createFFmpeg and fetchFile from the FFmpeg module
-        // This requires the script tag loading ffmpeg.js to have type="module"
-        import { createFFmpeg, fetchFile } from '/ffmpeg/ffmpeg.js';
-
-        // Placeholder for FFmpeg initialization (will be expanded)
+        /**
+         * Initializes the FFmpeg instance and loads the core.
+         */
         async function initializeFFmpeg() {
-            // Using the new FFmpeg() constructor as per the latest library versions
-            ffmpeg = createFFmpeg({
-                log: true,
-                coreURL: './ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
-                wasmURL: './ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
-                workerURL: './ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06',
-            });
-             try {
+            console.log('Initializing FFmpeg...');
+            // Corrected: using the new FFmpeg() constructor
+            ffmpeg = new FFmpeg({ log: true });
+            
+            try {
+                // The library will automatically find the core files since we are using a module script
                 await ffmpeg.load();
                 console.log('FFmpeg loaded successfully.');
             } catch (e) {
@@ -91,10 +85,10 @@
         // Initialize FFmpeg when the DOM is fully loaded
         window.addEventListener('DOMContentLoaded', initializeFFmpeg);
 
-
-        // Placeholder for recording logic (will be expanded)
+        // Recording logic
         startRecordingButton.addEventListener('click', async () => {
-             try {
+            try {
+                // Request access to the user's camera and microphone
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 videoPreview.srcObject = stream;
                 mediaRecorder = new MediaRecorder(stream);
@@ -106,7 +100,7 @@
                 };
 
                 mediaRecorder.onstop = async () => {
-                    const blob = new Blob(recordedChunks, { type: 'video/webm' }); // Assuming webm format
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
                     recordedChunks = [];
                     const url = URL.createObjectURL(blob);
                     videoPreview.src = url; // Display the recorded video in the preview
@@ -114,7 +108,7 @@
                     if (ffmpeg) {
                         trimVideoButton.disabled = false; // Enable trim button after recording
                     } else {
-                         console.error('FFmpeg is not initialized. Cannot enable trimming.');
+                        console.error('FFmpeg is not initialized. Cannot enable trimming.');
                     }
                 };
 
@@ -138,10 +132,9 @@
             }
         });
 
-
-        // Placeholder for trimming logic (will be expanded)
+        // Trimming logic
         trimVideoButton.addEventListener('click', async () => {
-             if (!ffmpeg) {
+            if (!ffmpeg) {
                 console.error('FFmpeg is not loaded.');
                 return;
             }
@@ -154,34 +147,36 @@
                 return;
             }
 
-            // Assuming the recorded video is currently in the video preview
+            // Get the recorded video from the preview element's src
             const videoBlob = await fetch(videoPreview.src).then(r => r.blob());
-            const inputFileName = 'input.webm'; // Or dynamically determine the format
+            const inputFileName = 'input.webm'; // Assuming webm format from MediaRecorder
             const outputFileName = 'output.mp4'; // Output format
 
-             try {
+            try {
                 // Write the video to FFmpeg's virtual file system
+                console.log('Writing video to FFmpeg file system...');
                 await ffmpeg.FS('writeFile', inputFileName, await fetchFile(videoBlob));
 
                 // Run the FFmpeg command for trimming
+                console.log('Running FFmpeg command...');
                 await ffmpeg.run('-ss', start.toString(), '-to', end.toString(), '-i', inputFileName, '-c', 'copy', outputFileName);
 
                 // Read the trimmed video from the virtual file system
+                console.log('Reading trimmed video...');
                 const data = ffmpeg.FS('readFile', outputFileName);
 
                 // Create a blob and URL for the trimmed video
-                const trimmedBlob = new Blob([data.buffer], { type: 'video/mp4' }); // Assuming mp4 output
+                const trimmedBlob = new Blob([data.buffer], { type: 'video/mp4' });
                 const trimmedUrl = URL.createObjectURL(trimmedBlob);
 
                 // Display the trimmed video
                 trimmedVideoOutput.src = trimmedUrl;
                 trimmedVideoOutput.load();
-
+                console.log('Trimming complete!');
             } catch (e) {
                 console.error('Error during trimming:', e);
             }
         });
-
 
     </script>
 </body>
