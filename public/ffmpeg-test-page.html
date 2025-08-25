@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FFmpeg CDN Test Page</title>
+    <title>FFmpeg CDN Module Test Page</title>
     <style>
         body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f0f4f8; color: #333; }
         .log-container { border: 1px solid #cce6ff; padding: 20px; margin-top: 20px; background-color: #e6f7ff; border-radius: 8px; }
@@ -15,7 +15,7 @@
     </style>
 </head>
 <body>
-    <h1>FFmpeg CDN Test Page</h1>
+    <h1>FFmpeg CDN Module Test Page</h1>
 
     <div class="log-container">
         <h2>Test Log</h2>
@@ -23,18 +23,15 @@
     </div>
 
     <!-- 
-      Based on the latest console output, the local ffmpeg.js file
-      is corrupted or malformed. It causes a SyntaxError, which means the
-      browser cannot even parse the file. This is a definitive problem with
-      the file itself, not our loading method.
-
-      The only way to guarantee a working file is to load it from a CDN.
-      This script will load the official, correct library and attempt to
-      find and run the `createFFmpeg` function.
+      Based on the last console output, the CDN file loaded, but the 
+      'createFFmpeg' function was not found. This is because the library
+      is an ES Module and needs to be loaded with a 'type="module"' attribute.
+      This allows us to use the 'import' syntax to get the function.
     -->
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.9.7/dist/ffmpeg.min.js"></script>
+    <script type="module">
+        // Import the createFFmpeg function from the CDN URL.
+        import { createFFmpeg } from 'https://unpkg.com/@ffmpeg/ffmpeg@0.9.7/dist/ffmpeg.min.js';
 
-    <script>
         const logElement = document.getElementById('log');
 
         /**
@@ -67,16 +64,15 @@
                 log('SUCCESS: Page is Cross-Origin Isolated.', 'success');
             } else {
                 log('FAILURE: Page is NOT Cross-Origin Isolated. FFmpeg WASM will not work.', 'failure');
+                log('Please ensure your server is configured with the correct headers (Cross-Origin-Opener-Policy: same-origin, Cross-Origin-Embedder-Policy: require-corp).', 'info');
+                return; // Stop here as further tests will fail without COOP/COEP
             }
 
-            log('Test 2: Checking for global "createFFmpeg" function from CDN...');
+            log('Test 2: Checking for "createFFmpeg" function after module import...');
             
-            // Check if the createFFmpeg function exists in the global scope.
             if (typeof createFFmpeg === 'function') {
-                log('SUCCESS: Found "createFFmpeg" as a global function.', 'success');
+                log('SUCCESS: Found "createFFmpeg" function. Module import successful.', 'success');
                 try {
-                    // Attempt to create an FFmpeg instance.
-                    // Note: We're also using CDN links for the core files.
                     const ffmpegInstance = createFFmpeg({
                         log: true, 
                         coreURL: 'https://unpkg.com/@ffmpeg/core@0.9.7/dist/ffmpeg-core.js',
@@ -86,18 +82,18 @@
 
                     log('Attempting to load FFmpeg core files...');
                     
-                    // Attempt to load the core files.
                     await ffmpegInstance.load();
 
                     log('SUCCESS: FFmpeg instance created and loaded successfully!', 'success');
                 } catch (error) {
-                    log(`FATAL: Failed to create FFmpeg instance: ${error.message}`, 'failure');
+                    log(`FATAL: Failed to load FFmpeg core files: ${error.message}`, 'failure');
+                    log('This could be a network issue, or the core files might be missing. Ensure these CDN links are accessible.', 'info');
                 }
             } else {
-                log('FAILURE: The global "createFFmpeg" function was not found after loading the CDN script.', 'failure');
-                log('This indicates an issue with the CDN link or the library structure.', 'info');
+                log('FAILURE: The "createFFmpeg" function was not found. The module might not be correctly imported.', 'failure');
+                log('Please ensure your browser supports ES Modules and the CDN link is correct.', 'info');
             }
-            log('FFmpeg CDN tests finished.', 'info');
+            log('FFmpeg CDN module tests finished.', 'info');
         }
 
         // Wait for the window to finish loading the script before running the tests.
