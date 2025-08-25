@@ -25,14 +25,15 @@
     </div>
 
     <!-- 
-      Based on the console error, we now know that 'ffmpeg.js' is an ES module.
-      Therefore, we MUST use 'type="module"' to load it correctly.
+      Based on the console error, we know that 'ffmpeg.js' is an ES module
+      that does NOT have a 'default' export. The only remaining standard
+      option is that it has a NAMED export.
 
-      We will now try to import the 'createFFmpeg' function as a default export,
-      which is the most common pattern for a single-function module.
+      We will now use the correct syntax to directly import the 'createFFmpeg'
+      function by name.
     -->
     <script type="module">
-        import createFFmpeg from './ffmpeg/ffmpeg.js';
+        import { createFFmpeg } from './ffmpeg/ffmpeg.js';
 
         const logElement = document.getElementById('log');
 
@@ -62,7 +63,7 @@
 
             log('Test 2: Attempting FFmpeg instance creation and load...');
             try {
-                // We are now attempting to call the function directly from our default import.
+                // We are now attempting to call the function directly from our named import.
                 const ffmpegInstance = createFFmpeg({
                     log: true, 
                     coreURL: './ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
