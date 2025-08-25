@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FFmpeg Advanced Test Page</title>
+    <title>FFmpeg Final Test Page</title>
     <style>
         body { font-family: sans-serif; line-height: 1.6; margin: 20px; }
         .log-container { border: 1px solid #ccc; padding: 15px; margin-top: 20px; background-color: #f9f9f9; }
@@ -17,7 +17,7 @@
     </style>
 </head>
 <body>
-    <h1>FFmpeg Advanced Test Page</h1>
+    <h1>FFmpeg Final Test Page</h1>
 
     <div class="log-container">
         <h2>Test Log</h2>
@@ -25,13 +25,17 @@
     </div>
 
     <!-- 
-      We are now using a "wildcard" import to get all named exports from the module
-      into a single object called 'ffmpeg'. This helps us debug what's actually exported.
+      Based on our research, the 'ffmpeg.js' file is an ES module
+      that does not export anything. Its purpose is to attach the
+      'createFFmpeg' function to the global 'window' object.
+      
+      Therefore, we must load it with a regular <script> tag and
+      NOT with 'type="module"'.
     -->
-    <script type="module">
-        // Import all exports into a single 'ffmpeg' object.
-        import * as ffmpeg from './ffmpeg/ffmpeg.js';
+    <script src="./ffmpeg/ffmpeg.js"></script>
 
+    <!-- The rest of our code will now run in a separate script tag. -->
+    <script>
         const logElement = document.getElementById('log');
 
         function log(message, type = 'info') {
@@ -60,15 +64,12 @@
 
             log('Test 2: Attempting FFmpeg instance creation and load...');
             try {
-                log('DEBUG: The imported module object is being logged below.', 'debug');
-                console.log(ffmpeg);
-
-                // Now we check for the 'createFFmpeg' function on the imported object.
-                if (typeof ffmpeg.createFFmpeg !== 'function') {
-                    throw new Error('createFFmpeg function is not available on the imported module object.');
+                // Now, we check for 'createFFmpeg' on the global window object.
+                if (typeof window.createFFmpeg !== 'function') {
+                    throw new Error('createFFmpeg function is not available on the global window object. The script may not have loaded correctly.');
                 }
                 
-                const ffmpegInstance = ffmpeg.createFFmpeg({
+                const ffmpegInstance = window.createFFmpeg({
                     log: true, 
                     coreURL: './ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
                     wasmURL: './ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
@@ -82,7 +83,7 @@
             } catch (error) {
                 log(`FATAL: Failed to create FFmpeg instance: ${error.message}`, 'failure');
             }
-            log('FFmpeg advanced tests finished.', 'info');
+            log('FFmpeg final tests finished.', 'info');
         }
 
         window.addEventListener('DOMContentLoaded', runTests);
