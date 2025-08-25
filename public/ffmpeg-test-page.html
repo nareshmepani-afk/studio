@@ -12,6 +12,7 @@
         .log-success { color: green; font-weight: bold; }
         .log-failure { color: red; font-weight: bold; }
         .log-info { color: blue; }
+        .log-debug { color: gray; }
         h1, h2 { color: #333; }
     </style>
 </head>
@@ -23,16 +24,13 @@
         <div id="log"></div>
     </div>
 
-    <!--
-      The previous errors indicate that ffmpeg.js is an ES module
-      that uses a named export. We must load it as a module to avoid
-      the "Unexpected token 'export'" error.
-      The import statement is updated to `import { createFFmpeg }`
-      to correctly handle the named export.
+    <!-- 
+      We are now using a "wildcard" import to get all named exports from the module
+      into a single object called 'ffmpeg'. This helps us debug what's actually exported.
     -->
     <script type="module">
-        // Import 'createFFmpeg' as a named export from the module.
-        import { createFFmpeg } from './ffmpeg/ffmpeg.js';
+        // Import all exports into a single 'ffmpeg' object.
+        import * as ffmpeg from './ffmpeg/ffmpeg.js';
 
         const logElement = document.getElementById('log');
 
@@ -62,11 +60,15 @@
 
             log('Test 2: Attempting FFmpeg instance creation and load...');
             try {
-                if (typeof createFFmpeg !== 'function') {
-                    throw new Error('createFFmpeg function is not available. Ensure ffmpeg.js is loaded correctly as a named export.');
+                log('DEBUG: The imported module object is being logged below.', 'debug');
+                console.log(ffmpeg);
+
+                // Now we check for the 'createFFmpeg' function on the imported object.
+                if (typeof ffmpeg.createFFmpeg !== 'function') {
+                    throw new Error('createFFmpeg function is not available on the imported module object.');
                 }
                 
-                const ffmpeg = createFFmpeg({
+                const ffmpegInstance = ffmpeg.createFFmpeg({
                     log: true, 
                     coreURL: './ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
                     wasmURL: './ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
@@ -74,7 +76,7 @@
                 });
 
                 log('Attempting to load FFmpeg core files...');
-                await ffmpeg.load();
+                await ffmpegInstance.load();
 
                 log('SUCCESS: FFmpeg instance created and loaded successfully.', 'success');
             } catch (error) {
