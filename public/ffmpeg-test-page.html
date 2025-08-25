@@ -3,21 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FFmpeg Global Load Test Page</title>
+    <title>FFmpeg CDN Test Page</title>
     <style>
-        body { font-family: sans-serif; line-height: 1.6; margin: 20px; }
-        .log-container { border: 1px solid #ccc; padding: 15px; margin-top: 20px; background-color: #f9f9f9; }
-        .log-entry { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee; }
-        .log-entry:last-child { border-bottom: none; }
-        .log-success { color: green; font-weight: bold; }
-        .log-failure { color: red; font-weight: bold; }
-        .log-info { color: blue; }
-        .log-debug { color: gray; }
-        h1, h2 { color: #333; }
+        body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f0f4f8; color: #333; }
+        .log-container { border: 1px solid #cce6ff; padding: 20px; margin-top: 20px; background-color: #e6f7ff; border-radius: 8px; }
+        .log-entry { margin-bottom: 10px; padding: 8px 12px; border-radius: 4px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .log-success { color: #2e7d32; font-weight: bold; }
+        .log-failure { color: #d32f2f; font-weight: bold; }
+        .log-info { color: #1976d2; }
+        h1, h2 { color: #1a237e; }
     </style>
 </head>
 <body>
-    <h1>FFmpeg Global Load Test Page</h1>
+    <h1>FFmpeg CDN Test Page</h1>
 
     <div class="log-container">
         <h2>Test Log</h2>
@@ -25,22 +23,28 @@
     </div>
 
     <!-- 
-      Based on the last console output, the ffmpeg.js module is empty and
-      exports nothing. We must stop trying to use it as a module.
+      Based on the latest console output, the local ffmpeg.js file
+      is corrupted or malformed. It causes a SyntaxError, which means the
+      browser cannot even parse the file. This is a definitive problem with
+      the file itself, not our loading method.
 
-      This is a final attempt to load the library as a classic script.
-      By removing the 'type="module"' attribute, we treat the file as a simple
-      script that will hopefully create a global 'createFFmpeg' or 'FFmpeg'
-      variable for us to use.
+      The only way to guarantee a working file is to load it from a CDN.
+      This script will load the official, correct library and attempt to
+      find and run the `createFFmpeg` function.
     -->
-    <script src="./ffmpeg/ffmpeg.js"></script>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.9.7/dist/ffmpeg.min.js"></script>
 
     <script>
         const logElement = document.getElementById('log');
 
+        /**
+         * Appends a formatted message to the on-page log.
+         * @param {string} message The message to display.
+         * @param {string} type The type of message ('info', 'success', 'failure').
+         */
         function log(message, type = 'info') {
             const entry = document.createElement('div');
-            entry.className = 'log-entry log-' + type;
+            entry.className = `log-entry log-${type}`;
             entry.textContent = message;
             if (logElement) {
                 logElement.appendChild(entry);
@@ -48,46 +52,56 @@
             console.log(`[${type.toUpperCase()}] ${message}`);
         }
         
+        // This is a global error handler to catch any unexpected script issues.
         window.onerror = function(message, source, lineno, colno, error) {
             log(`[UNCAUGHT ERROR] ${message} at ${source}:${lineno}:${colno}`, 'failure');
             console.error(error);
         };
 
+        /**
+         * Runs a series of tests to check for FFmpeg readiness.
+         */
         async function runTests() {
             log('Test 1: Checking for Cross-Origin Isolation...');
             if (window.crossOriginIsolated) {
                 log('SUCCESS: Page is Cross-Origin Isolated.', 'success');
             } else {
-                log('FAILURE: Page is NOT Cross-Origin Isolated.', 'failure');
-                log('Cross-Origin Isolation is required for FFmpeg WASM. Ensure required headers are set.', 'info');
+                log('FAILURE: Page is NOT Cross-Origin Isolated. FFmpeg WASM will not work.', 'failure');
             }
 
-            log('Test 2: Checking for global "createFFmpeg" function...');
+            log('Test 2: Checking for global "createFFmpeg" function from CDN...');
+            
+            // Check if the createFFmpeg function exists in the global scope.
             if (typeof createFFmpeg === 'function') {
                 log('SUCCESS: Found "createFFmpeg" as a global function.', 'success');
                 try {
+                    // Attempt to create an FFmpeg instance.
+                    // Note: We're also using CDN links for the core files.
                     const ffmpegInstance = createFFmpeg({
                         log: true, 
-                        coreURL: './ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
-                        wasmURL: './ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
-                        workerURL: './ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06',
+                        coreURL: 'https://unpkg.com/@ffmpeg/core@0.9.7/dist/ffmpeg-core.js',
+                        wasmURL: 'https://unpkg.com/@ffmpeg/core@0.9.7/dist/ffmpeg-core.wasm',
+                        workerURL: 'https://unpkg.com/@ffmpeg/core@0.9.7/dist/ffmpeg-core.worker.js',
                     });
 
                     log('Attempting to load FFmpeg core files...');
+                    
+                    // Attempt to load the core files.
                     await ffmpegInstance.load();
 
-                    log('SUCCESS: FFmpeg instance created and loaded successfully.', 'success');
+                    log('SUCCESS: FFmpeg instance created and loaded successfully!', 'success');
                 } catch (error) {
                     log(`FATAL: Failed to create FFmpeg instance: ${error.message}`, 'failure');
                 }
             } else {
-                log('FAILURE: The global "createFFmpeg" function was not found. This indicates a problem with the library files or how they are being served.', 'failure');
-                log('Please ensure all required FFmpeg library files are present and uncorrupted.', 'info');
+                log('FAILURE: The global "createFFmpeg" function was not found after loading the CDN script.', 'failure');
+                log('This indicates an issue with the CDN link or the library structure.', 'info');
             }
-            log('FFmpeg final tests finished.', 'info');
+            log('FFmpeg CDN tests finished.', 'info');
         }
 
-        window.addEventListener('DOMContentLoaded', runTests);
+        // Wait for the window to finish loading the script before running the tests.
+        window.addEventListener('load', runTests);
     </script>
 </body>
 </html>
