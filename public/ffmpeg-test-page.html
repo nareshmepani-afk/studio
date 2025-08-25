@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FFmpeg Final Test Page</title>
+    <title>FFmpeg Global Load Test Page</title>
     <style>
         body { font-family: sans-serif; line-height: 1.6; margin: 20px; }
         .log-container { border: 1px solid #ccc; padding: 15px; margin-top: 20px; background-color: #f9f9f9; }
@@ -17,9 +17,7 @@
     </style>
 </head>
 <body>
-    <h1>FFmpeg Final Test Page</h1>
-
-    <p>We are now debugging the module's contents. Please open the developer console and expand the logged object to see what is exported.</p>
+    <h1>FFmpeg Global Load Test Page</h1>
 
     <div class="log-container">
         <h2>Test Log</h2>
@@ -27,16 +25,17 @@
     </div>
 
     <!-- 
-      Based on the console error, we know that 'ffmpeg.js' is an ES module
-      that does NOT have a 'default' export or a named export for 'createFFmpeg'.
+      Based on the last console output, the ffmpeg.js module is empty and
+      exports nothing. We must stop trying to use it as a module.
 
-      We will now import the entire module as a namespace and log the object to
-      the console to see what is actually exported from the module. This is a
-      critical debugging step to find the correct function name.
+      This is a final attempt to load the library as a classic script.
+      By removing the 'type="module"' attribute, we treat the file as a simple
+      script that will hopefully create a global 'createFFmpeg' or 'FFmpeg'
+      variable for us to use.
     -->
-    <script type="module">
-        import * as FFmpegModule from './ffmpeg/ffmpeg.js';
+    <script src="./ffmpeg/ffmpeg.js"></script>
 
+    <script>
         const logElement = document.getElementById('log');
 
         function log(message, type = 'info') {
@@ -63,16 +62,11 @@
                 log('Cross-Origin Isolation is required for FFmpeg WASM. Ensure required headers are set.', 'info');
             }
 
-            log('Test 2: Inspecting FFmpeg module exports...');
-            log('Please check your developer console for the logged FFmpegModule object.', 'info');
-            
-            // This is the key debugging step. We log the entire imported module.
-            console.log("FFmpegModule exports:", FFmpegModule);
-
-            if (FFmpegModule && typeof FFmpegModule.createFFmpeg === 'function') {
-                log('SUCCESS: Found createFFmpeg function as a named export.', 'success');
+            log('Test 2: Checking for global "createFFmpeg" function...');
+            if (typeof createFFmpeg === 'function') {
+                log('SUCCESS: Found "createFFmpeg" as a global function.', 'success');
                 try {
-                    const ffmpegInstance = FFmpegModule.createFFmpeg({
+                    const ffmpegInstance = createFFmpeg({
                         log: true, 
                         coreURL: './ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
                         wasmURL: './ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
@@ -87,8 +81,8 @@
                     log(`FATAL: Failed to create FFmpeg instance: ${error.message}`, 'failure');
                 }
             } else {
-                log('FAILURE: Could not find "createFFmpeg" function on the FFmpegModule object. The library may have a different export name.', 'failure');
-                log('Please report the contents of the FFmpegModule object from your console.', 'info');
+                log('FAILURE: The global "createFFmpeg" function was not found. This indicates a problem with the library files or how they are being served.', 'failure');
+                log('Please ensure all required FFmpeg library files are present and uncorrupted.', 'info');
             }
             log('FFmpeg final tests finished.', 'info');
         }
