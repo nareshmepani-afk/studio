@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FFmpeg Web Assembly Test</title>
-    <!-- Tailwind CSS for styling from a reliable CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"></script>
+    <!-- Tailwind CSS for styling from the official Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles for the app */
         body {
@@ -33,8 +33,6 @@
             color: #4b5563;
         }
     </style>
-    <!-- Load the FFmpeg library from a CDN. This version exposes a global `FFmpeg` object. -->
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.9.7/dist/ffmpeg.min.js"></script>
 </head>
 <body>
     <div class="container flex flex-col items-center space-y-6">
@@ -52,6 +50,9 @@
             </a>
         </div>
     </div>
+
+    <!-- Load the FFmpeg library from a CDN. This version exposes a global `FFmpeg` object. -->
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.9.7/dist/ffmpeg.min.js"></script>
 
     <script>
         // Use a global variable to store the FFmpeg instance
@@ -141,3 +142,4 @@
     </script>
 </body>
 </html>
+
