@@ -48,10 +48,12 @@
 
     <!-- Script tag for FFmpeg.js -->
     <!-- Ensure the path is correct relative to this HTML file -->
-    <script src="./ffmpeg/ffmpeg.js"></script>
+    <!-- Loading as a module now -->
+    <script type="module" src="/ffmpeg/ffmpeg.js"></script>
 
     <script>
         // JavaScript logic will be added here later
+        // This script will now also be a module
         const videoPreview = document.getElementById('video-preview');
         const startRecordingButton = document.getElementById('start-recording');
         const stopRecordingButton = document.getElementById('stop-recording');
@@ -64,12 +66,13 @@
         let recordedChunks = [];
         let ffmpeg; // Variable to hold the FFmpeg instance
         
+        // Import createFFmpeg and fetchFile from the FFmpeg module
+        // This requires the script tag loading ffmpeg.js to have type="module"
+        import { createFFmpeg, fetchFile } from '/ffmpeg/ffmpeg.js';
+
         // Placeholder for FFmpeg initialization (will be expanded)
         async function initializeFFmpeg() {
-             if (typeof createFFmpeg === 'undefined') {
-                console.error('createFFmpeg is not defined. Ensure ffmpeg.js is loaded correctly.');
-                return null;
-            }
+            // Using the new FFmpeg() constructor as per the latest library versions
             ffmpeg = createFFmpeg({
                 log: true,
                 coreURL: './ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
@@ -85,8 +88,8 @@
             }
         }
 
-        // Initialize FFmpeg when the page loads
-        window.addEventListener('load', initializeFFmpeg);
+        // Initialize FFmpeg when the DOM is fully loaded
+        window.addEventListener('DOMContentLoaded', initializeFFmpeg);
 
 
         // Placeholder for recording logic (will be expanded)
@@ -179,13 +182,6 @@
             }
         });
 
-        // Helper function to fetch a file for FFmpeg (requires @ffmpeg/util)
-        // This is a placeholder; you'll need to import fetchFile from @ffmpeg/util
-         async function fetchFile(data) {
-            const response = await fetch(data instanceof File ? URL.createObjectURL(data) : data);
-            const arrayBuffer = await response.arrayBuffer();
-            return new Uint8Array(arrayBuffer);
-        }
 
     </script>
 </body>
