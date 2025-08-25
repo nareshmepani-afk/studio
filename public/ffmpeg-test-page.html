@@ -23,10 +23,19 @@
         <div id="log"></div>
     </div>
 
-    <script type="module">
-        // The import statement has been updated to use a relative path.
-        import createFFmpeg from './ffmpeg/ffmpeg.js';
+    <!-- 
+      This script tag loads the FFmpeg library. 
+      It is a classic script, not a module, so we don't use 'type="module"'.
+      This will make the 'createFFmpeg' function available globally.
+    -->
+    <script src="./ffmpeg/ffmpeg.js"></script>
 
+    <!-- 
+      This separate script block contains our test logic.
+      We've wrapped the logic in a 'DOMContentLoaded' listener to ensure
+      the previous script has finished loading before we try to use it.
+    -->
+    <script>
         const logElement = document.getElementById('log');
 
         function log(message, type = 'info') {
@@ -56,7 +65,7 @@
             log('Test 2: Attempting FFmpeg instance creation and load...');
             try {
                 if (typeof createFFmpeg !== 'function') {
-                    throw new Error('createFFmpeg function is not available. Ensure ffmpeg.js is loaded as a module.');
+                    throw new Error('createFFmpeg function is not available. Ensure ffmpeg.js is loaded correctly.');
                 }
                 
                 const ffmpeg = createFFmpeg({
