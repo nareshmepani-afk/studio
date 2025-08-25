@@ -3,101 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FFmpeg CDN Module Test Page</title>
+    <title>FFmpeg Web Assembly Test</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load the FFmpeg library from a CDN. This version exposes a global `FFmpeg` object. -->
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.9.7/dist/ffmpeg.min.js"></script>
     <style>
-        body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f0f4f8; color: #333; }
-        .log-container { border: 1px solid #cce6ff; padding: 20px; margin-top: 20px; background-color: #e6f7ff; border-radius: 8px; }
-        .log-entry { margin-bottom: 10px; padding: 8px 12px; border-radius: 4px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .log-success { color: #2e7d32; font-weight: bold; }
-        .log-failure { color: #d32f2f; font-weight: bold; }
-        .log-info { color: #1976d2; }
-        h1, h2 { color: #1a237e; }
+        /* Custom styles for the app */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        #message-box {
+            min-height: 3rem;
+            background-color: #f3f4f6;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            text-align: center;
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
     </style>
 </head>
 <body>
-    <h1>FFmpeg CDN Module Test Page</h1>
-
-    <div class="log-container">
-        <h2>Test Log</h2>
-        <div id="log"></div>
+    <div class="container flex flex-col items-center space-y-6">
+        <h1 class="text-3xl font-bold text-gray-800">Video Processor</h1>
+        <input type="file" id="video-input" accept="video/*" class="w-full text-gray-700 bg-gray-100 p-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <button id="process-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
+            Convert to GIF
+        </button>
+        <div id="message-box">Status: Ready</div>
+        <div id="output-container" class="hidden">
+            <h2 class="text-xl font-semibold text-gray-800 mt-4">Output:</h2>
+            <img id="output-image" src="#" alt="Processed GIF" class="mt-2 rounded-lg max-w-full h-auto border border-gray-300">
+            <a id="download-link" href="#" download="processed.gif" class="mt-4 inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
+                Download GIF
+            </a>
+        </div>
     </div>
 
-    <!-- 
-      Based on the last console output, the CDN file loaded, but the 
-      'createFFmpeg' function was not found. This is because the library
-      is an ES Module and needs to be loaded with a 'type="module"' attribute.
-      This allows us to use the 'import' syntax to get the function.
-    -->
-    <script type="module">
-        // Import the createFFmpeg function from the CDN URL.
-        import { createFFmpeg } from 'https://unpkg.com/@ffmpeg/ffmpeg@0.9.7/dist/ffmpeg.min.js';
-
-        const logElement = document.getElementById('log');
+    <script>
+        // Use a global variable to store the FFmpeg instance
+        let ffmpeg = null;
 
         /**
-         * Appends a formatted message to the on-page log.
+         * Writes a status message to the message box UI element.
          * @param {string} message The message to display.
-         * @param {string} type The type of message ('info', 'success', 'failure').
          */
-        function log(message, type = 'info') {
-            const entry = document.createElement('div');
-            entry.className = `log-entry log-${type}`;
-            entry.textContent = message;
-            if (logElement) {
-                logElement.appendChild(entry);
-            }
-            console.log(`[${type.toUpperCase()}] ${message}`);
-        }
-        
-        // This is a global error handler to catch any unexpected script issues.
-        window.onerror = function(message, source, lineno, colno, error) {
-            log(`[UNCAUGHT ERROR] ${message} at ${source}:${lineno}:${colno}`, 'failure');
-            console.error(error);
+        const log = (message) => {
+            document.getElementById('message-box').innerText = `Status: ${message}`;
+            console.log(message);
         };
 
         /**
-         * Runs a series of tests to check for FFmpeg readiness.
+         * Initializes the FFmpeg instance and loads the core.
          */
-        async function runTests() {
-            log('Test 1: Checking for Cross-Origin Isolation...');
-            if (window.crossOriginIsolated) {
-                log('SUCCESS: Page is Cross-Origin Isolated.', 'success');
-            } else {
-                log('FAILURE: Page is NOT Cross-Origin Isolated. FFmpeg WASM will not work.', 'failure');
-                log('Please ensure your server is configured with the correct headers (Cross-Origin-Opener-Policy: same-origin, Cross-Origin-Embedder-Policy: require-corp).', 'info');
-                return; // Stop here as further tests will fail without COOP/COEP
+        const initializeFFmpeg = async () => {
+            log('Initializing FFmpeg...');
+            // In this version (0.9.7), FFmpeg is a global object. We call its createFFmpeg method.
+            ffmpeg = FFmpeg.createFFmpeg({ log: true });
+            try {
+                // The `load()` method must be called to load the FFmpeg core.
+                await ffmpeg.load();
+                log('FFmpeg loaded successfully!');
+            } catch (error) {
+                log(`Failed to load FFmpeg: ${error.message}`);
+                console.error('FFmpeg load error:', error);
+            }
+        };
+
+        /**
+         * Processes the video file when the button is clicked.
+         */
+        const processVideo = async () => {
+            const fileInput = document.getElementById('video-input');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                log('Please select a video file first.');
+                return;
             }
 
-            log('Test 2: Checking for "createFFmpeg" function after module import...');
-            
-            if (typeof createFFmpeg === 'function') {
-                log('SUCCESS: Found "createFFmpeg" function. Module import successful.', 'success');
-                try {
-                    const ffmpegInstance = createFFmpeg({
-                        log: true, 
-                        coreURL: 'https://unpkg.com/@ffmpeg/core@0.9.7/dist/ffmpeg-core.js',
-                        wasmURL: 'https://unpkg.com/@ffmpeg/core@0.9.7/dist/ffmpeg-core.wasm',
-                        workerURL: 'https://unpkg.com/@ffmpeg/core@0.9.7/dist/ffmpeg-core.worker.js',
-                    });
-
-                    log('Attempting to load FFmpeg core files...');
-                    
-                    await ffmpegInstance.load();
-
-                    log('SUCCESS: FFmpeg instance created and loaded successfully!', 'success');
-                } catch (error) {
-                    log(`FATAL: Failed to load FFmpeg core files: ${error.message}`, 'failure');
-                    log('This could be a network issue, or the core files might be missing. Ensure these CDN links are accessible.', 'info');
-                }
-            } else {
-                log('FAILURE: The "createFFmpeg" function was not found. The module might not be correctly imported.', 'failure');
-                log('Please ensure your browser supports ES Modules and the CDN link is correct.', 'info');
+            if (!ffmpeg) {
+                log('FFmpeg is not initialized. Please wait a moment and try again.');
+                await initializeFFmpeg();
+                if (!ffmpeg) return; // Exit if initialization failed again
             }
-            log('FFmpeg CDN module tests finished.', 'info');
-        }
 
-        // Wait for the window to finish loading the script before running the tests.
-        window.addEventListener('load', runTests);
+            try {
+                log('Reading file...');
+                const { fetchFile } = FFmpeg; // Get the fetchFile utility from the global FFmpeg object
+                
+                // Write the file to FFmpeg's virtual file system
+                ffmpeg.FS('writeFile', file.name, await fetchFile(file));
+
+                log('Converting video to GIF...');
+                
+                // Run the FFmpeg command
+                await ffmpeg.run('-i', file.name, '-t', '2.5', '-ss', '2.0', '-f', 'gif', 'output.gif');
+
+                // Read the output file from FFmpeg's virtual file system
+                log('Reading output file...');
+                const data = ffmpeg.FS('readFile', 'output.gif');
+
+                // Create a URL for the output data
+                const url = URL.createObjectURL(new Blob([data.buffer], { type: 'image/gif' }));
+                
+                // Display the output and a download link
+                document.getElementById('output-image').src = url;
+                document.getElementById('download-link').href = url;
+                document.getElementById('output-container').classList.remove('hidden');
+
+                log('Conversion successful! See the result below.');
+            } catch (error) {
+                log(`Conversion failed: ${error.message}`);
+                console.error('Conversion error:', error);
+            }
+        };
+        
+        // Add event listeners for the button and for the window load event
+        document.getElementById('process-button').addEventListener('click', processVideo);
+        
+        // Initialize FFmpeg on page load.
+        window.onload = initializeFFmpeg;
+
     </script>
 </body>
 </html>
