@@ -19,6 +19,8 @@
 <body>
     <h1>FFmpeg Final Test Page</h1>
 
+    <p>We are now debugging the module's contents. Please open the developer console and expand the logged object to see what is exported.</p>
+
     <div class="log-container">
         <h2>Test Log</h2>
         <div id="log"></div>
@@ -26,14 +28,14 @@
 
     <!-- 
       Based on the console error, we know that 'ffmpeg.js' is an ES module
-      that does NOT have a 'default' export. The only remaining standard
-      option is that it has a NAMED export.
+      that does NOT have a 'default' export or a named export for 'createFFmpeg'.
 
-      We will now use the correct syntax to directly import the 'createFFmpeg'
-      function by name.
+      We will now import the entire module as a namespace and log the object to
+      the console to see what is actually exported from the module. This is a
+      critical debugging step to find the correct function name.
     -->
     <script type="module">
-        import { createFFmpeg } from './ffmpeg/ffmpeg.js';
+        import * as FFmpegModule from './ffmpeg/ffmpeg.js';
 
         const logElement = document.getElementById('log');
 
@@ -61,22 +63,32 @@
                 log('Cross-Origin Isolation is required for FFmpeg WASM. Ensure required headers are set.', 'info');
             }
 
-            log('Test 2: Attempting FFmpeg instance creation and load...');
-            try {
-                // We are now attempting to call the function directly from our named import.
-                const ffmpegInstance = createFFmpeg({
-                    log: true, 
-                    coreURL: './ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
-                    wasmURL: './ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
-                    workerURL: './ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06',
-                });
+            log('Test 2: Inspecting FFmpeg module exports...');
+            log('Please check your developer console for the logged FFmpegModule object.', 'info');
+            
+            // This is the key debugging step. We log the entire imported module.
+            console.log("FFmpegModule exports:", FFmpegModule);
 
-                log('Attempting to load FFmpeg core files...');
-                await ffmpegInstance.load();
+            if (FFmpegModule && typeof FFmpegModule.createFFmpeg === 'function') {
+                log('SUCCESS: Found createFFmpeg function as a named export.', 'success');
+                try {
+                    const ffmpegInstance = FFmpegModule.createFFmpeg({
+                        log: true, 
+                        coreURL: './ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
+                        wasmURL: './ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
+                        workerURL: './ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06',
+                    });
 
-                log('SUCCESS: FFmpeg instance created and loaded successfully.', 'success');
-            } catch (error) {
-                log(`FATAL: Failed to create FFmpeg instance: ${error.message}`, 'failure');
+                    log('Attempting to load FFmpeg core files...');
+                    await ffmpegInstance.load();
+
+                    log('SUCCESS: FFmpeg instance created and loaded successfully.', 'success');
+                } catch (error) {
+                    log(`FATAL: Failed to create FFmpeg instance: ${error.message}`, 'failure');
+                }
+            } else {
+                log('FAILURE: Could not find "createFFmpeg" function on the FFmpegModule object. The library may have a different export name.', 'failure');
+                log('Please report the contents of the FFmpegModule object from your console.', 'info');
             }
             log('FFmpeg final tests finished.', 'info');
         }
