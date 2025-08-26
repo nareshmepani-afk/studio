@@ -48,10 +48,10 @@
 
     <!-- The main application script, now correctly marked as a module -->
     <script type="module">
-        // Import the main FFmpeg class from the local file
+        // Import the main FFmpeg class
         import { FFmpeg } from '/ffmpeg/ffmpeg.js';
-        // Import the fetchFile utility from a public CDN, using the correct ES module path
-        import { fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
+        // Import utilities from the correct ES module path
+        import { fetchFile, toBlobURL } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
 
         // Get references to all the HTML elements
         const videoPreview = document.getElementById('video-preview');
@@ -67,17 +67,30 @@
         let ffmpeg; // Variable to hold the FFmpeg instance
         
         /**
-         * Initializes the FFmpeg instance and loads the core.
+         * Initializes the FFmpeg instance and loads the core files.
+         * This uses specific URLs for the core and worker to avoid cross-origin issues.
          */
         async function initializeFFmpeg() {
             console.log('Initializing FFmpeg...');
-            // Corrected: using the new FFmpeg() constructor
+            // The paths to the core FFmpeg files from a reliable CDN.
+            // This is the most common and robust way to load them.
+            const corePath = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm';
+            
+            // Create a new FFmpeg instance
             ffmpeg = new FFmpeg({ log: true });
             
             try {
-                // The library will automatically find the core files since we are using a module script
-                await ffmpeg.load();
+                // Use toBlobURL to fetch the core files and create blob URLs.
+                // This is the most reliable way to load them from a CDN and ensures
+                // correct headers for WebAssembly and workers.
+                await ffmpeg.load({
+                    coreURL: await toBlobURL(`${corePath}/ffmpeg-core.js`, 'text/javascript'),
+                    wasmURL: await toBlobURL(`${corePath}/ffmpeg-core.wasm`, 'application/wasm'),
+                    workerURL: await toBlobURL(`${corePath}/ffmpeg-core.worker.js`, 'text/javascript'),
+                });
                 console.log('FFmpeg loaded successfully.');
+                // Once loaded, we can enable the trim button if a video is ready
+                // but we will do this inside the mediaRecorder.onstop event to be safe.
             } catch (e) {
                 console.error('Failed to load FFmpeg:', e);
                 ffmpeg = null; // Ensure ffmpeg is null if loading fails
