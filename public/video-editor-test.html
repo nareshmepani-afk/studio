@@ -48,8 +48,10 @@
 
     <!-- The main application script, now correctly marked as a module -->
     <script type="module">
-        // Import FFmpeg from the module
-        import { FFmpeg, fetchFile } from '/ffmpeg/ffmpeg.js';
+        // Import the main FFmpeg class from the local file
+        import { FFmpeg } from '/ffmpeg/ffmpeg.js';
+        // Import the fetchFile utility from a public CDN, as it is in a separate package
+        import { fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/index.js';
 
         // Get references to all the HTML elements
         const videoPreview = document.getElementById('video-preview');
