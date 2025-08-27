@@ -26,9 +26,15 @@
 
     <div class="controls">
         <h2>Video Preview</h2>
-        <!-- Added playsinline for better mobile compatibility -->
+        <!-- `playsinline` is crucial for mobile video playback. -->
         <video id="video-preview" width="640" height="480" controls autoplay muted playsinline></video>
-        <p id="status-message">Please allow camera and microphone access to begin.</p>
+        <p id="status-message">Loading FFmpeg and preparing application...</p>
+    </div>
+
+    <div class="controls">
+        <h2>Recording Controls</h2>
+        <button id="start-recording" disabled>Start Recording</button>
+        <button id="stop-recording" disabled>Stop Recording</button>
     </div>
 
     <div class="controls">
@@ -46,7 +52,6 @@
 
     <div class="controls">
         <h2>Trimmed Video Output</h2>
-        <!-- Added playsinline for better mobile compatibility -->
         <video id="trimmed-video-output" width="640" height="480" controls playsinline></video>
     </div>
 
@@ -65,6 +70,8 @@
 
         // --- DOM Element References ---
         const videoPreview = document.getElementById('video-preview');
+        const startRecordingButton = document.getElementById('start-recording');
+        const stopRecordingButton = document.getElementById('stop-recording');
         const trimStartInput = document.getElementById('trim-start');
         const trimEndInput = document.getElementById('trim-end');
         const trimVideoButton = document.getElementById('trim-video');
@@ -76,6 +83,7 @@
         // --- Global State Variables ---
         let ffmpeg;
         let testVideoBlob = null;
+        let mediaRecorder;
 
         // --- Utility Function for Logging Status ---
         const log = (message) => {
@@ -118,12 +126,11 @@
             testResultsContainer.innerHTML = '<h2>Test Results</h2>'; 
 
             try {
-                // Ensure FFmpeg is initialized before starting any tests
                 await initializeFFmpeg();
                 displayTestResult('FFmpeg Initialization', true, 'Passed');
             } catch (e) {
                 displayTestResult('FFmpeg Initialization', false, `Failed: ${e.message}`);
-                return; // Stop test execution if FFmpeg is not ready
+                return; 
             }
 
             for (const { title, testFn } of testRegistry) {
@@ -138,7 +145,6 @@
 
         // --- Main FFmpeg Initialization Logic ---
         async function initializeFFmpeg() {
-            // Check if FFmpeg is already loaded to avoid re-initialization
             if (ffmpeg && ffmpeg.loaded) {
                 log('FFmpeg is already loaded.');
                 return;
@@ -161,42 +167,53 @@
         }
 
         // --- Video Recording Logic ---
-        /**
-         * Records a video from the user's webcam for a specified duration.
-         * @param {number} durationMs - The duration in milliseconds.
-         * @returns {Promise<Blob>} A promise that resolves with the recorded video blob.
-         */
-        const recordVideo = (durationMs) => new Promise(async (resolve, reject) => {
+        const startRecording = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 videoPreview.srcObject = stream;
-                const recorder = new MediaRecorder(stream);
-                const chunks = [];
                 
-                recorder.ondataavailable = (event) => {
+                let chunks = [];
+                mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.ondataavailable = (event) => {
                     if (event.data.size > 0) chunks.push(event.data);
                 };
                 
-                recorder.onstop = () => {
-                    stream.getTracks().forEach(track => track.stop()); // Clean up camera/mic access
-                    videoPreview.srcObject = null;
+                mediaRecorder.onstop = () => {
                     const blob = new Blob(chunks, { type: 'video/webm' });
-                    resolve(blob);
-                };
-                
-                recorder.onerror = (e) => {
-                    stream.getTracks().forEach(track => track.stop());
-                    reject(new Error(`MediaRecorder error: ${e.message}`));
+                    testVideoBlob = blob;
+                    videoPreview.srcObject = null; // Disconnect the stream from the preview
+                    videoPreview.src = URL.createObjectURL(testVideoBlob); // Set recorded video as source
+                    stream.getTracks().forEach(track => track.stop()); // Stop camera and microphone
+                    log('Recording stopped. Video ready for trimming.');
+                    
+                    // Enable trimming and test controls
+                    trimStartInput.disabled = false;
+                    trimEndInput.disabled = false;
+                    trimVideoButton.disabled = false;
+                    runTestsButton.disabled = false;
+
+                    // Re-enable start button, disable stop button
+                    startRecordingButton.disabled = false;
+                    stopRecordingButton.disabled = true;
                 };
 
-                recorder.start();
-                setTimeout(() => {
-                    if (recorder.state !== 'inactive') recorder.stop();
-                }, durationMs);
+                mediaRecorder.start();
+                log('Recording started...');
+                startRecordingButton.disabled = true;
+                stopRecordingButton.disabled = false;
+                
             } catch (e) {
-                reject(new Error(`Could not access camera/microphone: ${e.message}`));
+                log(`Could not access camera/microphone: ${e.message}`);
+                console.error('Error starting recording:', e);
             }
-        });
+        };
+
+        const stopRecording = () => {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        };
         
         // --- Test Case Definition ---
         registerTest('Video Trimming Test', async () => {
@@ -211,14 +228,12 @@
             const outputFileName = 'output.mp4'; 
 
             await ffmpeg.FS('writeFile', inputFileName, await fetchFile(testVideoBlob));
-            // Use the correct order for FFmpeg arguments (-i first for better performance)
             await ffmpeg.run('-i', inputFileName, '-ss', start.toString(), '-to', end.toString(), '-c', 'copy', outputFileName);
             const data = ffmpeg.FS('readFile', outputFileName);
 
             const trimmedBlob = new Blob([data.buffer], { type: 'video/mp4' });
             trimmedVideoOutput.src = URL.createObjectURL(trimmedBlob);
             
-            // Wait for the trimmed video to load to check its duration
             await new Promise(resolve => trimmedVideoOutput.onloadeddata = resolve);
             const duration = trimmedVideoOutput.duration;
 
@@ -228,6 +243,10 @@
         });
 
         // --- Event Listeners for User Actions ---
+        startRecordingButton.addEventListener('click', startRecording);
+        stopRecordingButton.addEventListener('click', stopRecording);
+        runTestsButton.addEventListener('click', runAllTests);
+
         trimVideoButton.addEventListener('click', async () => {
             if (!ffmpeg || !ffmpeg.loaded) {
                 log('Error: FFmpeg is not loaded.');
@@ -263,26 +282,16 @@
             }
         });
 
-        runTestsButton.addEventListener('click', runAllTests);
-
         // --- Initial Application Setup ---
         (async () => {
             try {
-                log('Recording a 3-second test video...');
-                testVideoBlob = await recordVideo(3000);
-                videoPreview.src = URL.createObjectURL(testVideoBlob);
-                
-                log('Test video recorded. Initializing FFmpeg...');
+                log('Loading FFmpeg. Please wait...');
                 await initializeFFmpeg();
-                
-                log('Ready. You can now run tests or trim the video.');
-                trimStartInput.disabled = false;
-                trimEndInput.disabled = false;
-                trimVideoButton.disabled = false;
-                runTestsButton.disabled = false;
+                log('Ready. Click "Start Recording" to begin.');
+                startRecordingButton.disabled = false;
                 
             } catch (e) {
-                log(`Setup failed: ${e.message}. Please grant permissions and reload.`);
+                log(`Setup failed: ${e.message}. Please reload the page.`);
                 console.error('Setup failed:', e);
             }
         })();
