@@ -287,6 +287,7 @@
             try {
                 log('Loading FFmpeg. Please wait...');
                 window.requestAnimationFrame(async () => {
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Add a small delay for repaint
                     await initializeFFmpeg();
                     log('Ready. Click "Start Recording" to begin.');
                     startRecordingButton.disabled = false;
