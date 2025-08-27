@@ -287,7 +287,7 @@
             try {
                 log('Loading FFmpeg. Please wait...');
                 // Introduce a small delay to allow the message to render before FFmpeg starts initializing.
-                await new Promise(resolve => setTimeout(resolve, 50)); 
+                await new Promise(resolve => setTimeout(resolve, 500)); 
                 await initializeFFmpeg();
                 log('Ready. Click "Start Recording" to begin.');
                 startRecordingButton.disabled = false;
