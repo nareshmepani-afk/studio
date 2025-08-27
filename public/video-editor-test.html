@@ -150,6 +150,7 @@
                 return;
             }
             log('Initializing FFmpeg...');
+            console.time('FFmpeg Loading Time');
             ffmpeg = new FFmpeg({ log: true });
             const corePath = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm';
             try {
@@ -158,8 +159,10 @@
                     wasmURL: await toBlobURL(`${corePath}/ffmpeg-core.wasm`, 'application/wasm'),
                     workerURL: await toBlobURL(`${corePath}/ffmpeg-core.worker.js`, 'text/javascript'),
                 });
+                console.timeEnd('FFmpeg Loading Time');
                 log('FFmpeg loaded successfully.');
             } catch (e) {
+                console.timeEnd('FFmpeg Loading Time');
                 console.error('Failed to load FFmpeg:', e);
                 ffmpeg = null;
                 throw new Error('FFmpeg failed to load.');
@@ -283,18 +286,29 @@
         });
 
         // --- Initial Application Setup ---
+        console.time('Total App Setup Time');
+        console.log('App setup starting...');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOMContentLoaded event fired.');
+            console.timeEnd('DOMContentLoaded');
+        });
+
         (async () => {
+            console.time('Initial Script Execution Time');
             try {
                 log('Loading FFmpeg. Please wait...');
-                window.requestAnimationFrame(async () => {
-                    await new Promise(resolve => setTimeout(resolve, 100)); // Add a small delay for repaint
-                    await initializeFFmpeg();
-                    log('Ready. Click "Start Recording" to begin.');
-                    startRecordingButton.disabled = false;
-                });
+                await new Promise(resolve => setTimeout(resolve, 100)); // Add a small delay for repaint
+                await initializeFFmpeg();
+                log('Ready. Click "Start Recording" to begin.');
+                startRecordingButton.disabled = false;
+                console.timeEnd('Initial Script Execution Time');
+                console.timeEnd('Total App Setup Time');
             } catch (e) {
                 log(`Setup failed: ${e.message}. Please reload the page.`);
                 console.error('Setup failed:', e);
+                console.timeEnd('Initial Script Execution Time');
+                console.timeEnd('Total App Setup Time');
             }
         })();
     </script>
