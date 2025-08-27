@@ -12,10 +12,17 @@
         input { margin: 5px; padding: 8px; }
         .controls { margin-bottom: 20px; padding: 15px; border: 1px solid #eee; background-color: #f9f9f9; }
         label { margin-right: 10px; }
+        /* Test results styling */
+        #test-results { margin-top: 20px; padding: 15px; border: 1px solid #ccc; background-color: #f0f0f0; }
+        .test-result { margin-bottom: 10px; padding: 10px; border-bottom: 1px solid #ddd; }
+        .test-result.passed { background-color: #d4edda; }
+        .test-result.failed { background-color: #f8d7da; }
+        .test-title { font-weight: bold; }
+        .test-message { margin-top: 5px; }
     </style>
 </head>
 <body>
-    <h1>Client-Side Video Editor Test 1</h1>
+    <h1>Client-Side Video Editor Test</h1>
 
     <div class="controls">
         <h2>Video Preview</h2>
@@ -46,14 +53,22 @@
         <video id="trimmed-video-output" width="640" height="480" controls></video>
     </div>
 
-    <!-- The main application script, now correctly marked as a module -->
+    <!-- Test Automation Controls -->
+    <div class="controls">
+        <h2>Test Automation</h2>
+        <button id="run-tests">Run Integration Tests</button>
+    </div>
+
+    <!-- Test Results Display -->
+    <div id="test-results">
+        <h2>Test Results</h2>
+        <!-- Test results will be dynamically inserted here -->
+    </div>
+
     <script type="module">
-        // Import the main FFmpeg class
         import { FFmpeg } from '/ffmpeg/ffmpeg.js';
-        // Import utilities from the correct ES module path
         import { fetchFile, toBlobURL } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
 
-        // Get references to all the HTML elements
         const videoPreview = document.getElementById('video-preview');
         const startRecordingButton = document.getElementById('start-recording');
         const stopRecordingButton = document.getElementById('stop-recording');
@@ -61,52 +76,128 @@
         const trimEndInput = document.getElementById('trim-end');
         const trimVideoButton = document.getElementById('trim-video');
         const trimmedVideoOutput = document.getElementById('trimmed-video-output');
+        const runTestsButton = document.getElementById('run-tests');
+        const testResultsContainer = document.getElementById('test-results');
 
         let mediaRecorder;
         let recordedChunks = [];
-        let ffmpeg; // Variable to hold the FFmpeg instance
-        
-        /**
-         * Initializes the FFmpeg instance and loads the core files.
-         * This uses specific URLs for the core and worker to avoid cross-origin issues.
-         */
+        let ffmpeg;
+
+        // --- Test Framework ---
+        const testRegistry = [];
+        const registerTest = (title, testFn) => {
+            testRegistry.push({ title, testFn });
+        };
+
+        const runTests = async () => {
+            testResultsContainer.innerHTML = '<h2>Test Results</h2>'; // Clear previous results
+            for (const { title, testFn } of testRegistry) {
+                const resultDiv = document.createElement('div');
+                resultDiv.classList.add('test-result');
+                const titleDiv = document.createElement('div');
+                titleDiv.classList.add('test-title');
+                titleDiv.textContent = title;
+                resultDiv.appendChild(titleDiv);
+
+                try {
+                    await testFn();
+                    resultDiv.classList.add('passed');
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('test-message');
+                    messageDiv.textContent = 'Passed';
+                    resultDiv.appendChild(messageDiv);
+                } catch (e) {
+                    resultDiv.classList.add('failed');
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('test-message');
+                    messageDiv.textContent = `Failed: ${e.message}`;
+                    resultDiv.appendChild(messageDiv);
+                }
+                testResultsContainer.appendChild(resultDiv);
+            }
+        };
+
+        runTestsButton.addEventListener('click', runTests);
+
+        // --- Core Application Logic ---
         async function initializeFFmpeg() {
+            if (ffmpeg) return; // Already initialized
             console.log('Initializing FFmpeg...');
-            // The paths to the core FFmpeg files from a reliable CDN.
-            // This is the most common and robust way to load them.
-            const corePath = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm';
-            
-            // Create a new FFmpeg instance
             ffmpeg = new FFmpeg({ log: true });
-            
+            const corePath = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm';
             try {
-                // Use toBlobURL to fetch the core files and create blob URLs.
-                // This is the most reliable way to load them from a CDN and ensures
-                // correct headers for WebAssembly and workers.
                 await ffmpeg.load({
                     coreURL: await toBlobURL(`${corePath}/ffmpeg-core.js`, 'text/javascript'),
                     wasmURL: await toBlobURL(`${corePath}/ffmpeg-core.wasm`, 'application/wasm'),
                     workerURL: await toBlobURL(`${corePath}/ffmpeg-core.worker.js`, 'text/javascript'),
                 });
                 console.log('FFmpeg loaded successfully.');
-                // Once loaded, we can enable the trim button if a video is ready
-                // but we will do this inside the mediaRecorder.onstop event to be safe.
             } catch (e) {
                 console.error('Failed to load FFmpeg:', e);
-                ffmpeg = null; // Ensure ffmpeg is null if loading fails
+                ffmpeg = null;
+                throw new Error('FFmpeg failed to load. Integration tests cannot proceed.');
             }
         }
 
-        // Initialize FFmpeg when the DOM is fully loaded
-        window.addEventListener('DOMContentLoaded', initializeFFmpeg);
+        // --- Test Cases ---
+        registerTest('FFmpeg Initialization Test', async () => {
+            await initializeFFmpeg();
+            if (!ffmpeg || !ffmpeg.loaded) {
+                throw new Error('FFmpeg did not initialize correctly.');
+            }
+        });
 
-        // Recording logic
+        registerTest('Video Recording Test', async () => {
+            // This is a simplified test. In a real scenario, you might want to
+            // check for stream activity or the size of recorded chunks.
+            startRecordingButton.click();
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Record for 2 seconds
+            stopRecordingButton.click();
+            await new Promise(resolve => mediaRecorder.onstop = () => resolve());
+
+            if (recordedChunks.length > 0 || videoPreview.src) {
+                // Test passes if recording seems to have worked
+                return;
+            }
+            throw new Error('Video recording did not produce any data.');
+        });
+
+        registerTest('Video Trimming Test', async () => {
+            if (!ffmpeg) {
+                throw new Error('FFmpeg is not loaded. Skipping trim test.');
+            }
+            if (!videoPreview.src) {
+                throw new Error('No recorded video to trim. Skipping trim test.');
+            }
+
+            trimStartInput.value = '1';
+            trimEndInput.value = '2';
+            trimVideoButton.click();
+
+            // Wait for trimming to complete
+            await new Promise((resolve, reject) => {
+                trimmedVideoOutput.onloadeddata = () => {
+                    if (trimmedVideoOutput.duration > 0 && trimmedVideoOutput.duration < 1.5) {
+                        resolve();
+                    } else {
+                        reject(new Error(`Trimmed video duration is incorrect: ${trimmedVideoOutput.duration}`));
+                    }
+                };
+                setTimeout(() => reject(new Error('Trimming took too long.')), 10000); // 10-second timeout
+            });
+        });
+
+        // --- Event Listeners for UI ---
+        window.addEventListener('DOMContentLoaded', () => {
+            // Don't auto-load FFmpeg unless tests are run, to save resources.
+        });
+
         startRecordingButton.addEventListener('click', async () => {
             try {
-                // Request access to the user's camera and microphone
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 videoPreview.srcObject = stream;
                 mediaRecorder = new MediaRecorder(stream);
+                recordedChunks = [];
 
                 mediaRecorder.ondataavailable = (event) => {
                     if (event.data.size > 0) {
@@ -114,24 +205,21 @@
                     }
                 };
 
-                mediaRecorder.onstop = async () => {
+                mediaRecorder.onstop = () => {
                     const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                    recordedChunks = [];
                     const url = URL.createObjectURL(blob);
-                    videoPreview.src = url; // Display the recorded video in the preview
-                    
+                    videoPreview.srcObject = null;
+                    videoPreview.src = url;
                     if (ffmpeg) {
-                        trimVideoButton.disabled = false; // Enable trim button after recording
-                    } else {
-                        console.error('FFmpeg is not initialized. Cannot enable trimming.');
+                        trimVideoButton.disabled = false;
                     }
                 };
 
                 mediaRecorder.start();
                 startRecordingButton.disabled = true;
                 stopRecordingButton.disabled = false;
-                trimVideoButton.disabled = true; // Disable trim while recording
-                trimmedVideoOutput.removeAttribute('src'); // Clear previous trimmed video
+                trimVideoButton.disabled = true;
+                trimmedVideoOutput.removeAttribute('src');
                 trimmedVideoOutput.load();
 
             } catch (e) {
@@ -147,7 +235,6 @@
             }
         });
 
-        // Trimming logic
         trimVideoButton.addEventListener('click', async () => {
             if (!ffmpeg) {
                 console.error('FFmpeg is not loaded.');
@@ -162,29 +249,16 @@
                 return;
             }
 
-            // Get the recorded video from the preview element's src
             const videoBlob = await fetch(videoPreview.src).then(r => r.blob());
-            const inputFileName = 'input.webm'; // Assuming webm format from MediaRecorder
-            const outputFileName = 'output.mp4'; // Output format
+            const inputFileName = 'input.webm';
+            const outputFileName = 'output.mp4';
 
             try {
-                // Write the video to FFmpeg's virtual file system
-                console.log('Writing video to FFmpeg file system...');
                 await ffmpeg.FS('writeFile', inputFileName, await fetchFile(videoBlob));
-
-                // Run the FFmpeg command for trimming
-                console.log('Running FFmpeg command...');
                 await ffmpeg.run('-ss', start.toString(), '-to', end.toString(), '-i', inputFileName, '-c', 'copy', outputFileName);
-
-                // Read the trimmed video from the virtual file system
-                console.log('Reading trimmed video...');
                 const data = ffmpeg.FS('readFile', outputFileName);
-
-                // Create a blob and URL for the trimmed video
                 const trimmedBlob = new Blob([data.buffer], { type: 'video/mp4' });
                 const trimmedUrl = URL.createObjectURL(trimmedBlob);
-
-                // Display the trimmed video
                 trimmedVideoOutput.src = trimmedUrl;
                 trimmedVideoOutput.load();
                 console.log('Trimming complete!');
