@@ -55,15 +55,6 @@
         <video id="trimmed-video-output" width="640" height="480" controls playsinline></video>
     </div>
 
-    <div class="controls">
-        <h2>Test Automation</h2>
-        <button id="run-tests" disabled>Run Integration Tests</button>
-    </div>
-
-    <div id="test-results">
-        <h2>Test Results</h2>
-    </div>
-
     <script type="module">
         import { FFmpeg } from '/ffmpeg/ffmpeg.js';
         import { fetchFile, toBlobURL } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
@@ -76,8 +67,6 @@
         const trimEndInput = document.getElementById('trim-end');
         const trimVideoButton = document.getElementById('trim-video');
         const trimmedVideoOutput = document.getElementById('trimmed-video-output');
-        const runTestsButton = document.getElementById('run-tests');
-        const testResultsContainer = document.getElementById('test-results');
         const statusMessage = document.getElementById('status-message');
 
         // --- Global State Variables ---
@@ -89,58 +78,6 @@
         const log = (message) => {
             statusMessage.textContent = message;
             console.log(message);
-        };
-
-        // --- Test Framework ---
-        const testRegistry = [];
-
-        /**
-         * Registers a new test case to be run later.
-         * @param {string} title - The title of the test.
-         * @param {Function} testFn - The async function with the test logic.
-         */
-        const registerTest = (title, testFn) => {
-            testRegistry.push({ title, testFn });
-        };
-
-        /**
-         * Displays a visual result for a single test.
-         * @param {string} title - The test title.
-         * @param {boolean} passed - Whether the test passed.
-         * @param {string} message - The result message.
-         */
-        const displayTestResult = (title, passed, message) => {
-            const resultDiv = document.createElement('div');
-            resultDiv.classList.add('test-result', passed ? 'passed' : 'failed');
-            resultDiv.innerHTML = `
-                <div class="test-title">${title}</div>
-                <div class="test-message">${message}</div>
-            `;
-            testResultsContainer.appendChild(resultDiv);
-        };
-
-        /**
-         * Sequentially runs all registered tests.
-         */
-        const runAllTests = async () => {
-            testResultsContainer.innerHTML = '<h2>Test Results</h2>'; 
-
-            try {
-                await initializeFFmpeg();
-                displayTestResult('FFmpeg Initialization', true, 'Passed');
-            } catch (e) {
-                displayTestResult('FFmpeg Initialization', false, `Failed: ${e.message}`);
-                return; 
-            }
-
-            for (const { title, testFn } of testRegistry) {
-                try {
-                    await testFn();
-                    displayTestResult(title, true, 'Passed');
-                } catch (e) {
-                    displayTestResult(title, false, `Failed: ${e.message}`);
-                }
-            }
         };
 
         // --- Main FFmpeg Initialization Logic ---
@@ -194,7 +131,6 @@
                     trimStartInput.disabled = false;
                     trimEndInput.disabled = false;
                     trimVideoButton.disabled = false;
-                    runTestsButton.disabled = false;
 
                     // Re-enable start button, disable stop button
                     startRecordingButton.disabled = false;
@@ -217,38 +153,10 @@
                 mediaRecorder.stop();
             }
         };
-        
-        // --- Test Case Definition ---
-        registerTest('Video Trimming Test', async () => {
-            if (!testVideoBlob) {
-                throw new Error('No recorded video available for trimming.');
-            }
-            
-            const start = 0.5;
-            const end = 1.5;
-            
-            const inputFileName = 'input.webm'; 
-            const outputFileName = 'output.mp4'; 
-
-            await ffmpeg.FS('writeFile', inputFileName, await fetchFile(testVideoBlob));
-            await ffmpeg.run('-i', inputFileName, '-ss', start.toString(), '-to', end.toString(), '-c', 'copy', outputFileName);
-            const data = ffmpeg.FS('readFile', outputFileName);
-
-            const trimmedBlob = new Blob([data.buffer], { type: 'video/mp4' });
-            trimmedVideoOutput.src = URL.createObjectURL(trimmedBlob);
-            
-            await new Promise(resolve => trimmedVideoOutput.onloadeddata = resolve);
-            const duration = trimmedVideoOutput.duration;
-
-            if (Math.abs(duration - (end - start)) > 0.5) {
-                throw new Error(`Trimmed video duration is incorrect: expected ~${end - start}s, got ${duration.toFixed(2)}s.`);
-            }
-        });
 
         // --- Event Listeners for User Actions ---
         startRecordingButton.addEventListener('click', startRecording);
         stopRecordingButton.addEventListener('click', stopRecording);
-        runTestsButton.addEventListener('click', runAllTests);
 
         trimVideoButton.addEventListener('click', async () => {
             if (!ffmpeg || !ffmpeg.loaded) {
