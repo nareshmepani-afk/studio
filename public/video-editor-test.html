@@ -295,26 +295,28 @@
             console.timeEnd('DOMContentLoaded');
         });
 
+        // This pattern ensures the UI has a chance to repaint before we start the
+        // heavy, time-consuming process of loading FFmpeg.
         (async () => {
-            console.time('Initial Script Execution Time');
-            try {
-                // Set initial status and then yield to the event loop.
-                log('Loading FFmpeg. Please wait...');
-                await new Promise(resolve => setTimeout(resolve, 0)); 
-                
-                await initializeFFmpeg();
-                
-                log('Ready. Click "Start Recording" to begin.');
-                startRecordingButton.disabled = false;
-                
-                console.timeEnd('Initial Script Execution Time');
-                console.timeEnd('Total App Setup Time');
-            } catch (e) {
-                log(`Setup failed: ${e.message}. Please reload the page.`);
-                console.error('Setup failed:', e);
-                console.timeEnd('Initial Script Execution Time');
-                console.timeEnd('Total App Setup Time');
-            }
+            console.log('Setting loading message and yielding to browser repaint...');
+            log('Loading FFmpeg. Please wait...');
+
+            setTimeout(async () => {
+                console.log('Resuming FFmpeg initialization after repaint.');
+                console.time('Initial Script Execution Time');
+                try {
+                    await initializeFFmpeg();
+                    log('Ready. Click "Start Recording" to begin.');
+                    startRecordingButton.disabled = false;
+                    console.timeEnd('Initial Script Execution Time');
+                    console.timeEnd('Total App Setup Time');
+                } catch (e) {
+                    log(`Setup failed: ${e.message}. Please reload the page.`);
+                    console.error('Setup failed:', e);
+                    console.timeEnd('Initial Script Execution Time');
+                    console.timeEnd('Total App Setup Time');
+                }
+            }, 0);
         })();
     </script>
 </body>
