@@ -211,6 +211,13 @@
 
             setTimeout(async () => {
                 console.log('Resuming FFmpeg initialization after repaint.');
+                // Diagnostic check for Cross-Origin Isolation
+                if (window.crossOriginIsolated) {
+                    log('Success: The page is Cross-Origin Isolated.', 'success');
+                } else {
+                    log('Warning: The page is NOT Cross-Origin Isolated. FFmpeg may fail to load. Please ensure your server sends the correct headers.', 'warning');
+                }
+                
                 console.time('Initial Script Execution Time');
                 try {
                     await initializeFFmpeg();
