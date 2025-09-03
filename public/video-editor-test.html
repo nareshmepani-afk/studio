@@ -94,7 +94,8 @@
                 await ffmpeg.load({
                     coreURL: await toBlobURL(`${corePath}/ffmpeg-core.js`, 'text/javascript'),
                     wasmURL: await toBlobURL(`${corePath}/ffmpeg-core.wasm`, 'application/wasm'),
-                    workerURL: await toBlobURL(`${corePath}/ffmpeg-core.worker.js`, 'text/javascript'),
+                    // FIX: Load the worker script directly from the CDN to ensure it gets the server headers.
+                    workerURL: `${corePath}/ffmpeg-core.worker.js`,
                 });
                 console.timeEnd('FFmpeg Loading Time');
                 log('FFmpeg loaded successfully.');
