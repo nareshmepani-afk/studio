@@ -87,22 +87,30 @@
                 return;
             }
             log('Initializing FFmpeg...');
-            console.time('FFmpeg Loading Time');
+            console.log('Creating new FFmpeg instance...');
             ffmpeg = new FFmpeg({ log: true });
             const corePath = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm';
+            
             try {
+                console.log('Starting FFmpeg core files loading...');
+                // Log the URLs being used for verification.
+                console.log(`Loading coreURL from: ${await toBlobURL(`${corePath}/ffmpeg-core.js`, 'text/javascript')}`);
+                console.log(`Loading wasmURL from: ${await toBlobURL(`${corePath}/ffmpeg-core.wasm`, 'application/wasm')}`);
+                console.log(`Loading workerURL from: ${corePath}/ffmpeg-core.worker.js`);
+
                 await ffmpeg.load({
                     coreURL: await toBlobURL(`${corePath}/ffmpeg-core.js`, 'text/javascript'),
                     wasmURL: await toBlobURL(`${corePath}/ffmpeg-core.wasm`, 'application/wasm'),
                     // FIX: Load the worker script directly from the CDN to ensure it gets the server headers.
                     workerURL: `${corePath}/ffmpeg-core.worker.js`,
                 });
-                console.timeEnd('FFmpeg Loading Time');
+                
+                console.log('FFmpeg core files loaded successfully.');
                 log('FFmpeg loaded successfully.');
             } catch (e) {
-                console.timeEnd('FFmpeg Loading Time');
                 console.error('Failed to load FFmpeg:', e);
                 ffmpeg = null;
+                log(`Failed to load FFmpeg: ${e.message}`);
                 throw new Error('FFmpeg failed to load.');
             }
         }
