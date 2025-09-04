@@ -50,11 +50,11 @@
         <video id="trimmed-video-output" width="640" height="480" controls playsinline></video>
     </div>
     <script type="module">
-        // FIXED: Import toBlobURL for all FFmpeg files
+        // Import FFmpeg and util functions including toBlobURL
         import { FFmpeg } from '/ffmpeg/ffmpeg.js';
         import { fetchFile, toBlobURL } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
         
-        // --- DOM Element References ---
+        // --- DOM References
         const videoPreview = document.getElementById('video-preview');
         const startRecordingButton = document.getElementById('start-recording');
         const stopRecordingButton = document.getElementById('stop-recording');
@@ -64,40 +64,34 @@
         const trimmedVideoOutput = document.getElementById('trimmed-video-output');
         const statusMessage = document.getElementById('status-message');
         
-        // --- Global State Variables ---
+        // --- State
         let ffmpeg;
         let testVideoBlob = null;
         let mediaRecorder;
         
-        // --- Utility Function for Logging Status ---
+        // --- Log Utility
         const log = (message) => {
             statusMessage.textContent = message;
             console.log(message);
         };
         
-        // --- FIXED FFmpeg Initialization Logic ---
+        // --- FFmpeg Initialization (with toBlobURL for ALL files)
         async function initializeFFmpeg() {
             if (ffmpeg && ffmpeg.loaded) {
                 log('FFmpeg is already loaded.');
                 return;
             }
-            
             log('Initializing FFmpeg...');
             console.log('Creating new FFmpeg instance...');
             ffmpeg = new FFmpeg({ log: true });
-            
             try {
                 log('Loading self-hosted FFmpeg core files with toBlobURL...');
-                
-                // SOLUTION: Use toBlobURL for all files to ensure proper CORS handling in Firebase App Hosting
-                const coreURL = await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript');
-                const wasmURL = await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm');
+                // Use toBlobURL for all files to ensure proper CORS handling in Firebase App Hosting
+                const coreURL   = await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript');
+                const wasmURL   = await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm');
                 const workerURL = await toBlobURL('/ffmpeg/ffmpeg-core.worker.js', 'text/javascript');
-                
                 console.log('Loading FFmpeg with blob URLs:', { coreURL, wasmURL, workerURL });
-                
                 await ffmpeg.load({ coreURL, wasmURL, workerURL });
-                
                 console.log('FFmpeg core files loaded successfully.');
                 log('FFmpeg loaded successfully.');
             } catch (e) {
@@ -108,7 +102,7 @@
             }
         }
         
-        // --- Video Recording Logic ---
+        // --- Recording Logic
         const startRecording = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -125,13 +119,9 @@
                     videoPreview.src = URL.createObjectURL(testVideoBlob);
                     stream.getTracks().forEach(track => track.stop());
                     log('Recording stopped. Video ready for trimming.');
-                    
-                    // Enable trimming controls
                     trimStartInput.disabled = false;
                     trimEndInput.disabled = false;
                     trimVideoButton.disabled = false;
-                    
-                    // Re-enable start button, disable stop button
                     startRecordingButton.disabled = false;
                     stopRecordingButton.disabled = true;
                 };
@@ -151,9 +141,7 @@
             }
         };
         
-        // --- Event Listeners for User Actions ---
-        startRecordingButton.addEventListener('click', startRecording);
-        stopRecordingButton.addEventListener('click', stopRecording);
+        // --- Trimming Logic
         trimVideoButton.addEventListener('click', async () => {
             if (!ffmpeg || !ffmpeg.loaded) {
                 log('Error: FFmpeg is not loaded.');
@@ -166,7 +154,7 @@
             const start = parseFloat(trimStartInput.value);
             const end = parseFloat(trimEndInput.value);
             if (isNaN(start) || isNaN(end) || start < 0 || end <= start) {
-                log('Error: Invalid trim times. Please enter a positive start time and an end time greater than the start time.');
+                log('Error: Invalid trim times. Start must be >= 0, end > start.');
                 return;
             }
             const inputFileName = 'input.webm';
@@ -188,7 +176,11 @@
             }
         });
         
-        // --- Initial Application Setup ---
+        // --- Event Listeners
+        startRecordingButton.addEventListener('click', startRecording);
+        stopRecordingButton.addEventListener('click', stopRecording);
+        
+        // --- Initial Setup
         console.time('Total App Setup Time');
         console.time('DOMContentLoaded');
         console.log('App setup starting...');
@@ -202,13 +194,11 @@
             log('Loading FFmpeg. Please wait...');
             setTimeout(async () => {
                 console.log('Resuming FFmpeg initialization after repaint.');
-                
                 if (window.crossOriginIsolated) {
                     log('Success: The page is Cross-Origin Isolated.', 'success');
                 } else {
                     log('Warning: The page is NOT Cross-Origin Isolated. FFmpeg may fail to load. Please ensure your server sends the correct headers.', 'warning');
                 }
-                
                 console.time('Initial Script Execution Time');
                 try {
                     await initializeFFmpeg();
