@@ -52,19 +52,6 @@
         ]
       },
       {
-        "source": "**/worker.js",
-        "headers": [
-          {
-            "key": "Cross-Origin-Resource-Policy",
-            "value": "cross-origin"
-          },
-          {
-            "key": "Content-Type",
-            "value": "text/javascript"
-          }
-        ]
-      },
-      {
         "source": "**/*worker*.js",
         "headers": [
           {
