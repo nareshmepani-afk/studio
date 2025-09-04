@@ -56,7 +56,8 @@
     </div>
 
     <script type="module">
-        import { FFmpeg } from '/ffmpeg_core/ffmpeg.js';
+        // Importing FFmpeg and fetchFile directly from CDN
+        import { FFmpeg } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.7/dist/ffmpeg.js';
         import { fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
 
         // --- DOM Element References ---
@@ -89,16 +90,17 @@
             log('Initializing FFmpeg...');
             console.log('Creating new FFmpeg instance...');
             ffmpeg = new FFmpeg({ log: true });
-            
+
             try {
-                log('Loading FFmpeg core files...');
-                
-                await ffmpeg.load({
-                    coreURL: '/ffmpeg_core/ffmpeg-core.js',
-                    wasmURL: '/ffmpeg_core/ffmpeg-core.wasm',
-                    workerURL: '/ffmpeg_core/ffmpeg-core.worker.js',
-                });
-                
+                log('Loading FFmpeg core files from CDN...');
+
+                // Correctly referencing the core, wasm, and worker URLs from the CDN
+                const coreURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm/ffmpeg-core.js';
+                const wasmURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm/ffmpeg-core.wasm';
+                const workerURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm/ffmpeg-core.worker.js';
+
+                await ffmpeg.load({ coreURL, wasmURL, workerURL });
+
                 console.log('FFmpeg core files loaded successfully.');
                 log('FFmpeg loaded successfully.');
             } catch (e) {
@@ -114,14 +116,14 @@
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 videoPreview.srcObject = stream;
-                
+
                 let chunks = [];
                 mediaRecorder = new MediaRecorder(stream);
-                
+
                 mediaRecorder.ondataavailable = (event) => {
                     if (event.data.size > 0) chunks.push(event.data);
                 };
-                
+
                 mediaRecorder.onstop = () => {
                     const blob = new Blob(chunks, { type: 'video/webm' });
                     testVideoBlob = blob;
@@ -129,7 +131,7 @@
                     videoPreview.src = URL.createObjectURL(testVideoBlob); // Set recorded video as source
                     stream.getTracks().forEach(track => track.stop()); // Stop camera and microphone
                     log('Recording stopped. Video ready for trimming.');
-                    
+
                     // Enable trimming and test controls
                     trimStartInput.disabled = false;
                     trimEndInput.disabled = false;
@@ -144,7 +146,7 @@
                 log('Recording started...');
                 startRecordingButton.disabled = true;
                 stopRecordingButton.disabled = false;
-                
+
             } catch (e) {
                 log(`Could not access camera/microphone: ${e.message}`);
                 console.error('Error starting recording:', e);
@@ -176,7 +178,7 @@
                 log('Error: Invalid trim times. Please enter a positive start time and an end time greater than the start time.');
                 return;
             }
-            
+
             const inputFileName = 'input.webm';
             const outputFileName = 'output.mp4';
             try {
@@ -220,7 +222,7 @@
                 } else {
                     log('Warning: The page is NOT Cross-Origin Isolated. FFmpeg may fail to load. Please ensure your server sends the correct headers.', 'warning');
                 }
-                
+
                 console.time('Initial Script Execution Time');
                 try {
                     await initializeFFmpeg();
