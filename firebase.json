@@ -24,24 +24,6 @@
             "value": "require-corp"
           }
         ]
-      },
-      {
-        "source": "/ffmpeg_core/*",
-        "headers": [
-          {
-            "key": "Cross-Origin-Resource-Policy",
-            "value": "cross-origin"
-          }
-        ]
-      },
-      {
-        "source": "**/*.wasm",
-        "headers": [
-          {
-            "key": "Content-Type",
-            "value": "application/wasm"
-          }
-        ]
       }
     ]
   }
