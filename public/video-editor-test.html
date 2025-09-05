@@ -12,13 +12,8 @@
         input { margin: 5px; padding: 8px; }
         .controls { margin-bottom: 20px; padding: 15px; border: 1px solid #eee; background-color: #f9f9f9; }
         label { margin-right: 10px; }
-        /* Test results styling */
-        #test-results { margin-top: 20px; padding: 15px; border: 1px solid #ccc; background-color: #f0f0f0; }
-        .test-result { margin-bottom: 10px; padding: 10px; border-bottom: 1px solid #ddd; }
-        .test-result.passed { background-color: #d4edda; }
-        .test-result.failed { background-color: #f8d7da; }
-        .test-title { font-weight: bold; }
-        .test-message { margin-top: 5px; }
+        .error { color: red; font-weight: bold; }
+        .success { color: green; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -50,11 +45,16 @@
         <video id="trimmed-video-output" width="640" height="480" controls playsinline></video>
     </div>
     <script type="module">
-        // Import FFmpeg and util functions including toBlobURL
-        import { FFmpeg } from '/ffmpeg/ffmpeg.js';
-        import { fetchFile, toBlobURL } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
-        
-        // --- DOM References
+        // Import FFmpeg with error handling
+        try {
+            var { FFmpeg } = await import('/ffmpeg/ffmpeg.js');
+            var { fetchFile, toBlobURL } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js');
+        } catch (importError) {
+            console.error('Failed to import FFmpeg modules:', importError);
+            document.getElementById('status-message').innerHTML = '<span class="error">Failed to load FFmpeg modules. Check console for details.</span>';
+        }
+
+        // DOM References
         const videoPreview = document.getElementById('video-preview');
         const startRecordingButton = document.getElementById('start-recording');
         const stopRecordingButton = document.getElementById('stop-recording');
@@ -63,46 +63,78 @@
         const trimVideoButton = document.getElementById('trim-video');
         const trimmedVideoOutput = document.getElementById('trimmed-video-output');
         const statusMessage = document.getElementById('status-message');
-        
-        // --- State
+
+        // State
         let ffmpeg;
         let testVideoBlob = null;
         let mediaRecorder;
-        
-        // --- Log Utility
-        const log = (message) => {
-            statusMessage.textContent = message;
-            console.log(message);
+
+        // Log Utility with styling
+        const log = (message, type = 'info') => {
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            statusMessage.innerHTML = `<span class="${className}">${message}</span>`;
+            console.log(`[${type.toUpperCase()}] ${message}`);
         };
-        
-        // --- FFmpeg Initialization (with toBlobURL for ALL files)
+
+        // Enhanced FFmpeg Initialization with comprehensive error handling
         async function initializeFFmpeg() {
             if (ffmpeg && ffmpeg.loaded) {
-                log('FFmpeg is already loaded.');
+                log('FFmpeg is already loaded.', 'success');
                 return;
             }
+
             log('Initializing FFmpeg...');
-            console.log('Creating new FFmpeg instance...');
-            ffmpeg = new FFmpeg({ log: true });
+            
             try {
-                log('Loading self-hosted FFmpeg core files with toBlobURL...');
-                // Use toBlobURL for all files to ensure proper CORS handling in Firebase App Hosting
-                const coreURL   = await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript');
-                const wasmURL   = await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm');
-                const workerURL = await toBlobURL('/ffmpeg/ffmpeg-core.worker.js', 'text/javascript');
-                console.log('Loading FFmpeg with blob URLs:', { coreURL, wasmURL, workerURL });
-                await ffmpeg.load({ coreURL, wasmURL, workerURL });
-                console.log('FFmpeg core files loaded successfully.');
-                log('FFmpeg loaded successfully.');
+                ffmpeg = new FFmpeg({ 
+                    log: true,
+                    // Add progress callback for better user feedback
+                    progress: ({ ratio }) => {
+                        if (ratio >= 0) {
+                            log(`Loading progress: ${Math.round(ratio * 100)}%`);
+                        }
+                    }
+                });
+
+                log('Loading FFmpeg core files with toBlobURL...');
+
+                // Enhanced error handling for each file
+                const coreURL = await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript')
+                    .catch(e => {
+                        throw new Error(`Failed to load ffmpeg-core.js: ${e.message}`);
+                    });
+                    
+                const wasmURL = await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm')
+                    .catch(e => {
+                        throw new Error(`Failed to load ffmpeg-core.wasm: ${e.message}`);
+                    });
+                    
+                const workerURL = await toBlobURL('/ffmpeg/ffmpeg-core.worker.js', 'text/javascript')
+                    .catch(e => {
+                        throw new Error(`Failed to load ffmpeg-core.worker.js: ${e.message}`);
+                    });
+
+                console.log('FFmpeg blob URLs created:', { coreURL, wasmURL, workerURL });
+
+                // Add timeout for load operation
+                const loadPromise = ffmpeg.load({ coreURL, wasmURL, workerURL });
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('FFmpeg load timeout after 30 seconds')), 30000)
+                );
+
+                await Promise.race([loadPromise, timeoutPromise]);
+
+                log('FFmpeg loaded successfully!', 'success');
+                
             } catch (e) {
-                console.error('Failed to load FFmpeg:', e);
+                console.error('FFmpeg initialization failed:', e);
                 ffmpeg = null;
-                log(`Failed to load FFmpeg: ${e.message}`);
-                throw new Error('FFmpeg failed to load.');
+                log(`FFmpeg initialization failed: ${e.message}`, 'error');
+                throw e;
             }
         }
-        
-        // --- Recording Logic
+
+        // Recording Logic (unchanged)
         const startRecording = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -118,7 +150,8 @@
                     videoPreview.srcObject = null;
                     videoPreview.src = URL.createObjectURL(testVideoBlob);
                     stream.getTracks().forEach(track => track.stop());
-                    log('Recording stopped. Video ready for trimming.');
+                    log('Recording stopped. Video ready for trimming.', 'success');
+                    
                     trimStartInput.disabled = false;
                     trimEndInput.disabled = false;
                     trimVideoButton.disabled = false;
@@ -130,89 +163,96 @@
                 startRecordingButton.disabled = true;
                 stopRecordingButton.disabled = false;
             } catch (e) {
-                log(`Could not access camera/microphone: ${e.message}`);
+                log(`Could not access camera/microphone: ${e.message}`, 'error');
                 console.error('Error starting recording:', e);
             }
         };
-        
+
         const stopRecording = () => {
             if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                 mediaRecorder.stop();
             }
         };
-        
-        // --- Trimming Logic
+
+        // Enhanced Trimming Logic
         trimVideoButton.addEventListener('click', async () => {
             if (!ffmpeg || !ffmpeg.loaded) {
-                log('Error: FFmpeg is not loaded.');
+                log('Error: FFmpeg is not loaded.', 'error');
                 return;
             }
             if (!testVideoBlob) {
-                log('Error: No video has been recorded.');
+                log('Error: No video has been recorded.', 'error');
                 return;
             }
+            
             const start = parseFloat(trimStartInput.value);
             const end = parseFloat(trimEndInput.value);
             if (isNaN(start) || isNaN(end) || start < 0 || end <= start) {
-                log('Error: Invalid trim times. Start must be >= 0, end > start.');
+                log('Error: Invalid trim times. Start must be >= 0, end > start.', 'error');
                 return;
             }
+            
             const inputFileName = 'input.webm';
             const outputFileName = 'output.mp4';
+            
             try {
                 log('Trimming video...');
                 trimVideoButton.disabled = true;
+                
                 await ffmpeg.FS('writeFile', inputFileName, await fetchFile(testVideoBlob));
                 await ffmpeg.run('-i', inputFileName, '-ss', start.toString(), '-to', end.toString(), '-c', 'copy', outputFileName);
+                
                 const data = ffmpeg.FS('readFile', outputFileName);
                 const trimmedBlob = new Blob([data.buffer], { type: 'video/mp4' });
                 trimmedVideoOutput.src = URL.createObjectURL(trimmedBlob);
-                log('Trimming complete!');
+                
+                log('Trimming complete!', 'success');
             } catch (e) {
-                log(`Error during trimming: ${e.message}`);
+                log(`Error during trimming: ${e.message}`, 'error');
                 console.error('Error during trimming:', e);
             } finally {
                 trimVideoButton.disabled = false;
             }
         });
-        
-        // --- Event Listeners
+
+        // Event Listeners
         startRecordingButton.addEventListener('click', startRecording);
         stopRecordingButton.addEventListener('click', stopRecording);
-        
-        // --- Initial Setup
+
+        // Enhanced Initial Setup
         console.time('Total App Setup Time');
-        console.time('DOMContentLoaded');
         console.log('App setup starting...');
+        
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOMContentLoaded event fired.');
-            console.timeEnd('DOMContentLoaded');
         });
-        
+
+        // Main initialization with better error handling
         (async () => {
-            console.log('Setting loading message and yielding to browser repaint...');
             log('Loading FFmpeg. Please wait...');
+            
             setTimeout(async () => {
-                console.log('Resuming FFmpeg initialization after repaint.');
+                // Cross-origin isolation check
                 if (window.crossOriginIsolated) {
-                    log('Success: The page is Cross-Origin Isolated.', 'success');
+                    log('✓ Cross-Origin Isolation enabled', 'success');
                 } else {
-                    log('Warning: The page is NOT Cross-Origin Isolated. FFmpeg may fail to load. Please ensure your server sends the correct headers.', 'warning');
+                    log('⚠ Cross-Origin Isolation not detected. FFmpeg may fail.', 'error');
                 }
-                console.time('Initial Script Execution Time');
+
+                console.time('FFmpeg Initialization');
                 try {
                     await initializeFFmpeg();
-                    log('Ready. Click "Start Recording" to begin.');
+                    log('✓ Ready! Click "Start Recording" to begin.', 'success');
                     startRecordingButton.disabled = false;
-                    console.timeEnd('Initial Script Execution Time');
+                    console.timeEnd('FFmpeg Initialization');
                     console.timeEnd('Total App Setup Time');
                 } catch (e) {
-                    log(`Setup failed: ${e.message}. Please reload the page.`);
+                    log(`✗ Setup failed: ${e.message}. Please reload the page.`, 'error');
                     console.error('Setup failed:', e);
-                    console.timeEnd('Initial Script Execution Time');
+                    console.timeEnd('FFmpeg Initialization');
                     console.timeEnd('Total App Setup Time');
                 }
-            }, 0);
+            }, 100); // Small delay for UI repaint
         })();
     </script>
 </body>

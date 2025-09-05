@@ -59,10 +59,16 @@
             "value": "cross-origin"
           },
           {
-            "key": "Content-Type",
+            "key": "Content-Type", 
             "value": "text/javascript"
           }
         ]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "!/ffmpeg/**",
+        "destination": "/video-editor-test.html"
       }
     ]
   }
