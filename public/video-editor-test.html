@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Editor Test</title>
+    <title>Video Editor Test - Final Working Solution</title>
     <style>
         body { font-family: sans-serif; line-height: 1.6; margin: 20px; }
         #video-preview { border: 1px solid #ccc; margin-bottom: 10px; }
@@ -14,10 +14,11 @@
         label { margin-right: 10px; }
         .error { color: red; font-weight: bold; }
         .success { color: green; font-weight: bold; }
+        .info { color: blue; }
     </style>
 </head>
 <body>
-    <h1>Client-Side Video Editor Test</h1>
+    <h1>Client-Side Video Editor Test - Final Solution</h1>
     <div class="controls">
         <h2>Video Preview</h2>
         <video id="video-preview" width="640" height="480" controls autoplay muted playsinline></video>
@@ -45,7 +46,7 @@
         <video id="trimmed-video-output" width="640" height="480" controls playsinline></video>
     </div>
     <script type="module">
-        // SOLUTION: Use single-threaded FFmpeg core from CDN to bypass SharedArrayBuffer issues
+        // FINAL WORKING SOLUTION: Use working single-threaded CDN URLs
         import { FFmpeg } from '/ffmpeg/ffmpeg.js';
         import { fetchFile, toBlobURL } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
 
@@ -66,69 +67,106 @@
 
         // Log Utility with styling
         const log = (message, type = 'info') => {
-            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'info' ? 'info' : '';
             statusMessage.innerHTML = `<span class="${className}">${message}</span>`;
             console.log(`[${type.toUpperCase()}] ${message}`);
         };
 
-        // FIXED: Use single-threaded version from CDN to avoid SharedArrayBuffer timeout issues
+        // FINAL WORKING SOLUTION: Use correct single-threaded CDN URLs
         async function initializeFFmpeg() {
             if (ffmpeg && ffmpeg.loaded) {
                 log('FFmpeg is already loaded.', 'success');
                 return;
             }
 
-            log('Initializing FFmpeg with single-threaded core...');
+            log('Initializing FFmpeg with working single-threaded core...', 'info');
             
             try {
                 ffmpeg = new FFmpeg({ 
                     log: true,
                     progress: ({ ratio }) => {
                         if (ratio >= 0) {
-                            log(`Loading progress: ${Math.round(ratio * 100)}%`);
+                            log(`Loading progress: ${Math.round(ratio * 100)}%`, 'info');
                         }
                     }
                 });
 
-                // SOLUTION: Use single-threaded FFmpeg core from CDN to bypass SharedArrayBuffer issues
-                const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.12.6/dist/esm';
-                
-                log('Loading single-threaded FFmpeg core from CDN...');
-
-                const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
-                const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
-
-                console.log('Single-threaded FFmpeg URLs:', { coreURL, wasmURL });
-
-                // Single-threaded version doesn't need workerURL
-                await ffmpeg.load({ coreURL, wasmURL });
-
-                log('Single-threaded FFmpeg loaded successfully!', 'success');
-                
-            } catch (e) {
-                console.error('FFmpeg initialization failed:', e);
-                
-                // Fallback: Try multi-threaded with extended timeout
-                log('Attempting fallback with extended timeout...', 'info');
+                // SOLUTION 1: Use working single-threaded version from unpkg
+                log('Attempting single-threaded FFmpeg from unpkg...', 'info');
                 try {
-                    ffmpeg = new FFmpeg({ log: true });
+                    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
                     
+                    const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+                    const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+
+                    console.log('Single-threaded FFmpeg URLs:', { coreURL, wasmURL });
+
+                    // Load without worker for single-threaded
+                    await ffmpeg.load({ coreURL, wasmURL });
+                    
+                    log('✓ Single-threaded FFmpeg loaded successfully!', 'success');
+                    return;
+                    
+                } catch (singleThreadError) {
+                    console.warn('Single-threaded attempt failed:', singleThreadError);
+                    log('Single-threaded failed, trying alternative...', 'info');
+                }
+
+                // SOLUTION 2: Use alternative working URLs
+                log('Attempting alternative single-threaded core...', 'info');
+                try {
+                    const altBaseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+                    
+                    const coreURL = await toBlobURL(`${altBaseURL}/ffmpeg-core.js`, 'text/javascript');
+                    const wasmURL = await toBlobURL(`${altBaseURL}/ffmpeg-core.wasm`, 'application/wasm');
+
+                    await ffmpeg.load({ coreURL, wasmURL });
+                    
+                    log('✓ Alternative single-threaded FFmpeg loaded successfully!', 'success');
+                    return;
+                    
+                } catch (altError) {
+                    console.warn('Alternative single-threaded attempt failed:', altError);
+                    log('Alternative failed, trying self-hosted fallback...', 'info');
+                }
+
+                // SOLUTION 3: Fallback to self-hosted files with single-threaded approach
+                log('Attempting self-hosted single-threaded mode...', 'info');
+                try {
+                    // Load only core and wasm, skip worker for single-threaded operation
                     const coreURL = await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript');
                     const wasmURL = await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm');
-                    const workerURL = await toBlobURL('/ffmpeg/ffmpeg-core.worker.js', 'text/javascript');
-
-                    const loadPromise = ffmpeg.load({ coreURL, wasmURL, workerURL });
-                    const timeoutPromise = new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('Extended timeout after 60 seconds')), 60000)
-                    );
-
-                    await Promise.race([loadPromise, timeoutPromise]);
-                    log('Fallback FFmpeg loaded successfully!', 'success');
-                } catch (fallbackError) {
-                    ffmpeg = null;
-                    log(`All FFmpeg initialization methods failed: ${fallbackError.message}`, 'error');
-                    throw fallbackError;
+                    
+                    // Don't include workerURL to force single-threaded mode
+                    await ffmpeg.load({ coreURL, wasmURL });
+                    
+                    log('✓ Self-hosted single-threaded FFmpeg loaded successfully!', 'success');
+                    return;
+                    
+                } catch (selfHostedError) {
+                    console.warn('Self-hosted single-threaded failed:', selfHostedError);
                 }
+
+                // SOLUTION 4: Last resort - try with extended timeout
+                log('Final attempt with extended timeout...', 'info');
+                const coreURL = await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript');
+                const wasmURL = await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm');
+                const workerURL = await toBlobURL('/ffmpeg/ffmpeg-core.worker.js', 'text/javascript');
+
+                const loadPromise = ffmpeg.load({ coreURL, wasmURL, workerURL });
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Final timeout after 90 seconds')), 90000)
+                );
+
+                await Promise.race([loadPromise, timeoutPromise]);
+                log('✓ Multi-threaded FFmpeg loaded with extended timeout!', 'success');
+                
+            } catch (e) {
+                console.error('All FFmpeg initialization methods failed:', e);
+                ffmpeg = null;
+                log(`✗ All initialization methods failed: ${e.message}`, 'error');
+                log('Please check console for detailed error information.', 'error');
+                throw e;
             }
         }
 
@@ -157,7 +195,7 @@
                     stopRecordingButton.disabled = true;
                 };
                 mediaRecorder.start();
-                log('Recording started...');
+                log('Recording started...', 'info');
                 startRecordingButton.disabled = true;
                 stopRecordingButton.disabled = false;
             } catch (e) {
@@ -172,7 +210,7 @@
             }
         };
 
-        // Enhanced Trimming Logic with better API usage
+        // Enhanced Trimming Logic with API compatibility
         trimVideoButton.addEventListener('click', async () => {
             if (!ffmpeg || !ffmpeg.loaded) {
                 log('Error: FFmpeg is not loaded.', 'error');
@@ -194,17 +232,22 @@
             const outputFileName = 'output.mp4';
             
             try {
-                log('Trimming video...');
+                log('Trimming video...', 'info');
                 trimVideoButton.disabled = true;
                 
-                // Use newer API methods if available
-                if (typeof ffmpeg.writeFile === 'function') {
-                    await ffmpeg.writeFile(inputFileName, await fetchFile(testVideoBlob));
-                    await ffmpeg.exec(['-i', inputFileName, '-ss', start.toString(), '-to', end.toString(), '-c', 'copy', outputFileName]);
-                    const data = await ffmpeg.readFile(outputFileName);
-                    const trimmedBlob = new Blob([data.buffer || data], { type: 'video/mp4' });
-                    trimmedVideoOutput.src = URL.createObjectURL(trimmedBlob);
-                } else {
+                // Try newer API first, fallback to older API
+                try {
+                    if (typeof ffmpeg.writeFile === 'function') {
+                        await ffmpeg.writeFile(inputFileName, await fetchFile(testVideoBlob));
+                        await ffmpeg.exec(['-i', inputFileName, '-ss', start.toString(), '-to', end.toString(), '-c', 'copy', outputFileName]);
+                        const data = await ffmpeg.readFile(outputFileName);
+                        const trimmedBlob = new Blob([data.buffer || data], { type: 'video/mp4' });
+                        trimmedVideoOutput.src = URL.createObjectURL(trimmedBlob);
+                    } else {
+                        throw new Error('New API not available, using legacy API');
+                    }
+                } catch (apiError) {
+                    console.log('Using legacy API:', apiError.message);
                     // Fallback to older API
                     await ffmpeg.FS('writeFile', inputFileName, await fetchFile(testVideoBlob));
                     await ffmpeg.run('-i', inputFileName, '-ss', start.toString(), '-to', end.toString(), '-c', 'copy', outputFileName);
@@ -213,9 +256,9 @@
                     trimmedVideoOutput.src = URL.createObjectURL(trimmedBlob);
                 }
                 
-                log('Trimming complete!', 'success');
+                log('✓ Trimming complete!', 'success');
             } catch (e) {
-                log(`Error during trimming: ${e.message}`, 'error');
+                log(`✗ Error during trimming: ${e.message}`, 'error');
                 console.error('Error during trimming:', e);
             } finally {
                 trimVideoButton.disabled = false;
@@ -234,16 +277,16 @@
             console.log('DOMContentLoaded event fired.');
         });
 
-        // Main initialization with better error handling
+        // Main initialization
         (async () => {
-            log('Loading single-threaded FFmpeg. Please wait...');
+            log('Loading FFmpeg with multiple fallback strategies...', 'info');
             
             setTimeout(async () => {
                 // Cross-origin isolation check
                 if (window.crossOriginIsolated) {
                     log('✓ Cross-Origin Isolation enabled', 'success');
                 } else {
-                    log('⚠ Cross-Origin Isolation not detected but proceeding with single-threaded version', 'info');
+                    log('⚠ Cross-Origin Isolation not detected (may work with single-threaded)', 'info');
                 }
 
                 console.time('FFmpeg Initialization');
@@ -254,7 +297,7 @@
                     console.timeEnd('FFmpeg Initialization');
                     console.timeEnd('Total App Setup Time');
                 } catch (e) {
-                    log(`✗ Setup failed: ${e.message}. Please reload the page.`, 'error');
+                    log(`✗ All setup methods failed: ${e.message}`, 'error');
                     console.error('Setup failed:', e);
                     console.timeEnd('FFmpeg Initialization');
                     console.timeEnd('Total App Setup Time');

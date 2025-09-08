@@ -1,58 +1,25 @@
 {
-  "hosting": {
-    "public": "public",
-    "ignore": [
-      "firebase.json",
-      "**/.*", 
-      "**/node_modules/**"
-    ],
-    "source": ".",
-    "frameworksBackend": {
-      "id": "memory-weaver-8rk9t",
-      "region": "us-central1"
+  "headers": [
+    {
+      "source": "**",
+      "headers": [
+        {"key": "Cross-Origin-Opener-Policy", "value": "same-origin"},
+        {"key": "Cross-Origin-Embedder-Policy", "value": "require-corp"}
+      ]
     },
-    "headers": [
-      {
-        "source": "**",
-        "headers": [
-          {
-            "key": "Cross-Origin-Opener-Policy",
-            "value": "same-origin"
-          },
-          {
-            "key": "Cross-Origin-Embedder-Policy", 
-            "value": "require-corp"
-          }
-        ]
-      },
-      {
-        "source": "/ffmpeg/**",
-        "headers": [
-          {
-            "key": "Cross-Origin-Resource-Policy",
-            "value": "cross-origin"
-          }
-        ]
-      },
-      {
-        "source": "**/*.wasm",
-        "headers": [
-          {
-            "key": "Cross-Origin-Resource-Policy",
-            "value": "cross-origin"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/wasm"
-          }
-        ]
-      }
-    ],
-    "rewrites": [
-      {
-        "source": "!/ffmpeg/**",
-        "destination": "/video-editor-test.html"
-      }
-    ]
-  }
+    {
+      "source": "/ffmpeg/**",
+      "headers": [
+        {"key": "Cross-Origin-Resource-Policy", "value": "cross-origin"},
+        {"key": "Content-Type", "value": "application/javascript"}
+      ]
+    },
+    {
+      "source": "/ffmpeg/ffmpeg-core.wasm",
+      "headers": [
+        {"key": "Content-Type", "value": "application/wasm"},
+        {"key": "Cross-Origin-Resource-Policy", "value": "cross-origin"}
+      ]
+    }
+  ]
 }
