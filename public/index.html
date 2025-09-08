@@ -7,7 +7,7 @@
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f9; color: #333; }
         h1, h2 { color: #1a237e; }
-        #video-preview, #trimmed-video-output { border: 2px solid #ccc; border-radius: 8px; margin-bottom: 10px; background-color: #000; }
+        #video-preview, #trimmed-video-output { border: 2px solid #ccc; border-radius: 8px; margin-bottom: 10px; background-color: #000; max-width: 100%; }
         button { margin: 5px 0; padding: 12px 20px; cursor: pointer; border: none; border-radius: 5px; background-color: #3f51b5; color: white; font-size: 16px; transition: background-color 0.3s; }
         button:disabled { background-color: #9fa8da; cursor: not-allowed; }
         button:hover:not(:disabled) { background-color: #303f9f; }
@@ -26,7 +26,6 @@
         <h2>1. Status</h2>
         <div id="status-message" class="info">Initializing... Please wait.</div>
     </div>
-
     <div class="controls">
         <h2>2. Record a Video</h2>
         <video id="video-preview" width="640" height="480" autoplay muted playsinline></video>
@@ -35,7 +34,6 @@
             <button id="stop-recording" disabled>Stop Recording</button>
         </div>
     </div>
-
     <div class="controls">
         <h2>3. Trim Your Video</h2>
         <div>
@@ -48,15 +46,13 @@
         </div>
         <button id="trim-video" disabled>Trim Video</button>
     </div>
-
     <div class="controls">
         <h2>4. Your Trimmed Video</h2>
         <video id="trimmed-video-output" width="640" height="480" controls playsinline></video>
     </div>
-
     <script type="module">
-        // Import the self-hosted FFmpeg library
-        import { FFmpeg } from './ffmpeg/ffmpeg.js';
+        // Import the FFmpeg library wrapper from CDN and util for file handling
+        import { FFmpeg } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/ffmpeg.js';
         import { fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
 
         // DOM References
@@ -86,24 +82,26 @@
                 log: true,
                 progress: ({ progress }) => {
                     const percentage = Math.round(progress * 100);
-                    if (percentage < 100) {
+                     if (percentage < 100 && percentage > 0) { // Avoid logging 0% and 100%
                         log(`Processing video... ${percentage}%`, 'info');
                     }
                 }
             });
 
             try {
-                // This loads the multi-threaded version using the files in your /ffmpeg/ directory
-                await ffmpeg.load({
-                    coreURL: '/ffmpeg/ffmpeg-core.js',
-                    wasmURL: '/ffmpeg/ffmpeg-core.wasm',
-                    workerURL: '/ffmpeg/ffmpeg-core.worker.js'
-                });
+                // Construct absolute URLs to the self-hosted core files.
+                // This is the key to fixing the worker loading issue.
+                const coreURL = new URL('/ffmpeg/ffmpeg-core.js', document.baseURI).href;
+                const wasmURL = new URL('/ffmpeg/ffmpeg-core.wasm', document.baseURI).href;
+                const workerURL = new URL('/ffmpeg/ffmpeg-core.worker.js', document.baseURI).href;
+
+                await ffmpeg.load({ coreURL, wasmURL, workerURL });
+
                 log('Ready to record!', 'success');
                 startRecordingButton.disabled = false;
             } catch (error) {
                 console.error('Failed to load FFmpeg:', error);
-                log('Error: Could not load FFmpeg. Check console.', 'error');
+                log('Error: Could not load FFmpeg. Check console and file paths.', 'error');
             }
         }
 
@@ -116,6 +114,7 @@
                 mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
 
                 mediaRecorder.ondataavailable = (event) => chunks.push(event.data);
+                
                 mediaRecorder.onstop = () => {
                     recordedBlob = new Blob(chunks, { type: 'video/webm' });
                     videoPreview.srcObject = null;
@@ -149,9 +148,10 @@
         trimVideoButton.addEventListener('click', async () => {
             if (!ffmpeg || !ffmpeg.loaded) return log('FFmpeg not loaded.', 'error');
             if (!recordedBlob) return log('Please record a video first.', 'error');
-
+            
             const start = parseFloat(trimStartInput.value);
             const end = parseFloat(trimEndInput.value);
+
             if (isNaN(start) || isNaN(end) || start < 0 || end <= start) {
                 return log('Invalid start/end times.', 'error');
             }
@@ -165,9 +165,9 @@
                 
                 await ffmpeg.writeFile(inputFileName, await fetchFile(recordedBlob));
                 
-                // Using '-c copy' is fast but can be inaccurate. For better precision, re-encoding is safer.
-                // Command: -i [input] -ss [start] -to [end] [output]
-                await ffmpeg.exec(['-i', inputFileName, '-ss', start.toString(), '-to', end.toString(), '-c', 'copy', outputFileName]);
+                // For accurate trimming, re-encoding is necessary. '-c copy' is faster but can be imprecise.
+                // We will re-encode here for better results. Remove '-c:v libx264' to use copy if speed is critical.
+                await ffmpeg.exec(['-i', inputFileName, '-ss', start.toString(), '-to', end.toString(), outputFileName]);
                 
                 const data = await ffmpeg.readFile(outputFileName);
                 const trimmedBlob = new Blob([data], { type: 'video/mp4' });
