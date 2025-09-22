@@ -51,8 +51,8 @@
         <video id="trimmed-video-output" width="640" height="480" controls playsinline></video>
     </div>
     <script type="module">
-        // FINAL WORKING VERSION - USES LOCAL FILES
-        import { FFmpeg } from './ffmpeg/ffmpeg.js';
+        // FINAL WORKING VERSION - USES FIXED LOCAL FILES
+        import { FFmpeg } from './ffmpeg/ffmpeg-fixed.js';
         import { fetchFile } from './ffmpeg/util.js';
 
         const videoPreview = document.getElementById('video-preview');
@@ -75,28 +75,58 @@
         };
 
         async function initializeFFmpeg() {
-            log('Loading FFmpeg library...', 'info');
-            ffmpeg = new FFmpeg({
-                log: true,
-                progress: ({ progress }) => {
-                    const percentage = Math.round(progress * 100);
-                     if (percentage < 100 && percentage > 0) {
-                        log(`Processing video... ${percentage}%`, 'info');
-                    }
-                }
-            });
-
+            log('Loading FFmpeg library with compatibility fixes...', 'info');
+            
             try {
-                const coreURL = new URL('/ffmpeg/ffmpeg-core.js', document.baseURI).href;
-                const wasmURL = new URL('/ffmpeg/ffmpeg-core.wasm', document.baseURI).href;
-                const workerURL = new URL('/ffmpeg/ffmpeg-core.worker.js', document.baseURI).href;
+                ffmpeg = new FFmpeg({
+                    log: true,
+                    progress: ({ progress }) => {
+                        const percentage = Math.round(progress * 100);
+                        if (percentage < 100 && percentage > 0) {
+                            log(`Processing video... ${percentage}%`, 'info');
+                        }
+                    }
+                });
 
-                await ffmpeg.load({ coreURL, wasmURL, workerURL });
-                log('Ready to record!', 'success');
+                // Try multiple loading strategies for maximum compatibility
+                log('Attempting to load FFmpeg core files...', 'info');
+                
+                try {
+                    // Strategy 1: Direct URLs
+                    const coreURL = new URL('/ffmpeg/ffmpeg-core.js', document.baseURI).href;
+                    const wasmURL = new URL('/ffmpeg/ffmpeg-core.wasm', document.baseURI).href;
+                    const workerURL = new URL('/ffmpeg/ffmpeg-core.worker.js', document.baseURI).href;
+
+                    await ffmpeg.load({ coreURL, wasmURL, workerURL });
+                    log('✓ Multi-threaded FFmpeg loaded successfully!', 'success');
+                    
+                } catch (multiThreadError) {
+                    console.warn('Multi-threaded loading failed:', multiThreadError);
+                    log('Trying single-threaded mode...', 'info');
+                    
+                    // Strategy 2: Single-threaded fallback
+                    const coreURL = new URL('/ffmpeg/ffmpeg-core.js', document.baseURI).href;
+                    const wasmURL = new URL('/ffmpeg/ffmpeg-core.wasm', document.baseURI).href;
+                    
+                    // Load without worker for single-threaded operation
+                    await ffmpeg.load({ coreURL, wasmURL });
+                    log('✓ Single-threaded FFmpeg loaded successfully!', 'success');
+                }
+                
                 startRecordingButton.disabled = false;
+                
             } catch (error) {
                 console.error('Failed to load FFmpeg:', error);
-                log('Error: Could not load FFmpeg. Check console.', 'error');
+                log(`Error: Could not load FFmpeg - ${error.message}`, 'error');
+                
+                // Provide helpful error messages
+                if (error.message.includes('Private field')) {
+                    log('Browser compatibility issue detected. Please update your browser.', 'error');
+                } else if (error.message.includes('404')) {
+                    log('FFmpeg files not found. Please ensure files are in /ffmpeg/ folder.', 'error');
+                } else {
+                    log('Check console for detailed error information.', 'error');
+                }
             }
         }
 
@@ -106,10 +136,19 @@
                 videoPreview.srcObject = stream;
                 recordedBlob = null;
                 const chunks = [];
-                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                
+                // Use compatible codec for better browser support
+                let mimeType = 'video/webm';
+                if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                    mimeType = 'video/webm;codecs=vp9';
+                } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+                    mimeType = 'video/webm;codecs=vp8';
+                }
+                
+                mediaRecorder = new MediaRecorder(stream, { mimeType });
                 mediaRecorder.ondataavailable = (event) => chunks.push(event.data);
                 mediaRecorder.onstop = () => {
-                    recordedBlob = new Blob(chunks, { type: 'video/webm' });
+                    recordedBlob = new Blob(chunks, { type: mimeType });
                     videoPreview.srcObject = null;
                     videoPreview.src = URL.createObjectURL(recordedBlob);
                     stream.getTracks().forEach(track => track.stop());
@@ -124,6 +163,7 @@
                 log('Recording...', 'info');
                 startRecordingButton.disabled = true;
                 stopRecordingButton.disabled = false;
+                
             } catch (error) {
                 log(`Camera/Mic access denied: ${error.message}`, 'error');
                 console.error('Error starting recording:', error);
@@ -139,22 +179,45 @@
         trimVideoButton.addEventListener('click', async () => {
             if (!ffmpeg || !ffmpeg.loaded) return log('FFmpeg not loaded.', 'error');
             if (!recordedBlob) return log('Please record a video first.', 'error');
+            
             const start = parseFloat(trimStartInput.value);
             const end = parseFloat(trimEndInput.value);
             if (isNaN(start) || isNaN(end) || start < 0 || end <= start) {
                 return log('Invalid start/end times.', 'error');
             }
+            
             trimVideoButton.disabled = true;
             log('Trimming video... This may take a moment.', 'info');
+            
             try {
                 const inputFileName = 'input.webm';
                 const outputFileName = 'output.mp4';
-                await ffmpeg.writeFile(inputFileName, await fetchFile(recordedBlob));
-                await ffmpeg.exec(['-i', inputFileName, '-ss', start.toString(), '-to', end.toString(), outputFileName]);
-                const data = await ffmpeg.readFile(outputFileName);
-                const trimmedBlob = new Blob([data], { type: 'video/mp4' });
-                trimmedVideoOutput.src = URL.createObjectURL(trimmedBlob);
-                log('Trimming complete!', 'success');
+                
+                // Use API compatible with both old and new FFmpeg versions
+                if (typeof ffmpeg.writeFile === 'function') {
+                    // New API
+                    await ffmpeg.writeFile(inputFileName, await fetchFile(recordedBlob));
+                    await ffmpeg.exec([
+                        '-i', inputFileName, 
+                        '-ss', start.toString(), 
+                        '-to', end.toString(), 
+                        '-c', 'copy',
+                        outputFileName
+                    ]);
+                    const data = await ffmpeg.readFile(outputFileName);
+                    const trimmedBlob = new Blob([data.buffer || data], { type: 'video/mp4' });
+                    trimmedVideoOutput.src = URL.createObjectURL(trimmedBlob);
+                } else {
+                    // Legacy API fallback
+                    await ffmpeg.FS('writeFile', inputFileName, await fetchFile(recordedBlob));
+                    await ffmpeg.run('-i', inputFileName, '-ss', start.toString(), '-to', end.toString(), '-c', 'copy', outputFileName);
+                    const data = ffmpeg.FS('readFile', outputFileName);
+                    const trimmedBlob = new Blob([data.buffer], { type: 'video/mp4' });
+                    trimmedVideoOutput.src = URL.createObjectURL(trimmedBlob);
+                }
+                
+                log('✓ Trimming complete!', 'success');
+                
             } catch (error) {
                 log('An error occurred during trimming.', 'error');
                 console.error('Trimming error:', error);
@@ -163,10 +226,24 @@
             }
         });
 
+        // Event listeners
         startRecordingButton.addEventListener('click', startRecording);
         stopRecordingButton.addEventListener('click', stopRecording);
         
-        initializeFFmpeg();
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Page loaded, initializing FFmpeg...');
+            initializeFFmpeg();
+        });
+
+        // Also initialize immediately if DOM is already ready
+        if (document.readyState === 'loading') {
+            // DOM is still loading
+            document.addEventListener('DOMContentLoaded', initializeFFmpeg);
+        } else {
+            // DOM is already loaded
+            initializeFFmpeg();
+        }
     </script>
 </body>
 </html>
