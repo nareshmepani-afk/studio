@@ -12,7 +12,7 @@ var a = (s, o) => {
 var p = s => l(e(s != null ? Object.create(Object.getPrototypeOf(s)) : {}, "default", { value: s, enumerable: !0 }), s);
 var m = {};
 a(m, { FFmpeg: () => f, default: () => g });
-import * as u from "./util";
+import * as u from "./util.js";
 
 class f {
     constructor(s) {
