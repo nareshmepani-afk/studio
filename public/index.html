@@ -53,7 +53,7 @@
     <script type="module">
         // FINAL WORKING VERSION - USES SELF-HOSTED FILES
         import { FFmpeg } from './ffmpeg/ffmpeg.js';
-        import { fetchFile } from './ffmpeg/util.js';
+        // The 'fetchFile' import has been removed as it's not needed.
 
         const videoPreview = document.getElementById('video-preview');
         const startRecordingButton = document.getElementById('start-recording');
@@ -85,12 +85,10 @@
                     }
                 }
             });
-
             try {
                 const coreURL = new URL('/ffmpeg/ffmpeg-core.js', document.baseURI).href;
                 const wasmURL = new URL('/ffmpeg/ffmpeg-core.wasm', document.baseURI).href;
                 const workerURL = new URL('/ffmpeg/ffmpeg-core.worker.js', document.baseURI).href;
-
                 await ffmpeg.load({ coreURL, wasmURL, workerURL });
                 log('Ready to record!', 'success');
                 startRecordingButton.disabled = false;
@@ -149,7 +147,10 @@
             try {
                 const inputFileName = 'input.webm';
                 const outputFileName = 'output.mp4';
-                await ffmpeg.writeFile(inputFileName, await fetchFile(recordedBlob));
+                
+                // THE FIX: Pass the blob directly to writeFile, which can now handle it.
+                await ffmpeg.writeFile(inputFileName, recordedBlob);
+                
                 await ffmpeg.exec(['-i', inputFileName, '-ss', start.toString(), '-to', end.toString(), outputFileName]);
                 const data = await ffmpeg.readFile(outputFileName);
                 const trimmedBlob = new Blob([data], { type: 'video/mp4' });
