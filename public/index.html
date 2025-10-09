@@ -51,7 +51,6 @@
         <video id="trimmed-video-output" width="640" height="480" controls playsinline></video>
     </div>
     <script type="module">
-        // FINAL WORKING VERSION - USES SELF-HOSTED FILES
         import { FFmpeg } from './ffmpeg/ffmpeg.js';
         import { fetchFile } from './ffmpeg/util.js';
 
@@ -94,7 +93,7 @@
                 startRecordingButton.disabled = false;
             } catch (error) {
                 console.error('Failed to load FFmpeg:', error);
-                log('Error: Could not load FFmpeg. Please use a modern browser like Chrome or Firefox and check the console for details.', 'error');
+                log('Error: Could not load FFmpeg. Please test on a modern browser like Chrome or Firefox.', 'error');
             }
         }
 
