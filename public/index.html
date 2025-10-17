@@ -51,8 +51,7 @@
         <video id="trimmed-video-output" width="640" height="480" controls playsinline></video>
     </div>
     <script type="module">
-        // THE FIX: Import from the newly renamed file to bypass the server cache.
-        import { FFmpeg } from './ffmpeg/ffmpeg-v2.js';
+        import { FFmpeg } from './ffmpeg/ffmpeg.js';
         import { fetchFile } from './ffmpeg/util.js';
 
         const videoPreview = document.getElementById('video-preview');
