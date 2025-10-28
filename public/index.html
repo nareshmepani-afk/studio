@@ -3,39 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Editor - Final Solution</title>
+    <title>Video Editor with Automated Self-Testing</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f9; color: #333; }
-        h1, h2 { color: #1a237e; }
-        #video-preview, #trimmed-video-output { border: 2px solid #ccc; border-radius: 8px; margin-bottom: 10px; background-color: #000; max-width: 100%; }
-        button { margin: 5px 0; padding: 12px 20px; cursor: pointer; border: none; border-radius: 5px; background-color: #3f51b5; color: white; font-size: 16px; transition: background-color: 0.3s; }
+        h1, h2, h3 { color: #1a237e; }
+        video { border: 2px solid #ccc; border-radius: 8px; margin-bottom: 10px; background-color: #000; max-width: 100%; }
+        button { margin: 5px 0; padding: 12px 20px; cursor: pointer; border: none; border-radius: 5px; background-color: #3f51b5; color: white; font-size: 16px; transition: background-color 0.3s; }
         button:disabled { background-color: #9fa8da; cursor: not-allowed; }
         button:hover:not(:disabled) { background-color: #303f9f; }
         input { margin: 5px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; }
-        .controls { margin-bottom: 25px; padding: 20px; border: 1px solid #ddd; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .controls, .test-section { margin-bottom: 25px; padding: 20px; border: 1px solid #ddd; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         label { margin-right: 10px; font-weight: bold; }
         #status-message { font-size: 1.1em; font-weight: bold; min-height: 25px; padding: 10px; border-radius: 5px; text-align: center; }
         .error { color: #c62828; background-color: #ffcdd2; }
         .success { color: #2e7d32; background-color: #c8e6c9; }
         .info { color: #0d47a1; background-color: #bbdefb; }
+        #recording-timer { font-size: 2em; font-weight: bold; color: #c62828; text-align: center; margin-bottom: 10px; }
+        .test-summary, .test-details, .test-history { margin-top: 15px; }
+        .test-step { padding: 8px; border-bottom: 1px solid #eee; }
+        .test-step:last-child { border-bottom: none; }
+        .pass { color: #2e7d32; }
+        .fail { color: #c62828; }
     </style>
 </head>
 <body>
-    <h1>Client-Side Video Trimmer</h1>
-    <div class="controls">
-        <h2>1. Status</h2>
-        <div id="status-message" class="info">Initializing... Please wait.</div>
+    <h1>Video Editor with Automated Self-Testing</h1>
+
+    <div class="test-section">
+        <h2>Automated Self-Test</h2>
+        <button id="run-self-test">Run Self-Test</button>
+        <div class="test-summary">
+            <h3>Overall Status: <span id="overall-test-status">Not Run</span></h3>
+            <h3>Self-Assessment Score: <span id="self-assessment-score">N/A</span></h3>
+        </div>
+        <div class="test-details">
+            <h3>Test Steps:</h3>
+            <div id="test-steps-container"></div>
+        </div>
+        <div class="test-history">
+            <h3>Test History:</h3>
+            <div id="test-history-container"></div>
+        </div>
     </div>
+
     <div class="controls">
-        <h2>2. Record a Video</h2>
+        <h2>1. Record a Video</h2>
+        <div id="recording-timer">00:00</div>
         <video id="video-preview" width="640" height="480" autoplay muted playsinline></video>
         <div>
             <button id="start-recording" disabled>Start Recording</button>
             <button id="stop-recording" disabled>Stop Recording</button>
         </div>
     </div>
+
     <div class="controls">
-        <h2>3. Trim Your Video</h2>
+        <h2>2. Trim Your Video</h2>
         <div>
             <label for="trim-start">Start Time (sec):</label>
             <input type="number" id="trim-start" value="0" min="0" disabled>
@@ -46,124 +68,16 @@
         </div>
         <button id="trim-video" disabled>Trim Video</button>
     </div>
+
     <div class="controls">
-        <h2>4. Your Trimmed Video</h2>
+        <h2>3. Your Trimmed Video</h2>
         <video id="trimmed-video-output" width="640" height="480" controls playsinline></video>
     </div>
-    <script type="module">
-        import { FFmpeg } from './ffmpeg/ffmpeg.js';
-        import { fetchFile } from './ffmpeg/util.js';
 
-        const videoPreview = document.getElementById('video-preview');
-        const startRecordingButton = document.getElementById('start-recording');
-        const stopRecordingButton = document.getElementById('stop-recording');
-        const trimStartInput = document.getElementById('trim-start');
-        const trimEndInput = document.getElementById('trim-end');
-        const trimVideoButton = document.getElementById('trim-video');
-        const trimmedVideoOutput = document.getElementById('trimmed-video-output');
-        const statusMessage = document.getElementById('status-message');
-        
-        let ffmpeg = null;
-        let recordedBlob = null;
-        let mediaRecorder;
-
-        const log = (message, type = 'info') => {
-            statusMessage.textContent = message;
-            statusMessage.className = type;
-            console.log(`[${type.toUpperCase()}] ${message}`);
-        };
-
-        async function initializeFFmpeg() {
-            log('Loading FFmpeg library...', 'info');
-            ffmpeg = new FFmpeg({
-                log: true,
-                progress: ({ progress }) => {
-                    const percentage = Math.round(progress * 100);
-                     if (percentage < 100 && percentage > 0) {
-                        log(`Processing video... ${percentage}%`, 'info');
-                    }
-                }
-            });
-            try {
-                const coreURL = new URL('/ffmpeg/ffmpeg-core.js', document.baseURI).href;
-                const wasmURL = new URL('/ffmpeg/ffmpeg-core.wasm', document.baseURI).href;
-                const workerURL = new URL('/ffmpeg/ffmpeg-core.worker.js', document.baseURI).href;
-                await ffmpeg.load({ coreURL, wasmURL, workerURL });
-                log('Ready to record!', 'success');
-                startRecordingButton.disabled = false;
-            } catch (error) {
-                console.error('Failed to load FFmpeg:', error);
-                log('Error: Could not load FFmpeg. Please test on a modern browser like Chrome or Firefox.', 'error');
-            }
-        }
-
-        const startRecording = async () => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                videoPreview.srcObject = stream;
-                recordedBlob = null;
-                const chunks = [];
-                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-                mediaRecorder.ondataavailable = (event) => chunks.push(event.data);
-                mediaRecorder.onstop = () => {
-                    recordedBlob = new Blob(chunks, { type: 'video/webm' });
-                    videoPreview.srcObject = null;
-                    videoPreview.src = URL.createObjectURL(recordedBlob);
-                    stream.getTracks().forEach(track => track.stop());
-                    log('Recording complete. Ready to trim.', 'success');
-                    trimStartInput.disabled = false;
-                    trimEndInput.disabled = false;
-                    trimVideoButton.disabled = false;
-                    startRecordingButton.disabled = false;
-                    stopRecordingButton.disabled = true;
-                };
-                mediaRecorder.start();
-                log('Recording...', 'info');
-                startRecordingButton.disabled = true;
-                stopRecordingButton.disabled = false;
-            } catch (error) {
-                log(`Camera/Mic access denied: ${error.message}`, 'error');
-                console.error('Error starting recording:', error);
-            }
-        };
-
-        const stopRecording = () => {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
-        };
-
-        trimVideoButton.addEventListener('click', async () => {
-            if (!ffmpeg || !ffmpeg.loaded) return log('FFmpeg not loaded.', 'error');
-            if (!recordedBlob) return log('Please record a video first.', 'error');
-            const start = parseFloat(trimStartInput.value);
-            const end = parseFloat(trimEndInput.value);
-            if (isNaN(start) || isNaN(end) || start < 0 || end <= start) {
-                return log('Invalid start/end times.', 'error');
-            }
-            trimVideoButton.disabled = true;
-            log('Trimming video... This may take a moment.', 'info');
-            try {
-                const inputFileName = 'input.webm';
-                const outputFileName = 'output.mp4';
-                await ffmpeg.writeFile(inputFileName, await fetchFile(recordedBlob));
-                await ffmpeg.exec(['-i', inputFileName, '-ss', start.toString(), '-to', end.toString(), outputFileName]);
-                const data = await ffmpeg.readFile(outputFileName);
-                const trimmedBlob = new Blob([data], { type: 'video/mp4' });
-                trimmedVideoOutput.src = URL.createObjectURL(trimmedBlob);
-                log('Trimming complete!', 'success');
-            } catch (error) {
-                log('An error occurred during trimming.', 'error');
-                console.error('Trimming error:', error);
-            } finally {
-                trimVideoButton.disabled = false;
-            }
-        });
-
-        startRecordingButton.addEventListener('click', startRecording);
-        stopRecordingButton.addEventListener('click', stopRecording);
-        
-        initializeFFmpeg();
-    </script>
+    <div id="status-container">
+        <div id="status-message" class="info">Initializing... Please wait.</div>
+    </div>
+    
+    <script src="main.js" type="module"></script>
 </body>
 </html>
