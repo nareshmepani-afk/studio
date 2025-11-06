@@ -7,7 +7,30 @@
   packages = [
     pkgs.nodejs_20
     pkgs.zulu
-    pkgs.playwright-driver
+    # Add a comprehensive set of libraries required by Playwright/Chromium
+    pkgs.glib
+    pkgs.nss
+    pkgs.dbus
+    pkgs.atk
+    pkgs.at-spi2-atk
+    pkgs.libxkbcommon
+    pkgs.libXshmfence
+    pkgs.pango
+    pkgs.cairo
+    pkgs.libepoxy
+    pkgs.gdk-pixbuf
+    pkgs.libdrm
+    pkgs.mesa
+    pkgs.udev
+    pkgs.alsa-lib
+    pkgs.at-spi2-core
+    pkgs.libXcomposite
+    pkgs.libXdamage
+    pkgs.libXfixes
+    pkgs.libXrandr
+    pkgs.libXinerama
+    pkgs.expat
+    pkgs.cups
   ];
   # Sets environment variables in the workspace
   env = {};
