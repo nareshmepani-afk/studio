@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video Editor</title>
+    <style>
+        #drop-zone {
+            border: 2px dashed #ccc;
+            border-radius: 20px;
+            width: 300px;
+            height: 200px;
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        #video-player {
+            width: 100%;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Simple Video Editor</h1>
+
+    <div id="drop-zone">
+        <p>Drag and drop your video here</p>
+    </div>
+
+    <video id="video-player" controls></video>
+
+    <div>
+        <label for="start-time">Start Time:</label>
+        <input type="number" id="start-time" value="0">
+        <label for="end-time">End Time:</label>
+        <input type="number" id="end-time" value="10">
+        <button id="trim-button">Trim Video</button>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const videoPlayer = document.getElementById('video-player');
+        const startTimeInput = document.getElementById('start-time');
+        const endTimeInput = document.getElementById('end-time');
+        const trimButton = document.getElementById('trim-button');
+
+        dropZone.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            dropZone.style.backgroundColor = '#eee';
+        });
+
+        dropZone.addEventListener('dragleave', (event) => {
+            event.preventDefault();
+            dropZone.style.backgroundColor = 'transparent';
+        });
+
+        dropZone.addEventListener('drop', (event) => {
+            event.preventDefault();
+            dropZone.style.backgroundColor = 'transparent';
+            const file = event.dataTransfer.files[0];
+            if (file.type.startsWith('video/')) {
+                const videoURL = URL.createObjectURL(file);
+                videoPlayer.src = videoURL;
+            } else {
+                alert('Please drop a valid video file.');
+            }
+        });
+
+        trimButton.addEventListener('click', () => {
+            const startTime = parseFloat(startTimeInput.value);
+            const endTime = parseFloat(endTimeInput.value);
+
+            if (isNaN(startTime) || isNaN(endTime) || startTime < 0 || endTime <= startTime) {
+                alert('Invalid start or end time.');
+                return;
+            }
+
+            // This is a simplified trim example.
+            // In a real application, you would use a library like FFmpeg.wasm for client-side trimming.
+            // Here, we'll just simulate the trim by setting the video's start and end time.
+            videoPlayer.currentTime = startTime;
+            videoPlayer.play();
+
+            setTimeout(() => {
+                videoPlayer.pause();
+            }, (endTime - startTime) * 1000);
+        });
+    </script>
+
+</body>
+</html>
