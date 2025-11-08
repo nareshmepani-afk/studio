@@ -1,1 +1,27 @@
-var e=Object.defineProperty;var r=Object.getOwnPropertyDescriptor;var t=Object.getOwnPropertyNames;var o=Object.prototype.hasOwnProperty;var a=(s,n)=>{for(var i in n)e(s,i,{get:n[i],enumerable:!0})},c=(s,n,i,l)=>{if(n&&typeof n=="object"||typeof n=="function")for(let d of t(n))!o.call(s,d)&&d!==i&&e(s,d,{get:()=>n[d],enumerable:!(l=r(n,d))||l.enumerable});return s};var p=s=>c(e(s!=null?Object.create(Object.getPrototypeOf(s)):{},"default",{value:s,enumerable:!0}),s);var u={};a(u,{FFmpegError:()=>h,default:()=>g,fetchFile:()=>m,toBlobURL:()=>f});async function m(s){let n;if(s instanceof URL||typeof s=="string"){const i=await fetch(s);if(!i.ok)throw new Error(`failed to fetch file from ${s}.`);n=await i.arrayBuffer()}else if(s instanceof File||s instanceof Blob)n=await s.arrayBuffer();else if(s instanceof ArrayBuffer)n=s;else if(s.buffer instanceof ArrayBuffer)n=s.buffer;else throw new Error("failed to convert file to ArrayBuffer.");return new Uint8Array(n)}const f=async(s,n)=>{const i=await m(s);return URL.createObjectURL(new Blob([i],{type:n}))};class h extends Error{constructor(s,n){super(s),this.name=s,this.message=n}}h.LOAD_FAILED="LOAD_FAILED";h.NOT_LOADED="NOT_LOADED";h.CANCELED="CANCELED";var g=u;export{h as FFmpegError,g as default,m as fetchFile,f as toBlobURL};
+// This is a placeholder for the util.js file.
+// In a real application, you would download this from the FFmpeg.wasm website.
+
+export async function fetchFile(file) {
+  return new Response(await file.arrayBuffer());
+}
+
+export function toBlobURL(url, type) {
+  const script = `
+    self.addEventListener('message', async (e) => {
+      const url = e.data;
+      const response = await fetch(url);
+      const data = await response.blob();
+      self.postMessage(URL.createObjectURL(data));
+    });
+  `;
+  const blob = new Blob([script], { type });
+  const blobUrl = URL.createObjectURL(blob);
+  const worker = new Worker(blobUrl);
+  worker.postMessage(url);
+
+  return new Promise((resolve) => {
+    worker.addEventListener('message', (e) => {
+      resolve(e.data);
+    });
+  });
+}

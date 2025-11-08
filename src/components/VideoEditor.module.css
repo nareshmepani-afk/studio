@@ -1,14 +1,20 @@
-.dropZone {
-    border: 2px dashed #ccc;
-    border-radius: 20px;
-    width: 300px;
-    height: 200px;
-    text-align: center;
-    padding: 20px;
+.controls {
     margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #eee;
+    background-color: #f9f9f9;
 }
 
-.videoPlayer {
-    width: 100%;
-    max-width: 600px;
+.error {
+    color: red;
+    font-weight: bold;
+}
+
+.success {
+    color: green;
+    font-weight: bold;
+}
+
+.info {
+    color: blue;
 }
