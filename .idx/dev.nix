@@ -4,37 +4,39 @@
   # Which nixpkgs channel to use.
   channel = "stable-23.11"; # or "unstable"
   # Use https://search.nixos.org/packages to find packages
-  packages = [
-    pkgs.nodejs_20,
-    pkgs.zulu,
+  packages = with pkgs; [
+    nodejs_20
+    zulu
     # Add a comprehensive set of libraries required by Playwright/Chromium
-    pkgs.glib,
-    pkgs.nss,
-    pkgs.nspr,
-    pkgs.dbus,
-    pkgs.atk,
-    pkgs.at-spi2-atk,
-    pkgs.libxkbcommon,
-    pkgs.xorg.libXshmfence,
-    pkgs.pango,
-    pkgs.cairo,
-    pkgs.libepoxy,
-    pkgs.gdk-pixbuf,
-    pkgs.libdrm,
-    pkgs.mesa,
-    pkgs.udev,
-    pkgs.alsaLib,
-    pkgs.at-spi2-core,
-    pkgs.libX11,
-    pkgs.libxcb,
-    pkgs.xorg.libXcomposite,
-    pkgs.xorg.libXdamage,
-    pkgs.xorg.libXext,
-    pkgs.xorg.libXfixes,
-    pkgs.xorg.libXrandr,
-    pkgs.xorg.libXinerama,
-    pkgs.expat,
-    pkgs.cups
+    glib
+    nss
+    nspr
+    dbus
+    atk
+    at-spi2-atk
+    libxkbcommon
+    pango
+    cairo
+    libepoxy
+    gdk-pixbuf
+    libdrm
+    mesa
+    udev
+    alsaLib
+    at-spi2-core
+    libxcb
+    expat
+    cups
+
+    # X.org libraries
+    xorg.libX11
+    xorg.libXcomposite
+    xorg.libXdamage
+    xorg.libXext
+    xorg.libXfixes
+    xorg.libXinerama
+    xorg.libXrandr
+    xorg.libXshmfence
   ];
   # Sets environment variables in the workspace
   env = {};
