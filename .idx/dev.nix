@@ -10,6 +10,7 @@
     # Add a comprehensive set of libraries required by Playwright/Chromium
     pkgs.glib
     pkgs.nss
+    pkgs.nspr
     pkgs.dbus
     pkgs.atk
     pkgs.at-spi2-atk
@@ -22,10 +23,13 @@
     pkgs.libdrm
     pkgs.mesa
     pkgs.udev
-    pkgs.alsa-lib
+    pkgs.alsaLib  # Corrected from alsa-lib
     pkgs.at-spi2-core
+    pkgs.libX11
+    pkgs.libxcb
     pkgs.libXcomposite
     pkgs.libXdamage
+    pkgs.libXext
     pkgs.libXfixes
     pkgs.libXrandr
     pkgs.libXinerama
@@ -39,7 +43,7 @@
   services.firebase.emulators = {
     detect = true;
     projectId = "demo-app";
-    services = ["auth" "firestore"];
+    services = ["auth", "firestore"];
   };
   idx = {
     # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
@@ -58,7 +62,7 @@
       enable = true;
       previews = {
         web = {
-          command = ["npm" "run" "dev" "--" "--port" "$PORT" "--hostname" "0.0.0.0"];
+          command = ["npm", "run", "dev", "--", "--port", "$PORT", "--hostname", "0.0.0.0"];
           manager = "web";
         };
       };
