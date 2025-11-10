@@ -4,39 +4,12 @@
   # Which nixpkgs channel to use.
   channel = "stable-23.11"; # or "unstable"
   # Use https://search.nixos.org/packages to find packages
-  packages = with pkgs; [
-    nodejs_20
-    zulu
-    # Add a comprehensive set of libraries required by Playwright/Chromium
-    glib
-    nss
-    nspr
-    dbus
-    atk
-    at-spi2-atk
-    libxkbcommon
-    pango
-    cairo
-    libepoxy
-    gdk-pixbuf
-    libdrm
-    mesa
-    udev
-    alsaLib
-    at-spi2-core
-    libxcb
-    expat
-    cups
-
-    # X.org libraries
-    xorg.libX11
-    xorg.libXcomposite
-    xorg.libXdamage
-    xorg.libXext
-    xorg.libXfixes
-    xorg.libXinerama
-    xorg.libXrandr
-    xorg.libXshmfence
+  packages = [
+    pkgs.nodejs_20
+    pkgs.zulu
+    # This single package provides the browsers (Chromium, Firefox, WebKit)
+    # and all of their required system dependencies for Playwright.
+    pkgs.playwright-driver.browsers
   ];
   # Sets environment variables in the workspace
   env = {};
