@@ -2,38 +2,38 @@
 # see: https://firebase.google.com/docs/studio/customize-workspace
 {pkgs}: {
   # Which nixpkgs channel to use.
-  channel = "stable-24.11"; # or "unstable"
+  channel = "stable-23.11"; # or "unstable"
   # Use https://search.nixos.org/packages to find packages
   packages = [
-    pkgs.nodejs_20
-    pkgs.zulu
+    pkgs.nodejs_20,
+    pkgs.zulu,
     # Add a comprehensive set of libraries required by Playwright/Chromium
-    pkgs.glib
-    pkgs.nss
-    pkgs.nspr
-    pkgs.dbus
-    pkgs.atk
-    pkgs.at-spi2-atk
-    pkgs.libxkbcommon
-    pkgs.libXshmfence
-    pkgs.pango
-    pkgs.cairo
-    pkgs.libepoxy
-    pkgs.gdk-pixbuf
-    pkgs.libdrm
-    pkgs.mesa
-    pkgs.udev
-    pkgs.alsaLib  # Corrected from alsa-lib
-    pkgs.at-spi2-core
-    pkgs.libX11
-    pkgs.libxcb
-    pkgs.libXcomposite
-    pkgs.libXdamage
-    pkgs.libXext
-    pkgs.libXfixes
-    pkgs.libXrandr
-    pkgs.libXinerama
-    pkgs.expat
+    pkgs.glib,
+    pkgs.nss,
+    pkgs.nspr,
+    pkgs.dbus,
+    pkgs.atk,
+    pkgs.at-spi2-atk,
+    pkgs.libxkbcommon,
+    pkgs.libXshmfence,
+    pkgs.pango,
+    pkgs.cairo,
+    pkgs.libepoxy,
+    pkgs.gdk-pixbuf,
+    pkgs.libdrm,
+    pkgs.mesa,
+    pkgs.udev,
+    pkgs.alsaLib,
+    pkgs.at-spi2-core,
+    pkgs.libX11,
+    pkgs.libxcb,
+    pkgs.libXcomposite,
+    pkgs.libXdamage,
+    pkgs.libXext,
+    pkgs.libXfixes,
+    pkgs.libXrandr,
+    pkgs.libXinerama,
+    pkgs.expat,
     pkgs.cups
   ];
   # Sets environment variables in the workspace
