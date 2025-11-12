@@ -6,8 +6,8 @@
 
   # Use https://search.nixos.org/packages to find packages
   packages = [
-    pkgs.nodejs_20
-    pkgs.zulu
+    pkgs.nodejs_20,
+    pkgs.zulu,
     # This single package provides the browsers (Chromium, Firefox, WebKit)
     # and all of their required system dependencies for Playwright.
     pkgs.playwright-driver.browsers
@@ -21,7 +21,7 @@
   services.firebase.emulators = {
     detect = true;
     projectId = "demo-app";
-    services = ["auth", "firestore"];
+    services = [ "auth" "firestore" ];
   };
 
   idx = {
