@@ -1,3 +1,4 @@
+
 {
   "hosting": {
     "public": "public",
@@ -15,7 +16,7 @@
             "value": "same-origin"
           },
           {
-            "key": "Cross-Origin-Embedder-Policy",
+            "key": "Cross-origin-Embedder-Policy",
             "value": "require-corp"
           }
         ]
@@ -23,3 +24,5 @@
     ]
   }
 }
+
+    
