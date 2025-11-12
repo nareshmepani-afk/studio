@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { getFFmpegInstance, fetchFile, trimMediaWithFFmpeg } from '@/lib/ffmpeg';
+import { getFFmpegInstance, trimMediaWithFFmpeg } from '@/lib/ffmpeg';
 import styles from './VideoEditor.module.css';
 
 // Utility to format seconds into a MIN:SEC.MS format
