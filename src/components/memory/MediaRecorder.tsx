@@ -319,41 +319,44 @@ export function MediaCaptureControl({
       recorder.onstop = () => {
         const currentRecordedChunksCopy = [...recordedChunks.current];
         recordedChunks.current = [];
+        cleanupAndFinalizeRecording(streamForNewRecording);
+
         if (currentRecordedChunksCopy.length === 0) {
           setTimeout(() => toast({ variant: 'destructive', title: 'No Data Recorded', description: 'The recording seems to be empty. Please try again, ensuring your microphone/camera is active.', duration: 7000 }), 0);
-          cleanupAndFinalizeRecording(streamForNewRecording);
           setIsStopping(false);
           return;
         }
+
         const blobMimeTypeToUse = mediaRecorderRef.current?.mimeType || (type === 'video' ? (selectedMimeType || 'video/webm') : (selectedMimeType || 'audio/webm'));
         const blob = new Blob(currentRecordedChunksCopy, { type: blobMimeTypeToUse });
+        
         if (blob.size < 1024) {
           setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Recorded data is too small or corrupted. Please try a longer recording.', duration: 7000 }), 0);
-          cleanupAndFinalizeRecording(streamForNewRecording);
           setIsStopping(false);
           return;
         }
+
         if (!checkStorageQuota(blob.size)) {
-          cleanupAndFinalizeRecording(streamForNewRecording);
           setIsStopping(false);
           return;
         }
+
         const file = new File([blob], `recording.${blob.type.split('/')[1]?.split(';')[0] || 'bin'}`, { type: blob.type });
         const newObjectUrlForPreview = URL.createObjectURL(blob);
-        requestAnimationFrame(() => {
-          setRecordedFile(file);
-          setInternalPreviewUrl(newObjectUrlForPreview);
-          setMediaType(type);
-          setMediaSize(file.size);
-          setMediaDuration(0);
-          setStartTime(0);
-          setEndTime(0);
-          latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
-          setRawPreviewReady(true);
-          setIsStopping(false); // Processing done
-        });
+        
+        // This is now the single source of truth for post-recording state updates
+        setRecordedFile(file);
+        setInternalPreviewUrl(newObjectUrlForPreview);
+        setMediaType(type);
+        setMediaSize(file.size);
+        setMediaDuration(0);
+        setStartTime(0);
+        setEndTime(0);
+        latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
+        setRawPreviewReady(true);
+        setIsStopping(false); // End processing state, this will reveal the "Accept" button
+        
         setTimeout(() => toast({ title: "Recording Complete!", description: "Preview your raw recording and click 'Accept Recording' to proceed." }), 0);
-        cleanupAndFinalizeRecording(streamForNewRecording);
       };
       recorder.onerror = (event: any) => {
         console.error('MediaRecorder error:', event);
@@ -619,7 +622,7 @@ export function MediaCaptureControl({
         {!canRecordOrUpload && (<Alert variant="destructive"><ShieldAlert className="h-4 w-4" /><AlertTitle>Host Pass Required</AlertTitle><AlertDescription>An active Host Pass is needed to record or upload new media. Please check your pass status in Settings.</AlertDescription></Alert>)}
         {ffmpegError && (<Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Media Tools Error</AlertTitle><AlertDescription>{ffmpegError}</AlertDescription></Alert>)}
 
-        {!internalPreviewUrl && !isRecording && (
+        {!internalPreviewUrl && !isRecording && !isStopping && (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-2">
               <Button onClick={() => handleStartRecording('video')} className="flex-1" disabled={!isReady || isRecording || hasCameraPermission === false}>
@@ -658,7 +661,7 @@ export function MediaCaptureControl({
           </div>
         )}
 
-        {(isRecording || (mediaType === 'video' && internalPreviewUrl)) && (
+        {(isRecording || isStopping || (mediaType === 'video' && internalPreviewUrl)) && (
             <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
                 <video ref={isRecording ? liveVideoRef : videoRef} src={isRecording ? undefined : internalPreviewUrl || ''} autoPlay={isRecording} muted={isRecording} playsInline controls={!isRecording && !isStopping} className="w-full h-full object-contain" />
                 {isRecording && (
