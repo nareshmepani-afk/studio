@@ -6,8 +6,8 @@
 
   # Use https://search.nixos.org/packages to find packages
   packages = [
-    pkgs.nodejs_20,
-    pkgs.zulu,
+    pkgs.nodejs_20
+    pkgs.zulu
     # This single package provides the browsers (Chromium, Firefox, WebKit)
     # and all of their required system dependencies for Playwright.
     pkgs.playwright-driver.browsers
@@ -44,7 +44,7 @@
       enable = true;
       previews = {
         web = {
-          command = ["npm", "run", "dev", "--", "--port", "$PORT", "--hostname", "0.0.0.0"];
+          command = [ "npm" "run" "dev" "--" "--port" "$PORT" "--hostname" "0.0.0.0" ];
           manager = "web";
         };
       };
