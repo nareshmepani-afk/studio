@@ -23,6 +23,7 @@ interface FFmpegType {
   ) => any;
   setLogger: (logger: FFmpegLogger) => void;
   setProgress: (progresser: FFmpegProgresser) => void;
+  isLoaded: () => boolean;
 }
 // --- END: Manual type definitions ---
 
@@ -75,7 +76,7 @@ export async function getFFmpegInstance(): Promise<FFmpegType> {
       
       const ffmpeg = window.FFmpeg.createFFmpeg({
           // The `corePath` is now crucial for the multi-threaded version
-          corePath: '/ffmpeg-core.js',
+          corePath: '/ffmpeg/ffmpeg-core.js',
           log: false, // Set to true for detailed debugging if needed
       });
 
@@ -118,7 +119,7 @@ export const fetchFile = async (data: Blob | string | File): Promise<Uint8Array>
  */
 export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   const ffmpeg = await getFFmpegInstance();
-  if (!ffmpeg) {
+  if (!ffmpeg || !ffmpeg.isLoaded()) {
     throw new Error("getDurationWithFFmpeg: FFmpeg instance is not available.");
   }
 
@@ -178,7 +179,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
  */
 export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, endTime: number): Promise<Blob> {
   const ffmpeg = await getFFmpegInstance();
-  if (!ffmpeg) {
+  if (!ffmpeg || !ffmpeg.isLoaded()) {
     throw new Error("trimMediaWithFFmpeg: FFmpeg instance is not available.");
   }
   
@@ -193,12 +194,13 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
       throw new Error("trimMediaWithFFmpeg: End time must be after start time for trimming.");
     }
 
-    // Using '-c copy' is fast but can be inaccurate. Removing it forces re-encoding, which is more precise for trimming.
+    // Using '-c copy' is fast but can be inaccurate. For precise trimming, re-encoding is necessary.
+    // Let's remove '-c copy' to favor accuracy over speed.
     await ffmpeg.run(
       '-i', inputFilename,
       '-ss', startTime.toString(),
       '-to', endTime.toString(),
-      '-c', 'copy', // Keep copy for speed, but be aware it can be less accurate.
+      // '-c', 'copy', // Removed for accuracy
       outputFilename
     );
 
