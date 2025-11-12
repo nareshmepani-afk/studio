@@ -755,5 +755,3 @@ export function MediaCaptureControl({
     </Card>
   );
 }
-
-    
