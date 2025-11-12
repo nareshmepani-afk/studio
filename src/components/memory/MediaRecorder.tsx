@@ -529,7 +529,7 @@ export function MediaCaptureControl({
       return;
     }
     if (!recordedFile) {
-      toast({ title: "No Media File", description: "Please record or upload media first.", variant: "destructive" });
+      toast({ title: "No Media File", description: "Please record or upload media first." });
       return;
     }
     setIsProcessing(true);

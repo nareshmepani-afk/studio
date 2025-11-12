@@ -95,3 +95,4 @@ export interface PromptGroup {
 export const FREE_TIER_STORAGE_QUOTA_BYTES = 10 * 1024 * 1024; // 10 MB (Kept for reference)
 export const STANDARD_HOST_STORAGE_QUOTA_BYTES = 600 * 1024 * 1024; // 600 MB - for users with an active host pass (interpreted as per-memory/chapter limit)
 
+

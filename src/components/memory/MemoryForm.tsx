@@ -15,7 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft, Eye, Layers } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, getDate, parseISO } from 'date-fns';
+import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, parseISO } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import {
   Carousel,
