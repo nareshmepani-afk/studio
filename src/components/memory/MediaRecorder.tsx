@@ -72,6 +72,7 @@ export function MediaCaptureControl({
 }: MediaCaptureControlProps) {
   const { user, storageQuotaBytes, hostPassStatus } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
+  const [isStopping, setIsStopping] = useState(false); // New state for processing after stop
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(null);
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
 
@@ -321,6 +322,7 @@ export function MediaCaptureControl({
         if (currentRecordedChunksCopy.length === 0) {
           setTimeout(() => toast({ variant: 'destructive', title: 'No Data Recorded', description: 'The recording seems to be empty. Please try again, ensuring your microphone/camera is active.', duration: 7000 }), 0);
           cleanupAndFinalizeRecording(streamForNewRecording);
+          setIsStopping(false);
           return;
         }
         const blobMimeTypeToUse = mediaRecorderRef.current?.mimeType || (type === 'video' ? (selectedMimeType || 'video/webm') : (selectedMimeType || 'audio/webm'));
@@ -328,10 +330,12 @@ export function MediaCaptureControl({
         if (blob.size < 1024) {
           setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Recorded data is too small or corrupted. Please try a longer recording.', duration: 7000 }), 0);
           cleanupAndFinalizeRecording(streamForNewRecording);
+          setIsStopping(false);
           return;
         }
         if (!checkStorageQuota(blob.size)) {
           cleanupAndFinalizeRecording(streamForNewRecording);
+          setIsStopping(false);
           return;
         }
         const file = new File([blob], `recording.${blob.type.split('/')[1]?.split(';')[0] || 'bin'}`, { type: blob.type });
@@ -346,6 +350,7 @@ export function MediaCaptureControl({
           setEndTime(0);
           latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
           setRawPreviewReady(true);
+          setIsStopping(false); // Processing done
         });
         setTimeout(() => toast({ title: "Recording Complete!", description: "Preview your raw recording and click 'Accept Recording' to proceed." }), 0);
         cleanupAndFinalizeRecording(streamForNewRecording);
@@ -353,6 +358,7 @@ export function MediaCaptureControl({
       recorder.onerror = (event: any) => {
         console.error('MediaRecorder error:', event);
         cleanupAndFinalizeRecording(streamForNewRecording);
+        setIsStopping(false);
         setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: event.error?.message || 'Something went wrong during recording. Please try again.' }), 0);
       };
       recorder.start(1000);
@@ -374,6 +380,7 @@ export function MediaCaptureControl({
 
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      setIsStopping(true); // Start processing state
       mediaRecorderRef.current.stop();
     } else if (isRecording) {
       cleanupAndFinalizeRecording(streamForVideoFeed);
@@ -653,11 +660,17 @@ export function MediaCaptureControl({
 
         {(isRecording || (mediaType === 'video' && internalPreviewUrl)) && (
             <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
-                <video ref={isRecording ? liveVideoRef : videoRef} src={isRecording ? undefined : internalPreviewUrl || ''} autoPlay={isRecording} muted={isRecording} playsInline controls={!isRecording} className="w-full h-full object-contain" />
+                <video ref={isRecording ? liveVideoRef : videoRef} src={isRecording ? undefined : internalPreviewUrl || ''} autoPlay={isRecording} muted={isRecording} playsInline controls={!isRecording && !isStopping} className="w-full h-full object-contain" />
                 {isRecording && (
                     <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-xs flex items-center">
                         <Timer className="h-3 w-3 mr-1 text-red-500 animate-pulse" />
                         {formatSecondsToTime(currentRecordingDuration)} / {formatSecondsToTime(mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS : MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS)}
+                    </div>
+                )}
+                {isStopping && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+                        <Loader2 className="h-8 w-8 animate-spin text-white" />
+                        <span className="ml-3 text-white">Processing recording...</span>
                     </div>
                 )}
             </div>
@@ -681,7 +694,7 @@ export function MediaCaptureControl({
           <Button onClick={handleStopRecording} className="w-full" variant="destructive"><StopCircle className="mr-2"/> Stop Recording</Button>
         )}
 
-        {internalPreviewUrl && !isRecording && (
+        {internalPreviewUrl && !isRecording && !isStopping && (
           <div className="space-y-4">
             {mediaType === 'audio' && (
               <div className="p-4 bg-muted rounded-md">
@@ -739,3 +752,5 @@ export function MediaCaptureControl({
     </Card>
   );
 }
+
+    
