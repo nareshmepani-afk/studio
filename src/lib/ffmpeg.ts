@@ -8,8 +8,8 @@ interface FFmpegLog {
   message: string;
 }
 interface FFmpegProgress {
-  ratio: number;
-  time: number;
+  progress: number; // For core-mt, progress is a value from 0 to 1
+  time?: number; // Time might not be available in core-mt progress
 }
 type FFmpegLogger = (log: FFmpegLog) => void;
 type FFmpegProgresser = (progress: FFmpegProgress) => void;
@@ -80,7 +80,10 @@ export async function getFFmpegInstance(): Promise<FFmpegType> {
       await waitForFFmpeg();
       console.log("ffmpeg.ts: window.FFmpeg is available. Creating instance.");
       
-      const ffmpeg = window.FFmpeg.createFFmpeg({ log: false });
+      const ffmpeg = window.FFmpeg.createFFmpeg({
+          corePath: '/ffmpeg-core.js', // Using the path from the public folder for the MT core
+          log: false 
+      });
 
       console.log(`ffmpeg.ts: Calling ffmpeg.load()`);
       await ffmpeg.load();
@@ -162,10 +165,12 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     console.warn("FFmpeg log output for duration check:", logOutput);
     throw new Error("getDurationWithFFmpeg: Could not parse duration from FFmpeg output.");
   } finally {
-    try {
-      ffmpeg.FS('unlink', fileName);
-    } catch (e) { /* Ignore cleanup errors */ }
-    ffmpeg.setLogger(() => {});
+    if (ffmpeg) { // Check if ffmpeg instance is not null before using it
+      try {
+        ffmpeg.FS('unlink', fileName);
+      } catch (e) { /* Ignore cleanup errors */ }
+      ffmpeg.setLogger(() => {});
+    }
   }
 }
 
@@ -200,9 +205,11 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
     const data = ffmpeg.FS('readFile', outputFilename);
     return new Blob([data.buffer], { type: mediaBlob.type });
   } finally {
-    try {
-      ffmpeg.FS('unlink', inputFilename);
-      ffmpeg.FS('unlink', outputFilename);
-    } catch(e) { /* Ignore cleanup errors */ }
+     if (ffmpeg) { // Check if ffmpeg instance is not null
+        try {
+          ffmpeg.FS('unlink', inputFilename);
+          ffmpeg.FS('unlink', outputFilename);
+        } catch(e) { /* Ignore cleanup errors */ }
+     }
   }
 }
