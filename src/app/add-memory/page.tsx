@@ -91,7 +91,7 @@ function AddMemoryPageComponent() {
         }
       }
 
-      if (isEditing && memoryToEdit) {
+      if (editMemoryId && memoryToEdit) {
         // Update existing memory
         const memoryDocRef = doc(db, 'users', user.id, 'memories', memoryToEdit.id);
         await updateDoc(memoryDocRef, {
