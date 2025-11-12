@@ -39,11 +39,11 @@ let ffmpegInstance: FFmpegType | null = null;
 let ffmpegLoadingPromise: Promise<FFmpegType> | null = null;
 
 // Helper to wait for the global FFmpeg object to be available
-const waitForFFmpeg = (timeout = 10000): Promise<void> => {
+const waitForFFmpegScript = (timeout = 10000): Promise<void> => {
   return new Promise((resolve, reject) => {
     const startTime = Date.now();
     const interval = setInterval(() => {
-      if (window.FFmpeg) {
+      if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') {
         clearInterval(interval);
         resolve();
       } else if (Date.now() - startTime > timeout) {
@@ -61,33 +61,25 @@ const waitForFFmpeg = (timeout = 10000): Promise<void> => {
  * @returns {Promise<FFmpegType>} A promise that resolves to the FFmpeg instance.
  */
 export async function getFFmpegInstance(): Promise<FFmpegType> {
-  console.log("ffmpeg.ts: getFFmpegInstance() called.");
-
   if (ffmpegInstance) {
-    console.log("ffmpeg.ts: Returning existing, loaded FFmpeg instance.");
     return ffmpegInstance;
   }
   
   if (ffmpegLoadingPromise) {
-    console.log("ffmpeg.ts: FFmpeg is already loading, returning existing promise.");
     return ffmpegLoadingPromise;
   }
   
-  console.log("ffmpeg.ts: No existing instance or promise. Starting new initialization.");
-
   ffmpegLoadingPromise = (async (): Promise<FFmpegType> => {
     try {
-      await waitForFFmpeg();
-      console.log("ffmpeg.ts: window.FFmpeg is available. Creating instance.");
+      await waitForFFmpegScript();
       
       const ffmpeg = window.FFmpeg.createFFmpeg({
-          corePath: '/ffmpeg-core.js', // Using the path from the public folder for the MT core
-          log: false 
+          // The `corePath` is now crucial for the multi-threaded version
+          corePath: '/ffmpeg-core.js',
+          log: false, // Set to true for detailed debugging if needed
       });
 
-      console.log(`ffmpeg.ts: Calling ffmpeg.load()`);
       await ffmpeg.load();
-      console.log("ffmpeg.ts: ffmpeg.load() completed successfully.");
 
       ffmpegInstance = ffmpeg;
       return ffmpegInstance;
@@ -95,7 +87,7 @@ export async function getFFmpegInstance(): Promise<FFmpegType> {
     } catch (error) {
       console.error("getFFmpegInstance: Critical error during FFmpeg initialization:", error);
       ffmpegInstance = null; // Reset instance on failure
-      ffmpegLoadingPromise = null; // Reset promise on failure
+      ffmpegLoadingPromise = null; // Reset promise on failure to allow retries
       throw error; // Re-throw the error to be caught by the caller
     }
   })();
@@ -126,12 +118,15 @@ export const fetchFile = async (data: Blob | string | File): Promise<Uint8Array>
  */
 export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   const ffmpeg = await getFFmpegInstance();
+  if (!ffmpeg) {
+    throw new Error("getDurationWithFFmpeg: FFmpeg instance is not available.");
+  }
 
-  const fileName = 'input.' + (mediaBlob.type.split('/')[1]?.split(';')[0] || 'tmp');
+  const fileName = 'input_duration.' + (mediaBlob.type.split('/')[1]?.split(';')[0] || 'tmp');
   let logOutput = "";
 
   try {
-    await ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
+    ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
     
     const messages: string[] = [];
     ffmpeg.setLogger(({ type, message }: FFmpegLog) => {
@@ -143,7 +138,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     try {
         await ffmpeg.run('-i', fileName);
     } catch(e) {
-        // This command is expected to fail but prints metadata.
+        // This command is expected to fail but prints metadata to stderr.
     }
     
     logOutput = messages.join('\n');
@@ -157,6 +152,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
       return hours * 3600 + minutes * 60 + seconds + centiseconds / 100;
     }
 
+    // Fallback for different duration format
     const alternativeDurationMatch = logOutput.match(/Duration: (\d+\.\d+)/);
     if (alternativeDurationMatch) {
       return parseFloat(alternativeDurationMatch[1]);
@@ -164,13 +160,12 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     
     console.warn("FFmpeg log output for duration check:", logOutput);
     throw new Error("getDurationWithFFmpeg: Could not parse duration from FFmpeg output.");
+
   } finally {
-    if (ffmpeg) { // Check if ffmpeg instance is not null before using it
-      try {
-        ffmpeg.FS('unlink', fileName);
-      } catch (e) { /* Ignore cleanup errors */ }
-      ffmpeg.setLogger(() => {});
-    }
+    try {
+      ffmpeg.FS('unlink', fileName);
+    } catch (e) { /* Ignore cleanup errors */ }
+    ffmpeg.setLogger(() => {}); // Reset logger
   }
 }
 
@@ -183,33 +178,36 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
  */
 export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, endTime: number): Promise<Blob> {
   const ffmpeg = await getFFmpegInstance();
+  if (!ffmpeg) {
+    throw new Error("trimMediaWithFFmpeg: FFmpeg instance is not available.");
+  }
+  
   const fileExtension = mediaBlob.type.split('/')[1]?.split(';')[0] || 'tmp';
   const inputFilename = 'input_trim.' + fileExtension;
   const outputFilename = 'output_trim.' + fileExtension;
 
   try {
-    await ffmpeg.FS('writeFile', inputFilename, await fetchFile(mediaBlob));
+    ffmpeg.FS('writeFile', inputFilename, await fetchFile(mediaBlob));
     const duration = endTime - startTime;
     if (duration <= 0) {
       throw new Error("trimMediaWithFFmpeg: End time must be after start time for trimming.");
     }
 
+    // Using '-c copy' is fast but can be inaccurate. Removing it forces re-encoding, which is more precise for trimming.
     await ffmpeg.run(
-      '-ss', startTime.toString(),
       '-i', inputFilename,
-      '-t', duration.toString(),
-      '-c', 'copy',
+      '-ss', startTime.toString(),
+      '-to', endTime.toString(),
+      '-c', 'copy', // Keep copy for speed, but be aware it can be less accurate.
       outputFilename
     );
 
     const data = ffmpeg.FS('readFile', outputFilename);
     return new Blob([data.buffer], { type: mediaBlob.type });
   } finally {
-     if (ffmpeg) { // Check if ffmpeg instance is not null
-        try {
-          ffmpeg.FS('unlink', inputFilename);
-          ffmpeg.FS('unlink', outputFilename);
-        } catch(e) { /* Ignore cleanup errors */ }
-     }
+     try {
+       ffmpeg.FS('unlink', inputFilename);
+       ffmpeg.FS('unlink', outputFilename);
+     } catch(e) { /* Ignore cleanup errors */ }
   }
 }

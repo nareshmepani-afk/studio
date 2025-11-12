@@ -112,14 +112,10 @@ export function MediaCaptureControl({
   const [ffmpegError, setFFmpegError] = useState<string | null>(null);
   
   useEffect(() => {
-    // FFmpeg instance is now loaded globally via layout.tsx
-    // This effect just initializes it for this component instance
     if (!isFFmpegInstanceReady && !ffmpegError) {
-        console.log("MediaRecorder: FFmpeg script is loaded, now initializing instance...");
         setProcessingStatusText('Initializing media tools...');
         getFFmpegInstance()
           .then(() => {
-            console.log("MediaRecorder: FFmpeg instance is ready.");
             setIsFFmpegInstanceReady(true);
             setProcessingStatusText('');
             setFFmpegError(null);
@@ -416,13 +412,13 @@ export function MediaCaptureControl({
       return;
     }
     if (!isFFmpegInstanceReady) {
-      // Gracefully handle FFmpeg failure
-      onMediaReady({
-        file: recordedFile, type: mediaType!,
-        startTime: 0, endTime: 0, duration: 0, size: recordedFile.size
-      });
-      toast({ title: "Using Raw Media", description: "Media processing tools are unavailable. Using the full, untrimmed media file.", icon: <CheckCircle className="h-4 w-4" /> });
-      return;
+        // Gracefully handle FFmpeg failure
+        onMediaReady({
+            file: recordedFile, type: mediaType!,
+            startTime: 0, endTime: 0, duration: 0, size: recordedFile.size
+        });
+        toast({ title: "Using Raw Media", description: "Media processing tools are unavailable. Using the full, untrimmed media file.", icon: <CheckCircle className="h-4 w-4" /> });
+        return;
     }
     setIsProcessing(true);
     setProcessingStatusText('Analyzing media... (this may take a moment)');
@@ -549,7 +545,8 @@ export function MediaCaptureControl({
       setProcessingStatusText('Verifying trimmed media...');
       const newDuration = await getDurationWithFFmpeg(trimmedBlob);
       if (!checkStorageQuota(trimmedBlob.size)) {
-        return; // checkStorageQuota shows its own toast
+        setIsProcessing(false); // Make sure to exit processing state
+        return; 
       }
       const newFile = new File([trimmedBlob], `trimmed_${recordedFile.name}`, { type: trimmedBlob.type });
       onMediaReady({
@@ -755,5 +752,3 @@ export function MediaCaptureControl({
     </Card>
   );
 }
-
-    
