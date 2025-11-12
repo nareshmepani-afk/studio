@@ -1,9 +1,8 @@
 // src/lib/ffmpeg.ts
-import {
-  createFFmpeg,
-  fetchFile as fetchFileUtil,
-} from './ffmpeg.js';
-import type { FFmpeg } from '@ffmpeg/ffmpeg';
+import { createFFmpeg } from './ffmpeg.js';
+import type { FFmpeg, LogEvent } from '@ffmpeg/ffmpeg';
+import { fetchFile as fetchFileUtil } from '@ffmpeg/util';
+
 
 let ffmpegInstance: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg | null> | null = null;
@@ -81,11 +80,11 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
 
   try {
     // Write the media blob to the FFmpeg file system.
-    ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
+    await ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
     
     // Set up a temporary logger to capture stderr
     const messages: string[] = [];
-    ffmpeg.setLogger(({ type, message }) => {
+    ffmpeg.setLogger(({ type, message }: LogEvent) => {
       if (type === 'fferr') {
         messages.push(message);
       }
@@ -145,7 +144,7 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
   const outputFilename = 'output_trim.' + fileExtension;
 
   try {
-    ffmpeg.FS('writeFile', inputFilename, await fetchFile(mediaBlob));
+    await ffmpeg.FS('writeFile', inputFilename, await fetchFile(mediaBlob));
     const duration = endTime - startTime;
     if (duration <= 0) {
       throw new Error("trimMediaWithFFmpeg: End time must be after start time for trimming.");

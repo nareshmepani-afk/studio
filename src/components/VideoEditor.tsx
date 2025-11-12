@@ -47,13 +47,11 @@ export default function VideoEditor() {
       try {
         const ffmpeg = await getFFmpegInstance();
         if (ffmpeg) {
-            // @ts-ignore
             ffmpeg.setLogger(({ type, message }) => {
                 if (type === 'ffout' || type === 'fferr') {
                     console.log(`FFMPEG [${type}]:`, message);
                 }
             });
-            // @ts-ignore
             ffmpeg.setProgress(({ progress, time }) => {
                 if (isProcessing) {
                     const percentage = Math.min(Math.round(progress * 100), 100);
