@@ -1,29 +1,9 @@
 // src/lib/ffmpeg.ts
-// This file handles loading FFmpeg.wasm and provides helper functions.
-
-interface FFmpeg {
-  // This interface is an approximation of the FFmpeg.js API.
-  // The actual load method takes options for coreURL, wasmURL, etc.
-  load: (options?: { coreURL?: string; wasmURL?: string; workerURL?: string }) => Promise<void>;
-  // The FS method provides file system operations.
-  FS: (method: 'writeFile' | 'readFile' | 'unlink', ...args: any[]) => any;
-  // The run method executes FFmpeg commands.
-  run: (...args: string[]) => Promise<void>;
-  // The setLogger method allows custom logging.
-  setLogger: (logger: ({ type, message }: { type: string; message: string; }) => void) => void;
-  // isLoaded returns a boolean indicating if the instance is ready.
-  isLoaded: () => boolean;
-}
-
-declare global {
-  interface Window {
-    // We assume FFmpegWASM is globally available due to a static script tag.
-    FFmpegWASM: {
-      createFFmpeg: (options?: any) => FFmpeg;
-      fetchFile: (data: Blob | string | Uint8Array) => Promise<Uint8Array>;
-    };
-  }
-}
+import {
+  createFFmpeg,
+  fetchFile as fetchFileUtil,
+} from './ffmpeg.js';
+import type { FFmpeg } from '@ffmpeg/ffmpeg';
 
 let ffmpegInstance: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg | null> | null = null;
@@ -31,14 +11,13 @@ let ffmpegLoadingPromise: Promise<FFmpeg | null> | null = null;
 /**
  * Initializes and returns a singleton FFmpeg instance.
  * It checks if an instance is already loaded or in the process of loading.
- * This function assumes the FFmpeg.js library is loaded via a static <script> tag.
  * @returns {Promise<FFmpeg | null>} A promise that resolves to the FFmpeg instance or null if initialization fails.
  */
 export async function getFFmpegInstance(): Promise<FFmpeg | null> {
   console.log("ffmpeg.ts: getFFmpegInstance() called.");
 
   // Check if a previously loaded and functional instance exists.
-  if (ffmpegInstance && ffmpegInstance.isLoaded()) {
+  if (ffmpegInstance) {
     console.log("ffmpeg.ts: Returning existing, loaded FFmpeg instance.");
     return ffmpegInstance;
   }
@@ -53,24 +32,12 @@ export async function getFFmpegInstance(): Promise<FFmpeg | null> {
 
   // Start a new loading process wrapped in a promise.
   ffmpegLoadingPromise = (async () => {
-    // Ensure the FFmpegWASM object is available from the static script tag.
-    if (typeof window.FFmpegWASM === 'undefined' || typeof window.FFmpegWASM.createFFmpeg !== 'function') {
-      console.error("getFFmpegInstance: window.FFmpegWASM or createFFmpeg is not defined. Ensure the static script tag is loading the library correctly.");
-      return null;
-    }
-
     try {
-      const { createFFmpeg } = window.FFmpegWASM;
       console.log("ffmpeg.ts: createFFmpeg function retrieved. Creating instance.");
       const ffmpeg = createFFmpeg({ log: false });
 
       console.log(`ffmpeg.ts: Calling ffmpeg.load()`);
-      // @ts-ignore - Ignore the load signature mismatch as the FFmpeg.js v0.12.x requires this.
-      await ffmpeg.load({
-        coreURL: '/ffmpeg/ffmpeg-core.js?v=2025/08/17-09.06',
-        wasmURL: '/ffmpeg/ffmpeg-core.wasm?v=2025/08/17-09.06',
-        workerURL: '/ffmpeg/ffmpeg-core.worker.js?v=2025/08/17-09.06',
-      });
+      await ffmpeg.load();
       console.log("ffmpeg.ts: ffmpeg.load() completed successfully.");
 
       ffmpegInstance = ffmpeg;
@@ -95,11 +62,7 @@ export async function getFFmpegInstance(): Promise<FFmpeg | null> {
  * @returns {Promise<Uint8Array>} A promise that resolves to the file data as a Uint8Array.
  */
 export const fetchFile = async (data: Blob | string | Uint8Array): Promise<Uint8Array> => {
-  // Ensure the FFmpeg instance is loaded.
-  if (typeof window.FFmpegWASM === 'undefined' || !window.FFmpegWASM.fetchFile) {
-    await getFFmpegInstance();
-  }
-  return window.FFmpegWASM.fetchFile(data);
+  return fetchFileUtil(data);
 };
 
 /**
@@ -119,16 +82,24 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   try {
     // Write the media blob to the FFmpeg file system.
     ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
+    
+    // Set up a temporary logger to capture stderr
+    const messages: string[] = [];
     ffmpeg.setLogger(({ type, message }) => {
-      // Capture log output to parse the duration.
-      if (type === 'fferr' || type === 'ffout') {
-        logOutput += message + "\n";
+      if (type === 'fferr') {
+        messages.push(message);
       }
     });
 
-    // Run ffprobe command to get duration from file metadata
-    // Use an invalid command to force FFmpeg to log file info, which contains the duration.
-    await ffmpeg.run('-i', fileName);
+    // Run a minimal FFmpeg command just to get media info
+    try {
+        await ffmpeg.run('-i', fileName);
+    } catch(e) {
+        // This command is expected to fail with an error like "At least one output file must be specified"
+        // but it will still print the input file's metadata to the logger.
+    }
+    
+    logOutput = messages.join('\n');
 
     // Look for the standard Duration: HH:MM:SS.cs format.
     const durationMatch = logOutput.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
@@ -145,6 +116,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
       if (alternativeDurationMatch) {
         return parseFloat(alternativeDurationMatch[1]);
       }
+      console.warn("FFmpeg log output for duration check:", logOutput);
       throw new Error("getDurationWithFFmpeg: Could not parse duration from FFmpeg output.");
     }
   } finally {
