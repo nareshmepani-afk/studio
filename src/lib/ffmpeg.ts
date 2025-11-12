@@ -1,10 +1,30 @@
 
-// src/lib/ffmpeg.ts
-
 // This file is now designed to work with a globally loaded ffmpeg.js script.
 // It assumes the script has been added to the `window` object.
 
-import type { FFmpeg as FFmpegType, LogEvent } from '@ffmpeg/ffmpeg';
+// --- START: Manual type definitions to avoid importing from `@ffmpeg/ffmpeg` ---
+interface FFmpegLog {
+  type: string;
+  message: string;
+}
+interface FFmpegProgress {
+  ratio: number;
+  time: number;
+}
+type FFmpegLogger = (log: FFmpegLog) => void;
+type FFmpegProgresser = (progress: FFmpegProgress) => void;
+
+interface FFmpegType {
+  load: () => Promise<void>;
+  run: (...args: string[]) => Promise<void>;
+  FS: (
+    method: 'writeFile' | 'readFile' | 'unlink',
+    ...args: any[]
+  ) => any;
+  setLogger: (logger: FFmpegLogger) => void;
+  setProgress: (progresser: FFmpegProgresser) => void;
+}
+// --- END: Manual type definitions ---
 
 // Extend the Window interface to declare the FFmpeg object
 declare global {
@@ -111,7 +131,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     await ffmpeg.FS('writeFile', fileName, await fetchFile(mediaBlob));
     
     const messages: string[] = [];
-    ffmpeg.setLogger(({ type, message }: LogEvent) => {
+    ffmpeg.setLogger(({ type, message }: FFmpegLog) => {
       if (type === 'fferr') {
         messages.push(message);
       }
