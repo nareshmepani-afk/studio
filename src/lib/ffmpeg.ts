@@ -55,7 +55,7 @@ export async function getFFmpegInstance() {
         ffmpeg = null; // Ensure it's null on failure
         reject(error);
     } finally {
-        ffmpegLoadingPromise = null;
+        // Do not nullify the promise here, so subsequent calls still get the result
     }
   });
 
@@ -76,7 +76,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   let logOutput = "";
 
   const logger = ({ message }: { message: string }) => {
-      logOutput += message + "\\n";
+      logOutput += message + "\n";
   };
   ffmpegInstance.on('log', logger);
 
@@ -89,7 +89,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
         // This command is expected to fail but prints metadata to stderr.
     }
     
-    const durationMatch = logOutput.match(/Duration: (\\d{2}):(\\d{2}):(\\d{2})\\.(\\d{2})/);
+    const durationMatch = logOutput.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
     if (durationMatch) {
       const hours = parseInt(durationMatch[1], 10);
       const minutes = parseInt(durationMatch[2], 10);
@@ -99,7 +99,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     }
 
     // Fallback for different duration format
-    const alternativeDurationMatch = logOutput.match(/Duration: (\\d+\\.\\d+)/);
+    const alternativeDurationMatch = logOutput.match(/Duration: (\d+\.\d+)/);
     if (alternativeDurationMatch) {
       return parseFloat(alternativeDurationMatch[1]);
     }
