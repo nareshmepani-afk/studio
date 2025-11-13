@@ -1,31 +1,7 @@
 
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
+
 declare var FFmpeg: any;
-
-// Inlined from @ffmpeg/util to avoid build issues.
-const fetchFile = async (data: string | File | Blob): Promise<Uint8Array> => {
-  let r: Response;
-  if (typeof data === "string") {
-    r = await fetch(data);
-  } else {
-    r = new Response(data);
-  }
-  return new Uint8Array(await r.arrayBuffer());
-};
-
-// Inlined from @ffmpeg/util to avoid build issues.
-const toBlobURL = async (
-  url: string,
-  type: string
-): Promise<string> => {
-  const r = await fetch(url);
-  const blob = await r.blob();
-  return URL.createObjectURL(
-    new Blob([blob], {
-      type,
-    })
-  );
-};
-
 
 let ffmpeg: any | null = null;
 let ffmpegLoadingPromise: Promise<any> | null = null;
