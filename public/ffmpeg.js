@@ -265,7 +265,7 @@
 
 
     const error = (code, extra) => {
-      if (log) {
+      if (log && ffmpeg) {
         const {
           logger
         } = ffmpeg;
@@ -362,12 +362,8 @@
         // It is important to have path of ffmpeg-core.js.
         // It is not possible to find it with document.currentScript.src
         // as it is inside a worker.
-        const {
-          logger: l
-        } = ffmpeg;
-
         if (log) {
-          setLogger(l, `loading ffmpeg-core from ${corePath}`);
+          setLogger({ log: logger, type: 'ffmpeg-core' }, `loading ffmpeg-core from ${corePath}`);
         }
 
         const worker = new Worker(WORKER_URL, {
@@ -500,5 +496,3 @@
   Object.defineProperty(exports, '__esModule', { value: true });
 
 }));
-
-    
