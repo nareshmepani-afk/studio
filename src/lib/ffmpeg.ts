@@ -1,12 +1,14 @@
 
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import { fetchFile } from '@ffmpeg/util';
 
 let ffmpeg: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
-const CORE_VERSION = "0.12.6";
-const BASE_URL = `https://unpkg.com/@ffmpeg/core-mt@${CORE_VERSION}/dist/esm`;
+// The URL must match the location of the files in the `public` folder.
+const CORE_URL = `/ffmpeg/ffmpeg-core.js`;
+const WASM_URL = `/ffmpeg/ffmpeg-core.wasm`;
+const WORKER_URL = `/ffmpeg/ffmpeg-core.worker.js`;
 
 export async function getFFmpegInstance(): Promise<FFmpeg> {
   if (ffmpeg) {
@@ -21,13 +23,13 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       const ffmpegInstance = new FFmpeg();
 
       ffmpegInstance.on('log', ({ message }: { message: string }) => {
-        // console.log(message); // Optional: useful for debugging but can be noisy
+        // console.log(message); // Optional: useful for debugging
       });
 
       await ffmpegInstance.load({
-        coreURL: await toBlobURL(`${BASE_URL}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${BASE_URL}/ffmpeg-core.wasm`, 'application/wasm'),
-        workerURL: await toBlobURL(`${BASE_URL}/ffmpeg-core.worker.js`, 'text/javascript'),
+        coreURL: CORE_URL,
+        wasmURL: WASM_URL,
+        workerURL: WORKER_URL,
       });
 
       ffmpeg = ffmpegInstance;
@@ -121,7 +123,7 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
       outputFilename
     ]);
 
-    const data = await ffmpegInstance.readFile(outputFilename) as Uint8Array;
+    const data = await ffmpegInstance.readFile(outputFilename) as Uint8Aray;
     return new Blob([data.buffer], { type: mediaBlob.type });
   } finally {
      try {
