@@ -5,10 +5,7 @@
   channel = "stable-23.11"; # or "unstable"
 
   # Use https://search.nixos.org/packages to find packages
-  packages = [
-    pkgs.nodejs_20
-    pkgs.zulu
-  ];
+  packages = [ pkgs.nodejs_20 pkgs.zulu ];
 
   # Sets environment variables in the workspace
   env = {};
@@ -18,21 +15,17 @@
   services.firebase.emulators = {
     detect = true;
     projectId = "demo-app";
-    services = ["auth", "firestore"];
+    services = [ "auth" "firestore" ];
   };
 
   idx = {
     # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
-    extensions = [
-      # "vscodevim.vim"
-    ];
+    extensions = [];
 
     workspace = {
       # Runs when a workspace is created
       onCreate = {
-        default.openFiles = [
-          "src/app/page.tsx"
-        ];
+        default.openFiles = [ "src/app/page.tsx" ];
       };
     };
 
@@ -41,7 +34,7 @@
       enable = true;
       previews = {
         web = {
-          command = ["npm", "run", "dev", "--", "--port", "$PORT", "--hostname", "0.0.0.0"];
+          command = [ "npm" "run" "dev" "--" "--port" "$PORT" "--hostname" "0.0.0.0" ];
           manager = "web";
         };
       };
