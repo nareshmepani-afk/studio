@@ -1,12 +1,14 @@
 
+import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
 
-declare var FFmpeg: any;
+let ffmpeg: FFmpeg | null = null;
+let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 
-let ffmpeg: any | null = null;
-let ffmpegLoadingPromise: Promise<any> | null = null;
+const CORE_VERSION = "0.12.6";
+const BASE_URL = `https://unpkg.com/@ffmpeg/core-mt@${CORE_VERSION}/dist/esm`;
 
-export async function getFFmpegInstance() {
+export async function getFFmpegInstance(): Promise<FFmpeg> {
   if (ffmpeg) {
     return ffmpeg;
   }
@@ -16,36 +18,16 @@ export async function getFFmpegInstance() {
 
   ffmpegLoadingPromise = new Promise(async (resolve, reject) => {
     try {
-      // Wait for the global FFmpeg script to be loaded by ClientSideLayout.tsx
-      await new Promise<void>((scriptResolve, scriptReject) => {
-        const checkInterval = setInterval(() => {
-          if (typeof window.FFmpeg !== 'undefined') {
-            clearInterval(checkInterval);
-            scriptResolve();
-          }
-        }, 100);
-        setTimeout(() => {
-            clearInterval(checkInterval);
-            scriptReject(new Error("FFmpeg script failed to load within 10 seconds."));
-        }, 10000);
-      });
-
-      const ffmpegInstance = new window.FFmpeg();
+      const ffmpegInstance = new FFmpeg();
 
       ffmpegInstance.on('log', ({ message }: { message: string }) => {
         // console.log(message); // Optional: useful for debugging but can be noisy
       });
 
       await ffmpegInstance.load({
-        coreURL: await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript'),
-        wasmURL: await toBlobURL(
-          '/ffmpeg/ffmpeg-core.wasm',
-          'application/wasm'
-        ),
-        workerURL: await toBlobURL(
-          '/ffmpeg/ffmpeg-core.worker.js',
-          'text/javascript'
-        ),
+        coreURL: await toBlobURL(`${BASE_URL}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${BASE_URL}/ffmpeg-core.wasm`, 'application/wasm'),
+        workerURL: await toBlobURL(`${BASE_URL}/ffmpeg-core.worker.js`, 'text/javascript'),
       });
 
       ffmpeg = ffmpegInstance;
@@ -53,9 +35,8 @@ export async function getFFmpegInstance() {
     } catch (error) {
         console.error("FFmpeg initialization failed:", error);
         ffmpeg = null; // Ensure it's null on failure
+        ffmpegLoadingPromise = null; // Allow retrying
         reject(error);
-    } finally {
-        // Do not nullify the promise here, so subsequent calls still get the result
     }
   });
 
@@ -69,9 +50,6 @@ export async function getFFmpegInstance() {
  */
 export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   const ffmpegInstance = await getFFmpegInstance();
-  if (!ffmpegInstance) {
-    throw new Error("FFmpeg instance could not be loaded.");
-  }
   const fileName = 'input_duration.' + (mediaBlob.type.split('/')[1]?.split(';')[0] || 'tmp');
   let logOutput = "";
 
@@ -124,9 +102,6 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
  */
 export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, endTime: number): Promise<Blob> {
   const ffmpegInstance = await getFFmpegInstance();
-  if (!ffmpegInstance) {
-    throw new Error("FFmpeg instance could not be loaded.");
-  }
   const fileExtension = mediaBlob.type.split('/')[1]?.split(';')[0] || 'tmp';
   const inputFilename = 'input_trim.' + fileExtension;
   const outputFilename = 'output_trim.' + fileExtension;
@@ -146,8 +121,8 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
       outputFilename
     ]);
 
-    const data = await ffmpegInstance.readFile(outputFilename);
-    return new Blob([data], { type: mediaBlob.type });
+    const data = await ffmpegInstance.readFile(outputFilename) as Uint8Array;
+    return new Blob([data.buffer], { type: mediaBlob.type });
   } finally {
      try {
        await ffmpegInstance.deleteFile(inputFilename);

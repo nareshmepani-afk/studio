@@ -6,7 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import "./globals.css";
 import React from "react";
-import { ClientSideLayout } from "@/components/layout/ClientSideLayout";
+// import { ClientSideLayout } from "@/components/layout/ClientSideLayout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,9 +31,8 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <ClientSideLayout>
-              {children}
-            </ClientSideLayout>
+            {/* ClientSideLayout is no longer needed as FFmpeg is loaded via npm packages */}
+            {children}
             <Toaster />
           </AuthProvider>
         </ThemeProvider>
