@@ -1,36 +1,89 @@
 
-import { fetchFile } from '@ffmpeg/util';
-import { toBlobURL } from '@ffmpeg/util';
-
 declare var FFmpeg: any;
 
+// Inlined from @ffmpeg/util to avoid build issues.
+const fetchFile = async (data: string | File | Blob): Promise<Uint8Array> => {
+  let r: Response;
+  if (typeof data === "string") {
+    r = await fetch(data);
+  } else {
+    r = new Response(data);
+  }
+  return new Uint8Array(await r.arrayBuffer());
+};
+
+// Inlined from @ffmpeg/util to avoid build issues.
+const toBlobURL = async (
+  url: string,
+  type: string
+): Promise<string> => {
+  const r = await fetch(url);
+  const blob = await r.blob();
+  return URL.createObjectURL(
+    new Blob([blob], {
+      type,
+    })
+  );
+};
+
+
 let ffmpeg: any | null = null;
+let ffmpegLoadingPromise: Promise<any> | null = null;
 
 export async function getFFmpegInstance() {
   if (ffmpeg) {
     return ffmpeg;
   }
+  if (ffmpegLoadingPromise) {
+    return ffmpegLoadingPromise;
+  }
 
-  ffmpeg = new FFmpeg();
+  ffmpegLoadingPromise = new Promise(async (resolve, reject) => {
+    try {
+      // Wait for the global FFmpeg script to be loaded by ClientSideLayout.tsx
+      await new Promise<void>((scriptResolve, scriptReject) => {
+        const checkInterval = setInterval(() => {
+          if (typeof window.FFmpeg !== 'undefined') {
+            clearInterval(checkInterval);
+            scriptResolve();
+          }
+        }, 100);
+        setTimeout(() => {
+            clearInterval(checkInterval);
+            scriptReject(new Error("FFmpeg script failed to load within 10 seconds."));
+        }, 10000);
+      });
 
-  ffmpeg.on('log', ({ message }: { message: string }) => {
-    console.log(message);
+      const ffmpegInstance = new window.FFmpeg();
+
+      ffmpegInstance.on('log', ({ message }: { message: string }) => {
+        // console.log(message); // Optional: useful for debugging but can be noisy
+      });
+
+      await ffmpegInstance.load({
+        coreURL: await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript'),
+        wasmURL: await toBlobURL(
+          '/ffmpeg/ffmpeg-core.wasm',
+          'application/wasm'
+        ),
+        workerURL: await toBlobURL(
+          '/ffmpeg/ffmpeg-core.worker.js',
+          'text/javascript'
+        ),
+      });
+
+      ffmpeg = ffmpegInstance;
+      resolve(ffmpeg);
+    } catch (error) {
+        console.error("FFmpeg initialization failed:", error);
+        ffmpeg = null; // Ensure it's null on failure
+        reject(error);
+    } finally {
+        ffmpegLoadingPromise = null;
+    }
   });
 
-  // toBlobURL is used to bypass CORS issue, urls with the same domain can be used directly.
-  await ffmpeg.load({
-    coreURL: await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript'),
-    wasmURL: await toBlobURL(
-      '/ffmpeg/ffmpeg-core.wasm',
-      'application/wasm'
-    ),
-    workerURL: await toBlobURL(
-      '/ffmpeg/ffmpeg-core.worker.js',
-      'text/javascript'
-    ),
-  });
-
-  return ffmpeg;
+  return ffmpegLoadingPromise;
 }
 
 /**
@@ -47,7 +100,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   let logOutput = "";
 
   const logger = ({ message }: { message: string }) => {
-      logOutput += message + "\n";
+      logOutput += message + "\\n";
   };
   ffmpegInstance.on('log', logger);
 
@@ -60,7 +113,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
         // This command is expected to fail but prints metadata to stderr.
     }
     
-    const durationMatch = logOutput.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
+    const durationMatch = logOutput.match(/Duration: (\\d{2}):(\\d{2}):(\\d{2})\\.(\\d{2})/);
     if (durationMatch) {
       const hours = parseInt(durationMatch[1], 10);
       const minutes = parseInt(durationMatch[2], 10);
@@ -70,7 +123,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     }
 
     // Fallback for different duration format
-    const alternativeDurationMatch = logOutput.match(/Duration: (\d+\.\d+)/);
+    const alternativeDurationMatch = logOutput.match(/Duration: (\\d+\\.\\d+)/);
     if (alternativeDurationMatch) {
       return parseFloat(alternativeDurationMatch[1]);
     }
@@ -109,11 +162,11 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
       throw new Error("trimMediaWithFFmpeg: End time must be after start time for trimming.");
     }
 
-    // Using '-c copy' is fast but can be inaccurate. For precise trimming, re-encoding is necessary.
     await ffmpegInstance.exec([
       '-i', inputFilename,
       '-ss', startTime.toString(),
       '-to', endTime.toString(),
+      '-c', 'copy', // Use copy codec for speed, might be less accurate
       outputFilename
     ]);
 
