@@ -36,10 +36,10 @@ function formatSecondsToTime(timeInSeconds: number | undefined): string {
 }
 
 // Maximum duration constants (in seconds)
-const MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS = 300; // 5 minutes for raw recording
-const MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS = 600; // 10 minutes
-const MAX_TRIMMED_VIDEO_DURATION_SECONDS = 180; // 3 minutes for final trimmed video
-const MAX_TRIMMED_AUDIO_DURATION_SECONDS = 300; // 5 minutes for final trimmed audio
+const MAX_RAW_VIDEO_RECORDING_DURATION = 300; // 5 minutes for raw recording
+const MAX_RAW_AUDIO_RECORDING_DURATION = 600; // 10 minutes
+const MAX_TRIMMED_VIDEO_DURATION = 180; // 3 minutes for final trimmed video
+const MAX_TRIMMED_AUDIO_DURATION = 300; // 5 minutes for final trimmed audio
 
 interface MediaCaptureControlProps {
   onMediaReady: (media: {
@@ -387,8 +387,8 @@ export function MediaCaptureControl({
   };
 
   const processDuration = (durationValue: number) => {
-    const currentMaxRawDuration = mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS : MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS;
-    const currentMaxTrimmedDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
+    const currentMaxRawDuration = mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION : MAX_RAW_AUDIO_RECORDING_DURATION;
+    const currentMaxTrimmedDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION : MAX_TRIMMED_AUDIO_DURATION;
     if (durationValue > currentMaxRawDuration) {
       setTimeout(() => toast({ variant: 'destructive', title: `${mediaType === 'video' ? 'Video' : 'Audio'} Too Long`, description: `Recording is ${formatSecondsToTime(durationValue)}. Maximum allowed is ${formatSecondsToTime(currentMaxRawDuration)}. Please re-record or upload a shorter segment.`, duration: 10000 }), 0);
       handleDiscardMedia(false);
@@ -529,7 +529,7 @@ export function MediaCaptureControl({
       return;
     }
     const selectedSegmentDuration = currentEndTime - currentStartTime;
-    const currentMaxTrimmedDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
+    const currentMaxTrimmedDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION : MAX_TRIMMED_AUDIO_DURATION;
     if (selectedSegmentDuration > currentMaxTrimmedDuration) {
       toast({ title: `Trimmed ${mediaType} Exceeds Limit`, description: `Selected segment is ${formatSecondsToTime(selectedSegmentDuration)}. Max allowed is ${formatSecondsToTime(currentMaxTrimmedDuration)}. Please trim further.`, variant: "destructive", duration: 10000 });
       return;
@@ -608,7 +608,7 @@ export function MediaCaptureControl({
     return () => { mediaElement.removeEventListener('play', onPlayHandler); mediaElement.removeEventListener('timeupdate', onTimeUpdateHandler); };
   }, [internalPreviewUrl, mediaType, mediaDuration, videoRef, audioPreviewRef, startTime, rawPreviewReady]);
 
-  const currentFinalMaxDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION_SECONDS : MAX_TRIMMED_AUDIO_DURATION_SECONDS;
+  const currentFinalMaxDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION : MAX_TRIMMED_AUDIO_DURATION;
   const isReady = canRecordOrUpload;
 
   return (
@@ -664,7 +664,7 @@ export function MediaCaptureControl({
                 {isRecording && (
                     <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-xs flex items-center">
                         <Timer className="h-3 w-3 mr-1 text-red-500 animate-pulse" />
-                        {formatSecondsToTime(currentRecordingDuration)} / {formatSecondsToTime(mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION_SECONDS : MAX_RAW_AUDIO_RECORDING_DURATION_SECONDS)}
+                        {formatSecondsToTime(currentRecordingDuration)} / {formatSecondsToTime(mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION : MAX_RAW_AUDIO_RECORDING_DURATION)}
                     </div>
                 )}
                 {isStopping && (
