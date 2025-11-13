@@ -1,26 +1,10 @@
 
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-// Removed fetchFile import from @ffmpeg/util as it was causing build errors.
-// The functionality will be inlined.
+import { fetchFile } from '@ffmpeg/util';
+import { toBlobURL } from '@ffmpeg/util';
 
 let ffmpeg: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
-
-// The URL must match the location of the files in the `public` folder.
-const CORE_URL = `/ffmpeg/ffmpeg-core.js`;
-const WASM_URL = `/ffmpeg/ffmpeg-core.wasm`;
-const WORKER_URL = `/ffmpeg/ffmpeg-core.worker.js`;
-
-/**
- * Inlined function to replace fetchFile from @ffmpeg/util.
- * Converts a Blob or File into a Uint8Array.
- * @param data The media blob or file.
- * @returns A promise that resolves to a Uint8Array.
- */
-const inlineFetchFile = async (data: Blob | File): Promise<Uint8Array> => {
-  const arrayBuffer = await data.arrayBuffer();
-  return new Uint8Array(arrayBuffer);
-};
 
 export async function getFFmpegInstance(): Promise<FFmpeg> {
   if (ffmpeg) {
@@ -37,11 +21,15 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
       ffmpegInstance.on('log', ({ message }: { message: string }) => {
         // console.log(message); // Optional: useful for debugging
       });
+      
+      const coreURL = await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript');
+      const wasmURL = await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm');
+      const workerURL = await toBlobURL('/ffmpeg/ffmpeg-core.worker.js', 'text/javascript');
 
       await ffmpegInstance.load({
-        coreURL: CORE_URL,
-        wasmURL: WASM_URL,
-        workerURL: WORKER_URL,
+        coreURL,
+        wasmURL,
+        workerURL,
       });
 
       ffmpeg = ffmpegInstance;
@@ -73,7 +61,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   ffmpegInstance.on('log', logger);
 
   try {
-    await ffmpegInstance.writeFile(fileName, await inlineFetchFile(mediaBlob));
+    await ffmpegInstance.writeFile(fileName, await fetchFile(mediaBlob));
 
     try {
         await ffmpegInstance.exec(['-i', fileName]);
@@ -121,7 +109,7 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
   const outputFilename = 'output_trim.' + fileExtension;
 
   try {
-    await ffmpegInstance.writeFile(inputFilename, await inlineFetchFile(mediaBlob));
+    await ffmpegInstance.writeFile(inputFilename, await fetchFile(mediaBlob));
     const duration = endTime - startTime;
     if (duration <= 0) {
       throw new Error("trimMediaWithFFmpeg: End time must be after start time for trimming.");
@@ -135,8 +123,8 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
       outputFilename
     ]);
 
-    const data = await ffmpegInstance.readFile(outputFilename) as Uint8Array; // Corrected typo here from Uint8Aray
-    return new Blob([data.buffer], { type: mediaBlob.type });
+    const data = await ffmpegInstance.readFile(outputFilename);
+    return new Blob([(data as Uint8Array).buffer], { type: mediaBlob.type });
   } finally {
      try {
        await ffmpegInstance.deleteFile(inputFilename);
