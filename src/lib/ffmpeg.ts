@@ -1,6 +1,7 @@
 
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile } from '@ffmpeg/util';
+// Removed fetchFile import from @ffmpeg/util as it was causing build errors.
+// The functionality will be inlined.
 
 let ffmpeg: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
@@ -9,6 +10,17 @@ let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
 const CORE_URL = `/ffmpeg/ffmpeg-core.js`;
 const WASM_URL = `/ffmpeg/ffmpeg-core.wasm`;
 const WORKER_URL = `/ffmpeg/ffmpeg-core.worker.js`;
+
+/**
+ * Inlined function to replace fetchFile from @ffmpeg/util.
+ * Converts a Blob or File into a Uint8Array.
+ * @param data The media blob or file.
+ * @returns A promise that resolves to a Uint8Array.
+ */
+const inlineFetchFile = async (data: Blob | File): Promise<Uint8Array> => {
+  const arrayBuffer = await data.arrayBuffer();
+  return new Uint8Array(arrayBuffer);
+};
 
 export async function getFFmpegInstance(): Promise<FFmpeg> {
   if (ffmpeg) {
@@ -61,7 +73,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
   ffmpegInstance.on('log', logger);
 
   try {
-    await ffmpegInstance.writeFile(fileName, await fetchFile(mediaBlob));
+    await ffmpegInstance.writeFile(fileName, await inlineFetchFile(mediaBlob));
 
     try {
         await ffmpegInstance.exec(['-i', fileName]);
@@ -109,7 +121,7 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
   const outputFilename = 'output_trim.' + fileExtension;
 
   try {
-    await ffmpegInstance.writeFile(inputFilename, await fetchFile(mediaBlob));
+    await ffmpegInstance.writeFile(inputFilename, await inlineFetchFile(mediaBlob));
     const duration = endTime - startTime;
     if (duration <= 0) {
       throw new Error("trimMediaWithFFmpeg: End time must be after start time for trimming.");
@@ -123,7 +135,7 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
       outputFilename
     ]);
 
-    const data = await ffmpegInstance.readFile(outputFilename) as Uint8Aray;
+    const data = await ffmpegInstance.readFile(outputFilename) as Uint8Array; // Corrected typo here from Uint8Aray
     return new Blob([data.buffer], { type: mediaBlob.type });
   } finally {
      try {
