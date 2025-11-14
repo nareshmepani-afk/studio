@@ -27,6 +27,8 @@ import { countryOptions } from '@/lib/constants';
 import { mockPromptGroups } from '@/lib/mockData';
 import { Slider } from '@/components/ui/slider';
 import dynamic from 'next/dynamic';
+import { getFFmpeg } from '@/lib/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
 
 const MediaCaptureControl = dynamic(
   () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
@@ -57,10 +59,11 @@ type MediaFromRecorder = {
 type CurrentMediaData = {
   file: File; 
   type: 'video' | 'audio';
-  startTime?: number;
-  endTime?: number;
+  startTime: number;
+  endTime: number;
   duration: number; 
   size: number;
+  isTrimmed: boolean;
 };
 
 type MediaForRecorderInit = {
@@ -83,7 +86,6 @@ const SLIDE_INDEX_MEDIA = 1;
 const SLIDE_INDEX_PREVIEW = 2;
 const TOTAL_SLIDES = 3;
 
-// Helper function from MediaRecorder, now local
 function formatSecondsToTime(timeInSeconds: number | undefined): string {
   if (timeInSeconds === undefined || isNaN(timeInSeconds) || timeInSeconds < 0) return "0:00";
   const totalSecs = Math.floor(timeInSeconds);
@@ -142,6 +144,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
   const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null); 
   const [trimValues, setTrimValues] = useState<[number, number]>([0, 100]);
+  const [isTrimming, setIsTrimming] = useState(false);
 
 
   useEffect(() => {
@@ -179,6 +182,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             endTime: endTime,
             duration: duration,
             size: size,
+            isTrimmed: false,
         });
         setCurrentMediaPreviewUrl(firstMedia.url); 
         setTrimValues([startTime, endTime]);
@@ -187,11 +191,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       }
     } else { // New memory
       let determinedInitialTitle = '';
-      if (initialCustomPromptText) { // For custom chapters from brainstorm
+      if (initialCustomPromptText) {
         determinedInitialTitle = initialCustomPromptText;
-      } else if (initialPromptId) { // For Life Journey prompts
+      } else if (initialPromptId) {
         const foundPrompt = mockPromptGroups.flatMap(g => g.prompts).find(p => p.id === initialPromptId);
-        determinedInitialTitle = foundPrompt ? foundPrompt.text.en : ''; // Default to English for pre-fill
+        determinedInitialTitle = foundPrompt ? foundPrompt.text.en : '';
       }
       setTitle(determinedInitialTitle);
       setLocation(''); setCountry('United Kingdom'); setDescription(''); setSelectedEmotionTags([]); setSelectedCategory(memoryCategoriesList[0]);
@@ -269,6 +273,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       endTime: mediaPayload.duration,
       duration: mediaPayload.duration,
       size: mediaPayload.size,
+      isTrimmed: false,
     });
     setTrimValues([0, mediaPayload.duration]);
     setCurrentMediaPreviewUrl(newPreviewUrlFromFile);
@@ -280,7 +285,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     }
     setCurrentMedia(null);
     setCurrentMediaPreviewUrl(null);
-    setTrimValues([0, 100]); // Reset trim
+    setTrimValues([0, 100]);
   }, [currentMediaPreviewUrl]);
 
   const handleEmotionTagToggle = (tag: EmotionTag) => setSelectedEmotionTags(prevTags => prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]);
@@ -288,7 +293,63 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const handleTrimChange = (newValues: [number, number]) => {
     if (currentMedia) {
       setTrimValues(newValues);
-      setCurrentMedia(prev => prev ? {...prev, startTime: newValues[0], endTime: newValues[1]} : null);
+    }
+  };
+
+  const handleApplyTrim = async () => {
+    if (!currentMedia || isTrimming) return;
+    
+    const [start, end] = trimValues;
+    if (end - start <= 0) {
+        toast({ title: "Invalid Trim", description: "End time must be after start time.", variant: "destructive" });
+        return;
+    }
+
+    setIsTrimming(true);
+    toast({ title: "Trimming Media...", description: "This may take a moment. Please wait." });
+
+    try {
+        const ffmpeg = await getFFmpeg();
+        const inputFileName = `input.${currentMedia.type === 'video' ? 'mp4' : 'mp3'}`;
+        const outputFileName = `output.${currentMedia.type === 'video' ? 'mp4' : 'mp3'}`;
+
+        await ffmpeg.writeFile(inputFileName, await fetchFile(currentMedia.file));
+
+        await ffmpeg.exec([
+            '-i', inputFileName,
+            '-ss', `${start}`,
+            '-to', `${end}`,
+            '-c', 'copy', // Use stream copy for speed if no re-encoding is needed
+            outputFileName
+        ]);
+
+        const data = await ffmpeg.readFile(outputFileName);
+        const newFile = new File([data], outputFileName, { type: currentMedia.file.type });
+
+        if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(currentMediaPreviewUrl);
+        }
+        const newPreviewUrl = URL.createObjectURL(newFile);
+        
+        setCurrentMedia({
+            file: newFile,
+            type: currentMedia.type,
+            startTime: 0, // Reset times as the file is now trimmed
+            endTime: end - start,
+            duration: end - start,
+            size: newFile.size,
+            isTrimmed: true,
+        });
+        setCurrentMediaPreviewUrl(newPreviewUrl);
+        setTrimValues([0, end - start]);
+
+        toast({ title: "Trim Applied!", description: "The media has been trimmed. You can now preview the result.", variant: "success" });
+
+    } catch (error) {
+        console.error("Error applying trim:", error);
+        toast({ title: "Trimming Failed", description: "Could not trim the media. Please try again.", variant: "destructive" });
+    } finally {
+        setIsTrimming(false);
     }
   };
 
@@ -298,11 +359,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     let mediaFileToUpload: File | undefined = undefined;
 
     if (currentMedia) { 
-      const isNewFile = currentMedia.file.size > 0 && currentMedia.file.name !== "existing_media_placeholder";
-      if (isNewFile) mediaFileToUpload = currentMedia.file;
+      const isNewOrTrimmedFile = currentMedia.file.size > 0 && (currentMedia.file.name !== "existing_media_placeholder" || currentMedia.isTrimmed);
+      if (isNewOrTrimmedFile) mediaFileToUpload = currentMedia.file;
 
       const originalMediaAttachmentId = memory?.mediaAttachments?.[0]?.id || Date.now().toString();
-      const urlForSubmission = isNewFile ? "placeholder_for_upload" : (currentMediaPreviewUrl || memory?.mediaAttachments?.[0]?.url || '');
+      const urlForSubmission = isNewOrTrimmedFile ? "placeholder_for_upload" : (currentMediaPreviewUrl || memory?.mediaAttachments?.[0]?.url || '');
 
       mediaAttachmentsForSubmission = [{
         id: originalMediaAttachmentId,
@@ -329,7 +390,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, selectedCategory, initialPromptId, selectedEmotionTags, isEditing]);
 
   const handleActionButtonClick = useCallback(() => {
-    if (isParentSubmitting) return;
+    if (isParentSubmitting || isTrimming) return;
     if (currentSlide === SLIDE_INDEX_DETAILS) {
       if (!title.trim()) { toast({ title: "Title Required", variant: "destructive" }); setTimeout(() => titleInputRef.current?.focus(), 100); return; }
       let tempDate = new Date(selectedYear, selectedMonth, 1); tempDate = setDate(tempDate, selectedDay);
@@ -344,7 +405,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       }
       setCurrentSlide(SLIDE_INDEX_PREVIEW);
     } else if (currentSlide === SLIDE_INDEX_PREVIEW) triggerSubmitProcess();
-  }, [ isParentSubmitting, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments ]);
+  }, [ isParentSubmitting, isTrimming, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments ]);
 
   const handleFormSubmit = (event: FormEvent) => { event.preventDefault(); handleActionButtonClick(); };
 
@@ -361,7 +422,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   }
 
   const mediaForRecorderProp = useMemo(() => {
-    if (!currentMedia || !currentMediaPreviewUrl) return undefined;
+    if (!currentMedia || !currentMediaPreviewUrl || currentMedia.isTrimmed) return undefined;
     return {
         type: currentMedia.type,
         previewUrl: currentMediaPreviewUrl,
@@ -392,6 +453,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     };
   }
 
+  const isTrimChanged = currentMedia && !currentMedia.isTrimmed && (trimValues[0] > 0 || trimValues[1] < currentMedia.duration);
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-6" noValidate>
@@ -496,6 +558,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                     value={trimValues}
                                     onValueChange={(vals) => handleTrimChange(vals as [number, number])}
                                     minStepsBetweenThumbs={1}
+                                    disabled={currentMedia.isTrimmed || isTrimming}
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground font-mono">
                                     <span>Start: {formatSecondsToTime(trimValues[0])}</span>
@@ -503,6 +566,17 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                     <span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
                                 </div>
                             </div>
+                           {isTrimChanged && (
+                                <div className="mt-4">
+                                    <Button onClick={handleApplyTrim} disabled={isTrimming} className="w-full">
+                                        {isTrimming ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Scissors className="mr-2 h-4 w-4" />}
+                                        Apply Trim & Preview
+                                    </Button>
+                                </div>
+                           )}
+                           {currentMedia.isTrimmed && (
+                            <p className="text-sm text-green-600 mt-2 text-center">Trim has been applied.</p>
+                           )}
                         </CardContent>
                     </Card>
                   )}
@@ -523,8 +597,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       </Carousel>
 
       <div className="max-w-3xl mx-auto flex justify-between items-center pt-4 px-1 sm:px-0">
-        <Button type="button" onClick={() => { if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) setCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) setCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
-        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || (currentSlide === SLIDE_INDEX_MEDIA && !isNextToPreviewEnabled) || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview)}>{isParentSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</Button>
+        <Button type="button" onClick={() => { if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) setCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) setCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting || isTrimming} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
+        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || isTrimming || (currentSlide === SLIDE_INDEX_MEDIA && !isNextToPreviewEnabled) || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview)}>{(isParentSubmitting || isTrimming) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</Button>
       </div>
     </form>
   );
