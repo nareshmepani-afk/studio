@@ -205,7 +205,7 @@ export function MediaCaptureControl({
                 return;
             }
             onMediaReady({ file, type: type, duration: mediaElement.duration, size: file.size });
-            toast({ title: "Recording Complete!", description: `Duration: ${formatSecondsToTime(mediaElement.duration)}. You can now save your memory.` });
+            toast({ title: "Recording Complete!", description: `Duration: ${formatSecondsToTime(mediaElement.duration)}. You can now save your memory.`, variant: "success" });
         };
       };
 
@@ -216,7 +216,7 @@ export function MediaCaptureControl({
       recordingIntervalRef.current = setInterval(() => {
         setCurrentRecordingDuration(prev => prev + 1);
       }, 1000);
-      toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` });
+      toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.`, variant: "success" });
     } catch (err) {
       console.error("Error initializing MediaRecorder:", err);
       cleanupStream();
@@ -271,7 +271,7 @@ export function MediaCaptureControl({
             return;
         }
         onMediaReady({ file, type: fileType, duration: mediaElement.duration, size: file.size });
-        toast({ title: "File Ready!", description: `${file.name} is ready to be saved with your memory.` });
+        toast({ title: "File Ready!", description: `${file.name} is ready to be saved with your memory.`, variant: "success" });
     };
     event.target.value = ''; // Allow re-uploading the same file
   };
