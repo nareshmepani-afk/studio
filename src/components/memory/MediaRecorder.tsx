@@ -205,6 +205,11 @@ export function MediaCaptureControl({
   }, [isRecording, mediaType, streamForVideoFeed]);
 
   const checkStorageQuota = useCallback((fileSize: number): boolean => {
+    if (!isFFmpegInstanceReady) {
+      // If ffmpeg isn't ready, we can't be sure of the final size after trim, so we can't reliably check.
+      // We'll have to check it again after processing.
+      return true;
+    }
     if (fileSize > storageQuotaBytes) {
       const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
       const chapterQuotaMB = (storageQuotaBytes / (1024 * 1024)).toFixed(0);
@@ -213,7 +218,7 @@ export function MediaCaptureControl({
       return false;
     }
     return true;
-  }, [storageQuotaBytes]);
+  }, [storageQuotaBytes, isFFmpegInstanceReady]);
 
   const checkHostPass = (): boolean => {
     if (!canRecordOrUpload) {
