@@ -28,7 +28,7 @@ import { mockPromptGroups } from '@/lib/mockData';
 import dynamic from 'next/dynamic';
 
 const MediaCaptureControl = dynamic(
-  () => import('./MediaRecorder').then((mod) => mod.MediaCaptureControl),
+  () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
   { 
     ssr: false,
     loading: () => <div className="flex items-center justify-center h-48"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
@@ -507,3 +507,5 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     </form>
   );
 }
+
+    
