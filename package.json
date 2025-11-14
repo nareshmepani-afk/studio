@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "node node_modules/@playwright/test/cli.js test"
+    "test": "node node_modules/@playwright/test/cli.js test",
+    "postinstall": "patch-package && node -e \"const fs = require('fs'); const path = require('path'); const ffmpegCorePath = path.dirname(require.resolve('@ffmpeg/core')); const vendorDir = path.join(process.cwd(), 'public/vendor/ffmpeg'); fs.mkdirSync(vendorDir, { recursive: true }); fs.copyFileSync(path.join(ffmpegCorePath, 'ffmpeg-core.js'), path.join(vendorDir, 'ffmpeg-core.js')); fs.copyFileSync(path.join(ffmpegCorePath, 'ffmpeg-core.wasm'), path.join(vendorDir, 'ffmpeg-core.wasm'));\""
   },
   "dependencies": {
     "@ffmpeg/core": "^0.12.6",

@@ -27,9 +27,12 @@ export async function getFFmpeg(): Promise<FFmpeg> {
         description: 'Please wait, this may take a moment.',
       });
 
+      // Corrected paths to point to the public directory
+      const baseURL = '/vendor/ffmpeg';
+
       await ffmpeg.load({
-        coreURL: await toBlobURL('/node_modules/@ffmpeg/core/dist/ffmpeg-core.js', 'application/javascript'),
-        wasmURL: await toBlobURL('/node_modules/@ffmpeg/core/dist/ffmpeg-core.wasm', 'application/wasm'),
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'application/javascript'),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
       });
 
       toast({
