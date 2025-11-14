@@ -8,9 +8,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import { addMonths, addDays, isBefore, parseISO, format } from 'date-fns';
 import type { GetPassPriceOutput as GetGuestPassPriceOutput } from '@/ai/flows/get-pass-price-flow';
-import { getPassPriceAction as getGuestPassPriceAction } from '@/actions/getPassPriceAction';
 import type { GetHostPassPriceOutput } from '@/ai/flows/get-host-pass-price-flow';
-import { getHostPassPriceAction } from '@/actions/getHostPassPriceAction';
 import SplashScreen from '@/components/layout/SplashScreen'; 
 import { auth, db } from '@/lib/firebase';
 import {
@@ -36,14 +34,10 @@ interface AuthContextType {
 
   activateFreeGuestPass: () => Promise<void>;
   purchasePaidGuestPass: () => Promise<void>;
-  guestPassPriceDetails: GetGuestPassPriceOutput | null;
-  isFetchingGuestPassPrice: boolean;
-
+  
   activateFreeHostPass: () => Promise<void>;
   purchasePaidHostPass: () => Promise<void>;
   hostPassStatus: User['hostPassStatus'];
-  hostPassPriceDetails: GetHostPassPriceOutput | null;
-  isFetchingHostPassPrice: boolean;
   
   storageQuotaBytes: number;
   calculateAndUpdateStorageUsage: (userId: string) => Promise<void>;
@@ -68,10 +62,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userMode, setUserModeState] = useState<UserMode>('host');
   
   const [pendingRequestCount, setPendingRequestCountState] = useState<number>(0);
-  const [guestPassPriceDetails, setGuestPassPriceDetails] = useState<GetGuestPassPriceOutput | null>(null);
-  const [isFetchingGuestPassPrice, setIsFetchingGuestPassPrice] = useState(false);
-  const [hostPassPriceDetails, setHostPassPriceDetails] = useState<GetHostPassPriceOutput | null>(null);
-  const [isFetchingHostPassPrice, setIsFetchingHostPassPrice] = useState(false);
   
   const [memories, setMemories] = useState<MemoryType[]>([]);
   const [completedPromptIds, setCompletedPromptIds] = useState<Set<string>>(new Set());
@@ -211,7 +201,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // The navigation logic should only run once the loading is complete.
     if (!loading) {
       console.log(`AuthContext: Navigation check. Path: ${pathname}, IsAuthenticated: ${!!user}.`);
-      const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/v7-diagnostics.html']; // Added diagnostics page
+      const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
       console.log(`AuthContext: Public paths: ${publicPaths.join(', ')}`);
       const isPublic = publicPaths.includes(pathname);
       if (user && isPublic) {
@@ -267,8 +257,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("AuthContext: Attempting to log out user.");
       await firebaseSignOut(auth);
       setUserModeState('host');
-      setGuestPassPriceDetails(null);
-      setHostPassPriceDetails(null);
       setIsLoading(true); // Reset loading state for next login
       router.push('/');
     } catch (error: any) {
@@ -334,36 +322,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const getStorageQuotaBytes = useCallback((): number => (user && (user.hostPassStatus === 'free_host_pass_active' || user.hostPassStatus === 'paid_host_pass_active')) ? STANDARD_HOST_STORAGE_QUOTA_BYTES : 0, [user]);
 
-  const fetchGuestPassPrice = useCallback(async () => {
-    if (isFetchingGuestPassPrice || guestPassPriceDetails || !user) return;
-    setIsFetchingGuestPassPrice(true);
-    try {
-      const priceData = await getGuestPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
-      setGuestPassPriceDetails(priceData);
-    } catch (error) {
-      console.error("AuthContext: Failed to fetch GUEST pass price:", error);
-    } finally { setIsFetchingGuestPassPrice(false); }
-  }, [isFetchingGuestPassPrice, guestPassPriceDetails, user]);
-
-  const fetchHostPassPrice = useCallback(async () => {
-    if (isFetchingHostPassPrice || hostPassPriceDetails || !user) return;
-    setIsFetchingHostPassPrice(true);
-    try {
-      const priceData = await getHostPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
-      setHostPassPriceDetails(priceData);
-    } catch (error) {
-      console.error("AuthContext: Failed to fetch HOST pass price:", error);
-    } finally { setIsFetchingHostPassPrice(false); }
-  }, [isFetchingHostPassPrice, hostPassPriceDetails, user]);
   
-  useEffect(() => {
-    if (user && userMode === 'guest' && (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired')) {
-        fetchGuestPassPrice();
-    } else if (user && userMode === 'host' && (user.hostPassStatus === 'free_host_pass_expired' || user.hostPassStatus === 'paid_host_pass_expired')) {
-        fetchHostPassPrice();
-    }
-  }, [user, userMode, fetchGuestPassPrice, fetchHostPassPrice]);
-
   // --- Final Context Value ---
   const contextValue = useMemo(() => ({
       isAuthenticated: !!user,
@@ -372,10 +331,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       pendingRequestCount, setPendingRequestCount: setPendingRequestCountState,
       userMode, toggleUserMode: () => setUserModeState(p => p === 'host' ? 'guest' : 'host'), setUserMode: setUserModeState,
       activateFreeGuestPass, purchasePaidGuestPass,
-      guestPassPriceDetails, isFetchingGuestPassPrice,
       activateFreeHostPass, purchasePaidHostPass,
       hostPassStatus: user?.hostPassStatus || 'no_pass_initiated',
-      hostPassPriceDetails, isFetchingHostPassPrice,
       storageQuotaBytes: getStorageQuotaBytes(),
       calculateAndUpdateStorageUsage,
       updateUserProfileInFirestore,
@@ -389,7 +346,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       hasNewSharedMemories,
   }), [ 
       user, loading, pendingRequestCount, userMode,
-      guestPassPriceDetails, isFetchingGuestPassPrice, hostPassPriceDetails, isFetchingHostPassPrice,
       memories, completedPromptIds, flaggedPromptIds, isDataLoading, hasNewSharedMemories,
       login, register, logout, activateFreeGuestPass, purchasePaidGuestPass,
       markSharedMemoryAsViewed, activateFreeHostPass, purchasePaidHostPass,
@@ -403,3 +359,5 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
+    

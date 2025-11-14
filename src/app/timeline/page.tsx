@@ -18,6 +18,8 @@ import { toast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import { getPassPriceAction } from '@/actions/getPassPriceAction';
+import type { GetPassPriceOutput } from '@/ai/flows/get-pass-price-flow';
 
 export default function TimelinePage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,14 +35,15 @@ export default function TimelinePage() {
     userMode,
     activateFreeGuestPass,
     purchasePaidGuestPass,
-    guestPassPriceDetails,
-    fetchGuestPassPrice,
-    isFetchingGuestPassPrice,
     hostPassStatus,
     markSharedMemoryAsViewed,
     memories,
     isDataLoading,
   } = useAuth();
+  
+  const [guestPassPriceDetails, setGuestPassPriceDetails] = useState<GetPassPriceOutput | null>(null);
+  const [isFetchingGuestPassPrice, setIsFetchingGuestPassPrice] = useState(false);
+
 
   const mockHostPendingRequests = useMemo(() => [
     { id: 'req1', text: 'Tell us about your first pet!', user: 'Guest123' },
@@ -56,6 +59,19 @@ export default function TimelinePage() {
   }, [hostPassStatus]);
   
   const isViewingLegacyChest = useMemo(() => legacyFilter === 'legacy', [legacyFilter]);
+
+  const fetchGuestPassPrice = useCallback(async () => {
+    if (isFetchingGuestPassPrice || guestPassPriceDetails || !user) return;
+    setIsFetchingGuestPassPrice(true);
+    try {
+        const priceData = await getPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
+        setGuestPassPriceDetails(priceData);
+    } catch (error) {
+        console.error("TimelinePage: Failed to fetch GUEST pass price:", error);
+    } finally {
+        setIsFetchingGuestPassPrice(false);
+    }
+  }, [isFetchingGuestPassPrice, guestPassPriceDetails, user]);
 
   useEffect(() => {
     if (userMode === 'guest' && user && !canGuestViewSharedMemories) {
@@ -155,7 +171,7 @@ export default function TimelinePage() {
     } else if (guestPassPriceDetails) {
         buttonText += ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.passPrice)})`;
     } else {
-         buttonText += ` (£7.99 - Mock)`;
+         buttonText += ` (price unavailable)`;
     }
     
     const button = (<Button onClick={purchasePaidGuestPass} className="mt-2 sm:mt-0 sm:ml-2 w-full sm:w-auto" disabled={isFetchingGuestPassPrice} aria-label={buttonText}>{isFetchingGuestPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}{buttonText}</Button>);
@@ -344,3 +360,5 @@ export default function TimelinePage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    

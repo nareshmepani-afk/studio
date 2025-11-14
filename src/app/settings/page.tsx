@@ -14,12 +14,16 @@ import type { User } from '@/types';
 import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types'; 
 import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, Star, Zap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useState, useEffect, type FormEvent, useRef, useMemo } from 'react';
+import { useState, useEffect, type FormEvent, useRef, useMemo, useCallback } from 'react';
 import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { useRouter } from 'next/navigation'; 
 import { storage } from '@/lib/firebase'; 
-import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'; 
+import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { getPassPriceAction } from '@/actions/getPassPriceAction';
+import { getHostPassPriceAction } from '@/actions/getHostPassPriceAction';
+import type { GetPassPriceOutput } from '@/ai/flows/get-pass-price-flow';
+import type { GetHostPassPriceOutput } from '@/ai/flows/get-host-pass-price-flow';
 
 const currentGlobalYear = new Date().getFullYear();
 const dobYears: number[] = Array.from({ length: 120 }, (_, i) => currentGlobalYear - i); 
@@ -35,13 +39,9 @@ export default function SettingsPage() {
     loading: authLoading, 
     activateFreeGuestPass, 
     purchasePaidGuestPass, 
-    guestPassPriceDetails,
-    isFetchingGuestPassPrice,
     activateFreeHostPass,
     purchasePaidHostPass,
     hostPassStatus, 
-    hostPassPriceDetails: authHostPassPriceDetails,
-    isFetchingHostPassPrice: isFetchingAuthHostPassPrice,
     storageQuotaBytes, 
   } = useAuth();
   const router = useRouter(); 
@@ -60,6 +60,11 @@ export default function SettingsPage() {
   const [countryOfBirth, setCountryOfBirth] = useState('');
   const [city, setCity] = useState('');
   const [townArea, setTownArea] = useState('');
+  
+  const [guestPassPriceDetails, setGuestPassPriceDetails] = useState<GetPassPriceOutput | null>(null);
+  const [isFetchingGuestPassPrice, setIsFetchingGuestPassPrice] = useState(false);
+  const [hostPassPriceDetails, setHostPassPriceDetails] = useState<GetHostPassPriceOutput | null>(null);
+  const [isFetchingHostPassPrice, setIsFetchingHostPassPrice] = useState(false);
 
   const daysInSelectedDobMonth = useMemo(() => {
     if (dobYear && dobMonth) {
@@ -96,6 +101,38 @@ export default function SettingsPage() {
   }, [user]); 
 
   useEffect(() => { if (dobDay && parseInt(dobDay) > daysInSelectedDobMonth) setDobDay(daysInSelectedDobMonth.toString()); }, [dobDay, daysInSelectedDobMonth]);
+
+    const fetchGuestPassPrice = useCallback(async () => {
+        if (isFetchingGuestPassPrice || guestPassPriceDetails || !user) return;
+        setIsFetchingGuestPassPrice(true);
+        try {
+            const priceData = await getPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
+            setGuestPassPriceDetails(priceData);
+        } catch (error) {
+            console.error("SettingsPage: Failed to fetch GUEST pass price:", error);
+        } finally { setIsFetchingGuestPassPrice(false); }
+    }, [isFetchingGuestPassPrice, guestPassPriceDetails, user]);
+
+    const fetchHostPassPrice = useCallback(async () => {
+        if (isFetchingHostPassPrice || hostPassPriceDetails || !user) return;
+        setIsFetchingHostPassPrice(true);
+        try {
+            const priceData = await getHostPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
+            setHostPassPriceDetails(priceData);
+        } catch (error) {
+            console.error("SettingsPage: Failed to fetch HOST pass price:", error);
+        } finally { setIsFetchingHostPassPrice(false); }
+    }, [isFetchingHostPassPrice, hostPassPriceDetails, user]);
+
+    useEffect(() => {
+        if (user && (user.sharedAccessStatus === 'free_pass_expired' || user.sharedAccessStatus === 'paid_pass_expired')) {
+            fetchGuestPassPrice();
+        }
+        if (user && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired')) {
+            fetchHostPassPrice();
+        }
+    }, [user, hostPassStatus, fetchGuestPassPrice, fetchHostPassPrice]);
+
 
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -217,7 +254,7 @@ export default function SettingsPage() {
     } else if (guestPassPriceDetails) {
         buttonText += ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: guestPassPriceDetails.currency }).format(guestPassPriceDetails.passPrice)})`;
     } else {
-         buttonText += ` (£7.99 - Mock)`;
+         buttonText += ` (price unavailable)`;
     }
     
     const button = (<Button onClick={purchasePaidGuestPass} variant="outline" size="sm" disabled={isFetchingGuestPassPrice}>{isFetchingGuestPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShoppingCart className="mr-2 h-4 w-4" />}{buttonText}</Button>);
@@ -257,18 +294,18 @@ export default function SettingsPage() {
 
   const renderHostPurchaseButton = () => {
     let buttonText = "Purchase 31-Day Host Pass";
-    if (isFetchingAuthHostPassPrice) { 
+    if (isFetchingHostPassPrice) { 
         buttonText = "Fetching price...";
-    } else if (authHostPassPriceDetails) {
-        buttonText += ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: authHostPassPriceDetails.currency }).format(authHostPassPriceDetails.passPrice)})`;
+    } else if (hostPassPriceDetails) {
+        buttonText += ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
     } else {
-         buttonText += ` (£12.99 - Mock)`; 
+         buttonText += ` (price unavailable)`; 
     }
 
-    const button = (<Button onClick={purchasePaidHostPass} variant="default" size="sm" disabled={isFetchingAuthHostPassPrice}>{isFetchingAuthHostPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}{buttonText}</Button>);
+    const button = (<Button onClick={purchasePaidHostPass} variant="default" size="sm" disabled={isFetchingHostPassPrice}>{isFetchingHostPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}{buttonText}</Button>);
     
-    if (authHostPassPriceDetails && !isFetchingAuthHostPassPrice && authHostPassPriceDetails.justification) { 
-       return (<TooltipProvider><div className="flex flex-col items-start space-y-1">{button}<Tooltip><TooltipTrigger asChild><span className="text-xs text-muted-foreground flex items-center cursor-default mt-1"><Info className="h-3 w-3 mr-1" /> {authHostPassPriceDetails.justification}</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{authHostPassPriceDetails.justification} (Based on avg coffee: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: authHostPassPriceDetails.currency }).format(authHostPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
+    if (hostPassPriceDetails && !isFetchingHostPassPrice && hostPassPriceDetails.justification) { 
+       return (<TooltipProvider><div className="flex flex-col items-start space-y-1">{button}<Tooltip><TooltipTrigger asChild><span className="text-xs text-muted-foreground flex items-center cursor-default mt-1"><Info className="h-3 w-3 mr-1" /> {hostPassPriceDetails.justification}</span></TooltipTrigger><TooltipContent align="start" className="max-w-xs"><p>{hostPassPriceDetails.justification} (Based on avg coffee: ~{new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.coffeePrice)})</p></TooltipContent></Tooltip></div></TooltipProvider>);
     }
     return button;
   };
@@ -277,12 +314,12 @@ export default function SettingsPage() {
     if (!user) return null;
     let statusText = ""; let actionContent = null;
     let currentPriceString = "";
-    if (authHostPassPriceDetails && !isFetchingAuthHostPassPrice) { 
-        currentPriceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: authHostPassPriceDetails.currency }).format(authHostPassPriceDetails.passPrice)})`;
-    } else if (isFetchingAuthHostPassPrice) {
+    if (hostPassPriceDetails && !isFetchingHostPassPrice) { 
+        currentPriceString = ` (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
+    } else if (isFetchingHostPassPrice) {
         currentPriceString = "(fetching price...)";
     } else {
-         currentPriceString = "(approx. £12.99 - Mock)"; 
+         currentPriceString = "(price unavailable)"; 
     }
 
     switch (hostPassStatus) { 
@@ -429,3 +466,5 @@ export default function SettingsPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    

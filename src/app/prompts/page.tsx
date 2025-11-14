@@ -1,3 +1,4 @@
+
 "use client";
 
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
@@ -22,6 +23,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
+import { getHostPassPriceAction } from '@/actions/getHostPassPriceAction';
+import type { GetHostPassPriceOutput } from '@/ai/flows/get-host-pass-price-flow';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { db } from '@/lib/firebase';
@@ -39,14 +42,15 @@ export default function LifeJourneyPage() {
     userMode,
     purchasePaidHostPass,
     activateFreeHostPass,
-    hostPassPriceDetails,
-    isFetchingHostPassPrice,
     hostPassStatus,
     getLatestMemories,
     completedPromptIds,
     flaggedPromptIds,
     isDataLoading,
   } = useAuth();
+  
+  const [hostPassPriceDetails, setHostPassPriceDetails] = useState<GetHostPassPriceOutput | null>(null);
+  const [isFetchingHostPassPrice, setIsFetchingHostPassPrice] = useState(false);
 
   const [showCustomChapterDialog, setShowCustomChapterDialog] = useState(false);
   const [customChapterUserProfile, setCustomChapterUserProfile] = useState('');
@@ -57,6 +61,25 @@ export default function LifeJourneyPage() {
   console.log(`[LifeJourneyPage] Render: isLoading=${isLoading}, isDataLoading=${isDataLoading}, user=${user ? user.id : 'null'}`);
 
   useEffect(() => { if (user?.profileInfo) setCustomChapterUserProfile(user.profileInfo); }, [user?.profileInfo]);
+  
+  const fetchHostPassPrice = useCallback(async () => {
+    if (isFetchingHostPassPrice || hostPassPriceDetails || !user) return;
+    setIsFetchingHostPassPrice(true);
+    try {
+      const priceData = await getHostPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
+      setHostPassPriceDetails(priceData);
+    } catch (error) {
+      console.error("PromptsPage: Failed to fetch HOST pass price:", error);
+    } finally {
+      setIsFetchingHostPassPrice(false);
+    }
+  }, [isFetchingHostPassPrice, hostPassPriceDetails, user]);
+
+  useEffect(() => {
+    if (user && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired')) {
+      fetchHostPassPrice();
+    }
+  }, [user, hostPassStatus, fetchHostPassPrice]);
 
   const canAccessFullJourney = useMemo(() => {
     return hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
@@ -160,7 +183,7 @@ export default function LifeJourneyPage() {
     if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
         if (isFetchingHostPassPrice) return "Fetching price...";
         if (hostPassPriceDetails) return `Purchase Host Pass (${new Intl.NumberFormat('en-GB', { style: 'currency', currency: hostPassPriceDetails.currency }).format(hostPassPriceDetails.passPrice)})`;
-        return `Purchase Host Pass (£12.99 - Mock)`;
+        return `Purchase Host Pass (price unavailable)`;
     }
     return "Activate 6-Month Free Host Pass";
   }, [hostPassStatus, isFetchingHostPassPrice, hostPassPriceDetails]);
@@ -354,3 +377,5 @@ export default function LifeJourneyPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    
