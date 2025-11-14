@@ -48,6 +48,7 @@ interface MediaCaptureControlProps {
   };
   promptIdForTeleprompter?: string;
   chapterTitleForTeleprompter?: string;
+  trimValues: [number, number]; // New prop for live trimming
 }
 
 export function MediaCaptureControl({
@@ -55,7 +56,8 @@ export function MediaCaptureControl({
   onDiscard,
   initialMedia,
   promptIdForTeleprompter,
-  chapterTitleForTeleprompter
+  chapterTitleForTeleprompter,
+  trimValues
 }: MediaCaptureControlProps) {
   const { user, storageQuotaBytes, hostPassStatus } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
@@ -143,6 +145,41 @@ export function MediaCaptureControl({
     setMediaType(initialMedia?.type || null);
     setPreviewUrl(initialMedia?.previewUrl || null);
   }, [initialMedia]);
+
+  // EFFECT FOR SOFT-PREVIEW TRIMMING
+  useEffect(() => {
+    const mediaElement = videoRef.current || audioPreviewRef.current;
+    if (!mediaElement || !trimValues) return;
+
+    const [startTime, endTime] = trimValues;
+
+    const handleTimeUpdate = () => {
+      if (mediaElement.currentTime > endTime || mediaElement.currentTime < startTime) {
+        mediaElement.pause();
+        mediaElement.currentTime = startTime;
+      }
+    };
+    
+    const handlePlay = () => {
+      if (mediaElement.currentTime < startTime || mediaElement.currentTime >= endTime) {
+        mediaElement.currentTime = startTime;
+      }
+    };
+
+    mediaElement.addEventListener('timeupdate', handleTimeUpdate);
+    mediaElement.addEventListener('play', handlePlay);
+
+    // Set initial time if not playing
+    if (mediaElement.paused && mediaElement.currentTime < startTime) {
+        mediaElement.currentTime = startTime;
+    }
+    
+    return () => {
+      mediaElement.removeEventListener('timeupdate', handleTimeUpdate);
+      mediaElement.removeEventListener('play', handlePlay);
+    };
+
+  }, [trimValues]);
 
 
   const handleStartRecording = async (type: 'video' | 'audio') => {
@@ -235,6 +272,7 @@ export function MediaCaptureControl({
   
   const handleDiscardMedia = useCallback(() => {
     if (isRecording) {
+        // Stop recording if it's active
         handleStopRecording();
     }
     revokeCurrentPreviewUrl();
@@ -376,5 +414,3 @@ export function MediaCaptureControl({
     </Card>
   );
 }
-
-    

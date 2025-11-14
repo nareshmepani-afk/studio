@@ -293,8 +293,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const handleTrimChange = (newValues: [number, number]) => {
     if (currentMedia) {
       setTrimValues(newValues);
-      // Also update the soft-trim values on the media object for preview
-      setCurrentMedia(prev => prev ? ({ ...prev, startTime: newValues[0], endTime: newValues[1] }) : null);
     }
   };
 
@@ -373,10 +371,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         type: currentMedia.type,
         url: urlForSubmission,
         filename: currentMedia.file.name, 
-        startTime: currentMedia.startTime,
-        endTime: currentMedia.endTime,
+        startTime: currentMedia.isTrimmed ? 0 : trimValues[0],
+        endTime: currentMedia.isTrimmed ? currentMedia.duration : trimValues[1],
         duration: currentMedia.duration,
         size: currentMedia.size,
+        isTrimmed: currentMedia.isTrimmed,
       }];
     } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
         mediaAttachmentsForSubmission = undefined; 
@@ -390,7 +389,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         promptId: finalPromptIdToSave, isLegacy: memory?.isLegacy || false },
       mediaFileToUpload
     );
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, selectedCategory, initialPromptId, selectedEmotionTags, isEditing]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, selectedCategory, initialPromptId, selectedEmotionTags, isEditing, trimValues]);
 
   const handleActionButtonClick = useCallback(() => {
     if (isParentSubmitting || isTrimming) return;
@@ -444,7 +443,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       mediaAttachmentsForPreview = [{
         id: memory?.mediaAttachments?.[0]?.id || 'preview-media-1',
         type: currentMedia.type, url: currentMediaPreviewUrl, filename: currentMedia.file.name,
-        startTime: currentMedia.startTime, endTime: currentMedia.endTime, duration: currentMedia.duration, size: currentMedia.size,
+        startTime: currentMedia.isTrimmed ? 0 : trimValues[0],
+        endTime: currentMedia.isTrimmed ? currentMedia.duration : trimValues[1],
+        duration: currentMedia.duration, size: currentMedia.size,
+        isTrimmed: currentMedia.isTrimmed,
       }];
     }
     mockMemoryForPreview = {
@@ -543,6 +545,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                       initialMedia={mediaForRecorderProp}
                       promptIdForTeleprompter={currentPromptIdForTeleprompter}
                       chapterTitleForTeleprompter={title}
+                      trimValues={trimValues}
                   />
                   {currentMedia && (
                     <Card className="bg-muted/50">
