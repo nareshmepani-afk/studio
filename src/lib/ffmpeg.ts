@@ -1,7 +1,6 @@
 
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile } from '@ffmpeg/util';
-import { toBlobURL } from '@ffmpeg/util';
+import { fetchFile } from '@ffmpeg/ffmpeg';
 
 let ffmpeg: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
@@ -22,9 +21,11 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
         // console.log(message); // Optional: useful for debugging
       });
       
-      const coreURL = await toBlobURL('/ffmpeg/ffmpeg-core.js', 'text/javascript');
-      const wasmURL = await toBlobURL('/ffmpeg/ffmpeg-core.wasm', 'application/wasm');
-      const workerURL = await toBlobURL('/ffmpeg/ffmpeg-core.worker.js', 'text/javascript');
+      // Use static paths to the core files.
+      // These files must be available in your `public/ffmpeg` directory.
+      const coreURL = '/ffmpeg/ffmpeg-core.js';
+      const wasmURL = '/ffmpeg/ffmpeg-core.wasm';
+      const workerURL = '/ffmpeg/ffmpeg-core.worker.js';
 
       await ffmpegInstance.load({
         coreURL,
@@ -64,9 +65,10 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
     await ffmpegInstance.writeFile(fileName, await fetchFile(mediaBlob));
 
     try {
+        // This command is expected to fail but prints metadata to stderr.
         await ffmpegInstance.exec(['-i', fileName]);
     } catch(e) {
-        // This command is expected to fail but prints metadata to stderr.
+        // This is expected. FFmpeg throws an error when run with just -i.
     }
     
     const durationMatch = logOutput.match(/Duration: (\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
@@ -78,7 +80,7 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
       return hours * 3600 + minutes * 60 + seconds + centiseconds / 100;
     }
 
-    // Fallback for different duration format
+    // Fallback for different duration format (e.g., from streams without a proper container)
     const alternativeDurationMatch = logOutput.match(/Duration: (\d+\.\d+)/);
     if (alternativeDurationMatch) {
       return parseFloat(alternativeDurationMatch[1]);
@@ -89,7 +91,9 @@ export async function getDurationWithFFmpeg(mediaBlob: Blob): Promise<number> {
 
   } finally {
     try {
-      await ffmpegInstance.deleteFile(fileName);
+      if (await ffmpegInstance.pathExists(fileName)) {
+        await ffmpegInstance.deleteFile(fileName);
+      }
     } catch (e) { /* Ignore cleanup errors */ }
     ffmpegInstance.off('log', logger); // Reset logger
   }
@@ -115,11 +119,12 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
       throw new Error("trimMediaWithFFmpeg: End time must be after start time for trimming.");
     }
 
+    // Using a more reliable command for trimming
     await ffmpegInstance.exec([
-      '-i', inputFilename,
       '-ss', startTime.toString(),
       '-to', endTime.toString(),
-      '-c', 'copy', // Use copy codec for speed, might be less accurate
+      '-i', inputFilename,
+      '-c', 'copy', // Use copy codec for speed, assuming container format doesn't change
       outputFilename
     ]);
 
@@ -127,8 +132,12 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
     return new Blob([(data as Uint8Array).buffer], { type: mediaBlob.type });
   } finally {
      try {
-       await ffmpegInstance.deleteFile(inputFilename);
-       await ffmpegInstance.deleteFile(outputFilename);
+       if (await ffmpegInstance.pathExists(inputFilename)) {
+         await ffmpegInstance.deleteFile(inputFilename);
+       }
+       if (await ffmpegInstance.pathExists(outputFilename)) {
+         await ffmpegInstance.deleteFile(outputFilename);
+       }
      } catch(e) { /* Ignore cleanup errors */ }
   }
 }
