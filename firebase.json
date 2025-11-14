@@ -1,11 +1,21 @@
 
 {
-  "hosting": {
-    "source": ".",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
+  "apphosting": {
+    "backend": "nextn",
+    "headers": [
+      {
+        "source": "/**",
+        "headers": [
+          {
+            "key": "Cross-Origin-Opener-Policy",
+            "value": "same-origin"
+          },
+          {
+            "key": "Cross-origin-Embedder-Policy",
+            "value": "require-corp"
+          }
+        ]
+      }
     ]
   }
 }
