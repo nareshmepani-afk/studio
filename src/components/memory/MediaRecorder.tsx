@@ -17,36 +17,25 @@ import { useAuth } from '@/hooks/useAuth';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { mockPromptGroups } from '@/lib/mockData';
 import type { MediaAttachment } from '@/types';
-import { getFFmpegInstance, getDurationWithFFmpeg, trimMediaWithFFmpeg } from '@/lib/ffmpeg';
 
 // Moved from utils.ts to break circular dependency
 function formatSecondsToTime(timeInSeconds: number | undefined): string {
-  if (timeInSeconds === undefined || isNaN(timeInSeconds) || timeInSeconds < 0) return "0:00.0";
+  if (timeInSeconds === undefined || isNaN(timeInSeconds) || timeInSeconds < 0) return "0:00";
 
-  const totalSecs = Math.max(0, Number(timeInSeconds.toFixed(1)));
+  const totalSecs = Math.floor(timeInSeconds);
 
-  if (totalSecs < 60) {
-    return `0:${totalSecs.toFixed(1).padStart(4, '0')}`;
-  } else {
-    const minutes = Math.floor(totalSecs / 60);
-    const seconds = totalSecs % 60;
-    const formattedSeconds = seconds.toFixed(1);
-    return `${minutes}:${formattedSeconds.padStart(4, '0')}`;
-  }
+  const minutes = Math.floor(totalSecs / 60);
+  const seconds = totalSecs % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
 // Maximum duration constants (in seconds)
-const MAX_RAW_VIDEO_RECORDING_DURATION = 300; // 5 minutes for raw recording
-const MAX_RAW_AUDIO_RECORDING_DURATION = 600; // 10 minutes
-const MAX_TRIMMED_VIDEO_DURATION = 180; // 3 minutes for final trimmed video
-const MAX_TRIMMED_AUDIO_DURATION = 300; // 5 minutes for final trimmed audio
+const MAX_RECORDING_DURATION = 300; // 5 minutes for all recordings
 
 interface MediaCaptureControlProps {
   onMediaReady: (media: {
     file: File;
     type: 'video' | 'audio';
-    startTime?: number;
-    endTime?: number;
     duration: number;
     size: number;
   }) => void;
@@ -54,8 +43,6 @@ interface MediaCaptureControlProps {
   initialMedia?: {
     type: 'video' | 'audio';
     previewUrl: string;
-    startTime?: number;
-    endTime?: number;
     duration: number;
     size: number;
   };
@@ -72,28 +59,17 @@ export function MediaCaptureControl({
 }: MediaCaptureControlProps) {
   const { user, storageQuotaBytes, hostPassStatus } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
-  const [isStopping, setIsStopping] = useState(false); // New state for processing after stop
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(null);
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
-
   const [internalPreviewUrl, setInternalPreviewUrl] = useState<string | null>(null);
 
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-  const [streamForVideoFeed, setStreamForVideoFeed] = useState<MediaStream | null>(null);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const mediaRecorderRef = useRef<globalThis.MediaRecorder | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioPreviewRef = useRef<HTMLAudioElement>(null);
   const liveVideoRef = useRef<HTMLVideoElement>(null);
   const recordedChunks = useRef<Blob[]>([]);
-
-  const [startTime, setStartTime] = useState<number>(0);
-  const [endTime, setEndTime] = useState<number>(0);
-  const [mediaDuration, setMediaDuration] = useState<number>(0);
-  const [mediaSize, setMediaSize] = useState<number>(0);
-
-  const latestTrimValuesRef = useRef({ startTime: 0, endTime: 0 });
-  const [isLoadingSample, setIsLoadingSample] = useState(false);
-  const [sampleLoadingType, setSampleLoadingType] = useState<'video' | 'audio' | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const [showTeleprompter, setShowTeleprompter] = useState(false);
   const [currentTeleprompterScript, setCurrentTeleprompterScript] = useState<string | null>(null);
@@ -101,72 +77,25 @@ export function MediaCaptureControl({
   const [currentRecordingDuration, setCurrentRecordingDuration] = useState(0);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [rawPreviewReady, setRawPreviewReady] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processingStatusText, setProcessingStatusText] = useState('');
-
   const canRecordOrUpload =
     hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
 
-  const [isFFmpegInstanceReady, setIsFFmpegInstanceReady] = useState(false);
-  const [ffmpegError, setFFmpegError] = useState<string | null>(null);
-  
-  useEffect(() => {
-    if (!isFFmpegInstanceReady && !ffmpegError) {
-        setProcessingStatusText('Initializing media tools...');
-        getFFmpegInstance()
-          .then(() => {
-            setIsFFmpegInstanceReady(true);
-            setProcessingStatusText('');
-            setFFmpegError(null);
-          })
-          .catch(error => {
-            const errorMessage = "Media processing tools failed to load. Trimming and duration analysis are disabled.";
-            console.error("MediaRecorder: FFmpeg instance failed to initialize:", error);
-            toast({
-              title: "Media Tools Unavailable",
-              description: errorMessage,
-              variant: "destructive",
-              duration: 10000,
-            });
-            setProcessingStatusText('Media tools failed');
-            setFFmpegError(errorMessage);
-            setIsFFmpegInstanceReady(false);
-          });
-    }
-  }, [isFFmpegInstanceReady, ffmpegError]);
-
-  useEffect(() => { latestTrimValuesRef.current = { startTime, endTime }; }, [startTime, endTime]);
-
-  const cleanupStreamTracks = useCallback((streamToClean: MediaStream | null) => {
-    if (streamToClean) {
-      streamToClean.getTracks().forEach(track => track.stop());
+  const cleanupStream = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     }
   }, []);
 
-  const cleanupAndFinalizeRecording = useCallback((streamUsedForRecording: MediaStream | null) => {
-    cleanupStreamTracks(streamUsedForRecording);
-    setStreamForVideoFeed(prevStream => {
-      if (prevStream === streamUsedForRecording) return null;
-      return prevStream;
-    });
-    mediaRecorderRef.current = null;
-    setIsRecording(false);
-    if (recordingIntervalRef.current) {
-      clearInterval(recordingIntervalRef.current);
-      recordingIntervalRef.current = null;
-    }
-    setCurrentRecordingDuration(0);
-  }, [cleanupStreamTracks]);
-
-  const getPermissions = useCallback(async (type: 'video' | 'audio'): Promise<MediaStream | null> => {
+  const getPermissions = useCallback(async (type: 'video' | 'audio'): Promise<boolean> => {
+    cleanupStream();
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
-      setHasCameraPermission(true);
-      return mediaStream;
+      streamRef.current = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
+      setHasPermission(true);
+      return true;
     } catch (error) {
       console.error('Error accessing media devices:', error);
-      setHasCameraPermission(false);
+      setHasPermission(false);
       setTimeout(() =>
         toast({
           variant: 'destructive',
@@ -175,41 +104,11 @@ export function MediaCaptureControl({
           duration: 7000
         }), 0
       );
-      return null;
+      return false;
     }
-  }, []);
-
-  useEffect(() => {
-    let currentLiveVideoElement = liveVideoRef.current;
-    if (isRecording && mediaType === 'video' && streamForVideoFeed && currentLiveVideoElement) {
-      if (currentLiveVideoElement.srcObject !== streamForVideoFeed) {
-        currentLiveVideoElement.srcObject = streamForVideoFeed;
-      }
-      currentLiveVideoElement.play().catch(e => console.warn("Live video play interrupted:", e));
-      setCurrentRecordingDuration(0);
-      if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
-      recordingIntervalRef.current = setInterval(() => {
-        setCurrentRecordingDuration(prev => prev + 1);
-      }, 1000);
-    } else if (!isRecording) {
-      if (currentLiveVideoElement && currentLiveVideoElement.srcObject) {
-        if (currentLiveVideoElement.srcObject === streamForVideoFeed || !streamForVideoFeed) {
-          currentLiveVideoElement.srcObject = null;
-        }
-      }
-      if (recordingIntervalRef.current) {
-        clearInterval(recordingIntervalRef.current);
-        recordingIntervalRef.current = null;
-      }
-    }
-  }, [isRecording, mediaType, streamForVideoFeed]);
+  }, [cleanupStream]);
 
   const checkStorageQuota = useCallback((fileSize: number): boolean => {
-    if (!isFFmpegInstanceReady) {
-      // If ffmpeg isn't ready, we can't be sure of the final size after trim, so we can't reliably check.
-      // We'll have to check it again after processing.
-      return true;
-    }
     if (fileSize > storageQuotaBytes) {
       const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
       const chapterQuotaMB = (storageQuotaBytes / (1024 * 1024)).toFixed(0);
@@ -218,7 +117,7 @@ export function MediaCaptureControl({
       return false;
     }
     return true;
-  }, [storageQuotaBytes, isFFmpegInstanceReady]);
+  }, [storageQuotaBytes]);
 
   const checkHostPass = (): boolean => {
     if (!canRecordOrUpload) {
@@ -233,454 +132,209 @@ export function MediaCaptureControl({
     }
     return true;
   };
-
+  
   const revokeCurrentInternalPreviewUrl = useCallback(() => {
-    if (internalPreviewUrl && internalPreviewUrl.startsWith('blob:') && internalPreviewUrl !== initialMedia?.previewUrl) {
+    if (internalPreviewUrl && internalPreviewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(internalPreviewUrl);
     }
-  }, [internalPreviewUrl, initialMedia?.previewUrl]);
+  }, [internalPreviewUrl]);
 
-  const performDiscardReset = useCallback((showToast: boolean) => {
-    revokeCurrentInternalPreviewUrl();
-    setRecordedFile(null);
-    setInternalPreviewUrl(initialMedia?.previewUrl || null);
-    setMediaType(initialMedia?.type || null);
-    const initStartTime = initialMedia?.startTime || 0;
-    const initDuration = initialMedia?.duration || 0;
-    const initEndTime = initialMedia?.endTime !== undefined ? initialMedia.endTime : initDuration;
-    const initSize = initialMedia?.size || 0;
-    setStartTime(initStartTime);
-    setEndTime(initEndTime);
-    latestTrimValuesRef.current = { startTime: initStartTime, endTime: initEndTime };
-    setMediaDuration(initDuration);
-    setMediaSize(initSize);
-    recordedChunks.current = [];
-    setRawPreviewReady(false);
-    setShowTeleprompter(false);
-    setCurrentTeleprompterScript(null);
-    onDiscard();
-    if (showToast) setTimeout(() => toast({ title: "Media Discarded" }), 0);
-  }, [initialMedia, onDiscard, revokeCurrentInternalPreviewUrl]);
-
-  const handleDiscardMedia = useCallback((showToast = true) => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.onstop = () => {
-        cleanupAndFinalizeRecording(streamForVideoFeed);
-        performDiscardReset(showToast);
-      };
-      mediaRecorderRef.current.stop();
-    } else {
-      cleanupAndFinalizeRecording(streamForVideoFeed);
-      performDiscardReset(showToast);
-    }
-  }, [cleanupAndFinalizeRecording, performDiscardReset, streamForVideoFeed]);
 
   const handleStartRecording = async (type: 'video' | 'audio') => {
     if (isRecording || !checkHostPass()) return;
+    
+    const permissionGranted = await getPermissions(type);
+    if (!permissionGranted || !streamRef.current) return;
+    
     revokeCurrentInternalPreviewUrl();
-    setRecordedFile(null); setInternalPreviewUrl(null); setMediaType(type); setStartTime(0); setEndTime(0); setMediaDuration(0); setMediaSize(0);
-    latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
+    setRecordedFile(null); 
+    setInternalPreviewUrl(null); 
+    setMediaType(type); 
     recordedChunks.current = [];
-    setRawPreviewReady(false);
-    setShowTeleprompter(false);
-    setCurrentTeleprompterScript(null);
-    cleanupStreamTracks(streamForVideoFeed);
-    const streamForNewRecording = await getPermissions(type);
-    if (!streamForNewRecording || !streamForNewRecording.active) {
-      cleanupStreamTracks(streamForNewRecording);
-      setStreamForVideoFeed(null);
-      return;
-    }
-    setStreamForVideoFeed(streamForNewRecording);
+
+    // Teleprompter Logic
     let scriptKey = promptIdForTeleprompter;
     if (!scriptKey && chapterTitleForTeleprompter) {
-      for (const group of mockPromptGroups) {
-        const foundPrompt = group.prompts.find(p => p.text.en.toLowerCase() === chapterTitleForTeleprompter.toLowerCase() || p.text.gu === chapterTitleForTeleprompter);
-        if (foundPrompt) { scriptKey = foundPrompt.id; break; }
-      }
+        for (const group of mockPromptGroups) {
+            const foundPrompt = group.prompts.find(p => p.text.en.toLowerCase() === chapterTitleForTeleprompter.toLowerCase() || p.text.gu === chapterTitleForTeleprompter);
+            if (foundPrompt) { scriptKey = foundPrompt.id; break; }
+        }
     }
     const script = scriptKey ? teleprompterScripts[scriptKey] : null;
     if (script) { setCurrentTeleprompterScript(script); setShowTeleprompter(true); }
     else if (type === 'video') { setCurrentTeleprompterScript(defaultTeleprompterFallbackScript); setShowTeleprompter(true); }
-    let selectedMimeType = '';
+
+
     try {
-      const preferredVideoMimeTypes = ['video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=h264,opus', 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/webm'];
-      const preferredAudioMimeTypes = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/webm'];
-      const typesToTest = type === 'video' ? preferredVideoMimeTypes : preferredAudioMimeTypes;
-      for (const mime of typesToTest) {
-        if (MediaRecorder.isTypeSupported(mime)) {
-          selectedMimeType = mime;
-          break;
-        }
-      }
-      const recorderOptions = selectedMimeType ? { mimeType: selectedMimeType } : undefined;
-      const recorder = new window.MediaRecorder(streamForNewRecording, recorderOptions);
+      const recorder = new window.MediaRecorder(streamRef.current);
       mediaRecorderRef.current = recorder;
       recorder.ondataavailable = (event) => { if (event.data.size > 0) recordedChunks.current.push(event.data); };
+      
       recorder.onstop = () => {
-        const currentRecordedChunksCopy = [...recordedChunks.current];
+        const blob = new Blob(recordedChunks.current, { type: recorder.mimeType });
         recordedChunks.current = [];
-        cleanupAndFinalizeRecording(streamForNewRecording);
 
-        if (currentRecordedChunksCopy.length === 0) {
-          setTimeout(() => toast({ variant: 'destructive', title: 'No Data Recorded', description: 'The recording seems to be empty. Please try again, ensuring your microphone/camera is active.', duration: 7000 }), 0);
-          setIsStopping(false);
-          return;
-        }
-
-        const blobMimeTypeToUse = mediaRecorderRef.current?.mimeType || (type === 'video' ? (selectedMimeType || 'video/webm') : (selectedMimeType || 'audio/webm'));
-        const blob = new Blob(currentRecordedChunksCopy, { type: blobMimeTypeToUse });
-        
         if (blob.size < 1024) {
-          setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Recorded data is too small or corrupted. Please try a longer recording.', duration: 7000 }), 0);
-          setIsStopping(false);
+          setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Recorded data is too small. Please try a longer recording.', duration: 7000 }), 0);
           return;
         }
 
         if (!checkStorageQuota(blob.size)) {
-          setIsStopping(false);
-          return;
+            return;
         }
-
+        
         const file = new File([blob], `recording.${blob.type.split('/')[1]?.split(';')[0] || 'bin'}`, { type: blob.type });
         const newObjectUrlForPreview = URL.createObjectURL(blob);
         
-        // This is now the single source of truth for post-recording state updates
         setRecordedFile(file);
         setInternalPreviewUrl(newObjectUrlForPreview);
-        setMediaType(type);
-        setMediaSize(file.size);
-        setMediaDuration(0);
-        setStartTime(0);
-        setEndTime(0);
-        latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
-        setRawPreviewReady(true);
-        setIsStopping(false); // End processing state, this will reveal the "Accept" button
         
-        setTimeout(() => toast({ title: "Recording Complete!", description: "Preview your raw recording and click 'Accept Recording' to proceed." }), 0);
+        // Get duration
+        const mediaElement = document.createElement(type);
+        mediaElement.src = newObjectUrlForPreview;
+        mediaElement.onloadedmetadata = () => {
+             if (mediaElement.duration > MAX_RECORDING_DURATION) {
+                toast({ variant: 'destructive', title: 'Recording Too Long', description: `Recording is ${formatSecondsToTime(mediaElement.duration)}. Max allowed is ${formatSecondsToTime(MAX_RECORDING_DURATION)}. Please re-record.`, duration: 10000 });
+                handleDiscardMedia();
+                return;
+            }
+            onMediaReady({ file, type: type, duration: mediaElement.duration, size: file.size });
+            toast({ title: "Recording Complete!", description: `Duration: ${formatSecondsToTime(mediaElement.duration)}. You can now save your memory.` });
+        };
       };
-      recorder.onerror = (event: any) => {
-        console.error('MediaRecorder error:', event);
-        cleanupAndFinalizeRecording(streamForNewRecording);
-        setIsStopping(false);
-        setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: event.error?.message || 'Something went wrong during recording. Please try again.' }), 0);
-      };
-      recorder.start(1000);
+
+      recorder.start();
       setIsRecording(true);
-      setTimeout(() => toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` }),0);
+      setCurrentRecordingDuration(0);
+      if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+      recordingIntervalRef.current = setInterval(() => {
+        setCurrentRecordingDuration(prev => prev + 1);
+      }, 1000);
+      toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.` });
     } catch (err) {
       console.error("Error initializing MediaRecorder:", err);
-      cleanupStreamTracks(streamForNewRecording);
-      setStreamForVideoFeed(null);
-      setShowTeleprompter(false);
-      setCurrentTeleprompterScript(null);
-      setIsRecording(false);
-      mediaRecorderRef.current = null;
-      if (recordingIntervalRef.current) { clearInterval(recordingIntervalRef.current); recordingIntervalRef.current = null; }
-      setCurrentRecordingDuration(0);
-      setTimeout(() => toast({ variant: 'destructive', title: 'Recording Setup Failed', description: 'Could not start recording. Check device compatibility or permissions.' }), 0);
+      cleanupStream();
+      toast({ variant: 'destructive', title: 'Recording Setup Failed', description: 'Could not start recording. Check device compatibility or permissions.' });
     }
   };
 
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      setIsStopping(true); // Start processing state
       mediaRecorderRef.current.stop();
-    } else if (isRecording) {
-      cleanupAndFinalizeRecording(streamForVideoFeed);
+      setIsRecording(false);
+      if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+      cleanupStream();
     }
   };
+  
+  const handleDiscardMedia = useCallback(() => {
+    if (isRecording) {
+        handleStopRecording();
+    }
+    revokeCurrentInternalPreviewUrl();
+    setRecordedFile(null);
+    setInternalPreviewUrl(null);
+    setMediaType(null);
+    onDiscard();
+    toast({ title: "Media Discarded" });
+  }, [isRecording, revokeCurrentInternalPreviewUrl, onDiscard]);
+  
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!checkHostPass()) { event.target.value = ''; return; }
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  const processDuration = (durationValue: number) => {
-    const currentMaxRawDuration = mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION : MAX_RAW_AUDIO_RECORDING_DURATION;
-    const currentMaxTrimmedDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION : MAX_TRIMMED_AUDIO_DURATION;
-    if (durationValue > currentMaxRawDuration) {
-      setTimeout(() => toast({ variant: 'destructive', title: `${mediaType === 'video' ? 'Video' : 'Audio'} Too Long`, description: `Recording is ${formatSecondsToTime(durationValue)}. Maximum allowed is ${formatSecondsToTime(currentMaxRawDuration)}. Please re-record or upload a shorter segment.`, duration: 10000 }), 0);
-      handleDiscardMedia(false);
-      return;
-    }
-    setMediaDuration(durationValue);
-    setEndTime(durationValue);
-    setStartTime(0);
-    latestTrimValuesRef.current = { startTime: 0, endTime: durationValue };
-    setRawPreviewReady(false);
-    if (durationValue > currentMaxTrimmedDuration) {
-      setTimeout(() => toast({ title: "Media Ready for Trimming", description: `Your ${formatSecondsToTime(durationValue)} ${mediaType} needs to be trimmed to ${formatSecondsToTime(currentMaxTrimmedDuration)} or less.`, duration: 10000, icon: <AlertTriangle className="h-4 w-4 text-amber-500" /> }), 0);
-    } else {
-      setTimeout(() => toast({ title: "Media Verified", description: `Duration: ${formatSecondsToTime(durationValue)}. You can now trim or use the media.` }), 0);
-    }
-  };
-
-  const handleAcceptRawRecording = useCallback(async () => {
-    if (!recordedFile) {
-      toast({variant: 'destructive', title: 'Preview Error', description: 'No media file to accept.'});
-      return;
-    }
-    if (!isFFmpegInstanceReady) {
-        // Gracefully handle FFmpeg failure
-        onMediaReady({
-            file: recordedFile, type: mediaType!,
-            startTime: 0, endTime: 0, duration: 0, size: recordedFile.size
-        });
-        toast({ title: "Using Raw Media", description: "Media processing tools are unavailable. Using the full, untrimmed media file.", icon: <CheckCircle className="h-4 w-4" /> });
+    const fileType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : null;
+    if (!fileType) {
+        toast({ title: "Invalid File Type", description: "Please upload a valid video or audio file.", variant: "destructive" });
         return;
     }
-    setIsProcessing(true);
-    setProcessingStatusText('Analyzing media... (this may take a moment)');
-    try {
-      const duration = await getDurationWithFFmpeg(recordedFile);
-      processDuration(duration);
-    } catch (error) {
-      console.error("Error getting media duration with FFmpeg:", error);
-      toast({ variant: 'destructive', title: 'Recording Processing Error', description: `Could not verify media. The file might be corrupted. Error: ${(error as Error).message}`, duration: 8000 });
-      handleDiscardMedia(false);
+    if (!checkStorageQuota(file.size)) {
+        event.target.value = '';
+        return;
     }
-    setIsProcessing(false);
-    setProcessingStatusText('');
-  }, [recordedFile, mediaType, onMediaReady, handleDiscardMedia, isFFmpegInstanceReady]);
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!checkHostPass()) { event.target.value = ''; return; }
-    if (event.target.files && event.target.files[0]) {
-      const file = event.target.files[0];
-      const fileType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : null;
-      if (!fileType) { setTimeout(() => toast({ title: "Invalid File Type", description:"Please upload a valid video or audio file.", variant: "destructive" }), 0); return; }
-      if (!checkStorageQuota(file.size)) { event.target.value = ''; return; }
-      revokeCurrentInternalPreviewUrl();
-      setRecordedFile(null); setInternalPreviewUrl(null);
-      cleanupStreamTracks(streamForVideoFeed); setStreamForVideoFeed(null);
-      setRawPreviewReady(false);
-      setShowTeleprompter(false);
-      setCurrentTeleprompterScript(null);
-      const newObjectUrlForPreview = URL.createObjectURL(file);
-      requestAnimationFrame(() => {
-          setRecordedFile(file);
-          setInternalPreviewUrl(newObjectUrlForPreview);
-          setMediaType(fileType);
-          setMediaSize(file.size);
-          setMediaDuration(0);
-          setStartTime(0);
-          setEndTime(0);
-          latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
-          setRawPreviewReady(true);
-      });
-      setTimeout(() => toast({ title: "File Uploaded", description: `${file.name}. Preview and accept to proceed.` }), 0);
-      event.target.value = '';
-    }
-  };
-
-  const handleLoadSampleMedia = async (type: 'video' | 'audio') => {
-    if (!checkHostPass()) return;
-    setIsLoadingSample(true); setSampleLoadingType(type);
-    revokeCurrentInternalPreviewUrl();
-    setRecordedFile(null); setInternalPreviewUrl(null);
-    cleanupStreamTracks(streamForVideoFeed); setStreamForVideoFeed(null);
-    setRawPreviewReady(false);
-    setShowTeleprompter(false);
-    setCurrentTeleprompterScript(null);
-    const sampleUrl = type === 'video' ? "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" : "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3";
-    const filename = type === 'video' ? 'sample_video.mp4' : 'sample_audio.mp3';
-    const mimeType = type === 'video' ? 'video/mp4' : 'audio/mpeg';
-    try {
-      const response = await fetch(sampleUrl);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const blob = await response.blob();
-      const file = new File([blob], filename, { type: mimeType });
-      if (!checkStorageQuota(file.size)) { setIsLoadingSample(false); setSampleLoadingType(null); return; }
-      const newInternalBlobUrl = URL.createObjectURL(blob);
-      requestAnimationFrame(() => {
-          setRecordedFile(file);
-          setInternalPreviewUrl(newInternalBlobUrl);
-          setMediaType(type);
-          setMediaSize(file.size);
-          setMediaDuration(0);
-          setStartTime(0);
-          setEndTime(0);
-          latestTrimValuesRef.current = { startTime: 0, endTime: 0 };
-          setRawPreviewReady(true);
-      });
-      setTimeout(() => toast({ title: `Sample ${type} loaded`, description: `${filename}. Preview and accept to proceed.` }), 0);
-    } catch (error) {
-      console.error(`Error loading sample ${type}:`, error);
-      setTimeout(() => toast({ variant: 'destructive', title: `Failed to Load Sample ${type.charAt(0).toUpperCase() + type.slice(1)}` }), 0);
-    } finally { setIsLoadingSample(false); setSampleLoadingType(null); }
-  };
-
-  const handleUseMedia = async () => {
-    if (!checkHostPass()) return;
     
-    if (!isFFmpegInstanceReady) {
-        if (!recordedFile) {
-            toast({ title: "No Media File", description: "Please record or upload media first.", variant: "destructive" });
+    revokeCurrentInternalPreviewUrl();
+    const newPreviewUrl = URL.createObjectURL(file);
+    
+    const mediaElement = document.createElement(fileType);
+    mediaElement.src = newPreviewUrl;
+    mediaElement.onloadedmetadata = () => {
+        if (mediaElement.duration > MAX_RECORDING_DURATION) {
+            toast({ variant: 'destructive', title: 'File Too Long', description: `Uploaded file is ${formatSecondsToTime(mediaElement.duration)}. Max allowed is ${formatSecondsToTime(MAX_RECORDING_DURATION)}.`, duration: 10000 });
+            URL.revokeObjectURL(newPreviewUrl);
             return;
         }
-        // Gracefully handle FFmpeg failure by using the raw file
-        onMediaReady({
-            file: recordedFile, type: mediaType!,
-            startTime: 0, endTime: 0, duration: 0, size: recordedFile.size,
-        });
-        toast({ title: "Using Raw Media", description: "Media processing tools are unavailable. Using the full, untrimmed media file.", icon: <CheckCircle className="h-4 w-4" /> });
-        return;
-    }
-
-    const currentStartTime = latestTrimValuesRef.current.startTime;
-    const currentEndTime = latestTrimValuesRef.current.endTime;
-    if (currentStartTime >= currentEndTime && currentEndTime > 0) {
-      toast({ title: "Invalid Trim: Start time must be before end time", variant: "destructive" });
-      return;
-    }
-    if (currentEndTime > mediaDuration && mediaDuration > 0) {
-      toast({ title: "Invalid End Time", description: `End (${formatSecondsToTime(currentEndTime)}) > duration (${formatSecondsToTime(mediaDuration)}).`, variant: "destructive" });
-      return;
-    }
-    const selectedSegmentDuration = currentEndTime - currentStartTime;
-    const currentMaxTrimmedDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION : MAX_TRIMMED_AUDIO_DURATION;
-    if (selectedSegmentDuration > currentMaxTrimmedDuration) {
-      toast({ title: `Trimmed ${mediaType} Exceeds Limit`, description: `Selected segment is ${formatSecondsToTime(selectedSegmentDuration)}. Max allowed is ${formatSecondsToTime(currentMaxTrimmedDuration)}. Please trim further.`, variant: "destructive", duration: 10000 });
-      return;
-    }
-    if (!recordedFile) {
-      toast({ title: "No Media File", description: "Please record or upload media first." });
-      return;
-    }
-    setIsProcessing(true);
-    try {
-      setProcessingStatusText('Trimming media...');
-      const trimmedBlob = await trimMediaWithFFmpeg(recordedFile, currentStartTime, currentEndTime);
-      setProcessingStatusText('Verifying trimmed media...');
-      const newDuration = await getDurationWithFFmpeg(trimmedBlob);
-      if (!checkStorageQuota(trimmedBlob.size)) {
-        setIsProcessing(false); // Make sure to exit processing state
-        return; 
-      }
-      const newFile = new File([trimmedBlob], `trimmed_${recordedFile.name}`, { type: trimmedBlob.type });
-      onMediaReady({
-        file: newFile,
-        type: mediaType!,
-        startTime: 0,
-        endTime: newDuration,
-        duration: newDuration,
-        size: newFile.size,
-      });
-      toast({ title: "Media Trimmed and Ready!", description: `Final duration: ${formatSecondsToTime(newDuration)}.`, icon: <CheckCircle className="h-4 w-4" /> });
-    } catch (error) {
-      console.error("Error during media processing:", error);
-      toast({ title: "Processing Failed", description: "Could not trim the media. Please try again.", variant: "destructive" });
-    } finally {
-      setIsProcessing(false);
-      setProcessingStatusText('');
-    }
-  };
-
-  useEffect(() => {
-    setMediaType(initialMedia?.type || null);
-    setInternalPreviewUrl(initialMedia?.previewUrl || null);
-    const initStartTime = initialMedia?.startTime || 0;
-    const initDuration = initialMedia?.duration || 0;
-    const initEndTime = initialMedia?.endTime !== undefined ? initialMedia.endTime : initDuration;
-    const initSize = initialMedia?.size || 0;
-    setStartTime(initStartTime);
-    setEndTime(initEndTime);
-    latestTrimValuesRef.current = { startTime: initStartTime, endTime: initEndTime };
-    setMediaDuration(initDuration);
-    setMediaSize(initSize);
-    setIsRecording(false);
-    setRecordedFile(null);
-    setRawPreviewReady(false);
-    setShowTeleprompter(false);
-    setCurrentTeleprompterScript(null);
-  }, [initialMedia]);
-
-  useEffect(() => {
-    const currentInternalUrl = internalPreviewUrl;
-    const initialPreview = initialMedia?.previewUrl;
-    return () => {
-      if (currentInternalUrl && currentInternalUrl.startsWith('blob:') && currentInternalUrl !== initialPreview) {
-        URL.revokeObjectURL(currentInternalUrl);
-      }
+        setRecordedFile(file);
+        setInternalPreviewUrl(newPreviewUrl);
+        setMediaType(fileType);
+        onMediaReady({ file, type: fileType, duration: mediaElement.duration, size: file.size });
+        toast({ title: "File Ready!", description: `${file.name} is ready to be saved with your memory.` });
     };
-  }, [internalPreviewUrl, initialMedia?.previewUrl]);
-
+    event.target.value = ''; // Allow re-uploading the same file
+  };
+  
   useEffect(() => {
-    if (rawPreviewReady) return;
-    const mediaElement = mediaType === 'video' ? videoRef.current : audioPreviewRef.current;
-    if (!mediaElement || !internalPreviewUrl || !(mediaDuration > 0)) return;
-    const getPlaybackStartTime = () => latestTrimValuesRef.current.startTime; const getPlaybackEndTime = () => latestTrimValuesRef.current.endTime;
-    const onPlayHandler = () => { const numericStartTime = getPlaybackStartTime(); if (mediaElement.currentTime < numericStartTime - 0.05 || (mediaElement.currentTime >= getPlaybackEndTime() - 0.05 && getPlaybackEndTime() < mediaDuration - 0.05) ) mediaElement.currentTime = numericStartTime; };
-    const onTimeUpdateHandler = () => { const numericEndTime = getPlaybackEndTime(); if (mediaElement.currentTime >= numericEndTime - 0.05) { mediaElement.pause(); if (mediaElement.currentTime > numericEndTime) mediaElement.currentTime = numericEndTime; } };
-    if (mediaElement.paused && startTime !== undefined) { const numericStartTime = getPlaybackStartTime(); if (Math.abs(mediaElement.currentTime - numericStartTime) > 0.1) mediaElement.currentTime = numericStartTime; }
-    mediaElement.addEventListener('play', onPlayHandler); mediaElement.addEventListener('timeupdate', onTimeUpdateHandler);
-    return () => { mediaElement.removeEventListener('play', onPlayHandler); mediaElement.removeEventListener('timeupdate', onTimeUpdateHandler); };
-  }, [internalPreviewUrl, mediaType, mediaDuration, videoRef, audioPreviewRef, startTime, rawPreviewReady]);
-
-  const currentFinalMaxDuration = mediaType === 'video' ? MAX_TRIMMED_VIDEO_DURATION : MAX_TRIMMED_AUDIO_DURATION;
-  const isReady = canRecordOrUpload;
+    if (streamRef.current && mediaType === 'video' && liveVideoRef.current) {
+        liveVideoRef.current.srcObject = streamRef.current;
+    }
+  }, [mediaType, isRecording]);
+  
+  useEffect(() => {
+    // Sync with initialMedia from parent
+    if (initialMedia) {
+        setInternalPreviewUrl(initialMedia.previewUrl);
+        setMediaType(initialMedia.type);
+    } else {
+        setInternalPreviewUrl(null);
+        setMediaType(null);
+    }
+  }, [initialMedia]);
 
   return (
     <Card>
       <CardHeader><CardTitle className="font-headline text-lg">Record or Upload Media</CardTitle></CardHeader>
       <CardContent className="space-y-4">
-        {hasCameraPermission === false && (<Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Permissions Required</AlertTitle><AlertDescription>Camera/mic permissions needed. Enable in browser & refresh.</AlertDescription></Alert>)}
+        {hasPermission === false && (<Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Permissions Required</AlertTitle><AlertDescription>Camera/mic permissions needed. Enable in browser & refresh.</AlertDescription></Alert>)}
         {!canRecordOrUpload && (<Alert variant="destructive"><ShieldAlert className="h-4 w-4" /><AlertTitle>Host Pass Required</AlertTitle><AlertDescription>An active Host Pass is needed to record or upload new media. Please check your pass status in Settings.</AlertDescription></Alert>)}
-        {ffmpegError && (<Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Media Tools Error</AlertTitle><AlertDescription>{ffmpegError}</AlertDescription></Alert>)}
 
-        {!internalPreviewUrl && !isRecording && !isStopping && (
+        {!internalPreviewUrl && !isRecording && (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-2">
-              <Button onClick={() => handleStartRecording('video')} className="flex-1" disabled={!isReady || isRecording || hasCameraPermission === false}>
+              <Button onClick={() => handleStartRecording('video')} className="flex-1" disabled={!canRecordOrUpload || isRecording}>
                 <Video className="mr-2" /> Start Video
               </Button>
-              <Button onClick={() => handleStartRecording('audio')} className="flex-1" disabled={!isReady || isRecording || hasCameraPermission === false}>
+              <Button onClick={() => handleStartRecording('audio')} className="flex-1" disabled={!canRecordOrUpload || isRecording}>
                 <Mic className="mr-2" /> Start Audio
               </Button>
             </div>
             <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or</span>
-              </div>
+              <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+              <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">Or</span></div>
             </div>
-            <div className="flex flex-col items-center justify-center w-full">
-                <Label htmlFor="media-upload" className={cn(
-                    "flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-secondary",
-                    !isReady && "cursor-not-allowed opacity-50"
-                )}>
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
-                        <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or D&D</p>
-                        <p className="text-xs text-muted-foreground">Video (max 5:00.0) / Audio (max 10:00.0)</p>
-                    </div>
-                    <Input id="media-upload" type="file" className="hidden" onChange={handleFileUpload} accept="video/*,audio/*" disabled={!isReady} />
-                </Label>
-            </div> 
-            <div className="text-center text-xs text-muted-foreground pt-1">
-                Or, load a sample to test:
-                <Button variant="link" size="sm" onClick={() => handleLoadSampleMedia('video')} disabled={isLoadingSample || !isReady} className="text-xs h-auto px-1 py-0">{isLoadingSample && sampleLoadingType==='video' ? <Loader2 className="mr-1 h-3 w-3 animate-spin"/> : null}Sample Video</Button>
-                <Button variant="link" size="sm" onClick={() => handleLoadSampleMedia('audio')} disabled={isLoadingSample || !isReady} className="text-xs h-auto px-1 py-0">{isLoadingSample && sampleLoadingType==='audio' ? <Loader2 className="mr-1 h-3 w-3 animate-spin"/> : null}Sample Audio</Button>
-            </div>
+            <Label htmlFor="media-upload" className={cn("flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-secondary", !canRecordOrUpload && "cursor-not-allowed opacity-50")}>
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span></p>
+                <p className="text-xs text-muted-foreground">Video/Audio (max {formatSecondsToTime(MAX_RECORDING_DURATION)})</p>
+              </div>
+              <Input id="media-upload" type="file" className="hidden" onChange={handleFileUpload} accept="video/*,audio/*" disabled={!canRecordOrUpload} />
+            </Label>
           </div>
         )}
 
-        {(isRecording || isStopping || (mediaType === 'video' && internalPreviewUrl)) && (
+        {(isRecording || (mediaType === 'video' && internalPreviewUrl)) && (
             <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
-                <video ref={isRecording ? liveVideoRef : videoRef} src={isRecording ? undefined : internalPreviewUrl || ''} autoPlay={isRecording} muted={isRecording} playsInline controls={!isRecording && !isStopping} className="w-full h-full object-contain" />
+                <video ref={isRecording ? liveVideoRef : videoRef} src={isRecording ? undefined : internalPreviewUrl || ''} autoPlay={isRecording} muted={isRecording} playsInline controls={!isRecording} className="w-full h-full object-contain" />
                 {isRecording && (
                     <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-xs flex items-center">
                         <Timer className="h-3 w-3 mr-1 text-red-500 animate-pulse" />
-                        {formatSecondsToTime(currentRecordingDuration)} / {formatSecondsToTime(mediaType === 'video' ? MAX_RAW_VIDEO_RECORDING_DURATION : MAX_RAW_AUDIO_RECORDING_DURATION)}
-                    </div>
-                )}
-                {isStopping && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-                        <Loader2 className="h-8 w-8 animate-spin text-white" />
-                        <span className="ml-3 text-white">Processing recording...</span>
+                        {formatSecondsToTime(currentRecordingDuration)} / {formatSecondsToTime(MAX_RECORDING_DURATION)}
                     </div>
                 )}
             </div>
         )}
-
+        
         {showTeleprompter && isRecording && (
           <Dialog open={showTeleprompter} onOpenChange={setShowTeleprompter}>
             <DialogContent className="max-w-2xl">
@@ -688,9 +342,7 @@ export function MediaCaptureControl({
               <ScrollArea className="h-72 w-full rounded-md border p-4">
                  <p className="whitespace-pre-wrap">{currentTeleprompterScript}</p>
               </ScrollArea>
-              <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowTeleprompter(false)}>Close Prompter</Button>
-              </DialogFooter>
+              <DialogFooter><Button variant="outline" onClick={() => setShowTeleprompter(false)}>Close Prompter</Button></DialogFooter>
             </DialogContent>
           </Dialog>
         )}
@@ -699,57 +351,14 @@ export function MediaCaptureControl({
           <Button onClick={handleStopRecording} className="w-full" variant="destructive"><StopCircle className="mr-2"/> Stop Recording</Button>
         )}
 
-        {internalPreviewUrl && !isRecording && !isStopping && (
+        {internalPreviewUrl && !isRecording && (
           <div className="space-y-4">
             {mediaType === 'audio' && (
               <div className="p-4 bg-muted rounded-md">
                 <audio ref={audioPreviewRef} src={internalPreviewUrl} controls className="w-full" />
               </div>
             )}
-            
-            {rawPreviewReady ? (
-                 <div className="flex flex-col sm:flex-row gap-2">
-                    <Button onClick={handleAcceptRawRecording} className="flex-1" disabled={isProcessing}><CheckCircle className="mr-2"/>{isProcessing ? <><Loader2 className="mr-2 animate-spin"/>{processingStatusText || 'Accepting...'}</> : `Accept ${mediaType === 'video' ? 'Video' : 'Audio'}`}</Button>
-                    <Button onClick={() => handleDiscardMedia()} className="flex-1" variant="outline"><RotateCcw className="mr-2"/>Discard & Restart</Button>
-                 </div>
-            ) : (
-                <>
-                  <div className="space-y-2">
-                    <Label>Trim Your {mediaType}</Label>
-                    <Slider
-                        min={0}
-                        max={mediaDuration}
-                        step={0.1}
-                        value={[startTime, endTime]}
-                        onValueChange={(value) => {
-                          if (Array.isArray(value)) {
-                            setStartTime(value[0]);
-                            setEndTime(value[1]);
-                          }
-                        }}
-                        disabled={isProcessing || !isFFmpegInstanceReady}
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Start: {formatSecondsToTime(startTime)}</span>
-                        <span>End: {formatSecondsToTime(endTime)}</span>
-                    </div>
-                    <div className="text-center text-sm font-medium">
-                        Selected Duration: {formatSecondsToTime(endTime - startTime)}
-                        {isFFmpegInstanceReady && ((endTime - startTime) > currentFinalMaxDuration) &&
-                          <span className="text-destructive ml-2">(exceeds {formatSecondsToTime(currentFinalMaxDuration)} max)</span>
-                        }
-                    </div>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button onClick={handleUseMedia} className="flex-1" disabled={isProcessing}>
-                      {isProcessing ? <><Loader2 className="mr-2 animate-spin"/>{processingStatusText || 'Processing...'}</> : <><CheckCircle className="mr-2"/>Use This Media</>}
-                    </Button>
-                    <Button onClick={() => handleDiscardMedia()} className="flex-1" variant="outline" disabled={isProcessing}>
-                      <RotateCcw className="mr-2"/> Discard & Restart
-                    </Button>
-                  </div>
-                </>
-            )}
+            <Button onClick={handleDiscardMedia} className="w-full" variant="outline"><RotateCcw className="mr-2"/> Discard & Restart</Button>
           </div>
         )}
         
