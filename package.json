@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "@ffmpeg/core": "^0.12.10",
-    "@ffmpeg/core-mt": "^0.12.6",
     "@ffmpeg/ffmpeg": "^0.12.10",
     "@genkit-ai/googleai": "^1.8.0",
     "@genkit-ai/next": "^1.8.0",
