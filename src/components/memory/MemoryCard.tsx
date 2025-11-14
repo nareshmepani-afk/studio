@@ -70,10 +70,12 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
       };
       
       const handlePlay = () => {
+        // When play is clicked, ensure we are within the trimmed range
         if (startTime !== undefined && isFinite(startTime) && mediaElement.currentTime < startTime) {
             mediaElement.currentTime = startTime;
         }
-        if (endTime !== undefined && isFinite(endTime) && mediaElement.currentTime > endTime) {
+        // If current time is past the end, loop back to start
+        if (endTime !== undefined && isFinite(endTime) && mediaElement.currentTime >= endTime) {
              if (startTime !== undefined && isFinite(startTime)) {
                 mediaElement.currentTime = startTime;
              } else {
@@ -111,6 +113,8 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
 
   const LegacyIcon = memory.isLegacy ? CheckSquare : Archive;
   const legacyTooltipText = memory.isLegacy ? "Remove from Legacy Chest" : "Add to Legacy Chest";
+  
+  const isPhysicallyTrimmed = primaryMedia?.isTrimmed === true;
 
   return (
     <>
@@ -169,7 +173,9 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
               <Badge variant="secondary" key={item.id} className="text-xs">
                 {item.type === 'video' ? <Video className="h-3 w-3 mr-1" /> : <Mic className="h-3 w-3 mr-1" />}
                 {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-                {item.startTime !== undefined && item.endTime !== undefined && item.duration && Math.abs(item.duration - (item.endTime - item.startTime)) > 1 && (
+                {/* Logic to show 'Trimmed' badge. We consider it trimmed if start/end time are set AND it's not the full duration. */}
+                {/* Or if it has been physically trimmed */}
+                {(isPhysicallyTrimmed || (item.startTime !== undefined && item.endTime !== undefined && item.duration && (item.startTime > 0 || item.endTime < item.duration))) && (
                    <span className="ml-1">(Trimmed)</span>
                 )}
               </Badge>

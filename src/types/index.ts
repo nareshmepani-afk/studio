@@ -36,6 +36,7 @@ export interface MediaAttachment {
   endTime?: number;   // Optional: end time in seconds for pseudo-trim
   duration?: number;  // Optional: total duration of the media in seconds
   size?: number; // Optional: size of the media file in bytes
+  isTrimmed?: boolean; // Flag to indicate if the file has been physically trimmed
 }
 
 export const emotionTagsList = [
@@ -94,6 +95,7 @@ export interface PromptGroup {
 // Storage Quotas
 export const FREE_TIER_STORAGE_QUOTA_BYTES = 10 * 1024 * 1024; // 10 MB (Kept for reference)
 export const STANDARD_HOST_STORAGE_QUOTA_BYTES = 600 * 1024 * 1024; // 600 MB - for users with an active host pass (interpreted as per-memory/chapter limit)
+
 
 
 

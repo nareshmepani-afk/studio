@@ -182,7 +182,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             endTime: endTime,
             duration: duration,
             size: size,
-            isTrimmed: false,
+            isTrimmed: false, // Assume existing media is not physically trimmed yet
         });
         setCurrentMediaPreviewUrl(firstMedia.url); 
         setTrimValues([startTime, endTime]);
@@ -293,6 +293,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const handleTrimChange = (newValues: [number, number]) => {
     if (currentMedia) {
       setTrimValues(newValues);
+      // Also update the soft-trim values on the media object for preview
+      setCurrentMedia(prev => prev ? ({ ...prev, startTime: newValues[0], endTime: newValues[1] }) : null);
     }
   };
 
@@ -331,17 +333,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         }
         const newPreviewUrl = URL.createObjectURL(newFile);
         
+        const newDuration = end - start;
         setCurrentMedia({
             file: newFile,
             type: currentMedia.type,
-            startTime: 0, // Reset times as the file is now trimmed
-            endTime: end - start,
-            duration: end - start,
+            startTime: 0, // Reset times as the file is now physically trimmed
+            endTime: newDuration,
+            duration: newDuration,
             size: newFile.size,
             isTrimmed: true,
         });
         setCurrentMediaPreviewUrl(newPreviewUrl);
-        setTrimValues([0, end - start]);
+        setTrimValues([0, newDuration]);
 
         toast({ title: "Trim Applied!", description: "The media has been trimmed. You can now preview the result.", variant: "success" });
 
@@ -453,7 +456,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     };
   }
 
-  const isTrimChanged = currentMedia && !currentMedia.isTrimmed && (trimValues[0] > 0 || trimValues[1] < currentMedia.duration);
+  const isTrimChangedFromOriginal = currentMedia && !currentMedia.isTrimmed && (trimValues[0] > 0 || trimValues[1] < currentMedia.duration);
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-6" noValidate>
@@ -546,7 +549,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base font-medium flex items-center"><Scissors className="mr-2 h-4 w-4"/>Trim Media (Client-Side)</CardTitle>
                             <CardDescription className="text-xs">
-                                Drag the handles to select the part of the media you want to save. This happens in your browser before uploading.
+                                Drag the handles to select the part of the media you want to save. The player will preview this selection.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -566,12 +569,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                     <span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
                                 </div>
                             </div>
-                           {isTrimChanged && (
+                           {isTrimChangedFromOriginal && (
                                 <div className="mt-4">
                                     <Button onClick={handleApplyTrim} disabled={isTrimming} className="w-full">
                                         {isTrimming ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Scissors className="mr-2 h-4 w-4" />}
-                                        Apply Trim & Preview
+                                        Apply Trim & Finalize
                                     </Button>
+                                    <p className="text-xs text-muted-foreground text-center mt-1">This will permanently trim the file for this memory.</p>
                                 </div>
                            )}
                            {currentMedia.isTrimmed && (
