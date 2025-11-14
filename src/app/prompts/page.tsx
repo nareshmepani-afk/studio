@@ -29,6 +29,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { db } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { addMonths, isBefore, parseISO, format, addDays } from 'date-fns';
 
 const FIRESTORE_USER_PROMPT_FLAGS_COLLECTION = 'userPromptFlags';
 
@@ -40,13 +41,12 @@ export default function LifeJourneyPage() {
     user,
     isLoading, // Added isLoading from AuthContext
     userMode,
-    purchasePaidHostPass,
-    activateFreeHostPass,
     hostPassStatus,
     getLatestMemories,
     completedPromptIds,
     flaggedPromptIds,
     isDataLoading,
+    updateUserProfileInFirestore,
   } = useAuth();
   
   const [hostPassPriceDetails, setHostPassPriceDetails] = useState<GetHostPassPriceOutput | null>(null);
@@ -74,6 +74,24 @@ export default function LifeJourneyPage() {
       setIsFetchingHostPassPrice(false);
     }
   }, [isFetchingHostPassPrice, hostPassPriceDetails, user]);
+
+    const activateFreeHostPass = useCallback(async () => {
+        if (user && user.hostPassStatus === 'no_pass_initiated') {
+        const now = new Date();
+        await updateUserProfileInFirestore(user.id, { hostPassStatus: 'free_host_pass_active', freeHostPassActivatedDate: now.toISOString() });
+        toast({ title: "Free Host Pass Activated!", description: `Your 6-month free host pass starts now. Ends ${format(addMonths(now, 6), 'PPP')}.`, duration: 7000 });
+        }
+    }, [user, updateUserProfileInFirestore]);
+
+    const purchasePaidHostPass = useCallback(async () => {
+        if (user) {
+        const now = new Date(); let startDate = now;
+        if (user.hostPassStatus === 'paid_host_pass_active' && user.paidHostPassExpiryDate && isBefore(now, parseISO(user.paidHostPassExpiryDate))) { startDate = parseISO(user.paidHostPassExpiryDate); }
+        const newExpiryDate = addDays(startDate, 31);
+        await updateUserProfileInFirestore(user.id, { hostPassStatus: 'paid_host_pass_active', paidHostPassExpiryDate: newExpiryDate.toISOString() });
+        toast({ title: "Host Pass Activated (Payment Simulated)!", description: `Your 31-day host pass is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
+        }
+    }, [user, updateUserProfileInFirestore]);
 
   useEffect(() => {
     if (user && (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired')) {
@@ -377,5 +395,3 @@ export default function LifeJourneyPage() {
     </AuthenticatedPageWrapper>
   );
 }
-
-    

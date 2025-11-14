@@ -7,8 +7,6 @@ import React, { createContext, useState, useEffect, ReactNode, useCallback, useM
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import { addMonths, addDays, isBefore, parseISO, format } from 'date-fns';
-import type { GetPassPriceOutput as GetGuestPassPriceOutput } from '@/ai/flows/get-pass-price-flow';
-import type { GetHostPassPriceOutput } from '@/ai/flows/get-host-pass-price-flow';
 import SplashScreen from '@/components/layout/SplashScreen'; 
 import { auth, db } from '@/lib/firebase';
 import {
@@ -31,12 +29,7 @@ interface AuthContextType {
   userMode: UserMode;
   toggleUserMode: () => void;
   setUserMode: (mode: UserMode) => void;
-
-  activateFreeGuestPass: () => Promise<void>;
-  purchasePaidGuestPass: () => Promise<void>;
   
-  activateFreeHostPass: () => Promise<void>;
-  purchasePaidHostPass: () => Promise<void>;
   hostPassStatus: User['hostPassStatus'];
   
   storageQuotaBytes: number;
@@ -264,42 +257,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [router]);
   
-  const activateFreeGuestPass = useCallback(async () => {
-    if (user && user.sharedAccessStatus === 'no_pass_initiated') {
-      const now = new Date();
-      await updateUserProfileInFirestore(user.id, { sharedAccessStatus: 'free_pass_active', freePassActivatedDate: now.toISOString() });
-      toast({ title: "Free Guest Pass Activated!", description: `Your 6-month free access starts now. Ends ${format(addMonths(now, 6), 'PPP')}.`, duration: 7000 });
-    }
-  }, [user, updateUserProfileInFirestore]);
-
-  const purchasePaidGuestPass = useCallback(async () => {
-    if (user) {
-        const now = new Date(); let startDate = now;
-        if (user.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate && isBefore(now, parseISO(user.paidPassExpiryDate))) { startDate = parseISO(user.paidPassExpiryDate); }
-        const newExpiryDate = addDays(startDate, 31);
-        await updateUserProfileInFirestore(user.id, { sharedAccessStatus: 'paid_pass_active', paidPassExpiryDate: newExpiryDate.toISOString() });
-        toast({ title: "Guest Pass Activated (Payment Simulated)!", description: `Your 31-day pass is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
-    }
-  }, [user, updateUserProfileInFirestore]);
-
-  const activateFreeHostPass = useCallback(async () => {
-    if (user && user.hostPassStatus === 'no_pass_initiated') {
-      const now = new Date();
-      await updateUserProfileInFirestore(user.id, { hostPassStatus: 'free_host_pass_active', freeHostPassActivatedDate: now.toISOString() });
-      toast({ title: "Free Host Pass Activated!", description: `Your 6-month free host pass starts now. Ends ${format(addMonths(now, 6), 'PPP')}.`, duration: 7000 });
-    }
-  }, [user, updateUserProfileInFirestore]);
-
-  const purchasePaidHostPass = useCallback(async () => {
-    if (user) {
-      const now = new Date(); let startDate = now;
-      if (user.hostPassStatus === 'paid_host_pass_active' && user.paidHostPassExpiryDate && isBefore(now, parseISO(user.paidHostPassExpiryDate))) { startDate = parseISO(user.paidHostPassExpiryDate); }
-      const newExpiryDate = addDays(startDate, 31);
-      await updateUserProfileInFirestore(user.id, { hostPassStatus: 'paid_host_pass_active', paidHostPassExpiryDate: newExpiryDate.toISOString() });
-      toast({ title: "Host Pass Activated (Payment Simulated)!", description: `Your 31-day host pass is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
-    }
-  }, [user, updateUserProfileInFirestore]);
-
   const markSharedMemoryAsViewed = useCallback(async (memoryId: string) => {
     if (user) {
       const currentViewedIds = user.viewedSharedMemoryIds || [];
@@ -330,8 +287,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       login, register, logout,
       pendingRequestCount, setPendingRequestCount: setPendingRequestCountState,
       userMode, toggleUserMode: () => setUserModeState(p => p === 'host' ? 'guest' : 'host'), setUserMode: setUserModeState,
-      activateFreeGuestPass, purchasePaidGuestPass,
-      activateFreeHostPass, purchasePaidHostPass,
       hostPassStatus: user?.hostPassStatus || 'no_pass_initiated',
       storageQuotaBytes: getStorageQuotaBytes(),
       calculateAndUpdateStorageUsage,
@@ -347,8 +302,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }), [ 
       user, loading, pendingRequestCount, userMode,
       memories, completedPromptIds, flaggedPromptIds, isDataLoading, hasNewSharedMemories,
-      login, register, logout, activateFreeGuestPass, purchasePaidGuestPass,
-      markSharedMemoryAsViewed, activateFreeHostPass, purchasePaidHostPass,
+      login, register, logout,
+      markSharedMemoryAsViewed,
       getStorageQuotaBytes,
       calculateAndUpdateStorageUsage, updateUserProfileInFirestore
   ]);
@@ -359,5 +314,3 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-
-    

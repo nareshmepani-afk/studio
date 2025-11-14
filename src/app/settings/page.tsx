@@ -15,7 +15,7 @@ import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types';
 import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, Star, Zap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState, useEffect, type FormEvent, useRef, useMemo, useCallback } from 'react';
-import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths } from 'date-fns';
+import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths, addDays, isBefore } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { useRouter } from 'next/navigation'; 
 import { storage } from '@/lib/firebase'; 
@@ -37,10 +37,6 @@ export default function SettingsPage() {
     user, 
     updateUserProfileInFirestore, 
     loading: authLoading, 
-    activateFreeGuestPass, 
-    purchasePaidGuestPass, 
-    activateFreeHostPass,
-    purchasePaidHostPass,
     hostPassStatus, 
     storageQuotaBytes, 
   } = useAuth();
@@ -150,6 +146,42 @@ export default function SettingsPage() {
   const handleTakePhoto = () => {
     toast({ title: "Feature Coming Soon", description: "Webcam photo capture will be implemented." });
   };
+
+    const activateFreeGuestPass = useCallback(async () => {
+        if (user && user.sharedAccessStatus === 'no_pass_initiated') {
+        const now = new Date();
+        await updateUserProfileInFirestore(user.id, { sharedAccessStatus: 'free_pass_active', freePassActivatedDate: now.toISOString() });
+        toast({ title: "Free Guest Pass Activated!", description: `Your 6-month free access starts now. Ends ${format(addMonths(now, 6), 'PPP')}.`, duration: 7000 });
+        }
+    }, [user, updateUserProfileInFirestore]);
+
+    const purchasePaidGuestPass = useCallback(async () => {
+        if (user) {
+            const now = new Date(); let startDate = now;
+            if (user.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate && isBefore(now, parseISO(user.paidPassExpiryDate))) { startDate = parseISO(user.paidPassExpiryDate); }
+            const newExpiryDate = addDays(startDate, 31);
+            await updateUserProfileInFirestore(user.id, { sharedAccessStatus: 'paid_pass_active', paidPassExpiryDate: newExpiryDate.toISOString() });
+            toast({ title: "Guest Pass Activated (Payment Simulated)!", description: `Your 31-day pass is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
+        }
+    }, [user, updateUserProfileInFirestore]);
+
+    const activateFreeHostPass = useCallback(async () => {
+        if (user && user.hostPassStatus === 'no_pass_initiated') {
+        const now = new Date();
+        await updateUserProfileInFirestore(user.id, { hostPassStatus: 'free_host_pass_active', freeHostPassActivatedDate: now.toISOString() });
+        toast({ title: "Free Host Pass Activated!", description: `Your 6-month free host pass starts now. Ends ${format(addMonths(now, 6), 'PPP')}.`, duration: 7000 });
+        }
+    }, [user, updateUserProfileInFirestore]);
+
+    const purchasePaidHostPass = useCallback(async () => {
+        if (user) {
+        const now = new Date(); let startDate = now;
+        if (user.hostPassStatus === 'paid_host_pass_active' && user.paidHostPassExpiryDate && isBefore(now, parseISO(user.paidHostPassExpiryDate))) { startDate = parseISO(user.paidHostPassExpiryDate); }
+        const newExpiryDate = addDays(startDate, 31);
+        await updateUserProfileInFirestore(user.id, { hostPassStatus: 'paid_host_pass_active', paidHostPassExpiryDate: newExpiryDate.toISOString() });
+        toast({ title: "Host Pass Activated (Payment Simulated)!", description: `Your 31-day host pass is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
+        }
+    }, [user, updateUserProfileInFirestore]);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -466,5 +498,3 @@ export default function SettingsPage() {
     </AuthenticatedPageWrapper>
   );
 }
-
-    
