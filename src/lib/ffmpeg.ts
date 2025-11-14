@@ -136,4 +136,3 @@ export async function trimMediaWithFFmpeg(mediaBlob: Blob, startTime: number, en
   }
 }
 
-    
