@@ -21,16 +21,10 @@ export async function getFFmpegInstance(): Promise<FFmpeg> {
         // console.log(message); // Optional: useful for debugging
       });
       
-      // Use dynamic imports to get the correct paths for the core and worker files
-      const { toBlobURL } = await import('@ffmpeg/util');
-      const coreURL = await toBlobURL('/node_modules/@ffmpeg/core-mt/dist/esm/ffmpeg-core.js', 'text/javascript');
-      const wasmURL = await toBlobURL('/node_modules/@ffmpeg/core-mt/dist/esm/ffmpeg-core.wasm', 'application/wasm');
-      const workerURL = await toBlobURL('/node_modules/@ffmpeg/core-mt/dist/esm/ffmpeg-core.worker.js', 'text/javascript');
-
       await ffmpegInstance.load({
-        coreURL,
-        wasmURL,
-        workerURL,
+          coreURL: "/ffmpeg-core.js",
+          wasmURL: "/ffmpeg-core.wasm",
+          workerURL: "/ffmpeg-core.worker.js",
       });
 
       ffmpeg = ffmpegInstance;
