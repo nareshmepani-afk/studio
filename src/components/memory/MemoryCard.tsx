@@ -86,6 +86,7 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
       mediaElement.addEventListener('timeupdate', handleTimeUpdate);
       mediaElement.addEventListener('play', handlePlay);
 
+      // If media is already loaded, set the start time
       if (mediaElement.readyState >= 1 && startTime !== undefined && isFinite(startTime)) {
          mediaElement.currentTime = startTime;
       }
@@ -97,7 +98,7 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
         mediaElement.removeEventListener('play', handlePlay);
       };
     }
-  }, [primaryMedia]);
+  }, [primaryMedia, primaryMedia?.startTime, primaryMedia?.endTime]); // Re-run effect if startTime/endTime change
 
   const canPerformActions = userMode === 'host' && onEdit && onDelete;
   const locationString = [memory.location, memory.country].filter(Boolean).join(', ');
@@ -134,7 +135,7 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
             <Image
               src={memory.imageUrl}
               alt={memory.title}
-              layout="fill"
+              fill
               objectFit="cover"
               data-ai-hint="memory moment"
             />
@@ -274,4 +275,3 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
     </>
   );
 }
-

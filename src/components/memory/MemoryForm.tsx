@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { MemoryCard } from './MemoryCard';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft, Eye, Layers } from 'lucide-react';
+import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft, Eye, Layers, Scissors, Timer } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, parseISO, getDate } from 'date-fns';
 import { enGB } from 'date-fns/locale';
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/carousel";
 import { countryOptions } from '@/lib/constants';
 import { mockPromptGroups } from '@/lib/mockData';
+import { Slider } from '@/components/ui/slider';
 import dynamic from 'next/dynamic';
 
 const MediaCaptureControl = dynamic(
@@ -82,6 +83,16 @@ const SLIDE_INDEX_MEDIA = 1;
 const SLIDE_INDEX_PREVIEW = 2;
 const TOTAL_SLIDES = 3;
 
+// Helper function from MediaRecorder, now local
+function formatSecondsToTime(timeInSeconds: number | undefined): string {
+  if (timeInSeconds === undefined || isNaN(timeInSeconds) || timeInSeconds < 0) return "0:00";
+  const totalSecs = Math.floor(timeInSeconds);
+  const minutes = Math.floor(totalSecs / 60);
+  const seconds = totalSecs % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+
 export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting, initialPromptId, initialCustomPromptText }: MemoryFormProps) {
   const { user, hostPassStatus } = useAuth();
   const searchParams = useSearchParams(); 
@@ -130,6 +141,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
   const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null); 
+  const [trimValues, setTrimValues] = useState<[number, number]>([0, 100]);
+
 
   useEffect(() => {
     if (memory) {
@@ -155,16 +168,20 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         const firstMedia = memory.mediaAttachments[0];
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
         const size = (typeof firstMedia.size === 'number' && !isNaN(firstMedia.size)) ? firstMedia.size : 0;
+        
+        const startTime = (typeof firstMedia.startTime === 'number' && !isNaN(firstMedia.startTime)) ? firstMedia.startTime : 0;
+        const endTime = (typeof firstMedia.endTime === 'number' && !isNaN(firstMedia.endTime) && firstMedia.endTime <= duration) ? firstMedia.endTime : duration;
 
         setCurrentMedia({
             file: new File([], firstMedia.filename || "existing_media_placeholder", {type: firstMedia.type === 'video' ? 'video/mp4' : 'audio/mp3'}), 
             type: firstMedia.type,
-            startTime: firstMedia.startTime,
-            endTime: firstMedia.endTime,
+            startTime: startTime,
+            endTime: endTime,
             duration: duration,
             size: size,
         });
         setCurrentMediaPreviewUrl(firstMedia.url); 
+        setTrimValues([startTime, endTime]);
       } else {
         setCurrentMedia(null); setCurrentMediaPreviewUrl(null);
       }
@@ -248,9 +265,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     setCurrentMedia({ 
       file: mediaPayload.file,
       type: mediaPayload.type,
+      startTime: 0,
+      endTime: mediaPayload.duration,
       duration: mediaPayload.duration,
       size: mediaPayload.size,
     });
+    setTrimValues([0, mediaPayload.duration]);
     setCurrentMediaPreviewUrl(newPreviewUrlFromFile);
   }, [currentMediaPreviewUrl]);
 
@@ -260,9 +280,17 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     }
     setCurrentMedia(null);
     setCurrentMediaPreviewUrl(null);
+    setTrimValues([0, 100]); // Reset trim
   }, [currentMediaPreviewUrl]);
 
   const handleEmotionTagToggle = (tag: EmotionTag) => setSelectedEmotionTags(prevTags => prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]);
+  
+  const handleTrimChange = (newValues: [number, number]) => {
+    if (currentMedia) {
+      setTrimValues(newValues);
+      setCurrentMedia(prev => prev ? {...prev, startTime: newValues[0], endTime: newValues[1]} : null);
+    }
+  };
 
   const triggerSubmitProcess = useCallback(() => {
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
@@ -310,8 +338,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       if (!selectedCategory) { toast({ title: "Category Required", variant: "destructive" }); return; }
        setCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
-      if (!isEditing && !currentMedia) { toast({ title: "Media Required", description: "Please record or upload media for Step 2.", variant: "destructive" }); return; }
-      else if (isEditing && !currentMedia && (!memory?.mediaAttachments || memory.mediaAttachments.length === 0)) { toast({ title: "Media Required", description: "Please record or upload media for Step 2.", variant: "destructive" }); return; }
+      if (!currentMedia && (!isEditing || !memory?.mediaAttachments?.length)) {
+        toast({ title: "Media Required", description: "Please record or upload media for this chapter.", variant: "destructive" });
+        return;
+      }
       setCurrentSlide(SLIDE_INDEX_PREVIEW);
     } else if (currentSlide === SLIDE_INDEX_PREVIEW) triggerSubmitProcess();
   }, [ isParentSubmitting, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments ]);
@@ -319,8 +349,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const handleFormSubmit = (event: FormEvent) => { event.preventDefault(); handleActionButtonClick(); };
 
   let actionButtonText = 'Next'; let ActionButtonIcon: React.ElementType = ArrowRight;
-  if (currentSlide === SLIDE_INDEX_MEDIA) { actionButtonText = 'Next to Preview'; ActionButtonIcon = Eye; }
-  else if (currentSlide === SLIDE_INDEX_PREVIEW) { actionButtonText = isEditing ? 'Update Memory' : 'Save Memory'; ActionButtonIcon = Sparkles; }
+  const isNextToPreviewEnabled = !!currentMedia || (isEditing && !!memory?.mediaAttachments?.length);
+
+  if (currentSlide === SLIDE_INDEX_MEDIA) { 
+    actionButtonText = 'Next to Preview'; 
+    ActionButtonIcon = Eye; 
+  }
+  else if (currentSlide === SLIDE_INDEX_PREVIEW) { 
+    actionButtonText = isEditing ? 'Update Memory' : 'Save Memory'; 
+    ActionButtonIcon = Sparkles; 
+  }
 
   const mediaForRecorderProp = useMemo(() => {
     if (!currentMedia || !currentMediaPreviewUrl) return undefined;
@@ -428,8 +466,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
           <CarouselItem>
             <div ref={step2AnchorRef} />
             <Card className="w-full">
-              <CardHeader><CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>{!currentMedia && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}</CardHeader>
-              <CardContent>
+              <CardHeader>
+                <CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>
+                {!currentMedia && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}
+              </CardHeader>
+              <CardContent className="space-y-4">
                   <MediaCaptureControl
                       key={`${hostPassStatus}-${memory?.id || 'new'}`}
                       onMediaReady={handleMediaReady}
@@ -438,6 +479,33 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                       promptIdForTeleprompter={currentPromptIdForTeleprompter}
                       chapterTitleForTeleprompter={title}
                   />
+                  {currentMedia && (
+                    <Card className="bg-muted/50">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-base font-medium flex items-center"><Scissors className="mr-2 h-4 w-4"/>Trim Media (Client-Side)</CardTitle>
+                            <CardDescription className="text-xs">
+                                Drag the handles to select the part of the media you want to save. This happens in your browser before uploading.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-2">
+                                <Slider
+                                    min={0}
+                                    max={currentMedia.duration}
+                                    step={0.1}
+                                    value={trimValues}
+                                    onValueChange={(vals) => handleTrimChange(vals as [number, number])}
+                                    minStepsBetweenThumbs={1}
+                                />
+                                <div className="flex justify-between text-xs text-muted-foreground font-mono">
+                                    <span>Start: {formatSecondsToTime(trimValues[0])}</span>
+                                    <span>End: {formatSecondsToTime(trimValues[1])}</span>
+                                    <span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                  )}
               </CardContent>
             </Card>
           </CarouselItem>
@@ -456,10 +524,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
       <div className="max-w-3xl mx-auto flex justify-between items-center pt-4 px-1 sm:px-0">
         <Button type="button" onClick={() => { if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) setCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) setCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
-        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview)}>{isParentSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</Button>
+        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || (currentSlide === SLIDE_INDEX_MEDIA && !isNextToPreviewEnabled) || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview)}>{isParentSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</Button>
       </div>
     </form>
   );
 }
-
-    
