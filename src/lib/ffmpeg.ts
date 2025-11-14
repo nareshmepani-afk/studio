@@ -1,6 +1,5 @@
 
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile } from '@ffmpeg/ffmpeg';
+import { FFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
 
 let ffmpeg: FFmpeg | null = null;
 let ffmpegLoadingPromise: Promise<FFmpeg> | null = null;
