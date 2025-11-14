@@ -346,8 +346,47 @@ export default function SettingsPage() {
             <Card>
               <CardHeader><CardTitle className="font-headline text-xl">Additional Information</CardTitle></CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-2"><Label>Date of Birth (Optional)</Label><div className="grid grid-cols-3 gap-2"><div><Label htmlFor="dob-day" className="sr-only">Day</Label><Select value={dobDay} onValueChange={setDobDay}><SelectTrigger id="dob-day"><SelectValue placeholder="Day" /></SelectTrigger><SelectContent>{dobDayOptions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select></div><div><Label htmlFor="dob-month" className="sr-only">Month</Label><Select value={dobMonth} onValueChange={setDobMonth}><SelectTrigger id="dob-month"><SelectValue placeholder="Month" /></SelectTrigger><SelectContent>{dobMonths.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}</SelectContent></Select></div><div><Label htmlFor="dob-year" className="sr-only">Year</Label><Select value={dobYear} onValueChange={setDobYear}><SelectTrigger id="dob-year"><SelectValue placeholder="Year" /></SelectTrigger><SelectContent>{dobYears.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent></Select></div></div></div>
-                <div className="space-y-2"><Label>Location (Optional)</Label><div className="space-y-1"><Label htmlFor="countryOfBirth" className="text-sm font-normal text-muted-foreground">Country of Birth</Label><Input id="countryOfBirth" value={countryOfBirth} onChange={(e) => setCountryOfBirth(e.target.value)} placeholder="e.g., United Kingdom" /></div><div className="space-y-1"><Label htmlFor="city" className="text-sm font-normal text-muted-foreground">City</Label><Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g., London" /></div><div className="space-y-1"><Label htmlFor="townArea" className="text-sm font-normal text-muted-foreground">Town/Area</Label><Input id="townArea" value={townArea} onChange={(e) => setTownArea(e.target.value)} placeholder="e.g., Westminster" /></div></div>
+                <div className="space-y-2">
+                    <Label htmlFor="dob-day">Date of Birth (Optional)</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                        <div>
+                            <Label htmlFor="dob-day" className="sr-only">Day</Label>
+                            <Select value={dobDay} onValueChange={setDobDay}>
+                                <SelectTrigger id="dob-day"><SelectValue placeholder="Day" /></SelectTrigger>
+                                <SelectContent>{dobDayOptions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label htmlFor="dob-month" className="sr-only">Month</Label>
+                            <Select value={dobMonth} onValueChange={setDobMonth}>
+                                <SelectTrigger id="dob-month"><SelectValue placeholder="Month" /></SelectTrigger>
+                                <SelectContent>{dobMonths.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}</SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Label htmlFor="dob-year" className="sr-only">Year</Label>
+                            <Select value={dobYear} onValueChange={setDobYear}>
+                                <SelectTrigger id="dob-year"><SelectValue placeholder="Year" /></SelectTrigger>
+                                <SelectContent>{dobYears.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label>Location (Optional)</Label>
+                    <div className="space-y-1">
+                        <Label htmlFor="countryOfBirth" className="text-sm font-normal text-muted-foreground">Country of Birth</Label>
+                        <Input id="countryOfBirth" value={countryOfBirth} onChange={(e) => setCountryOfBirth(e.target.value)} placeholder="e.g., United Kingdom" />
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="city" className="text-sm font-normal text-muted-foreground">City</Label>
+                        <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g., London" />
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="townArea" className="text-sm font-normal text-muted-foreground">Town/Area</Label>
+                        <Input id="townArea" value={townArea} onChange={(e) => setTownArea(e.target.value)} placeholder="e.g., Westminster" />
+                    </div>
+                </div>
               </CardContent>
             </Card>
             <Card>

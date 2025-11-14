@@ -462,12 +462,64 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             <Card className="w-full">
               <CardHeader><CardTitle className="font-headline text-2xl">{memory ? 'Edit Chapter' : 'New Chapter'} (Step {SLIDE_INDEX_DETAILS + 1} of {TOTAL_SLIDES})</CardTitle><CardDescription>Capture the details of your moment. Fields marked with * are mandatory.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-1"><Label htmlFor="title" >Title *</Label><Input ref={titleInputRef} id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" /></div>
-                <div className="space-y-1"><Label>Date *</Label><div className="grid grid-cols-3 gap-2"><div><Label htmlFor="year-select" className="sr-only">Year</Label><Select key={`year-${selectedYear.toString()}-${memory?.id || 'new'}`} value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}><SelectTrigger id="year-select" ref={yearSelectRef}><SelectValue placeholder="Year" /></SelectTrigger><SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent></Select></div><div><Label htmlFor="month-select" className="sr-only">Month</Label><Select key={`month-${selectedMonth.toString()}-${memory?.id || 'new'}`} value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}><SelectTrigger id="month-select"><SelectValue placeholder="Month" /></SelectTrigger><SelectContent>{months.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}</SelectContent></Select></div><div><Label htmlFor="day-select" className="sr-only">Day</Label><Select key={`day-${selectedDay.toString()}-${memory?.id || 'new'}`} value={selectedDay.toString()} onValueChange={(value) => setSelectedDay(parseInt(value))}><SelectTrigger id="day-select"><SelectValue placeholder="Day" /></SelectTrigger><SelectContent>{dayOptions.map(d => <SelectItem key={d} value={d.toString()}>{d}</SelectItem>)}</SelectContent></Select></div></div></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><div className="space-y-1"><Label htmlFor="location"><MapPin className="inline-block mr-1 h-4 w-4" />Location (Optional)</Label><Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g., Eiffel Tower, Paris" /></div><div className="space-y-1"><Label htmlFor="country-select">Country (Optional)</Label><Select key={`country-${country}-${memory?.id || 'new'}`} value={country} onValueChange={setCountry}><SelectTrigger id="country-select"><SelectValue placeholder="Select Country" /></SelectTrigger><SelectContent>{countryOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent></Select></div></div>
-                <div className="space-y-1"><Label htmlFor="category-select">Category *</Label><Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as MemoryCategory)}><SelectTrigger id="category-select"><Layers className="inline-block mr-2 h-4 w-4 text-muted-foreground" /><SelectValue placeholder="Select category" /></SelectTrigger><SelectContent>{memoryCategoriesList.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select></div>
-                <div className="space-y-1"><Label htmlFor="description">Description *</Label><Textarea ref={descriptionTextareaRef} id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} required/></div>
-                <div className="space-y-1"><Label htmlFor="emotion-tags"><Tag className="inline-block mr-1 h-4 w-4" />Emotion Tags (Optional)</Label><div className="flex flex-wrap gap-2 pt-1">{emotionTagsList.map((tag) => (<Button type="button" key={tag} variant={selectedEmotionTags.includes(tag) ? 'default' : 'outline'} size="sm" onClick={() => handleEmotionTagToggle(tag)} className="text-xs h-auto py-1 px-2">{tag}</Button>))}</div></div>
+                <div className="space-y-1">
+                  <Label htmlFor="title">Title *</Label>
+                  <Input ref={titleInputRef} id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="year-select">Date *</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Label htmlFor="year-select" className="sr-only">Year</Label>
+                      <Select key={`year-${selectedYear.toString()}-${memory?.id || 'new'}`} value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                          <SelectTrigger id="year-select" ref={yearSelectRef}><SelectValue placeholder="Year" /></SelectTrigger>
+                          <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="month-select" className="sr-only">Month</Label>
+                      <Select key={`month-${selectedMonth.toString()}-${memory?.id || 'new'}`} value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
+                        <SelectTrigger id="month-select"><SelectValue placeholder="Month" /></SelectTrigger>
+                        <SelectContent>{months.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="day-select" className="sr-only">Day</Label>
+                      <Select key={`day-${selectedDay.toString()}-${memory?.id || 'new'}`} value={selectedDay.toString()} onValueChange={(value) => setSelectedDay(parseInt(value))}>
+                        <SelectTrigger id="day-select"><SelectValue placeholder="Day" /></SelectTrigger>
+                        <SelectContent>{dayOptions.map(d => <SelectItem key={d} value={d.toString()}>{d}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                        <Label htmlFor="location"><MapPin className="inline-block mr-1 h-4 w-4" />Location (Optional)</Label>
+                        <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g., Eiffel Tower, Paris" />
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="country-select">Country (Optional)</Label>
+                        <Select key={`country-${country}-${memory?.id || 'new'}`} value={country} onValueChange={setCountry}>
+                            <SelectTrigger id="country-select"><SelectValue placeholder="Select Country" /></SelectTrigger>
+                            <SelectContent>{countryOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="category-select">Category *</Label>
+                  <Select value={selectedCategory} onValueChange={(value) => setSelectedCategory(value as MemoryCategory)}>
+                    <SelectTrigger id="category-select"><Layers className="inline-block mr-2 h-4 w-4 text-muted-foreground" /><SelectValue placeholder="Select category" /></SelectTrigger>
+                    <SelectContent>{memoryCategoriesList.map(cat => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="description">Description *</Label>
+                  <Textarea ref={descriptionTextareaRef} id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} required/>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="emotion-tags"><Tag className="inline-block mr-1 h-4 w-4" />Emotion Tags (Optional)</Label>
+                  <div id="emotion-tags" className="flex flex-wrap gap-2 pt-1">{emotionTagsList.map((tag) => (<Button type="button" key={tag} variant={selectedEmotionTags.includes(tag) ? 'default' : 'outline'} size="sm" onClick={() => handleEmotionTagToggle(tag)} className="text-xs h-auto py-1 px-2">{tag}</Button>))}</div>
+                </div>
               </CardContent>
             </Card>
           </CarouselItem>
@@ -507,4 +559,3 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     </form>
   );
 }
-
