@@ -320,19 +320,28 @@ export function MediaCaptureControl({
             </Label>
           </div>
         )}
-
-        {(isRecording && mediaType === 'video') && (
-            <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
-                <video ref={liveVideoRef} autoPlay muted playsInline className="w-full h-full object-contain" />
-            </div>
-        )}
-
-        {isRecording && mediaType === 'audio' && (
-            <div className="flex flex-col items-center justify-center p-8 bg-muted rounded-md space-y-4">
-                 <Mic className="w-12 h-12 text-primary animate-pulse" />
-                 <p className="font-mono text-lg text-primary">{formatSecondsToTime(currentRecordingDuration)}</p>
-                 <p className="text-sm text-muted-foreground">Recording audio...</p>
-            </div>
+        
+        {isRecording && (
+          <div className="space-y-4">
+            {(mediaType === 'video') && (
+                <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
+                    <video ref={liveVideoRef} autoPlay muted playsInline className="w-full h-full object-contain" />
+                </div>
+            )}
+    
+            {mediaType === 'audio' && (
+                <div className="flex flex-col items-center justify-center p-8 bg-muted rounded-md space-y-4">
+                     <Mic className="w-12 h-12 text-primary animate-pulse" />
+                     <p className="text-sm text-muted-foreground">Recording audio...</p>
+                </div>
+            )}
+            
+            <Button onClick={handleStopRecording} className="w-full" variant="destructive">
+                <StopCircle className="mr-2"/> 
+                <span>Stop Recording</span>
+                <span className="font-mono ml-2 text-sm tabular-nums">({formatSecondsToTime(currentRecordingDuration)})</span>
+            </Button>
+          </div>
         )}
         
         {showTeleprompter && isRecording && (
@@ -345,18 +354,6 @@ export function MediaCaptureControl({
               <DialogFooter><Button variant="outline" onClick={() => setShowTeleprompter(false)}>Close Prompter</Button></DialogFooter>
             </DialogContent>
           </Dialog>
-        )}
-
-        {isRecording && (
-            <div className="flex flex-col items-center space-y-4">
-                {mediaType === 'video' && (
-                    <div className="text-center font-mono text-sm text-white bg-black/50 px-2 py-1 rounded-md absolute bottom-4 left-1/2 -translate-x-1/2">
-                        <Timer className="inline h-4 w-4 mr-1 text-red-500 animate-pulse" />
-                        {formatSecondsToTime(currentRecordingDuration)} / {formatSecondsToTime(MAX_RECORDING_DURATION)}
-                    </div>
-                )}
-                <Button onClick={handleStopRecording} className="w-full" variant="destructive"><StopCircle className="mr-2"/> Stop Recording</Button>
-            </div>
         )}
 
         {previewUrl && !isRecording && (
