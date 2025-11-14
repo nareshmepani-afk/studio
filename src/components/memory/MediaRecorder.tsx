@@ -59,9 +59,8 @@ export function MediaCaptureControl({
 }: MediaCaptureControlProps) {
   const { user, storageQuotaBytes, hostPassStatus } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
-  const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(null);
-  const [recordedFile, setRecordedFile] = useState<File | null>(null);
-  const [internalPreviewUrl, setInternalPreviewUrl] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(initialMedia?.type || null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(initialMedia?.previewUrl || null);
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const mediaRecorderRef = useRef<globalThis.MediaRecorder | null>(null);
@@ -133,11 +132,17 @@ export function MediaCaptureControl({
     return true;
   };
   
-  const revokeCurrentInternalPreviewUrl = useCallback(() => {
-    if (internalPreviewUrl && internalPreviewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(internalPreviewUrl);
+  const revokeCurrentPreviewUrl = useCallback(() => {
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
     }
-  }, [internalPreviewUrl]);
+  }, [previewUrl]);
+
+  useEffect(() => {
+    // This effect handles syncing with the parent's initial state
+    setMediaType(initialMedia?.type || null);
+    setPreviewUrl(initialMedia?.previewUrl || null);
+  }, [initialMedia]);
 
 
   const handleStartRecording = async (type: 'video' | 'audio') => {
@@ -146,9 +151,9 @@ export function MediaCaptureControl({
     const permissionGranted = await getPermissions(type);
     if (!permissionGranted || !streamRef.current) return;
     
-    revokeCurrentInternalPreviewUrl();
-    setRecordedFile(null); 
-    setInternalPreviewUrl(null); 
+    revokeCurrentPreviewUrl();
+    setPreviewUrl(null); 
+    onDiscard(); // Inform parent that any existing media is now gone
     setMediaType(type); 
     recordedChunks.current = [];
 
@@ -176,23 +181,24 @@ export function MediaCaptureControl({
 
         if (blob.size < 1024) {
           setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Recorded data is too small. Please try a longer recording.', duration: 7000 }), 0);
+          handleDiscardMedia();
           return;
         }
 
         if (!checkStorageQuota(blob.size)) {
+            handleDiscardMedia();
             return;
         }
         
         const file = new File([blob], `recording.${blob.type.split('/')[1]?.split(';')[0] || 'bin'}`, { type: blob.type });
-        const newObjectUrlForPreview = URL.createObjectURL(blob);
-        
-        setRecordedFile(file);
-        setInternalPreviewUrl(newObjectUrlForPreview);
         
         // Get duration
         const mediaElement = document.createElement(type);
-        mediaElement.src = newObjectUrlForPreview;
+        const objectUrlForDurationCheck = URL.createObjectURL(blob);
+        mediaElement.src = objectUrlForDurationCheck;
+
         mediaElement.onloadedmetadata = () => {
+             URL.revokeObjectURL(objectUrlForDurationCheck);
              if (mediaElement.duration > MAX_RECORDING_DURATION) {
                 toast({ variant: 'destructive', title: 'Recording Too Long', description: `Recording is ${formatSecondsToTime(mediaElement.duration)}. Max allowed is ${formatSecondsToTime(MAX_RECORDING_DURATION)}. Please re-record.`, duration: 10000 });
                 handleDiscardMedia();
@@ -231,13 +237,12 @@ export function MediaCaptureControl({
     if (isRecording) {
         handleStopRecording();
     }
-    revokeCurrentInternalPreviewUrl();
-    setRecordedFile(null);
-    setInternalPreviewUrl(null);
+    revokeCurrentPreviewUrl();
+    setPreviewUrl(null);
     setMediaType(null);
     onDiscard();
     toast({ title: "Media Discarded" });
-  }, [isRecording, revokeCurrentInternalPreviewUrl, onDiscard]);
+  }, [isRecording, revokeCurrentPreviewUrl, onDiscard]);
   
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!checkHostPass()) { event.target.value = ''; return; }
@@ -254,20 +259,17 @@ export function MediaCaptureControl({
         return;
     }
     
-    revokeCurrentInternalPreviewUrl();
-    const newPreviewUrl = URL.createObjectURL(file);
+    revokeCurrentPreviewUrl();
     
     const mediaElement = document.createElement(fileType);
+    const newPreviewUrl = URL.createObjectURL(file);
     mediaElement.src = newPreviewUrl;
     mediaElement.onloadedmetadata = () => {
+        URL.revokeObjectURL(newPreviewUrl); // Clean up the temp object URL
         if (mediaElement.duration > MAX_RECORDING_DURATION) {
             toast({ variant: 'destructive', title: 'File Too Long', description: `Uploaded file is ${formatSecondsToTime(mediaElement.duration)}. Max allowed is ${formatSecondsToTime(MAX_RECORDING_DURATION)}.`, duration: 10000 });
-            URL.revokeObjectURL(newPreviewUrl);
             return;
         }
-        setRecordedFile(file);
-        setInternalPreviewUrl(newPreviewUrl);
-        setMediaType(fileType);
         onMediaReady({ file, type: fileType, duration: mediaElement.duration, size: file.size });
         toast({ title: "File Ready!", description: `${file.name} is ready to be saved with your memory.` });
     };
@@ -280,17 +282,6 @@ export function MediaCaptureControl({
     }
   }, [mediaType, isRecording]);
   
-  useEffect(() => {
-    // Sync with initialMedia from parent
-    if (initialMedia) {
-        setInternalPreviewUrl(initialMedia.previewUrl);
-        setMediaType(initialMedia.type);
-    } else {
-        setInternalPreviewUrl(null);
-        setMediaType(null);
-    }
-  }, [initialMedia]);
-
   return (
     <Card>
       <CardHeader><CardTitle className="font-headline text-lg">Record or Upload Media</CardTitle></CardHeader>
@@ -298,7 +289,7 @@ export function MediaCaptureControl({
         {hasPermission === false && (<Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Permissions Required</AlertTitle><AlertDescription>Camera/mic permissions needed. Enable in browser & refresh.</AlertDescription></Alert>)}
         {!canRecordOrUpload && (<Alert variant="destructive"><ShieldAlert className="h-4 w-4" /><AlertTitle>Host Pass Required</AlertTitle><AlertDescription>An active Host Pass is needed to record or upload new media. Please check your pass status in Settings.</AlertDescription></Alert>)}
 
-        {!internalPreviewUrl && !isRecording && (
+        {!previewUrl && !isRecording && (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-2">
               <Button onClick={() => handleStartRecording('video')} className="flex-1" disabled={!canRecordOrUpload || isRecording}>
@@ -323,9 +314,9 @@ export function MediaCaptureControl({
           </div>
         )}
 
-        {(isRecording || (mediaType === 'video' && internalPreviewUrl)) && (
+        {(isRecording || (mediaType === 'video' && previewUrl)) && (
             <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
-                <video ref={isRecording ? liveVideoRef : videoRef} src={isRecording ? undefined : internalPreviewUrl || ''} autoPlay={isRecording} muted={isRecording} playsInline controls={!isRecording} className="w-full h-full object-contain" />
+                <video ref={isRecording ? liveVideoRef : videoRef} src={isRecording ? undefined : previewUrl || ''} autoPlay={isRecording} muted={isRecording} playsInline controls={!isRecording} className="w-full h-full object-contain" />
                 {isRecording && (
                     <div className="absolute bottom-2 left-2 bg-black/50 text-white px-2 py-1 rounded-md text-xs flex items-center">
                         <Timer className="h-3 w-3 mr-1 text-red-500 animate-pulse" />
@@ -351,11 +342,11 @@ export function MediaCaptureControl({
           <Button onClick={handleStopRecording} className="w-full" variant="destructive"><StopCircle className="mr-2"/> Stop Recording</Button>
         )}
 
-        {internalPreviewUrl && !isRecording && (
+        {previewUrl && !isRecording && (
           <div className="space-y-4">
             {mediaType === 'audio' && (
               <div className="p-4 bg-muted rounded-md">
-                <audio ref={audioPreviewRef} src={internalPreviewUrl} controls className="w-full" />
+                <audio ref={audioPreviewRef} src={previewUrl} controls className="w-full" />
               </div>
             )}
             <Button onClick={handleDiscardMedia} className="w-full" variant="outline"><RotateCcw className="mr-2"/> Discard & Restart</Button>
@@ -366,3 +357,5 @@ export function MediaCaptureControl({
     </Card>
   );
 }
+
+    

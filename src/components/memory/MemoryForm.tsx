@@ -49,8 +49,6 @@ interface MemoryFormProps {
 type MediaFromRecorder = {
   file: File;
   type: 'video' | 'audio';
-  startTime?: number;
-  endTime?: number;
   duration: number; 
   size: number;
 };
@@ -65,11 +63,8 @@ type CurrentMediaData = {
 };
 
 type MediaForRecorderInit = {
-  file?: File; 
   type: 'video' | 'audio';
   previewUrl: string; 
-  startTime?: number;
-  endTime?: number;
   duration: number;
   size: number;
 };
@@ -89,7 +84,7 @@ const TOTAL_SLIDES = 3;
 
 export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting, initialPromptId, initialCustomPromptText }: MemoryFormProps) {
   const { user, hostPassStatus } = useAuth();
-  const searchParams = useSearchParams(); // Keep for other potential params, though specific prompt text/id is now via props
+  const searchParams = useSearchParams(); 
   const router = useRouter();
   const isEditing = !!memory;
 
@@ -101,18 +96,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const step2AnchorRef = useRef<HTMLDivElement>(null);
   const step3AnchorRef = useRef<HTMLDivElement>(null);
 
-  const videoPreviewRef = useRef<HTMLVideoElement>(null);
-  const audioPreviewRef = useRef<HTMLAudioElement>(null);
-
   const visualScrollTimerRef = useRef<NodeJS.Timeout | null>();
   const initialScrollTimerRef = useRef<NodeJS.Timeout | null>();
-
 
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
   const [country, setCountry] = useState('United Kingdom');
   const [selectedCategory, setSelectedCategory] = useState<MemoryCategory | undefined>(memoryCategoriesList[0]);
-
 
   const getInitialDateComponent = useCallback((component: 'year' | 'month' | 'day', dateSource?: string) => {
     const dateToParse = dateSource ? parseISO(dateSource) : new Date();
@@ -138,12 +128,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const [currentSlide, setCurrentSlide] = useState(SLIDE_INDEX_DETAILS);
   const currentSlideRef = useRef(currentSlide);
 
-  const [isProcessingMedia, setIsProcessingMedia] = useState(false);
-
-
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
   const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null); 
-  const [mediaToInitializeRecorder, setMediaToInitializeRecorder] = useState<MediaForRecorderInit | undefined>(undefined);
 
   useEffect(() => {
     if (memory) {
@@ -179,16 +165,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             size: size,
         });
         setCurrentMediaPreviewUrl(firstMedia.url); 
-        setMediaToInitializeRecorder({ 
-            type: firstMedia.type,
-            previewUrl: firstMedia.url, 
-            startTime: firstMedia.startTime,
-            endTime: firstMedia.endTime,
-            duration: duration,
-            size: size,
-        });
       } else {
-        setCurrentMedia(null); setCurrentMediaPreviewUrl(null); setMediaToInitializeRecorder(undefined);
+        setCurrentMedia(null); setCurrentMediaPreviewUrl(null);
       }
     } else { // New memory
       let determinedInitialTitle = '';
@@ -201,7 +179,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       setTitle(determinedInitialTitle);
       setLocation(''); setCountry('United Kingdom'); setDescription(''); setSelectedEmotionTags([]); setSelectedCategory(memoryCategoriesList[0]);
       setSelectedYear(getInitialDateComponent('year')); setSelectedMonth(getInitialDateComponent('month')); setSelectedDay(getInitialDateComponent('day'));
-      setCurrentMedia(null); setCurrentMediaPreviewUrl(null); setMediaToInitializeRecorder(undefined);
+      setCurrentMedia(null); setCurrentMediaPreviewUrl(null);
     }
   }, [memory, initialPromptId, initialCustomPromptText, getInitialDateComponent]);
 
@@ -233,9 +211,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     }, 350);
   }, []);
 
-
   useEffect(() => { currentSlideRef.current = currentSlide; }, [currentSlide]);
-
 
  useEffect(() => {
     if (!carouselApi) return;
@@ -253,9 +229,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     return () => { if (carouselApi) { carouselApi.off("select", handleApiEvent); carouselApi.off("reInit", handleApiEvent); } if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current); if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current); };
   }, [carouselApi, performVisualScroll]);
 
-
   useEffect(() => { if (selectedDay > daysInSelectedMonth) setSelectedDay(daysInSelectedMonth); }, [selectedDay, daysInSelectedMonth]);
-
 
   useEffect(() => {
     const urlToRevoke = currentMediaPreviewUrl;
@@ -266,94 +240,27 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     };
   }, [currentMediaPreviewUrl]);
 
-
   const handleMediaReady = useCallback((mediaPayload: MediaFromRecorder) => {
-    setIsProcessingMedia(true);
-
     if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(currentMediaPreviewUrl);
     }
-
     const newPreviewUrlFromFile = URL.createObjectURL(mediaPayload.file);
-
     setCurrentMedia({ 
       file: mediaPayload.file,
       type: mediaPayload.type,
-      startTime: mediaPayload.startTime,
-      endTime: mediaPayload.endTime,
       duration: mediaPayload.duration,
       size: mediaPayload.size,
     });
     setCurrentMediaPreviewUrl(newPreviewUrlFromFile);
-
-    setMediaToInitializeRecorder({ 
-      file: mediaPayload.file,
-      type: mediaPayload.type,
-      previewUrl: newPreviewUrlFromFile, 
-      startTime: mediaPayload.startTime,
-      endTime: mediaPayload.endTime,
-      duration: mediaPayload.duration,
-      size: mediaPayload.size,
-    });
-    setIsProcessingMedia(false);
   }, [currentMediaPreviewUrl]);
 
-
-  useEffect(() => {
-    if (currentSlide === SLIDE_INDEX_MEDIA && currentMediaPreviewUrl && currentMedia) {
-      const mediaElement = currentMedia.type === 'video' ? videoPreviewRef.current : audioPreviewRef.current;
-      if (mediaElement) {
-        if (mediaElement.src !== currentMediaPreviewUrl) {
-            mediaElement.src = currentMediaPreviewUrl;
-        }
-        mediaElement.load(); 
-      }
-    }
-  }, [currentMediaPreviewUrl, currentMedia, currentSlide]);
-
-
-  const handleMediaDiscardFromChild = useCallback(() => { 
-    setIsProcessingMedia(true);
+  const handleMediaDiscard = useCallback(() => {
     if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(currentMediaPreviewUrl); 
+      URL.revokeObjectURL(currentMediaPreviewUrl);
     }
-
-    if (isEditing && memory?.mediaAttachments?.[0]?.url && !memory.mediaAttachments[0].url.startsWith('blob:')) {
-      const firstMedia = memory.mediaAttachments[0]; 
-      const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
-      const size = (typeof firstMedia.size === 'number' && !isNaN(firstMedia.size)) ? firstMedia.size : 0;
-      setCurrentMedia({
-        file: new File([], firstMedia.filename || "existing_media_placeholder", {type: firstMedia.type === 'video' ? 'video/mp4' : 'audio/mp3'}),
-        type: firstMedia.type, startTime: firstMedia.startTime, endTime: firstMedia.endTime, duration, size,
-      });
-      setCurrentMediaPreviewUrl(firstMedia.url); 
-      setMediaToInitializeRecorder({
-        type: firstMedia.type, previewUrl: firstMedia.url,
-        startTime: firstMedia.startTime, endTime: firstMedia.endTime, duration, size,
-      });
-    } else { 
-      setCurrentMedia(null); setCurrentMediaPreviewUrl(null); setMediaToInitializeRecorder(undefined);
-    }
-    setIsProcessingMedia(false);
-  }, [isEditing, memory?.mediaAttachments, currentMediaPreviewUrl]);
-
-  const handleMediaDiscardInForm = useCallback(() => { 
-    handleMediaDiscardFromChild(); 
-  }, [handleMediaDiscardFromChild]);
-
-
-  useEffect(() => {
-    const mediaElement = currentMedia?.type === 'video' ? videoPreviewRef.current : audioPreviewRef.current;
-    if (mediaElement && currentMedia && currentMediaPreviewUrl && mediaElement.src === currentMediaPreviewUrl) {
-      const targetTime = (currentMedia.startTime !== undefined && isFinite(currentMedia.startTime)) ? currentMedia.startTime : 0.01;
-      const applyStartTime = () => { if (mediaElement.readyState >= 1 && targetTime <= mediaElement.duration && Math.abs(mediaElement.currentTime - targetTime) > 0.1) { try { mediaElement.currentTime = targetTime; } catch (error) { console.warn("Error setting currentTime:", error); }}};
-      if (mediaElement.readyState >= 1) applyStartTime(); else mediaElement.addEventListener('loadedmetadata', applyStartTime, { once: true });
-      return () => mediaElement.removeEventListener('loadedmetadata', applyStartTime);
-    }
-  }, [currentMedia, currentMediaPreviewUrl]);
-
-  useEffect(() => { if (currentSlide !== SLIDE_INDEX_MEDIA && isProcessingMedia) setIsProcessingMedia(false); }, [currentSlide, isProcessingMedia]);
-
+    setCurrentMedia(null);
+    setCurrentMediaPreviewUrl(null);
+  }, [currentMediaPreviewUrl]);
 
   const handleEmotionTagToggle = (tag: EmotionTag) => setSelectedEmotionTags(prevTags => prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]);
 
@@ -393,9 +300,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     );
   }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, selectedCategory, initialPromptId, selectedEmotionTags, isEditing]);
 
-
   const handleActionButtonClick = useCallback(() => {
-    if (isParentSubmitting || isProcessingMedia) return;
+    if (isParentSubmitting) return;
     if (currentSlide === SLIDE_INDEX_DETAILS) {
       if (!title.trim()) { toast({ title: "Title Required", variant: "destructive" }); setTimeout(() => titleInputRef.current?.focus(), 100); return; }
       let tempDate = new Date(selectedYear, selectedMonth, 1); tempDate = setDate(tempDate, selectedDay);
@@ -408,7 +314,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       else if (isEditing && !currentMedia && (!memory?.mediaAttachments || memory.mediaAttachments.length === 0)) { toast({ title: "Media Required", description: "Please record or upload media for Step 2.", variant: "destructive" }); return; }
       setCurrentSlide(SLIDE_INDEX_PREVIEW);
     } else if (currentSlide === SLIDE_INDEX_PREVIEW) triggerSubmitProcess();
-  }, [ isParentSubmitting, isProcessingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments ]);
+  }, [ isParentSubmitting, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments ]);
 
   const handleFormSubmit = (event: FormEvent) => { event.preventDefault(); handleActionButtonClick(); };
 
@@ -416,20 +322,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   if (currentSlide === SLIDE_INDEX_MEDIA) { actionButtonText = 'Next to Preview'; ActionButtonIcon = Eye; }
   else if (currentSlide === SLIDE_INDEX_PREVIEW) { actionButtonText = isEditing ? 'Update Memory' : 'Save Memory'; ActionButtonIcon = Sparkles; }
 
-  const initialMediaForRecorderProp = useMemo(() => {
-    if (currentMediaPreviewUrl && currentMedia) {
-      return {
+  const mediaForRecorderProp = useMemo(() => {
+    if (!currentMedia || !currentMediaPreviewUrl) return undefined;
+    return {
         type: currentMedia.type,
-        previewUrl: currentMediaPreviewUrl, 
-        startTime: currentMedia.startTime,
-        endTime: currentMedia.endTime,
+        previewUrl: currentMediaPreviewUrl,
         duration: currentMedia.duration,
         size: currentMedia.size,
-      };
-    }
-    return undefined;
+    };
   }, [currentMedia, currentMediaPreviewUrl]);
-
+  
   const currentPromptIdForTeleprompter = initialPromptId || memory?.promptId;
 
   let mockMemoryForPreview: Memory | undefined = undefined;
@@ -526,13 +428,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
           <CarouselItem>
             <div ref={step2AnchorRef} />
             <Card className="w-full">
-              <CardHeader><CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>{!(currentMedia && currentMediaPreviewUrl) && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}</CardHeader>
+              <CardHeader><CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>{!currentMedia && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}</CardHeader>
               <CardContent>
                   <MediaCaptureControl
-                      key={`${hostPassStatus}-${initialMediaForRecorderProp?.previewUrl || 'new'}`}
+                      key={`${hostPassStatus}-${memory?.id || 'new'}`}
                       onMediaReady={handleMediaReady}
-                      onDiscard={handleMediaDiscardFromChild}
-                      initialMedia={initialMediaForRecorderProp}
+                      onDiscard={handleMediaDiscard}
+                      initialMedia={mediaForRecorderProp}
                       promptIdForTeleprompter={currentPromptIdForTeleprompter}
                       chapterTitleForTeleprompter={title}
                   />
@@ -553,9 +455,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       </Carousel>
 
       <div className="max-w-3xl mx-auto flex justify-between items-center pt-4 px-1 sm:px-0">
-        <Button type="button" onClick={() => { if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) setCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) setCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting || isProcessingMedia} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
-        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || isProcessingMedia || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview)}>{(isParentSubmitting || isProcessingMedia) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</Button>
+        <Button type="button" onClick={() => { if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) setCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) setCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
+        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview)}>{isParentSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</Button>
       </div>
     </form>
   );
 }
+
+    
