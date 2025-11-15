@@ -292,7 +292,20 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   
   const handleTrimChange = (newValues: [number, number]) => {
     if (currentMedia) {
-      setTrimValues(newValues);
+      const [oldStart, oldEnd] = trimValues;
+      const [newStart, newEnd] = newValues;
+
+      // Determine which handle was moved by comparing old and new values
+      if (newStart !== oldStart) {
+        // Start handle was moved, keep the old end time
+        setTrimValues([newStart, oldEnd]);
+      } else if (newEnd !== oldEnd) {
+        // End handle was moved, keep the old start time
+        setTrimValues([oldStart, newEnd]);
+      } else {
+        // Fallback for initial set or other cases
+        setTrimValues(newValues);
+      }
     }
   };
 
