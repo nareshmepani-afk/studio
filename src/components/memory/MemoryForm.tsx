@@ -595,7 +595,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             <Card className="w-full">
               <CardHeader><CardTitle className="font-headline text-2xl">{memory ? 'Preview Changes' : 'New Chapter'} (Step {SLIDE_INDEX_PREVIEW + 1} of {TOTAL_SLIDES})</CardTitle><CardDescription>Review your chapter details and media. Go back to make changes or click '{actionButtonText}' to save.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
-                {mockMemoryForPreview && (<div className="border p-1 sm:p-2 rounded-lg bg-background shadow-sm"><MemoryCard key={mockMemoryForPreview.mediaAttachments?.[0]?.url || mockMemoryForPreview.id || 'no-media-preview'} memory={mockMemoryForPreview} userMode="guest" /></div>)}
+                {mockMemoryForPreview && (<div className="border p-1 sm:p-2 rounded-lg bg-background shadow-sm"><MemoryCard key={mockMemoryForPreview.mediaAttachments?.[0]?.url || 'preview'} memory={mockMemoryForPreview} userMode="guest" /></div>)}
                 {!mockMemoryForPreview && currentSlide === SLIDE_INDEX_PREVIEW && (<p className="text-muted-foreground text-center py-8">Preparing preview... If this persists, ensure all required fields in previous steps are complete.</p>)}
               </CardContent>
             </Card>
