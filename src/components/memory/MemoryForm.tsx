@@ -354,7 +354,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             size: newFile.size,
             isTrimmed: true,
         });
-        setCurrentMediaPreviewUrl(newPreviewUrl);
+        setCurrentMediaPreviewUrl(`${newPreviewUrl}?v=${Date.now()}`); // Add unique query param
         setTrimValues([0, newDuration]);
 
         toast({ title: "Trim Applied!", description: "The media has been trimmed. You can now preview the result.", variant: "success" });
@@ -472,6 +472,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   }
 
   const isTrimChangedFromOriginal = currentMedia && !currentMedia.isTrimmed && (trimValues[0] > 0 || trimValues[1] < currentMedia.duration);
+  
+  const previewKey = mockMemoryForPreview?.mediaAttachments?.[0]?.url || 'preview';
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-6" noValidate>
@@ -581,8 +583,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground font-mono">
                                     <span>Start: {formatSecondsToTime(trimValues[0])}</span>
-                                    <span>Duration: {formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
-                                    <span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1])}</span>
+                                    <span>End: {formatSecondsToTime(trimValues[1])}</span>
+                                    <span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
                                 </div>
                             </div>
                            {isTrimChangedFromOriginal && (
@@ -608,7 +610,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             <Card className="w-full">
               <CardHeader><CardTitle className="font-headline text-2xl">{memory ? 'Preview Changes' : 'New Chapter'} (Step {SLIDE_INDEX_PREVIEW + 1} of {TOTAL_SLIDES})</CardTitle><CardDescription>Review your chapter details and media. Go back to make changes or click '{actionButtonText}' to save.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
-                {mockMemoryForPreview && (<div className="border p-1 sm:p-2 rounded-lg bg-background shadow-sm"><MemoryCard key={mockMemoryForPreview.mediaAttachments?.[0]?.url || 'preview'} memory={mockMemoryForPreview} userMode="guest" /></div>)}
+                {mockMemoryForPreview && (<div className="border p-1 sm:p-2 rounded-lg bg-background shadow-sm"><MemoryCard key={previewKey} memory={mockMemoryForPreview} userMode="guest" /></div>)}
                 {!mockMemoryForPreview && currentSlide === SLIDE_INDEX_PREVIEW && (<p className="text-muted-foreground text-center py-8">Preparing preview... If this persists, ensure all required fields in previous steps are complete.</p>)}
               </CardContent>
             </Card>
