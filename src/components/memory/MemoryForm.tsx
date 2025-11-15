@@ -145,6 +145,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null); 
   const [trimValues, setTrimValues] = useState<[number, number]>([0, 100]);
   const [isTrimming, setIsTrimming] = useState(false);
+  const [mediaKey, setMediaKey] = useState(Date.now().toString());
 
 
   useEffect(() => {
@@ -354,8 +355,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             size: newFile.size,
             isTrimmed: true,
         });
-        setCurrentMediaPreviewUrl(`${newPreviewUrl}?v=${Date.now()}`); // Add unique query param
+        setCurrentMediaPreviewUrl(newPreviewUrl);
         setTrimValues([0, newDuration]);
+        setMediaKey(Date.now().toString()); // Force re-render of MediaCaptureControl
 
         toast({ title: "Trim Applied!", description: "The media has been trimmed. You can now preview the result.", variant: "success" });
 
@@ -473,7 +475,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
   const isTrimChangedFromOriginal = currentMedia && !currentMedia.isTrimmed && (trimValues[0] > 0 || trimValues[1] < currentMedia.duration);
   
-  const previewKey = mockMemoryForPreview?.mediaAttachments?.[0]?.url || 'preview';
+  const previewKey = `${mockMemoryForPreview?.mediaAttachments?.[0]?.url}?t=${Date.now()}` || 'preview';
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-6" noValidate>
@@ -554,7 +556,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
               </CardHeader>
               <CardContent className="space-y-4">
                   <MediaCaptureControl
-                      key={`${hostPassStatus}-${memory?.id || 'new'}`}
+                      key={mediaKey}
                       onMediaReady={handleMediaReady}
                       onDiscard={handleMediaDiscard}
                       initialMedia={mediaForRecorderProp}
@@ -589,7 +591,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                             </div>
                            {isTrimChangedFromOriginal && (
                                 <div className="mt-4">
-                                    <Button onClick={handleApplyTrim} disabled={isTrimming} className="w-full">
+                                    <Button onClick={handleApplyTrim} disabled={isTrimming} className="w-full bg-primary hover:bg-primary/90">
                                         {isTrimming ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Scissors className="mr-2 h-4 w-4" />}
                                         Apply Trim & Finalize
                                     </Button>
