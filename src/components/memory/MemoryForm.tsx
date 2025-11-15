@@ -437,7 +437,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   }
 
   const mediaForRecorderProp = useMemo(() => {
-    if (!currentMedia || !currentMediaPreviewUrl || currentMedia.isTrimmed) return undefined;
+    if (!currentMedia || !currentMediaPreviewUrl) return undefined;
     return {
         type: currentMedia.type,
         previewUrl: currentMediaPreviewUrl,
@@ -581,8 +581,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground font-mono">
                                     <span>Start: {formatSecondsToTime(trimValues[0])}</span>
-                                    <span>End: {formatSecondsToTime(trimValues[1])}</span>
-                                    <span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
+                                    <span>Duration: {formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
+                                    <span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1])}</span>
                                 </div>
                             </div>
                            {isTrimChangedFromOriginal && (
