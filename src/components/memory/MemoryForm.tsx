@@ -538,7 +538,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="description">Description *</Label>
-                  <Textarea ref={descriptionTextareaRef} id="description" value={description} onChange={(e) => setDescription(e.g.target.value)} placeholder="Describe your memory..." rows={4} required/>
+                  <Textarea ref={descriptionTextareaRef} id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} required/>
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="emotion-tags"><Tag className="inline-block mr-1 h-4 w-4" />Emotion Tags (Optional)</Label>
