@@ -141,7 +141,7 @@ export function MediaCaptureControl({
   }, [previewUrl]);
 
   useEffect(() => {
-    // This effect handles syncing with the parent's initial state
+    // This effect handles syncing with the parent's initial state and any subsequent changes to it
     setMediaType(initialMedia?.type || null);
     setPreviewUrl(initialMedia?.previewUrl || null);
   }, [initialMedia]);
@@ -280,7 +280,7 @@ export function MediaCaptureControl({
     setMediaType(null);
     onDiscard();
     toast({ title: "Media Discarded" });
-  }, [isRecording, revokeCurrentPreviewUrl, onDiscard]);
+  }, [isRecording, revokeCurrentPreviewUrl, onDiscard, handleStopRecording]);
   
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!checkHostPass()) { event.target.value = ''; return; }

@@ -438,15 +438,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     ActionButtonIcon = Sparkles; 
   }
 
-  const mediaForRecorderProp = useMemo(() => {
-    if (!currentMedia || !currentMediaPreviewUrl) return undefined;
-    return {
-        type: currentMedia.type,
-        previewUrl: currentMediaPreviewUrl,
-        duration: currentMedia.duration,
-        size: currentMedia.size,
-    };
-  }, [currentMedia, currentMediaPreviewUrl]);
+  const mediaForRecorderProp =
+    currentMedia && currentMediaPreviewUrl
+      ? {
+          type: currentMedia.type,
+          previewUrl: currentMediaPreviewUrl,
+          duration: currentMedia.duration,
+          size: currentMedia.size,
+        }
+      : undefined;
   
   const currentPromptIdForTeleprompter = initialPromptId || memory?.promptId;
 
