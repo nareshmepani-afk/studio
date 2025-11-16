@@ -475,7 +475,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
   const isTrimChangedFromOriginal = currentMedia && !currentMedia.isTrimmed && (trimValues[0] > 0 || trimValues[1] < currentMedia.duration);
   
-  const previewKey = `${mockMemoryForPreview?.mediaAttachments?.[0]?.url}?t=${Date.now()}` || 'preview';
+  const previewKey = `${mockMemoryForPreview?.mediaAttachments?.[0]?.url}?t=${mediaKey}` || 'preview';
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-6" noValidate>
@@ -538,7 +538,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="description">Description *</Label>
-                  <Textarea ref={descriptionTextareaRef} id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} required/>
+                  <Textarea ref={descriptionTextareaRef} id="description" value={description} onChange={(e) => setDescription(e.g.target.value)} placeholder="Describe your memory..." rows={4} required/>
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="emotion-tags"><Tag className="inline-block mr-1 h-4 w-4" />Emotion Tags (Optional)</Label>
@@ -591,7 +591,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                             </div>
                            {isTrimChangedFromOriginal && (
                                 <div className="mt-4">
-                                    <Button onClick={handleApplyTrim} disabled={isTrimming} className="w-full bg-primary hover:bg-primary/90">
+                                    <Button onClick={handleApplyTrim} disabled={isTrimming} className="w-full">
                                         {isTrimming ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Scissors className="mr-2 h-4 w-4" />}
                                         Apply Trim & Finalize
                                     </Button>
