@@ -61,8 +61,8 @@ export function MediaCaptureControl({
 }: MediaCaptureControlProps) {
   const { user, storageQuotaBytes, hostPassStatus } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
-  const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(initialMedia?.type || null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(initialMedia?.previewUrl || null);
+  const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const mediaRecorderRef = useRef<globalThis.MediaRecorder | null>(null);
@@ -140,10 +140,15 @@ export function MediaCaptureControl({
     }
   }, [previewUrl]);
 
+  // This effect now correctly handles initialization and subsequent updates from parent
   useEffect(() => {
-    // This effect handles syncing with the parent's initial state and any subsequent changes to it
-    setMediaType(initialMedia?.type || null);
-    setPreviewUrl(initialMedia?.previewUrl || null);
+    if (initialMedia) {
+      setMediaType(initialMedia.type);
+      setPreviewUrl(initialMedia.previewUrl);
+    } else {
+      setMediaType(null);
+      setPreviewUrl(null);
+    }
   }, [initialMedia]);
 
   // EFFECT FOR SOFT-PREVIEW TRIMMING
@@ -303,9 +308,11 @@ export function MediaCaptureControl({
     const newPreviewUrl = URL.createObjectURL(file);
     mediaElement.src = newPreviewUrl;
     mediaElement.onloadedmetadata = () => {
-        URL.revokeObjectURL(newPreviewUrl); // Clean up the temp object URL
+        // We don't revoke the URL here because we need it for the preview.
+        // It will be revoked by the parent component's cleanup logic.
         if (mediaElement.duration > MAX_RECORDING_DURATION) {
             toast({ variant: 'destructive', title: 'File Too Long', description: `Uploaded file is ${formatSecondsToTime(mediaElement.duration)}. Max allowed is ${formatSecondsToTime(MAX_RECORDING_DURATION)}.`, duration: 10000 });
+            URL.revokeObjectURL(newPreviewUrl); // Revoke if invalid
             return;
         }
         onMediaReady({ file, type: fileType, duration: mediaElement.duration, size: file.size });
