@@ -154,7 +154,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       setCurrentMedia(pendingTrimmedMedia.media);
       setCurrentMediaPreviewUrl(pendingTrimmedMedia.url);
       setTrimValues([0, pendingTrimmedMedia.media.duration]);
-      setPendingTrimmedMedia(null); // Clear the pending state
+      setPendingTrimmedMedia(null);
+      setMediaKey(Date.now().toString()); 
       toast({ title: "Trim Applied!", description: "The media has been trimmed. You can now preview the result.", variant: "success" });
     }
   }, [pendingTrimmedMedia]);
@@ -189,7 +190,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         const endTime = (typeof firstMedia.endTime === 'number' && !isNaN(firstMedia.endTime) && firstMedia.endTime <= duration) ? firstMedia.endTime : duration;
 
         setCurrentMedia({
-            file: new File([], firstMedia.filename || "existing_media_placeholder", {type: firstMedia.type === 'video' ? 'video/mp4' : 'audio/mp3'}), 
+            file: new File([], firstMedia.filename || "existing_media_placeholder", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/mp3'}), 
             type: firstMedia.type,
             startTime: startTime,
             endTime: endTime,
@@ -332,21 +333,20 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     }
 
     setIsTrimming(true);
-    toast({ title: "Trimming Media...", description: "This may take a moment. Please wait." });
+    toast({ title: "Applying Trim & Finalize...", description: "This may take a moment. Please wait." });
 
     try {
         const ffmpeg = await getFFmpeg();
         const inputFileName = `input.${currentMedia.type === 'video' ? 'webm' : 'mp3'}`;
-        const outputFileName = `output.${currentMedia.type === 'video' ? 'mp4' : 'mp3'}`;
+        const outputFileName = `output.${currentMedia.type === 'video' ? 'webm' : 'mp3'}`;
 
         await ffmpeg.writeFile(inputFileName, await fetchFile(currentMedia.file));
 
-        // Remove "-c copy" to allow transcoding
         await ffmpeg.exec([
             '-i', inputFileName,
             '-ss', `${start}`,
             '-to', `${end}`,
-            // '-c', 'copy', // This was the source of the error
+            '-c', 'copy',
             outputFileName
         ]);
 
@@ -370,8 +370,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             isTrimmed: true,
         };
         
-        // Force component to re-mount to ensure video player updates
         setCurrentMedia(null);
+        setCurrentMediaPreviewUrl(null);
         setPendingTrimmedMedia({ media: newMediaData, url: newPreviewUrl });
         
     } catch (error) {
@@ -611,7 +611,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                 <div className="mt-4">
                                     <Button onClick={handleApplyTrim} disabled={isTrimming} className="w-full">
                                         {isTrimming ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Scissors className="mr-2 h-4 w-4" />}
-                                        Apply Trim & Finalize
+                                        {isTrimming ? 'Applying Trim & Finalize...' : 'Apply Trim & Finalize'}
                                     </Button>
                                     <p className="text-xs text-muted-foreground text-center mt-1">This will permanently trim the file for this memory.</p>
                                 </div>
@@ -645,5 +645,3 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     </form>
   );
 }
-
-    
