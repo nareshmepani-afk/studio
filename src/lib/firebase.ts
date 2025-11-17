@@ -1,8 +1,8 @@
 
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
-import { initializeAuth, getAuth, browserLocalPersistence, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore, initializeFirestore } from 'firebase/firestore';
-import { getStorage, type FirebaseStorage } from 'firebase/storage';
+import { getAuth, browserLocalPersistence, connectAuthEmulator, type Auth } from 'firebase/auth';
+import { getFirestore, type Firestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getStorage, type FirebaseStorage, connectStorageEmulator } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -17,14 +17,12 @@ const firebaseConfig = {
 const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 // It's recommended to initialize auth this way to avoid re-initialization errors in Next.js
-const auth: Auth = initializeAuth(app, {
-  persistence: browserLocalPersistence
-});
+const auth: Auth = getAuth(app);
+auth.setPersistence(browserLocalPersistence);
 
-// Use initializeFirestore to apply experimental settings
-const db: Firestore = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-});
+
+// Use getFirestore to ensure a single instance
+const db: Firestore = getFirestore(app);
 const storage: FirebaseStorage = getStorage(app);
 
 export { app, auth, db, storage };
