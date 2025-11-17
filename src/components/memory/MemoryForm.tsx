@@ -147,6 +147,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const [isTrimming, setIsTrimming] = useState(false);
   const [mediaKey, setMediaKey] = useState(Date.now().toString());
 
+  const [pendingTrimmedMedia, setPendingTrimmedMedia] = useState<{ media: CurrentMediaData, url: string } | null>(null);
+
+  useEffect(() => {
+    if (pendingTrimmedMedia) {
+      setCurrentMedia(pendingTrimmedMedia.media);
+      setCurrentMediaPreviewUrl(pendingTrimmedMedia.url);
+      setTrimValues([0, pendingTrimmedMedia.media.duration]);
+      setPendingTrimmedMedia(null); // Clear the pending state
+      toast({ title: "Trim Applied!", description: "The media has been trimmed. You can now preview the result.", variant: "success" });
+    }
+  }, [pendingTrimmedMedia]);
+
 
   useEffect(() => {
     if (memory) {
@@ -183,7 +195,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             endTime: endTime,
             duration: duration,
             size: size,
-            isTrimmed: false, // Assume existing media is not physically trimmed yet
+            isTrimmed: firstMedia.isTrimmed || false,
         });
         setCurrentMediaPreviewUrl(firstMedia.url); 
         setTrimValues([startTime, endTime]);
@@ -324,16 +336,17 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
     try {
         const ffmpeg = await getFFmpeg();
-        const inputFileName = `input.${currentMedia.type === 'video' ? 'mp4' : 'mp3'}`;
+        const inputFileName = `input.${currentMedia.type === 'video' ? 'webm' : 'mp3'}`;
         const outputFileName = `output.${currentMedia.type === 'video' ? 'mp4' : 'mp3'}`;
 
         await ffmpeg.writeFile(inputFileName, await fetchFile(currentMedia.file));
 
+        // Remove "-c copy" to allow transcoding
         await ffmpeg.exec([
             '-i', inputFileName,
             '-ss', `${start}`,
             '-to', `${end}`,
-            '-c', 'copy', // Use stream copy for speed if no re-encoding is needed
+            // '-c', 'copy', // This was the source of the error
             outputFileName
         ]);
 
@@ -343,24 +356,24 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
             URL.revokeObjectURL(currentMediaPreviewUrl);
         }
-        const newPreviewUrl = URL.createObjectURL(newFile);
         
+        const newPreviewUrl = URL.createObjectURL(newFile);
         const newDuration = end - start;
-        setCurrentMedia({
+
+        const newMediaData: CurrentMediaData = {
             file: newFile,
             type: currentMedia.type,
-            startTime: 0, // Reset times as the file is now physically trimmed
+            startTime: 0,
             endTime: newDuration,
             duration: newDuration,
             size: newFile.size,
             isTrimmed: true,
-        });
-        setCurrentMediaPreviewUrl(newPreviewUrl);
-        setTrimValues([0, newDuration]);
-        setMediaKey(Date.now().toString()); // Force re-render of MediaCaptureControl
-
-        toast({ title: "Trim Applied!", description: "The media has been trimmed. You can now preview the result.", variant: "success" });
-
+        };
+        
+        // Force component to re-mount to ensure video player updates
+        setCurrentMedia(null);
+        setPendingTrimmedMedia({ media: newMediaData, url: newPreviewUrl });
+        
     } catch (error) {
         console.error("Error applying trim:", error);
         toast({ title: "Trimming Failed", description: "Could not trim the media. Please try again.", variant: "destructive" });
@@ -420,6 +433,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         toast({ title: "Media Required", description: "Please record or upload media for this chapter.", variant: "destructive" });
         return;
       }
+      setMediaKey(Date.now().toString());
       setCurrentSlide(SLIDE_INDEX_PREVIEW);
     } else if (currentSlide === SLIDE_INDEX_PREVIEW) triggerSubmitProcess();
   }, [ isParentSubmitting, isTrimming, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments ]);
@@ -475,7 +489,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
   const isTrimChangedFromOriginal = currentMedia && !currentMedia.isTrimmed && (trimValues[0] > 0 || trimValues[1] < currentMedia.duration);
   
-  const previewKey = `${mockMemoryForPreview?.mediaAttachments?.[0]?.url}?t=${mediaKey}` || 'preview';
+  const previewKey = `${mockMemoryForPreview?.id}-${mediaKey}`;
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-6" noValidate>
@@ -555,15 +569,19 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                 {!currentMedia && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}
               </CardHeader>
               <CardContent className="space-y-4">
-                  <MediaCaptureControl
-                      key={mediaKey}
-                      onMediaReady={handleMediaReady}
-                      onDiscard={handleMediaDiscard}
-                      initialMedia={mediaForRecorderProp}
-                      promptIdForTeleprompter={currentPromptIdForTeleprompter}
-                      chapterTitleForTeleprompter={title}
-                      trimValues={trimValues}
-                  />
+                  {currentMedia ? (
+                     <MediaCaptureControl
+                        key={mediaKey}
+                        onMediaReady={handleMediaReady}
+                        onDiscard={handleMediaDiscard}
+                        initialMedia={mediaForRecorderProp}
+                        promptIdForTeleprompter={currentPromptIdForTeleprompter}
+                        chapterTitleForTeleprompter={title}
+                        trimValues={trimValues}
+                    />
+                  ) : (
+                    <MediaCaptureControl onMediaReady={handleMediaReady} onDiscard={handleMediaDiscard} promptIdForTeleprompter={currentPromptIdForTeleprompter} chapterTitleForTeleprompter={title} trimValues={trimValues}/>
+                  )}
                   {currentMedia && (
                     <Card className="bg-muted/50">
                         <CardHeader className="pb-2">
@@ -627,3 +645,5 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     </form>
   );
 }
+
+    
