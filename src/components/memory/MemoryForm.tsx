@@ -337,8 +337,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
     try {
         const ffmpeg = await getFFmpeg();
-        const inputFileName = `input.${currentMedia.type === 'video' ? 'webm' : 'mp3'}`;
-        const outputFileName = `output.${currentMedia.type === 'video' ? 'webm' : 'mp3'}`;
+        const inputFileName = `input.webm`;
+        const outputFileName = `output.webm`;
 
         await ffmpeg.writeFile(inputFileName, await fetchFile(currentMedia.file));
 
@@ -430,7 +430,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
        setCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
       if (!currentMedia && (!isEditing || !memory?.mediaAttachments?.length)) {
-        toast({ title: "Media Required", description: "Please record or upload media for this chapter.", variant: "destructive" });
+        toast({ title: "Media Required", description: "Please record or upload media for this chapter." });
         return;
       }
       setMediaKey(Date.now().toString());
@@ -452,15 +452,17 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     ActionButtonIcon = Sparkles; 
   }
 
-  const mediaForRecorderProp =
-    currentMedia && currentMediaPreviewUrl
-      ? {
-          type: currentMedia.type,
-          previewUrl: currentMediaPreviewUrl,
-          duration: currentMedia.duration,
-          size: currentMedia.size,
-        }
-      : undefined;
+  const mediaForRecorderProp = useMemo(() => {
+    if (currentMedia && currentMediaPreviewUrl) {
+      return {
+        type: currentMedia.type,
+        previewUrl: currentMediaPreviewUrl,
+        duration: currentMedia.duration,
+        size: currentMedia.size,
+      };
+    }
+    return undefined;
+  }, [currentMedia, currentMediaPreviewUrl]);
   
   const currentPromptIdForTeleprompter = initialPromptId || memory?.promptId;
 
