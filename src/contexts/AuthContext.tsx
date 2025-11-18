@@ -8,15 +8,15 @@ import { useRouter, usePathname } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import { addMonths, addDays, isBefore, parseISO, format } from 'date-fns';
 import SplashScreen from '@/components/layout/SplashScreen'; 
-import { auth, db } from '@/lib/firebase';
+import { app } from '@/lib/firebase';
 import {
+  getAuth,
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, Timestamp, onSnapshot, Unsubscribe, orderBy } from 'firebase/firestore';
-
+import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, Timestamp, onSnapshot, Unsubscribe, orderBy } from 'firebase/firestore';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -65,6 +65,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
 
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
   const updateUserProfileInFirestore = useCallback(async (userId: string, updates: Partial<User>) => {
     const userDocRef = doc(db, "users", userId);
     try {
@@ -74,7 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error(`AuthContext: Error updating user profile in Firestore for user ${userId}:`, error);
       throw error;
     }
-  }, []);
+  }, [db]);
 
   // Listener and State Management
   useEffect(() => {
@@ -117,7 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("AuthContext: Cleaning up onAuthStateChanged listener.");
       unsubscribeAuth();
     }
-  }, []);
+  }, [auth, db]);
 
   // Data fetching listeners that depend on user.id
   useEffect(() => {
@@ -181,7 +184,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       unsubscribeMemories();
       unsubscribePrompts();
     };
-  }, [user?.id, user?.viewedSharedMemoryIds, updateUserProfileInFirestore, loading]);
+  }, [user?.id, user?.viewedSharedMemoryIds, updateUserProfileInFirestore, loading, db]);
 
 
   // Navigation Logic
@@ -221,7 +224,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Login Failed", description: error.message || "Invalid email or password.", variant: "destructive" });
       throw error;
     }
-  }, []);
+  }, [auth]);
 
   const register = useCallback(async (name: string, email: string, password: string): Promise<void> => {
     try {
@@ -243,7 +246,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Registration Failed", description: error.message || "Could not create account.", variant: "destructive" });
       throw error;
     }
-  }, []);
+  }, [auth, db]);
 
   const logout = useCallback(async () => {
     try {
@@ -255,7 +258,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error: any) {
       toast({ title: "Logout Failed", variant: "destructive" });
     }
-  }, [router]);
+  }, [auth, router]);
   
   const markSharedMemoryAsViewed = useCallback(async (memoryId: string) => {
     if (user) {
@@ -275,7 +278,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
         console.error(`AuthContext: Error calculating storage usage for user ${userId}:`, error);
     }
-  }, [updateUserProfileInFirestore]);
+  }, [updateUserProfileInFirestore, db]);
   
   const getStorageQuotaBytes = useCallback((): number => (user && (user.hostPassStatus === 'free_host_pass_active' || user.hostPassStatus === 'paid_host_pass_active')) ? STANDARD_HOST_STORAGE_QUOTA_BYTES : 0, [user]);
 

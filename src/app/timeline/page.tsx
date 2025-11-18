@@ -15,8 +15,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { format, parseISO, addMonths } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
-import { db } from '@/lib/firebase';
-import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
+import { getFirestore, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { getPassPriceAction } from '@/actions/getPassPriceAction';
 import type { GetPassPriceOutput } from '@/ai/flows/get-pass-price-flow';
@@ -33,16 +33,17 @@ export default function TimelinePage() {
     user,
     setPendingRequestCount,
     userMode,
-    activateFreeGuestPass,
-    purchasePaidGuestPass,
     hostPassStatus,
     markSharedMemoryAsViewed,
     memories,
     isDataLoading,
   } = useAuth();
+
+  const { purchasePaidGuestPass, activateFreeGuestPass } = useAuth();
   
   const [guestPassPriceDetails, setGuestPassPriceDetails] = useState<GetPassPriceOutput | null>(null);
   const [isFetchingGuestPassPrice, setIsFetchingGuestPassPrice] = useState(false);
+  const db = getFirestore(app);
 
 
   const mockHostPendingRequests = useMemo(() => [
@@ -101,7 +102,7 @@ export default function TimelinePage() {
       console.error("Error deleting memory from Firestore:", error);
       toast({ title: "Delete Failed", variant: "destructive" });
     }
-  }, [user]);
+  }, [user, db]);
 
   const handleToggleLegacyStatus = useCallback(async (memoryId: string) => {
     if (!user) return;
@@ -120,7 +121,7 @@ export default function TimelinePage() {
       console.error("Error updating legacy status in Firestore:", error);
       toast({ title: "Update Failed", variant: "destructive" });
     }
-  }, [user, memories]);
+  }, [user, memories, db]);
 
   const handleCreateMontage = useCallback(() => {
     setTimeout(() => {

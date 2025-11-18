@@ -18,8 +18,8 @@ import { useState, useEffect, type FormEvent, useRef, useMemo, useCallback } fro
 import { format, isValid, parseISO, getYear, getMonth, getDate, getDaysInMonth, addMonths, addDays, isBefore } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { useRouter } from 'next/navigation'; 
-import { storage } from '@/lib/firebase'; 
-import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { app } from '@/lib/firebase';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { getPassPriceAction } from '@/actions/getPassPriceAction';
 import { getHostPassPriceAction } from '@/actions/getHostPassPriceAction';
 import type { GetPassPriceOutput } from '@/ai/flows/get-pass-price-flow';
@@ -187,6 +187,7 @@ export default function SettingsPage() {
     event.preventDefault();
     if (!user) return;
     setIsSubmitting(true);
+    const storage = getStorage(app);
 
     let finalAvatarUrlToSave = user.avatarUrl;
     const oldAvatarUrl = user.avatarUrl;

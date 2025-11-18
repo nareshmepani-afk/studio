@@ -2,8 +2,8 @@
 "use server";
 
 import { z } from "zod";
-import { auth } from "@/lib/firebase"; // Import Firebase auth
-import { sendPasswordResetEmail } from "firebase/auth";
+import { app } from "@/lib/firebase"; // Import Firebase app
+import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 
 const RequestPasswordResetInputSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -25,6 +25,7 @@ export async function requestPasswordResetAction(
     }
 
     const { email } = validation.data;
+    const auth = getAuth(app);
 
     // In a real app with reCAPTCHA:
     // const recaptchaVerified = await verifyRecaptcha(recaptchaToken, process.env.RECAPTCHA_SECRET_KEY);

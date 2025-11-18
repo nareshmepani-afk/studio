@@ -9,9 +9,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import type { Memory, User, MediaAttachment } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { useState, useEffect, useCallback } from 'react';
-import { db, storage } from '@/lib/firebase';
-import { addDoc, doc, updateDoc, getDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { app } from '@/lib/firebase';
+import { getFirestore, addDoc, doc, updateDoc, getDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Loader2 } from 'lucide-react';
 
 function AddMemoryPageComponent() {
@@ -26,6 +26,9 @@ function AddMemoryPageComponent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [memoryToEdit, setMemoryToEdit] = useState<Memory | undefined>(undefined);
   const [isLoadingMemory, setIsLoadingMemory] = useState(true);
+
+  const db = getFirestore(app);
+  const storage = getStorage(app);
 
   useEffect(() => {
     if (editMemoryId && user) {
@@ -55,7 +58,7 @@ function AddMemoryPageComponent() {
     } else {
         setIsLoadingMemory(false);
     }
-  }, [editMemoryId, user, router]);
+  }, [editMemoryId, user, router, db]);
 
   const handleSubmit = async (
     memoryData: Omit<Memory, 'id' | 'userId'> & { promptId?: string },

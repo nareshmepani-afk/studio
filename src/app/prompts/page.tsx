@@ -27,8 +27,8 @@ import { getHostPassPriceAction } from '@/actions/getHostPassPriceAction';
 import type { GetHostPassPriceOutput } from '@/ai/flows/get-host-pass-price-flow';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { db } from '@/lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
+import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { addMonths, isBefore, parseISO, format, addDays } from 'date-fns';
 
 const FIRESTORE_USER_PROMPT_FLAGS_COLLECTION = 'userPromptFlags';
@@ -57,6 +57,8 @@ export default function LifeJourneyPage() {
   const [customChapterLanguage, setCustomChapterLanguage] = useState<'en' | 'gu'>('en');
   const [generatedChapterIdeas, setGeneratedChapterIdeas] = useState<string[]>([]);
   const [isLoadingChapterIdeas, setIsLoadingChapterIdeas] = useState(false);
+
+  const db = getFirestore(app);
 
   console.log(`[LifeJourneyPage] Render: isLoading=${isLoading}, isDataLoading=${isDataLoading}, user=${user ? user.id : 'null'}`);
 
@@ -124,7 +126,7 @@ export default function LifeJourneyPage() {
         console.error("Error updating prompt flag in Firestore:", error);
         toast({ title: "Flagging Error", variant: "destructive" });
     }
-  }, [user, flaggedPromptIds, currentLanguage]);
+  }, [user, flaggedPromptIds, currentLanguage, db]);
 
   const handleStartChapter = useCallback((promptId: string, promptText: string) => {
     const isPromptInAvailableGroups = availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === promptId);
