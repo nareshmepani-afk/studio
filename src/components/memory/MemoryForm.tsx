@@ -27,8 +27,7 @@ import { countryOptions } from '@/lib/constants';
 import { mockPromptGroups } from '@/lib/mockData';
 import { Slider } from '@/components/ui/slider';
 import dynamic from 'next/dynamic';
-import { getFFmpeg } from '@/lib/ffmpeg';
-import { fetchFile } from '@ffmpeg/util';
+
 
 const MediaCaptureControl = dynamic(
   () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
@@ -315,23 +314,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     if (currentMedia) {
       const [oldStart, oldEnd] = trimValues;
       const [newStart, newEnd] = newValues;
-
-      // Determine which handle was moved by comparing old and new values
-      if (newStart !== oldStart) {
-        // Start handle was moved, keep the old end time
-        setTrimValues([newStart, oldEnd]);
+      if (newStart !== oldStart && newEnd !== oldEnd) {
+         setTrimValues(newValues);
+      } else if (newStart !== oldStart) {
+        setTrimValues([newStart, Math.max(newStart, oldEnd)]);
       } else if (newEnd !== oldEnd) {
-        // End handle was moved, keep the old start time
-        setTrimValues([oldStart, newEnd]);
-      } else {
-        // Fallback for initial set or other cases
-        setTrimValues(newValues);
+        setTrimValues([Math.min(newEnd, oldStart), newEnd]);
       }
     }
   };
 
   const handleApplyTrim = async () => {
-    if (!currentMedia || isTrimming) return;
+     if (!currentMedia || isTrimming) return;
     
     const [start, end] = trimValues;
     if (end - start <= 0) {
@@ -340,51 +334,21 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     }
 
     setIsTrimming(true);
-    toast({ title: "Applying Trim & Finalize...", description: "This may take a moment. Please wait." });
+    toast({ title: "Applying Trim & Finalize...", description: "This is a mock action. No real trimming occurs.", variant: "success" });
 
-    try {
-        const ffmpeg = await getFFmpeg();
-        const inputFileName = `input.webm`;
-        const outputFileName = `output.webm`;
-
-        await ffmpeg.writeFile(inputFileName, await fetchFile(currentMedia.file));
-
-        await ffmpeg.exec([
-            '-i', inputFileName,
-            '-ss', `${start}`,
-            '-to', `${end}`,
-            '-c', 'copy',
-            outputFileName
-        ]);
-
-        const data = await ffmpeg.readFile(outputFileName);
-        const newFile = new File([data], outputFileName, { type: currentMedia.file.type });
-
-        if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(currentMediaPreviewUrl);
-        }
-        
-        const newPreviewUrl = URL.createObjectURL(newFile);
+    setTimeout(() => {
         const newDuration = end - start;
-
         const newMediaData: CurrentMediaData = {
-            file: newFile,
-            type: currentMedia.type,
-            startTime: 0,
-            endTime: newDuration,
-            duration: newDuration,
-            size: newFile.size,
-            isTrimmed: true,
+            ...currentMedia,
+            startTime: start,
+            endTime: end,
+            isTrimmed: true, // Mark as pseudo-trimmed
         };
         
-        setPendingTrimmedMedia({ media: newMediaData, url: newPreviewUrl });
-        
-    } catch (error) {
-        console.error("Error applying trim:", error);
-        toast({ title: "Trimming Failed", description: "Could not trim the media. Please try again.", variant: "destructive" });
-    } finally {
+        setCurrentMedia(newMediaData);
+        toast({ title: "Trim Applied!", description: "The start and end times have been saved.", variant: "success" });
         setIsTrimming(false);
-    }
+    }, 1000); // Simulate processing time
   };
 
   const triggerSubmitProcess = useCallback(() => {
@@ -404,8 +368,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         type: currentMedia.type,
         url: urlForSubmission,
         filename: currentMedia.file.name, 
-        startTime: currentMedia.isTrimmed ? 0 : trimValues[0],
-        endTime: currentMedia.isTrimmed ? currentMedia.duration : trimValues[1],
+        startTime: trimValues[0],
+        endTime: trimValues[1],
         duration: currentMedia.duration,
         size: currentMedia.size,
         isTrimmed: currentMedia.isTrimmed,
@@ -479,8 +443,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       mediaAttachmentsForPreview = [{
         id: memory?.mediaAttachments?.[0]?.id || 'preview-media-1',
         type: currentMedia.type, url: currentMediaPreviewUrl, filename: currentMedia.file.name,
-        startTime: currentMedia.isTrimmed ? 0 : trimValues[0],
-        endTime: currentMedia.isTrimmed ? currentMedia.duration : trimValues[1],
+        startTime: trimValues[0],
+        endTime: trimValues[1],
         duration: currentMedia.duration, size: currentMedia.size,
         isTrimmed: currentMedia.isTrimmed,
       }];
@@ -494,7 +458,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     };
   }
 
-  const isTrimChangedFromOriginal = currentMedia && !currentMedia.isTrimmed && (trimValues[0] > 0 || trimValues[1] < currentMedia.duration);
+  const isTrimChangedFromOriginal = currentMedia && (trimValues[0] > 0 || trimValues[1] < currentMedia.duration);
   
   const previewKey = `${mockMemoryForPreview?.id}-${mediaKey}`;
 
@@ -606,11 +570,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                     value={trimValues}
                                     onValueChange={(vals) => handleTrimChange(vals as [number, number])}
                                     minStepsBetweenThumbs={1}
-                                    disabled={currentMedia.isTrimmed || isTrimming}
+                                    disabled={isTrimming}
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground font-mono">
                                   <span>Start: {formatSecondsToTime(trimValues[0])}</span>
-                                  <span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
+                                  <span className="font-semibold">Duration: {formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
                                   <span>End: {formatSecondsToTime(trimValues[1])}</span>
                                 </div>
                             </div>
@@ -618,9 +582,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                 <div className="mt-4">
                                     <Button onClick={handleApplyTrim} disabled={isTrimming} className="w-full">
                                         {isTrimming ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Scissors className="mr-2 h-4 w-4" />}
-                                        {isTrimming ? 'Applying Trim & Finalize...' : 'Apply Trim & Finalize'}
+                                        {isTrimming ? 'Applying Trim...' : 'Apply Trim'}
                                     </Button>
-                                    <p className="text-xs text-muted-foreground text-center mt-1">This will permanently trim the file for this memory.</p>
+                                    <p className="text-xs text-muted-foreground text-center mt-1">This saves the start/end times. The full media is still uploaded.</p>
                                 </div>
                            )}
                            {currentMedia.isTrimmed && (
