@@ -311,16 +311,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const handleEmotionTagToggle = (tag: EmotionTag) => setSelectedEmotionTags(prevTags => prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]);
   
   const handleTrimChange = (newValues: [number, number]) => {
-    if (currentMedia) {
-      const [oldStart, oldEnd] = trimValues;
-      const [newStart, newEnd] = newValues;
-      if (newStart !== oldStart && newEnd !== oldEnd) {
-         setTrimValues(newValues);
-      } else if (newStart !== oldStart) {
-        setTrimValues([newStart, Math.max(newStart, oldEnd)]);
-      } else if (newEnd !== oldEnd) {
-        setTrimValues([Math.min(newEnd, oldStart), newEnd]);
-      }
+    const [oldStart, oldEnd] = trimValues;
+    const [newStart, newEnd] = newValues;
+
+    if (newStart !== oldStart) { // Start handle moved
+      setTrimValues([newStart, Math.max(newStart, oldEnd)]);
+    } else if (newEnd !== oldEnd) { // End handle moved
+      setTrimValues([Math.min(newEnd, oldStart), newEnd]);
     }
   };
 
@@ -399,7 +396,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
        setCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
       if (!currentMedia && (!isEditing || !memory?.mediaAttachments?.length)) {
-        toast({ title: "Media is Required to Proceed", description: "Please record a video or audio first, then you can proceed to the preview step." });
+        toast({ title: "Media is Required to Proceed", description: "Please record a video or audio first, then you can proceed to the preview step.", variant: "default" });
         return;
       }
       setMediaKey(Date.now().toString());
@@ -568,14 +565,14 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                     max={currentMedia.duration}
                                     step={0.1}
                                     value={trimValues}
-                                    onValueChange={(vals) => handleTrimChange(vals as [number, number])}
+                                    onValueChange={handleTrimChange}
                                     minStepsBetweenThumbs={1}
                                     disabled={isTrimming}
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground font-mono">
-                                  <span>Start: {formatSecondsToTime(trimValues[0])}</span>
-                                  <span className="font-semibold">Duration: {formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
-                                  <span>End: {formatSecondsToTime(trimValues[1])}</span>
+                                    <span>Start: {formatSecondsToTime(trimValues[0])}</span>
+                                    <span className="font-semibold">Duration: {formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
+                                    <span>End: {formatSecondsToTime(trimValues[1])}</span>
                                 </div>
                             </div>
                            {isTrimChangedFromOriginal && (
