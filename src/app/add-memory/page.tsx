@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { useState, useEffect, useCallback } from 'react';
 import { app } from '@/lib/firebase';
 import { getFirestore, addDoc, doc, updateDoc, getDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Loader2 } from 'lucide-react';
 
 function AddMemoryPageComponent() {
@@ -84,34 +84,61 @@ function AddMemoryPageComponent() {
         const fileRef = storageRef(storage, filePath);
         
         console.log(`Preparing to upload to: ${filePath}`);
-        console.log("Attaching custom metadata:", { userId: user.id });
+        const uploadMetadata = { customMetadata: { userId: user.id } };
+        console.log("Attaching custom metadata:", uploadMetadata.customMetadata);
 
-        // IMPORTANT: Add customMetadata to the upload
-        const uploadMetadata = {
-          customMetadata: {
-            userId: user.id,
-          },
-        };
+        // Using uploadBytesResumable for more robust uploads and better logging
+        const uploadTask = uploadBytesResumable(fileRef, mediaFileToUpload, uploadMetadata);
 
-        await uploadBytes(fileRef, mediaFileToUpload, uploadMetadata);
-        console.log("Upload successful.");
+        // Await the upload completion
+        await new Promise<void>((resolve, reject) => {
+          uploadTask.on('state_changed',
+            (snapshot) => {
+              // Log progress
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              console.log('Upload is ' + progress + '% done');
+              switch (snapshot.state) {
+                case 'paused':
+                  console.log('Upload is paused');
+                  break;
+                case 'running':
+                  console.log('Upload is running');
+                  break;
+              }
+            },
+            (error) => {
+              // Handle unsuccessful uploads
+              console.error("Upload failed with error object:", error);
+              reject(error); // Reject the promise on error
+            },
+            async () => {
+              // Handle successful uploads on complete
+              console.log('Upload successful. Now getting download URL...');
+              try {
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                console.log('File available at', downloadURL);
 
-        const downloadURL = await getDownloadURL(fileRef);
-        console.log("Got download URL:", downloadURL);
+                if (finalMediaAttachments && finalMediaAttachments.length > 0) {
+                    finalMediaAttachments[0].url = downloadURL;
+                } else {
+                    finalMediaAttachments = [{
+                        id: 'media' + Date.now(),
+                        type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
+                        url: downloadURL,
+                        filename: mediaFileToUpload.name,
+                        duration: memoryData.mediaAttachments?.[0]?.duration,
+                        size: mediaFileToUpload.size,
+                    }];
+                }
+                resolve(); // Resolve the promise on success
+              } catch (urlError) {
+                  console.error("Failed to get download URL:", urlError);
+                  reject(urlError);
+              }
+            }
+          );
+        });
 
-
-        if (finalMediaAttachments && finalMediaAttachments.length > 0) {
-            finalMediaAttachments[0].url = downloadURL;
-        } else {
-             finalMediaAttachments = [{
-                id: 'media' + Date.now(),
-                type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
-                url: downloadURL,
-                filename: mediaFileToUpload.name,
-                duration: memoryData.mediaAttachments?.[0]?.duration,
-                size: mediaFileToUpload.size,
-             }];
-        }
       } else {
           console.log("No new media file to upload.");
       }
