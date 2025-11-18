@@ -11,18 +11,8 @@ import { toast } from '@/hooks/use-toast';
 import { useState, useEffect, useCallback } from 'react';
 import { app } from '@/lib/firebase';
 import { getFirestore, addDoc, doc, updateDoc, getDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Loader2 } from 'lucide-react';
-import { uploadMemoryMediaAction } from '@/actions/uploadMemoryMediaAction';
-
-// Helper to convert file to Base64
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-  });
-};
 
 
 function AddMemoryPageComponent() {
@@ -86,41 +76,35 @@ function AddMemoryPageComponent() {
 
     try {
       const db = getFirestore(app);
+      const storage = getStorage(app);
       let finalMediaAttachments = memoryData.mediaAttachments;
 
       if (mediaFileToUpload) {
         console.log("Media file to upload found:", mediaFileToUpload.name);
         const filePath = `users/${user.id}/memories/${Date.now()}_${mediaFileToUpload.name}`;
+        const fileRef = storageRef(storage, filePath);
         
         console.log(`Preparing to upload to: ${filePath}`);
         
         toast({ title: "Uploading media...", description: "Please wait, this may take a moment."});
-        const base64File = await fileToBase64(mediaFileToUpload);
+        
+        const uploadResult = await uploadBytes(fileRef, mediaFileToUpload);
+        const downloadURL = await getDownloadURL(uploadResult.ref);
 
-        const uploadResult = await uploadMemoryMediaAction({
-          fileDataUrl: base64File,
-          filePath: filePath,
-          userId: user.id
-        });
+        console.log('Client-side upload successful. URL:', downloadURL);
+        toast({ title: "Media Upload Complete!", variant: "success" });
 
-        if (uploadResult.success && uploadResult.downloadURL) {
-          console.log('Server-side upload successful. URL:', uploadResult.downloadURL);
-          toast({ title: "Media Upload Complete!", variant: "success" });
-
-          if (finalMediaAttachments && finalMediaAttachments.length > 0) {
-              finalMediaAttachments[0].url = uploadResult.downloadURL;
-          } else {
-              finalMediaAttachments = [{
-                  id: 'media' + Date.now(),
-                  type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
-                  url: uploadResult.downloadURL,
-                  filename: mediaFileToUpload.name,
-                  duration: memoryData.mediaAttachments?.[0]?.duration,
-                  size: mediaFileToUpload.size,
-              }];
-          }
+        if (finalMediaAttachments && finalMediaAttachments.length > 0) {
+            finalMediaAttachments[0].url = downloadURL;
         } else {
-           throw new Error(uploadResult.error || "Server-side upload failed.");
+            finalMediaAttachments = [{
+                id: 'media' + Date.now(),
+                type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
+                url: downloadURL,
+                filename: mediaFileToUpload.name,
+                duration: memoryData.mediaAttachments?.[0]?.duration,
+                size: mediaFileToUpload.size,
+            }];
         }
 
       } else {
