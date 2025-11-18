@@ -277,6 +277,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   }, [currentMediaPreviewUrl]);
 
   const handleMediaReady = useCallback((mediaPayload: MediaFromRecorder) => {
+    console.log('[MemoryForm] Received media from recorder:', mediaPayload);
     if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(currentMediaPreviewUrl);
     }
@@ -295,6 +296,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   }, [currentMediaPreviewUrl]);
 
   const handleMediaDiscard = useCallback(() => {
+    console.log('[MemoryForm] Discarding media.');
     if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(currentMediaPreviewUrl);
     }
@@ -388,13 +390,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   };
 
   const triggerSubmitProcess = useCallback(() => {
+    console.log('[MemoryForm] Triggering submit process.');
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
     let mediaAttachmentsForSubmission: MediaAttachment[] | undefined = undefined;
     let mediaFileToUpload: File | undefined = undefined;
 
     if (currentMedia) { 
+      console.log('[MemoryForm] Processing current media for submission.');
       const isNewOrTrimmedFile = currentMedia.file.size > 0 && (currentMedia.file.name !== "existing_media_placeholder" || currentMedia.isTrimmed);
-      if (isNewOrTrimmedFile) mediaFileToUpload = currentMedia.file;
+      if (isNewOrTrimmedFile) {
+        mediaFileToUpload = currentMedia.file;
+        console.log('[MemoryForm] New/trimmed media file will be uploaded:', mediaFileToUpload);
+      }
 
       const originalMediaAttachmentId = memory?.mediaAttachments?.[0]?.id || Date.now().toString();
       const urlForSubmission = isNewOrTrimmedFile ? "placeholder_for_upload" : (currentMediaPreviewUrl || memory?.mediaAttachments?.[0]?.url || '');
@@ -410,18 +417,21 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         size: currentMedia.size,
         isTrimmed: currentMedia.isTrimmed,
       }];
+      console.log('[MemoryForm] Media attachment for submission:', mediaAttachmentsForSubmission);
     } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
         mediaAttachmentsForSubmission = undefined; 
+        console.log('[MemoryForm] Editing memory, but no new media. Existing media will be preserved/removed by parent.');
     }
     
     const finalPromptIdToSave = initialPromptId || memory?.promptId || undefined;
 
-    onSubmit(
-      { title, date: finalDate.toISOString(), description, emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForSubmission,
+    const memoryData = { title, date: finalDate.toISOString(), description, emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForSubmission,
         location: location || undefined, country: country || undefined, category: selectedCategory, 
-        promptId: finalPromptIdToSave, isLegacy: memory?.isLegacy || false },
-      mediaFileToUpload
-    );
+        promptId: finalPromptIdToSave, isLegacy: memory?.isLegacy || false };
+
+    console.log('[MemoryForm] Calling parent onSubmit with data:', memoryData, mediaFileToUpload);
+    onSubmit(memoryData, mediaFileToUpload);
+
   }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, selectedCategory, initialPromptId, selectedEmotionTags, isEditing, trimValues]);
 
   const handleActionButtonClick = useCallback(() => {
@@ -649,3 +659,5 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     </form>
   );
 }
+
+    

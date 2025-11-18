@@ -68,11 +68,11 @@ function AddMemoryPageComponent() {
   ) => {
     if (!user) {
       toast({ title: "Authentication Error", variant: "destructive" });
-      console.error("handleSubmit stopped: No authenticated user.");
+      console.error("[handleSubmit] Stopped: No authenticated user.");
       return;
     }
     setIsSubmitting(true);
-    console.log("handleSubmit started. User:", user.id);
+    console.log("[handleSubmit] Started. User:", user.id);
 
     try {
       const db = getFirestore(app);
@@ -80,18 +80,21 @@ function AddMemoryPageComponent() {
       let finalMediaAttachments = memoryData.mediaAttachments;
 
       if (mediaFileToUpload) {
-        console.log("Media file to upload found:", mediaFileToUpload.name);
+        console.log("[handleSubmit] Media file to upload found:", mediaFileToUpload);
         const filePath = `users/${user.id}/memories/${Date.now()}_${mediaFileToUpload.name}`;
         const fileRef = storageRef(storage, filePath);
         
-        console.log(`Preparing to upload to: ${filePath}`);
+        console.log(`[handleSubmit] Preparing to upload to: ${filePath}`);
         
         toast({ title: "Uploading media...", description: "Please wait, this may take a moment."});
         
+        console.log('[handleSubmit] Calling uploadBytes...');
         const uploadResult = await uploadBytes(fileRef, mediaFileToUpload);
+        console.log('[handleSubmit] uploadBytes promise resolved. Result:', uploadResult);
+        
         const downloadURL = await getDownloadURL(uploadResult.ref);
 
-        console.log('Client-side upload successful. URL:', downloadURL);
+        console.log('[handleSubmit] Client-side upload successful. Download URL:', downloadURL);
         toast({ title: "Media Upload Complete!", variant: "success" });
 
         if (finalMediaAttachments && finalMediaAttachments.length > 0) {
@@ -106,14 +109,15 @@ function AddMemoryPageComponent() {
                 size: mediaFileToUpload.size,
             }];
         }
+        console.log('[handleSubmit] Final media attachments object:', finalMediaAttachments);
 
       } else {
-          console.log("No new media file to upload.");
+          console.log("[handleSubmit] No new media file to upload.");
       }
 
       if (editMemoryId && memoryToEdit) {
         // Update existing memory
-        console.log(`Updating existing memory: ${memoryToEdit.id}`);
+        console.log(`[handleSubmit] Updating existing memory: ${memoryToEdit.id}`);
         const memoryDocRef = doc(db, 'users', user.id, 'memories', memoryToEdit.id);
         await updateDoc(memoryDocRef, {
             ...memoryData,
@@ -123,7 +127,7 @@ function AddMemoryPageComponent() {
         toast({ title: "Memory Updated Successfully!", variant: "success" });
       } else {
         // Create new memory
-        console.log("Creating new memory document.");
+        console.log("[handleSubmit] Creating new memory document.");
         const memoriesCollectionRef = collection(db, 'users', user.id, 'memories');
         await addDoc(memoriesCollectionRef, {
             ...memoryData,
@@ -136,21 +140,24 @@ function AddMemoryPageComponent() {
       }
       
       // Update storage usage in background
-      console.log("Calculating and updating storage usage.");
+      console.log("[handleSubmit] Calculating and updating storage usage.");
       calculateAndUpdateStorageUsage(user.id);
       
       // Redirect based on whether it was a prompt-based chapter or a freeform one
       if (memoryData.promptId) {
+        console.log('[handleSubmit] Redirecting to /prompts');
         router.push('/prompts');
       } else {
+        console.log('[handleSubmit] Redirecting to /timeline');
         router.push('/timeline');
       }
 
     } catch (error) {
-      console.error("Error saving memory:", error);
+      console.error("[handleSubmit] Error saving memory:", error);
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
       toast({ title: "Failed to Save Memory", description: `An error occurred while saving: ${errorMessage}`, variant: "destructive" });
     } finally {
+      console.log('[handleSubmit] Finished.');
       setIsSubmitting(false);
     }
   };
@@ -194,3 +201,5 @@ export default function AddMemoryPage() {
         </Suspense>
     );
 }
+
+    
