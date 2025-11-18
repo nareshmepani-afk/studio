@@ -190,7 +190,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         const endTime = (typeof firstMedia.endTime === 'number' && !isNaN(firstMedia.endTime) && firstMedia.endTime <= duration) ? firstMedia.endTime : duration;
 
         setCurrentMedia({
-            file: new File([], firstMedia.filename || "existing_media_placeholder", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/mp3'}), 
+            file: new File([], firstMedia.filename || "existing_media_placeholder", {type: firstMedia.type === 'video' ? 'video/webm' : 'audio/webm'}), 
             type: firstMedia.type,
             startTime: startTime,
             endTime: endTime,
@@ -430,7 +430,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
        setCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
       if (!currentMedia && (!isEditing || !memory?.mediaAttachments?.length)) {
-        toast({ title: "Media Required", description: "Please record or upload media for this chapter." });
+        toast({ title: "Media is Required to Proceed", description: "Please record a video or audio first, then you can proceed to the preview step." });
         return;
       }
       setMediaKey(Date.now().toString());
@@ -647,3 +647,5 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     </form>
   );
 }
+
+    
