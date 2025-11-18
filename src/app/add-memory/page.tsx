@@ -11,8 +11,19 @@ import { toast } from '@/hooks/use-toast';
 import { useState, useEffect, useCallback } from 'react';
 import { app } from '@/lib/firebase';
 import { getFirestore, addDoc, doc, updateDoc, getDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Loader2 } from 'lucide-react';
+import { uploadMemoryMediaAction } from '@/actions/uploadMemoryMediaAction';
+
+// Helper to convert file to Base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
+};
+
 
 function AddMemoryPageComponent() {
   const { user, calculateAndUpdateStorageUsage } = useAuth();
@@ -75,69 +86,42 @@ function AddMemoryPageComponent() {
 
     try {
       const db = getFirestore(app);
-      const storage = getStorage(app);
       let finalMediaAttachments = memoryData.mediaAttachments;
 
       if (mediaFileToUpload) {
         console.log("Media file to upload found:", mediaFileToUpload.name);
         const filePath = `users/${user.id}/memories/${Date.now()}_${mediaFileToUpload.name}`;
-        const fileRef = storageRef(storage, filePath);
         
         console.log(`Preparing to upload to: ${filePath}`);
-        const uploadMetadata = { customMetadata: { userId: user.id } };
-        console.log("Attaching custom metadata:", uploadMetadata.customMetadata);
+        
+        toast({ title: "Uploading media...", description: "Please wait, this may take a moment."});
+        const base64File = await fileToBase64(mediaFileToUpload);
 
-        // Using uploadBytesResumable for more robust uploads and better logging
-        const uploadTask = uploadBytesResumable(fileRef, mediaFileToUpload, uploadMetadata);
-
-        // Await the upload completion
-        await new Promise<void>((resolve, reject) => {
-          uploadTask.on('state_changed',
-            (snapshot) => {
-              // Log progress
-              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              console.log('Upload is ' + progress + '% done');
-              switch (snapshot.state) {
-                case 'paused':
-                  console.log('Upload is paused');
-                  break;
-                case 'running':
-                  console.log('Upload is running');
-                  break;
-              }
-            },
-            (error) => {
-              // Handle unsuccessful uploads
-              console.error("Upload failed with error object:", error);
-              reject(error); // Reject the promise on error
-            },
-            async () => {
-              // Handle successful uploads on complete
-              console.log('Upload successful. Now getting download URL...');
-              try {
-                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                console.log('File available at', downloadURL);
-
-                if (finalMediaAttachments && finalMediaAttachments.length > 0) {
-                    finalMediaAttachments[0].url = downloadURL;
-                } else {
-                    finalMediaAttachments = [{
-                        id: 'media' + Date.now(),
-                        type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
-                        url: downloadURL,
-                        filename: mediaFileToUpload.name,
-                        duration: memoryData.mediaAttachments?.[0]?.duration,
-                        size: mediaFileToUpload.size,
-                    }];
-                }
-                resolve(); // Resolve the promise on success
-              } catch (urlError) {
-                  console.error("Failed to get download URL:", urlError);
-                  reject(urlError);
-              }
-            }
-          );
+        const uploadResult = await uploadMemoryMediaAction({
+          fileDataUrl: base64File,
+          filePath: filePath,
+          userId: user.id
         });
+
+        if (uploadResult.success && uploadResult.downloadURL) {
+          console.log('Server-side upload successful. URL:', uploadResult.downloadURL);
+          toast({ title: "Media Upload Complete!", variant: "success" });
+
+          if (finalMediaAttachments && finalMediaAttachments.length > 0) {
+              finalMediaAttachments[0].url = uploadResult.downloadURL;
+          } else {
+              finalMediaAttachments = [{
+                  id: 'media' + Date.now(),
+                  type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
+                  url: uploadResult.downloadURL,
+                  filename: mediaFileToUpload.name,
+                  duration: memoryData.mediaAttachments?.[0]?.duration,
+                  size: mediaFileToUpload.size,
+              }];
+          }
+        } else {
+           throw new Error(uploadResult.error || "Server-side upload failed.");
+        }
 
       } else {
           console.log("No new media file to upload.");
@@ -180,7 +164,8 @@ function AddMemoryPageComponent() {
 
     } catch (error) {
       console.error("Error saving memory:", error);
-      toast({ title: "Failed to Save Memory", description: "An error occurred while saving.", variant: "destructive" });
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+      toast({ title: "Failed to Save Memory", description: `An error occurred while saving: ${errorMessage}`, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
