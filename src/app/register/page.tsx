@@ -31,15 +31,15 @@ export default function RegisterPage() {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (password !== confirmPassword) {
-      toast({ title: "Passwords Mismatch", description: "Passwords do not match.", variant: "destructive" });
+      toast({ title: "Passwords Mismatch", description: "Passwords do not match." });
       return;
     }
     if (password.length < 6) {
-        toast({ title: "Password Too Short", description: "Password must be at least 6 characters.", variant: "destructive" });
+        toast({ title: "Password Too Short", description: "Password must be at least 6 characters." });
         return;
     }
     if (!name.trim()) {
-        toast({ title: "Name Required", description: "Please enter your name.", variant: "destructive" });
+        toast({ title: "Name Required", description: "Please enter your name." });
         return;
     }
 

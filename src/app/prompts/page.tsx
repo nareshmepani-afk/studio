@@ -79,7 +79,7 @@ export default function LifeJourneyPage() {
         if (user && user.hostPassStatus === 'no_pass_initiated') {
         const now = new Date();
         await updateUserProfileInFirestore(user.id, { hostPassStatus: 'free_host_pass_active', freeHostPassActivatedDate: now.toISOString() });
-        toast({ title: "Free Host Pass Activated!", description: `Your 6-month free host pass starts now. Ends ${format(addMonths(now, 6), 'PPP')}.`, duration: 7000 });
+        toast({ title: "Free Host Pass Activated!", description: `Your 6-month free host pass starts now. Ends ${format(addMonths(now, 6), 'PPP')}.`, duration: 7000, variant: "success" });
         }
     }, [user, updateUserProfileInFirestore]);
 
@@ -89,7 +89,7 @@ export default function LifeJourneyPage() {
         if (user.hostPassStatus === 'paid_host_pass_active' && user.paidHostPassExpiryDate && isBefore(now, parseISO(user.paidHostPassExpiryDate))) { startDate = parseISO(user.paidHostPassExpiryDate); }
         const newExpiryDate = addDays(startDate, 31);
         await updateUserProfileInFirestore(user.id, { hostPassStatus: 'paid_host_pass_active', paidHostPassExpiryDate: newExpiryDate.toISOString() });
-        toast({ title: "Host Pass Activated (Payment Simulated)!", description: `Your 31-day host pass is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
+        toast({ title: "Host Pass Activated (Payment Simulated)!", description: `Your 31-day host pass is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000, variant: "success" });
         }
     }, [user, updateUserProfileInFirestore]);
 
@@ -118,6 +118,7 @@ export default function LifeJourneyPage() {
         toast({
             title: newFlagStatus ? "Prompt Flagged" : "Prompt Unflagged",
             description: `"${promptText}" is ${newFlagStatus ? "now flagged." : "no longer flagged."}`,
+            variant: "success"
         });
     } catch (error) {
         console.error("Error updating prompt flag in Firestore:", error);
@@ -128,7 +129,7 @@ export default function LifeJourneyPage() {
   const handleStartChapter = useCallback((promptId: string, promptText: string) => {
     const isPromptInAvailableGroups = availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === promptId);
     if (!canAccessFullJourney && !isPromptInAvailableGroups) {
-        toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters.", variant: "destructive" });
+        toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
         return;
     }
     toast({ title: "Starting New Chapter!", description: `Prompt: "${promptText}". Redirecting...`});
@@ -159,11 +160,11 @@ export default function LifeJourneyPage() {
 
   const handleGenerateCustomChapterIdeas = useCallback(async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {
-      toast({ title: "Profile Info Needed", description: "Please provide some information about yourself or your interests in the text area.", variant: "destructive" });
+      toast({ title: "Profile Info Needed", description: "Please provide some information about yourself or your interests in the text area." });
       return;
     }
     if (!canAccessFullJourney) {
-        toast({ title: "Host Pass Required", description: "Activate or purchase a Host Pass to use AI brainstorming.", variant: "destructive" });
+        toast({ title: "Host Pass Required", description: "Activate or purchase a Host Pass to use AI brainstorming." });
         return;
     }
     setIsLoadingChapterIdeas(true);
@@ -171,7 +172,7 @@ export default function LifeJourneyPage() {
       const profileToUse = customChapterUserProfile.trim() ? customChapterUserProfile : user?.profileInfo || '';
       const result = await generateMemoryCuesAction({ userProfile: profileToUse, currentDate: new Date().toISOString().split('T')[0], language: customChapterLanguage });
       setGeneratedChapterIdeas(result.memoryCues);
-      toast({ title: result.memoryCues.length > 0 ? "Chapter Ideas Generated!" : "No Ideas Generated" });
+      toast({ title: result.memoryCues.length > 0 ? "Chapter Ideas Generated!" : "No Ideas Generated", variant: result.memoryCues.length > 0 ? "success" : "default" });
     } catch (error) {
       toast({ title: "Error Generating Ideas", variant: "destructive" });
     }
@@ -180,7 +181,7 @@ export default function LifeJourneyPage() {
 
   const handleCustomIdeaSelected = useCallback((idea: string) => {
     if (!canAccessFullJourney) {
-        toast({ title: "Host Pass Required", description: "Activate or purchase a Host Pass to start custom chapters.", variant: "destructive" });
+        toast({ title: "Host Pass Required", description: "Activate or purchase a Host Pass to start custom chapters." });
         return;
     }
     toast({ title: "Custom Chapter Selected!", description: `Starting chapter: "${idea}". Redirecting...`});

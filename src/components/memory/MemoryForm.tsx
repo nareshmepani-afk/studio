@@ -422,11 +422,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const handleActionButtonClick = useCallback(() => {
     if (isParentSubmitting || isTrimming) return;
     if (currentSlide === SLIDE_INDEX_DETAILS) {
-      if (!title.trim()) { toast({ title: "Title Required", variant: "destructive" }); setTimeout(() => titleInputRef.current?.focus(), 100); return; }
+      if (!title.trim()) { toast({ title: "Title Required" }); setTimeout(() => titleInputRef.current?.focus(), 100); return; }
       let tempDate = new Date(selectedYear, selectedMonth, 1); tempDate = setDate(tempDate, selectedDay);
-      if (!isValid(tempDate) || getYear(tempDate) !== selectedYear || getMonth(tempDate) !== selectedMonth || getDate(tempDate) !== selectedDay) { toast({ title: "Invalid Date", variant: "destructive" }); setTimeout(() => yearSelectRef.current?.focus(), 100); return; }
-      if (!description.trim()) { toast({ title: "Description Required", variant: "destructive" }); setTimeout(() => descriptionTextareaRef.current?.focus(), 100); return; }
-      if (!selectedCategory) { toast({ title: "Category Required", variant: "destructive" }); return; }
+      if (!isValid(tempDate) || getYear(tempDate) !== selectedYear || getMonth(tempDate) !== selectedMonth || getDate(tempDate) !== selectedDay) { toast({ title: "Invalid Date" }); setTimeout(() => yearSelectRef.current?.focus(), 100); return; }
+      if (!description.trim()) { toast({ title: "Description Required" }); setTimeout(() => descriptionTextareaRef.current?.focus(), 100); return; }
+      if (!selectedCategory) { toast({ title: "Category Required" }); return; }
        setCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
       if (!currentMedia && (!isEditing || !memory?.mediaAttachments?.length)) {
@@ -605,8 +605,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground font-mono">
                                     <span>Start: {formatSecondsToTime(trimValues[0])}</span>
-                                    <span>Duration: {formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
-                                    <span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1])}</span>
+                                    <span>End: {formatSecondsToTime(trimValues[1])}</span>
+                                    <span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
                                 </div>
                             </div>
                            {isTrimChangedFromOriginal && (

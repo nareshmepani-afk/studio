@@ -151,7 +151,7 @@ export default function SettingsPage() {
         if (user && user.sharedAccessStatus === 'no_pass_initiated') {
         const now = new Date();
         await updateUserProfileInFirestore(user.id, { sharedAccessStatus: 'free_pass_active', freePassActivatedDate: now.toISOString() });
-        toast({ title: "Free Guest Pass Activated!", description: `Your 6-month free access starts now. Ends ${format(addMonths(now, 6), 'PPP')}.`, duration: 7000 });
+        toast({ title: "Free Guest Pass Activated!", description: `Your 6-month free access starts now. Ends ${format(addMonths(now, 6), 'PPP')}.`, duration: 7000, variant: "success" });
         }
     }, [user, updateUserProfileInFirestore]);
 
@@ -161,7 +161,7 @@ export default function SettingsPage() {
             if (user.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate && isBefore(now, parseISO(user.paidPassExpiryDate))) { startDate = parseISO(user.paidPassExpiryDate); }
             const newExpiryDate = addDays(startDate, 31);
             await updateUserProfileInFirestore(user.id, { sharedAccessStatus: 'paid_pass_active', paidPassExpiryDate: newExpiryDate.toISOString() });
-            toast({ title: "Guest Pass Activated (Payment Simulated)!", description: `Your 31-day pass is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
+            toast({ title: "Guest Pass Activated (Payment Simulated)!", description: `Your 31-day pass is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000, variant: "success" });
         }
     }, [user, updateUserProfileInFirestore]);
 
@@ -169,7 +169,7 @@ export default function SettingsPage() {
         if (user && user.hostPassStatus === 'no_pass_initiated') {
         const now = new Date();
         await updateUserProfileInFirestore(user.id, { hostPassStatus: 'free_host_pass_active', freeHostPassActivatedDate: now.toISOString() });
-        toast({ title: "Free Host Pass Activated!", description: `Your 6-month free host pass starts now. Ends ${format(addMonths(now, 6), 'PPP')}.`, duration: 7000 });
+        toast({ title: "Free Host Pass Activated!", description: `Your 6-month free host pass starts now. Ends ${format(addMonths(now, 6), 'PPP')}.`, duration: 7000, variant: "success" });
         }
     }, [user, updateUserProfileInFirestore]);
 
@@ -179,7 +179,7 @@ export default function SettingsPage() {
         if (user.hostPassStatus === 'paid_host_pass_active' && user.paidHostPassExpiryDate && isBefore(now, parseISO(user.paidHostPassExpiryDate))) { startDate = parseISO(user.paidHostPassExpiryDate); }
         const newExpiryDate = addDays(startDate, 31);
         await updateUserProfileInFirestore(user.id, { hostPassStatus: 'paid_host_pass_active', paidHostPassExpiryDate: newExpiryDate.toISOString() });
-        toast({ title: "Host Pass Activated (Payment Simulated)!", description: `Your 31-day host pass is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000 });
+        toast({ title: "Host Pass Activated (Payment Simulated)!", description: `Your 31-day host pass is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000, variant: "success" });
         }
     }, [user, updateUserProfileInFirestore]);
 
@@ -252,7 +252,7 @@ export default function SettingsPage() {
     
     try {
         await updateUserProfileInFirestore(user.id, updatedUserDetails);
-        toast({ title: "Settings Saved!", description: "Your profile information has been updated." });
+        toast({ title: "Settings Saved!", description: "Your profile information has been updated.", variant: "success" });
         setAvatarFile(null);
     } catch (error) {
         console.error("Error saving settings:", error);

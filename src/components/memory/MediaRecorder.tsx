@@ -12,7 +12,7 @@ import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 import { useAuth } from '@/hooks/useAuth';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { mockPromptGroups } from '@/lib/mockData';
@@ -222,7 +222,7 @@ export function MediaCaptureControl({
         recordedChunks.current = [];
 
         if (blob.size < 1024) {
-          setTimeout(() => toast({ variant: 'destructive', title: 'Recording Error', description: 'Recorded data is too small. Please try a longer recording.', duration: 7000 }), 0);
+          setTimeout(() => toast({ title: 'Recording Error', description: 'Recorded data is too small. Please try a longer recording.' }), 0);
           handleDiscardMedia();
           return;
         }
@@ -294,7 +294,7 @@ export function MediaCaptureControl({
 
     const fileType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : null;
     if (!fileType) {
-        toast({ title: "Invalid File Type", description: "Please upload a valid video or audio file.", variant: "destructive" });
+        toast({ title: "Invalid File Type", description: "Please upload a valid video or audio file." });
         return;
     }
     if (!checkStorageQuota(file.size)) {

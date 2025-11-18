@@ -99,7 +99,7 @@ function AddMemoryPageComponent() {
             mediaAttachments: finalMediaAttachments,
             updatedAt: serverTimestamp()
         });
-        toast({ title: "Memory Updated Successfully!" });
+        toast({ title: "Memory Updated Successfully!", variant: "success" });
       } else {
         // Create new memory
         const memoriesCollectionRef = collection(db, 'users', user.id, 'memories');
@@ -110,7 +110,7 @@ function AddMemoryPageComponent() {
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         });
-        toast({ title: "Memory Saved Successfully!" });
+        toast({ title: "Memory Saved Successfully!", variant: "success" });
       }
       
       // Update storage usage in background
@@ -170,4 +170,3 @@ export default function AddMemoryPage() {
         </Suspense>
     );
 }
-

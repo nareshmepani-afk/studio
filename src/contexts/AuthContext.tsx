@@ -215,7 +215,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log(`AuthContext: Attempting to log in user with email: ${email}.`);
       setIsLoading(true); // Start loading on login attempt
       await signInWithEmailAndPassword(auth, email, password);
-      toast({ title: "Login Successful", description: "Welcome back!" });
+      toast({ title: "Login Successful", description: "Welcome back!", variant: "success" });
     } catch (error: any) {
       setIsLoading(false); // Stop loading on failure
       toast({ title: "Login Failed", description: error.message || "Invalid email or password.", variant: "destructive" });
@@ -237,7 +237,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           storageUsedBytes: 0,
       };
       await setDoc(doc(db, "users", cred.user.uid), { ...newUser, createdAt: serverTimestamp() });
-      toast({ title: "Registration Successful", description: "Welcome! Your account has been created." });
+      toast({ title: "Registration Successful", description: "Welcome! Your account has been created.", variant: "success" });
     } catch (error: any) {
       setIsLoading(false); // Stop loading on failure
       toast({ title: "Registration Failed", description: error.message || "Could not create account.", variant: "destructive" });

@@ -33,7 +33,6 @@ function ResetPasswordFormComponent() {
       toast({
         title: "Invalid Token",
         description: "The password reset link is invalid or has expired. Please try requesting a reset again.",
-        variant: "destructive",
       });
     }
   }, [token]);
@@ -50,12 +49,12 @@ function ResetPasswordFormComponent() {
     // Firebase password minimum is 6 characters
     if (newPassword.length < 6) {
       setError("Password must be at least 6 characters long.");
-      toast({ title: "Password Too Short", description: "Password must be at least 6 characters long.", variant: "destructive" });
+      toast({ title: "Password Too Short", description: "Password must be at least 6 characters long." });
       return;
     }
     if (newPassword !== confirmPassword) {
       setError("Passwords do not match.");
-      toast({ title: "Passwords Mismatch", description: "The new passwords do not match.", variant: "destructive" });
+      toast({ title: "Passwords Mismatch", description: "The new passwords do not match." });
       return;
     }
 
@@ -75,6 +74,7 @@ function ResetPasswordFormComponent() {
         toast({
           title: "Password Reset Successful",
           description: result.message,
+          variant: "success",
         });
         setTimeout(() => router.push('/login'), 3000);
       } else {

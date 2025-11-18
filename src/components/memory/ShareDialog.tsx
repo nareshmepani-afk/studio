@@ -28,6 +28,7 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
     toast({ // Direct use of imported toast
       title: "Share link generated!",
       description: "You can now copy the link to share it.",
+      variant: "success",
     });
   };
 
@@ -38,6 +39,7 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
       setTimeout(() => setCopied(false), 2000);
       toast({ // Direct use
         title: "Link copied to clipboard!",
+        variant: "success",
       });
     }
   };
@@ -61,7 +63,7 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
               value={guestEmail}
               onChange={(e) => setGuestEmail(e.target.value)}
             />
-            <Button variant="outline" className="w-full" onClick={() => toast({ title: "Invite Sent (Mock)", description: `Invitation sent to ${guestEmail}.`})} disabled={!guestEmail}>
+            <Button variant="outline" className="w-full" onClick={() => toast({ title: "Invite Sent (Mock)", description: `Invitation sent to ${guestEmail}.`, variant: "success"})} disabled={!guestEmail}>
               Send Invite (Mock)
             </Button>
           </div>
@@ -88,4 +90,3 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
     </Dialog>
   );
 }
-

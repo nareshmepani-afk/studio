@@ -96,7 +96,7 @@ export default function TimelinePage() {
     try {
       const memoryDocRef = doc(db, "users", user.id, "memories", memoryId);
       await deleteDoc(memoryDocRef);
-      toast({ title: "Memory Deleted", description: "The memory has been removed."});
+      toast({ title: "Memory Deleted", description: "The memory has been removed.", variant: "success"});
     } catch (error) {
       console.error("Error deleting memory from Firestore:", error);
       toast({ title: "Delete Failed", variant: "destructive" });
@@ -114,6 +114,7 @@ export default function TimelinePage() {
       toast({
         title: newLegacyStatus ? "Added to Legacy Chest" : "Removed from Legacy Chest",
         description: `"${memoryToUpdate.title}" status updated.`,
+        variant: "success",
       });
     } catch (error) {
       console.error("Error updating legacy status in Firestore:", error);
@@ -269,7 +270,7 @@ export default function TimelinePage() {
                   <TooltipTrigger asChild>
                     <span>
                       <Link href={addMemoryButtonDisabled ? "#" : "/add-memory"}>
-                        <Button disabled={addMemoryButtonDisabled} aria-disabled={addMemoryButtonDisabled} onClick={(e) => { if(addMemoryButtonDisabled) { e.preventDefault(); toast({title: "Host Pass Required", description: addMemoryTooltipContent, variant: "destructive"});} }} aria-label={addMemoryTooltipContent}>
+                        <Button disabled={addMemoryButtonDisabled} aria-disabled={addMemoryButtonDisabled} onClick={(e) => { if(addMemoryButtonDisabled) { e.preventDefault(); toast({title: "Host Pass Required", description: addMemoryTooltipContent });} }} aria-label={addMemoryTooltipContent}>
                           <PlusCircle className="mr-2 h-5 w-5" /> Add New Memory
                         </Button>
                       </Link>
@@ -360,5 +361,3 @@ export default function TimelinePage() {
     </AuthenticatedPageWrapper>
   );
 }
-
-    
