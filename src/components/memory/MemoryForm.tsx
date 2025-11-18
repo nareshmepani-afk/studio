@@ -151,12 +151,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
   useEffect(() => {
     if (pendingTrimmedMedia) {
-      setCurrentMedia(pendingTrimmedMedia.media);
-      setCurrentMediaPreviewUrl(pendingTrimmedMedia.url);
-      setTrimValues([0, pendingTrimmedMedia.media.duration]);
-      setPendingTrimmedMedia(null);
-      setMediaKey(Date.now().toString()); 
-      toast({ title: "Trim Applied!", description: "The media has been trimmed. You can now preview the result.", variant: "success" });
+      setCurrentMedia(null); // Unmount the component
+      setCurrentMediaPreviewUrl(null);
+      
+      // In the next render cycle, set the new media
+      // This timeout ensures React processes the null state first
+      setTimeout(() => {
+        setCurrentMedia(pendingTrimmedMedia.media);
+        setCurrentMediaPreviewUrl(pendingTrimmedMedia.url);
+        setTrimValues([0, pendingTrimmedMedia.media.duration]);
+        setPendingTrimmedMedia(null);
+        toast({ title: "Trim Applied!", description: "The media has been trimmed. You can now preview the result.", variant: "success" });
+      }, 0);
     }
   }, [pendingTrimmedMedia]);
 
@@ -309,15 +315,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       const [oldStart, oldEnd] = trimValues;
       const [newStart, newEnd] = newValues;
 
-      // Determine which handle was moved by comparing old and new values
       if (newStart !== oldStart) {
-        // Start handle was moved, keep the old end time
         setTrimValues([newStart, oldEnd]);
       } else if (newEnd !== oldEnd) {
-        // End handle was moved, keep the old start time
         setTrimValues([oldStart, newEnd]);
       } else {
-        // Fallback for initial set or other cases
         setTrimValues(newValues);
       }
     }
@@ -370,8 +372,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             isTrimmed: true,
         };
         
-        setCurrentMedia(null);
-        setCurrentMediaPreviewUrl(null);
         setPendingTrimmedMedia({ media: newMediaData, url: newPreviewUrl });
         
     } catch (error) {
@@ -422,9 +422,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const handleActionButtonClick = useCallback(() => {
     if (isParentSubmitting || isTrimming) return;
     if (currentSlide === SLIDE_INDEX_DETAILS) {
-      if (!title.trim()) { toast({ title: "Title Required" }); setTimeout(() => titleInputRef.current?.focus(), 100); return; }
+      if (!title.trim()) { toast({ title: "Title Required", variant: "destructive" }); setTimeout(() => titleInputRef.current?.focus(), 100); return; }
       let tempDate = new Date(selectedYear, selectedMonth, 1); tempDate = setDate(tempDate, selectedDay);
-      if (!isValid(tempDate) || getYear(tempDate) !== selectedYear || getMonth(tempDate) !== selectedMonth || getDate(tempDate) !== selectedDay) { toast({ title: "Invalid Date" }); setTimeout(() => yearSelectRef.current?.focus(), 100); return; }
+      if (!isValid(tempDate) || getYear(tempDate) !== selectedYear || getMonth(tempDate) !== selectedMonth || getDate(tempDate) !== selectedDay) { toast({ title: "Invalid Date", variant: "destructive" }); setTimeout(() => yearSelectRef.current?.focus(), 100); return; }
       if (!description.trim()) { toast({ title: "Description Required" }); setTimeout(() => descriptionTextareaRef.current?.focus(), 100); return; }
       if (!selectedCategory) { toast({ title: "Category Required" }); return; }
        setCurrentSlide(SLIDE_INDEX_MEDIA);
@@ -647,5 +647,3 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     </form>
   );
 }
-
-    
