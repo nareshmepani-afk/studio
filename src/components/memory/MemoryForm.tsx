@@ -145,8 +145,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null); 
   const [trimValues, setTrimValues] = useState<[number, number]>([0, 100]);
   const [isTrimming, setIsTrimming] = useState(false);
+  
   const [mediaKey, setMediaKey] = useState(Date.now().toString());
-
   const [pendingTrimmedMedia, setPendingTrimmedMedia] = useState<{ media: CurrentMediaData, url: string } | null>(null);
 
   useEffect(() => {
@@ -157,6 +157,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       // In the next render cycle, set the new media
       // This timeout ensures React processes the null state first
       setTimeout(() => {
+        setMediaKey(Date.now().toString()); // Set a new key to force re-mount
         setCurrentMedia(pendingTrimmedMedia.media);
         setCurrentMediaPreviewUrl(pendingTrimmedMedia.url);
         setTrimValues([0, pendingTrimmedMedia.media.duration]);
@@ -315,11 +316,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       const [oldStart, oldEnd] = trimValues;
       const [newStart, newEnd] = newValues;
 
+      // Determine which handle was moved by comparing old and new values
       if (newStart !== oldStart) {
+        // Start handle was moved, keep the old end time
         setTrimValues([newStart, oldEnd]);
       } else if (newEnd !== oldEnd) {
+        // End handle was moved, keep the old start time
         setTrimValues([oldStart, newEnd]);
       } else {
+        // Fallback for initial set or other cases
         setTrimValues(newValues);
       }
     }
@@ -425,8 +430,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       if (!title.trim()) { toast({ title: "Title Required", variant: "destructive" }); setTimeout(() => titleInputRef.current?.focus(), 100); return; }
       let tempDate = new Date(selectedYear, selectedMonth, 1); tempDate = setDate(tempDate, selectedDay);
       if (!isValid(tempDate) || getYear(tempDate) !== selectedYear || getMonth(tempDate) !== selectedMonth || getDate(tempDate) !== selectedDay) { toast({ title: "Invalid Date", variant: "destructive" }); setTimeout(() => yearSelectRef.current?.focus(), 100); return; }
-      if (!description.trim()) { toast({ title: "Description Required" }); setTimeout(() => descriptionTextareaRef.current?.focus(), 100); return; }
-      if (!selectedCategory) { toast({ title: "Category Required" }); return; }
+      if (!description.trim()) { toast({ title: "Description Required", description: "Please provide a description for your memory.", variant: "default" }); setTimeout(() => descriptionTextareaRef.current?.focus(), 100); return; }
+      if (!selectedCategory) { toast({ title: "Category Required", description: "Please select a category.", variant: "default" }); return; }
        setCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
       if (!currentMedia && (!isEditing || !memory?.mediaAttachments?.length)) {
@@ -604,9 +609,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                     disabled={currentMedia.isTrimmed || isTrimming}
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground font-mono">
-                                    <span>Start: {formatSecondsToTime(trimValues[0])}</span>
-                                    <span>End: {formatSecondsToTime(trimValues[1])}</span>
-                                    <span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
+                                  <span>Start: {formatSecondsToTime(trimValues[0])}</span>
+                                  <span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
+                                  <span>End: {formatSecondsToTime(trimValues[1])}</span>
                                 </div>
                             </div>
                            {isTrimChangedFromOriginal && (
