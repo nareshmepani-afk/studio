@@ -28,7 +28,7 @@ function AddMemoryPageComponent() {
   const [isLoadingMemory, setIsLoadingMemory] = useState(true);
 
   const db = getFirestore(app);
-  const storage = getStorage(app);
+  
 
   useEffect(() => {
     if (editMemoryId && user) {
@@ -71,6 +71,7 @@ function AddMemoryPageComponent() {
     setIsSubmitting(true);
 
     try {
+      const storage = getStorage(app); // Just-in-time initialization of storage
       let finalMediaAttachments = memoryData.mediaAttachments;
 
       if (mediaFileToUpload) {
