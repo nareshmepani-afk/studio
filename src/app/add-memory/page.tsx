@@ -27,11 +27,12 @@ function AddMemoryPageComponent() {
   const [memoryToEdit, setMemoryToEdit] = useState<Memory | undefined>(undefined);
   const [isLoadingMemory, setIsLoadingMemory] = useState(true);
 
-  const db = getFirestore(app);
+  
   
 
   useEffect(() => {
     if (editMemoryId && user) {
+      const db = getFirestore(app);
       const fetchMemory = async () => {
         setIsLoadingMemory(true);
         try {
@@ -58,7 +59,7 @@ function AddMemoryPageComponent() {
     } else {
         setIsLoadingMemory(false);
     }
-  }, [editMemoryId, user, router, db]);
+  }, [editMemoryId, user, router]);
 
   const handleSubmit = async (
     memoryData: Omit<Memory, 'id' | 'userId'> & { promptId?: string },
@@ -66,24 +67,42 @@ function AddMemoryPageComponent() {
   ) => {
     if (!user) {
       toast({ title: "Authentication Error", variant: "destructive" });
+      console.error("handleSubmit stopped: No authenticated user.");
       return;
     }
     setIsSubmitting(true);
+    console.log("handleSubmit started. User:", user.id);
 
     try {
-      const storage = getStorage(app); // Just-in-time initialization of storage
+      const db = getFirestore(app);
+      const storage = getStorage(app);
       let finalMediaAttachments = memoryData.mediaAttachments;
 
       if (mediaFileToUpload) {
+        console.log("Media file to upload found:", mediaFileToUpload.name);
         const filePath = `users/${user.id}/memories/${Date.now()}_${mediaFileToUpload.name}`;
         const fileRef = storageRef(storage, filePath);
-        await uploadBytes(fileRef, mediaFileToUpload);
+        
+        console.log(`Preparing to upload to: ${filePath}`);
+        console.log("Attaching custom metadata:", { userId: user.id });
+
+        // IMPORTANT: Add customMetadata to the upload
+        const uploadMetadata = {
+          customMetadata: {
+            userId: user.id,
+          },
+        };
+
+        await uploadBytes(fileRef, mediaFileToUpload, uploadMetadata);
+        console.log("Upload successful.");
+
         const downloadURL = await getDownloadURL(fileRef);
+        console.log("Got download URL:", downloadURL);
+
 
         if (finalMediaAttachments && finalMediaAttachments.length > 0) {
             finalMediaAttachments[0].url = downloadURL;
         } else {
-            // This case should be less common with the new flow but is a good fallback
              finalMediaAttachments = [{
                 id: 'media' + Date.now(),
                 type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
@@ -93,10 +112,13 @@ function AddMemoryPageComponent() {
                 size: mediaFileToUpload.size,
              }];
         }
+      } else {
+          console.log("No new media file to upload.");
       }
 
       if (editMemoryId && memoryToEdit) {
         // Update existing memory
+        console.log(`Updating existing memory: ${memoryToEdit.id}`);
         const memoryDocRef = doc(db, 'users', user.id, 'memories', memoryToEdit.id);
         await updateDoc(memoryDocRef, {
             ...memoryData,
@@ -106,6 +128,7 @@ function AddMemoryPageComponent() {
         toast({ title: "Memory Updated Successfully!", variant: "success" });
       } else {
         // Create new memory
+        console.log("Creating new memory document.");
         const memoriesCollectionRef = collection(db, 'users', user.id, 'memories');
         await addDoc(memoriesCollectionRef, {
             ...memoryData,
@@ -118,6 +141,7 @@ function AddMemoryPageComponent() {
       }
       
       // Update storage usage in background
+      console.log("Calculating and updating storage usage.");
       calculateAndUpdateStorageUsage(user.id);
       
       // Redirect based on whether it was a prompt-based chapter or a freeform one
