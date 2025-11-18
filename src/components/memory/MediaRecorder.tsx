@@ -17,6 +17,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { mockPromptGroups } from '@/lib/mockData';
 import type { MediaAttachment } from '@/types';
+import { getFFmpeg } from '@/lib/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
 
 // Moved from utils.ts to break circular dependency
 function formatSecondsToTime(timeInSeconds: number | undefined): string {
@@ -61,6 +63,7 @@ export function MediaCaptureControl({
 }: MediaCaptureControlProps) {
   const { user, storageQuotaBytes, hostPassStatus } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -186,6 +189,56 @@ export function MediaCaptureControl({
 
   }, [trimValues]);
 
+  const processAndFinalizeMedia = useCallback(async (blob: Blob, type: 'video' | 'audio') => {
+    setIsProcessing(true);
+    toast({ title: "Processing Media...", description: "Converting to a web-friendly format. This may take a moment." });
+
+    try {
+        const ffmpeg = await getFFmpeg();
+        const inputFileName = `input.${type === 'video' ? 'webm' : 'webm'}`;
+        const outputFileName = `output.${type === 'video' ? 'mp4' : 'mp3'}`;
+
+        await ffmpeg.writeFile(inputFileName, await fetchFile(blob));
+
+        const command = type === 'video'
+            ? ['-i', inputFileName, '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-movflags', '+faststart', outputFileName]
+            : ['-i', inputFileName, '-c:a', 'libmp3lame', outputFileName];
+
+        await ffmpeg.exec(command);
+        const data = await ffmpeg.readFile(outputFileName);
+        const convertedBlob = new Blob([data], { type: type === 'video' ? 'video/mp4' : 'audio/mpeg' });
+
+        if (!checkStorageQuota(convertedBlob.size)) {
+            handleDiscardMedia();
+            setIsProcessing(false);
+            return;
+        }
+        
+        const file = new File([convertedBlob], outputFileName, { type: convertedBlob.type });
+
+        const mediaElement = document.createElement(type);
+        const objectUrlForDurationCheck = URL.createObjectURL(convertedBlob);
+        mediaElement.src = objectUrlForDurationCheck;
+
+        mediaElement.onloadedmetadata = () => {
+            URL.revokeObjectURL(objectUrlForDurationCheck);
+            if (mediaElement.duration > MAX_RECORDING_DURATION) {
+                toast({ variant: 'destructive', title: 'Recording Too Long', description: `Recording is ${formatSecondsToTime(mediaElement.duration)}. Max allowed is ${formatSecondsToTime(MAX_RECORDING_DURATION)}. Please re-record.`, duration: 10000 });
+                handleDiscardMedia();
+                return;
+            }
+            onMediaReady({ file, type: type, duration: mediaElement.duration, size: file.size });
+            toast({ title: "Recording Processed!", description: `Duration: ${formatSecondsToTime(mediaElement.duration)}. You can now save your memory.`, variant: "success" });
+            setIsProcessing(false);
+        };
+    } catch (error) {
+        console.error("Error processing media with FFmpeg:", error);
+        toast({ title: "Processing Failed", description: "Could not convert the media. Please try again.", variant: "destructive" });
+        setIsProcessing(false);
+        handleDiscardMedia();
+    }
+  }, [checkStorageQuota, onMediaReady, handleDiscardMedia]);
+
 
   const handleStartRecording = async (type: 'video' | 'audio') => {
     if (isRecording || !checkHostPass()) return;
@@ -213,7 +266,7 @@ export function MediaCaptureControl({
 
 
     try {
-      const recorder = new window.MediaRecorder(streamRef.current);
+      const recorder = new window.MediaRecorder(streamRef.current, { mimeType: type === 'video' ? 'video/webm' : 'audio/webm' });
       mediaRecorderRef.current = recorder;
       recorder.ondataavailable = (event) => { if (event.data.size > 0) recordedChunks.current.push(event.data); };
       
@@ -226,29 +279,8 @@ export function MediaCaptureControl({
           handleDiscardMedia();
           return;
         }
-
-        if (!checkStorageQuota(blob.size)) {
-            handleDiscardMedia();
-            return;
-        }
         
-        const file = new File([blob], `recording.${blob.type.split('/')[1]?.split(';')[0] || 'bin'}`, { type: blob.type });
-        
-        // Get duration
-        const mediaElement = document.createElement(type);
-        const objectUrlForDurationCheck = URL.createObjectURL(blob);
-        mediaElement.src = objectUrlForDurationCheck;
-
-        mediaElement.onloadedmetadata = () => {
-             URL.revokeObjectURL(objectUrlForDurationCheck);
-             if (mediaElement.duration > MAX_RECORDING_DURATION) {
-                toast({ variant: 'destructive', title: 'Recording Too Long', description: `Recording is ${formatSecondsToTime(mediaElement.duration)}. Max allowed is ${formatSecondsToTime(MAX_RECORDING_DURATION)}. Please re-record.`, duration: 10000 });
-                handleDiscardMedia();
-                return;
-            }
-            onMediaReady({ file, type: type, duration: mediaElement.duration, size: file.size });
-            toast({ title: "Recording Complete!", description: `Duration: ${formatSecondsToTime(mediaElement.duration)}. You can now save your memory.`, variant: "success" });
-        };
+        processAndFinalizeMedia(blob, type);
       };
 
       recorder.start();
@@ -297,27 +329,9 @@ export function MediaCaptureControl({
         toast({ title: "Invalid File Type", description: "Please upload a valid video or audio file." });
         return;
     }
-    if (!checkStorageQuota(file.size)) {
-        event.target.value = '';
-        return;
-    }
     
     revokeCurrentPreviewUrl();
-    
-    const mediaElement = document.createElement(fileType);
-    const newPreviewUrl = URL.createObjectURL(file);
-    mediaElement.src = newPreviewUrl;
-    mediaElement.onloadedmetadata = () => {
-        // We don't revoke the URL here because we need it for the preview.
-        // It will be revoked by the parent component's cleanup logic.
-        if (mediaElement.duration > MAX_RECORDING_DURATION) {
-            toast({ variant: 'destructive', title: 'File Too Long', description: `Uploaded file is ${formatSecondsToTime(mediaElement.duration)}. Max allowed is ${formatSecondsToTime(MAX_RECORDING_DURATION)}.`, duration: 10000 });
-            URL.revokeObjectURL(newPreviewUrl); // Revoke if invalid
-            return;
-        }
-        onMediaReady({ file, type: fileType, duration: mediaElement.duration, size: file.size });
-        toast({ title: "File Ready!", description: `${file.name} is ready to be saved with your memory.`, variant: "success" });
-    };
+    processAndFinalizeMedia(file, fileType);
     event.target.value = ''; // Allow re-uploading the same file
   };
   
@@ -333,6 +347,18 @@ export function MediaCaptureControl({
       cleanupStream();
     };
   }, [cleanupStream]);
+
+  if (isProcessing) {
+      return (
+        <Card>
+            <CardHeader><CardTitle className="font-headline text-lg">Processing Media</CardTitle></CardHeader>
+            <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
+                <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                <p className="text-sm text-muted-foreground">Converting your media...</p>
+            </CardContent>
+        </Card>
+      )
+  }
 
   return (
     <Card>
