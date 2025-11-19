@@ -37,6 +37,9 @@ const nextConfig: NextConfig = {
       }
     ],
   },
+  env: {
+    NEXT_PUBLIC_CRASHLYTICS_ENABLED: process.env.NODE_ENV === 'production' ? 'true' : 'false',
+  },
 };
 
 export default nextConfig;
