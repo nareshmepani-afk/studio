@@ -13,6 +13,10 @@
           {
             "key": "Cross-origin-Embedder-Policy",
             "value": "require-corp"
+          },
+          {
+            "key": "Content-Security-Policy",
+            "value": "script-src 'self' 'unsafe-eval' https://*.unpkg.com; object-src 'self'; worker-src 'self' blob:;"
           }
         ]
       }

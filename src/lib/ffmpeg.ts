@@ -1,5 +1,5 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import { fetchFile } from '@ffmpeg/util';
 
 let ffmpeg: FFmpeg | null;
 
@@ -18,12 +18,12 @@ export async function getFFmpeg() {
     });
 
     try {
-        // Use the single-threaded version of FFmpeg core
         const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
         await ffmpeg.load({
-            coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-            wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-            // No workerURL needed for single-threaded version
+            coreURL: `${baseURL}/ffmpeg-core.js`,
+            wasmURL: `${baseURL}/ffmpeg-core.wasm`,
+            // The single-threaded core still needs a worker definition, even if it's not a real "worker"
+            workerURL: `${baseURL}/ffmpeg-core.worker.js`,
         });
         console.log('FFmpeg (single-threaded) loaded successfully.');
     } catch (error) {
