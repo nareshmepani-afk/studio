@@ -12,17 +12,21 @@ export async function getFFmpeg() {
     ffmpeg = new FFmpeg();
 
     ffmpeg.on('log', ({ message }) => {
-        console.log(`[FFMPEG]: ${message}`);
+        // Suppress verbose logs but keep errors
+        if (message.includes('error') || message.includes('failed') || !message.startsWith('frame=')) {
+            console.log(`[FFMPEG]: ${message}`);
+        }
     });
 
     try {
-        const baseURL = 'https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm';
+        // Use the single-threaded version of FFmpeg core
+        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
         await ffmpeg.load({
             coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
             wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-            workerURL: await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript'),
+            // No workerURL needed for single-threaded version
         });
-        console.log('FFmpeg loaded successfully.');
+        console.log('FFmpeg (single-threaded) loaded successfully.');
     } catch (error) {
         console.error('Failed to load FFmpeg:', error);
         ffmpeg = null; // Reset on failure
