@@ -72,8 +72,10 @@ export const processVideoUpload = functions.storage.object()
         destination: permanentPath,
         metadata: {
           contentType: "video/mp4",
-          // Mark as processed to prevent re-triggering
-          metadata: {processed: "true"},
+          // Correctly set the custom metadata at the top level
+          metadata: {
+            processed: "true",
+          },
         },
       });
       functions.logger.log("Upload of converted file complete.");
