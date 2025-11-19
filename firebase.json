@@ -8,15 +8,11 @@
         "headers": [
           {
             "key": "Cross-Origin-Opener-Policy",
-            "value": "same-origin-allow-popups"
+            "value": "same-origin"
           },
           {
             "key": "Cross-origin-Embedder-Policy",
             "value": "require-corp"
-          },
-          {
-            "key": "Content-Security-Policy",
-            "value": "script-src 'self' 'unsafe-eval' https://*.unpkg.com; object-src 'self'; worker-src 'self' blob:;"
           }
         ]
       }
