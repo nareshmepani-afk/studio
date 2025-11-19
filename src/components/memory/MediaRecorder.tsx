@@ -17,8 +17,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { mockPromptGroups } from '@/lib/mockData';
 import type { MediaAttachment } from '@/types';
-import { getFFmpeg } from '@/lib/ffmpeg';
-import { fetchFile } from '@ffmpeg/util';
 
 // Moved from utils.ts to break circular dependency
 function formatSecondsToTime(timeInSeconds: number | undefined): string {
@@ -211,65 +209,52 @@ export function MediaCaptureControl({
   }, [isRecording, revokeCurrentPreviewUrl, onDiscard]);
 
 
-  const processAndFinalizeMedia = useCallback(async (blob: Blob, type: 'video' | 'audio', source: 'upload' | 'record') => {
+  const processAndFinalizeMedia = useCallback(async (blob: Blob, type: 'video' | 'audio') => {
     setIsProcessing(true);
-    toast({ title: "Processing Media...", description: "Converting to a web-friendly format. This may take a moment." });
-    console.log(`[MediaRecorder] Starting media processing. Original blob size: ${blob.size}, type: ${blob.type}, source: ${source}`);
+    console.log(`[MediaRecorder] Starting media finalization. Blob size: ${blob.size}, type: ${blob.type}`);
 
-    try {
-        const ffmpeg = await getFFmpeg();
-        const inputFileName = `input.${source === 'record' ? 'webm' : (type === 'video' ? 'mp4' : 'mp3')}`;
-        const outputFileName = `output.${type === 'video' ? 'mp4' : 'mp3'}`;
-        
-        console.log(`[MediaRecorder] FFMPEG: Writing input file: ${inputFileName}`);
-        await ffmpeg.writeFile(inputFileName, await fetchFile(blob));
+    if (!checkStorageQuota(blob.size)) {
+        handleDiscardMedia();
+        setIsProcessing(false);
+        return;
+    }
 
-        const command = type === 'video'
-            ? ['-i', inputFileName, '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-movflags', '+faststart', outputFileName]
-            : ['-i', inputFileName, '-c:a', 'libmp3lame', outputFileName];
-        
-        console.log('[MediaRecorder] FFMPEG: Executing command:', command.join(' '));
-        await ffmpeg.exec(command);
-        
-        console.log(`[MediaRecorder] FFMPEG: Reading output file: ${outputFileName}`);
-        const data = await ffmpeg.readFile(outputFileName);
-        const convertedBlob = new Blob([data], { type: type === 'video' ? 'video/mp4' : 'audio/mpeg' });
-        console.log(`[MediaRecorder] FFMPEG: Conversion complete. New blob size: ${convertedBlob.size}, type: ${convertedBlob.type}`);
+    const file = new File([blob], `recording.${type === 'video' ? 'webm' : 'webm'}`, { type: blob.type });
 
+    const mediaElement = document.createElement(type);
+    const objectUrlForDurationCheck = URL.createObjectURL(blob);
+    mediaElement.src = objectUrlForDurationCheck;
 
-        if (!checkStorageQuota(convertedBlob.size)) {
+    mediaElement.onloadedmetadata = () => {
+        URL.revokeObjectURL(objectUrlForDurationCheck);
+        console.log(`[MediaRecorder] Final media duration: ${mediaElement.duration}s`);
+        if (mediaElement.duration > MAX_RECORDING_DURATION) {
+            console.error(`[MediaRecorder] Recording too long: ${mediaElement.duration}s > ${MAX_RECORDING_DURATION}s`);
+            toast({ variant: 'destructive', title: 'Recording Too Long', description: `Recording is ${formatSecondsToTime(mediaElement.duration)}. Max allowed is ${formatSecondsToTime(MAX_RECORDING_DURATION)}. Please re-record.`, duration: 10000 });
             handleDiscardMedia();
             setIsProcessing(false);
             return;
         }
-        
-        const file = new File([convertedBlob], outputFileName, { type: convertedBlob.type });
 
-        const mediaElement = document.createElement(type);
-        const objectUrlForDurationCheck = URL.createObjectURL(convertedBlob);
-        mediaElement.src = objectUrlForDurationCheck;
+        revokeCurrentPreviewUrl();
+        const newPreviewUrl = URL.createObjectURL(file);
+        setPreviewUrl(newPreviewUrl);
+        setMediaType(type);
 
-        mediaElement.onloadedmetadata = () => {
-            URL.revokeObjectURL(objectUrlForDurationCheck);
-            console.log(`[MediaRecorder] Final media duration: ${mediaElement.duration}s`);
-            if (mediaElement.duration > MAX_RECORDING_DURATION) {
-                console.error(`[MediaRecorder] Recording too long: ${mediaElement.duration}s > ${MAX_RECORDING_DURATION}s`);
-                toast({ variant: 'destructive', title: 'Recording Too Long', description: `Recording is ${formatSecondsToTime(mediaElement.duration)}. Max allowed is ${formatSecondsToTime(MAX_RECORDING_DURATION)}. Please re-record.`, duration: 10000 });
-                handleDiscardMedia();
-                return;
-            }
-            onMediaReady({ file, type: type, duration: mediaElement.duration, size: file.size });
-            toast({ title: "Recording Processed!", description: `Duration: ${formatSecondsToTime(mediaElement.duration)}. You can now save your memory.`, variant: "success" });
-            console.log('[MediaRecorder] Media ready and passed to parent component.');
-            setIsProcessing(false);
-        };
-    } catch (error) {
-        console.error("[MediaRecorder] Error processing media with FFmpeg:", error);
-        toast({ title: "Processing Failed", description: "Could not convert the media. Please try again.", variant: "destructive" });
+        onMediaReady({ file, type: type, duration: mediaElement.duration, size: file.size });
+        toast({ title: "Recording Ready for Preview!", description: `Duration: ${formatSecondsToTime(mediaElement.duration)}. You can now trim or save your memory.`, variant: "success" });
+        console.log('[MediaRecorder] Media ready and passed to parent component.');
+        setIsProcessing(false);
+    };
+
+    mediaElement.onerror = () => {
+        URL.revokeObjectURL(objectUrlForDurationCheck);
+        console.error("[MediaRecorder] Error loading media metadata.");
+        toast({ title: "Processing Failed", description: "Could not read the recorded media. Please try again.", variant: "destructive" });
         setIsProcessing(false);
         handleDiscardMedia();
-    }
-  }, [checkStorageQuota, onMediaReady, handleDiscardMedia]);
+    };
+}, [checkStorageQuota, onMediaReady, handleDiscardMedia, revokeCurrentPreviewUrl]);
 
 
   const handleStartRecording = async (type: 'video' | 'audio') => {
@@ -308,6 +293,7 @@ export function MediaCaptureControl({
       
       recorder.onstop = () => {
         console.log('[MediaRecorder] MediaRecorder stopped.');
+        cleanupStream(); // Clean up stream as soon as recording stops
         const blob = new Blob(recordedChunks.current, { type: recorder.mimeType });
         recordedChunks.current = [];
 
@@ -318,7 +304,7 @@ export function MediaCaptureControl({
           return;
         }
         
-        processAndFinalizeMedia(blob, type, 'record');
+        processAndFinalizeMedia(blob, type);
       };
 
       recorder.start();
@@ -343,7 +329,6 @@ export function MediaCaptureControl({
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
-      cleanupStream();
     }
   };
   
@@ -359,8 +344,8 @@ export function MediaCaptureControl({
         return;
     }
     
-    revokeCurrentPreviewUrl();
-    processAndFinalizeMedia(file, fileType, 'upload');
+    // We pass the raw file to be processed, which now includes conversion
+    processAndFinalizeMedia(file, fileType);
     event.target.value = ''; // Allow re-uploading the same file
   };
   
@@ -374,6 +359,7 @@ export function MediaCaptureControl({
   useEffect(() => {
     return () => {
       cleanupStream();
+      if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
     };
   }, [cleanupStream]);
 
@@ -383,7 +369,7 @@ export function MediaCaptureControl({
             <CardHeader><CardTitle className="font-headline text-lg">Processing Media</CardTitle></CardHeader>
             <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
                 <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                <p className="text-sm text-muted-foreground">Converting your media...</p>
+                <p className="text-sm text-muted-foreground">Preparing your recording for preview...</p>
             </CardContent>
         </Card>
       )
@@ -476,5 +462,3 @@ export function MediaCaptureControl({
     </Card>
   );
 }
-
-    

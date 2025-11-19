@@ -81,35 +81,38 @@ function AddMemoryPageComponent() {
 
       if (mediaFileToUpload) {
         console.log("[handleSubmit] Media file to upload found:", mediaFileToUpload);
-        const filePath = `users/${user.id}/memories/${Date.now()}_${mediaFileToUpload.name}`;
-        const fileRef = storageRef(storage, filePath);
+        // Change the path to a temporary location for the Cloud Function to process
+        const tempPath = `temp-uploads/${user.id}/${Date.now()}_${mediaFileToUpload.name}`;
+        const fileRef = storageRef(storage, tempPath);
         
-        console.log(`[handleSubmit] Preparing to upload to: ${filePath}`);
+        console.log(`[handleSubmit] Preparing to upload to temporary path: ${tempPath}`);
         
-        toast({ title: "Uploading media...", description: "Please wait, this may take a moment."});
+        toast({ title: "Uploading media for processing...", description: "Please wait, this may take a moment."});
         
-        console.log('[handleSubmit] Calling uploadBytes...');
+        console.log('[handleSubmit] Calling uploadBytes with file:', mediaFileToUpload);
         const uploadResult = await uploadBytes(fileRef, mediaFileToUpload);
-        console.log('[handleSubmit] uploadBytes promise resolved. Result:', uploadResult);
-        
-        const downloadURL = await getDownloadURL(uploadResult.ref);
+        console.log('[handleSubmit] uploadBytes to temp path successful. Result:', uploadResult);
 
-        console.log('[handleSubmit] Client-side upload successful. Download URL:', downloadURL);
-        toast({ title: "Media Upload Complete!", variant: "success" });
+        // We don't get the download URL here anymore. The cloud function will handle it.
+        // We will store the temp path in Firestore so the function can find it.
+        const tempStoragePath = uploadResult.ref.fullPath;
 
         if (finalMediaAttachments && finalMediaAttachments.length > 0) {
-            finalMediaAttachments[0].url = downloadURL;
+            finalMediaAttachments[0].url = tempStoragePath; // Store the path, not a URL
+            // Add a status field to indicate processing is needed
+            (finalMediaAttachments[0] as any).processingStatus = 'pending';
         } else {
             finalMediaAttachments = [{
                 id: 'media' + Date.now(),
                 type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
-                url: downloadURL,
+                url: tempStoragePath,
+                processingStatus: 'pending',
                 filename: mediaFileToUpload.name,
                 duration: memoryData.mediaAttachments?.[0]?.duration,
                 size: mediaFileToUpload.size,
-            }];
+            } as any];
         }
-        console.log('[handleSubmit] Final media attachments object:', finalMediaAttachments);
+        console.log('[handleSubmit] Final media attachments object with temp path:', finalMediaAttachments);
 
       } else {
           console.log("[handleSubmit] No new media file to upload.");
@@ -124,7 +127,7 @@ function AddMemoryPageComponent() {
             mediaAttachments: finalMediaAttachments,
             updatedAt: serverTimestamp()
         });
-        toast({ title: "Memory Updated Successfully!", variant: "success" });
+        toast({ title: "Memory Update Submitted!", description: "Media is now being processed.", variant: "success" });
       } else {
         // Create new memory
         console.log("[handleSubmit] Creating new memory document.");
@@ -136,12 +139,10 @@ function AddMemoryPageComponent() {
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         });
-        toast({ title: "Memory Saved Successfully!", variant: "success" });
+        toast({ title: "Memory Submitted for Processing!", description: "Your memory will appear on the timeline once processing is complete.", variant: "success" });
       }
       
-      // Update storage usage in background
-      console.log("[handleSubmit] Calculating and updating storage usage.");
-      calculateAndUpdateStorageUsage(user.id);
+      // Storage usage will be updated by the cloud function after successful processing
       
       // Redirect based on whether it was a prompt-based chapter or a freeform one
       if (memoryData.promptId) {
@@ -201,5 +202,3 @@ export default function AddMemoryPage() {
         </Suspense>
     );
 }
-
-    

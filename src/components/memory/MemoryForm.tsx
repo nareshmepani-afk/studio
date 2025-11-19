@@ -27,8 +27,6 @@ import { countryOptions } from '@/lib/constants';
 import { mockPromptGroups } from '@/lib/mockData';
 import { Slider } from '@/components/ui/slider';
 import dynamic from 'next/dynamic';
-import { getFFmpeg } from '@/lib/ffmpeg';
-import { fetchFile } from '@ffmpeg/util';
 
 const MediaCaptureControl = dynamic(
   () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
@@ -327,66 +325,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   };
 
   const handleApplyTrim = async () => {
-    if (!currentMedia || isTrimming) return;
-    
-    const [start, end] = trimValues;
-    if (end - start <= 0) {
-        toast({ title: "Invalid Trim", description: "End time must be after start time.", variant: "destructive" });
-        return;
-    }
-
-    setIsTrimming(true);
-    toast({ title: "Trimming Media...", description: "This may take a moment. Please wait." });
-
-    try {
-        const ffmpeg = await getFFmpeg();
-        const inputFileName = `input.${currentMedia.type === 'video' ? 'webm' : 'webm'}`;
-        const outputFileName = `output.${currentMedia.type === 'video' ? 'mp4' : 'mp3'}`;
-
-        await ffmpeg.writeFile(inputFileName, await fetchFile(currentMedia.file));
-
-        await ffmpeg.exec([
-            '-i', inputFileName,
-            '-ss', `${start}`,
-            '-to', `${end}`,
-            '-c:v', 'libx264', // Re-encode video to H.264
-            '-c:a', 'aac',    // Re-encode audio to AAC
-            '-preset', 'ultrafast', // Use a faster preset for quicker processing
-            '-movflags', '+faststart', // Optimize for web streaming
-            outputFileName
-        ]);
-
-        const data = await ffmpeg.readFile(outputFileName);
-        const newFile = new File([data], outputFileName, { type: currentMedia.type === 'video' ? 'video/mp4' : 'audio/mp3' });
-
-        if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
-            URL.revokeObjectURL(currentMediaPreviewUrl);
-        }
-        const newPreviewUrl = URL.createObjectURL(newFile);
-        
-        const newDuration = end - start;
-
-        const newMediaData: CurrentMediaData = {
-            file: newFile,
-            type: currentMedia.type,
-            startTime: 0, // Reset times as the file is now physically trimmed
-            endTime: newDuration,
-            duration: newDuration,
-            size: newFile.size,
-            isTrimmed: true,
-        };
-
-        // Use the two-step state update to force re-mount
-        setCurrentMedia(null);
-        setCurrentMediaPreviewUrl(null);
-        setPendingTrimmedMedia({ media: newMediaData, url: newPreviewUrl });
-        
-    } catch (error) {
-        console.error("Error applying trim:", error);
-        toast({ title: "Trimming Failed", description: "Could not trim the media. Please try again.", variant: "destructive" });
-    } finally {
-        setIsTrimming(false);
-    }
+    // This function is now a placeholder as trimming is removed.
+    // In a real scenario, this might be re-implemented with server-side trimming logic.
+    toast({ title: "Trimming Not Implemented", description: "Client-side trimming has been removed. Full clip will be used.", variant: "default" });
   };
 
   const triggerSubmitProcess = useCallback(() => {
@@ -411,11 +352,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         type: currentMedia.type,
         url: urlForSubmission,
         filename: currentMedia.file.name, 
-        startTime: currentMedia.isTrimmed ? 0 : trimValues[0],
-        endTime: currentMedia.isTrimmed ? currentMedia.duration : trimValues[1],
+        // Trimming is now pseudo, so we pass the trim values
+        startTime: trimValues[0],
+        endTime: trimValues[1],
         duration: currentMedia.duration,
         size: currentMedia.size,
-        isTrimmed: currentMedia.isTrimmed,
+        isTrimmed: false, // Since it's pseudo-trimming, not physically trimmed on client
       }];
       console.log('[MemoryForm] Media attachment for submission:', mediaAttachmentsForSubmission);
     } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
@@ -487,10 +429,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       mediaAttachmentsForPreview = [{
         id: memory?.mediaAttachments?.[0]?.id || 'preview-media-1',
         type: currentMedia.type, url: currentMediaPreviewUrl, filename: currentMedia.file.name,
-        startTime: currentMedia.isTrimmed ? 0 : trimValues[0],
-        endTime: currentMedia.isTrimmed ? currentMedia.duration : trimValues[1],
+        startTime: trimValues[0],
+        endTime: trimValues[1],
         duration: currentMedia.duration, size: currentMedia.size,
-        isTrimmed: currentMedia.isTrimmed,
+        isTrimmed: false,
       }];
     }
     mockMemoryForPreview = {
@@ -501,8 +443,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       promptId: initialPromptId || memory?.promptId, isLegacy: memory?.isLegacy || false,
     };
   }
-
-  const isTrimChangedFromOriginal = currentMedia && !currentMedia.isTrimmed && (trimValues[0] > 0 || trimValues[1] < currentMedia.duration);
   
   const previewKey = `${mockMemoryForPreview?.id}-${mediaKey}`;
 
@@ -599,9 +539,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                   {currentMedia && (
                     <Card className="bg-muted/50">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-base font-medium flex items-center"><Scissors className="mr-2 h-4 w-4"/>Trim Media</CardTitle>
+                            <CardTitle className="text-base font-medium flex items-center"><Scissors className="mr-2 h-4 w-4"/>Trim Media (Playback only)</CardTitle>
                             <CardDescription className="text-xs">
-                                Drag the handles to select the part of the media you want to save. The player will preview this selection.
+                                Drag the handles to select the part of the media you want to save. This is a playback-only trim.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -613,7 +553,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                     value={trimValues}
                                     onValueChange={(vals) => handleTrimChange(vals as [number, number])}
                                     minStepsBetweenThumbs={1}
-                                    disabled={currentMedia.isTrimmed || isTrimming}
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground font-mono">
                                     <span>Start: {formatSecondsToTime(trimValues[0])}</span>
@@ -621,18 +560,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                     <span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1])}</span>
                                 </div>
                             </div>
-                           {isTrimChangedFromOriginal && (
-                                <div className="mt-4">
-                                    <Button onClick={handleApplyTrim} disabled={isTrimming} className="w-full">
-                                        {isTrimming ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Scissors className="mr-2 h-4 w-4" />}
-                                        Apply Trim & Finalize
-                                    </Button>
-                                    <p className="text-xs text-muted-foreground text-center mt-1">This will permanently trim the file for this memory.</p>
-                                </div>
-                           )}
-                           {currentMedia.isTrimmed && (
-                            <p className="text-sm text-green-600 mt-2 text-center">Trim has been applied.</p>
-                           )}
                         </CardContent>
                     </Card>
                   )}
@@ -659,5 +586,3 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     </form>
   );
 }
-
-    
