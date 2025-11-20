@@ -1,15 +1,12 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
-import { formidable } from 'formidable';
-import * as fs from 'fs/promises';
 import path from 'path';
 
-// Helper function to initialize Firebase Admin SDK safely,
-// using Application Default Credentials in production.
-function initializeFirebaseAdmin(): { db: FirebaseFirestore.Firestore, storage: ReturnType<getStorage>['bucket'] } {
+// Helper to initialize Firebase Admin SDK safely
+function initializeFirebaseAdmin() {
   if (getApps().length > 0) {
     return {
       db: getFirestore(),
@@ -19,7 +16,6 @@ function initializeFirebaseAdmin(): { db: FirebaseFirestore.Firestore, storage: 
 
   // When deployed to App Hosting, the Admin SDK automatically detects the environment
   // and uses the Application Default Credentials. No service account key is needed.
-  // For local development, you would set the GOOGLE_APPLICATION_CREDENTIALS env var.
   initializeApp({
     storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   });
@@ -30,57 +26,29 @@ function initializeFirebaseAdmin(): { db: FirebaseFirestore.Firestore, storage: 
   };
 }
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-// Helper to parse form data from a NextRequest
-async function parseForm(req: NextRequest): Promise<{ fields: formidable.Fields; files: formidable.Files }> {
-  const chunks: Uint8Array[] = [];
-  const reader = req.body!.getReader();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-  }
-  const body = Buffer.concat(chunks);
-  
-  return new Promise((resolve, reject) => {
-    const form = formidable({});
-    form.parse(body, (err, fields, files) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({ fields, files });
-      }
-    });
-  });
-}
-
 export async function POST(req: NextRequest) {
   try {
     const { db, storage } = initializeFirebaseAdmin();
+    const formData = await req.formData();
 
-    const { fields, files } = await parseForm(req);
-
-    const file = (files.file as formidable.File[])?.[0];
-    const userId = (fields.userId as string[])?.[0];
-
+    const file = formData.get('file') as File | null;
+    const userId = formData.get('userId') as string | null;
+    
     if (!file || !userId) {
       return NextResponse.json({ error: 'Missing file or user ID.' }, { status: 400 });
     }
 
-    const tempFilePath = file.filepath;
-    const finalFileName = path.basename(file.originalFilename || 'memory.webm');
-    
-    // Upload the original file to a permanent location
+    const finalFileName = file.name || 'memory.webm';
     const permanentPath = `users/${userId}/memories/${Date.now()}_${finalFileName}`;
-    const [uploadedFile] = await storage.upload(tempFilePath, {
-      destination: permanentPath,
+    
+    // Convert file to buffer to upload
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+
+    // Upload using the buffer
+    const uploadedFile = storage.file(permanentPath);
+    await uploadedFile.save(fileBuffer, {
       metadata: {
-        contentType: file.mimetype || "video/webm",
+        contentType: file.type || "video/webm",
       },
     });
 
@@ -91,16 +59,13 @@ export async function POST(req: NextRequest) {
     }).then((urls) => urls[0]);
 
     // Create Firestore document
-    const title = (fields.title as string[])?.[0] || 'Untitled Memory';
-    const date = (fields.date as string[])?.[0] || new Date().toISOString();
-    const description = (fields.description as string[])?.[0];
-    const category = (fields.category as string[])?.[0];
-    const promptId = (fields.promptId as string[])?.[0];
-
-    const fileStats = await fs.stat(tempFilePath);
+    const title = (formData.get('title') as string) || 'Untitled Memory';
+    const date = (formData.get('date') as string) || new Date().toISOString();
+    const description = (formData.get('description') as string) || '';
+    const category = (formData.get('category') as string) || '';
+    const promptId = (formData.get('promptId') as string) || '';
     
-    // Duration is hard to get reliably without ffmpeg, so we omit it for now
-    const duration = 0; 
+    const duration = 0; // Duration is hard to get reliably without server-side processing libraries
 
     const memoryDocData = {
       title,
@@ -114,19 +79,17 @@ export async function POST(req: NextRequest) {
       mediaAttachments: [
         {
           id: 'media' + Date.now(),
-          type: 'video', // Assuming video for now, can be enhanced
+          type: 'video', // Assuming video for now
           url: publicUrl,
           processingStatus: 'complete',
           filename: finalFileName,
           duration: duration,
-          size: fileStats.size,
+          size: file.size,
         },
       ],
     };
 
     const docRef = await db.collection('users').doc(userId).collection('memories').add(memoryDocData);
-
-    await fs.unlink(tempFilePath);
 
     return NextResponse.json({ success: true, memoryId: docRef.id, message: 'Media uploaded and memory created successfully.' }, { status: 200 });
 
