@@ -5,21 +5,31 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { formidable } from 'formidable';
 import * as fs from 'fs/promises';
+import path from 'path';
 
-// Initialize Firebase Admin SDK
-const serviceAccount = JSON.parse(
-  process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string
-);
+// Helper function to initialize Firebase Admin SDK safely
+function initializeFirebaseAdmin() {
+  if (getApps().length) {
+    return {
+      db: getFirestore(),
+      storage: getStorage().bucket(),
+    };
+  }
 
-if (!getApps().length) {
+  const serviceAccount = JSON.parse(
+    process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string
+  );
+
   initializeApp({
     credential: cert(serviceAccount),
     storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   });
-}
 
-const db = getFirestore();
-const storage = getStorage().bucket();
+  return {
+    db: getFirestore(),
+    storage: getStorage().bucket(),
+  };
+}
 
 export const config = {
   api: {
@@ -29,11 +39,6 @@ export const config = {
 
 // Helper to parse form data
 async function parseForm(req: NextRequest): Promise<{ fields: formidable.Fields; files: formidable.Files }> {
-  const contentType = req.headers.get('content-type');
-  if (!contentType) {
-    throw new Error('No content-type header');
-  }
-
   const chunks: Uint8Array[] = [];
   const reader = req.body!.getReader();
   while (true) {
@@ -57,6 +62,9 @@ async function parseForm(req: NextRequest): Promise<{ fields: formidable.Fields;
 
 export async function POST(req: NextRequest) {
   try {
+    // Initialize Firebase Admin within the request handler
+    const { db, storage } = initializeFirebaseAdmin();
+
     const { fields, files } = await parseForm(req);
 
     const file = (files.file as formidable.File[])?.[0];
@@ -78,10 +86,10 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 2. Get the public URL.
+    // 2. Get a long-lived signed URL for public access.
     const publicUrl = await uploadedFile.getSignedUrl({
         action: "read",
-        expires: "03-09-2491", // Far-future expiration date
+        expires: "03-09-2491", // A very distant future date
     }).then((urls) => urls[0]);
 
     // 3. Create Firestore document
@@ -93,7 +101,8 @@ export async function POST(req: NextRequest) {
 
     const fileStats = await fs.stat(tempFilePath);
     
-    const duration = 0; // We can't get duration reliably without ffmpeg, so we'll omit it for now
+    // Duration is hard to get reliably without ffmpeg, so we omit it for now
+    const duration = 0; 
 
     const memoryDocData = {
       title,
@@ -107,7 +116,7 @@ export async function POST(req: NextRequest) {
       mediaAttachments: [
         {
           id: 'media' + Date.now(),
-          type: 'video', // Assuming video, can be enhanced
+          type: 'video', // Assuming video for now, can be enhanced
           url: publicUrl,
           processingStatus: 'complete',
           filename: finalFileName,
@@ -119,14 +128,14 @@ export async function POST(req: NextRequest) {
 
     const docRef = await db.collection('users').doc(userId).collection('memories').add(memoryDocData);
 
-    // 4. Clean up temporary file
+    // 4. Clean up temporary file from the server
     await fs.unlink(tempFilePath);
 
-    return NextResponse.json({ success: true, memoryId: docRef.id, message: 'Media uploaded and memory created.' }, { status: 200 });
+    return NextResponse.json({ success: true, memoryId: docRef.id, message: 'Media uploaded and memory created successfully.' }, { status: 200 });
 
   } catch (e: any) {
-    console.error('API Error processing media:', e);
-    const errorMessage = e.message || 'An unknown error occurred';
+    console.error('API Error in process-video:', e);
+    const errorMessage = e.message || 'An unknown server error occurred';
     return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }
 }
