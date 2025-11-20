@@ -11,12 +11,11 @@ import { toast } from '@/hooks/use-toast';
 import { useState, useEffect, useCallback } from 'react';
 import { app } from '@/lib/firebase';
 import { getFirestore, addDoc, doc, updateDoc, getDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Loader2 } from 'lucide-react';
 
 
 function AddMemoryPageComponent() {
-  const { user, calculateAndUpdateStorageUsage } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -28,9 +27,6 @@ function AddMemoryPageComponent() {
   const [memoryToEdit, setMemoryToEdit] = useState<Memory | undefined>(undefined);
   const [isLoadingMemory, setIsLoadingMemory] = useState(true);
 
-  
-  
-
   useEffect(() => {
     if (editMemoryId && user) {
       const db = getFirestore(app);
@@ -41,7 +37,6 @@ function AddMemoryPageComponent() {
           const docSnap = await getDoc(memoryDocRef);
           if (docSnap.exists()) {
             const data = docSnap.data();
-            // Ensure date is in ISO string format
             const date = data.date?.toDate ? data.date.toDate().toISOString() : data.date;
             setMemoryToEdit({ id: docSnap.id, ...data, date } as Memory);
           } else {
@@ -63,102 +58,80 @@ function AddMemoryPageComponent() {
   }, [editMemoryId, user, router]);
 
   const handleSubmit = async (
-    memoryData: Omit<Memory, 'id' | 'userId'> & { promptId?: string },
+    memoryData: Omit<Memory, 'id' | 'userId'>,
     mediaFileToUpload?: File
   ) => {
     if (!user) {
       toast({ title: "Authentication Error", variant: "destructive" });
-      console.error("[handleSubmit] Stopped: No authenticated user.");
       return;
     }
     setIsSubmitting(true);
-    console.log("[handleSubmit] Started. User:", user.id);
+    const db = getFirestore(app);
 
     try {
-      const db = getFirestore(app);
-      const storage = getStorage(app);
-      let finalMediaAttachments = memoryData.mediaAttachments;
+      let finalMemoryData = { ...memoryData };
 
       if (mediaFileToUpload) {
-        console.log("[handleSubmit] Media file to upload found:", mediaFileToUpload);
-        // Change the path to a temporary location for the Cloud Function to process
-        const tempPath = `temp-uploads/${user.id}/${Date.now()}_${mediaFileToUpload.name}`;
-        const fileRef = storageRef(storage, tempPath);
+        toast({ title: "Uploading & Processing Media...", description: "Please wait, this may take a moment. You will be redirected when it's complete." });
         
-        console.log(`[handleSubmit] Preparing to upload to temporary path: ${tempPath}`);
+        const formData = new FormData();
+        formData.append('file', mediaFileToUpload);
+        formData.append('userId', user.id);
         
-        toast({ title: "Uploading media for processing...", description: "Please wait, this may take a moment."});
-        
-        console.log('[handleSubmit] Calling uploadBytes with file:', mediaFileToUpload);
-        const uploadResult = await uploadBytes(fileRef, mediaFileToUpload);
-        console.log('[handleSubmit] uploadBytes to temp path successful. Result:', uploadResult);
+        // Pass memory details to be used in Firestore doc creation
+        if (memoryData.promptId) formData.append('promptId', memoryData.promptId);
+        formData.append('title', memoryData.title);
+        formData.append('date', memoryData.date);
+        formData.append('description', memoryData.description || '');
+        if (memoryData.category) formData.append('category', memoryData.category);
 
-        // We don't get the download URL here anymore. The cloud function will handle it.
-        // We will store the temp path in Firestore so the function can find it.
-        const tempStoragePath = uploadResult.ref.fullPath;
+        const response = await fetch('/api/process-video', {
+          method: 'POST',
+          body: formData,
+        });
 
-        if (finalMediaAttachments && finalMediaAttachments.length > 0) {
-            finalMediaAttachments[0].url = tempStoragePath; // Store the path, not a URL
-            // Add a status field to indicate processing is needed
-            (finalMediaAttachments[0] as any).processingStatus = 'pending';
-        } else {
-            finalMediaAttachments = [{
-                id: 'media' + Date.now(),
-                type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
-                url: tempStoragePath,
-                processingStatus: 'pending',
-                filename: mediaFileToUpload.name,
-                duration: memoryData.mediaAttachments?.[0]?.duration,
-                size: mediaFileToUpload.size,
-            } as any];
+        if (!response.ok) {
+          const errorResult = await response.json();
+          throw new Error(errorResult.error || 'Media processing failed on the server.');
         }
-        console.log('[handleSubmit] Final media attachments object with temp path:', finalMediaAttachments);
 
-      } else {
-          console.log("[handleSubmit] No new media file to upload.");
-      }
+        const result = await response.json();
+        // The server now handles creating the memory document entirely.
+        // We just need to redirect.
+        toast({ title: "Memory Saved!", description: "Your memory has been processed and saved.", variant: "success" });
 
-      if (editMemoryId && memoryToEdit) {
-        // Update existing memory
-        console.log(`[handleSubmit] Updating existing memory: ${memoryToEdit.id}`);
+      } else if (editMemoryId && memoryToEdit) {
+        // Update existing memory (without changing media)
         const memoryDocRef = doc(db, 'users', user.id, 'memories', memoryToEdit.id);
         await updateDoc(memoryDocRef, {
-            ...memoryData,
-            mediaAttachments: finalMediaAttachments,
+            ...finalMemoryData,
             updatedAt: serverTimestamp()
         });
-        toast({ title: "Memory Update Submitted!", description: "Media is now being processed.", variant: "success" });
+        toast({ title: "Memory Updated!", variant: "success" });
       } else {
-        // Create new memory
-        console.log("[handleSubmit] Creating new memory document.");
+         // Create a new memory without media
         const memoriesCollectionRef = collection(db, 'users', user.id, 'memories');
         await addDoc(memoriesCollectionRef, {
-            ...memoryData,
+            ...finalMemoryData,
             userId: user.id,
-            mediaAttachments: finalMediaAttachments,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         });
-        toast({ title: "Memory Submitted for Processing!", description: "Your memory will appear on the timeline once processing is complete.", variant: "success" });
+        toast({ title: "Memory Saved!", variant: "success" });
       }
       
-      // Storage usage will be updated by the cloud function after successful processing
-      
-      // Redirect based on whether it was a prompt-based chapter or a freeform one
+      // Redirect after successful operation
       if (memoryData.promptId) {
-        console.log('[handleSubmit] Redirecting to /prompts');
         router.push('/prompts');
       } else {
-        console.log('[handleSubmit] Redirecting to /timeline');
         router.push('/timeline');
       }
 
     } catch (error) {
       console.error("[handleSubmit] Error saving memory:", error);
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-      toast({ title: "Failed to Save Memory", description: `An error occurred while saving: ${errorMessage}`, variant: "destructive" });
+      toast({ title: "Failed to Save Memory", description: `An error occurred: ${errorMessage}`, variant: "destructive" });
     } finally {
-      console.log('[handleSubmit] Finished.');
       setIsSubmitting(false);
     }
   };
