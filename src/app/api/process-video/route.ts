@@ -3,18 +3,10 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
-import { formidable, errors as FormidableErrors } from 'formidable';
+import { formidable } from 'formidable';
 import * as fs from 'fs/promises';
-import * as os from 'os';
-import * as path from 'path';
-import ffmpeg from 'fluent-ffmpeg';
-import { path as ffmpegPath } from '@ffmpeg-installer/ffmpeg';
-
-// Set ffmpeg path
-ffmpeg.setFfmpegPath(ffmpegPath);
 
 // Initialize Firebase Admin SDK
-// Make sure to load the service account key from environment variables
 const serviceAccount = JSON.parse(
   process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string
 );
@@ -75,59 +67,33 @@ export async function POST(req: NextRequest) {
     }
 
     const tempFilePath = file.filepath;
-    const finalFileName = path.basename(file.originalFilename || 'memory').replace(/\.[^/.]+$/, "") + ".mp4";
-    const finalFilePath = path.join(os.tmpdir(), finalFileName);
-
-    // 1. Convert video to MP4
-    await new Promise<void>((resolve, reject) => {
-      ffmpeg(tempFilePath)
-        .outputOptions("-c:v", "libx264")
-        .outputOptions("-preset", "ultrafast")
-        .outputOptions("-c:a", "aac")
-        .output(finalFilePath)
-        .on("end", () => {
-          console.log("FFmpeg conversion finished.");
-          resolve();
-        })
-        .on("error", (err) => {
-          console.error("FFmpeg error:", err);
-          reject(new Error(`FFmpeg conversion failed: ${err.message}`));
-        })
-        .run();
-    });
-
-    // 2. Upload the converted file to a permanent location
+    const finalFileName = path.basename(file.originalFilename || 'memory.webm');
+    
+    // 1. Upload the original file to a permanent location
     const permanentPath = `users/${userId}/memories/${Date.now()}_${finalFileName}`;
-    const [uploadedFile] = await storage.upload(finalFilePath, {
+    const [uploadedFile] = await storage.upload(tempFilePath, {
       destination: permanentPath,
       metadata: {
-        contentType: "video/mp4",
+        contentType: file.mimetype || "video/webm",
       },
     });
 
-    // 3. Get the public URL.
+    // 2. Get the public URL.
     const publicUrl = await uploadedFile.getSignedUrl({
         action: "read",
         expires: "03-09-2491", // Far-future expiration date
     }).then((urls) => urls[0]);
 
-    // 4. Create Firestore document
+    // 3. Create Firestore document
     const title = (fields.title as string[])?.[0] || 'Untitled Memory';
     const date = (fields.date as string[])?.[0] || new Date().toISOString();
     const description = (fields.description as string[])?.[0];
     const category = (fields.category as string[])?.[0];
     const promptId = (fields.promptId as string[])?.[0];
 
-    const fileStats = await fs.stat(finalFilePath);
+    const fileStats = await fs.stat(tempFilePath);
     
-    // We need to get duration, which requires ffmpeg again on the converted file
-     const duration = await new Promise<number>((resolve, reject) => {
-        ffmpeg.ffprobe(finalFilePath, (err, metadata) => {
-            if (err) reject(err);
-            else resolve(metadata.format.duration || 0);
-        });
-    });
-
+    const duration = 0; // We can't get duration reliably without ffmpeg, so we'll omit it for now
 
     const memoryDocData = {
       title,
@@ -141,7 +107,7 @@ export async function POST(req: NextRequest) {
       mediaAttachments: [
         {
           id: 'media' + Date.now(),
-          type: 'video',
+          type: 'video', // Assuming video, can be enhanced
           url: publicUrl,
           processingStatus: 'complete',
           filename: finalFileName,
@@ -153,15 +119,14 @@ export async function POST(req: NextRequest) {
 
     const docRef = await db.collection('users').doc(userId).collection('memories').add(memoryDocData);
 
-    // 5. Clean up temporary files
+    // 4. Clean up temporary file
     await fs.unlink(tempFilePath);
-    await fs.unlink(finalFilePath);
 
-    return NextResponse.json({ success: true, memoryId: docRef.id, message: 'Video processed and memory created.' }, { status: 200 });
+    return NextResponse.json({ success: true, memoryId: docRef.id, message: 'Media uploaded and memory created.' }, { status: 200 });
 
   } catch (e: any) {
-    console.error('API Error processing video:', e);
-    const errorMessage = e instanceof FormidableErrors.FormidableError ? 'Error parsing form data.' : e.message;
+    console.error('API Error processing media:', e);
+    const errorMessage = e.message || 'An unknown error occurred';
     return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }
 }

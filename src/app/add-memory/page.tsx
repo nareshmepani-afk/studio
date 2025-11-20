@@ -72,13 +72,12 @@ function AddMemoryPageComponent() {
       let finalMemoryData = { ...memoryData };
 
       if (mediaFileToUpload) {
-        toast({ title: "Uploading & Processing Media...", description: "Please wait, this may take a moment. You will be redirected when it's complete." });
+        toast({ title: "Uploading Media...", description: "Please wait, this may take a moment." });
         
         const formData = new FormData();
         formData.append('file', mediaFileToUpload);
         formData.append('userId', user.id);
         
-        // Pass memory details to be used in Firestore doc creation
         if (memoryData.promptId) formData.append('promptId', memoryData.promptId);
         formData.append('title', memoryData.title);
         formData.append('date', memoryData.date);
@@ -95,9 +94,6 @@ function AddMemoryPageComponent() {
           throw new Error(errorResult.error || 'Media processing failed on the server.');
         }
 
-        const result = await response.json();
-        // The server now handles creating the memory document entirely.
-        // We just need to redirect.
         toast({ title: "Memory Saved!", description: "Your memory has been processed and saved.", variant: "success" });
 
       } else if (editMemoryId && memoryToEdit) {
