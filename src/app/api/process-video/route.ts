@@ -1,32 +1,26 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { formidable } from 'formidable';
 import * as fs from 'fs/promises';
 import path from 'path';
 
-// Helper function to initialize Firebase Admin SDK safely
-function initializeFirebaseAdmin() {
-  if (getApps().length) {
+// Helper function to initialize Firebase Admin SDK safely,
+// using Application Default Credentials in production.
+function initializeFirebaseAdmin(): { db: FirebaseFirestore.Firestore, storage: ReturnType<getStorage>['bucket'] } {
+  if (getApps().length > 0) {
     return {
       db: getFirestore(),
       storage: getStorage().bucket(),
     };
   }
 
-  // This check is crucial for the build process and for runtime.
-  if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not set in the environment variables.');
-  }
-
-  const serviceAccount = JSON.parse(
-    process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string
-  );
-
+  // When deployed to App Hosting, the Admin SDK automatically detects the environment
+  // and uses the Application Default Credentials. No service account key is needed.
+  // For local development, you would set the GOOGLE_APPLICATION_CREDENTIALS env var.
   initializeApp({
-    credential: cert(serviceAccount),
     storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   });
 
@@ -42,7 +36,7 @@ export const config = {
   },
 };
 
-// Helper to parse form data
+// Helper to parse form data from a NextRequest
 async function parseForm(req: NextRequest): Promise<{ fields: formidable.Fields; files: formidable.Files }> {
   const chunks: Uint8Array[] = [];
   const reader = req.body!.getReader();
