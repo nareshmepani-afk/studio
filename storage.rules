@@ -1,22 +1,19 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow users to read and write their own files within their user-specific folder.
-    // The `userId` in the path must match the UID of the authenticated user.
-    match /users/{userId}/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
 
-    // Allow users to write to a temporary location for processing.
-    // This rule is critical for the server-side video conversion function.
-    match /temp-uploads/{userId}/{allPaths=**} {
+    // User Avatars
+    // Users can read anyone's avatar.
+    // Users can only write (upload/delete) their own avatar.
+    match /avatars/{userId}/{imageName} {
+      allow read;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Allow users to read and write their own avatar.
-    match /avatars/{userId}/{allPaths=**} {
+    // Memory Media
+    // Users can read and write their own memory media.
+    match /memories/{userId}/{mediaName} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
