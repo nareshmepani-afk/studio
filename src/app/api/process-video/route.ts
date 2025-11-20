@@ -16,6 +16,7 @@ function initializeFirebaseAdmin() {
     };
   }
 
+  // This check is crucial for the build process and for runtime.
   if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
     throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not set in the environment variables.');
   }
@@ -66,7 +67,6 @@ async function parseForm(req: NextRequest): Promise<{ fields: formidable.Fields;
 
 export async function POST(req: NextRequest) {
   try {
-    // Initialize Firebase Admin within the request handler
     const { db, storage } = initializeFirebaseAdmin();
 
     const { fields, files } = await parseForm(req);
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     const tempFilePath = file.filepath;
     const finalFileName = path.basename(file.originalFilename || 'memory.webm');
     
-    // 1. Upload the original file to a permanent location
+    // Upload the original file to a permanent location
     const permanentPath = `users/${userId}/memories/${Date.now()}_${finalFileName}`;
     const [uploadedFile] = await storage.upload(tempFilePath, {
       destination: permanentPath,
@@ -90,13 +90,13 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 2. Get a long-lived signed URL for public access.
+    // Get a long-lived signed URL for public access.
     const publicUrl = await uploadedFile.getSignedUrl({
         action: "read",
         expires: "03-09-2491", // A very distant future date
     }).then((urls) => urls[0]);
 
-    // 3. Create Firestore document
+    // Create Firestore document
     const title = (fields.title as string[])?.[0] || 'Untitled Memory';
     const date = (fields.date as string[])?.[0] || new Date().toISOString();
     const description = (fields.description as string[])?.[0];
@@ -132,7 +132,6 @@ export async function POST(req: NextRequest) {
 
     const docRef = await db.collection('users').doc(userId).collection('memories').add(memoryDocData);
 
-    // 4. Clean up temporary file from the server
     await fs.unlink(tempFilePath);
 
     return NextResponse.json({ success: true, memoryId: docRef.id, message: 'Media uploaded and memory created successfully.' }, { status: 200 });
