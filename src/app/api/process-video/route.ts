@@ -16,6 +16,10 @@ function initializeFirebaseAdmin() {
     };
   }
 
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not set in the environment variables.');
+  }
+
   const serviceAccount = JSON.parse(
     process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string
   );
