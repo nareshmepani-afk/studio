@@ -28,6 +28,7 @@ import { mockPromptGroups } from '@/lib/mockData';
 import { Slider } from '@/components/ui/slider';
 import dynamic from 'next/dynamic';
 
+
 const MediaCaptureControl = dynamic(
   () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
   { 
@@ -294,6 +295,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       }
     }
   };
+
 
   const triggerSubmitProcess = useCallback(() => {
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);

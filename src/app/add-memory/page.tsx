@@ -76,6 +76,7 @@ function AddMemoryPageComponent() {
         formData.append('file', mediaFileToUpload);
         formData.append('userId', user.id);
         
+        // Append other memory data to the form
         if (memoryData.promptId) formData.append('promptId', memoryData.promptId);
         formData.append('title', memoryData.title);
         formData.append('date', memoryData.date);
