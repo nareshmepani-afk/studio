@@ -89,13 +89,11 @@ function AddMemoryPageComponent() {
         });
 
         if (!response.ok) {
-          // If the server returns a JSON error, try to parse it. Otherwise, use text.
           let errorText = 'Media processing failed on the server.';
           try {
               const result = await response.json();
               errorText = result.error || errorText;
           } catch(e) {
-              // If response is not JSON, use the raw text
               const rawText = await response.text();
               errorText = rawText || errorText;
           }
@@ -108,14 +106,22 @@ function AddMemoryPageComponent() {
         // Update existing memory (without changing media)
         const memoryDocRef = doc(db, 'users', user.id, 'memories', memoryToEdit.id);
         
-        // Create a new object for update, excluding mediaAttachments to avoid saving blob URL
         const { mediaAttachments, ...dataToUpdate } = memoryData;
-
+        
+        // Firestore does not allow `undefined` values. We must clean the object.
+        const cleanedDataToUpdate: { [key: string]: any } = {};
+        for (const [key, value] of Object.entries(dataToUpdate)) {
+          if (value !== undefined) {
+            cleanedDataToUpdate[key] = value;
+          }
+        }
+        
         await updateDoc(memoryDocRef, {
-            ...dataToUpdate,
+            ...cleanedDataToUpdate,
             updatedAt: serverTimestamp()
         });
         toast({ title: "Memory Updated!", variant: "success" });
+
       } else {
          // Create a new memory without media
         const memoriesCollectionRef = collection(db, 'users', user.id, 'memories');
