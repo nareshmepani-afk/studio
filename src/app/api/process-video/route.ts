@@ -10,7 +10,7 @@ function initializeFirebaseAdmin() {
   if (getApps().length > 0) {
     return {
       db: getFirestore(),
-      storage: getStorage().bucket(),
+      storage: getStorage(),
     };
   }
 
@@ -22,7 +22,7 @@ function initializeFirebaseAdmin() {
 
   return {
     db: getFirestore(),
-    storage: getStorage().bucket(),
+    storage: getStorage(),
   };
 }
 
@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing file or user ID.' }, { status: 400 });
     }
 
+    const bucket = storage.bucket();
     const finalFileName = file.name || 'memory.webm';
     const permanentPath = `users/${userId}/memories/${Date.now()}_${finalFileName}`;
     
@@ -45,18 +46,18 @@ export async function POST(req: NextRequest) {
     const fileBuffer = Buffer.from(await file.arrayBuffer());
 
     // Upload using the buffer
-    const uploadedFile = storage.file(permanentPath);
+    const uploadedFile = bucket.file(permanentPath);
     await uploadedFile.save(fileBuffer, {
       metadata: {
         contentType: file.type || "video/webm",
       },
     });
 
-    // Get a long-lived signed URL for public access.
-    const publicUrl = await uploadedFile.getSignedUrl({
-        action: "read",
-        expires: "03-09-2491", // A very distant future date
-    }).then((urls) => urls[0]);
+    // Make the file publicly readable
+    await uploadedFile.makePublic();
+
+    // Construct the public URL directly
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${permanentPath}`;
 
     // Create Firestore document
     const title = (formData.get('title') as string) || 'Untitled Memory';
