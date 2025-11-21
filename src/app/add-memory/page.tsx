@@ -90,15 +90,16 @@ function AddMemoryPageComponent() {
 
         if (!response.ok) {
           // If the server returns a JSON error, try to parse it. Otherwise, use text.
-          const errorText = await response.text();
-          let errorMessage = 'Media processing failed on the server.';
+          let errorText = 'Media processing failed on the server.';
           try {
-            const result = JSON.parse(errorText);
-            errorMessage = result.error || errorMessage;
+              const result = await response.json();
+              errorText = result.error || errorText;
           } catch(e) {
-             errorMessage = errorText || errorMessage;
+              // If response is not JSON, use the raw text
+              const rawText = await response.text();
+              errorText = rawText || errorText;
           }
-          throw new Error(errorMessage);
+          throw new Error(errorText);
         }
 
         toast({ title: "Memory Saved!", description: "Your memory has been processed and saved.", variant: "success" });
@@ -106,8 +107,12 @@ function AddMemoryPageComponent() {
       } else if (editMemoryId && memoryToEdit) {
         // Update existing memory (without changing media)
         const memoryDocRef = doc(db, 'users', user.id, 'memories', memoryToEdit.id);
+        
+        // Create a new object for update, excluding mediaAttachments to avoid saving blob URL
+        const { mediaAttachments, ...dataToUpdate } = memoryData;
+
         await updateDoc(memoryDocRef, {
-            ...memoryData,
+            ...dataToUpdate,
             updatedAt: serverTimestamp()
         });
         toast({ title: "Memory Updated!", variant: "success" });
