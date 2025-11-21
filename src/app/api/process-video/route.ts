@@ -1,6 +1,6 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import path from 'path';
@@ -39,8 +39,9 @@ export async function POST(req: NextRequest) {
     }
 
     const bucket = storage.bucket();
-    const finalFileName = file.name || 'memory.webm';
-    const permanentPath = `users/${userId}/memories/${Date.now()}_${finalFileName}`;
+    // Use a unique name to prevent overwrites
+    const finalFileName = `${Date.now()}_${file.name || 'memory.webm'}`;
+    const permanentPath = `users/${userId}/memories/${finalFileName}`;
     
     // Convert file to buffer to upload
     const fileBuffer = Buffer.from(await file.arrayBuffer());
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
     await uploadedFile.makePublic();
 
     // Construct the public URL directly
+    // Format: https://storage.googleapis.com/<bucket-name>/<file-path>
     const publicUrl = `https://storage.googleapis.com/${bucket.name}/${permanentPath}`;
 
     // Create Firestore document
@@ -80,7 +82,7 @@ export async function POST(req: NextRequest) {
       mediaAttachments: [
         {
           id: 'media' + Date.now(),
-          type: 'video', // Assuming video for now
+          type: file.type.startsWith('video') ? 'video' : 'audio',
           url: publicUrl,
           processingStatus: 'complete',
           filename: finalFileName,

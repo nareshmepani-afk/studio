@@ -69,8 +69,6 @@ function AddMemoryPageComponent() {
     const db = getFirestore(app);
 
     try {
-      let finalMemoryData = { ...memoryData };
-
       if (mediaFileToUpload) {
         toast({ title: "Uploading Media...", description: "Please wait, this may take a moment." });
         
@@ -100,7 +98,7 @@ function AddMemoryPageComponent() {
         // Update existing memory (without changing media)
         const memoryDocRef = doc(db, 'users', user.id, 'memories', memoryToEdit.id);
         await updateDoc(memoryDocRef, {
-            ...finalMemoryData,
+            ...memoryData,
             updatedAt: serverTimestamp()
         });
         toast({ title: "Memory Updated!", variant: "success" });
@@ -108,7 +106,7 @@ function AddMemoryPageComponent() {
          // Create a new memory without media
         const memoriesCollectionRef = collection(db, 'users', user.id, 'memories');
         await addDoc(memoriesCollectionRef, {
-            ...finalMemoryData,
+            ...memoryData,
             userId: user.id,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
