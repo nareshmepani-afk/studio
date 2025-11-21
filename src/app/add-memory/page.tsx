@@ -88,9 +88,17 @@ function AddMemoryPageComponent() {
           body: formData,
         });
 
-        const result = await response.json();
         if (!response.ok) {
-          throw new Error(result.error || 'Media processing failed on the server.');
+          // If the server returns a JSON error, try to parse it. Otherwise, use text.
+          const errorText = await response.text();
+          let errorMessage = 'Media processing failed on the server.';
+          try {
+            const result = JSON.parse(errorText);
+            errorMessage = result.error || errorMessage;
+          } catch(e) {
+             errorMessage = errorText || errorMessage;
+          }
+          throw new Error(errorMessage);
         }
 
         toast({ title: "Memory Saved!", description: "Your memory has been processed and saved.", variant: "success" });
