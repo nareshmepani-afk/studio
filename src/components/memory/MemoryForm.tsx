@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, type FormEvent, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -26,6 +27,8 @@ import { countryOptions } from '@/lib/constants';
 import { mockPromptGroups } from '@/lib/mockData';
 import { Slider } from '@/components/ui/slider';
 import dynamic from 'next/dynamic';
+import { getFFmpeg } from '@/lib/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
 
 const MediaCaptureControl = dynamic(
   () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
@@ -274,7 +277,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   }, [currentMediaPreviewUrl]);
 
   const handleMediaReady = useCallback((mediaPayload: MediaFromRecorder) => {
-    console.log('[MemoryForm] Received media from recorder:', mediaPayload);
     if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(currentMediaPreviewUrl);
     }
@@ -293,7 +295,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   }, [currentMediaPreviewUrl]);
 
   const handleMediaDiscard = useCallback(() => {
-    console.log('[MemoryForm] Discarding media.');
     if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(currentMediaPreviewUrl);
     }
@@ -324,24 +325,73 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   };
 
   const handleApplyTrim = async () => {
-    // This function is now a placeholder as trimming is removed.
-    // In a real scenario, this might be re-implemented with server-side trimming logic.
-    toast({ title: "Trimming Not Implemented", description: "Client-side trimming has been removed. Full clip will be used.", variant: "default" });
+    if (!currentMedia || isTrimming) return;
+    
+    const [start, end] = trimValues;
+    if (end - start <= 0) {
+        toast({ title: "Invalid Trim", description: "End time must be after start time.", variant: "destructive" });
+        return;
+    }
+
+    setIsTrimming(true);
+    toast({ title: "Trimming Media...", description: "This may take a moment. Please wait." });
+
+    try {
+        const ffmpeg = await getFFmpeg();
+        const inputFileName = `input.${currentMedia.type === 'video' ? 'mp4' : 'mp3'}`;
+        const outputFileName = `output.${currentMedia.type === 'video' ? 'mp4' : 'mp3'}`;
+
+        await ffmpeg.writeFile(inputFileName, await fetchFile(currentMedia.file));
+
+        await ffmpeg.exec([
+            '-i', inputFileName,
+            '-ss', `${start}`,
+            '-to', `${end}`,
+            '-c', 'copy', // Use stream copy for speed if no re-encoding is needed
+            outputFileName
+        ]);
+
+        const data = await ffmpeg.readFile(outputFileName);
+        const newFile = new File([data], outputFileName, { type: currentMedia.file.type });
+
+        if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(currentMediaPreviewUrl);
+        }
+        const newPreviewUrl = URL.createObjectURL(newFile);
+        
+        const newDuration = end - start;
+
+        const newMediaData: CurrentMediaData = {
+            file: newFile,
+            type: currentMedia.type,
+            startTime: 0, // Reset times as the file is now physically trimmed
+            endTime: newDuration,
+            duration: newDuration,
+            size: newFile.size,
+            isTrimmed: true,
+        };
+
+        // Use the two-step state update to force re-mount
+        setCurrentMedia(null);
+        setCurrentMediaPreviewUrl(null);
+        setPendingTrimmedMedia({ media: newMediaData, url: newPreviewUrl });
+        
+    } catch (error) {
+        console.error("Error applying trim:", error);
+        toast({ title: "Trimming Failed", description: "Could not trim the media. Please try again.", variant: "destructive" });
+    } finally {
+        setIsTrimming(false);
+    }
   };
 
   const triggerSubmitProcess = useCallback(() => {
-    console.log('[MemoryForm] Triggering submit process.');
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
     let mediaAttachmentsForSubmission: MediaAttachment[] | undefined = undefined;
     let mediaFileToUpload: File | undefined = undefined;
 
     if (currentMedia) { 
-      console.log('[MemoryForm] Processing current media for submission.');
       const isNewOrTrimmedFile = currentMedia.file.size > 0 && (currentMedia.file.name !== "existing_media_placeholder" || currentMedia.isTrimmed);
-      if (isNewOrTrimmedFile) {
-        mediaFileToUpload = currentMedia.file;
-        console.log('[MemoryForm] New/trimmed media file will be uploaded:', mediaFileToUpload);
-      }
+      if (isNewOrTrimmedFile) mediaFileToUpload = currentMedia.file;
 
       const originalMediaAttachmentId = memory?.mediaAttachments?.[0]?.id || Date.now().toString();
       const urlForSubmission = isNewOrTrimmedFile ? "placeholder_for_upload" : (currentMediaPreviewUrl || memory?.mediaAttachments?.[0]?.url || '');
@@ -351,28 +401,24 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         type: currentMedia.type,
         url: urlForSubmission,
         filename: currentMedia.file.name, 
-        // Trimming is now pseudo, so we pass the trim values
-        startTime: trimValues[0],
-        endTime: trimValues[1],
+        startTime: currentMedia.isTrimmed ? 0 : trimValues[0],
+        endTime: currentMedia.isTrimmed ? currentMedia.duration : trimValues[1],
         duration: currentMedia.duration,
         size: currentMedia.size,
-        isTrimmed: false, // Since it's pseudo-trimming, not physically trimmed on client
+        isTrimmed: currentMedia.isTrimmed,
       }];
-      console.log('[MemoryForm] Media attachment for submission:', mediaAttachmentsForSubmission);
     } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
         mediaAttachmentsForSubmission = undefined; 
-        console.log('[MemoryForm] Editing memory, but no new media. Existing media will be preserved/removed by parent.');
     }
     
     const finalPromptIdToSave = initialPromptId || memory?.promptId || undefined;
 
-    const memoryData = { title, date: finalDate.toISOString(), description, emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForSubmission,
+    onSubmit(
+      { title, date: finalDate.toISOString(), description, emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForSubmission,
         location: location || undefined, country: country || undefined, category: selectedCategory, 
-        promptId: finalPromptIdToSave, isLegacy: memory?.isLegacy || false };
-
-    console.log('[MemoryForm] Calling parent onSubmit with data:', memoryData, mediaFileToUpload);
-    onSubmit(memoryData, mediaFileToUpload);
-
+        promptId: finalPromptIdToSave, isLegacy: memory?.isLegacy || false },
+      mediaFileToUpload
+    );
   }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, selectedCategory, initialPromptId, selectedEmotionTags, isEditing, trimValues]);
 
   const handleActionButtonClick = useCallback(() => {
@@ -428,10 +474,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       mediaAttachmentsForPreview = [{
         id: memory?.mediaAttachments?.[0]?.id || 'preview-media-1',
         type: currentMedia.type, url: currentMediaPreviewUrl, filename: currentMedia.file.name,
-        startTime: trimValues[0],
-        endTime: trimValues[1],
+        startTime: currentMedia.isTrimmed ? 0 : trimValues[0],
+        endTime: currentMedia.isTrimmed ? currentMedia.duration : trimValues[1],
         duration: currentMedia.duration, size: currentMedia.size,
-        isTrimmed: false,
+        isTrimmed: currentMedia.isTrimmed,
       }];
     }
     mockMemoryForPreview = {
@@ -442,6 +488,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       promptId: initialPromptId || memory?.promptId, isLegacy: memory?.isLegacy || false,
     };
   }
+
+  const isTrimChangedFromOriginal = currentMedia && !currentMedia.isTrimmed && (trimValues[0] > 0 || trimValues[1] < currentMedia.duration);
   
   const previewKey = `${mockMemoryForPreview?.id}-${mediaKey}`;
 
@@ -538,9 +586,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                   {currentMedia && (
                     <Card className="bg-muted/50">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-base font-medium flex items-center"><Scissors className="mr-2 h-4 w-4"/>Trim Media (Playback only)</CardTitle>
+                            <CardTitle className="text-base font-medium flex items-center"><Scissors className="mr-2 h-4 w-4"/>Trim Media</CardTitle>
                             <CardDescription className="text-xs">
-                                Drag the handles to select the part of the media you want to save. This is a playback-only trim.
+                                Drag the handles to select the part of the media you want to save. The player will preview this selection.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -552,6 +600,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                     value={trimValues}
                                     onValueChange={(vals) => handleTrimChange(vals as [number, number])}
                                     minStepsBetweenThumbs={1}
+                                    disabled={currentMedia.isTrimmed || isTrimming}
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground font-mono">
                                     <span>Start: {formatSecondsToTime(trimValues[0])}</span>
@@ -559,6 +608,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                     <span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1])}</span>
                                 </div>
                             </div>
+                           {isTrimChangedFromOriginal && (
+                                <div className="mt-4">
+                                    <Button onClick={handleApplyTrim} disabled={isTrimming} className="w-full">
+                                        {isTrimming ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Scissors className="mr-2 h-4 w-4" />}
+                                        Apply Trim & Finalize
+                                    </Button>
+                                    <p className="text-xs text-muted-foreground text-center mt-1">This will permanently trim the file for this memory.</p>
+                                </div>
+                           )}
+                           {currentMedia.isTrimmed && (
+                            <p className="text-sm text-green-600 mt-2 text-center">Trim has been applied.</p>
+                           )}
                         </CardContent>
                     </Card>
                   )}
