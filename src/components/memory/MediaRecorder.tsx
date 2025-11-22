@@ -195,6 +195,15 @@ export function MediaCaptureControl({
 
   }, [trimValues]);
 
+  const handleStopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      console.log('[MediaRecorder] Stopping MediaRecorder.');
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+    }
+  }, []);
+
   const handleDiscardMedia = useCallback(() => {
     if (isRecording) {
         console.log('[MediaRecorder] Discarding active recording.');
@@ -206,7 +215,7 @@ export function MediaCaptureControl({
     setMediaType(null);
     onDiscard();
     toast({ title: "Media Discarded" });
-  }, [isRecording, revokeCurrentPreviewUrl, onDiscard]);
+  }, [isRecording, revokeCurrentPreviewUrl, onDiscard, handleStopRecording]);
 
 
   const processAndFinalizeMedia = useCallback(async (blob: Blob, type: 'video' | 'audio') => {
@@ -237,10 +246,7 @@ export function MediaCaptureControl({
         }
 
         revokeCurrentPreviewUrl();
-        const newPreviewUrl = URL.createObjectURL(file);
-        setPreviewUrl(newPreviewUrl);
-        setMediaType(type);
-
+        // This onMediaReady call is what triggers the parent to update and move to the next slide
         onMediaReady({ file, type: type, duration: mediaElement.duration, size: file.size });
         toast({ title: "Recording Ready for Preview!", description: `Duration: ${formatSecondsToTime(mediaElement.duration)}. You can now trim or save your memory.`, variant: "success" });
         console.log('[MediaRecorder] Media ready and passed to parent component.');
@@ -267,9 +273,10 @@ export function MediaCaptureControl({
         return;
     }
     
+    // Clean up any old media before starting a new recording
     revokeCurrentPreviewUrl();
-    setPreviewUrl(null); 
-    onDiscard(); // Inform parent that any existing media is now gone
+    onDiscard();
+
     setMediaType(type); 
     recordedChunks.current = [];
 
@@ -323,14 +330,6 @@ export function MediaCaptureControl({
     }
   };
 
-  const handleStopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      console.log('[MediaRecorder] Stopping MediaRecorder.');
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
-    }
-  };
   
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!checkHostPass()) { event.target.value = ''; return; }
