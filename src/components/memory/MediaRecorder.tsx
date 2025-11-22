@@ -150,6 +150,7 @@ export function MediaCaptureControl({
 
   // This effect now correctly handles initialization and subsequent updates from parent
   useEffect(() => {
+    console.log('[MediaRecorder] Initial media prop change detected:', initialMedia);
     if (initialMedia) {
       console.log('[MediaRecorder] Initializing with media from parent:', initialMedia);
       setMediaType(initialMedia.type);
@@ -205,6 +206,7 @@ export function MediaCaptureControl({
   }, []);
 
   const handleDiscardMedia = useCallback(() => {
+    console.log('[MediaRecorder] Discard media clicked.');
     if (isRecording) {
         console.log('[MediaRecorder] Discarding active recording.');
         handleStopRecording();
@@ -274,6 +276,7 @@ export function MediaCaptureControl({
     }
     
     // Clean up any old media before starting a new recording
+    console.log('[MediaRecorder] Revoking URL and calling onDiscard before new recording.');
     revokeCurrentPreviewUrl();
     onDiscard();
 
@@ -357,6 +360,7 @@ export function MediaCaptureControl({
   // Cleanup stream on component unmount
   useEffect(() => {
     return () => {
+      console.log('[MediaRecorder] Unmounting, performing cleanup.');
       cleanupStream();
       if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
     };
@@ -461,3 +465,5 @@ export function MediaCaptureControl({
     </Card>
   );
 }
+
+    
