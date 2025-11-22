@@ -138,6 +138,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const [isTrimming, setIsTrimming] = useState(false);
   const [mediaKey, setMediaKey] = useState(Date.now().toString());
 
+  // New state to prevent race conditions during media start
+  const [isPreparingMedia, setIsPreparingMedia] = useState(false);
+
   useEffect(() => {
     console.log('[MemoryForm] Initializing form state from props.');
     if (memory) {
@@ -295,16 +298,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     handleSetCurrentSlide(SLIDE_INDEX_PREVIEW);
   }, [currentMediaPreviewUrl, handleSetCurrentSlide]);
 
-  const handleMediaDiscard = useCallback(() => {
-    console.log('[MemoryForm] handleMediaDiscard called.');
-    if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(currentMediaPreviewUrl);
-    }
-    setCurrentMedia(null);
-    setCurrentMediaPreviewUrl(null);
-    setTrimValues([0, 100]);
-  }, [currentMediaPreviewUrl]);
-
   const handleEmotionTagToggle = (tag: EmotionTag) => setSelectedEmotionTags(prevTags => prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]);
   
   const handleTrimChange = (newValues: [number, number]) => {
@@ -326,7 +319,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const triggerSubmitProcess = useCallback(() => {
     console.log('[MemoryForm] Triggering submit process.');
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
-    let mediaAttachmentsForSubmission: MediaAttachment[] | undefined = undefined;
     let mediaFileToUpload: File | undefined = undefined;
 
     if (currentMedia) { 
@@ -336,42 +328,32 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         console.log('[MemoryForm] New/trimmed media file will be uploaded:', currentMedia.file);
         mediaFileToUpload = currentMedia.file;
       }
-
-      const originalMediaAttachmentId = memory?.mediaAttachments?.[0]?.id || Date.now().toString();
-      const urlForSubmission = isNewFile ? "placeholder_for_upload" : (currentMediaPreviewUrl || memory?.mediaAttachments?.[0]?.url || '');
-
-      mediaAttachmentsForSubmission = [{
-        id: originalMediaAttachmentId,
-        type: currentMedia.type,
-        url: urlForSubmission,
-        filename: currentMedia.file.name, 
-        startTime: trimValues[0],
-        endTime: trimValues[1],
-        duration: currentMedia.duration,
-        size: currentMedia.size,
-        isTrimmed: currentMedia.isTrimmed,
-      }];
-      console.log('[MemoryForm] Media attachment for submission:', mediaAttachmentsForSubmission);
-    } else if (isEditing && memory?.mediaAttachments && memory.mediaAttachments.length > 0) {
-        console.log('[MemoryForm] Editing, but no *new* media. Media attachments will be untouched on submit.');
-        mediaAttachmentsForSubmission = undefined; 
     }
     
     const finalPromptIdToSave = initialPromptId || memory?.promptId || undefined;
-    const submissionData = { title, date: finalDate.toISOString(), description, emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForSubmission,
-        location: location || undefined, country: country || undefined, category: selectedCategory, 
-        promptId: finalPromptIdToSave, isLegacy: memory?.isLegacy || false };
+    const submissionData = { 
+        title, 
+        date: finalDate.toISOString(), 
+        description, 
+        emotionTags: selectedEmotionTags, 
+        // mediaAttachments are now handled on the server
+        location: location || undefined, 
+        country: country || undefined, 
+        category: selectedCategory, 
+        promptId: finalPromptIdToSave, 
+        isLegacy: memory?.isLegacy || false 
+    };
 
     console.log('[MemoryForm] Calling parent onSubmit with data:', submissionData, mediaFileToUpload);
     onSubmit(
-      submissionData,
+      submissionData as Omit<Memory, 'id' | 'userId'>,
       mediaFileToUpload
     );
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, selectedCategory, initialPromptId, selectedEmotionTags, isEditing, trimValues]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, location, country, selectedCategory, initialPromptId, selectedEmotionTags]);
 
   const handleActionButtonClick = useCallback(() => {
     console.log(`[MemoryForm] Action button clicked on slide ${currentSlide}.`);
-    if (isParentSubmitting || isTrimming) return;
+    if (isParentSubmitting || isTrimming || isPreparingMedia) return;
     if (currentSlide === SLIDE_INDEX_DETAILS) {
       console.log('[MemoryForm] Validating details slide.');
       if (!title.trim()) { toast({ title: "Title Required", variant: "destructive" }); setTimeout(() => titleInputRef.current?.focus(), 100); return; }
@@ -393,7 +375,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       console.log('[MemoryForm] Preview slide action. Triggering submit.');
       triggerSubmitProcess();
     }
-  }, [ isParentSubmitting, isTrimming, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments, handleSetCurrentSlide ]);
+  }, [ isParentSubmitting, isTrimming, isPreparingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments, handleSetCurrentSlide ]);
 
   const handleFormSubmit = (event: FormEvent) => { event.preventDefault(); handleActionButtonClick(); };
 
@@ -434,7 +416,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         duration: currentMedia.duration, size: currentMedia.size,
         isTrimmed: currentMedia.isTrimmed,
       }];
+    } else if (memory?.mediaAttachments) {
+      mediaAttachmentsForPreview = memory.mediaAttachments;
     }
+
     mockMemoryForPreview = {
       id: memory?.id || 'preview-id', title: title.trim() || "Untitled Chapter", date: isValid(finalDate) ? finalDate.toISOString() : new Date().toISOString(),
       description: description.trim() || "No description provided.", emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForPreview,
@@ -521,21 +506,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             <Card className="w-full">
               <CardHeader>
                 <CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>
-                {!currentMedia && <CardDescription>Record or upload a video/audio for your memory.</CardDescription>}
+                <CardDescription>Record or upload a video/audio for your memory.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                  {currentMedia && (
-                     <MediaCaptureControl
-                        key={mediaKey}
-                        onMediaReady={handleMediaReady}
-                        onDiscard={handleMediaDiscard}
-                        initialMedia={mediaForRecorderProp}
-                        promptIdForTeleprompter={currentPromptIdForTeleprompter}
-                        chapterTitleForTeleprompter={title}
-                        trimValues={trimValues}
-                    />
-                  )}
-                  {!currentMedia && <MediaCaptureControl onMediaReady={handleMediaReady} onDiscard={handleMediaDiscard} promptIdForTeleprompter={currentPromptIdForTeleprompter} chapterTitleForTeleprompter={title} trimValues={trimValues}/>}
+                  <MediaCaptureControl
+                    key={mediaKey}
+                    onMediaReady={handleMediaReady}
+                    onPreparingChange={setIsPreparingMedia}
+                    initialMedia={mediaForRecorderProp}
+                    promptIdForTeleprompter={currentPromptIdForTeleprompter}
+                    chapterTitleForTeleprompter={title}
+                    trimValues={trimValues}
+                  />
                   {currentMedia && (
                     <Card className="bg-muted/50">
                         <CardHeader className="pb-2">
@@ -581,11 +563,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       </Carousel>
 
       <div className="max-w-3xl mx-auto flex justify-between items-center pt-4 px-1 sm:px-0">
-        <Button type="button" onClick={() => { console.log(`[MemoryForm] Back/Previous button clicked on slide ${currentSlide}.`); if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) handleSetCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) handleSetCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting || isTrimming} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
-        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || isTrimming || (currentSlide === SLIDE_INDEX_MEDIA && !isNextToPreviewEnabled) || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview)}>{(isParentSubmitting || isTrimming) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</Button>
+        <Button type="button" onClick={() => { console.log(`[MemoryForm] Back/Previous button clicked on slide ${currentSlide}.`); if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) handleSetCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) handleSetCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
+        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia || (currentSlide === SLIDE_INDEX_MEDIA && !isNextToPreviewEnabled) || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview)}>{(isParentSubmitting || isTrimming || isPreparingMedia) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</Button>
       </div>
     </form>
   );
 }
-
-    

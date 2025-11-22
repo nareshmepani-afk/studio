@@ -39,6 +39,7 @@ interface MediaCaptureControlProps {
     duration: number;
     size: number;
   }) => void;
+  onPreparingChange: (isPreparing: boolean) => void;
   initialMedia?: {
     type: 'video' | 'audio';
     previewUrl: string;
@@ -52,6 +53,7 @@ interface MediaCaptureControlProps {
 
 export function MediaCaptureControl({
   onMediaReady,
+  onPreparingChange,
   initialMedia,
   promptIdForTeleprompter,
   chapterTitleForTeleprompter,
@@ -211,7 +213,6 @@ export function MediaCaptureControl({
     revokeCurrentPreviewUrl();
     setPreviewUrl(null);
     setMediaType(null);
-    // This no longer calls onDiscard to parent
     console.log('[MediaRecorder] Internal state reset for new recording.');
     toast({ title: "Media Discarded" });
   }, [isRecording, revokeCurrentPreviewUrl, handleStopRecording]);
@@ -263,14 +264,17 @@ export function MediaCaptureControl({
     console.log(`[MediaRecorder] Attempting to start ${type} recording.`);
     if (isRecording || !checkHostPass()) return;
     
+    console.log('[MediaRecorder] Setting isPreparing to true.');
+    onPreparingChange(true);
+
     const permissionGranted = await getPermissions(type);
     if (!permissionGranted || !streamRef.current) {
+        onPreparingChange(false);
         return;
     }
     
     console.log('[MediaRecorder] Revoking any existing URL before new recording.');
     revokeCurrentPreviewUrl();
-    // No longer calling onDiscard here
     setPreviewUrl(null);
     setMediaType(type); 
     
@@ -311,6 +315,7 @@ export function MediaCaptureControl({
 
       recorder.start();
       setIsRecording(true);
+      onPreparingChange(false); // Done preparing
       setCurrentRecordingDuration(0);
       if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
       recordingIntervalRef.current = setInterval(() => {
@@ -321,6 +326,7 @@ export function MediaCaptureControl({
     } catch (err) {
       console.error("[MediaRecorder] Error initializing MediaRecorder:", err);
       cleanupStream();
+      onPreparingChange(false); // Done preparing (with error)
       toast({ variant: 'destructive', title: 'Recording Setup Failed', description: 'Could not start recording. Check device compatibility or permissions.' });
     }
   };
