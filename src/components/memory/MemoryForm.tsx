@@ -294,9 +294,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     setCurrentMediaPreviewUrl(newPreviewUrlFromFile);
     
     // Explicitly move to the next slide
-    console.log('[MemoryForm] Media is ready, explicitly advancing to Preview slide.');
-    handleSetCurrentSlide(SLIDE_INDEX_PREVIEW);
-  }, [currentMediaPreviewUrl, handleSetCurrentSlide]);
+    console.log('[MemoryForm] Media is ready, staying on Media slide for preview/trim.');
+    // handleSetCurrentSlide(SLIDE_INDEX_PREVIEW); // This was the bug, removing it.
+  }, [currentMediaPreviewUrl]);
 
   const handleEmotionTagToggle = (tag: EmotionTag) => setSelectedEmotionTags(prevTags => prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]);
   
@@ -569,5 +569,3 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     </form>
   );
 }
-
-    
