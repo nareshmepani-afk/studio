@@ -223,7 +223,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     }, 350);
   }, []);
 
-  useEffect(() => { currentSlideRef.current = currentSlide; }, [currentSlide]);
+  useEffect(() => {
+    currentSlideRef.current = currentSlide;
+  }, [currentSlide]);
+
+
+  const handleSetCurrentSlide = useCallback((newSlide: number) => {
+      if (newSlide !== currentSlideRef.current) {
+          setCurrentSlide(newSlide);
+      }
+  }, []);
 
  useEffect(() => {
     if (!carouselApi) return;
@@ -233,13 +242,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
   useEffect(() => {
     if (!carouselApi) return;
-    const handleApiEvent = () => { if (!carouselApi) return; const newSelectedSnap = carouselApi.selectedScrollSnap(); if (newSelectedSnap !== currentSlideRef.current) setCurrentSlide(newSelectedSnap); };
+    const handleApiEvent = () => { if (!carouselApi) return; const newSelectedSnap = carouselApi.selectedScrollSnap(); if (newSelectedSnap !== currentSlideRef.current) { handleSetCurrentSlide(newSelectedSnap); } };
     const initialSnap = carouselApi.selectedScrollSnap();
-    if (initialSnap !== currentSlideRef.current) setCurrentSlide(initialSnap);
+    if (initialSnap !== currentSlideRef.current) { handleSetCurrentSlide(initialSnap); }
     else { if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current); initialScrollTimerRef.current = setTimeout(() => { if (carouselApi && carouselApi.selectedScrollSnap() === currentSlideRef.current) performVisualScroll(currentSlideRef.current); }, 100); }
     carouselApi.on("select", handleApiEvent); carouselApi.on("reInit", handleApiEvent);
     return () => { if (carouselApi) { carouselApi.off("select", handleApiEvent); carouselApi.off("reInit", handleApiEvent); } if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current); if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current); };
-  }, [carouselApi, performVisualScroll]);
+  }, [carouselApi, performVisualScroll, handleSetCurrentSlide]);
 
   useEffect(() => { if (selectedDay > daysInSelectedMonth) setSelectedDay(daysInSelectedMonth); }, [selectedDay, daysInSelectedMonth]);
 
@@ -268,7 +277,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     });
     setTrimValues([0, mediaPayload.duration]);
     setCurrentMediaPreviewUrl(newPreviewUrlFromFile);
-  }, [currentMediaPreviewUrl]);
+    
+    // Explicitly move to the next slide
+    handleSetCurrentSlide(SLIDE_INDEX_PREVIEW);
+  }, [currentMediaPreviewUrl, handleSetCurrentSlide]);
 
   const handleMediaDiscard = useCallback(() => {
     if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
@@ -304,7 +316,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
     if (currentMedia) { 
       const isNewFile = currentMedia.file.size > 0 && currentMedia.file.name !== "existing_media_placeholder";
-      if (isNewFile) mediaFileToUpload = currentMedia.file;
+      if (isNewFile) {
+        mediaFileToUpload = currentMedia.file;
+      }
 
       const originalMediaAttachmentId = memory?.mediaAttachments?.[0]?.id || Date.now().toString();
       const urlForSubmission = isNewFile ? "placeholder_for_upload" : (currentMediaPreviewUrl || memory?.mediaAttachments?.[0]?.url || '');
@@ -325,11 +339,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     }
     
     const finalPromptIdToSave = initialPromptId || memory?.promptId || undefined;
+    const submissionData = { title, date: finalDate.toISOString(), description, emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForSubmission,
+        location: location || undefined, country: country || undefined, category: selectedCategory, 
+        promptId: finalPromptIdToSave, isLegacy: memory?.isLegacy || false };
 
     onSubmit(
-      { title, date: finalDate.toISOString(), description, emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForSubmission,
-        location: location || undefined, country: country || undefined, category: selectedCategory, 
-        promptId: finalPromptIdToSave, isLegacy: memory?.isLegacy || false },
+      submissionData,
       mediaFileToUpload
     );
   }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, currentMediaPreviewUrl, location, country, selectedCategory, initialPromptId, selectedEmotionTags, isEditing, trimValues]);
@@ -342,16 +357,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       if (!isValid(tempDate) || getYear(tempDate) !== selectedYear || getMonth(tempDate) !== selectedMonth || getDate(tempDate) !== selectedDay) { toast({ title: "Invalid Date", variant: "destructive" }); setTimeout(() => yearSelectRef.current?.focus(), 100); return; }
       if (!description.trim()) { toast({ title: "Description Required", description: "Please provide a description for your memory.", variant: "default" }); setTimeout(() => descriptionTextareaRef.current?.focus(), 100); return; }
       if (!selectedCategory) { toast({ title: "Category Required", description: "Please select a category.", variant: "default" }); return; }
-       setCurrentSlide(SLIDE_INDEX_MEDIA);
+       handleSetCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
       if (!currentMedia && (!isEditing || !memory?.mediaAttachments?.length)) {
         toast({ title: "Media is Required to Proceed", description: "Please record a video or audio first, then you can proceed to the preview step.", variant: "default" });
         return;
       }
       setMediaKey(Date.now().toString()); // Generate a new key before going to preview
-      setCurrentSlide(SLIDE_INDEX_PREVIEW);
-    } else if (currentSlide === SLIDE_INDEX_PREVIEW) triggerSubmitProcess();
-  }, [ isParentSubmitting, isTrimming, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments ]);
+      handleSetCurrentSlide(SLIDE_INDEX_PREVIEW);
+    } else if (currentSlide === SLIDE_INDEX_PREVIEW) {
+      triggerSubmitProcess();
+    }
+  }, [ isParentSubmitting, isTrimming, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments, handleSetCurrentSlide ]);
 
   const handleFormSubmit = (event: FormEvent) => { event.preventDefault(); handleActionButtonClick(); };
 
@@ -539,7 +556,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       </Carousel>
 
       <div className="max-w-3xl mx-auto flex justify-between items-center pt-4 px-1 sm:px-0">
-        <Button type="button" onClick={() => { if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) setCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) setCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting || isTrimming} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
+        <Button type="button" onClick={() => { if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) handleSetCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) handleSetCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting || isTrimming} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
         <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || isTrimming || (currentSlide === SLIDE_INDEX_MEDIA && !isNextToPreviewEnabled) || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview)}>{(isParentSubmitting || isTrimming) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</Button>
       </div>
     </form>
