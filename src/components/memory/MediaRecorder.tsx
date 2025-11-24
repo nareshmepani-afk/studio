@@ -17,6 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { mockPromptGroups } from '@/lib/mockData';
 import type { MediaAttachment } from '@/types';
+import { MAX_RECORDING_DURATION } from '@/lib/constants';
 
 // Moved from utils.ts to break circular dependency
 function formatSecondsToTime(timeInSeconds: number | undefined): string {
@@ -28,9 +29,6 @@ function formatSecondsToTime(timeInSeconds: number | undefined): string {
   const seconds = totalSecs % 60;
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
-
-// Maximum duration constants (in seconds)
-const MAX_RECORDING_DURATION = 300; // 5 minutes for all recordings
 
 interface MediaCaptureControlProps {
   onMediaReady: (media: {
@@ -237,13 +235,7 @@ export function MediaCaptureControl({
     mediaElement.onloadedmetadata = () => {
         URL.revokeObjectURL(objectUrlForDurationCheck);
         console.log(`[MediaRecorder] Final media duration: ${mediaElement.duration}s`);
-        if (mediaElement.duration > MAX_RECORDING_DURATION) {
-            toast({ variant: 'destructive', title: 'Recording Too Long', description: `Recording is ${formatSecondsToTime(mediaElement.duration)}. Max allowed is ${formatSecondsToTime(MAX_RECORDING_DURATION)}. Please re-record.`, duration: 10000 });
-            handleDiscardMedia();
-            setIsProcessing(false);
-            return;
-        }
-
+        
         console.log('[MediaRecorder] Media ready and passed to parent component.');
         onMediaReady({ file, type: type, duration: mediaElement.duration, size: file.size });
         toast({ title: "Recording Ready for Preview!", description: `Duration: ${formatSecondsToTime(mediaElement.duration)}. You can now trim or save your memory.`, variant: "success" });

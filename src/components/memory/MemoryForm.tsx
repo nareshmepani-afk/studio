@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { MemoryCard } from './MemoryCard';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft, Eye, Layers, Scissors, Timer } from 'lucide-react';
+import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft, Eye, Layers, Scissors, Timer, AlertCircle } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, parseISO, getDate } from 'date-fns';
 import { enGB } from 'date-fns/locale';
@@ -27,6 +27,8 @@ import { countryOptions } from '@/lib/constants';
 import { mockPromptGroups } from '@/lib/mockData';
 import { Slider } from '@/components/ui/slider';
 import dynamic from 'next/dynamic';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { MAX_RECORDING_DURATION } from '@/lib/constants';
 
 
 const MediaCaptureControl = dynamic(
@@ -292,10 +294,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     });
     setTrimValues([0, mediaPayload.duration]);
     setCurrentMediaPreviewUrl(newPreviewUrlFromFile);
-    
-    // Explicitly move to the next slide
-    console.log('[MemoryForm] Media is ready, staying on Media slide for preview/trim.');
-    // handleSetCurrentSlide(SLIDE_INDEX_PREVIEW); // This was the bug, removing it.
+    console.log('[MemoryForm] Media is ready, user can now preview and trim.');
   }, [currentMediaPreviewUrl]);
 
   const handleEmotionTagToggle = (tag: EmotionTag) => setSelectedEmotionTags(prevTags => prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]);
@@ -351,6 +350,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     );
   }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, location, country, selectedCategory, initialPromptId, selectedEmotionTags]);
 
+  const trimmedDuration = useMemo(() => {
+    if (!currentMedia) return 0;
+    return trimValues[1] - trimValues[0];
+  }, [currentMedia, trimValues]);
+
+  const isTrimmedDurationTooLong = useMemo(() => {
+    return trimmedDuration > MAX_RECORDING_DURATION;
+  }, [trimmedDuration]);
+
+
   const handleActionButtonClick = useCallback(() => {
     console.log(`[MemoryForm] Action button clicked on slide ${currentSlide}.`);
     if (isParentSubmitting || isTrimming || isPreparingMedia) return;
@@ -368,6 +377,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         toast({ title: "Media is Required to Proceed", description: "Please record a video or audio first, then you can proceed to the preview step.", variant: "default" });
         return;
       }
+      if (isTrimmedDurationTooLong) {
+        toast({ title: "Media Too Long", description: `Please trim your selection to ${formatSecondsToTime(MAX_RECORDING_DURATION)} or less to continue.`, variant: "destructive" });
+        return;
+      }
       console.log('[MemoryForm] Media slide valid. Moving to preview slide.');
       setMediaKey(Date.now().toString()); // Generate a new key before going to preview
       handleSetCurrentSlide(SLIDE_INDEX_PREVIEW);
@@ -375,7 +388,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       console.log('[MemoryForm] Preview slide action. Triggering submit.');
       triggerSubmitProcess();
     }
-  }, [ isParentSubmitting, isTrimming, isPreparingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments, handleSetCurrentSlide ]);
+  }, [ isParentSubmitting, isTrimming, isPreparingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments, handleSetCurrentSlide, isTrimmedDurationTooLong ]);
 
   const handleFormSubmit = (event: FormEvent) => { event.preventDefault(); handleActionButtonClick(); };
 
@@ -539,9 +552,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground font-mono">
                                     <span>Start: {formatSecondsToTime(trimValues[0])}</span>
-                                    <span>Duration: {formatSecondsToTime(trimValues[1] - trimValues[0])}</span>
+                                    <span>Duration: {formatSecondsToTime(trimmedDuration)}</span>
                                     <span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1])}</span>
                                 </div>
+                                {isTrimmedDurationTooLong && (
+                                  <Alert variant="destructive" className="mt-2 text-xs">
+                                      <AlertCircle className="h-4 w-4" />
+                                      <AlertTitle>Selection Too Long</AlertTitle>
+                                      <AlertDescription>
+                                          Your trimmed selection is {formatSecondsToTime(trimmedDuration)}, which exceeds the {formatSecondsToTime(MAX_RECORDING_DURATION)} limit.
+                                      </AlertDescription>
+                                  </Alert>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
@@ -564,7 +586,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
       <div className="max-w-3xl mx-auto flex justify-between items-center pt-4 px-1 sm:px-0">
         <Button type="button" onClick={() => { console.log(`[MemoryForm] Back/Previous button clicked on slide ${currentSlide}.`); if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) handleSetCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) handleSetCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
-        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia || (currentSlide === SLIDE_INDEX_MEDIA && !isNextToPreviewEnabled) || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview)}>{(isParentSubmitting || isTrimming || isPreparingMedia) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</Button>
+        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia || (currentSlide === SLIDE_INDEX_MEDIA && !isNextToPreviewEnabled) || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview) || isTrimmedDurationTooLong}>{(isParentSubmitting || isTrimming || isPreparingMedia) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</Button>
       </div>
     </form>
   );
