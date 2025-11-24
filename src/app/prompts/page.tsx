@@ -4,8 +4,9 @@
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { PromptCard } from '@/components/prompts/PromptCard';
 import { mockPromptGroups } from '@/lib/mockData';
+import { teleprompterScripts } from '@/lib/teleprompterScripts';
 import { Button } from '@/components/ui/button';
-import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star as StarIcon, Info } from 'lucide-react';
+import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star as StarIcon, Info, QrCode } from 'lucide-react';
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
@@ -30,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { app } from '@/lib/firebase';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { addMonths, isBefore, parseISO, format, addDays } from 'date-fns';
+import QRCode from "qrcode.react";
 
 const FIRESTORE_USER_PROMPT_FLAGS_COLLECTION = 'userPromptFlags';
 
@@ -39,7 +41,7 @@ export default function LifeJourneyPage() {
 
   const {
     user,
-    isLoading, // Added isLoading from AuthContext
+    isLoading,
     userMode,
     hostPassStatus,
     getLatestMemories,
@@ -58,9 +60,10 @@ export default function LifeJourneyPage() {
   const [generatedChapterIdeas, setGeneratedChapterIdeas] = useState<string[]>([]);
   const [isLoadingChapterIdeas, setIsLoadingChapterIdeas] = useState(false);
 
-  const db = getFirestore(app);
+  const [qrCodeDialog, setQrCodeDialog] = useState<{ open: boolean; url: string; title: string; }>({ open: false, url: '', title: '' });
 
-  console.log(`[LifeJourneyPage] Render: isLoading=${isLoading}, isDataLoading=${isDataLoading}, user=${user ? user.id : 'null'}`);
+
+  const db = getFirestore(app);
 
   useEffect(() => { if (user?.profileInfo) setCustomChapterUserProfile(user.profileInfo); }, [user?.profileInfo]);
   
@@ -139,23 +142,15 @@ export default function LifeJourneyPage() {
   }, [canAccessFullJourney, availablePromptGroups, router]);
 
   const handleViewEditChapter = useCallback((promptId: string) => {
-    console.log(`[handleViewEditChapter] Initiated for promptId: ${promptId}`);
     if (!user) {
-        console.log("[handleViewEditChapter] User not available. Aborting.");
         return;
     }
-    console.log("[handleViewEditChapter] User is available.");
-
-    // Use the getter function to ensure we have the latest memories
     const currentMemories = getLatestMemories();
-    console.log(`[handleViewEditChapter] Total memories loaded: ${currentMemories.length}`);
     const memoryForPrompt = currentMemories.find(m => m.promptId === promptId);
 
     if (memoryForPrompt) {
-      console.log(`[handleViewEditChapter] Found memory with ID: ${memoryForPrompt.id} for promptId: ${promptId}. Redirecting...`);
       router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
     } else {
-      console.log(`[handleViewEditChapter] Failed to find memory for promptId: ${promptId}. Toasting error.`);
       toast({ title: "Error", description: "Could not find the recorded memory for this chapter. The data may still be loading.", variant: "destructive" });
     }
   }, [user, router, getLatestMemories]);
@@ -200,6 +195,12 @@ export default function LifeJourneyPage() {
     }
   }, [hostPassStatus, activateFreeHostPass, purchasePaidHostPass]);
 
+  const handleShowQrCode = useCallback((promptId: string, promptTitle: string) => {
+    const url = `${window.location.origin}/prompts/${promptId}`;
+    setQrCodeDialog({ open: true, url, title: promptTitle });
+  }, []);
+
+
   const hostPassButtonText = useMemo(() => {
     if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
         if (isFetchingHostPassPrice) return "Fetching price...";
@@ -209,23 +210,21 @@ export default function LifeJourneyPage() {
     return "Activate 6-Month Free Host Pass";
   }, [hostPassStatus, isFetchingHostPassPrice, hostPassPriceDetails]);
 
-  // Render loading state if the main app load is still in progress
   if (isLoading) {
     return (
       <AuthenticatedPageWrapper>
         <div className="container mx-auto py-8 px-4 text-center">
           <HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-          <h1 className="font-headline text-3xl mb-2">Loading Life Journey...</h1> {/* Updated message */}
+          <h1 className="font-headline text-3xl mb-2">Loading Life Journey...</h1>
           <p className="text-muted-foreground mb-6">
             Please wait while your data is loaded.
           </p>
-           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" /> {/* Moved loader */}
+           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
         </div>
       </AuthenticatedPageWrapper>
     );
-  } else if (userMode === 'guest') { // If loaded but userMode is guest
-    console.log(`[LifeJourneyPage] Loaded, userMode is guest. Displaying guest view.`);
-    return ( // Added return here
+  } else if (userMode === 'guest') {
+    return (
       <AuthenticatedPageWrapper>
         <div className="container mx-auto py-8 px-4 text-center">
           <HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
@@ -240,9 +239,6 @@ export default function LifeJourneyPage() {
       </AuthenticatedPageWrapper>
     );
   }
-
-
-  console.log(`[LifeJourneyPage] Loaded, userMode is host and data is ready. Displaying host view.`);
 
   return (
     <AuthenticatedPageWrapper>
@@ -277,9 +273,9 @@ export default function LifeJourneyPage() {
           <AlertTitle className="font-headline text-secondary-foreground">Welcome to Your Life Journey!</AlertTitle>
           <AlertDescription className="text-secondary-foreground/80 space-y-1.5">
             <p>This is where you can explore guided chapters to record your life story. Click on a prompt below to start recording your memory for that chapter.</p>
+            <p>Use the <Info className="inline-block h-4 w-4" /> icon for a preview of the teleprompter script, or the <QrCode className="inline-block h-4 w-4" /> icon to get a shareable QR code for an interviewer.</p>
             <p>Completed chapters are marked with a <CheckCircle className="inline-block h-4 w-4 text-green-500" />. You can view or edit these at any time.</p>
             <p>Use the <StarIcon className="inline-block h-4 w-4 text-amber-500" /> icon on a prompt to flag it for later re-use or if it particularly resonates with you.</p>
-            <p>Full access to all chapter groups and the "Brainstorm Custom Chapter" feature requires an active Host Pass. If your pass is inactive, you'll only see the first chapter group.</p>
           </AlertDescription>
         </Alert>
 
@@ -321,12 +317,14 @@ export default function LifeJourneyPage() {
                     key={prompt.id}
                     promptId={prompt.id}
                     promptText={prompt.text[currentLanguage] || prompt.text.en}
+                    teleprompterScript={teleprompterScripts[prompt.id] || "No script available for this prompt."}
                     isCompleted={completedPromptIds.has(prompt.id)}
                     isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
                     isLoading={isDataLoading}
                     onStartChapter={handleStartChapter}
                     onViewEditChapter={handleViewEditChapter}
                     onToggleFlagPrompt={handleToggleFlagPrompt}
+                    onShowQrCode={handleShowQrCode}
                   />
                 ))}
               </div>
@@ -392,6 +390,25 @@ export default function LifeJourneyPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCustomChapterDialog(false)}>Cancel</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={qrCodeDialog.open} onOpenChange={(open) => !open && setQrCodeDialog({ open: false, url: '', title: '' })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-headline text-lg">Scan to View Prompt</DialogTitle>
+            <DialogDescription>
+              An interviewer can scan this QR code with their phone to open a webpage with the teleprompter script for the prompt: <strong>{qrCodeDialog.title}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4">
+            <QRCode value={qrCodeDialog.url} size={256} level={"H"} includeMargin={true} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setQrCodeDialog({ open: false, url: '', title: '' })}>
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
