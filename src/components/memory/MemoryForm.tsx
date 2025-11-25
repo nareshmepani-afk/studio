@@ -29,6 +29,8 @@ import { Slider } from '@/components/ui/slider';
 import dynamic from 'next/dynamic';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MAX_RECORDING_DURATION } from '@/lib/constants';
+import { getFFmpeg } from '@/lib/ffmpeg';
+import { fetchFile } from '@ffmpeg/util';
 
 
 const MediaCaptureControl = dynamic(
@@ -315,16 +317,48 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   };
 
 
-  const triggerSubmitProcess = useCallback(() => {
+  const triggerSubmitProcess = useCallback(async () => {
     console.log('[MemoryForm] Triggering submit process.');
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
     let mediaFileToUpload: File | undefined = undefined;
 
-    if (currentMedia) { 
+    if (currentMedia) {
       console.log('[MemoryForm] Processing current media for submission.');
       const isNewFile = currentMedia.file.size > 0 && currentMedia.file.name !== "existing_media_placeholder";
-      if (isNewFile) {
-        console.log('[MemoryForm] New/trimmed media file will be uploaded:', currentMedia.file);
+      const hasBeenTrimmed = currentMedia.startTime > 0 || currentMedia.endTime < currentMedia.duration;
+
+      if (isNewFile && hasBeenTrimmed) {
+        setIsTrimming(true);
+        toast({ title: "Trimming media...", description: "This may take a moment before the upload begins." });
+        try {
+          const ffmpeg = await getFFmpeg();
+          const inputFile = "input.webm";
+          const outputFile = "output.webm";
+          await ffmpeg.writeFile(inputFile, await fetchFile(currentMedia.file));
+          
+          const start = formatSecondsToTime(currentMedia.startTime);
+          const duration = formatSecondsToTime(currentMedia.endTime - currentMedia.startTime);
+
+          // Use -c copy for faster, lossless trimming if codecs allow. Otherwise, re-encode.
+          // For webm/vp8/opus, re-encoding is safer.
+          await ffmpeg.exec(['-ss', start, '-i', inputFile, '-t', duration, '-c', 'copy', outputFile]);
+          
+          const data = await ffmpeg.readFile(outputFile);
+          const trimmedBlob = new Blob([data], { type: currentMedia.file.type });
+          mediaFileToUpload = new File([trimmedBlob], `trimmed_${currentMedia.file.name}`, { type: currentMedia.file.type });
+
+          console.log('[MemoryForm] Media trimmed successfully. New file size:', mediaFileToUpload.size);
+          
+        } catch (error) {
+          console.error("Error during FFmpeg trimming:", error);
+          toast({ title: "Trimming Failed", description: "Could not trim the media. The original file will be used.", variant: "destructive" });
+          // Fallback to uploading the original file if trimming fails
+          mediaFileToUpload = currentMedia.file;
+        } finally {
+          setIsTrimming(false);
+        }
+      } else if (isNewFile) {
+        console.log('[MemoryForm] New media file will be uploaded without trimming:', currentMedia.file);
         mediaFileToUpload = currentMedia.file;
       }
     }
@@ -335,12 +369,21 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         date: finalDate.toISOString(), 
         description, 
         emotionTags: selectedEmotionTags, 
-        // mediaAttachments are now handled on the server
         location: location || undefined, 
         country: country || undefined, 
         category: selectedCategory, 
         promptId: finalPromptIdToSave, 
-        isLegacy: memory?.isLegacy || false 
+        isLegacy: memory?.isLegacy || false,
+        mediaAttachments: currentMedia ? [{
+            ...memory?.mediaAttachments?.[0], // Keep original ID if editing
+            id: memory?.mediaAttachments?.[0]?.id || 'media' + Date.now(),
+            type: currentMedia.type,
+            startTime: currentMedia.startTime,
+            endTime: currentMedia.endTime,
+            duration: currentMedia.duration,
+            isTrimmed: currentMedia.startTime > 0 || currentMedia.endTime < currentMedia.duration,
+            // URL, size, filename will be set on the server
+        }] : memory?.mediaAttachments, // Keep original attachments if no new media
     };
 
     console.log('[MemoryForm] Calling parent onSubmit with data:', submissionData, mediaFileToUpload);
@@ -586,8 +629,10 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
       <div className="max-w-3xl mx-auto flex justify-between items-center pt-4 px-1 sm:px-0">
         <Button type="button" onClick={() => { console.log(`[MemoryForm] Back/Previous button clicked on slide ${currentSlide}.`); if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) handleSetCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) handleSetCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
-        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia || (currentSlide === SLIDE_INDEX_MEDIA && !isNextToPreviewEnabled) || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview) || isTrimmedDurationTooLong}>{(isParentSubmitting || isTrimming || isPreparingMedia) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</Button>
+        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia || (currentSlide === SLIDE_INDEX_MEDIA && !isNextToPreviewEnabled) || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview) || isTrimmedDurationTooLong}>{(isParentSubmitting || isTrimming || isPreparingMedia) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{isTrimming && 'Trimming...'} {!isTrimming && <><ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</>}</Button>
       </div>
     </form>
   );
 }
+
+    
