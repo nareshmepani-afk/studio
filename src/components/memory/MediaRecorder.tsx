@@ -18,6 +18,12 @@ import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/te
 import { mockPromptGroups } from '@/lib/mockData';
 import type { MediaAttachment } from '@/types';
 import { MAX_RECORDING_DURATION } from '@/lib/constants';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 // Moved from utils.ts to break circular dependency
 function formatSecondsToTime(timeInSeconds: number | undefined): string {
@@ -71,7 +77,6 @@ export function MediaCaptureControl({
   const recordedChunks = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const [showTeleprompter, setShowTeleprompter] = useState(false);
   const [currentTeleprompterScript, setCurrentTeleprompterScript] = useState<string | null>(null);
 
   const [currentRecordingDuration, setCurrentRecordingDuration] = useState(0);
@@ -198,6 +203,7 @@ export function MediaCaptureControl({
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      setCurrentTeleprompterScript(null); // Hide teleprompter on stop
       if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
       console.log('[MediaRecorder] MediaRecorder stopped.');
     }
@@ -211,6 +217,7 @@ export function MediaCaptureControl({
     revokeCurrentPreviewUrl();
     setPreviewUrl(null);
     setMediaType(null);
+    setCurrentTeleprompterScript(null);
     console.log('[MediaRecorder] Internal state reset for new recording.');
     toast({ title: "Media Discarded" });
   }, [isRecording, revokeCurrentPreviewUrl, handleStopRecording]);
@@ -281,8 +288,14 @@ export function MediaCaptureControl({
         }
     }
     const script = scriptKey ? teleprompterScripts[scriptKey] : null;
-    if (script) { console.log('[MediaRecorder] Showing teleprompter with script.'); setCurrentTeleprompterScript(script); setShowTeleprompter(true); }
-    else if (type === 'video') { console.log('[MediaRecorder] Showing fallback teleprompter script.'); setCurrentTeleprompterScript(defaultTeleprompterFallbackScript); setShowTeleprompter(true); }
+    if (script) { 
+        console.log('[MediaRecorder] Setting teleprompter script.'); 
+        setCurrentTeleprompterScript(script); 
+    }
+    else if (type === 'video') { 
+        console.log('[MediaRecorder] Setting fallback teleprompter script.'); 
+        setCurrentTeleprompterScript(defaultTeleprompterFallbackScript);
+    }
 
 
     try {
@@ -404,6 +417,25 @@ export function MediaCaptureControl({
             {(mediaType === 'video') && (
                 <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
                     <video ref={liveVideoRef} autoPlay muted playsInline className="w-full h-full object-contain" />
+                    {currentTeleprompterScript && (
+                      <div className="absolute bottom-0 left-0 right-0 z-10 p-2">
+                        <Accordion type="single" collapsible className="w-full bg-black/70 text-white rounded-md">
+                          <AccordionItem value="item-1" className="border-b-0">
+                            <AccordionTrigger className="text-sm font-semibold px-4 py-2 hover:no-underline">
+                              <div className="flex items-center">
+                                <BookOpen className="h-4 w-4 mr-2" />
+                                Show/Hide Teleprompter
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <ScrollArea className="h-40 w-full p-4">
+                                <p className="whitespace-pre-wrap text-base leading-relaxed">{currentTeleprompterScript}</p>
+                              </ScrollArea>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      </div>
+                    )}
                 </div>
             )}
     
@@ -420,18 +452,6 @@ export function MediaCaptureControl({
                 <span className="font-mono ml-2 text-sm tabular-nums">({formatSecondsToTime(currentRecordingDuration)})</span>
             </Button>
           </div>
-        )}
-        
-        {showTeleprompter && isRecording && (
-          <Dialog open={showTeleprompter} onOpenChange={setShowTeleprompter}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader><DialogTitle className="font-headline text-lg flex items-center"><BookOpen className="mr-2 h-5 w-5"/>Teleprompter</DialogTitle><DialogDescription>Use these talking points to guide your recording.</DialogDescription></DialogHeader>
-              <ScrollArea className="h-72 w-full rounded-md border p-4">
-                 <p className="whitespace-pre-wrap">{currentTeleprompterScript}</p>
-              </ScrollArea>
-              <DialogFooter><Button variant="outline" onClick={() => setShowTeleprompter(false)}>Close Prompter</Button></DialogFooter>
-            </DialogContent>
-          </Dialog>
         )}
 
         {previewUrl && !isRecording && (
@@ -454,3 +474,5 @@ export function MediaCaptureControl({
     </Card>
   );
 }
+
+    
