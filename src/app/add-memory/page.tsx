@@ -70,18 +70,25 @@ function AddMemoryPageComponent() {
 
     try {
       if (mediaFileToUpload) {
+        // SCENARIO 1: A NEW MEDIA FILE IS BEING UPLOADED
+        // This handles both creating new memories with media and replacing media on existing ones.
         toast({ title: "Uploading Media...", description: "Please wait, this may take a moment." });
         
         const formData = new FormData();
         formData.append('file', mediaFileToUpload);
         formData.append('userId', user.id);
         
-        // Append other memory data to the form
-        if (memoryData.promptId) formData.append('promptId', memoryData.promptId);
+        // Append other memory data to the form for the server to use
         formData.append('title', memoryData.title);
         formData.append('date', memoryData.date);
         formData.append('description', memoryData.description || '');
         if (memoryData.category) formData.append('category', memoryData.category);
+        if (memoryData.promptId) formData.append('promptId', memoryData.promptId);
+        
+        // If we are editing, we pass the existing memory ID so the server can replace it.
+        if (editMemoryId) {
+            formData.append('memoryId', editMemoryId);
+        }
 
         const response = await fetch('/api/process-video', {
           method: 'POST',
@@ -90,14 +97,11 @@ function AddMemoryPageComponent() {
 
         if (!response.ok) {
           let errorText = 'Media processing failed on the server.';
-          // Read the body as text first, as it could be HTML (e.g., from a 500 error) or JSON
           const rawText = await response.text(); 
           try {
-              // Try to parse the text as JSON
               const result = JSON.parse(rawText);
               errorText = result.error || errorText;
           } catch(e) {
-              // If JSON parsing fails, use the raw text as the error, if it's not empty
               errorText = rawText || errorText;
           }
           throw new Error(errorText);
@@ -106,9 +110,12 @@ function AddMemoryPageComponent() {
         toast({ title: "Memory Saved!", description: "Your memory has been processed and saved.", variant: "success" });
 
       } else if (editMemoryId && memoryToEdit) {
-        // Update existing memory (without changing media)
+        // SCENARIO 2: NO NEW MEDIA, JUST UPDATING METADATA
+        // This handles text-only changes for an existing memory.
         const memoryDocRef = doc(db, 'users', user.id, 'memories', memoryToEdit.id);
         
+        // We can directly use memoryData because it contains all the updated text fields.
+        // We just need to remove fields that shouldn't be directly written.
         const { mediaAttachments, ...dataToUpdate } = memoryData;
         
         // Firestore does not allow `undefined` values. We must clean the object.
@@ -126,7 +133,7 @@ function AddMemoryPageComponent() {
         toast({ title: "Memory Updated!", variant: "success" });
 
       } else {
-         // Create a new memory without media
+         // SCENARIO 3: CREATING A NEW MEMORY WITHOUT ANY MEDIA
         const memoriesCollectionRef = collection(db, 'users', user.id, 'memories');
         await addDoc(memoriesCollectionRef, {
             ...memoryData,

@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
 
     const file = formData.get('file') as File | null;
     const userId = formData.get('userId') as string | null;
+    const memoryId = formData.get('memoryId') as string | null; // ID of memory to update
 
     if (!file || !userId) {
       return NextResponse.json({ error: 'Missing file or user ID.' }, { status: 400 });
@@ -106,8 +107,6 @@ export async function POST(req: NextRequest) {
       category,
       promptId,
       userId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
       mediaAttachments: [
         {
           id: 'media' + Date.now(),
@@ -121,10 +120,19 @@ export async function POST(req: NextRequest) {
       ],
     };
 
-    // Add the new memory document to Firestore.
-    const docRef = await db.collection('users').doc(userId).collection('memories').add(memoryDocData);
+    let docId: string;
+    if (memoryId) {
+        // If a memoryId is provided, we are UPDATING an existing document
+        const docRef = db.collection('users').doc(userId).collection('memories').doc(memoryId);
+        await docRef.update({ ...memoryDocData, updatedAt: new Date() });
+        docId = memoryId;
+    } else {
+        // Otherwise, we are CREATING a new document
+        const docRef = await db.collection('users').doc(userId).collection('memories').add({ ...memoryDocData, createdAt: new Date(), updatedAt: new Date() });
+        docId = docRef.id;
+    }
 
-    return NextResponse.json({ success: true, memoryId: docRef.id, message: 'Media uploaded and memory created successfully.' }, { status: 200 });
+    return NextResponse.json({ success: true, memoryId: docId, message: 'Media uploaded and memory created successfully.' }, { status: 200 });
 
   } catch (e: any) {
     // Log the full error object for better server-side debugging
