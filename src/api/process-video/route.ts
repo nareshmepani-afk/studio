@@ -44,8 +44,8 @@ export async function POST(req: NextRequest) {
     const finalFileName = `${Date.now()}_${path.basename(file.name) || 'memory.webm'}`;
     const permanentPath = `users/${userId}/memories/${finalFileName}`;
     
-    // --- Start of Streaming Fix ---
-    // Instead of loading the whole file into a buffer, we create a readable stream.
+    // --- Start of CORRECTED Streaming Fix ---
+    // This is the correct way to stream a file from a Next.js API route.
     const uploadedFile = bucket.file(permanentPath);
     const fileStream = uploadedFile.createWriteStream({
       metadata: {
@@ -53,17 +53,38 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Create a passthrough stream from the file's arrayBuffer
-    const passthrough = new Readable();
-    passthrough.push(Buffer.from(await file.arrayBuffer()));
-    passthrough.push(null);
+    // We get a ReadableStream from the file, which doesn't load it all into memory.
+    const reader = file.stream().getReader();
 
+    // We pipe the chunks to the Firebase Storage write stream.
     await new Promise((resolve, reject) => {
-        passthrough.pipe(fileStream)
-            .on('finish', resolve)
-            .on('error', reject);
+      const pump = () => {
+        reader.read().then(({ done, value }) => {
+          if (done) {
+            fileStream.end();
+            return resolve(undefined);
+          }
+          if (fileStream.write(value)) {
+            pump();
+          } else {
+            fileStream.once('drain', pump);
+          }
+        }).catch(err => {
+            console.error("Error reading from file stream:", err);
+            fileStream.destroy(err);
+            reject(err);
+        });
+      };
+      
+      fileStream.on('finish', resolve);
+      fileStream.on('error', (err) => {
+          console.error("Firebase Storage write stream error:", err);
+          reject(err);
+      });
+
+      pump();
     });
-    // --- End of Streaming Fix ---
+    // --- End of CORRECTED Streaming Fix ---
 
     // Make the file publicly readable. This is crucial.
     await uploadedFile.makePublic();
@@ -107,7 +128,7 @@ export async function POST(req: NextRequest) {
 
   } catch (e: any) {
     // Log the full error object for better server-side debugging
-    console.error('API Error in process-video:', e.message || e.toString()); 
+    console.error('API Error in process-video:', e); 
     const errorMessage = e.message || 'An unknown server error occurred';
     return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }
