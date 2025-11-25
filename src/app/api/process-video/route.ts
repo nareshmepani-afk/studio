@@ -95,7 +95,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, memoryId: docRef.id, message: 'Media uploaded and memory created successfully.' }, { status: 200 });
 
   } catch (e: any) {
-    console.error('API Error in process-video:', e);
+    // Log the full error object for better server-side debugging
+    console.error('API Error in process-video:', e); 
     const errorMessage = e.message || 'An unknown server error occurred';
     return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }

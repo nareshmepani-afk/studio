@@ -90,11 +90,14 @@ function AddMemoryPageComponent() {
 
         if (!response.ok) {
           let errorText = 'Media processing failed on the server.';
+          // Read the body as text first, as it could be HTML (e.g., from a 500 error) or JSON
+          const rawText = await response.text(); 
           try {
-              const result = await response.json();
+              // Try to parse the text as JSON
+              const result = JSON.parse(rawText);
               errorText = result.error || errorText;
           } catch(e) {
-              const rawText = await response.text();
+              // If JSON parsing fails, use the raw text as the error, if it's not empty
               errorText = rawText || errorText;
           }
           throw new Error(errorText);
