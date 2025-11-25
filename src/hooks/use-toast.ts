@@ -10,7 +10,8 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+// Make toasts persistent by default by setting a very long remove delay
+const TOAST_REMOVE_DELAY = 3600000 // 1 hour
 
 type ToasterToast = ToastProps & {
   id: string
@@ -59,7 +60,7 @@ interface State {
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
-const addToRemoveQueue = (toastId: string) => {
+const addToRemoveQueue = (toastId: string, duration?: number) => {
   if (toastTimeouts.has(toastId)) {
     return
   }
@@ -70,7 +71,7 @@ const addToRemoveQueue = (toastId: string) => {
       type: "REMOVE_TOAST",
       toastId: toastId,
     })
-  }, TOAST_REMOVE_DELAY)
+  }, duration || TOAST_REMOVE_DELAY);
 
   toastTimeouts.set(toastId, timeout)
 }
@@ -164,6 +165,13 @@ function toast({ ...props }: Toast) {
       },
     },
   })
+
+  // If a duration is provided, use it to auto-dismiss, otherwise it persists
+  if (props.duration) {
+      setTimeout(() => {
+          dismiss();
+      }, props.duration)
+  }
 
   return {
     id: id,
