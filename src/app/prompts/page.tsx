@@ -273,7 +273,7 @@ export default function LifeJourneyPage() {
           <AlertTitle className="font-headline text-secondary-foreground">Welcome to Your Life Journey!</AlertTitle>
           <AlertDescription className="text-secondary-foreground/80 space-y-1.5">
             <p>This is where you can explore guided chapters to record your life story. Click on a prompt below to start recording your memory for that chapter.</p>
-            <p>Use the <Info className="inline-block h-4 w-4" /> icon for a preview of the teleprompter script, or the <QrCode className="inline-block h-4 w-4" /> icon to get a shareable QR code for an interviewer.</p>
+            <p>Use the <QrCode className="inline-block h-4 w-4" /> icon to get a shareable QR code for an interviewer, or the <Info className="inline-block h-4 w-4" /> icon for a preview of the teleprompter script.</p>
             <p>Completed chapters are marked with a <CheckCircle className="inline-block h-4 w-4 text-green-500" />. You can view or edit these at any time.</p>
             <p>Use the <StarIcon className="inline-block h-4 w-4 text-amber-500" /> icon on a prompt to flag it for later re-use or if it particularly resonates with you.</p>
           </AlertDescription>

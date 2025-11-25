@@ -98,6 +98,25 @@ export function PromptCard({
         </div>
 
         <div className="flex items-center">
+             <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleFlagToggle}
+                    className="mr-2 shrink-0" // Ensure button doesn't cause overflow
+                    aria-label={isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}
+                    disabled={isLoading}
+                  >
+                    <Star className={`h-5 w-5 ${isFlaggedForReuse ? 'fill-amber-400 text-amber-500' : 'text-muted-foreground hover:text-amber-500'}`} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button
               onClick={handleAction}
               size="sm"
@@ -117,25 +136,6 @@ export function PromptCard({
                 </>
               )}
             </Button>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleFlagToggle}
-                    className="ml-2 shrink-0" // Ensure button doesn't cause overflow
-                    aria-label={isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}
-                    disabled={isLoading}
-                  >
-                    <Star className={`h-5 w-5 ${isFlaggedForReuse ? 'fill-amber-400 text-amber-500' : 'text-muted-foreground hover:text-amber-500'}`} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
         </div>
       </CardFooter>
     </Card>
