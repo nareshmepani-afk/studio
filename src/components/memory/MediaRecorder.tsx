@@ -17,7 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { mockPromptGroups } from '@/lib/mockData';
 import type { MediaAttachment } from '@/types';
-import { MAX_RECORDING_DURATION } from '@/lib/constants';
+import { MAX_RECORDING_DURATION, MAX_RECORDING_HARD_LIMIT } from '@/lib/constants';
 import {
   Accordion,
   AccordionContent,
@@ -76,6 +76,7 @@ export function MediaCaptureControl({
   const liveVideoRef = useRef<HTMLVideoElement>(null);
   const recordedChunks = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+  const hardLimitTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [currentTeleprompterScript, setCurrentTeleprompterScript] = useState<string | null>(null);
 
@@ -205,6 +206,7 @@ export function MediaCaptureControl({
       setIsRecording(false);
       setCurrentTeleprompterScript(null); // Hide teleprompter on stop
       if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+      if (hardLimitTimeoutRef.current) clearTimeout(hardLimitTimeoutRef.current);
       console.log('[MediaRecorder] MediaRecorder stopped.');
     }
   }, []);
@@ -326,6 +328,15 @@ export function MediaCaptureControl({
       recordingIntervalRef.current = setInterval(() => {
         setCurrentRecordingDuration(prev => prev + 1);
       }, 1000);
+      
+      // Set hard limit timeout
+      if (hardLimitTimeoutRef.current) clearTimeout(hardLimitTimeoutRef.current);
+      hardLimitTimeoutRef.current = setTimeout(() => {
+        console.log("[MediaRecorder] Hard recording limit reached. Stopping recording.");
+        toast({ title: "Recording Limit Reached", description: `Recording automatically stopped at ${formatSecondsToTime(MAX_RECORDING_HARD_LIMIT)}.`, variant: "default" });
+        handleStopRecording();
+      }, MAX_RECORDING_HARD_LIMIT * 1000);
+
       console.log(`[MediaRecorder] ${type} recording started successfully.`);
       toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.`, variant: "success" });
     } catch (err) {
@@ -365,6 +376,7 @@ export function MediaCaptureControl({
       console.log('[MediaRecorder] Unmounting, performing cleanup.');
       cleanupStream();
       if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+      if (hardLimitTimeoutRef.current) clearTimeout(hardLimitTimeoutRef.current);
     };
   }, [cleanupStream]);
 
@@ -449,7 +461,7 @@ export function MediaCaptureControl({
             <Button onClick={handleStopRecording} className="w-full" variant="destructive">
                 <StopCircle className="mr-2"/> 
                 <span>Stop Recording</span>
-                <span className="font-mono ml-2 text-sm tabular-nums">({formatSecondsToTime(currentRecordingDuration)})</span>
+                <span className="font-mono ml-2 text-sm tabular-nums">({formatSecondsToTime(currentRecordingDuration)} / {formatSecondsToTime(MAX_RECORDING_HARD_LIMIT)})</span>
             </Button>
           </div>
         )}
@@ -474,5 +486,3 @@ export function MediaCaptureControl({
     </Card>
   );
 }
-
-    
