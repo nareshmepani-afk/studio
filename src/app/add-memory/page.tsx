@@ -69,34 +69,39 @@ function AddMemoryPageComponent() {
     setIsSubmitting(true);
     const db = getFirestore(app);
 
-    // --- AUTHENTIC FIX: Sanitize data to remove 'undefined' values ---
+    // Sanitize data to remove 'undefined' values before any Firestore operation
     const cleanMemoryData: { [key: string]: any } = {};
-    Object.keys(memoryData).forEach(key => {
-      const value = (memoryData as any)[key];
+    Object.entries(memoryData).forEach(([key, value]) => {
       if (value !== undefined) {
         cleanMemoryData[key] = value;
-      } else {
-        // If a value is undefined, we need to explicitly delete it in Firestore
-        // especially for optional fields like location, country etc.
-        cleanMemoryData[key] = deleteField();
       }
     });
-    // --- END FIX ---
 
     try {
       if (mediaFileToUpload) {
+        // SCENARIO 1: NEW MEDIA UPLOAD (for new or existing memory)
         let memoryDocRef;
+
         // Step 1: Create/Update Firestore doc with 'processing' status
         if (editMemoryId) {
             memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
-            await updateDoc(memoryDocRef, { ...cleanMemoryData, updatedAt: serverTimestamp(), 'mediaAttachments.0.processingStatus': 'uploading' });
+            // Add a placeholder for the media attachment to be updated
+            const updateData = { ...cleanMemoryData, updatedAt: serverTimestamp(), 'mediaAttachments.0.processingStatus': 'uploading' };
+             // When updating, remove undefined fields to avoid overwriting existing data
+            Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+            await updateDoc(memoryDocRef, updateData);
         } else {
-            memoryDocRef = await addDoc(collection(db, 'users', user.id, 'memories'), { ...cleanMemoryData, userId: user.id, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), 'mediaAttachments.0.processingStatus': 'uploading' });
+            // For new memories, create the document first to get an ID
+            const newMemoryData = { ...cleanMemoryData, userId: user.id, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+            if (!newMemoryData.mediaAttachments) newMemoryData.mediaAttachments = [];
+            newMemoryData.mediaAttachments[0] = { ...(newMemoryData.mediaAttachments[0] || {}), processingStatus: 'uploading' };
+            Object.keys(newMemoryData).forEach(key => newMemoryData[key] === undefined && delete newMemoryData[key]);
+            memoryDocRef = await addDoc(collection(db, 'users', user.id, 'memories'), newMemoryData);
         }
         
-        // Step 2: Upload file to Cloud Storage
+        // Step 2: Upload file to Cloud Storage using the correct path
         const storage = getStorage(app);
-        const filePath = `memories/${user.id}/${memoryDocRef.id}/${mediaFileToUpload.name}`;
+        const filePath = `memories/${user.id}/${memoryDocRef.id}-${mediaFileToUpload.name}`;
         const fileRef = storageRef(storage, filePath);
         const uploadTask = uploadBytesResumable(fileRef, mediaFileToUpload);
 
@@ -115,7 +120,7 @@ function AddMemoryPageComponent() {
           },
           (error) => {
             console.error("Upload failed:", error);
-            toast.update(toastId, { title: "Upload Failed", description: "Your video could not be saved. Please try again.", variant: "destructive" });
+            toast.update(toastId, { title: "Upload Failed", description: "Your media could not be saved. Please try again.", variant: "destructive" });
             updateDoc(memoryDocRef, { 'mediaAttachments.0.processingStatus': 'failed' });
             setIsSubmitting(false);
           },
@@ -140,10 +145,19 @@ function AddMemoryPageComponent() {
           }
         );
 
-      } else if (editMemoryId && memoryToEdit) {
+      } else if (editMemoryId) {
         // SCENARIO 2: NO NEW MEDIA, JUST UPDATING METADATA
-        const memoryDocRef = doc(db, 'users', user.id, 'memories', memoryToEdit.id);
-        await updateDoc(memoryDocRef, { ...cleanMemoryData, updatedAt: serverTimestamp() });
+        const memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
+        // Explicitly handle removal of fields if they are now empty
+        const finalUpdateData = { ...cleanMemoryData, updatedAt: serverTimestamp() };
+        for (const key of ['location', 'country', 'description']) {
+            if (finalUpdateData[key] === '') {
+                finalUpdateData[key] = deleteField();
+            } else if (finalUpdateData[key] === undefined) {
+                delete finalUpdateData[key]; // Do not send undefined to Firestore
+            }
+        }
+        await updateDoc(memoryDocRef, finalUpdateData);
         toast({ title: "Memory Updated!", variant: "success" });
         setIsSubmitting(false);
         if (cleanMemoryData.promptId) router.push('/prompts'); else router.push('/timeline');
@@ -151,7 +165,9 @@ function AddMemoryPageComponent() {
       } else {
          // SCENARIO 3: CREATING A NEW MEMORY WITHOUT ANY MEDIA
         const memoriesCollectionRef = collection(db, 'users', user.id, 'memories');
-        await addDoc(memoriesCollectionRef, { ...cleanMemoryData, userId: user.id, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        const finalCreateData = { ...cleanMemoryData, userId: user.id, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        Object.keys(finalCreateData).forEach(key => finalCreateData[key] === undefined && delete finalCreateData[key]);
+        await addDoc(memoriesCollectionRef, finalCreateData);
         toast({ title: "Memory Saved!", variant: "success" });
         setIsSubmitting(false);
         if (cleanMemoryData.promptId) router.push('/prompts'); else router.push('/timeline');
