@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Suspense } from 'react';
@@ -67,17 +68,26 @@ function AddMemoryPageComponent() {
     }
     setIsSubmitting(true);
     const db = getFirestore(app);
+    
+    // --- AUTHENTIC FIX: Sanitize data to remove 'undefined' values ---
+    const cleanMemoryData: { [key: string]: any } = {};
+    Object.keys(memoryData).forEach(key => {
+      const value = (memoryData as any)[key];
+      if (value !== undefined) {
+        cleanMemoryData[key] = value;
+      }
+    });
+    // --- END FIX ---
 
     try {
       if (mediaFileToUpload) {
-        // --- NEW ARCHITECTURE: CLIENT-SIDE UPLOAD ---
         let memoryDocRef;
         // Step 1: Create/Update Firestore doc with 'processing' status
         if (editMemoryId) {
             memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
-            await updateDoc(memoryDocRef, { ...memoryData, updatedAt: serverTimestamp(), 'mediaAttachments.0.processingStatus': 'uploading' });
+            await updateDoc(memoryDocRef, { ...cleanMemoryData, updatedAt: serverTimestamp(), 'mediaAttachments.0.processingStatus': 'uploading' });
         } else {
-            memoryDocRef = await addDoc(collection(db, 'users', user.id, 'memories'), { ...memoryData, userId: user.id, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), 'mediaAttachments.0.processingStatus': 'uploading' });
+            memoryDocRef = await addDoc(collection(db, 'users', user.id, 'memories'), { ...cleanMemoryData, userId: user.id, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), 'mediaAttachments.0.processingStatus': 'uploading' });
         }
         
         // Step 2: Upload file to Cloud Storage
@@ -109,7 +119,7 @@ function AddMemoryPageComponent() {
             // Step 4: Get download URL and update Firestore doc
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
             const mediaAttachmentUpdate: MediaAttachment = {
-                ...(memoryData.mediaAttachments?.[0] as MediaAttachment),
+                ...(cleanMemoryData.mediaAttachments?.[0] as MediaAttachment),
                 url: downloadURL,
                 processingStatus: 'complete',
                 filename: mediaFileToUpload.name,
@@ -122,25 +132,25 @@ function AddMemoryPageComponent() {
 
             toast.update(toastId, { title: "Memory Saved!", description: "Your memory and media have been successfully saved.", variant: "success" });
             setIsSubmitting(false);
-            if (memoryData.promptId) router.push('/prompts'); else router.push('/timeline');
+            if (cleanMemoryData.promptId) router.push('/prompts'); else router.push('/timeline');
           }
         );
 
       } else if (editMemoryId && memoryToEdit) {
         // SCENARIO 2: NO NEW MEDIA, JUST UPDATING METADATA
         const memoryDocRef = doc(db, 'users', user.id, 'memories', memoryToEdit.id);
-        await updateDoc(memoryDocRef, { ...memoryData, updatedAt: serverTimestamp() });
+        await updateDoc(memoryDocRef, { ...cleanMemoryData, updatedAt: serverTimestamp() });
         toast({ title: "Memory Updated!", variant: "success" });
         setIsSubmitting(false);
-        if (memoryData.promptId) router.push('/prompts'); else router.push('/timeline');
+        if (cleanMemoryData.promptId) router.push('/prompts'); else router.push('/timeline');
 
       } else {
          // SCENARIO 3: CREATING A NEW MEMORY WITHOUT ANY MEDIA
         const memoriesCollectionRef = collection(db, 'users', user.id, 'memories');
-        await addDoc(memoriesCollectionRef, { ...memoryData, userId: user.id, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        await addDoc(memoriesCollectionRef, { ...cleanMemoryData, userId: user.id, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
         toast({ title: "Memory Saved!", variant: "success" });
         setIsSubmitting(false);
-        if (memoryData.promptId) router.push('/prompts'); else router.push('/timeline');
+        if (cleanMemoryData.promptId) router.push('/prompts'); else router.push('/timeline');
       }
 
     } catch (error) {
