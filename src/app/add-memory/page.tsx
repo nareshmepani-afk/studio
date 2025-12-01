@@ -71,21 +71,18 @@ function AddMemoryPageComponent() {
     try {
       if (mediaFileToUpload) {
         // SCENARIO 1: A NEW MEDIA FILE IS BEING UPLOADED
-        // This handles both creating new memories with media and replacing media on existing ones.
         toast({ title: "Uploading Media...", description: "Please wait, this may take a moment." });
         
         const formData = new FormData();
         formData.append('file', mediaFileToUpload);
         formData.append('userId', user.id);
         
-        // Append other memory data to the form for the server to use
         formData.append('title', memoryData.title);
         formData.append('date', memoryData.date);
         formData.append('description', memoryData.description || '');
         if (memoryData.category) formData.append('category', memoryData.category);
         if (memoryData.promptId) formData.append('promptId', memoryData.promptId);
         
-        // If we are editing, we pass the existing memory ID so the server can replace it.
         if (editMemoryId) {
             formData.append('memoryId', editMemoryId);
         }
@@ -96,29 +93,36 @@ function AddMemoryPageComponent() {
         });
 
         if (!response.ok) {
-          let errorText = 'Media processing failed on the server.';
-          try {
-              const result = await response.json();
-              errorText = result.error || errorText;
-          } catch(e) {
-              const rawText = await response.text();
-              errorText = rawText || errorText;
-          }
-          throw new Error(errorText);
+            // CORRECTED ERROR HANDLING
+            let errorText = `Server responded with status: ${response.status}`;
+            try {
+                // Try to get more specific error from response body
+                const serverError = await response.text(); // Read body only once
+                console.error("Server error response:", serverError); // Log the full server error
+                // Attempt to parse as JSON for a structured error message
+                try {
+                   const errorJson = JSON.parse(serverError);
+                   errorText = errorJson.error || serverError;
+                } catch (parseError) {
+                    // If not JSON, use the raw text, stripping HTML for readability
+                    const strippedError = serverError.replace(/<[^>]*>?/gm, '');
+                    errorText = strippedError.trim().substring(0, 200) || errorText; // Limit length for toast
+                }
+            } catch (bodyReadError) {
+                console.error("Could not read server error response body:", bodyReadError);
+            }
+            throw new Error(errorText);
         }
 
-        toast({ title: "Memory Saved!", description: "Your memory has been processed and saved.", variant: "success" });
+        const result = await response.json();
+        toast({ title: "Memory Saved!", description: result.message || "Your memory has been processed and saved.", variant: "success" });
 
       } else if (editMemoryId && memoryToEdit) {
         // SCENARIO 2: NO NEW MEDIA, JUST UPDATING METADATA
-        // This handles text-only changes for an existing memory.
         const memoryDocRef = doc(db, 'users', user.id, 'memories', memoryToEdit.id);
         
-        // We can directly use memoryData because it contains all the updated text fields.
-        // We just need to remove fields that shouldn't be directly written.
         const { mediaAttachments, ...dataToUpdate } = memoryData;
         
-        // Firestore does not allow `undefined` values. We must clean the object.
         const cleanedDataToUpdate: { [key: string]: any } = {};
         for (const [key, value] of Object.entries(dataToUpdate)) {
           if (value !== undefined) {
