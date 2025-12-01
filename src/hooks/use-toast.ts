@@ -10,8 +10,7 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-// Make toasts persistent by default by setting a very long remove delay
-const TOAST_REMOVE_DELAY = 3600000 // 1 hour
+const TOAST_REMOVE_DELAY = 1000 * 60 * 60 * 24 // 24 hours
 
 type ToasterToast = ToastProps & {
   id: string
@@ -65,13 +64,16 @@ const addToRemoveQueue = (toastId: string, duration?: number) => {
     return
   }
 
+  // Use provided duration or the long default for persistent toasts
+  const timeoutDuration = duration && duration > 0 ? duration : TOAST_REMOVE_DELAY;
+
   const timeout = setTimeout(() => {
     toastTimeouts.delete(toastId)
     dispatch({
       type: "REMOVE_TOAST",
       toastId: toastId,
     })
-  }, duration || TOAST_REMOVE_DELAY);
+  }, timeoutDuration);
 
   toastTimeouts.set(toastId, timeout)
 }
@@ -95,13 +97,25 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
-        addToRemoveQueue(toastId)
+        // Dismissing a specific toast, remove it from queue if it's there.
+        // We will add it back with its duration if it has one.
+        if(toastTimeouts.has(toastId)) {
+            clearTimeout(toastTimeouts.get(toastId));
+            toastTimeouts.delete(toastId);
+        }
+        const toast = state.toasts.find(t => t.id === toastId);
+        if (toast) {
+           addToRemoveQueue(toastId, toast.duration);
+        }
       } else {
+        // Dismissing all toasts
         state.toasts.forEach((toast) => {
-          addToRemoveQueue(toast.id)
+           if(toastTimeouts.has(toast.id)) {
+              clearTimeout(toastTimeouts.get(toast.id));
+              toastTimeouts.delete(toast.id);
+           }
+           addToRemoveQueue(toast.id, toast.duration)
         })
       }
 
@@ -168,10 +182,12 @@ function toast({ ...props }: Toast) {
 
   // If a duration is provided, use it to auto-dismiss, otherwise it persists
   if (props.duration) {
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
           dismiss();
-      }, props.duration)
+      }, props.duration);
+      toastTimeouts.set(id, timeout);
   }
+
 
   return {
     id: id,
@@ -179,6 +195,11 @@ function toast({ ...props }: Toast) {
     update,
   }
 }
+
+// Add a new update method to the exported toast object
+toast.update = (id: string, props: ToasterToast) => {
+    dispatch({ type: "UPDATE_TOAST", toast: { ...props, id } });
+};
 
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)

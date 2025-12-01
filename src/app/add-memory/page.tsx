@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Suspense } from 'react';
@@ -11,6 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { useState, useEffect, useCallback } from 'react';
 import { app } from '@/lib/firebase';
 import { getFirestore, addDoc, doc, updateDoc, getDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Loader2 } from 'lucide-react';
 
 
@@ -70,96 +70,83 @@ function AddMemoryPageComponent() {
 
     try {
       if (mediaFileToUpload) {
-        // SCENARIO 1: A NEW MEDIA FILE IS BEING UPLOADED
-        toast({ title: "Uploading Media...", description: "Please wait, this may take a moment." });
-        
-        const formData = new FormData();
-        formData.append('file', mediaFileToUpload);
-        formData.append('userId', user.id);
-        
-        formData.append('title', memoryData.title);
-        formData.append('date', memoryData.date);
-        formData.append('description', memoryData.description || '');
-        if (memoryData.category) formData.append('category', memoryData.category);
-        if (memoryData.promptId) formData.append('promptId', memoryData.promptId);
-        
+        // --- NEW ARCHITECTURE: CLIENT-SIDE UPLOAD ---
+        let memoryDocRef;
+        // Step 1: Create/Update Firestore doc with 'processing' status
         if (editMemoryId) {
-            formData.append('memoryId', editMemoryId);
+            memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
+            await updateDoc(memoryDocRef, { ...memoryData, updatedAt: serverTimestamp(), 'mediaAttachments.0.processingStatus': 'uploading' });
+        } else {
+            memoryDocRef = await addDoc(collection(db, 'users', user.id, 'memories'), { ...memoryData, userId: user.id, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), 'mediaAttachments.0.processingStatus': 'uploading' });
         }
+        
+        // Step 2: Upload file to Cloud Storage
+        const storage = getStorage(app);
+        const filePath = `users/${user.id}/memories/${memoryDocRef.id}/${mediaFileToUpload.name}`;
+        const fileRef = storageRef(storage, filePath);
+        const uploadTask = uploadBytesResumable(fileRef, mediaFileToUpload);
 
-        const response = await fetch('/api/process-video', {
-          method: 'POST',
-          body: formData,
+        // Step 3: Monitor upload progress
+        const { id: toastId } = toast({
+          title: "Uploading Media...",
+          description: "Starting upload... 0%",
         });
 
-        if (!response.ok) {
-            // CORRECTED ERROR HANDLING
-            let errorText = `Server responded with status: ${response.status}`;
-            try {
-                // Try to get more specific error from response body
-                const serverError = await response.text(); // Read body only once
-                console.error("Server error response:", serverError); // Log the full server error
-                // Attempt to parse as JSON for a structured error message
-                try {
-                   const errorJson = JSON.parse(serverError);
-                   errorText = errorJson.error || serverError;
-                } catch (parseError) {
-                    // If not JSON, use the raw text, stripping HTML for readability
-                    const strippedError = serverError.replace(/<[^>]*>?/gm, '');
-                    errorText = strippedError.trim().substring(0, 200) || errorText; // Limit length for toast
-                }
-            } catch (bodyReadError) {
-                console.error("Could not read server error response body:", bodyReadError);
-            }
-            throw new Error(errorText);
-        }
+        uploadTask.on('state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            toast.update(toastId, {
+                description: `Upload is ${progress.toFixed(0)}% done`,
+            });
+          },
+          (error) => {
+            console.error("Upload failed:", error);
+            toast.update(toastId, { title: "Upload Failed", description: "Your video could not be saved. Please try again.", variant: "destructive" });
+            updateDoc(memoryDocRef, { 'mediaAttachments.0.processingStatus': 'failed' });
+            setIsSubmitting(false);
+          },
+          async () => {
+            // Step 4: Get download URL and update Firestore doc
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            const mediaAttachmentUpdate: MediaAttachment = {
+                ...(memoryData.mediaAttachments?.[0] as MediaAttachment),
+                url: downloadURL,
+                processingStatus: 'complete',
+                filename: mediaFileToUpload.name,
+                size: mediaFileToUpload.size,
+            };
+            await updateDoc(memoryDocRef, {
+                'mediaAttachments.0': mediaAttachmentUpdate,
+                 updatedAt: serverTimestamp(),
+            });
 
-        const result = await response.json();
-        toast({ title: "Memory Saved!", description: result.message || "Your memory has been processed and saved.", variant: "success" });
+            toast.update(toastId, { title: "Memory Saved!", description: "Your memory and media have been successfully saved.", variant: "success" });
+            setIsSubmitting(false);
+            if (memoryData.promptId) router.push('/prompts'); else router.push('/timeline');
+          }
+        );
 
       } else if (editMemoryId && memoryToEdit) {
         // SCENARIO 2: NO NEW MEDIA, JUST UPDATING METADATA
         const memoryDocRef = doc(db, 'users', user.id, 'memories', memoryToEdit.id);
-        
-        const { mediaAttachments, ...dataToUpdate } = memoryData;
-        
-        const cleanedDataToUpdate: { [key: string]: any } = {};
-        for (const [key, value] of Object.entries(dataToUpdate)) {
-          if (value !== undefined) {
-            cleanedDataToUpdate[key] = value;
-          }
-        }
-        
-        await updateDoc(memoryDocRef, {
-            ...cleanedDataToUpdate,
-            updatedAt: serverTimestamp()
-        });
+        await updateDoc(memoryDocRef, { ...memoryData, updatedAt: serverTimestamp() });
         toast({ title: "Memory Updated!", variant: "success" });
+        setIsSubmitting(false);
+        if (memoryData.promptId) router.push('/prompts'); else router.push('/timeline');
 
       } else {
          // SCENARIO 3: CREATING A NEW MEMORY WITHOUT ANY MEDIA
         const memoriesCollectionRef = collection(db, 'users', user.id, 'memories');
-        await addDoc(memoriesCollectionRef, {
-            ...memoryData,
-            userId: user.id,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-        });
+        await addDoc(memoriesCollectionRef, { ...memoryData, userId: user.id, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
         toast({ title: "Memory Saved!", variant: "success" });
-      }
-      
-      // Redirect after successful operation
-      if (memoryData.promptId) {
-        router.push('/prompts');
-      } else {
-        router.push('/timeline');
+        setIsSubmitting(false);
+        if (memoryData.promptId) router.push('/prompts'); else router.push('/timeline');
       }
 
     } catch (error) {
       console.error("[handleSubmit] Error saving memory:", error);
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
       toast({ title: "Failed to Save Memory", description: `An error occurred: ${errorMessage}`, variant: "destructive" });
-    } finally {
       setIsSubmitting(false);
     }
   };
