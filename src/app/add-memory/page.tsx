@@ -10,7 +10,7 @@ import type { Memory, User, MediaAttachment } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { useState, useEffect, useCallback } from 'react';
 import { app } from '@/lib/firebase';
-import { getFirestore, addDoc, doc, updateDoc, getDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, addDoc, doc, updateDoc, getDoc, collection, serverTimestamp, deleteField } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Loader2 } from 'lucide-react';
 
@@ -68,13 +68,17 @@ function AddMemoryPageComponent() {
     }
     setIsSubmitting(true);
     const db = getFirestore(app);
-    
+
     // --- AUTHENTIC FIX: Sanitize data to remove 'undefined' values ---
     const cleanMemoryData: { [key: string]: any } = {};
     Object.keys(memoryData).forEach(key => {
       const value = (memoryData as any)[key];
       if (value !== undefined) {
         cleanMemoryData[key] = value;
+      } else {
+        // If a value is undefined, we need to explicitly delete it in Firestore
+        // especially for optional fields like location, country etc.
+        cleanMemoryData[key] = deleteField();
       }
     });
     // --- END FIX ---
@@ -92,7 +96,7 @@ function AddMemoryPageComponent() {
         
         // Step 2: Upload file to Cloud Storage
         const storage = getStorage(app);
-        const filePath = `users/${user.id}/memories/${memoryDocRef.id}/${mediaFileToUpload.name}`;
+        const filePath = `memories/${user.id}/${memoryDocRef.id}/${mediaFileToUpload.name}`;
         const fileRef = storageRef(storage, filePath);
         const uploadTask = uploadBytesResumable(fileRef, mediaFileToUpload);
 
