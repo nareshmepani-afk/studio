@@ -97,11 +97,11 @@ function AddMemoryPageComponent() {
 
         if (!response.ok) {
           let errorText = 'Media processing failed on the server.';
-          const rawText = await response.text(); 
           try {
-              const result = JSON.parse(rawText);
+              const result = await response.json();
               errorText = result.error || errorText;
           } catch(e) {
+              const rawText = await response.text();
               errorText = rawText || errorText;
           }
           throw new Error(errorText);
