@@ -119,8 +119,16 @@ function AddMemoryPageComponent() {
           },
           async () => {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            
+            const originalAttachmentData = (memoryData.mediaAttachments?.[0] || {}) as Partial<MediaAttachment>;
+
             const mediaAttachmentUpdate: MediaAttachment = {
-                ...(cleanMemoryData.mediaAttachments?.[0] as MediaAttachment),
+                id: originalAttachmentData.id || 'media' + Date.now(),
+                type: originalAttachmentData.type || 'video',
+                startTime: originalAttachmentData.startTime || 0,
+                endTime: originalAttachmentData.endTime || originalAttachmentData.duration || 0,
+                duration: originalAttachmentData.duration || 0,
+                isTrimmed: originalAttachmentData.isTrimmed || false,
                 url: downloadURL,
                 processingStatus: 'complete',
                 filename: mediaFileToUpload.name,
@@ -132,6 +140,8 @@ function AddMemoryPageComponent() {
               mediaAttachments: [mediaAttachmentUpdate],
               updatedAt: serverTimestamp(),
             };
+            
+            delete finalData.mediaFile; // Ensure no file object is sent to Firestore
 
             if (editMemoryId) {
               await updateDoc(memoryDocRef, finalData);
