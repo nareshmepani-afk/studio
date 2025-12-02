@@ -10,7 +10,7 @@ import type { Memory, User, MediaAttachment } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { useState, useEffect, useCallback } from 'react';
 import { app } from '@/lib/firebase';
-import { getFirestore, addDoc, doc, updateDoc, getDoc, collection, serverTimestamp, deleteField } from 'firebase/firestore';
+import { getFirestore, addDoc, doc, updateDoc, getDoc, collection, serverTimestamp, deleteField, setDoc } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Loader2 } from 'lucide-react';
 
@@ -74,6 +74,12 @@ function AddMemoryPageComponent() {
       if (value !== undefined) {
         cleanMemoryData[key] = value;
       }
+    });
+     // Special handling for empty strings to delete fields instead of saving them as empty
+    Object.keys(cleanMemoryData).forEach(key => {
+        if (cleanMemoryData[key] === '') {
+            cleanMemoryData[key] = deleteField();
+        }
     });
 
     try {
@@ -142,15 +148,6 @@ function AddMemoryPageComponent() {
       } else {
         // SCENARIO 2: NO NEW MEDIA, JUST METADATA (CREATE OR UPDATE)
         const finalUpdateData = { ...cleanMemoryData, updatedAt: serverTimestamp() };
-        
-        // Remove undefined fields, and handle empty strings by deleting the field
-        Object.keys(finalUpdateData).forEach(key => {
-            if (finalUpdateData[key] === undefined) {
-                delete finalUpdateData[key];
-            } else if (finalUpdateData[key] === '') {
-                 finalUpdateData[key] = deleteField();
-            }
-        });
         
         if (editMemoryId) {
             await updateDoc(memoryDocRef, finalUpdateData);
