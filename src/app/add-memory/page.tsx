@@ -84,17 +84,16 @@ function AddMemoryPageComponent() {
 
     try {
       let memoryDocRef;
+      const isEditing = !!editMemoryId;
 
-      // Determine if we are creating or updating the Firestore document
-      if (editMemoryId) {
+      if (isEditing) {
         memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
       } else {
-        // For new memories, create the doc ref beforehand to get the ID
         memoryDocRef = doc(collection(db, 'users', user.id, 'memories'));
       }
 
       if (mediaFileToUpload) {
-        // SCENARIO 1: NEW MEDIA UPLOAD (for new or existing memory)
+        // SCENARIO 1: NEW MEDIA UPLOAD
         const storage = getStorage(app);
         const filePath = `memories/${user.id}/${memoryDocRef.id}-${mediaFileToUpload.name}`;
         const fileRef = storageRef(storage, filePath);
@@ -109,7 +108,8 @@ function AddMemoryPageComponent() {
           (snapshot) => {
             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
             toast.update(toastId, {
-                description: `Upload is ${progress.toFixed(0)}% done`,
+                title: `Uploading: ${progress.toFixed(0)}%`,
+                description: `Please stay on this page until the upload is complete.`,
             });
           },
           (error) => {
@@ -120,36 +120,33 @@ function AddMemoryPageComponent() {
           async () => {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
             
-            const originalAttachmentData = (memoryData.mediaAttachments?.[0] || {}) as Partial<MediaAttachment>;
-
-            const mediaAttachmentUpdate: MediaAttachment = {
-                id: originalAttachmentData.id || 'media' + Date.now(),
-                type: originalAttachmentData.type || 'video',
-                startTime: originalAttachmentData.startTime || 0,
-                endTime: originalAttachmentData.endTime || originalAttachmentData.duration || 0,
-                duration: originalAttachmentData.duration || 0,
-                isTrimmed: originalAttachmentData.isTrimmed || false,
+            // This is the new, correct way to build the metadata
+            const newMediaAttachment: MediaAttachment = {
+                id: memoryData.mediaAttachments?.[0]?.id || 'media' + Date.now(),
+                type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
                 url: downloadURL,
                 processingStatus: 'complete',
                 filename: mediaFileToUpload.name,
-                size: mediaFileToUpload.size,
+                size: mediaFileToUpload.size, // Correctly get size from the uploaded file
+                duration: memoryData.mediaAttachments?.[0]?.duration,
+                startTime: memoryData.mediaAttachments?.[0]?.startTime,
+                endTime: memoryData.mediaAttachments?.[0]?.endTime,
+                isTrimmed: memoryData.mediaAttachments?.[0]?.isTrimmed,
             };
 
             const finalData = {
               ...cleanMemoryData,
-              mediaAttachments: [mediaAttachmentUpdate],
+              mediaAttachments: [newMediaAttachment],
               updatedAt: serverTimestamp(),
             };
             
-            delete finalData.mediaFile; // Ensure no file object is sent to Firestore
-
-            if (editMemoryId) {
+            if (isEditing) {
               await updateDoc(memoryDocRef, finalData);
             } else {
               await setDoc(memoryDocRef, { ...finalData, userId: user.id, createdAt: serverTimestamp() });
             }
 
-            toast.update(toastId, { title: "Memory Saved!", description: "Your memory and media have been successfully saved.", variant: "success" });
+            toast.update(toastId, { title: "Memory Saved!", description: "Your memory and media have been successfully saved.", variant: "success", duration: 5000 });
             setIsSubmitting(false);
             if (cleanMemoryData.promptId) router.push('/prompts'); else router.push('/timeline');
           }
@@ -159,7 +156,7 @@ function AddMemoryPageComponent() {
         // SCENARIO 2: NO NEW MEDIA, JUST METADATA (CREATE OR UPDATE)
         const finalUpdateData = { ...cleanMemoryData, updatedAt: serverTimestamp() };
         
-        if (editMemoryId) {
+        if (isEditing) {
             await updateDoc(memoryDocRef, finalUpdateData);
             toast({ title: "Memory Updated!", variant: "success" });
         } else {
