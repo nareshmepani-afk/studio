@@ -6,3 +6,5 @@ export const countryOptions = [
 
 export const MAX_RECORDING_DURATION = 300; // 5 minutes - This is the trim limit
 export const MAX_RECORDING_HARD_LIMIT = 330; // 5 minutes and 30 seconds - This is the automatic stop limit
+export const MAX_UPLOAD_DURATION_SECONDS = 360; // 6 minutes - for uploads
+

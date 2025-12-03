@@ -29,8 +29,6 @@ import { Slider } from '@/components/ui/slider';
 import dynamic from 'next/dynamic';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MAX_RECORDING_DURATION } from '@/lib/constants';
-import { getFFmpeg } from '@/lib/ffmpeg';
-import { fetchFile } from '@ffmpeg/util';
 
 
 const MediaCaptureControl = dynamic(
@@ -139,10 +137,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
   const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null);
   const [trimValues, setTrimValues] = useState<[number, number]>([0, 100]);
-  const [isTrimming, setIsTrimming] = useState(false);
+  const [isTrimming, setIsTrimming] = useState(false); // Kept for UI state, though no physical trimming
   const [mediaKey, setMediaKey] = useState(Date.now().toString());
 
-  // New state to prevent race conditions during media start
   const [isPreparingMedia, setIsPreparingMedia] = useState(false);
 
   useEffect(() => {
@@ -187,7 +184,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       } else {
         setCurrentMedia(null); setCurrentMediaPreviewUrl(null);
       }
-    } else { // New memory
+    } else {
       let determinedInitialTitle = '';
       if (initialCustomPromptText) {
         determinedInitialTitle = initialCustomPromptText;
@@ -284,64 +281,34 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     });
     setTrimValues([0, mediaPayload.duration]);
     setCurrentMediaPreviewUrl(newPreviewUrlFromFile);
+    toast({ title: "Media Ready", description: "You can now preview and set start/end times for your media.", variant: "success" });
   }, [currentMediaPreviewUrl]);
 
   const handleEmotionTagToggle = (tag: EmotionTag) => setSelectedEmotionTags(prevTags => prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]);
 
   const handleTrimChange = (newValues: [number, number]) => {
     if (currentMedia) {
-      const [oldStart, oldEnd] = trimValues;
-      const [newStart, newEnd] = newValues;
-
-      if (newStart !== oldStart) {
-        setTrimValues([newStart, Math.max(newStart, oldEnd)]);
-      } else if (newEnd !== oldEnd) {
-        setTrimValues([Math.min(newEnd, oldStart), newEnd]);
-      } else {
         setTrimValues(newValues);
-      }
     }
   };
 
 
-  const triggerSubmitProcess = useCallback(async () => {
+  const triggerSubmitProcess = useCallback(() => {
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
     let mediaFileToUpload: File | undefined = undefined;
 
     if (currentMedia) {
       const isNewFile = currentMedia.file.size > 0 && currentMedia.file.name !== "existing_media_placeholder";
-      const hasBeenTrimmed = currentMedia.startTime > 0 || currentMedia.endTime < currentMedia.duration;
-
-      if (isNewFile && hasBeenTrimmed) {
-        setIsTrimming(true);
-        toast({ title: "Trimming media...", description: "This may take a moment before the upload begins." });
-        try {
-          const ffmpeg = await getFFmpeg();
-          const inputFile = "input.webm";
-          const outputFile = "output.webm";
-          await ffmpeg.writeFile(inputFile, await fetchFile(currentMedia.file));
-
-          const start = formatSecondsToTime(currentMedia.startTime);
-          const duration = formatSecondsToTime(currentMedia.endTime - currentMedia.startTime);
-
-          await ffmpeg.exec(['-ss', start, '-i', inputFile, '-t', duration, '-c', 'copy', outputFile]);
-
-          const data = await ffmpeg.readFile(outputFile);
-          const trimmedBlob = new Blob([data], { type: currentMedia.file.type });
-          mediaFileToUpload = new File([trimmedBlob], `trimmed_${currentMedia.file.name}`, { type: currentMedia.file.type });
-        } catch (error) {
-          console.error("Error during FFmpeg trimming:", error);
-          toast({ title: "Trimming Failed", description: "Could not trim the media. The original file will be used.", variant: "destructive" });
-          mediaFileToUpload = currentMedia.file;
-        } finally {
-          setIsTrimming(false);
-        }
-      } else if (isNewFile) {
+      if (isNewFile) {
         mediaFileToUpload = currentMedia.file;
       }
     }
 
     const finalPromptIdToSave = initialPromptId || memory?.promptId || undefined;
+
+    const [startTime, endTime] = trimValues;
+    const hasBeenTrimmed = startTime > 0 || (currentMedia && endTime < currentMedia.duration);
+
     const submissionData = {
         title,
         date: finalDate.toISOString(),
@@ -353,21 +320,26 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         promptId: finalPromptIdToSave,
         isLegacy: memory?.isLegacy || false,
         mediaAttachments: currentMedia ? [{
-            ...memory?.mediaAttachments?.[0],
             id: memory?.mediaAttachments?.[0]?.id || 'media' + Date.now(),
             type: currentMedia.type,
-            startTime: currentMedia.startTime,
-            endTime: currentMedia.endTime,
+            // These will be updated with the real URL on the server
+            url: memory?.mediaAttachments?.[0]?.url || '', 
+            filename: mediaFileToUpload?.name || memory?.mediaAttachments?.[0]?.filename,
+            processingStatus: mediaFileToUpload ? 'uploading' : 'complete',
+            // Pass the REAL data from state
+            startTime: startTime,
+            endTime: endTime,
             duration: currentMedia.duration,
-            isTrimmed: currentMedia.startTime > 0 || currentMedia.endTime < currentMedia.duration,
-        }] : memory?.mediaAttachments,
+            size: currentMedia.size,
+            isTrimmed: hasBeenTrimmed,
+        }] : (isEditing ? null : undefined), // null to delete, undefined to leave alone
     };
 
     onSubmit(
       submissionData as Omit<Memory, 'id' | 'userId'>,
       mediaFileToUpload
     );
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, location, country, selectedCategory, initialPromptId, selectedEmotionTags]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, location, country, selectedCategory, initialPromptId, selectedEmotionTags, trimValues, isEditing]);
 
   const trimmedDuration = useMemo(() => {
     if (!currentMedia) return 0;
@@ -390,7 +362,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
        handleSetCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
       if (!currentMedia && (!isEditing || !memory?.mediaAttachments?.length)) {
-        toast({ title: "Media is Required to Proceed", description: "Please record a video or audio first, then you can proceed to the preview step.", variant: "default" });
+        toast({ title: "Media is Required to Proceed", description: "Please record or upload a video or audio first, then you can proceed to the preview step.", variant: "default" });
         return;
       }
       if (isTrimmedDurationTooLong) {
@@ -444,7 +416,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         startTime: trimValues[0],
         endTime: trimValues[1],
         duration: currentMedia.duration, size: currentMedia.size,
-        isTrimmed: currentMedia.isTrimmed,
+        isTrimmed: currentMedia.startTime > 0 || trimValues[1] < currentMedia.duration,
       }];
     } else if (memory?.mediaAttachments) {
       mediaAttachmentsForPreview = memory.mediaAttachments;
@@ -536,7 +508,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             <Card className="w-full">
               <CardHeader>
                 <CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>
-                <CardDescription>Record or upload a video/audio for your memory.</CardDescription>
+                <CardDescription>Record or upload a video/audio for your memory. You can set the start and end times for playback.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                   <MediaCaptureControl
@@ -551,9 +523,9 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                   {currentMedia && (
                     <Card className="bg-muted/50">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-base font-medium flex items-center"><Scissors className="mr-2 h-4 w-4"/>Trim Media</CardTitle>
+                            <CardTitle className="text-base font-medium flex items-center"><Scissors className="mr-2 h-4 w-4"/>Define Playback Segment</CardTitle>
                             <CardDescription className="text-xs">
-                                Drag the handles to select the part of the media you want to save. The player will preview this selection.
+                                Drag the handles to set the start and end points for playback. This will not physically trim the file.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -565,7 +537,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                     value={trimValues}
                                     onValueChange={(vals) => handleTrimChange(vals as [number, number])}
                                     minStepsBetweenThumbs={1}
-                                    disabled={currentMedia.isTrimmed || isTrimming}
+                                    disabled={isTrimming}
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground font-mono">
                                     <span>Start: {formatSecondsToTime(trimValues[0])}</span>
@@ -577,7 +549,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                                       <AlertCircle className="h-4 w-4" />
                                       <AlertTitle>Selection Too Long</AlertTitle>
                                       <AlertDescription>
-                                          Your trimmed selection is {formatSecondsToTime(trimmedDuration)}, which exceeds the {formatSecondsToTime(MAX_RECORDING_DURATION)} limit.
+                                          Your selected duration is {formatSecondsToTime(trimmedDuration)}, which exceeds the {formatSecondsToTime(MAX_RECORDING_DURATION)} limit.
                                       </AlertDescription>
                                   </Alert>
                                 )}
@@ -603,7 +575,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
       <div className="max-w-3xl mx-auto flex justify-between items-center pt-4 px-1 sm:px-0">
         <Button type="button" onClick={() => { if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) handleSetCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) handleSetCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
-        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia || (currentSlide === SLIDE_INDEX_MEDIA && !isNextToPreviewEnabled) || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview) || isTrimmedDurationTooLong}>{isTrimming ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Trimming...</> : (isParentSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</>)}</Button>
+        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia || (currentSlide === SLIDE_INDEX_MEDIA && !isNextToPreviewEnabled) || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview) || isTrimmedDurationTooLong}>{isTrimming ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</> : (isParentSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</>)}</Button>
       </div>
     </form>
   );
