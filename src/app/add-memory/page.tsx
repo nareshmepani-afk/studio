@@ -70,20 +70,22 @@ function AddMemoryPageComponent() {
     setIsSubmitting(true);
     const db = getFirestore(app);
 
-    const cleanMemoryData: { [key: string]: any } = {};
-    Object.entries(memoryData).forEach(([key, value]) => {
-      if (value !== undefined) {
-        cleanMemoryData[key] = value;
-      }
-    });
-
-     Object.keys(cleanMemoryData).forEach(key => {
-        if (cleanMemoryData[key] === '') {
+    try {
+      // 1. Prepare the data, removing any undefined fields to prevent Firestore errors
+      const cleanMemoryData: { [key: string]: any } = {};
+      Object.entries(memoryData).forEach(([key, value]) => {
+        if (value !== undefined) {
+          cleanMemoryData[key] = value;
+        }
+      });
+       Object.keys(cleanMemoryData).forEach(key => {
+        // Also remove empty strings from optional fields, but keep for title/description
+        if (key !== 'title' && key !== 'description' && cleanMemoryData[key] === '') {
             delete cleanMemoryData[key];
         }
     });
 
-    try {
+
       const isEditing = !!editMemoryId;
       let memoryDocRef;
 
@@ -93,76 +95,89 @@ function AddMemoryPageComponent() {
         memoryDocRef = doc(collection(db, 'users', user.id, 'memories'));
       }
 
+      // 2. Handle media upload if a file is present
       if (mediaFileToUpload) {
         const storage = getStorage(app);
         const filePath = `memories/${user.id}/${memoryDocRef.id}-${mediaFileToUpload.name}`;
         const fileRef = storageRef(storage, filePath);
         const uploadTask = uploadBytesResumable(fileRef, mediaFileToUpload);
 
+        // Give immediate feedback that upload is starting
         const { id: toastId } = toast({
           title: "Uploading Media...",
-          description: "Starting upload... 0%",
+          description: "Please wait while your media is being uploaded. You can follow the progress here.",
         });
 
-        uploadTask.on('state_changed',
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            toast.update(toastId, {
-                title: `Uploading: ${progress.toFixed(0)}%`,
-                description: `Please stay on this page until the upload is complete.`,
-            });
-          },
-          (error) => {
-            console.error("Upload failed:", error);
-            toast.update(toastId, { title: "Upload Failed", description: `Your media could not be saved. Error: ${error.message}`, variant: "destructive" });
-            setIsSubmitting(false);
-          },
-          async () => {
-            try {
-                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                
-                const currentMediaData = memoryData.mediaAttachments?.[0];
-
-                const newMediaAttachment: MediaAttachment = {
-                    id: currentMediaData?.id || 'media' + Date.now(),
-                    type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
-                    url: downloadURL,
-                    processingStatus: 'complete',
-                    filename: mediaFileToUpload.name,
-                    size: mediaFileToUpload.size,
-                    duration: currentMediaData?.duration,
-                    startTime: currentMediaData?.startTime,
-                    endTime: currentMediaData?.endTime,
-                    isTrimmed: currentMediaData?.isTrimmed,
-                };
-    
-                const finalData = {
-                  ...cleanMemoryData,
-                  mediaAttachments: [newMediaAttachment],
-                  updatedAt: serverTimestamp(),
-                };
-                
-                if (isEditing) {
-                  await updateDoc(memoryDocRef, finalData);
-                } else {
-                  await setDoc(memoryDocRef, { ...finalData, userId: user.id, createdAt: serverTimestamp() });
-                }
-    
-                toast.update(toastId, { title: "Memory Saved!", description: "Your memory and media have been successfully saved.", variant: "success", duration: 5000 });
-                if (cleanMemoryData.promptId) router.push('/prompts'); else router.push('/timeline');
-            } catch (finalSaveError) {
-                console.error("[handleSubmit] Error during final save after upload:", finalSaveError);
-                const errorMessage = finalSaveError instanceof Error ? finalSaveError.message : "An unknown error occurred.";
-                toast.update(toastId, { title: "Failed to Save Memory Data", description: `The media was uploaded, but saving the memory details failed. Error: ${errorMessage}`, variant: "destructive" });
-            } finally {
-                setIsSubmitting(false);
+        // The 'complete' function of the observer is the key to waiting for the upload
+        await new Promise<void>((resolve, reject) => {
+          uploadTask.on('state_changed',
+            (snapshot) => {
+              // Update progress
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              toast.update(toastId, {
+                  title: `Uploading: ${Math.round(progress)}%`,
+                  description: `Please stay on this page.`,
+              });
+            },
+            (error) => {
+              // Handle upload errors
+              console.error("[handleSubmit] Upload failed:", error);
+              toast.update(toastId, { title: "Upload Failed", description: `Your media could not be saved. Error: ${error.message}`, variant: "destructive" });
+              setIsSubmitting(false);
+              reject(error);
+            },
+            async () => {
+              // Handle successful upload
+              try {
+                  const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                  
+                  // This is the correct point to build the final media attachment object
+                  const newMediaAttachment: MediaAttachment = {
+                      id: memoryData.mediaAttachments?.[0]?.id || 'media' + Date.now(),
+                      type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
+                      url: downloadURL,
+                      processingStatus: 'complete',
+                      filename: mediaFileToUpload.name,
+                      size: mediaFileToUpload.size,
+                      duration: memoryData.mediaAttachments?.[0]?.duration,
+                      startTime: memoryData.mediaAttachments?.[0]?.startTime,
+                      endTime: memoryData.mediaAttachments?.[0]?.endTime,
+                      isTrimmed: memoryData.mediaAttachments?.[0]?.isTrimmed || false,
+                  };
+      
+                  const finalData = {
+                    ...cleanMemoryData,
+                    mediaAttachments: [newMediaAttachment],
+                    updatedAt: serverTimestamp(),
+                  };
+                  
+                  // Now save the complete data to Firestore
+                  if (isEditing) {
+                    await updateDoc(memoryDocRef, finalData);
+                  } else {
+                    await setDoc(memoryDocRef, { ...finalData, userId: user.id, createdAt: serverTimestamp() });
+                  }
+      
+                  toast.update(toastId, { title: "Memory Saved!", description: "Your memory and media have been successfully saved.", variant: "success", duration: 5000 });
+                  resolve();
+              } catch (finalSaveError) {
+                  console.error("[handleSubmit] Error during final Firestore save after upload:", finalSaveError);
+                  const errorMessage = finalSaveError instanceof Error ? finalSaveError.message : "An unknown error occurred.";
+                  toast.update(toastId, { title: "Failed to Save Memory Data", description: `The media was uploaded, but saving the memory details failed. Error: ${errorMessage}`, variant: "destructive" });
+                  reject(finalSaveError);
+              }
             }
-          }
-        );
+          );
+        });
 
       } else {
+        // 3. Handle saving data without a new media file (or if media was removed)
         const finalUpdateData = { ...cleanMemoryData, updatedAt: serverTimestamp() };
-        
+         // If media is explicitly removed during edit, ensure it's not in the final data
+        if (isEditing && !memoryData.mediaAttachments) {
+            finalUpdateData.mediaAttachments = deleteField();
+        }
+
         if (isEditing) {
             await updateDoc(memoryDocRef, finalUpdateData);
             toast({ title: "Memory Updated!", variant: "success" });
@@ -170,15 +185,18 @@ function AddMemoryPageComponent() {
             await setDoc(memoryDocRef, { ...finalUpdateData, userId: user.id, createdAt: serverTimestamp() });
             toast({ title: "Memory Saved!", variant: "success" });
         }
-
-        if (cleanMemoryData.promptId) router.push('/prompts'); else router.push('/timeline');
-        setIsSubmitting(false);
       }
 
+      // 4. Navigate on success
+      if (cleanMemoryData.promptId) router.push('/prompts'); else router.push('/timeline');
+
     } catch (error) {
-      console.error("[handleSubmit] Error preparing to save memory:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+      // This is the top-level catch for the entire process
+      console.error("[handleSubmit] An error occurred during the save process:", error);
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
       toast({ title: "Failed to Save Memory", description: `An unexpected error occurred: ${errorMessage}`, variant: "destructive" });
+    } finally {
+      // This will always run, ensuring the UI is unlocked
       setIsSubmitting(false);
     }
   };
