@@ -53,7 +53,9 @@ function AddMemoryPageComponent() {
   const [originalMemory, setOriginalMemory] = useState<Memory | null>(null);
 
   useEffect(() => {
+    console.log("[AddMemoryPage] useEffect: Main effect triggered.");
     if (editMemoryId && user) {
+      console.log(`[AddMemoryPage] useEffect: Fetching memory with ID: ${editMemoryId}`);
       const db = getFirestore(app);
       const fetchMemory = async () => {
         setIsLoadingMemory(true);
@@ -61,6 +63,7 @@ function AddMemoryPageComponent() {
           const memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
           const docSnap = await getDoc(memoryDocRef);
           if (docSnap.exists()) {
+            console.log("[AddMemoryPage] useEffect: Document found. Populating ALL state in parent.");
             const data = docSnap.data() as Memory;
             setOriginalMemory({ ...data, id: docSnap.id }); // Store original for comparison
 
@@ -74,8 +77,10 @@ function AddMemoryPageComponent() {
             setIsLegacy(data.isLegacy || false);
             
             if (data.mediaAttachments && data.mediaAttachments.length > 0) {
+              console.log("[AddMemoryPage] useEffect: Populating existing media state.", data.mediaAttachments[0]);
               setCurrentMedia(data.mediaAttachments[0]);
             } else {
+              console.log("[AddMemoryPage] useEffect: No existing media found.");
               setCurrentMedia(null);
             }
             setMediaFileToUpload(null);
@@ -91,12 +96,14 @@ function AddMemoryPageComponent() {
           toast({ title: "Error loading memory", variant: "destructive" });
           router.push('/timeline');
         } finally {
+          console.log("[AddMemoryPage] useEffect: Finished fetching memory.");
           setIsLoadingMemory(false);
         }
       };
       fetchMemory();
     } else {
         // New memory setup
+        console.log("[AddMemoryPage] useEffect: No editMemoryId, setting up for new memory.");
         setIsLoadingMemory(false);
         setTitle(initialCustomPromptText || '');
         // Reset all other fields for a clean form
@@ -115,12 +122,14 @@ function AddMemoryPageComponent() {
   }, [editMemoryId, user, router, initialCustomPromptText]);
 
   const handleMediaDiscard = useCallback(() => {
+    console.log("[AddMemoryPage] handleMediaDiscard: Clearing media state.");
     setCurrentMedia(null);
     setMediaFileToUpload(null);
     setMediaHasBeenRemoved(true); // Flag that media was explicitly removed
   }, []);
 
   const handleNewMediaReady = useCallback((newFile: File, mediaData: Omit<MediaAttachment, 'id' | 'url'>) => {
+      console.log("[AddMemoryPage] handleNewMediaReady: New media is ready.", { newFile, mediaData });
       setCurrentMedia({ ...mediaData, url: URL.createObjectURL(newFile) });
       setMediaFileToUpload(newFile);
       setMediaHasBeenRemoved(false); // New media is present, so it hasn't been "removed"
@@ -128,6 +137,7 @@ function AddMemoryPageComponent() {
 
 
   const handleSubmit = async () => {
+    console.log("[AddMemoryPage] handleSubmit: Initiating save process.");
     if (!user) {
       toast({ title: "Authentication Error", variant: "destructive" });
       return;
@@ -147,6 +157,7 @@ function AddMemoryPageComponent() {
       // Handle Deletion of Old Media if a new file is uploaded or media was removed
       const oldMediaUrl = originalMemory?.mediaAttachments?.[0]?.url;
       if (isEditing && oldMediaUrl && (mediaFileToUpload || mediaHasBeenRemoved)) {
+          console.log("[AddMemoryPage] handleSubmit: Deleting old media from Storage.");
           try {
               const oldFileRef = storageRef(storage, oldMediaUrl);
               await deleteObject(oldFileRef);
@@ -161,6 +172,7 @@ function AddMemoryPageComponent() {
 
       // Handle Upload of New Media
       if (mediaFileToUpload && currentMedia) {
+        console.log("[AddMemoryPage] handleSubmit: Uploading new media file.");
         const filePath = `memories/${user.id}/${memoryDocRef.id}-${mediaFileToUpload.name}`;
         const fileRef = storageRef(storage, filePath);
         const uploadTask = uploadBytesResumable(fileRef, mediaFileToUpload);
@@ -171,16 +183,20 @@ function AddMemoryPageComponent() {
           uploadTask.on('state_changed',
             (snapshot) => {
               const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              console.log(`[AddMemoryPage] Upload progress: ${progress}%`);
               toast.update(toastId, { title: `Uploading Media ${Math.round(progress)}%...`});
             },
             (error) => { 
+                console.error("[AddMemoryPage] Upload failed.", error);
                 reject(error); 
             },
             async () => { 
                 try {
+                    console.log("[AddMemoryPage] Upload complete, getting download URL.");
                     const url = await getDownloadURL(uploadTask.snapshot.ref);
                     resolve(url);
                 } catch(error) {
+                    console.error("[AddMemoryPage] Failed to get download URL.", error);
                     reject(error);
                 }
             }
@@ -196,6 +212,7 @@ function AddMemoryPageComponent() {
       }
 
       // Construct final data for Firestore
+      console.log("[AddMemoryPage] handleSubmit: Constructing final data for Firestore.");
       const memoryDataForFirestore: Omit<Memory, 'id'> = {
         title,
         description,
@@ -215,13 +232,16 @@ function AddMemoryPageComponent() {
       // Special handling for delete field
       const finalUpdateData: { [key: string]: any } = { ...memoryDataForFirestore };
       if (mediaHasBeenRemoved && isEditing) {
+          console.log("[AddMemoryPage] handleSubmit: Media was removed, using deleteField() for update.");
           finalUpdateData.mediaAttachments = deleteField();
       }
 
       if (isEditing) {
+          console.log("[AddMemoryPage] handleSubmit: Updating existing document.");
           await updateDoc(memoryDocRef, finalUpdateData);
           toast({ title: "Memory Updated!", variant: "success" });
       } else {
+          console.log("[AddMemoryPage] handleSubmit: Creating new document.");
           await setDoc(memoryDocRef, finalUpdateData);
           toast({ title: "Memory Saved!", variant: "success" });
       }
@@ -233,6 +253,7 @@ function AddMemoryPageComponent() {
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
       toast({ title: "Failed to Save Memory", description: `An unexpected error occurred: ${errorMessage}`, variant: "destructive" });
     } finally {
+      console.log("[AddMemoryPage] handleSubmit: Save process finished.");
       setIsSubmitting(false);
     }
   };
@@ -295,5 +316,3 @@ export default function AddMemoryPage() {
     );
 }
 
-
-    

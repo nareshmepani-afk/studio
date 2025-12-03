@@ -241,7 +241,7 @@ export function MemoryForm({
                             description: description,
                             userId: user?.id || 'preview-user',
                             mediaAttachments: currentMedia ? [{...currentMedia, id:'preview-media-id', startTime: trimValues[0], endTime: trimValues[1]}] : [],
-                            emotionTags,
+                            emotionTags: selectedEmotionTags,
                             category: selectedCategory,
                             location,
                             country
