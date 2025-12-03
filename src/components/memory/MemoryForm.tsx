@@ -15,7 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { Sparkles, Loader2, ArrowRight, Tag, MapPin, ArrowLeft, Eye, Layers, Scissors, Timer, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, parseISO, getDate } from 'date-fns';
+import { getDaysInMonth, format, isValid, setDate, getMonth, getYear } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { countryOptions, MAX_RECORDING_DURATION } from '@/lib/constants';
@@ -91,6 +91,7 @@ export function MemoryForm({
   onCountryChange,
   onSelectedCategoryChange,
   onSelectedEmotionTagsChange,
+  onIsLegacyChange,
   years,
   months
 }: MemoryFormProps) {
@@ -103,7 +104,6 @@ export function MemoryForm({
   const [currentSlide, setCurrentSlide] = useState(SLIDE_INDEX_DETAILS);
   const [isPreparingMedia, setIsPreparingMedia] = useState(false);
   
-  // Local state for trim values, derived from currentMedia
   const [trimValues, setTrimValues] = useState<[number, number]>([currentMedia?.startTime ?? 0, currentMedia?.endTime ?? currentMedia?.duration ?? 0]);
 
   useEffect(() => {
@@ -126,7 +126,6 @@ export function MemoryForm({
     if (part === 'month') newDate.setMonth(value);
     if (part === 'year') newDate.setFullYear(value);
     
-    // Validate and correct day if month/year change makes it invalid
     const newDaysInMonth = getDaysInMonth(newDate);
     if (newDate.getDate() > newDaysInMonth) {
         newDate.setDate(newDaysInMonth);
@@ -161,10 +160,8 @@ export function MemoryForm({
       if (!currentMedia) { toast({ title: "Media is Required", description: "Please record or upload a video or audio to proceed.", variant: "default" }); return; }
       if (isTrimmedDurationTooLong) { toast({ title: "Media Too Long", description: `Please shorten your playback selection to ${formatSecondsToTime(MAX_RECORDING_DURATION)} or less.`, variant: "destructive" }); return; }
       
-      // Update the parent's media state with the final trim values before previewing
       if (currentMedia) {
         console.log("[MemoryForm] Updating parent media with final trim values:", trimValues);
-        // This is a bit of a hack, assumes file is there for new media. The parent handles the blob URL.
         onNewMediaReady(
             (currentMedia as any).file || new File([], "existing_media"), 
             {...currentMedia, startTime: trimValues[0], endTime: trimValues[1]}

@@ -94,7 +94,6 @@ function AddMemoryPageComponent() {
         } catch (error) {
           console.error("[AddMemoryPage] Error fetching memory:", error);
           toast({ title: "Error loading memory", variant: "destructive" });
-          router.push('/timeline');
         } finally {
           console.log("[AddMemoryPage] useEffect: Finished fetching memory.");
           setIsLoadingMemory(false);
@@ -269,16 +268,16 @@ function AddMemoryPageComponent() {
       );
   }
 
-  // Combine all state and handlers into a single object for MemoryForm
-  const formStateAndHandlers = {
-    title, onTitleChange: setTitle,
-    description, onDescriptionChange: setDescription,
-    memoryDate, onMemoryDateChange: setMemoryDate,
-    location, onLocationChange: setLocation,
-    country, onCountryChange: setCountry,
-    selectedCategory, onSelectedCategoryChange: setSelectedCategory,
-    selectedEmotionTags, onSelectedEmotionTagsChange: setSelectedEmotionTags,
-    isLegacy, onIsLegacyChange: setIsLegacy,
+  // Combine all state into a single object for MemoryForm's formState prop
+  const formState = {
+    title,
+    description,
+    memoryDate,
+    location,
+    country,
+    selectedCategory,
+    selectedEmotionTags,
+    isLegacy,
     currentMedia,
   };
 
@@ -286,7 +285,7 @@ function AddMemoryPageComponent() {
     <AuthenticatedPageWrapper>
       <div className="container mx-auto py-8 px-4">
         <MemoryForm
-          formState={formStateAndHandlers}
+          formState={formState}
           isEditing={!!editMemoryId}
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
@@ -294,6 +293,14 @@ function AddMemoryPageComponent() {
           initialCustomPromptText={initialCustomPromptText}
           onMediaDiscard={handleMediaDiscard}
           onNewMediaReady={handleNewMediaReady}
+          onTitleChange={setTitle}
+          onDescriptionChange={setDescription}
+          onMemoryDateChange={setMemoryDate}
+          onLocationChange={setLocation}
+          onCountryChange={setCountry}
+          onSelectedCategoryChange={setSelectedCategory}
+          onSelectedEmotionTagsChange={setSelectedEmotionTags}
+          onIsLegacyChange={setIsLegacy}
           years={years}
           months={months}
         />
