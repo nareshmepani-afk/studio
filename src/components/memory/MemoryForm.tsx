@@ -280,7 +280,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       isTrimmed: false,
     });
     setTrimValues([0, mediaPayload.duration]);
-    setCurrentMediaPreviewUrl(newPreviewUrlFromFile);
     toast({ title: "Media Ready", description: "You can now preview and set start/end times for your media.", variant: "success" });
   }, [currentMediaPreviewUrl]);
 

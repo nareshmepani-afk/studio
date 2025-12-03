@@ -4,7 +4,11 @@ export const countryOptions = [
   { value: "Other (Not Listed)", label: "Other (Not Listed)"},
 ];
 
-export const MAX_RECORDING_DURATION = 300; // 5 minutes - This is the trim limit
-export const MAX_RECORDING_HARD_LIMIT = 330; // 5 minutes and 30 seconds - This is the automatic stop limit
-export const MAX_UPLOAD_DURATION_SECONDS = 360; // 6 minutes - for uploads
+// This is the final trimmed/selected duration limit for a memory.
+export const MAX_RECORDING_DURATION = 300; // 5 minutes
 
+// This is the absolute maximum time the recorder will run before stopping automatically.
+export const MAX_RECORDING_HARD_LIMIT = 330; // 5.5 minutes (provides buffer for trimming)
+
+// This is the maximum duration for an initial file upload.
+export const MAX_UPLOAD_DURATION_SECONDS = 330; // 5.5 minutes (consistent with recording hard limit)
