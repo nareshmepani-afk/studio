@@ -6,12 +6,12 @@ import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageW
 import { MemoryForm } from '@/components/memory/MemoryForm';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
-import type { Memory, User, MediaAttachment } from '@/types';
+import type { Memory, MediaAttachment } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { useState, useEffect, useCallback } from 'react';
 import { app } from '@/lib/firebase';
 import { getFirestore, addDoc, doc, updateDoc, getDoc, collection, serverTimestamp, deleteField, setDoc } from 'firebase/firestore';
-import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { Loader2 } from 'lucide-react';
 
 
@@ -27,6 +27,7 @@ function AddMemoryPageComponent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [memoryToEdit, setMemoryToEdit] = useState<Memory | undefined>(undefined);
   const [isLoadingMemory, setIsLoadingMemory] = useState(true);
+  const [mediaHasBeenRemoved, setMediaHasBeenRemoved] = useState(false);
 
   useEffect(() => {
     if (editMemoryId && user) {
@@ -38,7 +39,7 @@ function AddMemoryPageComponent() {
           const memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
           const docSnap = await getDoc(memoryDocRef);
           if (docSnap.exists()) {
-            console.log("[AddMemoryPage] useEffect: Document found.");
+            console.log("[AddMemoryPage] useEffect: Document found, populating form state.");
             const data = docSnap.data();
             const date = data.date?.toDate ? data.date.toDate().toISOString() : data.date;
             setMemoryToEdit({ id: docSnap.id, ...data, date } as Memory);
@@ -63,6 +64,11 @@ function AddMemoryPageComponent() {
     }
   }, [editMemoryId, user, router]);
 
+  const handleMediaDiscard = useCallback(() => {
+    console.log("[AddMemoryPage] handleMediaDiscard: Media has been explicitly discarded by the user.");
+    setMediaHasBeenRemoved(true);
+  }, []);
+
   const handleSubmit = async (
     memoryData: Omit<Memory, 'id' | 'userId'>,
     mediaFileToUpload?: File
@@ -75,20 +81,14 @@ function AddMemoryPageComponent() {
     setIsSubmitting(true);
     console.log("[handleSubmit] Starting submission process...");
     const db = getFirestore(app);
+    const storage = getStorage(app);
 
     try {
       const cleanMemoryData: { [key: string]: any } = {};
       Object.entries(memoryData).forEach(([key, value]) => {
-        if (value !== undefined) {
-          cleanMemoryData[key] = value;
-        }
+        if (value !== undefined) cleanMemoryData[key] = value;
       });
-      Object.keys(cleanMemoryData).forEach(key => {
-        if (key !== 'title' && key !== 'description' && cleanMemoryData[key] === '') {
-            delete cleanMemoryData[key];
-        }
-      });
-      console.log("[handleSubmit] Cleaned memory data for Firestore:", cleanMemoryData);
+      console.log("[handleSubmit] Cleaned memory data for submission:", cleanMemoryData);
 
       const isEditing = !!editMemoryId;
       const memoryDocRef = isEditing
@@ -96,79 +96,77 @@ function AddMemoryPageComponent() {
         : doc(collection(db, 'users', user.id, 'memories'));
       console.log(`[handleSubmit] Mode: ${isEditing ? 'Editing' : 'Creating'}. Doc ID: ${memoryDocRef.id}`);
 
+      // Handle deletion of old media if necessary (only in edit mode)
+      const oldMediaUrl = isEditing ? memoryToEdit?.mediaAttachments?.[0]?.url : undefined;
+      if (isEditing && oldMediaUrl && (mediaFileToUpload || mediaHasBeenRemoved)) {
+          console.log("[handleSubmit] A new file is being uploaded or media was removed. Deleting old media from Storage:", oldMediaUrl);
+          try {
+              const oldFileRef = storageRef(storage, oldMediaUrl);
+              await deleteObject(oldFileRef);
+              console.log("[handleSubmit] Successfully deleted old media from Storage.");
+          } catch (deleteError: any) {
+              if (deleteError.code === 'storage/object-not-found') {
+                  console.warn("[handleSubmit] Old media file not found in Storage, but proceeding anyway.");
+              } else {
+                  throw deleteError; // Rethrow other deletion errors
+              }
+          }
+      }
+
       if (mediaFileToUpload) {
         console.log("[handleSubmit] New media file detected. Starting upload process.", { name: mediaFileToUpload.name, size: mediaFileToUpload.size });
-        const storage = getStorage(app);
         const filePath = `memories/${user.id}/${memoryDocRef.id}-${mediaFileToUpload.name}`;
         const fileRef = storageRef(storage, filePath);
         const uploadTask = uploadBytesResumable(fileRef, mediaFileToUpload);
 
-        const { id: toastId } = toast({
-          title: "Uploading Media...",
-          description: "Your file is being uploaded. Please wait.",
-        });
+        const { id: toastId } = toast({ title: "Uploading Media...", description: "Your file is being uploaded. Please wait." });
 
-        await new Promise<void>((resolve, reject) => {
+        const downloadURL = await new Promise<string>((resolve, reject) => {
           uploadTask.on('state_changed',
-            (snapshot) => {
-              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              console.log(`[handleSubmit] Upload progress: ${progress}%`);
-              toast.update(toastId, {
-                  title: `Uploading: ${Math.round(progress)}%`,
-                  description: `Please stay on this page.`,
-              });
-            },
-            (error) => {
-              console.error("[handleSubmit] Upload failed:", error);
-              toast.update(toastId, { title: "Upload Failed", description: `Your media could not be saved. Error: ${error.message}`, variant: "destructive" });
-              reject(error);
-            },
+            (snapshot) => { /* Progress reporting */ },
+            (error) => { reject(error); },
             async () => {
               try {
-                console.log("[handleSubmit] Upload complete. Getting download URL.");
-                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                
-                const finalMediaAttachment = {
-                  ...(memoryData.mediaAttachments?.[0]),
-                  url: downloadURL,
-                  processingStatus: 'complete',
-                };
-                console.log("[handleSubmit] Final media attachment object:", finalMediaAttachment);
-
-                const finalData = {
-                  ...cleanMemoryData,
-                  mediaAttachments: [finalMediaAttachment],
-                  updatedAt: serverTimestamp(),
-                };
-                
-                if (isEditing) {
-                  console.log("[handleSubmit] Updating Firestore document with new media info.");
-                  await updateDoc(memoryDocRef, finalData);
-                } else {
-                  console.log("[handleSubmit] Creating Firestore document with new media info.");
-                  await setDoc(memoryDocRef, { ...finalData, userId: user.id, createdAt: serverTimestamp() });
-                }
-      
-                toast.update(toastId, { title: "Memory Saved!", description: "Your memory and media have been successfully saved.", variant: "success", duration: 5000 });
-                resolve();
-              } catch (finalSaveError) {
-                  console.error("[handleSubmit] Error during final Firestore save after upload:", finalSaveError);
-                  const errorMessage = finalSaveError instanceof Error ? finalSaveError.message : "An unknown error occurred.";
-                  toast.update(toastId, { title: "Failed to Save Memory Data", description: `The media was uploaded, but saving the memory details failed. Error: ${errorMessage}`, variant: "destructive" });
-                  reject(finalSaveError);
+                const url = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve(url);
+              } catch (finalError) {
+                reject(finalError);
               }
             }
           );
         });
-      } else {
-        const finalUpdateData = { ...cleanMemoryData, updatedAt: serverTimestamp() };
-        if (isEditing && memoryData.mediaAttachments === null) {
-            console.log("[handleSubmit] Media explicitly removed during edit. Deleting field.");
-            finalUpdateData.mediaAttachments = deleteField();
-        } else if (isEditing) {
-            console.log("[handleSubmit] No new media file. Updating text fields only.");
+
+        console.log("[handleSubmit] Upload complete. Download URL obtained:", downloadURL);
+        const newMediaAttachment: MediaAttachment = {
+            id: 'media' + Date.now(),
+            type: memoryData.mediaAttachments?.[0]?.type || 'video',
+            url: downloadURL,
+            processingStatus: 'complete',
+            filename: mediaFileToUpload.name,
+            size: mediaFileToUpload.size,
+            duration: memoryData.mediaAttachments?.[0]?.duration,
+            startTime: memoryData.mediaAttachments?.[0]?.startTime,
+            endTime: memoryData.mediaAttachments?.[0]?.endTime,
+            isTrimmed: memoryData.mediaAttachments?.[0]?.isTrimmed,
+        };
+
+        const finalData = { ...cleanMemoryData, mediaAttachments: [newMediaAttachment], updatedAt: serverTimestamp() };
+        if (isEditing) {
+          console.log("[handleSubmit] Updating Firestore document with new media info.");
+          await updateDoc(memoryDocRef, finalData);
         } else {
-            console.log("[handleSubmit] Creating new memory without a media file.");
+          console.log("[handleSubmit] Creating Firestore document with new media info.");
+          await setDoc(memoryDocRef, { ...finalData, userId: user.id, createdAt: serverTimestamp() });
+        }
+        toast.update(toastId, { title: "Memory Saved!", description: "Your memory and media have been successfully saved.", variant: "success", duration: 5000 });
+
+      } else { // No new file to upload
+        let finalUpdateData = { ...cleanMemoryData, updatedAt: serverTimestamp() };
+        if (isEditing && mediaHasBeenRemoved) {
+          console.log("[handleSubmit] Media explicitly removed during edit. Deleting field from Firestore.");
+          finalUpdateData.mediaAttachments = deleteField();
+        } else {
+          console.log("[handleSubmit] No new media file. Updating text fields only or no media changes.");
         }
 
         if (isEditing) {
@@ -213,6 +211,7 @@ function AddMemoryPageComponent() {
           isSubmitting={isSubmitting}
           initialPromptId={initialPromptId}
           initialCustomPromptText={initialCustomPromptText}
+          onMediaDiscard={handleMediaDiscard}
         />
       </div>
     </AuthenticatedPageWrapper>
