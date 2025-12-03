@@ -3,27 +3,19 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mic, Video, StopCircle, UploadCloud, RotateCcw, CheckCircle, AlertTriangle, Loader2, ShieldAlert, BookOpen, Timer } from 'lucide-react';
+import { Mic, Video, StopCircle, UploadCloud, RotateCcw, AlertTriangle, Loader2, ShieldAlert, BookOpen } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAuth } from '@/hooks/useAuth';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { mockPromptGroups } from '@/lib/mockData';
-import type { MediaAttachment } from '@/types';
-import { MAX_RECORDING_DURATION, MAX_RECORDING_HARD_LIMIT, MAX_UPLOAD_DURATION_SECONDS } from '@/lib/constants';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { MAX_RECORDING_HARD_LIMIT, MAX_UPLOAD_DURATION_SECONDS } from '@/lib/constants';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 function formatSecondsToTime(timeInSeconds: number | undefined): string {
   if (timeInSeconds === undefined || isNaN(timeInSeconds) || timeInSeconds < 0) return "0:00";
@@ -34,12 +26,7 @@ function formatSecondsToTime(timeInSeconds: number | undefined): string {
 }
 
 interface MediaCaptureControlProps {
-  onMediaReady: (media: {
-    file: File;
-    type: 'video' | 'audio';
-    duration: number;
-    size: number;
-  }) => void;
+  onMediaReady: (file: File, mediaData: Omit<MediaAttachment, 'id' | 'url'>) => void;
   onMediaDiscard: () => void;
   onPreparingChange: (isPreparing: boolean) => void;
   initialMedia?: {
@@ -50,7 +37,6 @@ interface MediaCaptureControlProps {
   };
   promptIdForTeleprompter?: string;
   chapterTitleForTeleprompter?: string;
-  trimValues: [number, number];
 }
 
 export function MediaCaptureControl({
@@ -59,10 +45,9 @@ export function MediaCaptureControl({
   onPreparingChange,
   initialMedia,
   promptIdForTeleprompter,
-  chapterTitleForTeleprompter,
-  trimValues
+  chapterTitleForTeleprompter
 }: MediaCaptureControlProps) {
-  const { user, storageQuotaBytes, hostPassStatus } = useAuth();
+  const { storageQuotaBytes, hostPassStatus } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(null);
@@ -78,12 +63,10 @@ export function MediaCaptureControl({
   const hardLimitTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [currentTeleprompterScript, setCurrentTeleprompterScript] = useState<string | null>(null);
-
   const [currentRecordingDuration, setCurrentRecordingDuration] = useState(0);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const canRecordOrUpload =
-    hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
+  const canRecordOrUpload = hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
 
   const cleanupStream = useCallback(() => {
     if (streamRef.current) {
@@ -161,24 +144,6 @@ export function MediaCaptureControl({
     }
   }, [initialMedia]);
 
-  useEffect(() => {
-    const mediaElement = videoRef.current || audioPreviewRef.current;
-    if (!mediaElement || !trimValues) return;
-
-    const [startTime, endTime] = trimValues;
-    const handleTimeUpdate = () => { if (mediaElement.currentTime > endTime || mediaElement.currentTime < startTime) { mediaElement.pause(); mediaElement.currentTime = startTime; }};
-    const handlePlay = () => { if (mediaElement.currentTime < startTime || mediaElement.currentTime >= endTime) mediaElement.currentTime = startTime; };
-
-    mediaElement.addEventListener('timeupdate', handleTimeUpdate);
-    mediaElement.addEventListener('play', handlePlay);
-    if (mediaElement.paused && mediaElement.currentTime < startTime) mediaElement.currentTime = startTime;
-
-    return () => {
-      mediaElement.removeEventListener('timeupdate', handleTimeUpdate);
-      mediaElement.removeEventListener('play', handlePlay);
-    };
-  }, [trimValues]);
-
   const handleStopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       console.log('[MediaRecorder] handleStopRecording: Stopping MediaRecorder.');
@@ -205,48 +170,48 @@ export function MediaCaptureControl({
   const processAndFinalizeMedia = useCallback(async (blob: Blob, type: 'video' | 'audio', fileName: string) => {
     console.log(`[MediaRecorder] processAndFinalizeMedia: Starting. Blob size: ${blob.size}, type: ${blob.type}, name: ${fileName}`);
     setIsProcessing(true);
+    onPreparingChange(true);
 
     if (!checkStorageQuota(blob.size)) {
       handleDiscardMedia();
       setIsProcessing(false);
+      onPreparingChange(false);
       return;
     }
 
     const file = new File([blob], fileName, { type: blob.type });
-
-    const mediaElement = document.createElement(type);
     const objectUrlForDurationCheck = URL.createObjectURL(blob);
-    mediaElement.src = objectUrlForDurationCheck;
-
-    const durationPromise = new Promise<number>((resolve, reject) => {
-        mediaElement.onloadedmetadata = () => {
-            URL.revokeObjectURL(objectUrlForDurationCheck);
-            console.log(`[MediaRecorder] processAndFinalizeMedia: Final media duration: ${mediaElement.duration}s`);
-            if (mediaElement.duration > MAX_UPLOAD_DURATION_SECONDS) {
-                 toast({ title: "Upload Too Long", description: `Files cannot exceed ${formatSecondsToTime(MAX_UPLOAD_DURATION_SECONDS)}.`, variant: "destructive" });
-                 reject(new Error("Media duration exceeds limit."));
-                 return;
-            }
-            resolve(mediaElement.duration);
-        };
-        mediaElement.onerror = (e) => {
-            URL.revokeObjectURL(objectUrlForDurationCheck);
-            console.error('[MediaRecorder] processAndFinalizeMedia: Error loading media metadata', e);
-            reject(new Error("Could not read the media file to determine its duration."));
-        };
-    });
 
     try {
-        const duration = await durationPromise;
-        onMediaReady({ file, type, duration, size: file.size });
+        const duration = await new Promise<number>((resolve, reject) => {
+            const mediaElement = document.createElement(type);
+            mediaElement.src = objectUrlForDurationCheck;
+            mediaElement.onloadedmetadata = () => {
+                URL.revokeObjectURL(objectUrlForDurationCheck);
+                console.log(`[MediaRecorder] processAndFinalizeMedia: Final media duration: ${mediaElement.duration}s`);
+                if (mediaElement.duration > MAX_UPLOAD_DURATION_SECONDS) {
+                     reject(new Error(`Uploaded file is too long. Max duration is ${formatSecondsToTime(MAX_UPLOAD_DURATION_SECONDS)}.`));
+                     return;
+                }
+                resolve(mediaElement.duration);
+            };
+            mediaElement.onerror = (e) => {
+                URL.revokeObjectURL(objectUrlForDurationCheck);
+                console.error('[MediaRecorder] processAndFinalizeMedia: Error loading media metadata', e);
+                reject(new Error("Could not read the media file to determine its duration."));
+            };
+        });
+
+        onMediaReady(file, { type, duration, size: file.size, startTime: 0, endTime: duration, isTrimmed: false, url: '', filename: file.name });
         console.log('[MediaRecorder] processAndFinalizeMedia: Media ready, passed to parent.');
     } catch(error: any) {
         toast({ title: "Processing Failed", description: error.message || "An unknown error occurred.", variant: "destructive" });
         handleDiscardMedia();
     } finally {
         setIsProcessing(false);
+        onPreparingChange(false);
     }
-}, [checkStorageQuota, onMediaReady, handleDiscardMedia]);
+  }, [checkStorageQuota, onMediaReady, handleDiscardMedia, onPreparingChange]);
 
   const handleStartRecording = async (type: 'video' | 'audio') => {
     console.log(`[MediaRecorder] handleStartRecording: Attempting to start ${type} recording.`);
@@ -263,14 +228,20 @@ export function MediaCaptureControl({
 
     let scriptKey = promptIdForTeleprompter;
     if (!scriptKey && chapterTitleForTeleprompter) {
+        // Fallback to find prompt by title if ID is missing (e.g., custom prompt)
         for (const group of mockPromptGroups) {
             const foundPrompt = group.prompts.find(p => p.text.en.toLowerCase() === chapterTitleForTeleprompter.toLowerCase() || p.text.gu === chapterTitleForTeleprompter);
             if (foundPrompt) { scriptKey = foundPrompt.id; break; }
         }
     }
     const script = scriptKey ? teleprompterScripts[scriptKey] : null;
-    if (script) setCurrentTeleprompterScript(script);
-    else if (type === 'video') setCurrentTeleprompterScript(defaultTeleprompterFallbackScript);
+    if (script) {
+        setCurrentTeleprompterScript(script);
+        console.log('[MediaRecorder] handleStartRecording: Setting teleprompter script for prompt ID:', scriptKey);
+    } else if (type === 'video') {
+        setCurrentTeleprompterScript(defaultTeleprompterFallbackScript);
+        console.log('[MediaRecorder] handleStartRecording: No specific script found, using default fallback.');
+    }
 
     try {
       const recorder = new window.MediaRecorder(streamRef.current, { mimeType: type === 'video' ? 'video/webm' : 'audio/webm' });
@@ -323,7 +294,7 @@ export function MediaCaptureControl({
   };
 
   useEffect(() => {
-    if (streamRef.current && mediaType === 'video' && liveVideoRef.current) {
+    if (isRecording && mediaType === 'video' && liveVideoRef.current && streamRef.current) {
         liveVideoRef.current.srcObject = streamRef.current;
     }
   }, [mediaType, isRecording]);
