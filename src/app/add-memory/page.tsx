@@ -70,32 +70,30 @@ function AddMemoryPageComponent() {
     setIsSubmitting(true);
     const db = getFirestore(app);
 
-    // Clean data: remove undefined properties before saving to Firestore
     const cleanMemoryData: { [key: string]: any } = {};
     Object.entries(memoryData).forEach(([key, value]) => {
       if (value !== undefined) {
         cleanMemoryData[key] = value;
       }
     });
-     // Handle empty strings by converting them to a delete field operation
+
      Object.keys(cleanMemoryData).forEach(key => {
         if (cleanMemoryData[key] === '') {
-            cleanMemoryData[key] = deleteField();
+            delete cleanMemoryData[key];
         }
     });
 
     try {
-      let memoryDocRef;
       const isEditing = !!editMemoryId;
+      let memoryDocRef;
 
       if (isEditing) {
-        memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
+        memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId!);
       } else {
         memoryDocRef = doc(collection(db, 'users', user.id, 'memories'));
       }
 
       if (mediaFileToUpload) {
-        // SCENARIO 1: NEW MEDIA UPLOAD
         const storage = getStorage(app);
         const filePath = `memories/${user.id}/${memoryDocRef.id}-${mediaFileToUpload.name}`;
         const fileRef = storageRef(storage, filePath);
@@ -120,41 +118,49 @@ function AddMemoryPageComponent() {
             setIsSubmitting(false);
           },
           async () => {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            
-            const newMediaAttachment: MediaAttachment = {
-                id: memoryData.mediaAttachments?.[0]?.id || 'media' + Date.now(),
-                type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
-                url: downloadURL,
-                processingStatus: 'complete',
-                filename: mediaFileToUpload.name,
-                size: mediaFileToUpload.size,
-                duration: memoryData.mediaAttachments?.[0]?.duration,
-                startTime: memoryData.mediaAttachments?.[0]?.startTime,
-                endTime: memoryData.mediaAttachments?.[0]?.endTime,
-                isTrimmed: memoryData.mediaAttachments?.[0]?.isTrimmed,
-            };
+            try {
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                
+                const currentMediaData = memoryData.mediaAttachments?.[0];
 
-            const finalData = {
-              ...cleanMemoryData,
-              mediaAttachments: [newMediaAttachment],
-              updatedAt: serverTimestamp(),
-            };
-            
-            if (isEditing) {
-              await updateDoc(memoryDocRef, finalData);
-            } else {
-              await setDoc(memoryDocRef, { ...finalData, userId: user.id, createdAt: serverTimestamp() });
+                const newMediaAttachment: MediaAttachment = {
+                    id: currentMediaData?.id || 'media' + Date.now(),
+                    type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
+                    url: downloadURL,
+                    processingStatus: 'complete',
+                    filename: mediaFileToUpload.name,
+                    size: mediaFileToUpload.size,
+                    duration: currentMediaData?.duration,
+                    startTime: currentMediaData?.startTime,
+                    endTime: currentMediaData?.endTime,
+                    isTrimmed: currentMediaData?.isTrimmed,
+                };
+    
+                const finalData = {
+                  ...cleanMemoryData,
+                  mediaAttachments: [newMediaAttachment],
+                  updatedAt: serverTimestamp(),
+                };
+                
+                if (isEditing) {
+                  await updateDoc(memoryDocRef, finalData);
+                } else {
+                  await setDoc(memoryDocRef, { ...finalData, userId: user.id, createdAt: serverTimestamp() });
+                }
+    
+                toast.update(toastId, { title: "Memory Saved!", description: "Your memory and media have been successfully saved.", variant: "success", duration: 5000 });
+                if (cleanMemoryData.promptId) router.push('/prompts'); else router.push('/timeline');
+            } catch (finalSaveError) {
+                console.error("[handleSubmit] Error during final save after upload:", finalSaveError);
+                const errorMessage = finalSaveError instanceof Error ? finalSaveError.message : "An unknown error occurred.";
+                toast.update(toastId, { title: "Failed to Save Memory Data", description: `The media was uploaded, but saving the memory details failed. Error: ${errorMessage}`, variant: "destructive" });
+            } finally {
+                setIsSubmitting(false);
             }
-
-            toast.update(toastId, { title: "Memory Saved!", description: "Your memory and media have been successfully saved.", variant: "success", duration: 5000 });
-            setIsSubmitting(false);
-            if (cleanMemoryData.promptId) router.push('/prompts'); else router.push('/timeline');
           }
         );
 
       } else {
-        // SCENARIO 2: NO NEW MEDIA, JUST METADATA (CREATE OR UPDATE)
         const finalUpdateData = { ...cleanMemoryData, updatedAt: serverTimestamp() };
         
         if (isEditing) {
@@ -165,14 +171,14 @@ function AddMemoryPageComponent() {
             toast({ title: "Memory Saved!", variant: "success" });
         }
 
-        setIsSubmitting(false);
         if (cleanMemoryData.promptId) router.push('/prompts'); else router.push('/timeline');
+        setIsSubmitting(false);
       }
 
     } catch (error) {
-      console.error("[handleSubmit] Error saving memory:", error);
+      console.error("[handleSubmit] Error preparing to save memory:", error);
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-      toast({ title: "Failed to Save Memory", description: `An error occurred: ${errorMessage}`, variant: "destructive" });
+      toast({ title: "Failed to Save Memory", description: `An unexpected error occurred: ${errorMessage}`, variant: "destructive" });
       setIsSubmitting(false);
     }
   };
