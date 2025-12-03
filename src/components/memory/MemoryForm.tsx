@@ -23,12 +23,11 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { countryOptions } from '@/lib/constants';
+import { countryOptions, MAX_RECORDING_DURATION, MAX_UPLOAD_DURATION_SECONDS } from '@/lib/constants';
 import { mockPromptGroups } from '@/lib/mockData';
 import { Slider } from '@/components/ui/slider';
 import dynamic from 'next/dynamic';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { MAX_RECORDING_DURATION } from '@/lib/constants';
 
 
 const MediaCaptureControl = dynamic(
@@ -137,13 +136,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
   const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null);
   const [trimValues, setTrimValues] = useState<[number, number]>([0, 100]);
-  const [isTrimming, setIsTrimming] = useState(false); // Kept for UI state, though no physical trimming
+  const [isTrimming, setIsTrimming] = useState(false);
   const [mediaKey, setMediaKey] = useState(Date.now().toString());
 
   const [isPreparingMedia, setIsPreparingMedia] = useState(false);
 
   useEffect(() => {
+    console.log('[MemoryForm] Initializing form state from props.');
     if (memory) {
+      console.log('[MemoryForm] Editing existing memory, ID:', memory.id);
       setTitle(memory.title || '');
       setLocation(memory.location || '');
       setSelectedCategory(memory.category || memoryCategoriesList[0]);
@@ -163,6 +164,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       setSelectedDay(getInitialDateComponent('day', memory.date));
 
       if (memory.mediaAttachments && memory.mediaAttachments.length > 0 && memory.mediaAttachments[0].url) {
+        console.log('[MemoryForm] Existing media attachment found:', memory.mediaAttachments[0]);
         const firstMedia = memory.mediaAttachments[0];
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
         const size = (typeof firstMedia.size === 'number' && !isNaN(firstMedia.size)) ? firstMedia.size : 0;
@@ -182,9 +184,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         setCurrentMediaPreviewUrl(firstMedia.url);
         setTrimValues([startTime, endTime]);
       } else {
+        console.log('[MemoryForm] No existing media attachment.');
         setCurrentMedia(null); setCurrentMediaPreviewUrl(null);
       }
     } else {
+      console.log('[MemoryForm] Creating new memory.');
       let determinedInitialTitle = '';
       if (initialCustomPromptText) {
         determinedInitialTitle = initialCustomPromptText;
@@ -228,11 +232,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   }, []);
 
   useEffect(() => {
+    console.log(`[MemoryForm] Slide state changed. New slide: ${currentSlide}`);
     currentSlideRef.current = currentSlide;
   }, [currentSlide]);
 
 
   const handleSetCurrentSlide = useCallback((newSlide: number) => {
+      console.log(`[MemoryForm] handleSetCurrentSlide called. Attempting to move from ${currentSlideRef.current} to ${newSlide}`);
       if (newSlide !== currentSlideRef.current) {
           setCurrentSlide(newSlide);
       }
@@ -240,18 +246,20 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
  useEffect(() => {
     if (!carouselApi) return;
+    console.log(`[MemoryForm] Carousel API available. Syncing to slide ${currentSlide}.`);
     carouselApi.scrollTo(currentSlide, true);
     performVisualScroll(currentSlide);
   }, [currentSlide, carouselApi, performVisualScroll]);
 
   useEffect(() => {
     if (!carouselApi) return;
-    const handleApiEvent = () => { if (!carouselApi) return; const newSelectedSnap = carouselApi.selectedScrollSnap(); if (newSelectedSnap !== currentSlideRef.current) { handleSetCurrentSlide(newSelectedSnap); } };
+    console.log('[MemoryForm] Carousel API ready. Attaching listeners.');
+    const handleApiEvent = () => { if (!carouselApi) return; const newSelectedSnap = carouselApi.selectedScrollSnap(); console.log(`[MemoryForm] Carousel 'select' or 'reInit' event. Snap: ${newSelectedSnap}, Current state: ${currentSlideRef.current}`); if (newSelectedSnap !== currentSlideRef.current) { handleSetCurrentSlide(newSelectedSnap); } };
     const initialSnap = carouselApi.selectedScrollSnap();
     if (initialSnap !== currentSlideRef.current) { handleSetCurrentSlide(initialSnap); }
     else { if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current); initialScrollTimerRef.current = setTimeout(() => { if (carouselApi && carouselApi.selectedScrollSnap() === currentSlideRef.current) performVisualScroll(currentSlideRef.current); }, 100); }
     carouselApi.on("select", handleApiEvent); carouselApi.on("reInit", handleApiEvent);
-    return () => { if (carouselApi) { carouselApi.off("select", handleApiEvent); carouselApi.off("reInit", handleApiEvent); } if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current); if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current); };
+    return () => { if (carouselApi) { console.log('[MemoryForm] Cleaning up Carousel API listeners.'); carouselApi.off("select", handleApiEvent); carouselApi.off("reInit", handleApiEvent); } if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current); if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current); };
   }, [carouselApi, performVisualScroll, handleSetCurrentSlide]);
 
   useEffect(() => { if (selectedDay > daysInSelectedMonth) setSelectedDay(daysInSelectedMonth); }, [selectedDay, daysInSelectedMonth]);
@@ -260,16 +268,19 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     const urlToRevoke = currentMediaPreviewUrl;
     return () => {
       if (urlToRevoke && urlToRevoke.startsWith('blob:')) {
+        console.log('[MemoryForm] Revoking blob URL:', urlToRevoke);
         URL.revokeObjectURL(urlToRevoke);
       }
     };
   }, [currentMediaPreviewUrl]);
 
   const handleMediaReady = useCallback((mediaPayload: MediaFromRecorder) => {
+    console.log('[MemoryForm] Received media from recorder:', mediaPayload);
     if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
       URL.revokeObjectURL(currentMediaPreviewUrl);
     }
     const newPreviewUrlFromFile = URL.createObjectURL(mediaPayload.file);
+    console.log('[MemoryForm] Created new blob URL:', newPreviewUrlFromFile);
     setCurrentMedia({
       file: mediaPayload.file,
       type: mediaPayload.type,
@@ -280,8 +291,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       isTrimmed: false,
     });
     setTrimValues([0, mediaPayload.duration]);
-    toast({ title: "Media Ready", description: "You can now preview and set start/end times for your media.", variant: "success" });
+    toast({ title: "Media Ready", description: "You can now preview and define a playback segment for your media.", variant: "success" });
   }, [currentMediaPreviewUrl]);
+
+  const handleMediaDiscard = useCallback(() => {
+    console.log('[MemoryForm] handleMediaDiscard called from child. Resetting media state.');
+    setCurrentMedia(null);
+    setCurrentMediaPreviewUrl(null);
+    setTrimValues([0, 100]); // Reset trim values to default
+  }, []);
 
   const handleEmotionTagToggle = (tag: EmotionTag) => setSelectedEmotionTags(prevTags => prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]);
 
@@ -293,12 +311,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
 
   const triggerSubmitProcess = useCallback(() => {
+    console.log('[MemoryForm] Triggering submit process.');
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
     let mediaFileToUpload: File | undefined = undefined;
 
     if (currentMedia) {
+      console.log('[MemoryForm] Processing current media for submission.');
       const isNewFile = currentMedia.file.size > 0 && currentMedia.file.name !== "existing_media_placeholder";
       if (isNewFile) {
+        console.log('[MemoryForm] New media file will be uploaded:', currentMedia.file);
         mediaFileToUpload = currentMedia.file;
       }
     }
@@ -306,7 +327,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     const finalPromptIdToSave = initialPromptId || memory?.promptId || undefined;
 
     const [startTime, endTime] = trimValues;
-    const hasBeenTrimmed = startTime > 0 || (currentMedia && endTime < currentMedia.duration);
+    const hasBeenTrimmed = currentMedia ? (startTime > 0 || endTime < currentMedia.duration) : false;
 
     const submissionData = {
         title,
@@ -321,19 +342,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         mediaAttachments: currentMedia ? [{
             id: memory?.mediaAttachments?.[0]?.id || 'media' + Date.now(),
             type: currentMedia.type,
-            // These will be updated with the real URL on the server
-            url: memory?.mediaAttachments?.[0]?.url || '', 
+            url: memory?.mediaAttachments?.[0]?.url || '',
             filename: mediaFileToUpload?.name || memory?.mediaAttachments?.[0]?.filename,
             processingStatus: mediaFileToUpload ? 'uploading' : 'complete',
-            // Pass the REAL data from state
             startTime: startTime,
             endTime: endTime,
             duration: currentMedia.duration,
-            size: currentMedia.size,
+            size: mediaFileToUpload?.size ?? currentMedia.size,
             isTrimmed: hasBeenTrimmed,
-        }] : (isEditing ? null : undefined), // null to delete, undefined to leave alone
+        }] : (isEditing ? null : undefined),
     };
 
+    console.log('[MemoryForm] Calling parent onSubmit with data:', submissionData, mediaFileToUpload);
     onSubmit(
       submissionData as Omit<Memory, 'id' | 'userId'>,
       mediaFileToUpload
@@ -351,13 +371,16 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
 
   const handleActionButtonClick = useCallback(() => {
+    console.log(`[MemoryForm] Action button clicked on slide ${currentSlide}.`);
     if (isParentSubmitting || isTrimming || isPreparingMedia) return;
     if (currentSlide === SLIDE_INDEX_DETAILS) {
+      console.log('[MemoryForm] Validating details slide.');
       if (!title.trim()) { toast({ title: "Title Required", variant: "destructive" }); setTimeout(() => titleInputRef.current?.focus(), 100); return; }
       let tempDate = new Date(selectedYear, selectedMonth, 1); tempDate = setDate(tempDate, selectedDay);
       if (!isValid(tempDate) || getYear(tempDate) !== selectedYear || getMonth(tempDate) !== selectedMonth || getDate(tempDate) !== selectedDay) { toast({ title: "Invalid Date", variant: "destructive" }); setTimeout(() => yearSelectRef.current?.focus(), 100); return; }
       if (!description.trim()) { toast({ title: "Description Required", description: "Please provide a description for your memory.", variant: "default" }); setTimeout(() => descriptionTextareaRef.current?.focus(), 100); return; }
       if (!selectedCategory) { toast({ title: "Category Required", description: "Please select a category.", variant: "default" }); return; }
+       console.log('[MemoryForm] Details slide valid. Moving to media slide.');
        handleSetCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
       if (!currentMedia && (!isEditing || !memory?.mediaAttachments?.length)) {
@@ -365,15 +388,18 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         return;
       }
       if (isTrimmedDurationTooLong) {
-        toast({ title: "Media Too Long", description: `Please trim your selection to ${formatSecondsToTime(MAX_RECORDING_DURATION)} or less to continue.`, variant: "destructive" });
+        toast({ title: "Media Too Long", description: `Please shorten your playback selection to ${formatSecondsToTime(MAX_RECORDING_DURATION)} or less.`, variant: "destructive" });
         return;
       }
       if (currentMedia) {
+        console.log('[MemoryForm] Applying trim values to state before moving to preview.');
         setCurrentMedia(prev => prev ? ({ ...prev, startTime: trimValues[0], endTime: trimValues[1] }) : null);
       }
+      console.log('[MemoryForm] Media slide valid. Moving to preview slide.');
       setMediaKey(Date.now().toString());
       handleSetCurrentSlide(SLIDE_INDEX_PREVIEW);
     } else if (currentSlide === SLIDE_INDEX_PREVIEW) {
+      console.log('[MemoryForm] Preview slide action. Triggering submit.');
       triggerSubmitProcess();
     }
   }, [ isParentSubmitting, isTrimming, isPreparingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments, handleSetCurrentSlide, isTrimmedDurationTooLong, trimValues ]);
@@ -415,7 +441,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         startTime: trimValues[0],
         endTime: trimValues[1],
         duration: currentMedia.duration, size: currentMedia.size,
-        isTrimmed: currentMedia.startTime > 0 || trimValues[1] < currentMedia.duration,
+        isTrimmed: currentMedia.isTrimmed || (trimValues[0] > 0 || trimValues[1] < currentMedia.duration),
       }];
     } else if (memory?.mediaAttachments) {
       mediaAttachmentsForPreview = memory.mediaAttachments;
@@ -507,12 +533,13 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             <Card className="w-full">
               <CardHeader>
                 <CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>
-                <CardDescription>Record or upload a video/audio for your memory. You can set the start and end times for playback.</CardDescription>
+                <CardDescription>Record or upload a video/audio. You can define a playback segment of up to {formatSecondsToTime(MAX_RECORDING_DURATION)}.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                   <MediaCaptureControl
                     key={mediaKey}
                     onMediaReady={handleMediaReady}
+                    onMediaDiscard={handleMediaDiscard}
                     onPreparingChange={setIsPreparingMedia}
                     initialMedia={mediaForRecorderProp}
                     promptIdForTeleprompter={currentPromptIdForTeleprompter}
@@ -524,7 +551,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base font-medium flex items-center"><Scissors className="mr-2 h-4 w-4"/>Define Playback Segment</CardTitle>
                             <CardDescription className="text-xs">
-                                Drag the handles to set the start and end points for playback. This will not physically trim the file.
+                                Drag the handles to set the start and end points for playback. The player will loop this selection.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -573,8 +600,8 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       </Carousel>
 
       <div className="max-w-3xl mx-auto flex justify-between items-center pt-4 px-1 sm:px-0">
-        <Button type="button" onClick={() => { if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) handleSetCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) handleSetCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
-        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia || (currentSlide === SLIDE_INDEX_MEDIA && !isNextToPreviewEnabled) || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview) || isTrimmedDurationTooLong}>{isTrimming ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</> : (isParentSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</>)}</Button>
+        <Button type="button" onClick={() => { console.log(`[MemoryForm] Back/Previous button clicked on slide ${currentSlide}.`); if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) handleSetCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) handleSetCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
+        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia || (currentSlide === SLIDE_INDEX_MEDIA && !isNextToPreviewEnabled) || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview) || isTrimmedDurationTooLong}>{isParentSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : isTrimming ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</> : <><ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</>}</Button>
       </div>
     </form>
   );
