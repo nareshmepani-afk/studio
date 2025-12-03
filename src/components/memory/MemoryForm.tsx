@@ -58,6 +58,8 @@ interface MemoryFormProps {
   onSelectedCategoryChange: (value: MemoryCategory | undefined) => void;
   onSelectedEmotionTagsChange: (tags: EmotionTag[]) => void;
   onIsLegacyChange: (value: boolean) => void;
+  years: number[];
+  months: { value: number; label: string }[];
 }
 
 const SLIDE_INDEX_DETAILS = 0;
@@ -88,7 +90,9 @@ export function MemoryForm({
   onLocationChange,
   onCountryChange,
   onSelectedCategoryChange,
-  onSelectedEmotionTagsChange
+  onSelectedEmotionTagsChange,
+  years,
+  months
 }: MemoryFormProps) {
   const { user } = useAuth();
   const router = useRouter();
@@ -145,25 +149,31 @@ export function MemoryForm({
   const isTrimmedDurationTooLong = useMemo(() => trimmedDuration > MAX_RECORDING_DURATION, [trimmedDuration]);
 
   const handleActionButtonClick = useCallback(() => {
+    console.log(`[MemoryForm] Action button clicked on slide ${currentSlide}.`);
     if (isSubmitting || isPreparingMedia) return;
 
     if (currentSlide === SLIDE_INDEX_DETAILS) {
+      console.log("[MemoryForm] Validating details slide.");
       if (!title.trim()) { toast({ title: "Title Required", variant: "destructive" }); return; }
       setCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
+      console.log("[MemoryForm] Validating media slide.");
       if (!currentMedia) { toast({ title: "Media is Required", description: "Please record or upload a video or audio to proceed.", variant: "default" }); return; }
       if (isTrimmedDurationTooLong) { toast({ title: "Media Too Long", description: `Please shorten your playback selection to ${formatSecondsToTime(MAX_RECORDING_DURATION)} or less.`, variant: "destructive" }); return; }
       
       // Update the parent's media state with the final trim values before previewing
       if (currentMedia) {
+        console.log("[MemoryForm] Updating parent media with final trim values:", trimValues);
+        // This is a bit of a hack, assumes file is there for new media. The parent handles the blob URL.
         onNewMediaReady(
-            (currentMedia as any).file, // A bit of a hack, assumes file is there for new media
+            (currentMedia as any).file || new File([], "existing_media"), 
             {...currentMedia, startTime: trimValues[0], endTime: trimValues[1]}
         );
       }
       
       setCurrentSlide(SLIDE_INDEX_PREVIEW);
     } else if (currentSlide === SLIDE_INDEX_PREVIEW) {
+      console.log("[MemoryForm] Triggering submit on final step.");
       triggerSubmitProcess();
     }
   }, [isSubmitting, isPreparingMedia, currentSlide, title, currentMedia, triggerSubmitProcess, isTrimmedDurationTooLong, trimValues, onNewMediaReady]);
@@ -176,8 +186,13 @@ export function MemoryForm({
   
   const handleBack = () => {
     console.log(`[MemoryForm] Back/Previous button clicked on slide ${currentSlide}.`);
-    if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); 
-    else setCurrentSlide(s => s - 1);
+    if (currentSlide === SLIDE_INDEX_DETAILS) {
+        console.log("[MemoryForm] Navigating back from details page.");
+        router.back(); 
+    }
+    else {
+        setCurrentSlide(s => s - 1);
+    }
   };
 
   return (

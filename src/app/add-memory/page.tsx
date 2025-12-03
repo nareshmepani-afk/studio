@@ -13,7 +13,17 @@ import { app } from '@/lib/firebase';
 import { getFirestore, addDoc, doc, updateDoc, getDoc, collection, serverTimestamp, deleteField, setDoc } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { Loader2 } from 'lucide-react';
-import { parseISO, isValid } from 'date-fns';
+import { parseISO, isValid, format, getYear } from 'date-fns';
+import { enGB } from 'date-fns/locale';
+
+// Define date constants here, as they are used by the Select components in this component's render method
+const globalCurrentYear = new Date().getFullYear();
+const years: number[] = Array.from({ length: 101 }, (_, i) => globalCurrentYear - i);
+const months: { value: number; label: string }[] = Array.from({ length: 12 }, (_, i) => ({
+  value: i,
+  label: format(new Date(2000, i, 1), 'MMMM', { locale: enGB }),
+}));
+
 
 function AddMemoryPageComponent() {
   const { user } = useAuth();
@@ -91,6 +101,7 @@ function AddMemoryPageComponent() {
       fetchMemory();
     } else {
         // New memory setup
+        console.log("[AddMemoryPage] useEffect: Setting up for new memory.");
         setIsLoadingMemory(false);
         setTitle(initialCustomPromptText || '');
         // Reset all other fields for a clean form
@@ -174,10 +185,22 @@ function AddMemoryPageComponent() {
           uploadTask.on('state_changed',
             (snapshot) => {
               const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              console.log(`[handleSubmit] Upload progress: ${progress}%`);
               toast.update(toastId, { title: `Uploading Media ${Math.round(progress)}%...`});
             },
-            (error) => { reject(error); },
-            () => { getDownloadURL(uploadTask.snapshot.ref).then(resolve).catch(reject); }
+            (error) => { 
+                console.error("[handleSubmit] Upload failed:", error);
+                reject(error); 
+            },
+            async () => { 
+                try {
+                    const url = await getDownloadURL(uploadTask.snapshot.ref);
+                    resolve(url);
+                } catch(error) {
+                    console.error("[handleSubmit] Failed to get download URL:", error);
+                    reject(error);
+                }
+            }
           );
         });
         
@@ -204,12 +227,12 @@ function AddMemoryPageComponent() {
         userId: user.id,
         createdAt: isEditing ? originalMemory?.createdAt : serverTimestamp(),
         updatedAt: serverTimestamp(),
-        mediaAttachments: mediaHasBeenRemoved ? [] : (finalMediaAttachment ? [finalMediaAttachment] : []),
+        mediaAttachments: mediaHasBeenRemoved ? [] : (finalMediaAttachment ? [finalMediaAttachment] : (isEditing ? originalMemory?.mediaAttachments || [] : [])),
       };
       
       // Special handling for delete field
       const finalUpdateData: { [key: string]: any } = { ...memoryDataForFirestore };
-      if (mediaHasBeenRemoved) {
+      if (mediaHasBeenRemoved && isEditing) {
           finalUpdateData.mediaAttachments = deleteField();
       }
 
@@ -272,6 +295,8 @@ function AddMemoryPageComponent() {
           initialCustomPromptText={initialCustomPromptText}
           onMediaDiscard={handleMediaDiscard}
           onNewMediaReady={handleNewMediaReady}
+          years={years}
+          months={months}
         />
       </div>
     </AuthenticatedPageWrapper>

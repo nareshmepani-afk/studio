@@ -49,7 +49,7 @@ export function MediaCaptureControl({
 }: MediaCaptureControlProps) {
   const { storageQuotaBytes, hostPassStatus } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] useState(false);
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -202,8 +202,8 @@ export function MediaCaptureControl({
             };
         });
 
-        onMediaReady(file, { type, duration, size: file.size, startTime: 0, endTime: duration, isTrimmed: false, url: '', filename: file.name });
-        console.log('[MediaRecorder] processAndFinalizeMedia: Media ready, passed to parent.');
+        onMediaReady(file, { type, duration, size: file.size, startTime: 0, endTime: duration, isTrimmed: false });
+        console.log('[MediaRecorder] processAndFinalizeMedia: Media ready, passed to parent component.');
     } catch(error: any) {
         toast({ title: "Processing Failed", description: error.message || "An unknown error occurred.", variant: "destructive" });
         handleDiscardMedia();
@@ -281,6 +281,7 @@ export function MediaCaptureControl({
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("[MediaRecorder] File upload triggered.");
     if (!checkHostPass()) { event.target.value = ''; return; }
     const file = event.target.files?.[0];
     if (!file) return;
