@@ -56,13 +56,11 @@ function AddMemoryPageComponent() {
     if (editMemoryId && user) {
       const db = getFirestore(app);
       const fetchMemory = async () => {
-        console.log(`[AddMemoryPage] useEffect: Fetching memory with ID: ${editMemoryId}`);
         setIsLoadingMemory(true);
         try {
           const memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
           const docSnap = await getDoc(memoryDocRef);
           if (docSnap.exists()) {
-            console.log("[AddMemoryPage] useEffect: Document found. Populating ALL state in parent.");
             const data = docSnap.data() as Memory;
             setOriginalMemory({ ...data, id: docSnap.id }); // Store original for comparison
 
@@ -76,7 +74,6 @@ function AddMemoryPageComponent() {
             setIsLegacy(data.isLegacy || false);
             
             if (data.mediaAttachments && data.mediaAttachments.length > 0) {
-              console.log('[AddMemoryPage] useEffect: Populating existing media state.', data.mediaAttachments[0]);
               setCurrentMedia(data.mediaAttachments[0]);
             } else {
               setCurrentMedia(null);
@@ -85,23 +82,21 @@ function AddMemoryPageComponent() {
             setMediaHasBeenRemoved(false);
 
           } else {
-            console.error(`[AddMemoryPage] useEffect: Memory with ID ${editMemoryId} not found.`);
+            console.error(`[AddMemoryPage] Memory with ID ${editMemoryId} not found.`);
             toast({ title: "Memory not found", variant: "destructive" });
             router.push('/timeline');
           }
         } catch (error) {
-          console.error("[AddMemoryPage] useEffect: Error fetching memory:", error);
+          console.error("[AddMemoryPage] Error fetching memory:", error);
           toast({ title: "Error loading memory", variant: "destructive" });
           router.push('/timeline');
         } finally {
           setIsLoadingMemory(false);
-          console.log("[AddMemoryPage] useEffect: Finished fetching memory.");
         }
       };
       fetchMemory();
     } else {
         // New memory setup
-        console.log("[AddMemoryPage] useEffect: Setting up for new memory.");
         setIsLoadingMemory(false);
         setTitle(initialCustomPromptText || '');
         // Reset all other fields for a clean form
@@ -120,14 +115,12 @@ function AddMemoryPageComponent() {
   }, [editMemoryId, user, router, initialCustomPromptText]);
 
   const handleMediaDiscard = useCallback(() => {
-    console.log("[AddMemoryPage] handleMediaDiscard: User discarded media. Updating parent state.");
     setCurrentMedia(null);
     setMediaFileToUpload(null);
     setMediaHasBeenRemoved(true); // Flag that media was explicitly removed
   }, []);
 
   const handleNewMediaReady = useCallback((newFile: File, mediaData: Omit<MediaAttachment, 'id' | 'url'>) => {
-      console.log("[AddMemoryPage] handleNewMediaReady: New media is ready. Updating parent state.");
       setCurrentMedia({ ...mediaData, url: URL.createObjectURL(newFile) });
       setMediaFileToUpload(newFile);
       setMediaHasBeenRemoved(false); // New media is present, so it hasn't been "removed"
@@ -137,11 +130,9 @@ function AddMemoryPageComponent() {
   const handleSubmit = async () => {
     if (!user) {
       toast({ title: "Authentication Error", variant: "destructive" });
-      console.error("[handleSubmit] User not authenticated.");
       return;
     }
     setIsSubmitting(true);
-    console.log("[handleSubmit] Starting submission process...");
     const db = getFirestore(app);
     const storage = getStorage(app);
 
@@ -151,21 +142,17 @@ function AddMemoryPageComponent() {
         ? doc(db, 'users', user.id, 'memories', editMemoryId!)
         : doc(collection(db, 'users', user.id, 'memories'));
       
-      console.log(`[handleSubmit] Mode: ${isEditing ? 'Editing' : 'Creating'}. Doc ID: ${memoryDocRef.id}`);
-
       let finalMediaAttachment: Omit<MediaAttachment, 'id'> | null | undefined = currentMedia;
       
       // Handle Deletion of Old Media if a new file is uploaded or media was removed
       const oldMediaUrl = originalMemory?.mediaAttachments?.[0]?.url;
       if (isEditing && oldMediaUrl && (mediaFileToUpload || mediaHasBeenRemoved)) {
-          console.log("[handleSubmit] A new file is being uploaded or media was removed. Deleting old media from Storage:", oldMediaUrl);
           try {
               const oldFileRef = storageRef(storage, oldMediaUrl);
               await deleteObject(oldFileRef);
-              console.log("[handleSubmit] Successfully deleted old media from Storage.");
           } catch (deleteError: any) {
               if (deleteError.code === 'storage/object-not-found') {
-                  console.warn("[handleSubmit] Old media file not found in Storage, but proceeding anyway.");
+                  console.warn("[AddMemoryPage] Old media file not found in Storage, but proceeding anyway.");
               } else {
                   throw deleteError; // Rethrow other deletion errors
               }
@@ -174,7 +161,6 @@ function AddMemoryPageComponent() {
 
       // Handle Upload of New Media
       if (mediaFileToUpload && currentMedia) {
-        console.log("[handleSubmit] New media file detected. Starting upload process.", { name: mediaFileToUpload.name, size: mediaFileToUpload.size });
         const filePath = `memories/${user.id}/${memoryDocRef.id}-${mediaFileToUpload.name}`;
         const fileRef = storageRef(storage, filePath);
         const uploadTask = uploadBytesResumable(fileRef, mediaFileToUpload);
@@ -185,11 +171,9 @@ function AddMemoryPageComponent() {
           uploadTask.on('state_changed',
             (snapshot) => {
               const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              console.log(`[handleSubmit] Upload progress: ${progress}%`);
               toast.update(toastId, { title: `Uploading Media ${Math.round(progress)}%...`});
             },
             (error) => { 
-                console.error("[handleSubmit] Upload failed:", error);
                 reject(error); 
             },
             async () => { 
@@ -197,14 +181,12 @@ function AddMemoryPageComponent() {
                     const url = await getDownloadURL(uploadTask.snapshot.ref);
                     resolve(url);
                 } catch(error) {
-                    console.error("[handleSubmit] Failed to get download URL:", error);
                     reject(error);
                 }
             }
           );
         });
         
-        console.log("[handleSubmit] Upload complete. Download URL obtained:", downloadURL);
         finalMediaAttachment = {
           ...currentMedia,
           url: downloadURL,
@@ -236,8 +218,6 @@ function AddMemoryPageComponent() {
           finalUpdateData.mediaAttachments = deleteField();
       }
 
-      console.log("[handleSubmit] Data prepared for Firestore:", finalUpdateData);
-
       if (isEditing) {
           await updateDoc(memoryDocRef, finalUpdateData);
           toast({ title: "Memory Updated!", variant: "success" });
@@ -246,15 +226,13 @@ function AddMemoryPageComponent() {
           toast({ title: "Memory Saved!", variant: "success" });
       }
 
-      console.log("[handleSubmit] Submission process successful. Navigating away.");
       if (finalUpdateData.promptId) router.push('/prompts'); else router.push('/timeline');
 
     } catch (error) {
-      console.error("[handleSubmit] An error occurred during the save process:", error);
+      console.error("[AddMemoryPage] An error occurred during the save process:", error);
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
       toast({ title: "Failed to Save Memory", description: `An unexpected error occurred: ${errorMessage}`, variant: "destructive" });
     } finally {
-      console.log("[handleSubmit] Unlocking UI, setting isSubmitting to false.");
       setIsSubmitting(false);
     }
   };
@@ -317,3 +295,5 @@ export default function AddMemoryPage() {
     );
 }
 
+
+    
