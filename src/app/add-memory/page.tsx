@@ -70,14 +70,15 @@ function AddMemoryPageComponent() {
     setIsSubmitting(true);
     const db = getFirestore(app);
 
-    // Clean data: remove undefined and convert empty strings to deleteField()
+    // Clean data: remove undefined properties before saving to Firestore
     const cleanMemoryData: { [key: string]: any } = {};
     Object.entries(memoryData).forEach(([key, value]) => {
       if (value !== undefined) {
         cleanMemoryData[key] = value;
       }
     });
-    Object.keys(cleanMemoryData).forEach(key => {
+     // Handle empty strings by converting them to a delete field operation
+     Object.keys(cleanMemoryData).forEach(key => {
         if (cleanMemoryData[key] === '') {
             cleanMemoryData[key] = deleteField();
         }
@@ -121,7 +122,6 @@ function AddMemoryPageComponent() {
           async () => {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
             
-            // CORRECTED: Build the metadata object from the source of truth, `memoryData`.
             const newMediaAttachment: MediaAttachment = {
                 id: memoryData.mediaAttachments?.[0]?.id || 'media' + Date.now(),
                 type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
