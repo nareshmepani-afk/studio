@@ -10,7 +10,7 @@ import type { Memory, MediaAttachment, EmotionTag, MemoryCategory } from '@/type
 import { toast } from '@/hooks/use-toast';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
-import { parseISO, isValid, format } from 'date-fns';
+import { parseISO, isValid, format, getYear, getMonth, getDate } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { saveMemory } from '@/actions/memoryActions';
 import { app } from '@/lib/firebase';
