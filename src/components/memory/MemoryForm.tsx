@@ -171,7 +171,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     setMediaType(mediaData.type);
     setMediaDuration(mediaData.duration);
     setTrimValues([0, mediaData.duration]);
-    setCurrentSlide(SLIDE_INDEX_PREVIEW);
+    setCurrentSlide(SLIDE_INDEX_MEDIA); // Go to trim step
   }, [mediaPreviewUrl]);
 
   const triggerSubmitProcess = useCallback(() => {
