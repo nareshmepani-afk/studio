@@ -13,7 +13,7 @@ import { app } from '@/lib/firebase';
 import { getFirestore, addDoc, doc, updateDoc, getDoc, collection, serverTimestamp, deleteField, setDoc } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { Loader2 } from 'lucide-react';
-import { parseISO, isValid, format, getYear } from 'date-fns';
+import { parseISO, isValid, format, getYear, getMonth, getDate } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 
 // Define date constants here, as they are used by the Select components in this component's render method
@@ -322,4 +322,3 @@ export default function AddMemoryPage() {
         </Suspense>
     );
 }
-
