@@ -1,26 +1,34 @@
 
 "use client";
 
-import { Suspense, useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
-import { MemoryForm } from '@/components/memory/MemoryForm';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
-import type { Memory, MediaAttachment, EmotionTag, MemoryCategory } from '@/types';
+import type { Memory, MediaAttachment } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import { parseISO, isValid, format, getYear, getMonth, getDate } from 'date-fns';
-import { enGB } from 'date-fns/locale';
 import { saveMemory } from '@/actions/memoryActions';
 import { app } from '@/lib/firebase';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const globalCurrentYear = new Date().getFullYear();
-const years: number[] = Array.from({ length: 101 }, (_, i) => globalCurrentYear - i);
-const months: { value: number; label: string }[] = Array.from({ length: 12 }, (_, i) => ({
-  value: i,
-  label: format(new Date(2000, i, 1), 'MMMM', { locale: enGB }),
-}));
+const MemoryForm = dynamic(() => import('@/components/memory/MemoryForm').then(mod => mod.MemoryForm), {
+  ssr: false,
+  loading: () => (
+      <div className="w-full max-w-3xl mx-auto space-y-6">
+        <Skeleton className="h-48 w-full rounded-lg" />
+        <Skeleton className="h-12 w-full rounded-lg" />
+        <Skeleton className="h-24 w-full rounded-lg" />
+        <div className="flex justify-between">
+            <Skeleton className="h-10 w-24 rounded-lg" />
+            <Skeleton className="h-10 w-24 rounded-lg" />
+        </div>
+      </div>
+  )
+});
 
 function AddMemoryPageComponent() {
   const { user } = useAuth();
@@ -31,22 +39,9 @@ function AddMemoryPageComponent() {
   const initialPromptId = searchParams.get('promptId') || undefined;
   const initialCustomPromptText = searchParams.get('prompt') || undefined;
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [memoryToEdit, setMemoryToEdit] = useState<Memory | null>(null);
   const [isLoadingMemory, setIsLoadingMemory] = useState(true);
   
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [memoryDate, setMemoryDate] = useState<Date>(new Date());
-  const [location, setLocation] = useState('');
-  const [country, setCountry] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<MemoryCategory | undefined>(undefined);
-  const [selectedEmotionTags, setSelectedEmotionTags] = useState<EmotionTag[]>([]);
-  const [isLegacy, setIsLegacy] = useState(false);
-
-  const [currentMedia, setCurrentMedia] = useState<Omit<MediaAttachment, 'id'> | null>(null);
-  const [mediaFileToUpload, setMediaFileToUpload] = useState<File | null>(null);
-  const [mediaHasBeenRemoved, setMediaHasBeenRemoved] = useState(false);
-
   useEffect(() => {
     if (editMemoryId && user) {
       const db = getFirestore(app);
@@ -57,21 +52,11 @@ function AddMemoryPageComponent() {
           const docSnap = await getDoc(memoryDocRef);
           if (docSnap.exists()) {
             const data = docSnap.data() as Memory;
-            setTitle(data.title || '');
-            setDescription(data.description || '');
-            setMemoryDate(data.date && isValid(parseISO(data.date)) ? parseISO(data.date) : new Date());
-            setLocation(data.location || '');
-            setCountry(data.country || '');
-            setSelectedCategory(data.category);
-            setSelectedEmotionTags(data.emotionTags || []);
-            setIsLegacy(data.isLegacy || false);
-            if (data.mediaAttachments && data.mediaAttachments.length > 0) {
-              setCurrentMedia(data.mediaAttachments[0]);
-            } else {
-              setCurrentMedia(null);
-            }
-            setMediaFileToUpload(null);
-            setMediaHasBeenRemoved(false);
+            setMemoryToEdit({
+              ...data,
+              id: docSnap.id,
+              date: data.date && isValid(parseISO(data.date)) ? parseISO(data.date).toISOString() : new Date().toISOString(),
+            });
           } else {
             toast({ title: "Memory not found", variant: "destructive" });
             router.push('/timeline');
@@ -85,59 +70,27 @@ function AddMemoryPageComponent() {
       fetchMemory();
     } else {
         setIsLoadingMemory(false);
-        setTitle(initialCustomPromptText || '');
-        setDescription('');
-        setMemoryDate(new Date());
-        setLocation('');
-        setCountry('');
-        setSelectedCategory(undefined);
-        setSelectedEmotionTags([]);
-        setIsLegacy(false);
-        setCurrentMedia(null);
-        setMediaFileToUpload(null);
-        setMediaHasBeenRemoved(false);
     }
-  }, [editMemoryId, user, router, initialCustomPromptText]);
+  }, [editMemoryId, user, router]);
 
-  const handleMediaDiscard = useCallback(() => {
-    setCurrentMedia(null);
-    setMediaFileToUpload(null);
-    setMediaHasBeenRemoved(true);
-  }, []);
-
-  const handleNewMediaReady = useCallback((newFile: File, mediaData: Omit<MediaAttachment, 'id' | 'url'>) => {
-      setCurrentMedia({ ...mediaData, url: URL.createObjectURL(newFile) });
-      setMediaFileToUpload(newFile);
-      setMediaHasBeenRemoved(false);
-  }, []);
-
-  const handleSubmit = async () => {
+  const handleSubmit = async (
+      memoryData: Omit<Memory, 'id' | 'userId'> & { promptId?: string },
+      mediaFileToUpload?: File | undefined
+    ) => {
     if (!user) {
       toast({ title: "Authentication Error", variant: "destructive" });
       return;
     }
-    setIsSubmitting(true);
 
     const formData = new FormData();
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('date', memoryDate.toISOString());
-    formData.append('location', location);
-    formData.append('country', country);
-    if(selectedCategory) formData.append('category', JSON.stringify(selectedCategory));
-    formData.append('emotionTags', JSON.stringify(selectedEmotionTags));
-    formData.append('isLegacy', JSON.stringify(isLegacy));
-    if(initialPromptId) formData.append('promptId', initialPromptId);
+    Object.entries(memoryData).forEach(([key, value]) => {
+        if (value !== undefined) {
+             formData.append(key, JSON.stringify(value));
+        }
+    });
     
-    formData.append('mediaHasBeenRemoved', JSON.stringify(mediaHasBeenRemoved));
-
     if (mediaFileToUpload) {
         formData.append('mediaFile', mediaFileToUpload);
-        if (currentMedia?.duration) {
-            formData.append('mediaDuration', JSON.stringify(currentMedia.duration));
-        }
-    } else if (currentMedia && !mediaHasBeenRemoved) {
-        formData.append('currentMedia', JSON.stringify(currentMedia));
     }
     
     const result = await saveMemory(formData, user.id, editMemoryId);
@@ -152,8 +105,6 @@ function AddMemoryPageComponent() {
     } else {
       toast({ title: "Failed to Save Memory", description: result.message, variant: "destructive" });
     }
-
-    setIsSubmitting(false);
   };
   
   if (isLoadingMemory) {
@@ -167,40 +118,14 @@ function AddMemoryPageComponent() {
       );
   }
 
-  const formState = {
-    title,
-    description,
-    memoryDate,
-    location,
-    country,
-    selectedCategory,
-    selectedEmotionTags,
-    isLegacy,
-    currentMedia,
-  };
-
   return (
     <AuthenticatedPageWrapper>
       <div className="container mx-auto py-8 px-4">
         <MemoryForm
-          formState={formState}
-          isEditing={!!editMemoryId}
+          memory={memoryToEdit || undefined}
           onSubmit={handleSubmit}
-          isSubmitting={isSubmitting}
           initialPromptId={initialPromptId}
           initialCustomPromptText={initialCustomPromptText}
-          onMediaDiscard={handleMediaDiscard}
-          onNewMediaReady={handleNewMediaReady}
-          onTitleChange={setTitle}
-          onDescriptionChange={setDescription}
-          onMemoryDateChange={setMemoryDate}
-          onLocationChange={setLocation}
-          onCountryChange={setCountry}
-          onSelectedCategoryChange={setSelectedCategory}
-          onSelectedEmotionTagsChange={setSelectedEmotionTags}
-          onIsLegacyChange={setIsLegacy}
-          years={years}
-          months={months}
         />
       </div>
     </AuthenticatedPageWrapper>

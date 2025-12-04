@@ -17,7 +17,7 @@ import { mockPromptGroups } from '@/lib/mockData';
 import { MAX_RECORDING_HARD_LIMIT, MAX_UPLOAD_DURATION_SECONDS } from '@/lib/constants';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import type { MediaAttachment } from '@/types';
-
+import { useMediaTrimmer } from '@/hooks/use-media-trimmer';
 
 function formatSecondsToTime(timeInSeconds: number | undefined): string {
   if (timeInSeconds === undefined || isNaN(timeInSeconds) || timeInSeconds < 0) return "0:00";
@@ -28,8 +28,7 @@ function formatSecondsToTime(timeInSeconds: number | undefined): string {
 }
 
 interface MediaCaptureControlProps {
-  onMediaReady: (file: File, mediaData: Omit<MediaAttachment, 'id' | 'url'>) => void;
-  onMediaDiscard: () => void;
+  onMediaReady: (mediaData: { file: File; type: 'video' | 'audio'; duration: number; size: number }) => void;
   onPreparingChange: (isPreparing: boolean) => void;
   initialMedia?: {
     type: 'video' | 'audio';
@@ -39,21 +38,23 @@ interface MediaCaptureControlProps {
   };
   promptIdForTeleprompter?: string;
   chapterTitleForTeleprompter?: string;
+  trimValues: [number, number];
 }
 
 export function MediaCaptureControl({
   onMediaReady,
-  onMediaDiscard,
   onPreparingChange,
   initialMedia,
   promptIdForTeleprompter,
-  chapterTitleForTeleprompter
+  chapterTitleForTeleprompter,
+  trimValues,
 }: MediaCaptureControlProps) {
   const { storageQuotaBytes, hostPassStatus } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const { trim, isTrimming, isProcessing: isTrimmerProcessing } = useMediaTrimmer();
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const mediaRecorderRef = useRef<globalThis.MediaRecorder | null>(null);
@@ -68,7 +69,6 @@ export function MediaCaptureControl({
   const [currentRecordingDuration, setCurrentRecordingDuration] = useState(0);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // For audio visualization
   const [audioData, setAudioData] = useState<Uint8Array | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -77,6 +77,10 @@ export function MediaCaptureControl({
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
 
   const canRecordOrUpload = hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
+
+  useEffect(() => {
+    onPreparingChange(isTrimming || isTrimmerProcessing);
+  }, [isTrimming, isTrimmerProcessing, onPreparingChange]);
 
   const cleanupStream = useCallback(() => {
     if (animationFrameRef.current) {
@@ -173,58 +177,53 @@ export function MediaCaptureControl({
     setCurrentTeleprompterScript(null);
     if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
     if (hardLimitTimeoutRef.current) clearTimeout(hardLimitTimeoutRef.current);
-    // Cleanup for audio viz is in onstop handler of MediaRecorder
   }, []);
-
+  
   const handleDiscardMedia = useCallback(() => {
     if (isRecording) handleStopRecording();
     revokeCurrentPreviewUrl();
     setPreviewUrl(null);
     setMediaType(null);
     setCurrentTeleprompterScript(null);
-    onMediaDiscard();
     toast({ title: "Media Discarded" });
-  }, [isRecording, revokeCurrentPreviewUrl, handleStopRecording, onMediaDiscard]);
+  }, [isRecording, revokeCurrentPreviewUrl, handleStopRecording]);
+
 
   const processAndFinalizeMedia = useCallback(async (blob: Blob, type: 'video' | 'audio', fileName: string) => {
-    setIsProcessing(true);
     onPreparingChange(true);
 
     if (!checkStorageQuota(blob.size)) {
       handleDiscardMedia();
-      setIsProcessing(false);
       onPreparingChange(false);
       return;
     }
-
+    
     const file = new File([blob], fileName, { type: blob.type });
-    const objectUrlForDurationCheck = URL.createObjectURL(blob);
 
     try {
         const duration = await new Promise<number>((resolve, reject) => {
             const mediaElement = document.createElement(type);
-            mediaElement.src = objectUrlForDurationCheck;
+            mediaElement.src = URL.createObjectURL(file);
             mediaElement.onloadedmetadata = () => {
-                URL.revokeObjectURL(objectUrlForDurationCheck);
-                if (mediaElement.duration > MAX_UPLOAD_DURATION_SECONDS) {
+                URL.revokeObjectURL(mediaElement.src);
+                 if (mediaElement.duration > MAX_UPLOAD_DURATION_SECONDS) {
                      reject(new Error(`Uploaded file is too long. Max duration is ${formatSecondsToTime(MAX_UPLOAD_DURATION_SECONDS)}.`));
                      return;
                 }
                 resolve(mediaElement.duration);
             };
             mediaElement.onerror = (e) => {
-                URL.revokeObjectURL(objectUrlForDurationCheck);
+                URL.revokeObjectURL(mediaElement.src);
                 console.error('[MediaRecorder] Error loading media metadata', e);
                 reject(new Error("Could not read the media file to determine its duration."));
             };
         });
 
-        onMediaReady(file, { type, duration, size: file.size, startTime: 0, endTime: duration, isTrimmed: false });
+        onMediaReady({ file, type, duration, size: file.size });
     } catch(error: any) {
         toast({ title: "Processing Failed", description: error.message || "An unknown error occurred.", variant: "destructive" });
         handleDiscardMedia();
     } finally {
-        setIsProcessing(false);
         onPreparingChange(false);
     }
   }, [checkStorageQuota, onMediaReady, handleDiscardMedia, onPreparingChange]);
@@ -334,14 +333,31 @@ export function MediaCaptureControl({
       if (hardLimitTimeoutRef.current) clearTimeout(hardLimitTimeoutRef.current);
     };
   }, [cleanupStream]);
+  
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video && trimValues) {
+        const [start, end] = trimValues;
+        const handleTimeUpdate = () => {
+            if (video.currentTime > end) {
+                video.pause();
+                video.currentTime = start;
+            }
+        };
+        video.addEventListener('timeupdate', handleTimeUpdate);
+        return () => video.removeEventListener('timeupdate', handleTimeUpdate);
+    }
+  }, [previewUrl, trimValues]);
 
+  const isProcessing = isTrimmerProcessing || isTrimming;
+  
   if (isProcessing) {
       return (
         <Card>
             <CardHeader><CardTitle className="font-headline text-lg">Processing Media</CardTitle></CardHeader>
             <CardContent className="flex flex-col items-center justify-center p-8 space-y-4">
                 <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                <p className="text-sm text-muted-foreground">Preparing your file for preview...</p>
+                <p className="text-sm text-muted-foreground">{isTrimming ? 'Trimming your media...' : 'Preparing your file...'}</p>
             </CardContent>
         </Card>
       )
@@ -452,5 +468,3 @@ export function MediaCaptureControl({
     </Card>
   );
 }
-
-    
