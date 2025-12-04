@@ -185,7 +185,7 @@ export function MemoryForm({
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-6" noValidate>
-      <Carousel setApi={setCarouselApi} opts={{ align: "start", loop: false, draggable: false }} className="w-full max-w-3xl mx-auto py-4">
+      <Carousel setApi={setCarouselApi} opts={{ align: "start", loop: false }} className="w-full max-w-3xl mx-auto py-4">
         <CarouselContent>
           <CarouselItem>
             <Card className="w-full">
@@ -208,7 +208,7 @@ export function MemoryForm({
                     onMediaReady={onNewMediaReady} 
                     onMediaDiscard={onMediaDiscard} 
                     onPreparingChange={setIsPreparingMedia} 
-                    initialMedia={currentMedia ? { type: currentMedia.type, previewUrl: currentMedia.url, duration: currentMedia.duration, size: currentMedia.size } : undefined} 
+                    initialMedia={currentMedia ? { type: currentMedia.type, previewUrl: currentMedia.url, duration: currentMedia.duration ?? 0, size: currentMedia.size ?? 0 } : undefined} 
                     promptIdForTeleprompter={initialPromptId} 
                     chapterTitleForTeleprompter={title} 
                   />
