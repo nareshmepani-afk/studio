@@ -5,7 +5,7 @@ import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
-import type { Memory, MediaAttachment } from '@/types';
+import type { Memory } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
