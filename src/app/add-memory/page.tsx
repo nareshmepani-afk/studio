@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -9,7 +9,7 @@ import type { Memory } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
-import { parseISO, isValid, format, getYear, getMonth, getDate } from 'date-fns';
+import { parseISO, isValid } from 'date-fns';
 import { saveMemory } from '@/actions/memoryActions';
 import { app } from '@/lib/firebase';
 import dynamic from 'next/dynamic';
@@ -87,19 +87,13 @@ function AddMemoryPageComponent() {
     }
 
     const formData = new FormData();
-    // Use a server action that handles FormData properly.
-    // Instead of stringifying, we'll send raw values and the file.
-    // The server action 'saveMemory' will need to be adapted for this.
-
-    // A more robust way to handle complex objects with FormData is to stringify non-file data.
     Object.entries(memoryData).forEach(([key, value]) => {
-        if (value !== undefined && key !== 'mediaFile') { // Ensure mediaFile isn't stringified
+        if (value !== undefined && key !== 'mediaFile') { 
              formData.append(key, JSON.stringify(value));
         }
     });
     
     if (mediaFileToUpload) {
-        // The file from the trimmer is now correctly appended.
         formData.append('mediaFile', mediaFileToUpload);
     }
     

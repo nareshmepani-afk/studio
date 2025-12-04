@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { MemoryCard } from './MemoryCard';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -48,6 +48,23 @@ interface MemoryFormProps {
   initialCustomPromptText?: string; 
 }
 
+type MediaFromRecorder = {
+  file: File;
+  type: 'video' | 'audio';
+  duration: number; 
+  size: number;
+};
+
+type CurrentMediaData = {
+  file: File; 
+  type: 'video' | 'audio';
+  startTime: number;
+  endTime: number;
+  duration: number; 
+  size: number;
+  isTrimmed: boolean;
+};
+
 const globalCurrentYear = new Date().getFullYear();
 const years: number[] = Array.from({ length: 101 }, (_, i) => globalCurrentYear - i);
 const months: { value: number; label: string }[] = Array.from({ length: 12 }, (_, i) => ({
@@ -70,14 +87,38 @@ function formatSecondsToTime(timeInSeconds: number | undefined): string {
 
 
 export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting, initialPromptId, initialCustomPromptText }: MemoryFormProps) {
-  const { user } = useAuth();
+  const { user, hostPassStatus } = useAuth();
   const router = useRouter();
   const isEditing = !!memory;
+
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const yearSelectRef = useRef<HTMLButtonElement>(null); 
+
+  const step1AnchorRef = useRef<HTMLDivElement>(null);
+  const step2AnchorRef = useRef<HTMLDivElement>(null);
+  const step3AnchorRef = useRef<HTMLDivElement>(null);
+
+  const visualScrollTimerRef = useRef<NodeJS.Timeout | null>();
+  const initialScrollTimerRef = useRef<NodeJS.Timeout | null>();
 
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
   const [country, setCountry] = useState('United Kingdom');
   const [selectedCategory, setSelectedCategory] = useState<MemoryCategory | undefined>(memoryCategoriesList[0]);
+
+  const getInitialDateComponent = useCallback((component: 'year' | 'month' | 'day', dateSource?: string) => {
+    const dateToParse = dateSource ? parseISO(dateSource) : new Date();
+    if (isValid(dateToParse)) {
+      if (component === 'year') return getYear(dateToParse);
+      if (component === 'month') return getMonth(dateToParse);
+      if (component === 'day') return getDate(dateToParse);
+    }
+    const today = new Date();
+    if (component === 'year') return getYear(today);
+    if (component === 'month') return getMonth(today);
+    return getDate(today);
+  }, []);
 
   const [selectedYear, setSelectedYear] = useState<number>(globalCurrentYear);
   const [selectedMonth, setSelectedMonth] = useState<number>(getMonth(new Date()));
@@ -88,14 +129,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
 
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(SLIDE_INDEX_DETAILS);
+  const currentSlideRef = useRef(currentSlide);
 
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [mediaPreviewUrl, setMediaPreviewUrl] = useState<string | null>(null); 
-  const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(null);
-  const [mediaDuration, setMediaDuration] = useState(0);
+  const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
+  const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null); 
+  const [trimValues, setTrimValues] = useState<[number, number]>([0, 100]);
+  const [isTrimming, setIsTrimming] = useState(false);
+  const [mediaKey, setMediaKey] = useState(Date.now().toString());
 
-  const [trimValues, setTrimValues] = useState<[number, number]>([0, 0]);
-
+  // New state to prevent race conditions during media start
   const [isPreparingMedia, setIsPreparingMedia] = useState(false);
 
   useEffect(() => {
@@ -103,28 +145,44 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       setTitle(memory.title || '');
       setLocation(memory.location || '');
       setSelectedCategory(memory.category || memoryCategoriesList[0]);
-      setCountry(memory.country || 'United Kingdom');
+
+      let initialCountryValue = 'United Kingdom';
+      if (memory.country) {
+        if (memory.country.toUpperCase() === 'UK') initialCountryValue = 'United Kingdom';
+        else if (memory.country.toUpperCase() === 'USA' || memory.country.toUpperCase() === 'US') initialCountryValue = 'United States';
+        else { const foundOption = countryOptions.find(opt => opt.value.toLowerCase() === memory.country!.toLowerCase()); initialCountryValue = foundOption ? foundOption.value : 'United Kingdom'; }
+      }
+      setCountry(initialCountryValue);
+
       setDescription(memory.description || '');
       setSelectedEmotionTags(memory.emotionTags || []);
-      
-      const memoryDate = memory.date ? parseISO(memory.date) : new Date();
-      if (isValid(memoryDate)) {
-        setSelectedYear(getYear(memoryDate));
-        setSelectedMonth(getMonth(memoryDate));
-        setSelectedDay(getDate(memoryDate));
-      }
+      setSelectedYear(getInitialDateComponent('year', memory.date));
+      setSelectedMonth(getInitialDateComponent('month', memory.date));
+      setSelectedDay(getInitialDateComponent('day', memory.date));
 
-      const initialMedia = memory.mediaAttachments?.[0];
-      if (initialMedia?.url) {
-        setMediaPreviewUrl(initialMedia.url);
-        setMediaType(initialMedia.type);
-        const duration = initialMedia.duration || 0;
-        setMediaDuration(duration);
-        const startTime = initialMedia.startTime || 0;
-        const endTime = initialMedia.endTime || duration;
+      if (memory.mediaAttachments && memory.mediaAttachments.length > 0 && memory.mediaAttachments[0].url) {
+        const firstMedia = memory.mediaAttachments[0];
+        const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
+        const size = (typeof firstMedia.size === 'number' && !isNaN(firstMedia.size)) ? firstMedia.size : 0;
+        
+        const startTime = (typeof firstMedia.startTime === 'number' && !isNaN(firstMedia.startTime)) ? firstMedia.startTime : 0;
+        const endTime = (typeof firstMedia.endTime === 'number' && !isNaN(firstMedia.endTime) && firstMedia.endTime <= duration) ? firstMedia.endTime : duration;
+
+        setCurrentMedia({
+            file: new File([], firstMedia.filename || "existing_media_placeholder", {type: firstMedia.type === 'video' ? 'video/mp4' : 'audio/mp3'}), 
+            type: firstMedia.type,
+            startTime: startTime,
+            endTime: endTime,
+            duration: duration,
+            size: size,
+            isTrimmed: firstMedia.isTrimmed || false,
+        });
+        setCurrentMediaPreviewUrl(firstMedia.url); 
         setTrimValues([startTime, endTime]);
+      } else {
+        setCurrentMedia(null); setCurrentMediaPreviewUrl(null);
       }
-    } else {
+    } else { // New memory
       let determinedInitialTitle = '';
       if (initialCustomPromptText) {
         determinedInitialTitle = initialCustomPromptText;
@@ -133,8 +191,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         determinedInitialTitle = foundPrompt ? foundPrompt.text.en : '';
       }
       setTitle(determinedInitialTitle);
+      setLocation(''); setCountry('United Kingdom'); setDescription(''); setSelectedEmotionTags([]); setSelectedCategory(memoryCategoriesList[0]);
+      setSelectedYear(getInitialDateComponent('year')); setSelectedMonth(getInitialDateComponent('month')); setSelectedDay(getInitialDateComponent('day'));
+      setCurrentMedia(null); setCurrentMediaPreviewUrl(null);
     }
-  }, [memory, initialPromptId, initialCustomPromptText]);
+  }, [memory, initialPromptId, initialCustomPromptText, getInitialDateComponent]);
+
 
   const daysInSelectedMonth = useMemo(() => {
     return getDaysInMonth(new Date(selectedYear, selectedMonth));
@@ -144,149 +206,245 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     return Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1);
   }, [daysInSelectedMonth]);
 
+ const performVisualScroll = useCallback((slideIndex: number) => {
+    if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current);
+    visualScrollTimerRef.current = setTimeout(() => {
+      let targetElementRef: React.RefObject<HTMLDivElement> | null = null;
+      if (slideIndex === SLIDE_INDEX_DETAILS) targetElementRef = step1AnchorRef;
+      else if (slideIndex === SLIDE_INDEX_MEDIA) targetElementRef = step2AnchorRef;
+      else if (slideIndex === SLIDE_INDEX_PREVIEW) targetElementRef = step3AnchorRef;
+
+      if (targetElementRef?.current) {
+        const navbar = document.querySelector('header.sticky') as HTMLElement | null;
+        const navbarHeight = navbar ? navbar.offsetHeight : 0;
+        const elementRect = targetElementRef.current.getBoundingClientRect();
+        const currentScrollY = window.scrollY;
+        const targetScrollY = elementRect.top + currentScrollY - navbarHeight;
+        window.scrollTo({ top: targetScrollY, behavior: 'auto' });
+      }
+    }, 350);
+  }, []);
+
+  useEffect(() => {
+    currentSlideRef.current = currentSlide;
+  }, [currentSlide]);
+
+
+  const handleSetCurrentSlide = useCallback((newSlide: number) => {
+      if (newSlide !== currentSlideRef.current) {
+          setCurrentSlide(newSlide);
+      }
+  }, []);
+
  useEffect(() => {
     if (!carouselApi) return;
     carouselApi.scrollTo(currentSlide, true);
-    carouselApi.on("select", () => setCurrentSlide(carouselApi.selectedScrollSnap()));
-  }, [carouselApi, currentSlide]);
+    performVisualScroll(currentSlide);
+  }, [currentSlide, carouselApi, performVisualScroll]);
+
+  useEffect(() => {
+    if (!carouselApi) return;
+    const handleApiEvent = () => { if (!carouselApi) return; const newSelectedSnap = carouselApi.selectedScrollSnap(); if (newSelectedSnap !== currentSlideRef.current) { handleSetCurrentSlide(newSelectedSnap); } };
+    const initialSnap = carouselApi.selectedScrollSnap();
+    if (initialSnap !== currentSlideRef.current) { handleSetCurrentSlide(initialSnap); }
+    else { if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current); initialScrollTimerRef.current = setTimeout(() => { if (carouselApi && carouselApi.selectedScrollSnap() === currentSlideRef.current) performVisualScroll(currentSlideRef.current); }, 100); }
+    carouselApi.on("select", handleApiEvent); carouselApi.on("reInit", handleApiEvent);
+    return () => { if (carouselApi) { carouselApi.off("select", handleApiEvent); carouselApi.off("reInit", handleApiEvent); } if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current); if (initialScrollTimerRef.current) clearTimeout(initialScrollTimerRef.current); };
+  }, [carouselApi, performVisualScroll, handleSetCurrentSlide]);
 
   useEffect(() => { if (selectedDay > daysInSelectedMonth) setSelectedDay(daysInSelectedMonth); }, [selectedDay, daysInSelectedMonth]);
 
   useEffect(() => {
-    const urlToRevoke = mediaPreviewUrl;
+    const urlToRevoke = currentMediaPreviewUrl;
     return () => {
       if (urlToRevoke && urlToRevoke.startsWith('blob:')) {
         URL.revokeObjectURL(urlToRevoke);
       }
     };
-  }, [mediaPreviewUrl]);
+  }, [currentMediaPreviewUrl]);
 
-  const handleMediaReady = useCallback((mediaData: { file: File; type: 'video' | 'audio'; duration: number; }) => {
-    if (mediaPreviewUrl && mediaPreviewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(mediaPreviewUrl);
+  const handleMediaReady = useCallback((mediaPayload: MediaFromRecorder) => {
+    if (currentMediaPreviewUrl && currentMediaPreviewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(currentMediaPreviewUrl);
     }
-    const newPreviewUrl = URL.createObjectURL(mediaData.file);
-    setMediaFile(mediaData.file);
-    setMediaPreviewUrl(newPreviewUrl);
-    setMediaType(mediaData.type);
-    setMediaDuration(mediaData.duration);
-    setTrimValues([0, mediaData.duration]);
-    setCurrentSlide(SLIDE_INDEX_MEDIA); // Go to trim step
-  }, [mediaPreviewUrl]);
+    const newPreviewUrlFromFile = URL.createObjectURL(mediaPayload.file);
+    setCurrentMedia({ 
+      file: mediaPayload.file,
+      type: mediaPayload.type,
+      startTime: 0,
+      endTime: mediaPayload.duration,
+      duration: mediaPayload.duration,
+      size: mediaPayload.size,
+      isTrimmed: false,
+    });
+    setTrimValues([0, mediaPayload.duration]);
+    setCurrentMediaPreviewUrl(newPreviewUrlFromFile);
+    
+    // Explicitly move to the next slide
+    handleSetCurrentSlide(SLIDE_INDEX_PREVIEW);
+  }, [currentMediaPreviewUrl, handleSetCurrentSlide]);
+
+  const handleEmotionTagToggle = (tag: EmotionTag) => setSelectedEmotionTags(prevTags => prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]);
+  
+  const handleTrimChange = (newValues: [number, number]) => {
+    if (currentMedia) {
+      const [oldStart, oldEnd] = trimValues;
+      const [newStart, newEnd] = newValues;
+
+      if (newStart !== oldStart) {
+        setTrimValues([newStart, Math.max(newStart, oldEnd)]);
+      } else if (newEnd !== oldEnd) {
+        setTrimValues([Math.min(newEnd, oldStart), newEnd]);
+      } else {
+        setTrimValues(newValues);
+      }
+    }
+  };
+
 
   const triggerSubmitProcess = useCallback(() => {
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
-    let mediaAttachments: MediaAttachment[] | undefined = undefined;
+    let mediaFileToUpload: File | undefined = undefined;
 
-    if (mediaType && mediaPreviewUrl) {
-        mediaAttachments = [{
-            id: memory?.mediaAttachments?.[0]?.id || 'new-media-1',
-            type: mediaType,
-            url: mediaPreviewUrl,
-            startTime: trimValues[0],
-            endTime: trimValues[1],
-            duration: mediaDuration,
-            size: mediaFile?.size,
-        }];
+    if (currentMedia) { 
+      const isNewFile = currentMedia.file.size > 0 && currentMedia.file.name !== "existing_media_placeholder";
+      if (isNewFile) {
+        mediaFileToUpload = currentMedia.file;
+      }
     }
     
+    const finalPromptIdToSave = initialPromptId || memory?.promptId || undefined;
     const submissionData = { 
         title, 
         date: finalDate.toISOString(), 
         description, 
         emotionTags: selectedEmotionTags, 
-        mediaAttachments,
-        location, 
-        country, 
+        // mediaAttachments are now handled on the server
+        location: location || undefined, 
+        country: country || undefined, 
         category: selectedCategory, 
-        promptId: initialPromptId || memory?.promptId, 
+        promptId: finalPromptIdToSave, 
         isLegacy: memory?.isLegacy || false 
     };
 
-    onSubmit(submissionData as Omit<Memory, 'id' | 'userId'>, mediaFile || undefined);
-  }, [
-    title, selectedYear, selectedMonth, selectedDay, description, selectedEmotionTags, 
-    mediaType, mediaPreviewUrl, trimValues, mediaDuration, mediaFile, 
-    location, country, selectedCategory, initialPromptId, memory, onSubmit
-  ]);
+    onSubmit(
+      submissionData as Omit<Memory, 'id' | 'userId'>,
+      mediaFileToUpload
+    );
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, location, country, selectedCategory, initialPromptId, selectedEmotionTags]);
 
-  const handleFormSubmit = (event: FormEvent) => { 
-    event.preventDefault();
-    if (currentSlide === SLIDE_INDEX_PREVIEW) {
-        triggerSubmitProcess();
+  const handleActionButtonClick = useCallback(() => {
+    if (isParentSubmitting || isTrimming || isPreparingMedia) return;
+    if (currentSlide === SLIDE_INDEX_DETAILS) {
+      if (!title.trim()) { toast({ title: "Title Required", variant: "destructive" }); setTimeout(() => titleInputRef.current?.focus(), 100); return; }
+      let tempDate = new Date(selectedYear, selectedMonth, 1); tempDate = setDate(tempDate, selectedDay);
+      if (!isValid(tempDate) || getYear(tempDate) !== selectedYear || getMonth(tempDate) !== selectedMonth || getDate(tempDate) !== selectedDay) { toast({ title: "Invalid Date", variant: "destructive" }); setTimeout(() => yearSelectRef.current?.focus(), 100); return; }
+      if (!description.trim()) { toast({ title: "Description Required", description: "Please provide a description for your memory.", variant: "default" }); setTimeout(() => descriptionTextareaRef.current?.focus(), 100); return; }
+      if (!selectedCategory) { toast({ title: "Category Required", description: "Please select a category.", variant: "default" }); return; }
+       handleSetCurrentSlide(SLIDE_INDEX_MEDIA);
+    } else if (currentSlide === SLIDE_INDEX_MEDIA) {
+      if (!currentMedia && (!isEditing || !memory?.mediaAttachments?.length)) {
+        toast({ title: "Media is Required to Proceed", description: "Please record a video or audio first, then you can proceed to the preview step.", variant: "default" });
+        return;
+      }
+      setMediaKey(Date.now().toString()); // Generate a new key before going to preview
+      handleSetCurrentSlide(SLIDE_INDEX_PREVIEW);
+    } else if (currentSlide === SLIDE_INDEX_PREVIEW) {
+      triggerSubmitProcess();
     }
-  };
+  }, [ isParentSubmitting, isTrimming, isPreparingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments, handleSetCurrentSlide ]);
 
+  const handleFormSubmit = (event: FormEvent) => { event.preventDefault(); handleActionButtonClick(); };
+
+  let actionButtonText = 'Next'; let ActionButtonIcon: React.ElementType = ArrowRight;
+  const isNextToPreviewEnabled = !!currentMedia || (isEditing && !!memory?.mediaAttachments?.length);
+
+  if (currentSlide === SLIDE_INDEX_MEDIA) { 
+    actionButtonText = 'Next to Preview'; 
+    ActionButtonIcon = Eye; 
+  }
+  else if (currentSlide === SLIDE_INDEX_PREVIEW) { 
+    actionButtonText = isEditing ? 'Update Memory' : 'Save Memory'; 
+    ActionButtonIcon = Sparkles; 
+  }
+
+  const mediaForRecorderProp =
+    currentMedia && currentMediaPreviewUrl
+      ? {
+          type: currentMedia.type,
+          previewUrl: currentMediaPreviewUrl,
+          duration: currentMedia.duration,
+          size: currentMedia.size,
+        }
+      : undefined;
+  
   const currentPromptIdForTeleprompter = initialPromptId || memory?.promptId;
-  const initialMediaForRecorder = useMemo(() => (
-    (memory?.mediaAttachments?.[0] && !mediaFile) ? {
-      type: memory.mediaAttachments[0].type,
-      previewUrl: memory.mediaAttachments[0].url,
-      duration: memory.mediaAttachments[0].duration || 0,
-      size: memory.mediaAttachments[0].size || 0,
-    } : undefined
-  ), [memory, mediaFile]);
 
   let mockMemoryForPreview: Memory | undefined = undefined;
   if (currentSlide === SLIDE_INDEX_PREVIEW) {
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
     let mediaAttachmentsForPreview: MediaAttachment[] | undefined = undefined;
-    if (mediaType && mediaPreviewUrl) {
+    if (currentMedia && currentMediaPreviewUrl) { 
       mediaAttachmentsForPreview = [{
         id: memory?.mediaAttachments?.[0]?.id || 'preview-media-1',
-        type: mediaType, 
-        url: mediaPreviewUrl, 
-        filename: mediaFile?.name,
+        type: currentMedia.type, url: currentMediaPreviewUrl, filename: currentMedia.file.name,
         startTime: trimValues[0],
         endTime: trimValues[1],
-        duration: mediaDuration, 
-        size: mediaFile?.size,
+        duration: currentMedia.duration, size: currentMedia.size,
+        isTrimmed: currentMedia.isTrimmed,
       }];
+    } else if (memory?.mediaAttachments) {
+      mediaAttachmentsForPreview = memory.mediaAttachments;
     }
 
     mockMemoryForPreview = {
-      id: memory?.id || 'preview-id', 
-      title: title.trim() || "Untitled Chapter", 
-      date: isValid(finalDate) ? finalDate.toISOString() : new Date().toISOString(),
-      description: description.trim() || "No description provided.", 
-      emotionTags: selectedEmotionTags, 
-      mediaAttachments: mediaAttachmentsForPreview,
-      location: location.trim() || undefined, 
-      country: country.trim() || undefined, 
-      category: selectedCategory,
+      id: memory?.id || 'preview-id', title: title.trim() || "Untitled Chapter", date: isValid(finalDate) ? finalDate.toISOString() : new Date().toISOString(),
+      description: description.trim() || "No description provided.", emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForPreview,
+      location: location.trim() || undefined, country: country.trim() || undefined, category: selectedCategory,
       userId: user?.id || 'preview-user-id',
-      promptId: initialPromptId || memory?.promptId, 
-      isLegacy: memory?.isLegacy || false,
+      promptId: initialPromptId || memory?.promptId, isLegacy: memory?.isLegacy || false,
     };
   }
+  
+  const previewKey = `${mockMemoryForPreview?.id}-${mediaKey}`;
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-6" noValidate>
       <Carousel setApi={setCarouselApi} opts={{ align: "start", loop: false, draggable: false }} className="w-full max-w-3xl mx-auto py-4">
         <CarouselContent>
           <CarouselItem>
+            <div ref={step1AnchorRef} />
             <Card className="w-full">
-              <CardHeader><CardTitle className="font-headline text-2xl">{isEditing ? 'Edit Chapter' : 'New Chapter'} (Step {SLIDE_INDEX_DETAILS + 1} of {TOTAL_SLIDES})</CardTitle><CardDescription>Capture the details of your moment. Fields marked with * are mandatory.</CardDescription></CardHeader>
+              <CardHeader><CardTitle className="font-headline text-2xl">{memory ? 'Edit Chapter' : 'New Chapter'} (Step {SLIDE_INDEX_DETAILS + 1} of {TOTAL_SLIDES})</CardTitle><CardDescription>Capture the details of your moment. Fields marked with * are mandatory.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1">
                   <Label htmlFor="title">Title *</Label>
-                  <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" />
+                  <Input ref={titleInputRef} id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="year-select">Date *</Label>
                   <div className="grid grid-cols-3 gap-2">
-                    <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
-                      <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
-                      <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-                      <SelectTrigger><SelectValue placeholder="Month" /></SelectTrigger>
-                      <SelectContent>{months.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <Select value={selectedDay.toString()} onValueChange={(v) => setSelectedDay(parseInt(v))}>
-                      <SelectTrigger><SelectValue placeholder="Day" /></SelectTrigger>
-                      <SelectContent>{dayOptions.map(d => <SelectItem key={d} value={d.toString()}>{d}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <div>
+                      <Label htmlFor="year-select" className="sr-only">Year</Label>
+                      <Select key={`year-${selectedYear.toString()}-${memory?.id || 'new'}`} value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                          <SelectTrigger id="year-select" ref={yearSelectRef}><SelectValue placeholder="Year" /></SelectTrigger>
+                          <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="month-select" className="sr-only">Month</Label>
+                      <Select key={`month-${selectedMonth.toString()}-${memory?.id || 'new'}`} value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
+                        <SelectTrigger id="month-select"><SelectValue placeholder="Month" /></SelectTrigger>
+                        <SelectContent>{months.map(m => <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="day-select" className="sr-only">Day</Label>
+                      <Select key={`day-${selectedDay.toString()}-${memory?.id || 'new'}`} value={selectedDay.toString()} onValueChange={(value) => setSelectedDay(parseInt(value))}>
+                        <SelectTrigger id="day-select"><SelectValue placeholder="Day" /></SelectTrigger>
+                        <SelectContent>{dayOptions.map(d => <SelectItem key={d} value={d.toString()}>{d}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -296,7 +454,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                     </div>
                     <div className="space-y-1">
                         <Label htmlFor="country-select">Country (Optional)</Label>
-                        <Select value={country} onValueChange={setCountry}>
+                        <Select key={`country-${country}-${memory?.id || 'new'}`} value={country} onValueChange={setCountry}>
                             <SelectTrigger id="country-select"><SelectValue placeholder="Select Country" /></SelectTrigger>
                             <SelectContent>{countryOptions.map(option => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}</SelectContent>
                         </Select>
@@ -311,16 +469,17 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="description">Description *</Label>
-                  <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} required/>
+                  <Textarea ref={descriptionTextareaRef} id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your memory..." rows={4} required/>
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="emotion-tags"><Tag className="inline-block mr-1 h-4 w-4" />Emotion Tags (Optional)</Label>
-                  <div id="emotion-tags" className="flex flex-wrap gap-2 pt-1">{emotionTagsList.map((tag) => (<Button type="button" key={tag} variant={selectedEmotionTags.includes(tag) ? 'default' : 'outline'} size="sm" onClick={() => setSelectedEmotionTags(p => p.includes(tag) ? p.filter(t => t !== tag) : [...p, tag])} className="text-xs h-auto py-1 px-2">{tag}</Button>))}</div>
+                  <div id="emotion-tags" className="flex flex-wrap gap-2 pt-1">{emotionTagsList.map((tag) => (<Button type="button" key={tag} variant={selectedEmotionTags.includes(tag) ? 'default' : 'outline'} size="sm" onClick={() => handleEmotionTagToggle(tag)} className="text-xs h-auto py-1 px-2">{tag}</Button>))}</div>
                 </div>
               </CardContent>
             </Card>
           </CarouselItem>
           <CarouselItem>
+            <div ref={step2AnchorRef} />
             <Card className="w-full">
               <CardHeader>
                 <CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle>
@@ -328,14 +487,15 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
               </CardHeader>
               <CardContent className="space-y-4">
                   <MediaCaptureControl
+                    key={mediaKey}
                     onMediaReady={handleMediaReady}
                     onPreparingChange={setIsPreparingMedia}
-                    initialMedia={initialMediaForRecorder}
+                    initialMedia={mediaForRecorderProp}
                     promptIdForTeleprompter={currentPromptIdForTeleprompter}
                     chapterTitleForTeleprompter={title}
                     trimValues={trimValues}
                   />
-                  {(mediaPreviewUrl) && (
+                  {currentMedia && (
                     <Card className="bg-muted/50">
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base font-medium flex items-center"><Scissors className="mr-2 h-4 w-4"/>Trim Media</CardTitle>
@@ -347,11 +507,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
                             <div className="space-y-2">
                                 <Slider
                                     min={0}
-                                    max={mediaDuration}
+                                    max={currentMedia.duration}
                                     step={0.1}
                                     value={trimValues}
-                                    onValueChange={(vals) => setTrimValues(vals as [number, number])}
+                                    onValueChange={(vals) => handleTrimChange(vals as [number, number])}
                                     minStepsBetweenThumbs={1}
+                                    disabled={currentMedia.isTrimmed || isTrimming}
                                 />
                                 <div className="flex justify-between text-xs text-muted-foreground font-mono">
                                     <span>Start: {formatSecondsToTime(trimValues[0])}</span>
@@ -366,11 +527,12 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
             </Card>
           </CarouselItem>
           <CarouselItem>
+            <div ref={step3AnchorRef} />
             <Card className="w-full">
-              <CardHeader><CardTitle className="font-headline text-2xl">{isEditing ? 'Preview Changes' : 'Preview Chapter'} (Step {SLIDE_INDEX_PREVIEW + 1} of {TOTAL_SLIDES})</CardTitle><CardDescription>Review your chapter details and media. Go back to make changes or click '{isEditing ? 'Update Memory' : 'Save Memory'}' to save.</CardDescription></CardHeader>
+              <CardHeader><CardTitle className="font-headline text-2xl">{memory ? 'Preview Changes' : 'New Chapter'} (Step {SLIDE_INDEX_PREVIEW + 1} of {TOTAL_SLIDES})</CardTitle><CardDescription>Review your chapter details and media. Go back to make changes or click '{actionButtonText}' to save.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
-                {mockMemoryForPreview ? (<div className="border p-1 sm:p-2 rounded-lg bg-background shadow-sm"><MemoryCard memory={mockMemoryForPreview} userMode="guest" /></div>)
-                : (<p className="text-muted-foreground text-center py-8">Preparing preview...</p>)}
+                {mockMemoryForPreview && (<div className="border p-1 sm:p-2 rounded-lg bg-background shadow-sm"><MemoryCard key={previewKey} memory={mockMemoryForPreview} userMode="guest" /></div>)}
+                {!mockMemoryForPreview && currentSlide === SLIDE_INDEX_PREVIEW && (<p className="text-muted-foreground text-center py-8">Preparing preview... If this persists, ensure all required fields in previous steps are complete.</p>)}
               </CardContent>
             </Card>
           </CarouselItem>
@@ -378,10 +540,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       </Carousel>
 
       <div className="max-w-3xl mx-auto flex justify-between items-center pt-4 px-1 sm:px-0">
-        <Button type="button" onClick={() => setCurrentSlide(p => p > 0 ? p - 1 : 0)} disabled={isParentSubmitting || isPreparingMedia || currentSlide === 0} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />Previous</Button>
-        {currentSlide < SLIDE_INDEX_PREVIEW && <Button type="button" onClick={() => setCurrentSlide(p => p < TOTAL_SLIDES - 1 ? p + 1 : p)} disabled={isParentSubmitting || isPreparingMedia || (currentSlide === SLIDE_INDEX_MEDIA && !mediaPreviewUrl)}><Eye className="mr-2 h-4 w-4" />Next to Preview</Button>}
-        {currentSlide === SLIDE_INDEX_PREVIEW && <Button type="submit" disabled={isParentSubmitting || isPreparingMedia || !mockMemoryForPreview}>{(isParentSubmitting || isPreparingMedia) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<Sparkles className="mr-2 h-4 w-4" />{isEditing ? 'Update Memory' : 'Save Memory'}</Button>}
+        <Button type="button" onClick={() => { if (currentSlide === SLIDE_INDEX_DETAILS) router.back(); else if (currentSlide === SLIDE_INDEX_MEDIA) handleSetCurrentSlide(SLIDE_INDEX_DETAILS); else if (currentSlide === SLIDE_INDEX_PREVIEW) handleSetCurrentSlide(SLIDE_INDEX_MEDIA);}} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />{currentSlide === SLIDE_INDEX_DETAILS ? 'Back' : 'Previous'}</Button>
+        <Button type="button" onClick={handleActionButtonClick} disabled={!!isParentSubmitting || isTrimming || isPreparingMedia || (currentSlide === SLIDE_INDEX_MEDIA && !isNextToPreviewEnabled) || (currentSlide === SLIDE_INDEX_PREVIEW && !mockMemoryForPreview)}>{(isParentSubmitting || isTrimming || isPreparingMedia) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<ActionButtonIcon className="mr-2 h-4 w-4" />{actionButtonText}</Button>
       </div>
     </form>
   );
 }
+
+    
