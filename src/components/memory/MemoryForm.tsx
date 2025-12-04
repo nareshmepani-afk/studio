@@ -14,7 +14,7 @@ import { MemoryCard } from './MemoryCard';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft, Eye, Layers, Scissors, Timer } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, parseISO, getDate } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import {
@@ -27,6 +27,9 @@ import { countryOptions } from '@/lib/constants';
 import { mockPromptGroups } from '@/lib/mockData';
 import { Slider } from '@/components/ui/slider';
 import dynamic from 'next/dynamic';
+import { saveMemory } from '@/actions/memoryActions';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
 
 
 const MediaCaptureControl = dynamic(
@@ -36,17 +39,6 @@ const MediaCaptureControl = dynamic(
     loading: () => <div className="flex items-center justify-center h-48"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
   }
 );
-
-interface MemoryFormProps {
-  memory?: Memory;
-  onSubmit: (
-    memoryData: Omit<Memory, 'id' | 'userId'> & { promptId?: string },
-    mediaFileToUpload?: File
-  ) => void;
-  isSubmitting?: boolean;
-  initialPromptId?: string; 
-  initialCustomPromptText?: string; 
-}
 
 type MediaFromRecorder = {
   file: File;
@@ -86,10 +78,17 @@ function formatSecondsToTime(timeInSeconds: number | undefined): string {
 }
 
 
-export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting, initialPromptId, initialCustomPromptText }: MemoryFormProps) {
-  const { user, hostPassStatus } = useAuth();
+export function MemoryForm() {
+  const { user } = useAuth();
   const router = useRouter();
-  const isEditing = !!memory;
+  const searchParams = useSearchParams();
+  
+  const editMemoryId = searchParams.get('editMemoryId');
+  const initialPromptId = searchParams.get('promptId') || undefined;
+  const initialCustomPromptText = searchParams.get('prompt') || undefined;
+
+  const [memory, setMemory] = useState<Memory | null>(null);
+  const [isLoadingMemory, setIsLoadingMemory] = useState(true);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -106,6 +105,25 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   const [location, setLocation] = useState('');
   const [country, setCountry] = useState('United Kingdom');
   const [selectedCategory, setSelectedCategory] = useState<MemoryCategory | undefined>(memoryCategoriesList[0]);
+  const [description, setDescription] = useState('');
+  const [selectedEmotionTags, setSelectedEmotionTags] = useState<EmotionTag[]>([]);
+  
+  const [selectedYear, setSelectedYear] = useState<number>(globalCurrentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number>(getMonth(new Date()));
+  const [selectedDay, setSelectedDay] = useState<number>(getDate(new Date()));
+  
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [currentSlide, setCurrentSlide] = useState(SLIDE_INDEX_DETAILS);
+  const currentSlideRef = useRef(currentSlide);
+
+  const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
+  const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null); 
+  const [trimValues, setTrimValues] = useState<[number, number]>([0, 100]);
+  const [isTrimming, setIsTrimming] = useState(false);
+  const [mediaKey, setMediaKey] = useState(Date.now().toString());
+
+  const [isParentSubmitting, setIsParentSubmitting] = useState(false);
+  const [isPreparingMedia, setIsPreparingMedia] = useState(false);
 
   const getInitialDateComponent = useCallback((component: 'year' | 'month' | 'day', dateSource?: string) => {
     const dateToParse = dateSource ? parseISO(dateSource) : new Date();
@@ -120,28 +138,38 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     return getDate(today);
   }, []);
 
-  const [selectedYear, setSelectedYear] = useState<number>(globalCurrentYear);
-  const [selectedMonth, setSelectedMonth] = useState<number>(getMonth(new Date()));
-  const [selectedDay, setSelectedDay] = useState<number>(getDate(new Date()));
-
-  const [description, setDescription] = useState('');
-  const [selectedEmotionTags, setSelectedEmotionTags] = useState<EmotionTag[]>([]);
-
-  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
-  const [currentSlide, setCurrentSlide] = useState(SLIDE_INDEX_DETAILS);
-  const currentSlideRef = useRef(currentSlide);
-
-  const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
-  const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null); 
-  const [trimValues, setTrimValues] = useState<[number, number]>([0, 100]);
-  const [isTrimming, setIsTrimming] = useState(false);
-  const [mediaKey, setMediaKey] = useState(Date.now().toString());
-
-  // New state to prevent race conditions during media start
-  const [isPreparingMedia, setIsPreparingMedia] = useState(false);
+  useEffect(() => {
+    if (editMemoryId && user) {
+      const db = getFirestore(app);
+      const fetchMemory = async () => {
+        setIsLoadingMemory(true);
+        try {
+          const memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
+          const docSnap = await getDoc(memoryDocRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data() as Memory;
+            const validDate = data.date && isValid(parseISO(data.date)) ? parseISO(data.date).toISOString() : new Date().toISOString();
+            const memoryData = { ...data, id: docSnap.id, date: validDate };
+            setMemory(memoryData);
+          } else {
+            toast({ title: "Memory not found", variant: "destructive" });
+            router.push('/timeline');
+          }
+        } catch (error) {
+          console.error("Error loading memory:", error);
+          toast({ title: "Error loading memory", variant: "destructive" });
+        } finally {
+          setIsLoadingMemory(false);
+        }
+      };
+      fetchMemory();
+    } else {
+        setIsLoadingMemory(false);
+    }
+  }, [editMemoryId, user, router]);
 
   useEffect(() => {
-    if (memory) {
+    if (memory) { // Editing
       setTitle(memory.title || '');
       setLocation(memory.location || '');
       setSelectedCategory(memory.category || memoryCategoriesList[0]);
@@ -280,8 +308,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     setTrimValues([0, mediaPayload.duration]);
     setCurrentMediaPreviewUrl(newPreviewUrlFromFile);
     
-    // Explicitly move to the next slide
-    handleSetCurrentSlide(SLIDE_INDEX_PREVIEW);
+    handleSetCurrentSlide(SLIDE_INDEX_MEDIA);
   }, [currentMediaPreviewUrl, handleSetCurrentSlide]);
 
   const handleEmotionTagToggle = (tag: EmotionTag) => setSelectedEmotionTags(prevTags => prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]);
@@ -302,6 +329,42 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
   };
 
 
+  const onSubmitMemory = async (
+    memoryData: Omit<Memory, 'id' | 'userId'> & { promptId?: string },
+    mediaFileToUpload?: File | undefined
+  ) => {
+    if (!user) {
+      toast({ title: "Authentication Error", variant: "destructive" });
+      return;
+    }
+    setIsParentSubmitting(true);
+
+    const formData = new FormData();
+    Object.entries(memoryData).forEach(([key, value]) => {
+        if (value !== undefined && key !== 'mediaFile') { 
+             formData.append(key, JSON.stringify(value));
+        }
+    });
+    
+    if (mediaFileToUpload) {
+        formData.append('mediaFile', mediaFileToUpload);
+    }
+    
+    const result = await saveMemory(formData, user.id, editMemoryId);
+    setIsParentSubmitting(false);
+
+    if (result.success) {
+      toast({ title: result.message, variant: "success" });
+      if (initialPromptId) {
+          router.push('/prompts');
+      } else {
+          router.push('/timeline');
+      }
+    } else {
+      toast({ title: "Failed to Save Memory", description: result.message, variant: "destructive" });
+    }
+  };
+
   const triggerSubmitProcess = useCallback(() => {
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
     let mediaFileToUpload: File | undefined = undefined;
@@ -319,7 +382,6 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         date: finalDate.toISOString(), 
         description, 
         emotionTags: selectedEmotionTags, 
-        // mediaAttachments are now handled on the server
         location: location || undefined, 
         country: country || undefined, 
         category: selectedCategory, 
@@ -327,11 +389,11 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
         isLegacy: memory?.isLegacy || false 
     };
 
-    onSubmit(
+    onSubmitMemory(
       submissionData as Omit<Memory, 'id' | 'userId'>,
       mediaFileToUpload
     );
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, onSubmit, location, country, selectedCategory, initialPromptId, selectedEmotionTags]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, location, country, selectedCategory, initialPromptId, selectedEmotionTags]);
 
   const handleActionButtonClick = useCallback(() => {
     if (isParentSubmitting || isTrimming || isPreparingMedia) return;
@@ -343,7 +405,7 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
       if (!selectedCategory) { toast({ title: "Category Required", description: "Please select a category.", variant: "default" }); return; }
        handleSetCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
-      if (!currentMedia && (!isEditing || !memory?.mediaAttachments?.length)) {
+      if (!currentMedia && (!editMemoryId || !memory?.mediaAttachments?.length)) {
         toast({ title: "Media is Required to Proceed", description: "Please record a video or audio first, then you can proceed to the preview step.", variant: "default" });
         return;
       }
@@ -352,19 +414,28 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     } else if (currentSlide === SLIDE_INDEX_PREVIEW) {
       triggerSubmitProcess();
     }
-  }, [ isParentSubmitting, isTrimming, isPreparingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, memory?.mediaAttachments, handleSetCurrentSlide ]);
+  }, [ isParentSubmitting, isTrimming, isPreparingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, editMemoryId, triggerSubmitProcess, currentMedia, memory?.mediaAttachments, handleSetCurrentSlide ]);
 
   const handleFormSubmit = (event: FormEvent) => { event.preventDefault(); handleActionButtonClick(); };
 
+  if (isLoadingMemory) {
+    return (
+        <div className="container mx-auto py-8 px-4 text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+            <p className="text-muted-foreground mt-4">Loading memory...</p>
+        </div>
+    );
+  }
+
   let actionButtonText = 'Next'; let ActionButtonIcon: React.ElementType = ArrowRight;
-  const isNextToPreviewEnabled = !!currentMedia || (isEditing && !!memory?.mediaAttachments?.length);
+  const isNextToPreviewEnabled = !!currentMedia || (editMemoryId && !!memory?.mediaAttachments?.length);
 
   if (currentSlide === SLIDE_INDEX_MEDIA) { 
     actionButtonText = 'Next to Preview'; 
     ActionButtonIcon = Eye; 
   }
   else if (currentSlide === SLIDE_INDEX_PREVIEW) { 
-    actionButtonText = isEditing ? 'Update Memory' : 'Save Memory'; 
+    actionButtonText = editMemoryId ? 'Update Memory' : 'Save Memory'; 
     ActionButtonIcon = Sparkles; 
   }
 
@@ -546,5 +617,3 @@ export function MemoryForm({ memory, onSubmit, isSubmitting: isParentSubmitting,
     </form>
   );
 }
-
-    
