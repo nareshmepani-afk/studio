@@ -19,6 +19,10 @@ const MemoryForm = dynamic(() => import('@/components/memory/MemoryForm').then(m
   ssr: false,
   loading: () => (
       <div className="w-full max-w-3xl mx-auto space-y-6">
+        <div className="space-y-2">
+            <Skeleton className="h-8 w-1/4" />
+            <Skeleton className="h-4 w-1/2" />
+        </div>
         <Skeleton className="h-48 w-full rounded-lg" />
         <Skeleton className="h-12 w-full rounded-lg" />
         <Skeleton className="h-24 w-full rounded-lg" />
@@ -83,13 +87,19 @@ function AddMemoryPageComponent() {
     }
 
     const formData = new FormData();
+    // Use a server action that handles FormData properly.
+    // Instead of stringifying, we'll send raw values and the file.
+    // The server action 'saveMemory' will need to be adapted for this.
+
+    // A more robust way to handle complex objects with FormData is to stringify non-file data.
     Object.entries(memoryData).forEach(([key, value]) => {
-        if (value !== undefined) {
+        if (value !== undefined && key !== 'mediaFile') { // Ensure mediaFile isn't stringified
              formData.append(key, JSON.stringify(value));
         }
     });
     
     if (mediaFileToUpload) {
+        // The file from the trimmer is now correctly appended.
         formData.append('mediaFile', mediaFileToUpload);
     }
     
