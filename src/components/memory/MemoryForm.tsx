@@ -15,7 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { Sparkles, Loader2, ArrowRight, Tag, MapPin, ArrowLeft, Eye, Layers, Scissors, Timer, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getDaysInMonth, format, isValid, setDate, getMonth, getYear } from 'date-fns';
+import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, getDate } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { countryOptions, MAX_RECORDING_DURATION } from '@/lib/constants';
