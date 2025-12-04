@@ -68,13 +68,39 @@ export function MediaCaptureControl({
   const [currentRecordingDuration, setCurrentRecordingDuration] = useState(0);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // For audio visualization
+  const [audioData, setAudioData] = useState<Uint8Array | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+
   const canRecordOrUpload = hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
 
   const cleanupStream = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (sourceRef.current) {
+      sourceRef.current.disconnect();
+      sourceRef.current = null;
+    }
+    if (analyserRef.current) {
+      analyserRef.current.disconnect();
+      analyserRef.current = null;
+    }
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
+    setAudioData(null);
   }, []);
 
   const getPermissions = useCallback(async (type: 'video' | 'audio'): Promise<boolean> => {
@@ -142,11 +168,12 @@ export function MediaCaptureControl({
   const handleStopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      setCurrentTeleprompterScript(null);
-      if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
-      if (hardLimitTimeoutRef.current) clearTimeout(hardLimitTimeoutRef.current);
     }
+    setIsRecording(false);
+    setCurrentTeleprompterScript(null);
+    if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
+    if (hardLimitTimeoutRef.current) clearTimeout(hardLimitTimeoutRef.current);
+    // Cleanup for audio viz is in onstop handler of MediaRecorder
   }, []);
 
   const handleDiscardMedia = useCallback(() => {
@@ -209,6 +236,25 @@ export function MediaCaptureControl({
     const permissionGranted = await getPermissions(type);
     if (!permissionGranted || !streamRef.current) { onPreparingChange(false); return; }
 
+    if (type === 'audio') {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      const bufferLength = analyserRef.current.frequencyBinCount;
+      dataArrayRef.current = new Uint8Array(bufferLength);
+      sourceRef.current = audioContextRef.current.createMediaStreamSource(streamRef.current);
+      sourceRef.current.connect(analyserRef.current);
+      
+      const draw = () => {
+        if (analyserRef.current && dataArrayRef.current) {
+          analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+          setAudioData(new Uint8Array(dataArrayRef.current));
+        }
+        animationFrameRef.current = requestAnimationFrame(draw);
+      };
+      draw();
+    }
+
     revokeCurrentPreviewUrl();
     setPreviewUrl(null);
     setMediaType(type);
@@ -216,7 +262,6 @@ export function MediaCaptureControl({
 
     let scriptKey = promptIdForTeleprompter;
     if (!scriptKey && chapterTitleForTeleprompter) {
-        // Fallback to find prompt by title if ID is missing (e.g., custom prompt)
         for (const group of mockPromptGroups) {
             const foundPrompt = group.prompts.find(p => p.text.en.toLowerCase() === chapterTitleForTeleprompter.toLowerCase() || p.text.gu === chapterTitleForTeleprompter);
             if (foundPrompt) { scriptKey = foundPrompt.id; break; }
@@ -363,8 +408,19 @@ export function MediaCaptureControl({
 
             {mediaType === 'audio' && (
                 <div className="flex flex-col items-center justify-center p-8 bg-muted rounded-md space-y-4">
-                     <Mic className="w-12 h-12 text-primary animate-pulse" />
-                     <p className="text-sm text-muted-foreground">Recording audio...</p>
+                    <div className="flex items-end justify-center h-16 w-full gap-1">
+                      {audioData && Array.from(audioData).slice(0, 32).map((value, index) => (
+                        <div
+                          key={index}
+                          className="w-2 bg-primary rounded-full"
+                          style={{ height: `${Math.max(2, (value / 255) * 100)}%`, transition: 'height 0.1s ease-in-out' }}
+                        />
+                      ))}
+                      {!audioData && Array.from({length: 32}).map((_, index) => (
+                         <div key={index} className="w-2 h-1 bg-primary/50 rounded-full" />
+                      ))}
+                    </div>
+                    <p className="text-sm text-muted-foreground">Recording audio...</p>
                 </div>
             )}
 
