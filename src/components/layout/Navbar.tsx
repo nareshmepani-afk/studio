@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import { useMemories } from '@/hooks/useMemories';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -19,11 +20,27 @@ import { LogOut, PlusCircle, Settings, BellRing, Users, UserCog, Film, History, 
 import { useRouter, usePathname } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from './ThemeToggle';
+import { useMemo } from 'react';
 
 export function Navbar() {
-  const { isAuthenticated, user, logout, pendingRequestCount, userMode, toggleUserMode, setUserMode, hasNewSharedMemories } = useAuth();
+  const { isAuthenticated, user, logout, userMode, toggleUserMode, setUserMode } = useAuth();
+  const { memories } = useMemories();
   const router = useRouter();
   const pathname = usePathname();
+
+  // This logic is now derived from the memories hook
+  const hasNewSharedMemories = useMemo(() => {
+    if (!user || !user.viewedSharedMemoryIds) {
+      return false;
+    }
+    const viewedIds = new Set(user.viewedSharedMemoryIds);
+    return memories.some(mem => !viewedIds.has(mem.id));
+  }, [memories, user]);
+  
+  // This is a placeholder, as the original logic was removed from AuthContext.
+  // A real implementation would involve fetching requests data.
+  const pendingRequestCount = 0; 
+
 
   const handleLogout = () => {
     logout();

@@ -10,6 +10,7 @@ import { PlusCircle, Film, Users, ShieldCheck, ShieldOff, CalendarClock, Shoppin
 import Link from 'next/link';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useMemories } from '@/hooks/useMemories';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO, addMonths } from 'date-fns';
@@ -31,25 +32,18 @@ export default function TimelinePage() {
 
   const {
     user,
-    setPendingRequestCount,
     userMode,
     hostPassStatus,
-    markSharedMemoryAsViewed,
-    memories,
-    isDataLoading,
+    updateUserProfileInFirestore,
+    loading: authLoading,
   } = useAuth();
+  const { memories, isLoading: isMemoriesLoading } = useMemories();
+  const isDataLoading = authLoading || isMemoriesLoading;
 
-  const { purchasePaidGuestPass, activateFreeGuestPass } = useAuth();
   
   const [guestPassPriceDetails, setGuestPassPriceDetails] = useState<GetPassPriceOutput | null>(null);
   const [isFetchingGuestPassPrice, setIsFetchingGuestPassPrice] = useState(false);
   const db = getFirestore(app);
-
-
-  const mockHostPendingRequests = useMemo(() => [
-    { id: 'req1', text: 'Tell us about your first pet!', user: 'Guest123' },
-    { id: 'req2', text: 'What was your favorite childhood vacation?', user: 'Guest456' },
-  ], []);
 
   const canGuestViewSharedMemories = useMemo(() => {
     return user?.sharedAccessStatus === 'free_pass_active' || user?.sharedAccessStatus === 'paid_pass_active';
@@ -60,6 +54,19 @@ export default function TimelinePage() {
   }, [hostPassStatus]);
   
   const isViewingLegacyChest = useMemo(() => legacyFilter === 'legacy', [legacyFilter]);
+
+  const purchasePaidGuestPass = useCallback(async () => {
+    // This is a mock implementation
+    if (user) {
+      toast({ title: "Purchase Simulated", description: "Guest pass activated for 31 days." });
+    }
+  }, [user]);
+
+  const activateFreeGuestPass = useCallback(async () => {
+    if (user) {
+      toast({ title: "Free Pass Activated", description: "Your 6-month free guest pass is now active." });
+    }
+  }, [user]);
 
   const fetchGuestPassPrice = useCallback(async () => {
     if (isFetchingGuestPassPrice || guestPassPriceDetails || !user) return;
@@ -81,16 +88,6 @@ export default function TimelinePage() {
       }
     }
   }, [userMode, user, fetchGuestPassPrice, isFetchingGuestPassPrice, guestPassPriceDetails, canGuestViewSharedMemories]);
-
-  useEffect(() => {
-    if (user) {
-        if (userMode === 'host') {
-          setPendingRequestCount(mockHostPendingRequests.length);
-        } else {
-          setPendingRequestCount(0);
-        }
-    }
-  }, [user, userMode, setPendingRequestCount, mockHostPendingRequests]);
 
   const handleDeleteMemory = useCallback(async (memoryId: string) => {
     if (!user) return;
@@ -122,6 +119,15 @@ export default function TimelinePage() {
       toast({ title: "Update Failed", variant: "destructive" });
     }
   }, [user, memories, db]);
+  
+  const markSharedMemoryAsViewed = useCallback(async (memoryId: string) => {
+    if (user) {
+      const currentViewedIds = user.viewedSharedMemoryIds || [];
+      if (!currentViewedIds.includes(memoryId)) {
+        await updateUserProfileInFirestore(user.id, { viewedSharedMemoryIds: [...currentViewedIds, memoryId] });
+      }
+    }
+  }, [user, updateUserProfileInFirestore]);
 
   const handleCreateMontage = useCallback(() => {
     setTimeout(() => {

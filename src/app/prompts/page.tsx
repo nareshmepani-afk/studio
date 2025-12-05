@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
+import { useMemories } from '@/hooks/useMemories';
+import { usePromptFlags } from '@/hooks/usePromptFlags';
 import Link from 'next/link';
 import {
   Dialog,
@@ -32,24 +34,28 @@ import { app } from '@/lib/firebase';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { addMonths, isBefore, parseISO, format, addDays } from 'date-fns';
 import QRCode from "qrcode.react";
+import { useQueryClient } from '@tanstack/react-query';
+
 
 const FIRESTORE_USER_PROMPT_FLAGS_COLLECTION = 'userPromptFlags';
 
 export default function LifeJourneyPage() {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const {
     user,
-    isLoading,
+    loading: authLoading,
     userMode,
     hostPassStatus,
-    getLatestMemories,
-    completedPromptIds,
-    flaggedPromptIds,
-    isDataLoading,
     updateUserProfileInFirestore,
   } = useAuth();
+  
+  const { memories, completedPromptIds, isLoading: isMemoriesLoading } = useMemories();
+  const { flaggedPromptIds, isLoading: isFlagsLoading } = usePromptFlags();
+
+  const isDataLoading = isMemoriesLoading || isFlagsLoading;
   
   const [hostPassPriceDetails, setHostPassPriceDetails] = useState<GetHostPassPriceOutput | null>(null);
   const [isFetchingHostPassPrice, setIsFetchingHostPassPrice] = useState(false);
@@ -119,17 +125,17 @@ export default function LifeJourneyPage() {
     const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, user.id);
     try {
         await setDoc(promptFlagsDocRef, { [promptIdToToggle]: newFlagStatus }, { merge: true });
-        const promptText = mockPromptGroups.flatMap(g => g.prompts).find(p => p.id === promptIdToToggle)?.text[currentLanguage] || "This prompt";
+        // The snapshot listener in usePromptFlags will update the state automatically
         toast({
             title: newFlagStatus ? "Prompt Flagged" : "Prompt Unflagged",
-            description: `"${promptText}" is ${newFlagStatus ? "now flagged." : "no longer flagged."}`,
+            description: `This prompt is ${newFlagStatus ? "now flagged." : "no longer flagged."}`,
             variant: "success"
         });
     } catch (error) {
         console.error("Error updating prompt flag in Firestore:", error);
         toast({ title: "Flagging Error", variant: "destructive" });
     }
-  }, [user, flaggedPromptIds, currentLanguage, db]);
+  }, [user, flaggedPromptIds, db]);
 
   const handleStartChapter = useCallback((promptId: string, promptText: string) => {
     const isPromptInAvailableGroups = availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === promptId);
@@ -142,18 +148,14 @@ export default function LifeJourneyPage() {
   }, [canAccessFullJourney, availablePromptGroups, router]);
 
   const handleViewEditChapter = useCallback((promptId: string) => {
-    if (!user) {
-        return;
-    }
-    const currentMemories = getLatestMemories();
-    const memoryForPrompt = currentMemories.find(m => m.promptId === promptId);
+    const memoryForPrompt = memories.find(m => m.promptId === promptId);
 
     if (memoryForPrompt) {
       router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
     } else {
       toast({ title: "Error", description: "Could not find the recorded memory for this chapter. The data may still be loading.", variant: "destructive" });
     }
-  }, [user, router, getLatestMemories]);
+  }, [memories, router]);
 
   const handleGenerateCustomChapterIdeas = useCallback(async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {
@@ -210,7 +212,7 @@ export default function LifeJourneyPage() {
     return "Activate 6-Month Free Host Pass";
   }, [hostPassStatus, isFetchingHostPassPrice, hostPassPriceDetails]);
 
-  if (isLoading) {
+  if (authLoading || (user && isDataLoading)) {
     return (
       <AuthenticatedPageWrapper>
         <div className="container mx-auto py-8 px-4 text-center">

@@ -25,8 +25,8 @@ export default function RootLayout({
       <body className={`${inter.className} bg-background text-foreground`} suppressHydrationWarning>
         <Providers>
           {children}
-          <Toaster />
         </Providers>
+        <Toaster />
       </body>
     </html>
   );
