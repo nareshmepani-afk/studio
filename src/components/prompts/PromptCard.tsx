@@ -16,10 +16,10 @@ interface PromptCardProps {
   isCompleted: boolean;
   isFlaggedForReuse: boolean;
   isLoading?: boolean;
-  onStartChapter: (promptId: string, promptText: string) => void;
   onToggleFlagPrompt: (promptId: string) => void;
   onShowQrCode: (promptId: string, promptTitle: string) => void;
-  memories: Memory[]; // Pass the full memories array
+  memories: Memory[];
+  canAccess: boolean; // New prop to control access
 }
 
 export function PromptCard({
@@ -29,36 +29,37 @@ export function PromptCard({
   isCompleted,
   isFlaggedForReuse,
   isLoading = false,
-  onStartChapter,
   onToggleFlagPrompt,
   onShowQrCode,
   memories,
+  canAccess,
 }: PromptCardProps) {
   const router = useRouter();
 
-  const handleViewEditChapter = () => {
-    if (isLoading) return;
-    const memoryForPrompt = memories.find(m => m.promptId === promptId);
-    if (memoryForPrompt) {
-      router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
-    } else {
-      // This can happen in a brief moment if data is out of sync. A toast provides feedback.
-      toast({ title: "Error", description: "Could not find the recorded memory for this chapter. The data may still be loading.", variant: "destructive" });
-    }
-  };
-
   const handleAction = () => {
     if (isLoading) return;
+
+    if (!canAccess) {
+      toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
+      return;
+    }
+
     if (isCompleted) {
-      handleViewEditChapter();
+      const memoryForPrompt = memories.find(m => m.promptId === promptId);
+      if (memoryForPrompt) {
+        router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
+      } else {
+        toast({ title: "Error", description: "Could not find the recorded memory for this chapter. The data may still be loading.", variant: "destructive" });
+      }
     } else {
-      onStartChapter(promptId, promptText);
+      toast({ title: "Starting New Chapter!", description: `Prompt: "${promptText}". Redirecting...` });
+      router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
     }
   };
 
   const handleFlagToggle = (e: React.MouseEvent) => {
     if (isLoading) return;
-    e.stopPropagation(); // Prevent card action if clicking flag button
+    e.stopPropagation();
     onToggleFlagPrompt(promptId);
   };
   

@@ -137,7 +137,6 @@ export default function LifeJourneyPage() {
     const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, user.id);
     try {
         await setDoc(promptFlagsDocRef, { [promptIdToToggle]: newFlagStatus }, { merge: true });
-        // The snapshot listener in usePromptFlags will update the state automatically
         toast({
             title: newFlagStatus ? "Prompt Flagged" : "Prompt Unflagged",
             description: `This prompt is ${newFlagStatus ? "now flagged." : "no longer flagged."}`,
@@ -148,16 +147,6 @@ export default function LifeJourneyPage() {
         toast({ title: "Flagging Error", variant: "destructive" });
     }
   }, [user, flaggedPromptIds, db]);
-
-  const handleStartChapter = useCallback((promptId: string, promptText: string) => {
-    const isPromptInAvailableGroups = availablePromptGroups.flatMap(g => g.prompts).some(p => p.id === promptId);
-    if (!canAccessFullJourney && !isPromptInAvailableGroups) {
-        toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
-        return;
-    }
-    toast({ title: "Starting New Chapter!", description: `Prompt: "${promptText}". Redirecting...`});
-    router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
-  }, [canAccessFullJourney, availablePromptGroups, router]);
 
   const handleGenerateCustomChapterIdeas = useCallback(async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {
@@ -331,10 +320,10 @@ export default function LifeJourneyPage() {
                     isCompleted={completedPromptIds.has(prompt.id)}
                     isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
                     isLoading={isDataLoading}
-                    onStartChapter={handleStartChapter}
                     onToggleFlagPrompt={handleToggleFlagPrompt}
                     onShowQrCode={handleShowQrCode}
                     memories={memories}
+                    canAccess={canAccessFullJourney || availablePromptGroups[0].prompts.some(p => p.id === prompt.id)}
                   />
                 ))}
               </div>
