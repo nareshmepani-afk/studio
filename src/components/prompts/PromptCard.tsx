@@ -56,10 +56,16 @@ export function PromptCard({
   return (
     <Card className={`shadow-lg transition-all hover:shadow-xl animate-fade-in flex flex-col h-full ${isCompleted ? 'bg-green-50 dark:bg-green-900/30 border-green-500' : 'bg-card'}`}>
       <CardHeader className="pb-3">
-        {isCompleted && (
+        {isCompleted && !isLoading && (
             <div className="flex items-center text-green-600 dark:text-green-400 text-xs mb-1">
                 <CheckCircle className="h-4 w-4 mr-1.5" />
                 Chapter Recorded
+            </div>
+        )}
+        {isLoading && (
+            <div className="flex items-center text-muted-foreground text-xs mb-1">
+                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                Loading...
             </div>
         )}
         <CardTitle className={`font-normal text-base ${isCompleted ? 'text-green-800 dark:text-green-300' : 'text-foreground'}`}>
@@ -74,7 +80,7 @@ export function PromptCard({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={handleQrCodeClick} className="text-muted-foreground hover:text-primary" aria-label="Show QR Code for this prompt">
+                  <Button variant="ghost" size="icon" onClick={handleQrCodeClick} className="text-muted-foreground hover:text-primary" aria-label="Show QR Code for this prompt" disabled={isLoading}>
                     <QrCode className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
@@ -85,7 +91,7 @@ export function PromptCard({
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="View teleprompter script">
+                        <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="View teleprompter script" disabled={isLoading}>
                            <Info className="h-5 w-5" />
                         </Button>
                     </TooltipTrigger>
