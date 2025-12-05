@@ -3,8 +3,11 @@
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookText, CheckCircle, Edit, Star, Loader2, Info, QrCode } from 'lucide-react'; // Updated icons
+import { BookText, CheckCircle, Edit, Star, Loader2, Info, QrCode } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import type { Memory } from '@/types';
+import { useRouter } from 'next/navigation';
+import { toast } from '@/hooks/use-toast';
 
 interface PromptCardProps {
   promptId: string;
@@ -12,11 +15,11 @@ interface PromptCardProps {
   teleprompterScript: string;
   isCompleted: boolean;
   isFlaggedForReuse: boolean;
-  isLoading?: boolean; // New prop
+  isLoading?: boolean;
   onStartChapter: (promptId: string, promptText: string) => void;
-  onViewEditChapter: (promptId: string) => void;
   onToggleFlagPrompt: (promptId: string) => void;
   onShowQrCode: (promptId: string, promptTitle: string) => void;
+  memories: Memory[]; // Pass the full memories array
 }
 
 export function PromptCard({
@@ -25,17 +28,29 @@ export function PromptCard({
   teleprompterScript,
   isCompleted,
   isFlaggedForReuse,
-  isLoading = false, // Default to false
+  isLoading = false,
   onStartChapter,
-  onViewEditChapter,
   onToggleFlagPrompt,
-  onShowQrCode
+  onShowQrCode,
+  memories,
 }: PromptCardProps) {
+  const router = useRouter();
+
+  const handleViewEditChapter = () => {
+    if (isLoading) return;
+    const memoryForPrompt = memories.find(m => m.promptId === promptId);
+    if (memoryForPrompt) {
+      router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
+    } else {
+      // This can happen in a brief moment if data is out of sync. A toast provides feedback.
+      toast({ title: "Error", description: "Could not find the recorded memory for this chapter. The data may still be loading.", variant: "destructive" });
+    }
+  };
 
   const handleAction = () => {
     if (isLoading) return;
     if (isCompleted) {
-      onViewEditChapter(promptId);
+      handleViewEditChapter();
     } else {
       onStartChapter(promptId, promptText);
     }

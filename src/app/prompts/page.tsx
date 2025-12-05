@@ -159,15 +159,6 @@ export default function LifeJourneyPage() {
     router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
   }, [canAccessFullJourney, availablePromptGroups, router]);
 
-  const handleViewEditChapter = useCallback((promptId: string) => {
-    const memoryForPrompt = memories.find(m => m.promptId === promptId);
-    if (memoryForPrompt) {
-      router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
-    } else {
-      toast({ title: "Error", description: "Could not find the recorded memory for this chapter. The data may still be loading.", variant: "destructive" });
-    }
-  }, [memories, router]);
-
   const handleGenerateCustomChapterIdeas = useCallback(async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {
       toast({ title: "Profile Info Needed", description: "Please provide some information about yourself or your interests in the text area." });
@@ -341,14 +332,9 @@ export default function LifeJourneyPage() {
                     isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
                     isLoading={isDataLoading}
                     onStartChapter={handleStartChapter}
-                    onViewEditChapter={() => {
-                        console.log('[handleViewEditChapter] Fired. Searching for promptId:', prompt.id);
-                        console.log('[handleViewEditChapter] Current memories count:', memories.length);
-                        console.log('[handleViewEditChapter] isDataLoading:', isDataLoading);
-                        handleViewEditChapter(prompt.id);
-                    }}
                     onToggleFlagPrompt={handleToggleFlagPrompt}
                     onShowQrCode={handleShowQrCode}
+                    memories={memories}
                   />
                 ))}
               </div>
