@@ -19,7 +19,7 @@ interface PromptCardProps {
   onToggleFlagPrompt: (promptId: string) => void;
   onShowQrCode: (promptId: string, promptTitle: string) => void;
   memories: Memory[];
-  canAccess: boolean; // New prop to control access
+  canAccess: boolean; 
 }
 
 export function PromptCard({
@@ -88,10 +88,10 @@ export function PromptCard({
           {promptText}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow">
+      <CardContent>
         {/* Can add a snippet of the memory description here if completed, in the future */}
       </CardContent>
-      <CardFooter className="flex justify-between items-center">
+      <CardFooter className="flex justify-between items-center mt-auto">
         <div className="flex items-center space-x-1">
             <TooltipProvider>
               <Tooltip>
