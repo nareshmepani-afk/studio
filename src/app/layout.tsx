@@ -22,6 +22,9 @@ export default function RootLayout({
   
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="data:;base64,=" />
+      </head>
       <body className={`${inter.className} bg-background text-foreground`} suppressHydrationWarning>
         <Providers>
           {children}

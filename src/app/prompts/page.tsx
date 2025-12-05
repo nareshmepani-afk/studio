@@ -43,6 +43,7 @@ export default function LifeJourneyPage() {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
   const queryClient = useQueryClient();
+  const isMountedRef = useRef(true);
 
   const {
     user,
@@ -71,6 +72,13 @@ export default function LifeJourneyPage() {
 
   const db = getFirestore(app);
 
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   useEffect(() => { if (user?.profileInfo) setCustomChapterUserProfile(user.profileInfo); }, [user?.profileInfo]);
   
   const fetchHostPassPrice = useCallback(async () => {
@@ -78,11 +86,15 @@ export default function LifeJourneyPage() {
     setIsFetchingHostPassPrice(true);
     try {
       const priceData = await getHostPassPriceAction({ city: user.city || 'London', country: user.countryOfBirth || 'UK' });
-      setHostPassPriceDetails(priceData);
+      if (isMountedRef.current) {
+        setHostPassPriceDetails(priceData);
+      }
     } catch (error) {
       console.error("PromptsPage: Failed to fetch HOST pass price:", error);
     } finally {
-      setIsFetchingHostPassPrice(false);
+      if (isMountedRef.current) {
+        setIsFetchingHostPassPrice(false);
+      }
     }
   }, [isFetchingHostPassPrice, hostPassPriceDetails, user]);
 
@@ -170,12 +182,18 @@ export default function LifeJourneyPage() {
     try {
       const profileToUse = customChapterUserProfile.trim() ? customChapterUserProfile : user?.profileInfo || '';
       const result = await generateMemoryCuesAction({ userProfile: profileToUse, currentDate: new Date().toISOString().split('T')[0], language: customChapterLanguage });
-      setGeneratedChapterIdeas(result.memoryCues);
-      toast({ title: result.memoryCues.length > 0 ? "Chapter Ideas Generated!" : "No Ideas Generated", variant: result.memoryCues.length > 0 ? "success" : "default" });
+      if (isMountedRef.current) {
+        setGeneratedChapterIdeas(result.memoryCues);
+        toast({ title: result.memoryCues.length > 0 ? "Chapter Ideas Generated!" : "No Ideas Generated", variant: result.memoryCues.length > 0 ? "success" : "default" });
+      }
     } catch (error) {
-      toast({ title: "Error Generating Ideas", variant: "destructive" });
+      if (isMountedRef.current) {
+        toast({ title: "Error Generating Ideas", variant: "destructive" });
+      }
     }
-    setIsLoadingChapterIdeas(false);
+    if (isMountedRef.current) {
+      setIsLoadingChapterIdeas(false);
+    }
   }, [customChapterUserProfile, user?.profileInfo, canAccessFullJourney, customChapterLanguage]);
 
   const handleCustomIdeaSelected = useCallback((idea: string) => {
@@ -417,3 +435,5 @@ export default function LifeJourneyPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    
