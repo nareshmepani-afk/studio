@@ -329,26 +329,12 @@ export function MemoryForm() {
   };
 
 
-  const onSubmitMemory = async (
-    memoryData: Omit<Memory, 'id' | 'userId'> & { promptId?: string },
-    mediaFileToUpload?: File | undefined
-  ) => {
+  const onSubmitMemory = async (formData: FormData) => {
     if (!user) {
       toast({ title: "Authentication Error", variant: "destructive" });
       return;
     }
     setIsParentSubmitting(true);
-
-    const formData = new FormData();
-    Object.entries(memoryData).forEach(([key, value]) => {
-        if (value !== undefined && key !== 'mediaFile') { 
-             formData.append(key, JSON.stringify(value));
-        }
-    });
-    
-    if (mediaFileToUpload) {
-        formData.append('mediaFile', mediaFileToUpload);
-    }
     
     const result = await saveMemory(formData, user.id, editMemoryId);
     setIsParentSubmitting(false);
@@ -367,32 +353,32 @@ export function MemoryForm() {
 
   const triggerSubmitProcess = useCallback(() => {
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
-    let mediaFileToUpload: File | undefined = undefined;
+    const formData = new FormData();
+
+    formData.append('title', title);
+    formData.append('date', finalDate.toISOString());
+    formData.append('description', description);
+    formData.append('emotionTags', JSON.stringify(selectedEmotionTags));
+    formData.append('category', selectedCategory || 'Other');
+    if(location) formData.append('location', location);
+    if(country) formData.append('country', country);
+    if (initialPromptId || memory?.promptId) {
+        formData.append('promptId', initialPromptId || memory?.promptId || '');
+    }
+    formData.append('isLegacy', (memory?.isLegacy || false).toString());
+
 
     if (currentMedia) { 
       const isNewFile = currentMedia.file.size > 0 && currentMedia.file.name !== "existing_media_placeholder";
       if (isNewFile) {
-        mediaFileToUpload = currentMedia.file;
+        formData.append('mediaFile', currentMedia.file, currentMedia.file.name);
+      } else if (memory?.mediaAttachments) {
+         // If not a new file but we are in edit mode, pass existing attachments
+         formData.append('mediaAttachments', JSON.stringify(memory.mediaAttachments));
       }
     }
     
-    const finalPromptIdToSave = initialPromptId || memory?.promptId || undefined;
-    const submissionData = { 
-        title, 
-        date: finalDate.toISOString(), 
-        description, 
-        emotionTags: selectedEmotionTags, 
-        location: location || undefined, 
-        country: country || undefined, 
-        category: selectedCategory, 
-        promptId: finalPromptIdToSave, 
-        isLegacy: memory?.isLegacy || false 
-    };
-
-    onSubmitMemory(
-      submissionData as Omit<Memory, 'id' | 'userId'>,
-      mediaFileToUpload
-    );
+    onSubmitMemory(formData);
   }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, location, country, selectedCategory, initialPromptId, selectedEmotionTags]);
 
   const handleActionButtonClick = useCallback(() => {
