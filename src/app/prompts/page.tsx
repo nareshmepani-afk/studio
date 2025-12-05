@@ -160,20 +160,13 @@ export default function LifeJourneyPage() {
   }, [canAccessFullJourney, availablePromptGroups, router]);
 
   const handleViewEditChapter = useCallback((promptId: string) => {
-    console.log('[handleViewEditChapter] Fired. Searching for promptId:', promptId);
-    console.log('[handleViewEditChapter] Current memories count:', memories.length);
-    console.log('[handleViewEditChapter] isDataLoading:', isDataLoading);
-
     const memoryForPrompt = memories.find(m => m.promptId === promptId);
-    console.log('[handleViewEditChapter] Found memory for prompt:', memoryForPrompt);
-
     if (memoryForPrompt) {
       router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
     } else {
-      console.log('[handleViewEditChapter] Could not find memory. This could be a data loading issue.');
       toast({ title: "Error", description: "Could not find the recorded memory for this chapter. The data may still be loading.", variant: "destructive" });
     }
-  }, [memories, router, isDataLoading]);
+  }, [memories, router]);
 
   const handleGenerateCustomChapterIdeas = useCallback(async () => {
     if (!customChapterUserProfile.trim() && !user?.profileInfo?.trim()) {
@@ -348,7 +341,12 @@ export default function LifeJourneyPage() {
                     isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
                     isLoading={isDataLoading}
                     onStartChapter={handleStartChapter}
-                    onViewEditChapter={handleViewEditChapter}
+                    onViewEditChapter={() => {
+                        console.log('[handleViewEditChapter] Fired. Searching for promptId:', prompt.id);
+                        console.log('[handleViewEditChapter] Current memories count:', memories.length);
+                        console.log('[handleViewEditChapter] isDataLoading:', isDataLoading);
+                        handleViewEditChapter(prompt.id);
+                    }}
                     onToggleFlagPrompt={handleToggleFlagPrompt}
                     onShowQrCode={handleShowQrCode}
                   />
