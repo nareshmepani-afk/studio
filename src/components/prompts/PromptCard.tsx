@@ -5,9 +5,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { BookText, CheckCircle, Edit, Star, Loader2, Info, QrCode } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import type { Memory } from '@/types';
-import { useRouter } from 'next/navigation';
-import { toast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -18,9 +15,9 @@ interface PromptCardProps {
   isCompleted: boolean;
   isFlaggedForReuse: boolean;
   isLoading?: boolean;
+  onStartChapter: (promptId: string, promptText: string, isCompleted: boolean) => void;
   onToggleFlagPrompt: (promptId: string) => void;
   onShowQrCode: (promptId: string, promptTitle: string) => void;
-  memory: Memory | undefined;
   canAccess: boolean; 
 }
 
@@ -31,12 +28,11 @@ export function PromptCard({
   isCompleted,
   isFlaggedForReuse,
   isLoading = false,
+  onStartChapter,
   onToggleFlagPrompt,
   onShowQrCode,
-  memory,
   canAccess,
 }: PromptCardProps) {
-  const router = useRouter();
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
@@ -44,31 +40,12 @@ export function PromptCard({
   }, []);
 
   const handleAction = () => {
-    // Adding console.log here to definitively track the click event
+    // This console.log is for debugging the click event.
     console.log(`[PromptCard] handleAction called for promptId: ${promptId}. isCompleted: ${isCompleted}`);
-
-    if (isLoading || !hasMounted) {
-        console.log('[PromptCard] Action prevented: component not ready.');
-        return;
-    }
-
-    if (!canAccess) {
-      toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
-      return;
-    }
-
-    if (isCompleted) {
-      if (memory) {
-        router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}&promptId=${encodeURIComponent(promptId)}`);
-      } else {
-        toast({ title: "Error", description: "Could not find the recorded memory for this chapter. The data may still be loading.", variant: "destructive" });
-      }
-    } else {
-      toast({ title: "Starting New Chapter!", description: `Prompt: "${promptText}". Redirecting...` });
-      router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
-    }
+    if (isLoading || !hasMounted) return;
+    onStartChapter(promptId, promptText, isCompleted);
   };
-
+  
   const handleFlagToggle = (e: React.MouseEvent) => {
     if (isLoading || !hasMounted) return;
     e.stopPropagation();
@@ -81,8 +58,6 @@ export function PromptCard({
     onShowQrCode(promptId, promptText);
   };
 
-  // On the server or before the client has mounted, render a non-interactive skeleton.
-  // This guarantees no hydration mismatch.
   if (!hasMounted) {
     return (
         <Card className="shadow-lg flex flex-col h-full bg-card/50">
@@ -106,7 +81,6 @@ export function PromptCard({
     );
   }
 
-  // Once mounted on the client, render the full interactive component.
   return (
     <Card className={`shadow-lg transition-all hover:shadow-xl animate-fade-in flex flex-col h-full ${isCompleted ? 'bg-green-50 dark:bg-green-900/30 border-green-500' : 'bg-card'}`}>
       <CardHeader className="pb-3">
@@ -181,7 +155,7 @@ export function PromptCard({
               size="sm"
               variant={isCompleted ? "outline" : "default"}
               className="w-full"
-              disabled={isLoading}
+              disabled={isLoading || !canAccess}
             >
               {isLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

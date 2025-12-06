@@ -35,6 +35,7 @@ import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { addMonths, isBefore, parseISO, format, addDays } from 'date-fns';
 import QRCode from "qrcode.react";
 import { useQueryClient } from '@tanstack/react-query';
+import type { Memory } from '@/types';
 
 
 const FIRESTORE_USER_PROMPT_FLAGS_COLLECTION = 'userPromptFlags';
@@ -199,6 +200,29 @@ export default function LifeJourneyPage() {
     setQrCodeDialog({ open: true, url, title: promptTitle });
   }, []);
 
+  const handleStartChapter = useCallback((promptId: string, promptText: string, isCompleted: boolean) => {
+      console.log(`[LifeJourneyPage] handleStartChapter called. Prompt ID: ${promptId}, isCompleted: ${isCompleted}`);
+      if (isDataLoading) {
+          console.log('[LifeJourneyPage] Action prevented: data is loading.');
+          return;
+      }
+      if (!canAccessFullJourney) {
+          toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
+          return;
+      }
+      if (isCompleted) {
+          const memory = memories.find(m => m.promptId === promptId);
+          if (memory) {
+              router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}&promptId=${encodeURIComponent(promptId)}`);
+          } else {
+              toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
+          }
+      } else {
+          toast({ title: "Starting New Chapter!", description: `Prompt: "${promptText}". Redirecting...` });
+          router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
+      }
+  }, [router, memories, isDataLoading, canAccessFullJourney]);
+
 
   const hostPassButtonText = useMemo(() => {
     if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
@@ -209,7 +233,7 @@ export default function LifeJourneyPage() {
     return "Activate 6-Month Free Host Pass";
   }, [hostPassStatus, isFetchingHostPassPrice, hostPassPriceDetails]);
 
-  if (authLoading || (user && isDataLoading)) {
+  if (authLoading || (user && isDataLoading && !memories.length)) { // Adjusted loading condition
     return (
       <AuthenticatedPageWrapper>
         <div className="container mx-auto py-8 px-4 text-center">
@@ -320,9 +344,9 @@ export default function LifeJourneyPage() {
                     isCompleted={completedPromptIds.has(prompt.id)}
                     isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
                     isLoading={isDataLoading}
+                    onStartChapter={handleStartChapter}
                     onToggleFlagPrompt={handleToggleFlagPrompt}
                     onShowQrCode={handleShowQrCode}
-                    memory={memories.find(m => m.promptId === prompt.id)}
                     canAccess={canAccessFullJourney || availablePromptGroups[0].prompts.some(p => p.id === prompt.id)}
                   />
                 ))}
