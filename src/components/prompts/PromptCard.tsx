@@ -8,6 +8,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import type { Memory } from '@/types';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface PromptCardProps {
   promptId: string;
@@ -35,9 +37,20 @@ export function PromptCard({
   canAccess,
 }: PromptCardProps) {
   const router = useRouter();
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const handleAction = () => {
-    if (isLoading) return;
+    // Adding console.log here to definitively track the click event
+    console.log(`[PromptCard] handleAction called for promptId: ${promptId}. isCompleted: ${isCompleted}`);
+
+    if (isLoading || !hasMounted) {
+        console.log('[PromptCard] Action prevented: component not ready.');
+        return;
+    }
 
     if (!canAccess) {
       toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
@@ -57,30 +70,55 @@ export function PromptCard({
   };
 
   const handleFlagToggle = (e: React.MouseEvent) => {
-    if (isLoading) return;
+    if (isLoading || !hasMounted) return;
     e.stopPropagation();
     onToggleFlagPrompt(promptId);
   };
   
   const handleQrCodeClick = (e: React.MouseEvent) => {
-    if (isLoading) return;
+    if (isLoading || !hasMounted) return;
     e.stopPropagation();
     onShowQrCode(promptId, promptText);
   };
 
+  // On the server or before the client has mounted, render a non-interactive skeleton.
+  // This guarantees no hydration mismatch.
+  if (!hasMounted) {
+    return (
+        <Card className="shadow-lg flex flex-col h-full bg-card/50">
+            <CardHeader className="pb-3">
+                <Skeleton className="h-4 w-24 mb-2" />
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-5 w-1/2" />
+            </CardHeader>
+            <CardContent className="flex-grow" />
+            <CardFooter className="flex justify-between items-center mt-auto">
+                <div className="flex items-center space-x-1">
+                    <Skeleton className="h-8 w-8 rounded-md" />
+                    <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
+                <div className="flex items-center">
+                    <Skeleton className="h-8 w-8 rounded-md mr-2" />
+                    <Skeleton className="h-9 w-24 rounded-md" />
+                </div>
+            </CardFooter>
+        </Card>
+    );
+  }
+
+  // Once mounted on the client, render the full interactive component.
   return (
     <Card className={`shadow-lg transition-all hover:shadow-xl animate-fade-in flex flex-col h-full ${isCompleted ? 'bg-green-50 dark:bg-green-900/30 border-green-500' : 'bg-card'}`}>
       <CardHeader className="pb-3">
-        {isCompleted && !isLoading && (
-            <div className="flex items-center text-green-600 dark:text-green-400 text-xs mb-1">
-                <CheckCircle className="h-4 w-4 mr-1.5" />
-                Chapter Recorded
-            </div>
-        )}
-        {isLoading && (
+        {isLoading ? (
             <div className="flex items-center text-muted-foreground text-xs mb-1">
                 <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
                 Loading...
+            </div>
+        ) : isCompleted && (
+            <div className="flex items-center text-green-600 dark:text-green-400 text-xs mb-1">
+                <CheckCircle className="h-4 w-4 mr-1.5" />
+                Chapter Recorded
             </div>
         )}
         <CardTitle className={`font-normal text-base ${isCompleted ? 'text-green-800 dark:text-green-300' : 'text-foreground'}`}>
@@ -106,7 +144,7 @@ export function PromptCard({
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="View teleprompter script" disabled={isLoading}>
+                        <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="View teleprompter script" disabled={isLoading} onClick={(e) => e.stopPropagation()}>
                            <Info className="h-5 w-5" />
                         </Button>
                     </TooltipTrigger>
@@ -126,7 +164,7 @@ export function PromptCard({
                     variant="ghost"
                     size="icon"
                     onClick={handleFlagToggle}
-                    className="mr-2 shrink-0" // Ensure button doesn't cause overflow
+                    className="mr-2 shrink-0"
                     aria-label={isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}
                     disabled={isLoading}
                   >
