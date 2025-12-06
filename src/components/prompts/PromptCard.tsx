@@ -18,7 +18,7 @@ interface PromptCardProps {
   isLoading?: boolean;
   onToggleFlagPrompt: (promptId: string) => void;
   onShowQrCode: (promptId: string, promptTitle: string) => void;
-  memories: Memory[];
+  memory: Memory | undefined;
   canAccess: boolean; 
 }
 
@@ -31,7 +31,7 @@ export function PromptCard({
   isLoading = false,
   onToggleFlagPrompt,
   onShowQrCode,
-  memories,
+  memory,
   canAccess,
 }: PromptCardProps) {
   const router = useRouter();
@@ -45,9 +45,8 @@ export function PromptCard({
     }
 
     if (isCompleted) {
-      const memoryForPrompt = memories.find(m => m.promptId === promptId);
-      if (memoryForPrompt) {
-        router.push(`/add-memory?editMemoryId=${encodeURIComponent(memoryForPrompt.id)}&promptId=${encodeURIComponent(promptId)}`);
+      if (memory) {
+        router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}&promptId=${encodeURIComponent(promptId)}`);
       } else {
         toast({ title: "Error", description: "Could not find the recorded memory for this chapter. The data may still be loading.", variant: "destructive" });
       }
@@ -88,7 +87,7 @@ export function PromptCard({
           {promptText}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow">
         {/* Can add a snippet of the memory description here if completed, in the future */}
       </CardContent>
       <CardFooter className="flex justify-between items-center mt-auto">
@@ -143,7 +142,7 @@ export function PromptCard({
               onClick={handleAction}
               size="sm"
               variant={isCompleted ? "outline" : "default"}
-              className="flex-grow" // Main action button takes more space
+              className="w-full"
               disabled={isLoading}
             >
               {isLoading ? (

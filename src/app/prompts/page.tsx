@@ -322,7 +322,7 @@ export default function LifeJourneyPage() {
                     isLoading={isDataLoading}
                     onToggleFlagPrompt={handleToggleFlagPrompt}
                     onShowQrCode={handleShowQrCode}
-                    memories={memories}
+                    memory={memories.find(m => m.promptId === prompt.id)}
                     canAccess={canAccessFullJourney || availablePromptGroups[0].prompts.some(p => p.id === prompt.id)}
                   />
                 ))}
