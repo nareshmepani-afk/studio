@@ -210,17 +210,21 @@ export default function LifeJourneyPage() {
           toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
           return;
       }
-      if (isCompleted) {
-          const memory = memories.find(m => m.promptId === promptId);
-          if (memory) {
-              router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}&promptId=${encodeURIComponent(promptId)}`);
-          } else {
-              toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
-          }
-      } else {
-          toast({ title: "Starting New Chapter!", description: `Prompt: "${promptText}". Redirecting...` });
-          router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
-      }
+
+      // The key fix: wrap router.push in a setTimeout to escape the current event cycle.
+      setTimeout(() => {
+        if (isCompleted) {
+            const memory = memories.find(m => m.promptId === promptId);
+            if (memory) {
+                router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}&promptId=${encodeURIComponent(promptId)}`);
+            } else {
+                toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
+            }
+        } else {
+            toast({ title: "Starting New Chapter!", description: `Prompt: "${promptText}". Redirecting...` });
+            router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
+        }
+      }, 0);
   }, [router, memories, isDataLoading, canAccessFullJourney]);
 
 
