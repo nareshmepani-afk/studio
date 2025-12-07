@@ -14,8 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
-import { useMemories } from '@/hooks/useMemories';
-import { usePromptFlags } from '@/hooks/usePromptFlags';
 import Link from 'next/link';
 import {
   Dialog,
@@ -40,7 +38,8 @@ import type { Memory } from '@/types';
 
 const FIRESTORE_USER_PROMPT_FLAGS_COLLECTION = 'userPromptFlags';
 
-export default function LifeJourneyPage() {
+// This component receives data from AuthenticatedPageWrapper
+export default function LifeJourneyPage({ memories, completedPromptIds, flaggedPromptIds, isDataLoading }: any) {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -53,11 +52,6 @@ export default function LifeJourneyPage() {
     hostPassStatus,
     updateUserProfileInFirestore,
   } = useAuth();
-  
-  const { memories, completedPromptIds, isLoading: isMemoriesLoading } = useMemories();
-  const { flaggedPromptIds, isLoading: isFlagsLoading } = usePromptFlags();
-
-  const isDataLoading = isMemoriesLoading || isFlagsLoading;
   
   const [hostPassPriceDetails, setHostPassPriceDetails] = useState<GetHostPassPriceOutput | null>(null);
   const [isFetchingHostPassPrice, setIsFetchingHostPassPrice] = useState(false);
@@ -217,7 +211,7 @@ export default function LifeJourneyPage() {
       // The key fix: wrap router.push in a setTimeout to escape the current event cycle.
       setTimeout(() => {
         if (isCompleted) {
-            const memory = memories.find(m => m.promptId === promptId);
+            const memory = memories.find((m: Memory) => m.promptId === promptId);
             if (memory) {
                 router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}`);
             } else {
@@ -239,9 +233,8 @@ export default function LifeJourneyPage() {
     return "Activate 6-Month Free Host Pass";
   }, [hostPassStatus, isFetchingHostPassPrice, hostPassPriceDetails]);
 
-  if (authLoading || (user && isDataLoading && !memories.length)) { // Adjusted loading condition
+  if (authLoading || (user && isDataLoading && !memories.length)) {
     return (
-      <AuthenticatedPageWrapper>
         <div className="container mx-auto py-8 px-4 text-center">
           <HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
           <h1 className="font-headline text-3xl mb-2">Loading Life Journey...</h1>
@@ -250,11 +243,9 @@ export default function LifeJourneyPage() {
           </p>
            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
         </div>
-      </AuthenticatedPageWrapper>
     );
   } else if (userMode === 'guest') {
     return (
-      <AuthenticatedPageWrapper>
         <div className="container mx-auto py-8 px-4 text-center">
           <HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
           <h1 className="font-headline text-3xl mb-2">Life Journey Not Available</h1>
@@ -265,12 +256,10 @@ export default function LifeJourneyPage() {
             <Button variant="outline">Go to Timeline</Button>
           </Link>
         </div>
-      </AuthenticatedPageWrapper>
     );
   }
 
   return (
-    <AuthenticatedPageWrapper>
       <div className="container mx-auto py-8 px-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div className="flex items-center mb-4 md:mb-0">
@@ -441,6 +430,5 @@ export default function LifeJourneyPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AuthenticatedPageWrapper>
   );
 }

@@ -7,27 +7,45 @@ import { ReactNode } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2 } from 'lucide-react';
 import SplashScreen from './SplashScreen';
+import { useMemories } from '@/hooks/useMemories';
+import { usePromptFlags } from '@/hooks/usePromptFlags';
 
 interface AuthenticatedPageWrapperProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 export function AuthenticatedPageWrapper({ children }: AuthenticatedPageWrapperProps) {
-  const { loading } = useAuth();
-
-  // The main loading gate is now in AuthContext, which shows a SplashScreen.
-  // We can render the children directly here as the AuthContext handles the loading screen.
-  // If not authenticated, the context will redirect.
+  const { user, loading: authLoading } = useAuth();
   
-  if (loading) {
+  // Fetch data here in the stable wrapper
+  const { memories, completedPromptIds, isLoading: isMemoriesLoading } = useMemories();
+  const { flaggedPromptIds, isLoading: isFlagsLoading } = usePromptFlags();
+
+  const isDataLoading = authLoading || (user && (isMemoriesLoading || isFlagsLoading));
+
+  if (isDataLoading) {
     return <SplashScreen />;
   }
+
+  // Clone children to pass down the fetched data as props
+  const childrenWithProps = React.Children.map(children, child => {
+    if (React.isValidElement(child)) {
+      // @ts-ignore
+      return React.cloneElement(child, { 
+        memories, 
+        completedPromptIds, 
+        flaggedPromptIds,
+        isDataLoading: isDataLoading 
+      });
+    }
+    return child;
+  });
 
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
       <main className="flex-1 animate-fade-in">
-        {children}
+        {childrenWithProps}
       </main>
     </div>
   );
