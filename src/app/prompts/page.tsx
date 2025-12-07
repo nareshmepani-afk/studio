@@ -245,7 +245,11 @@ export default function LifeJourneyPage({ memories, completedPromptIds, flaggedP
   }
 
   // The main loading gate is now handled by AuthenticatedPageWrapper.
-  // We can safely assume memories, completedPromptIds, and flaggedPromptIds are available here.
+  // This is a final safeguard to prevent render errors if props aren't ready.
+  if (!flaggedPromptIds) {
+    return null;
+  }
+  
 
   return (
     <>
