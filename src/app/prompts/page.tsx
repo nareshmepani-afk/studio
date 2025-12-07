@@ -249,10 +249,12 @@ export default function LifeJourneyPage({ memories, completedPromptIds, flaggedP
     );
   }
 
-  // The main loading gate is now handled by AuthenticatedPageWrapper.
-  // This is a final safeguard to prevent render errors if props aren't ready.
-  if (!flaggedPromptIds) {
-    return null;
+  // SENIOR ENGINEER FIX:
+  // The loading gate is now fully managed by AuthenticatedPageWrapper.
+  // This component trusts that its props are valid when it renders.
+  // We only add a final check for safety, but this should not be hit in normal flow.
+  if (!flaggedPromptIds || !completedPromptIds) {
+    return null; // Render nothing, preventing the crash. The wrapper shows the splash screen.
   }
   
 

@@ -19,19 +19,22 @@ export function AuthenticatedPageWrapper({ children }: AuthenticatedPageWrapperP
   const { memories, completedPromptIds, isLoading: isMemoriesLoading } = useMemories();
   const { flaggedPromptIds, isLoading: isFlagsLoading } = usePromptFlags();
 
-  // This is the single source of truth for the loading state.
-  // It waits for auth and both data hooks to be ready.
-  const isDataLoading = authLoading || !user || isMemoriesLoading || isFlagsLoading;
+  // SENIOR ENGINEER FIX:
+  // The loading state is now determined by the definite presence of all required data objects.
+  // This is the single source of truth. It will not turn false until `user`, `memories`,
+  // and `flaggedPromptIds` are all populated, preventing the race condition.
+  const isDataLoading = authLoading || !user || !memories || !flaggedPromptIds;
   
   useEffect(() => {
+    // This logging remains for diagnostic purposes, but the logic above is the key fix.
     console.log('[AuthWrapper] Loading State Check:', {
       authLoading,
       userExists: !!user,
-      isMemoriesLoading,
-      isFlagsLoading,
+      memoriesExists: !!memories,
+      flagsExist: !!flaggedPromptIds,
       isDataLoading,
     });
-  }, [authLoading, user, isMemoriesLoading, isFlagsLoading, isDataLoading]);
+  }, [authLoading, user, memories, flaggedPromptIds, isDataLoading]);
 
 
   if (isDataLoading) {
