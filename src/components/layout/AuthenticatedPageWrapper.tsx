@@ -3,7 +3,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { Navbar } from '@/components/layout/Navbar';
-import React from 'react';
+import React, { useEffect } from 'react';
 import SplashScreen from './SplashScreen';
 import { useMemories } from '@/hooks/useMemories';
 import { usePromptFlags } from '@/hooks/usePromptFlags';
@@ -22,6 +22,17 @@ export function AuthenticatedPageWrapper({ children }: AuthenticatedPageWrapperP
   // This is the single source of truth for the loading state.
   // It waits for auth and both data hooks to be ready.
   const isDataLoading = authLoading || !user || isMemoriesLoading || isFlagsLoading;
+  
+  useEffect(() => {
+    console.log('[AuthWrapper] Loading State Check:', {
+      authLoading,
+      userExists: !!user,
+      isMemoriesLoading,
+      isFlagsLoading,
+      isDataLoading,
+    });
+  }, [authLoading, user, isMemoriesLoading, isFlagsLoading, isDataLoading]);
+
 
   if (isDataLoading) {
     return <SplashScreen />;
