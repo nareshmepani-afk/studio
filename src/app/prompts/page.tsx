@@ -32,26 +32,35 @@ import { app } from '@/lib/firebase';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { addMonths, isBefore, parseISO, format, addDays } from 'date-fns';
 import QRCode from "qrcode.react";
-import { useQueryClient } from '@tanstack/react-query';
 import type { Memory } from '@/types';
+import { useMemories } from '@/hooks/useMemories';
+import { usePromptFlags } from '@/hooks/usePromptFlags';
 
 
 const FIRESTORE_USER_PROMPT_FLAGS_COLLECTION = 'userPromptFlags';
 
-// This component receives data from AuthenticatedPageWrapper
-export default function LifeJourneyPage({ memories, completedPromptIds, flaggedPromptIds }: any) {
+// This component is wrapped by AuthenticatedPageWrapper, which handles the auth loading state.
+export default function LifeJourneyPage() {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
-  const queryClient = useQueryClient();
   const isMountedRef = useRef(true);
 
   const {
     user,
-    loading: authLoading,
+    loading: authLoading, // We still use this to know when the user object is ready.
     userMode,
     hostPassStatus,
     updateUserProfileInFirestore,
   } = useAuth();
+  
+  // SENIOR ENGINEER FIX:
+  // Data fetching is now LOCAL to the component that needs it.
+  // This eliminates the props-drilling race condition.
+  const { memories, completedPromptIds, isLoading: isMemoriesLoading } = useMemories();
+  const { flaggedPromptIds, isLoading: isFlagsLoading } = usePromptFlags();
+
+  // The definitive loading state for this page.
+  const isDataLoading = authLoading || isMemoriesLoading || isFlagsLoading;
   
   const [hostPassPriceDetails, setHostPassPriceDetails] = useState<GetHostPassPriceOutput | null>(null);
   const [isFetchingHostPassPrice, setIsFetchingHostPassPrice] = useState(false);
@@ -132,7 +141,7 @@ export default function LifeJourneyPage({ memories, completedPromptIds, flaggedP
   }, [canAccessFullJourney]);
 
   const handleToggleFlagPrompt = useCallback(async (promptIdToToggle: string) => {
-    if (!user || !flaggedPromptIds) return;
+    if (!user) return; // flaggedPromptIds will be defined if user is.
     const newFlagStatus = !flaggedPromptIds.has(promptIdToToggle);
     const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, user.id);
     try {
@@ -233,7 +242,17 @@ export default function LifeJourneyPage({ memories, completedPromptIds, flaggedP
     return "Activate 6-Month Free Host Pass";
   }, [hostPassStatus, isFetchingHostPassPrice, hostPassPriceDetails]);
 
-  // Safeguard against rendering with undefined props from the wrapper
+  // The wrapper handles the auth splash screen. This handles the page's own data loading.
+  if (isDataLoading) {
+     return (
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+          <h2 className="text-2xl font-headline mb-2">Loading Life Journey...</h2>
+          <p className="text-muted-foreground">Please wait while your data is loaded.</p>
+        </div>
+     );
+  }
+  
   if (userMode === 'guest') {
     return (
         <div className="container mx-auto py-8 px-4 text-center">
@@ -248,18 +267,9 @@ export default function LifeJourneyPage({ memories, completedPromptIds, flaggedP
         </div>
     );
   }
-
-  // SENIOR ENGINEER FIX:
-  // The loading gate is now fully managed by AuthenticatedPageWrapper.
-  // This component trusts that its props are valid when it renders.
-  // We only add a final check for safety, but this should not be hit in normal flow.
-  if (!flaggedPromptIds || !completedPromptIds) {
-    return null; // Render nothing, preventing the crash. The wrapper shows the splash screen.
-  }
   
-
   return (
-    <>
+    <AuthenticatedPageWrapper>
       <div className="container mx-auto py-8 px-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div className="flex items-center mb-4 md:mb-0">
@@ -429,6 +439,6 @@ export default function LifeJourneyPage({ memories, completedPromptIds, flaggedP
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </AuthenticatedPageWrapper>
   );
 }

@@ -15,51 +15,32 @@ interface AuthenticatedPageWrapperProps {
 export function AuthenticatedPageWrapper({ children }: AuthenticatedPageWrapperProps) {
   const { user, loading: authLoading } = useAuth();
   
-  // Fetch data here in the stable wrapper
-  const { memories, completedPromptIds, isLoading: isMemoriesLoading } = useMemories();
-  const { flaggedPromptIds, isLoading: isFlagsLoading } = usePromptFlags();
-
   // SENIOR ENGINEER FIX:
-  // The loading state is now determined by the definite presence of all required data objects.
-  // This is the single source of truth. It will not turn false until `user`, `memories`,
-  // and `flaggedPromptIds` are all populated, preventing the race condition.
-  const isDataLoading = authLoading || !user || !memories || !flaggedPromptIds;
+  // The wrapper is ONLY responsible for authentication. It will not fetch page-specific data.
+  // This eliminates the race condition entirely. The child page is now responsible for its own data.
+  const isAuthenticating = authLoading || !user;
   
   useEffect(() => {
-    // This logging remains for diagnostic purposes, but the logic above is the key fix.
+    // This logging remains for diagnostic purposes
     console.log('[AuthWrapper] Loading State Check:', {
       authLoading,
       userExists: !!user,
-      memoriesExists: !!memories,
-      flagsExist: !!flaggedPromptIds,
-      isDataLoading,
+      isAuthenticating,
     });
-  }, [authLoading, user, memories, flaggedPromptIds, isDataLoading]);
+  }, [authLoading, user, isAuthenticating]);
 
 
-  if (isDataLoading) {
+  if (isAuthenticating) {
     return <SplashScreen />;
   }
 
-  // Clone children to pass down the fetched data as props.
-  // This ensures the child page only renders when all data is available.
-  const childrenWithProps = React.Children.map(children, child => {
-    if (React.isValidElement(child)) {
-      // @ts-ignore
-      return React.cloneElement(child, { 
-        memories, 
-        completedPromptIds, 
-        flaggedPromptIds,
-      });
-    }
-    return child;
-  });
-
+  // The wrapper no longer needs to clone props. It just renders the children when auth is ready.
+  // The child page will handle its own data fetching and loading states.
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
       <main className="flex-1 animate-fade-in">
-        {childrenWithProps}
+        {children}
       </main>
     </div>
   );
