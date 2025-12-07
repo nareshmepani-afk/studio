@@ -39,7 +39,7 @@ import type { Memory } from '@/types';
 const FIRESTORE_USER_PROMPT_FLAGS_COLLECTION = 'userPromptFlags';
 
 // This component receives data from AuthenticatedPageWrapper
-export default function LifeJourneyPage({ memories, completedPromptIds, flaggedPromptIds, isDataLoading }: any) {
+export default function LifeJourneyPage({ memories, completedPromptIds, flaggedPromptIds }: any) {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -196,16 +196,11 @@ export default function LifeJourneyPage({ memories, completedPromptIds, flaggedP
 
   const handleStartChapter = useCallback((promptId: string, isCompleted: boolean) => {
       console.log(`[LifeJourneyPage] handleStartChapter called. Prompt ID: ${promptId}, isCompleted: ${isCompleted}`);
-      if (isDataLoading) {
-          console.log('[LifeJourneyPage] Action prevented: data is loading.');
+      
+      const isFirstGroupPrompt = mockPromptGroups[0]?.prompts.some(p => p.id === promptId);
+      if (!canAccessFullJourney && !isCompleted && !isFirstGroupPrompt) {
+          toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
           return;
-      }
-      if (!canAccessFullJourney && !isCompleted) {
-          const isFirstGroupPrompt = mockPromptGroups[0]?.prompts.some(p => p.id === promptId);
-          if(!isFirstGroupPrompt) {
-            toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
-            return;
-          }
       }
 
       // The key fix: wrap router.push in a setTimeout to escape the current event cycle.
@@ -221,7 +216,7 @@ export default function LifeJourneyPage({ memories, completedPromptIds, flaggedP
             router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
         }
       }, 0);
-  }, [router, memories, isDataLoading, canAccessFullJourney]);
+  }, [router, memories, canAccessFullJourney]);
 
 
   const hostPassButtonText = useMemo(() => {
@@ -234,18 +229,7 @@ export default function LifeJourneyPage({ memories, completedPromptIds, flaggedP
   }, [hostPassStatus, isFetchingHostPassPrice, hostPassPriceDetails]);
 
   // Safeguard against rendering with undefined props from the wrapper
-  if (authLoading || (user && (isDataLoading || !memories || !completedPromptIds || !flaggedPromptIds))) {
-    return (
-        <div className="container mx-auto py-8 px-4 text-center">
-          <HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-          <h1 className="font-headline text-3xl mb-2">Loading Life Journey...</h1>
-          <p className="text-muted-foreground mb-6">
-            Please wait while your data is loaded.
-          </p>
-           <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-        </div>
-    );
-  } else if (userMode === 'guest') {
+  if (userMode === 'guest') {
     return (
         <div className="container mx-auto py-8 px-4 text-center">
           <HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
@@ -259,6 +243,9 @@ export default function LifeJourneyPage({ memories, completedPromptIds, flaggedP
         </div>
     );
   }
+
+  // The main loading gate is now handled by AuthenticatedPageWrapper.
+  // We can safely assume memories, completedPromptIds, and flaggedPromptIds are available here.
 
   return (
     <>
@@ -340,7 +327,6 @@ export default function LifeJourneyPage({ memories, completedPromptIds, flaggedP
                     teleprompterScript={teleprompterScripts[prompt.id] || "No script available for this prompt."}
                     isCompleted={completedPromptIds.has(prompt.id)}
                     isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
-                    isLoading={isDataLoading}
                     onStartChapter={handleStartChapter}
                     onToggleFlagPrompt={handleToggleFlagPrompt}
                     onShowQrCode={handleShowQrCode}
@@ -435,5 +421,3 @@ export default function LifeJourneyPage({ memories, completedPromptIds, flaggedP
     </>
   );
 }
-
-    

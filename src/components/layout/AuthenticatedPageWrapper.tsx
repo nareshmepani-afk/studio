@@ -3,9 +3,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { Navbar } from '@/components/layout/Navbar';
-import { ReactNode } from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2 } from 'lucide-react';
+import React from 'react';
 import SplashScreen from './SplashScreen';
 import { useMemories } from '@/hooks/useMemories';
 import { usePromptFlags } from '@/hooks/usePromptFlags';
@@ -21,13 +19,16 @@ export function AuthenticatedPageWrapper({ children }: AuthenticatedPageWrapperP
   const { memories, completedPromptIds, isLoading: isMemoriesLoading } = useMemories();
   const { flaggedPromptIds, isLoading: isFlagsLoading } = usePromptFlags();
 
-  const isDataLoading = authLoading || (user && (isMemoriesLoading || isFlagsLoading));
+  // This is the single source of truth for the loading state.
+  // It waits for auth and both data hooks to be ready.
+  const isDataLoading = authLoading || !user || isMemoriesLoading || isFlagsLoading;
 
   if (isDataLoading) {
     return <SplashScreen />;
   }
 
-  // Clone children to pass down the fetched data as props
+  // Clone children to pass down the fetched data as props.
+  // This ensures the child page only renders when all data is available.
   const childrenWithProps = React.Children.map(children, child => {
     if (React.isValidElement(child)) {
       // @ts-ignore
@@ -35,7 +36,6 @@ export function AuthenticatedPageWrapper({ children }: AuthenticatedPageWrapperP
         memories, 
         completedPromptIds, 
         flaggedPromptIds,
-        isDataLoading: isDataLoading 
       });
     }
     return child;
