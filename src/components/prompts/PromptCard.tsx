@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { BookText, CheckCircle, Edit, Star, Loader2, Info, QrCode } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface PromptCardProps {
@@ -15,7 +15,7 @@ interface PromptCardProps {
   isCompleted: boolean;
   isFlaggedForReuse: boolean;
   isLoading?: boolean;
-  onStartChapter: (promptId: string, promptText: string, isCompleted: boolean) => void;
+  onStartChapter: (promptId: string, isCompleted: boolean) => void;
   onToggleFlagPrompt: (promptId: string) => void;
   onShowQrCode: (promptId: string, promptTitle: string) => void;
   canAccess: boolean; 
@@ -39,12 +39,11 @@ export function PromptCard({
     setHasMounted(true);
   }, []);
 
-  const handleAction = () => {
-    // This console.log is for debugging the click event.
+  const handleAction = useCallback(() => {
     console.log(`[PromptCard] handleAction called for promptId: ${promptId}. isCompleted: ${isCompleted}`);
     if (isLoading || !hasMounted) return;
-    onStartChapter(promptId, promptText, isCompleted);
-  };
+    onStartChapter(promptId, isCompleted);
+  }, [isLoading, hasMounted, onStartChapter, promptId, isCompleted]);
   
   const handleFlagToggle = (e: React.MouseEvent) => {
     if (isLoading || !hasMounted) return;

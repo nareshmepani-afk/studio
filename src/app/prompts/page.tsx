@@ -200,15 +200,18 @@ export default function LifeJourneyPage() {
     setQrCodeDialog({ open: true, url, title: promptTitle });
   }, []);
 
-  const handleStartChapter = useCallback((promptId: string, promptText: string, isCompleted: boolean) => {
+  const handleStartChapter = useCallback((promptId: string, isCompleted: boolean) => {
       console.log(`[LifeJourneyPage] handleStartChapter called. Prompt ID: ${promptId}, isCompleted: ${isCompleted}`);
       if (isDataLoading) {
           console.log('[LifeJourneyPage] Action prevented: data is loading.');
           return;
       }
-      if (!canAccessFullJourney) {
-          toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
-          return;
+      if (!canAccessFullJourney && !isCompleted) {
+          const isFirstGroupPrompt = mockPromptGroups[0]?.prompts.some(p => p.id === promptId);
+          if(!isFirstGroupPrompt) {
+            toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
+            return;
+          }
       }
 
       // The key fix: wrap router.push in a setTimeout to escape the current event cycle.
@@ -216,12 +219,11 @@ export default function LifeJourneyPage() {
         if (isCompleted) {
             const memory = memories.find(m => m.promptId === promptId);
             if (memory) {
-                router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}&promptId=${encodeURIComponent(promptId)}`);
+                router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}`);
             } else {
                 toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
             }
         } else {
-            toast({ title: "Starting New Chapter!", description: `Prompt: "${promptText}". Redirecting...` });
             router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
         }
       }, 0);

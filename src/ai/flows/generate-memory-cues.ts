@@ -1,5 +1,5 @@
 
-// use server'
+'use server';
 
 /**
  * @fileOverview This file defines a Genkit flow for generating memory cues based on the current date and user profile data.
@@ -15,7 +15,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const GenerateMemoryCuesInputSchema = z.object({
+export const GenerateMemoryCuesInputSchema = z.object({
   userProfile: z
     .string()
     .describe('User profile data including demographics, interests, past events, family information, historical context, or specific decades/periods they lived through if relevant.'),
@@ -28,7 +28,7 @@ const GenerateMemoryCuesInputSchema = z.object({
 });
 export type GenerateMemoryCuesInput = z.infer<typeof GenerateMemoryCuesInputSchema>;
 
-const GenerateMemoryCuesOutputSchema = z.object({
+export const GenerateMemoryCuesOutputSchema = z.object({
   memoryCues: z
     .array(z.string())
     .describe('An array of memory cues (chapter ideas) relevant to the user based on their profile, the current date, and in the specified language. Consider family relationships and historical periods if mentioned in the profile.'),
@@ -90,4 +90,3 @@ const generateMemoryCuesFlow = ai.defineFlow(
     return output!;
   }
 );
-
