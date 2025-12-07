@@ -127,7 +127,7 @@ export default function LifeJourneyPage({ memories, completedPromptIds, flaggedP
   }, [canAccessFullJourney]);
 
   const handleToggleFlagPrompt = useCallback(async (promptIdToToggle: string) => {
-    if (!user) return;
+    if (!user || !flaggedPromptIds) return;
     const newFlagStatus = !flaggedPromptIds.has(promptIdToToggle);
     const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, user.id);
     try {
@@ -233,7 +233,8 @@ export default function LifeJourneyPage({ memories, completedPromptIds, flaggedP
     return "Activate 6-Month Free Host Pass";
   }, [hostPassStatus, isFetchingHostPassPrice, hostPassPriceDetails]);
 
-  if (authLoading || (user && isDataLoading && !memories.length)) {
+  // Safeguard against rendering with undefined props from the wrapper
+  if (authLoading || (user && (isDataLoading || !memories || !completedPromptIds || !flaggedPromptIds))) {
     return (
         <div className="container mx-auto py-8 px-4 text-center">
           <HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
@@ -434,3 +435,5 @@ export default function LifeJourneyPage({ memories, completedPromptIds, flaggedP
     </>
   );
 }
+
+    
