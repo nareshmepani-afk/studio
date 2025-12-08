@@ -53,9 +53,7 @@ export default function LifeJourneyPage() {
     updateUserProfileInFirestore,
   } = useAuth();
   
-  // SENIOR ENGINEER FIX:
-  // Data fetching is now LOCAL to the component that needs it.
-  // This eliminates the props-drilling race condition.
+  // SENIOR ENGINEER FIX: Data fetching is now LOCAL to the component that needs it.
   const { memories, completedPromptIds, isLoading: isMemoriesLoading } = useMemories();
   const { flaggedPromptIds, isLoading: isFlagsLoading } = usePromptFlags();
 
