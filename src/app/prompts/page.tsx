@@ -201,43 +201,43 @@ export default function LifeJourneyPage() {
     setQrCodeDialog({ open: true, url, title: promptTitle });
   }, []);
 
-  const handleStartChapter = (promptId: string, isCompleted: boolean) => {
-      // Re-introducing logs for diagnostics
-      console.log(`[DIAGNOSTIC] handleStartChapter called for promptId: ${promptId}, isCompleted: ${isCompleted}`);
+  const handleStartChapter = useCallback((promptId: string, isCompleted: boolean) => {
+    // Re-introducing logs for diagnostics
+    console.log(`[DIAGNOSTIC] handleStartChapter called for promptId: ${promptId}, isCompleted: ${isCompleted}`);
+    
+    const isFirstGroupPrompt = mockPromptGroups[0]?.prompts.some(p => p.id === promptId);
+    if (!canAccessFullJourney && !isCompleted && !isFirstGroupPrompt) {
+        console.log('[DIAGNOSTIC] Access denied. User does not have full journey access.');
+        toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
+        return;
+    }
+  
+    if (isCompleted) {
+        console.log("[DIAGNOSTIC] Handling completed chapter. Current memories count:", memories.length);
+        console.log("[DIAGNOSTIC] Searching for memory with promptId:", promptId);
+        const memory = memories.find((m: Memory) => m.promptId === promptId);
+        
+        if (memory) {
+            console.log(`[DIAGNOSTIC] Found memory for promptId ${promptId}:`, memory);
+            const url = `/add-memory?editMemoryId=${encodeURIComponent(memory.id)}`;
+            console.log(`[DIAGNOSTIC] Bypassing router. Navigating with window.location.assign to: ${url}`);
+            
+            // *** THE DIAGNOSTIC CHANGE ***
+            window.location.assign(url);
 
-      const isFirstGroupPrompt = mockPromptGroups[0]?.prompts.some(p => p.id === promptId);
-      if (!canAccessFullJourney && !isCompleted && !isFirstGroupPrompt) {
-          console.log('[DIAGNOSTIC] Access denied. User does not have full journey access.');
-          toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
-          return;
-      }
-
-      if (isCompleted) {
-          console.log("[DIAGNOSTIC] Handling completed chapter. Current memories count:", memories.length);
-          console.log("[DIAGNOSTIC] Searching for memory with promptId:", promptId);
-          const memory = memories.find((m: Memory) => m.promptId === promptId);
-
-          if (memory) {
-              console.log(`[DIAGNOSTIC] Found memory for promptId ${promptId}:`, memory);
-              const url = `/add-memory?editMemoryId=${encodeURIComponent(memory.id)}`;
-              console.log(`[DIAGNOSTIC] Bypassing router. Navigating with window.location.assign to: ${url}`);
-              
-              // *** THE DIAGNOSTIC CHANGE ***
-              window.location.assign(url);
-
-          } else {
-              console.error(`[DIAGNOSTIC] Could not find memory for completed promptId: ${promptId}`);
-              console.log("[DIAGNOSTIC] Available memories:", memories);
-              toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
-          }
-      } else {
-          const url = `/add-memory?promptId=${encodeURIComponent(promptId)}`;
-          console.log(`[DIAGNOSTIC] Bypassing router. Navigating with window.location.assign to: ${url}`);
-          
-          // *** THE DIAGNOSTIC CHANGE ***
-          window.location.assign(url);
-      }
-  };
+        } else {
+            console.error(`[DIAGNOSTIC] Could not find memory for completed promptId: ${promptId}`);
+            console.log("[DIAGNOSTIC] Available memories:", memories);
+            toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
+        }
+    } else {
+        const url = `/add-memory?promptId=${encodeURIComponent(promptId)}`;
+        console.log(`[DIAGNOSTIC] Bypassing router. Navigating with window.location.assign to: ${url}`);
+        
+        // *** THE DIAGNOSTIC CHANGE ***
+        window.location.assign(url);
+    }
+}, [memories, router, canAccessFullJourney]);
 
 
   const hostPassButtonText = useMemo(() => {
@@ -455,3 +455,5 @@ export default function LifeJourneyPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    
