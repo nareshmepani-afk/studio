@@ -3,7 +3,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { Navbar } from '@/components/layout/Navbar';
-import React, { useEffect, cloneElement } from 'react';
+import React, { useEffect } from 'react';
 import SplashScreen from './SplashScreen';
 
 interface AuthenticatedPageWrapperProps {
@@ -14,11 +14,9 @@ export function AuthenticatedPageWrapper({ children }: AuthenticatedPageWrapperP
   const { user, loading: authLoading } = useAuth();
 
   // The wrapper is ONLY responsible for authentication. It will not fetch page-specific data.
-  // This eliminates the race condition entirely. The child page is now responsible for its own data.
   const isAuthenticating = authLoading || !user;
 
   useEffect(() => {
-    // This logging remains for diagnostic purposes
     console.log('[AuthWrapper] Loading State Check:', {
       authLoading,
       userExists: !!user,
