@@ -335,20 +335,26 @@ export default function LifeJourneyPage() {
             <section key={group.id}>
               <h2 className="font-headline text-3xl mb-6 border-b pb-3 text-primary">{group.title[currentLanguage] || group.title.en}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {group.prompts.map((prompt) => (
-                  <PromptCard
-                    key={prompt.id}
-                    promptId={prompt.id}
-                    promptText={prompt.text[currentLanguage] || prompt.text.en}
-                    teleprompterScript={teleprompterScripts[prompt.id] || "No script available for this prompt."}
-                    isCompleted={completedPromptIds.has(prompt.id)}
-                    isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
-                    onStartChapter={handleStartChapter}
-                    onToggleFlagPrompt={handleToggleFlagPrompt}
-                    onShowQrCode={handleShowQrCode}
-                    canAccess={canAccessFullJourney || availablePromptGroups[0].prompts.some(p => p.id === prompt.id)}
-                  />
-                ))}
+                {group.prompts.map((prompt) => {
+                    const isCompleted = completedPromptIds.has(prompt.id);
+                    const memoryForPrompt = isCompleted ? memories.find(m => m.promptId === prompt.id) : undefined;
+                    
+                    return (
+                      <PromptCard
+                        key={prompt.id}
+                        promptId={prompt.id}
+                        promptText={prompt.text[currentLanguage] || prompt.text.en}
+                        teleprompterScript={teleprompterScripts[prompt.id] || "No script available for this prompt."}
+                        isCompleted={isCompleted}
+                        isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
+                        onStartChapter={handleStartChapter}
+                        onToggleFlagPrompt={handleToggleFlagPrompt}
+                        onShowQrCode={handleShowQrCode}
+                        canAccess={canAccessFullJourney || availablePromptGroups[0].prompts.some(p => p.id === prompt.id)}
+                        memoryDescription={memoryForPrompt?.description}
+                      />
+                    );
+                })}
               </div>
             </section>
           ))}

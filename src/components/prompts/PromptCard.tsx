@@ -19,6 +19,7 @@ interface PromptCardProps {
   onToggleFlagPrompt: (promptId: string) => void;
   onShowQrCode: (promptId: string, promptTitle: string) => void;
   canAccess: boolean; 
+  memoryDescription?: string;
 }
 
 export function PromptCard({
@@ -32,6 +33,7 @@ export function PromptCard({
   onToggleFlagPrompt,
   onShowQrCode,
   canAccess,
+  memoryDescription,
 }: PromptCardProps) {
   const [hasMounted, setHasMounted] = useState(false);
 
@@ -40,7 +42,6 @@ export function PromptCard({
   }, []);
 
   const handleAction = useCallback(() => {
-    console.log(`[PromptCard] handleAction called for promptId: ${promptId}. isCompleted: ${isCompleted}`);
     if (isLoading || !hasMounted) return;
     onStartChapter(promptId, isCompleted);
   }, [isLoading, hasMounted, onStartChapter, promptId, isCompleted]);
@@ -99,9 +100,13 @@ export function PromptCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-grow">
-        {/* Can add a snippet of the memory description here if completed, in the future */}
+        {isCompleted && memoryDescription && (
+          <p className="text-sm text-muted-foreground line-clamp-3 italic border-l-2 border-green-200 dark:border-green-800 pl-2">
+            {memoryDescription}
+          </p>
+        )}
       </CardContent>
-      <CardFooter className="flex justify-between items-center mt-auto">
+      <CardFooter className="flex justify-between items-center mt-auto pt-2">
         <div className="flex items-center space-x-1">
             <TooltipProvider>
               <Tooltip>
