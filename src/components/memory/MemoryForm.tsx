@@ -139,9 +139,11 @@ export function MemoryForm() {
   }, []);
 
   useEffect(() => {
+    // This effect should only run when we have both an ID and a user.
     if (editMemoryId && user) {
       const db = getFirestore(app);
       const fetchMemory = async () => {
+        // Set loading to true only when we are actively fetching.
         setIsLoadingMemory(true);
         try {
           const memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
@@ -163,9 +165,12 @@ export function MemoryForm() {
         }
       };
       fetchMemory();
-    } else {
+    } else if (!editMemoryId) {
+        // If we are not editing, we are done loading immediately.
         setIsLoadingMemory(false);
     }
+    // The key change: The hook now depends on `user`, so it will re-run when `user` becomes available.
+    // If `editMemoryId` is present but `user` is not on the first render, it will simply wait.
   }, [editMemoryId, user, router]);
 
   useEffect(() => {
@@ -379,7 +384,7 @@ export function MemoryForm() {
     }
     
     onSubmitMemory(formData);
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, location, country, selectedCategory, initialPromptId, selectedEmotionTags]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, location, country, selectedCategory, initialPromptId, selectedEmotionTags, editMemoryId, onSubmitMemory]);
 
   const handleActionButtonClick = useCallback(() => {
     if (isParentSubmitting || isTrimming || isPreparingMedia) return;
