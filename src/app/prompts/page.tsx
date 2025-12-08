@@ -75,16 +75,11 @@ export default function LifeJourneyPage() {
   const db = getFirestore(app);
 
   useEffect(() => {
-     console.log('[LifeJourneyPage] Props received:', {
-      memories: memories ? `(${memories.length}) memories` : undefined,
-      completedPromptIds: completedPromptIds ? `(${completedPromptIds.size}) ids` : undefined,
-      flaggedPromptIds: flaggedPromptIds ? `(${flaggedPromptIds.size}) ids` : undefined,
-    });
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
-  }, [memories, completedPromptIds, flaggedPromptIds]);
+  }, []);
 
   useEffect(() => { if (user?.profileInfo) setCustomChapterUserProfile(user.profileInfo); }, [user?.profileInfo]);
   
