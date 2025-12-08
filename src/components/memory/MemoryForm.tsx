@@ -79,7 +79,7 @@ function formatSecondsToTime(timeInSeconds: number | undefined): string {
 
 
 export function MemoryForm() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth(); // Get auth loading state
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -139,39 +139,44 @@ export function MemoryForm() {
   }, []);
 
   useEffect(() => {
-    // This effect should only run when we have both an ID and a user.
-    if (editMemoryId && user) {
-      const db = getFirestore(app);
-      const fetchMemory = async () => {
-        // Set loading to true only when we are actively fetching.
-        setIsLoadingMemory(true);
-        try {
-          const memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
-          const docSnap = await getDoc(memoryDocRef);
-          if (docSnap.exists()) {
-            const data = docSnap.data() as Memory;
-            const validDate = data.date && isValid(parseISO(data.date)) ? parseISO(data.date).toISOString() : new Date().toISOString();
-            const memoryData = { ...data, id: docSnap.id, date: validDate };
-            setMemory(memoryData);
-          } else {
-            toast({ title: "Memory not found", variant: "destructive" });
-            router.push('/timeline');
-          }
-        } catch (error) {
-          console.error("Error loading memory:", error);
-          toast({ title: "Error loading memory", variant: "destructive" });
-        } finally {
-          setIsLoadingMemory(false);
-        }
-      };
-      fetchMemory();
-    } else if (!editMemoryId) {
-        // If we are not editing, we are done loading immediately.
-        setIsLoadingMemory(false);
+    // Only proceed if auth has finished loading
+    if (authLoading) {
+        return;
     }
-    // The key change: The hook now depends on `user`, so it will re-run when `user` becomes available.
-    // If `editMemoryId` is present but `user` is not on the first render, it will simply wait.
-  }, [editMemoryId, user, router]);
+
+    if (editMemoryId && user) {
+        const db = getFirestore(app);
+        const fetchMemory = async () => {
+            setIsLoadingMemory(true);
+            try {
+                const memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
+                const docSnap = await getDoc(memoryDocRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data() as Memory;
+                    const validDate = data.date && isValid(parseISO(data.date)) ? parseISO(data.date).toISOString() : new Date().toISOString();
+                    const memoryData = { ...data, id: docSnap.id, date: validDate };
+                    setMemory(memoryData);
+                } else {
+                    toast({ title: "Memory not found", variant: "destructive" });
+                    router.push('/timeline');
+                }
+            } catch (error) {
+                console.error("Error loading memory:", error);
+                toast({ title: "Error loading memory", variant: "destructive" });
+            } finally {
+                setIsLoadingMemory(false);
+            }
+        };
+        fetchMemory();
+    } else if (!editMemoryId) {
+        setIsLoadingMemory(false);
+    } else if (!user && !authLoading) {
+        // If auth is done and there's still no user, redirect
+        toast({ title: "Authentication required", variant: "destructive" });
+        router.push('/login');
+    }
+}, [editMemoryId, user, authLoading, router]);
+
 
   useEffect(() => {
     if (memory) { // Editing
@@ -409,11 +414,11 @@ export function MemoryForm() {
 
   const handleFormSubmit = (event: FormEvent) => { event.preventDefault(); handleActionButtonClick(); };
 
-  if (isLoadingMemory) {
+  if (isLoadingMemory || authLoading) {
     return (
         <div className="container mx-auto py-8 px-4 text-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-            <p className="text-muted-foreground mt-4">Loading memory...</p>
+            <p className="text-muted-foreground mt-4">Loading memory editor...</p>
         </div>
     );
   }
@@ -608,3 +613,5 @@ export function MemoryForm() {
     </form>
   );
 }
+
+    
