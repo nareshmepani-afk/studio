@@ -3,6 +3,7 @@
 
 import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
+import type { Memory } from '@/types';
 
 // The MemoryForm now contains all client-side logic and must not be rendered on the server.
 const MemoryForm = dynamic(() => import('@/components/memory/MemoryForm').then(mod => mod.MemoryForm), {
@@ -15,11 +16,16 @@ const MemoryForm = dynamic(() => import('@/components/memory/MemoryForm').then(m
   ),
 });
 
-export function AddMemoryPageContent() {
-  // This component now only serves to dynamically load the client-heavy MemoryForm.
+interface AddMemoryPageContentProps {
+    memory?: Memory;
+}
+
+export function AddMemoryPageContent({ memory }: AddMemoryPageContentProps) {
+  // This component now only serves to dynamically load the client-heavy MemoryForm
+  // and pass the pre-loaded memory object to it.
   return (
     <div className="container mx-auto py-8 px-4">
-        <MemoryForm />
+        <MemoryForm memoryToEdit={memory} />
     </div>
   );
 }

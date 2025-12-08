@@ -28,9 +28,6 @@ import { mockPromptGroups } from '@/lib/mockData';
 import { Slider } from '@/components/ui/slider';
 import dynamic from 'next/dynamic';
 import { saveMemory } from '@/actions/memoryActions';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { app } from '@/lib/firebase';
-
 
 const MediaCaptureControl = dynamic(
   () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
@@ -77,18 +74,23 @@ function formatSecondsToTime(timeInSeconds: number | undefined): string {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
+interface MemoryFormProps {
+    memoryToEdit?: Memory;
+}
 
-export function MemoryForm() {
+export function MemoryForm({ memoryToEdit }: MemoryFormProps) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  const editMemoryId = searchParams.get('editMemoryId');
+  // The memory object is now passed as a prop.
+  const memory = memoryToEdit;
+  const editMemoryId = memory?.id;
+
   const initialPromptId = searchParams.get('promptId') || undefined;
   const initialCustomPromptText = searchParams.get('prompt') || undefined;
 
-  const [memory, setMemory] = useState<Memory | null>(null);
-  const [isLoadingMemory, setIsLoadingMemory] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -139,61 +141,12 @@ export function MemoryForm() {
   }, []);
 
   useEffect(() => {
-    // This is the main data fetching and state initialization hook.
-    // It now waits for auth to be complete before doing anything.
-    if (authLoading) {
-      setIsLoadingMemory(true); // Keep the loading screen up while auth is in progress
-      return;
-    }
-  
-    // If auth is done and there's no user, and we're trying to edit, redirect to login.
-    if (!user && editMemoryId) {
-      toast({ title: "Authentication required", description: "Please log in to edit your memory.", variant: "destructive" });
-      router.push('/login');
+    // If we're editing but the memory prop hasn't arrived yet, we just wait.
+    if (editMemoryId && !memory) {
+      setIsLoading(true);
       return;
     }
 
-    if (editMemoryId && user) {
-      const db = getFirestore(app);
-      const fetchMemory = async () => {
-        setIsLoadingMemory(true);
-        try {
-          const memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
-          const docSnap = await getDoc(memoryDocRef);
-          if (docSnap.exists()) {
-            const data = docSnap.data() as Memory;
-            const validDate = data.date && isValid(parseISO(data.date)) ? parseISO(data.date).toISOString() : new Date().toISOString();
-            const memoryData = { ...data, id: docSnap.id, date: validDate };
-            setMemory(memoryData);
-          } else {
-            toast({ title: "Memory not found", variant: "destructive" });
-            router.push('/timeline');
-          }
-        } catch (error) {
-          console.error("Error loading memory:", error);
-          toast({ title: "Error loading memory", variant: "destructive" });
-          router.push('/timeline');
-        } finally {
-          setIsLoadingMemory(false);
-        }
-      };
-      fetchMemory();
-    } else {
-      // This case handles creating a new memory.
-      // We know auth is done at this point, so if there's no user, we can handle it.
-      if (!user) {
-        toast({ title: "Authentication required", description: "Please log in to create a new memory.", variant: "destructive" });
-        router.push('/login');
-        return;
-      }
-      setIsLoadingMemory(false); // Stop loading, we are creating a new memory.
-    }
-  }, [editMemoryId, user, authLoading, router]);
-
-
-  useEffect(() => {
-    // This effect now ONLY sets form state based on the `memory` object,
-    // which is reliably populated by the effect above.
     if (memory) { // Editing
       setTitle(memory.title || '');
       setLocation(memory.location || '');
@@ -209,9 +162,10 @@ export function MemoryForm() {
 
       setDescription(memory.description || '');
       setSelectedEmotionTags(memory.emotionTags || []);
-      setSelectedYear(getInitialDateComponent('year', memory.date));
-      setSelectedMonth(getInitialDateComponent('month', memory.date));
-      setSelectedDay(getInitialDateComponent('day', memory.date));
+      const validDate = memory.date && isValid(parseISO(memory.date)) ? parseISO(memory.date) : new Date();
+      setSelectedYear(getYear(validDate));
+      setSelectedMonth(getMonth(validDate));
+      setSelectedDay(getDate(validDate));
 
       if (memory.mediaAttachments && memory.mediaAttachments.length > 0 && memory.mediaAttachments[0].url) {
         const firstMedia = memory.mediaAttachments[0];
@@ -248,7 +202,8 @@ export function MemoryForm() {
       setSelectedYear(getInitialDateComponent('year')); setSelectedMonth(getInitialDateComponent('month')); setSelectedDay(getInitialDateComponent('day'));
       setCurrentMedia(null); setCurrentMediaPreviewUrl(null);
     }
-  }, [memory, initialPromptId, initialCustomPromptText, getInitialDateComponent]);
+    setIsLoading(false);
+  }, [memory, editMemoryId, initialPromptId, initialCustomPromptText, getInitialDateComponent]);
 
 
   const daysInSelectedMonth = useMemo(() => {
@@ -353,7 +308,6 @@ export function MemoryForm() {
     }
   };
 
-
   const onSubmitMemory = async (formData: FormData) => {
     if (!user) {
       toast({ title: "Authentication Error", variant: "destructive" });
@@ -361,7 +315,7 @@ export function MemoryForm() {
     }
     setIsParentSubmitting(true);
     
-    const result = await saveMemory(formData, user.id, editMemoryId);
+    const result = await saveMemory(formData, user.id, editMemoryId || null);
     setIsParentSubmitting(false);
 
     if (result.success) {
@@ -404,7 +358,7 @@ export function MemoryForm() {
     }
     
     onSubmitMemory(formData);
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, location, country, selectedCategory, initialPromptId, selectedEmotionTags, editMemoryId, onSubmitMemory, router]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, location, country, selectedCategory, initialPromptId, selectedEmotionTags, onSubmitMemory, router]);
 
   const handleActionButtonClick = useCallback(() => {
     if (isParentSubmitting || isTrimming || isPreparingMedia) return;
@@ -429,7 +383,7 @@ export function MemoryForm() {
 
   const handleFormSubmit = (event: FormEvent) => { event.preventDefault(); handleActionButtonClick(); };
 
-  if (isLoadingMemory || authLoading) {
+  if (isLoading) {
     return (
         <div className="container mx-auto py-8 px-4 text-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
@@ -439,7 +393,7 @@ export function MemoryForm() {
   }
 
   let actionButtonText = 'Next'; let ActionButtonIcon: React.ElementType = ArrowRight;
-  const isNextToPreviewEnabled = !!currentMedia || (editMemoryId && !!memory?.mediaAttachments?.length);
+  const isNextToPreviewEnabled = !!currentMedia || (!!editMemoryId && !!memory?.mediaAttachments?.length);
 
   if (currentSlide === SLIDE_INDEX_MEDIA) { 
     actionButtonText = 'Next to Preview'; 
@@ -628,5 +582,3 @@ export function MemoryForm() {
     </form>
   );
 }
-
-    
