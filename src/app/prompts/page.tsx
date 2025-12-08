@@ -201,9 +201,6 @@ export default function LifeJourneyPage() {
     setQrCodeDialog({ open: true, url, title: promptTitle });
   }, []);
 
-  // **** THE FIX: REMOVED useCallback ****
-  // This function is now recreated on every render, ensuring it always has the latest
-  // router, memories, and canAccessFullJourney state, thus fixing the stale closure bug.
   const handleStartChapter = (promptId: string, isCompleted: boolean) => {
       const isFirstGroupPrompt = mockPromptGroups[0]?.prompts.some(p => p.id === promptId);
       if (!canAccessFullJourney && !isCompleted && !isFirstGroupPrompt) {
@@ -211,20 +208,16 @@ export default function LifeJourneyPage() {
           return;
       }
 
-      // The key fix: wrap router.push in a setTimeout to escape the current event cycle.
-      // This part remains valid to prevent other potential React lifecycle issues.
-      setTimeout(() => {
-        if (isCompleted) {
-            const memory = memories.find((m: Memory) => m.promptId === promptId);
-            if (memory) {
-                router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}`);
-            } else {
-                toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
-            }
-        } else {
-            router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
-        }
-      }, 0);
+      if (isCompleted) {
+          const memory = memories.find((m: Memory) => m.promptId === promptId);
+          if (memory) {
+              router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}`);
+          } else {
+              toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
+          }
+      } else {
+          router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
+      }
   };
 
 
@@ -315,7 +308,7 @@ export default function LifeJourneyPage() {
                 : "Your Host Pass has expired. Renew to continue accessing all Life Journey chapters and creation tools."
               }</p>
               <Button onClick={handleHostPassAction} size="sm" className="mt-3" disabled={isFetchingHostPassPrice}>
-                {isFetchingHostPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (hostPassStatus === 'no_pass_initiated' ? <StarIcon className="mr-2 h-4 w-4" /> : <Zap className="mr-2 h-4 w-4"/>)}
+                {isFetchingHostPassPrice ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (hostPassStatus === 'no_pass_initiated' ? <StarIcon className="mr-2 h-4 w-4" /> : <Zap className="mr-2 h-4 w-4" />)}
                 {hostPassButtonText}
               </Button>
             </AlertDescription>

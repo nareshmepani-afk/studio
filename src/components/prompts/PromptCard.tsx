@@ -41,10 +41,10 @@ export function PromptCard({
     setHasMounted(true);
   }, []);
 
-  const handleAction = useCallback(() => {
+  const handleAction = () => {
     if (isLoading || !hasMounted) return;
     onStartChapter(promptId, isCompleted);
-  }, [isLoading, hasMounted, onStartChapter, promptId, isCompleted]);
+  };
   
   const handleFlagToggle = (e: React.MouseEvent) => {
     if (isLoading || !hasMounted) return;
