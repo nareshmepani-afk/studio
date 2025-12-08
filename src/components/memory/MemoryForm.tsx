@@ -79,7 +79,7 @@ function formatSecondsToTime(timeInSeconds: number | undefined): string {
 
 
 export function MemoryForm() {
-  const { user, loading: authLoading } = useAuth(); // Get auth loading state
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -139,46 +139,61 @@ export function MemoryForm() {
   }, []);
 
   useEffect(() => {
-    // Only proceed if auth has finished loading
+    // This is the main data fetching and state initialization hook.
+    // It now waits for auth to be complete before doing anything.
     if (authLoading) {
-        return;
+      setIsLoadingMemory(true); // Keep the loading screen up while auth is in progress
+      return;
+    }
+  
+    // If auth is done and there's no user, and we're trying to edit, redirect to login.
+    if (!user && editMemoryId) {
+      toast({ title: "Authentication required", description: "Please log in to edit your memory.", variant: "destructive" });
+      router.push('/login');
+      return;
     }
 
     if (editMemoryId && user) {
-        const db = getFirestore(app);
-        const fetchMemory = async () => {
-            setIsLoadingMemory(true);
-            try {
-                const memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
-                const docSnap = await getDoc(memoryDocRef);
-                if (docSnap.exists()) {
-                    const data = docSnap.data() as Memory;
-                    const validDate = data.date && isValid(parseISO(data.date)) ? parseISO(data.date).toISOString() : new Date().toISOString();
-                    const memoryData = { ...data, id: docSnap.id, date: validDate };
-                    setMemory(memoryData);
-                } else {
-                    toast({ title: "Memory not found", variant: "destructive" });
-                    router.push('/timeline');
-                }
-            } catch (error) {
-                console.error("Error loading memory:", error);
-                toast({ title: "Error loading memory", variant: "destructive" });
-            } finally {
-                setIsLoadingMemory(false);
-            }
-        };
-        fetchMemory();
-    } else if (!editMemoryId) {
-        setIsLoadingMemory(false);
-    } else if (!user && !authLoading) {
-        // If auth is done and there's still no user, redirect
-        toast({ title: "Authentication required", variant: "destructive" });
+      const db = getFirestore(app);
+      const fetchMemory = async () => {
+        setIsLoadingMemory(true);
+        try {
+          const memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
+          const docSnap = await getDoc(memoryDocRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data() as Memory;
+            const validDate = data.date && isValid(parseISO(data.date)) ? parseISO(data.date).toISOString() : new Date().toISOString();
+            const memoryData = { ...data, id: docSnap.id, date: validDate };
+            setMemory(memoryData);
+          } else {
+            toast({ title: "Memory not found", variant: "destructive" });
+            router.push('/timeline');
+          }
+        } catch (error) {
+          console.error("Error loading memory:", error);
+          toast({ title: "Error loading memory", variant: "destructive" });
+          router.push('/timeline');
+        } finally {
+          setIsLoadingMemory(false);
+        }
+      };
+      fetchMemory();
+    } else {
+      // This case handles creating a new memory.
+      // We know auth is done at this point, so if there's no user, we can handle it.
+      if (!user) {
+        toast({ title: "Authentication required", description: "Please log in to create a new memory.", variant: "destructive" });
         router.push('/login');
+        return;
+      }
+      setIsLoadingMemory(false); // Stop loading, we are creating a new memory.
     }
-}, [editMemoryId, user, authLoading, router]);
+  }, [editMemoryId, user, authLoading, router]);
 
 
   useEffect(() => {
+    // This effect now ONLY sets form state based on the `memory` object,
+    // which is reliably populated by the effect above.
     if (memory) { // Editing
       setTitle(memory.title || '');
       setLocation(memory.location || '');
@@ -389,7 +404,7 @@ export function MemoryForm() {
     }
     
     onSubmitMemory(formData);
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, location, country, selectedCategory, initialPromptId, selectedEmotionTags, editMemoryId, onSubmitMemory]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, location, country, selectedCategory, initialPromptId, selectedEmotionTags, editMemoryId, onSubmitMemory, router]);
 
   const handleActionButtonClick = useCallback(() => {
     if (isParentSubmitting || isTrimming || isPreparingMedia) return;
