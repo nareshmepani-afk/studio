@@ -141,7 +141,7 @@ export default function LifeJourneyPage() {
   }, [canAccessFullJourney]);
 
   const handleToggleFlagPrompt = useCallback(async (promptIdToToggle: string) => {
-    if (!user) return; // flaggedPromptIds will be defined if user is.
+    if (!user || !flaggedPromptIds) return; 
     const newFlagStatus = !flaggedPromptIds.has(promptIdToToggle);
     const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, user.id);
     try {
