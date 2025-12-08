@@ -141,7 +141,7 @@ export default function LifeJourneyPage() {
         await setDoc(promptFlagsDocRef, { [promptIdToToggle]: newFlagStatus }, { merge: true });
         toast({
             title: newFlagStatus ? "Prompt Flagged" : "Prompt Unflagged",
-            description: `This prompt is ${newFlagStatus ? "now flagged." : "no longer flagged."}`,
+            description: `This prompt is ${newFlaggedStatus ? "now flagged." : "no longer flagged."}`,
             variant: "success"
         });
     } catch (error) {
@@ -433,3 +433,5 @@ export default function LifeJourneyPage() {
     </AuthenticatedPageWrapper>
   );
 }
+
+    
