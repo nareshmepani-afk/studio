@@ -202,8 +202,6 @@ export default function LifeJourneyPage() {
   }, []);
 
   const handleStartChapter = useCallback((promptId: string, isCompleted: boolean) => {
-      console.log(`[LifeJourneyPage] handleStartChapter called. Prompt ID: ${promptId}, isCompleted: ${isCompleted}`);
-      
       const isFirstGroupPrompt = mockPromptGroups[0]?.prompts.some(p => p.id === promptId);
       if (!canAccessFullJourney && !isCompleted && !isFirstGroupPrompt) {
           toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });

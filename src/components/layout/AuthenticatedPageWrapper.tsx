@@ -3,7 +3,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { Navbar } from '@/components/layout/Navbar';
-import React, { useEffect } from 'react';
+import React, from 'react';
 import SplashScreen from './SplashScreen';
 
 interface AuthenticatedPageWrapperProps {
@@ -13,24 +13,16 @@ interface AuthenticatedPageWrapperProps {
 export function AuthenticatedPageWrapper({ children }: AuthenticatedPageWrapperProps) {
   const { user, loading: authLoading } = useAuth();
 
-  // The wrapper is ONLY responsible for authentication. It will not fetch page-specific data.
+  // This wrapper is now ONLY responsible for authentication.
+  // It shows a splash screen until the user object is available.
   const isAuthenticating = authLoading || !user;
-
-  useEffect(() => {
-    console.log('[AuthWrapper] Loading State Check:', {
-      authLoading,
-      userExists: !!user,
-      isAuthenticating,
-    });
-  }, [authLoading, user, isAuthenticating]);
-
 
   if (isAuthenticating) {
     return <SplashScreen />;
   }
 
-  // The wrapper no longer needs to clone props. It just renders the children when auth is ready.
-  // The child page will handle its own data fetching and loading states.
+  // Once authenticated, it renders the Navbar and the page content.
+  // The child page is now responsible for its own data fetching and loading states.
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
