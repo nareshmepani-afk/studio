@@ -134,13 +134,13 @@ export default function LifeJourneyPage() {
   }, [canAccessFullJourney]);
 
   const handleToggleFlagPrompt = useCallback(async (promptIdToToggle: string) => {
-    if (!user || !flaggedPromptIds) return; 
-    const newFlagStatus = !flaggedPromptIds.has(promptIdToToggle);
+    if (!user || !flaggedPromptIds) return;
+    const newFlaggedStatus = !flaggedPromptIds.has(promptIdToToggle);
     const promptFlagsDocRef = doc(db, FIRESTORE_USER_PROMPT_FLAGS_COLLECTION, user.id);
     try {
-        await setDoc(promptFlagsDocRef, { [promptIdToToggle]: newFlagStatus }, { merge: true });
+        await setDoc(promptFlagsDocRef, { [promptIdToToggle]: newFlaggedStatus }, { merge: true });
         toast({
-            title: newFlagStatus ? "Prompt Flagged" : "Prompt Unflagged",
+            title: newFlaggedStatus ? "Prompt Flagged" : "Prompt Unflagged",
             description: `This prompt is ${newFlaggedStatus ? "now flagged." : "no longer flagged."}`,
             variant: "success"
         });
@@ -201,7 +201,10 @@ export default function LifeJourneyPage() {
     setQrCodeDialog({ open: true, url, title: promptTitle });
   }, []);
 
-  const handleStartChapter = useCallback((promptId: string, isCompleted: boolean) => {
+  // **** THE FIX: REMOVED useCallback ****
+  // This function is now recreated on every render, ensuring it always has the latest
+  // router, memories, and canAccessFullJourney state, thus fixing the stale closure bug.
+  const handleStartChapter = (promptId: string, isCompleted: boolean) => {
       const isFirstGroupPrompt = mockPromptGroups[0]?.prompts.some(p => p.id === promptId);
       if (!canAccessFullJourney && !isCompleted && !isFirstGroupPrompt) {
           toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
@@ -209,6 +212,7 @@ export default function LifeJourneyPage() {
       }
 
       // The key fix: wrap router.push in a setTimeout to escape the current event cycle.
+      // This part remains valid to prevent other potential React lifecycle issues.
       setTimeout(() => {
         if (isCompleted) {
             const memory = memories.find((m: Memory) => m.promptId === promptId);
@@ -221,7 +225,7 @@ export default function LifeJourneyPage() {
             router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
         }
       }, 0);
-  }, [router, memories, canAccessFullJourney]);
+  };
 
 
   const hostPassButtonText = useMemo(() => {
@@ -433,5 +437,3 @@ export default function LifeJourneyPage() {
     </AuthenticatedPageWrapper>
   );
 }
-
-    
