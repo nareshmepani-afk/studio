@@ -3,7 +3,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getFirestore, collection, query, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { app } from '@/lib/firebase';
 import type { Memory } from '@/types';
 import { useAuth } from './useAuth';
@@ -13,9 +13,16 @@ const db = getFirestore(app);
 export function useMemories() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  
+  const [isInitialSnapshotLoading, setInitialSnapshotLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+        setInitialSnapshotLoading(false);
+        return;
+    }
+
+    setInitialSnapshotLoading(true);
 
     const memoriesQuery = query(collection(db, "users", user.id, "memories"), orderBy('date', 'desc'));
     
@@ -28,27 +35,33 @@ export function useMemories() {
           date: (data.date as Timestamp)?.toDate ? (data.date as Timestamp).toDate().toISOString() : data.date,
         } as Memory;
       });
+      
       queryClient.setQueryData(['memories', user.id], fetchedMemories);
+      setInitialSnapshotLoading(false);
+
+    }, (error) => {
+        console.error("Error fetching memories snapshot:", error);
+        setInitialSnapshotLoading(false);
     });
 
     return () => unsubscribe();
   }, [user, queryClient]);
 
-  const { data, isLoading, isError } = useQuery<Memory[]>({
+  const { data: memories, isError } = useQuery<Memory[]>({ 
     queryKey: ['memories', user?.id],
-    queryFn: async () => {
-      // The query will be populated by the snapshot listener,
-      // so this function can be a placeholder or fetch initial data if needed.
-      return [];
-    },
+    // THIS IS THE FIX: The query function CANNOT return undefined.
+    // We return an empty array as a valid placeholder.
+    // The query will be correctly populated by the snapshot listener, which
+    // overwrites this initial data.
+    queryFn: async () => [], 
     enabled: !!user,
-    staleTime: Infinity, // Data is managed by the real-time listener
+    staleTime: Infinity,
   });
 
   return {
-    memories: data ?? [],
-    completedPromptIds: new Set((data ?? []).map(m => m.promptId).filter(Boolean) as string[]),
-    isLoading: isLoading || (!!user && data === undefined), // More robust loading state
+    memories: memories ?? [],
+    completedPromptIds: new Set((memories ?? []).map(m => m.promptId).filter(Boolean) as string[]),
+    isLoading: !!user && isInitialSnapshotLoading,
     isError,
   };
 }

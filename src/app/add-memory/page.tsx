@@ -10,42 +10,41 @@ import { useMemories } from '@/hooks/useMemories';
 import type { Memory } from '@/types';
 import { toast } from "@/hooks/use-toast";
 
+// This helper component handles the specific case where a memory is not found after loading.
+// It shows a toast notification and redirects the user back to the timeline gracefully.
+const RedirectAndNotify = () => {
+    const router = useRouter();
+    useEffect(() => {
+        toast({
+            title: "Memory Not Found",
+            description: "The requested memory could not be found. You are being redirected.",
+            variant: "destructive",
+        });
+        router.push('/timeline');
+    }, [router]);
+
+    return (
+        <div className="container mx-auto py-8 px-4 text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+            <p className="text-muted-foreground mt-4">Memory not found. Redirecting to timeline...</p>
+        </div>
+    );
+};
+
 function EditMemoryLoader() {
     const searchParams = useSearchParams();
-    const router = useRouter();
     const editMemoryId = searchParams.get('editMemoryId');
     const { memories, isLoading } = useMemories();
 
-    // If we're not in "edit" mode, render the form for a new memory immediately.
+    // If there's no editMemoryId in the URL, we are creating a new memory.
     if (!editMemoryId) {
         return <AddMemoryPageContent />;
     }
 
-    // This effect handles the core logic for the "edit" mode.
-    // It waits for the memory data to finish loading, then checks if the requested memory exists.
-    useEffect(() => {
-        // Only run the check after loading is complete and we are trying to edit.
-        if (!isLoading && editMemoryId) {
-            const memoryExists = memories.some((m: Memory) => m.id === editMemoryId);
-            
-            // If the memory does not exist in the cache, it's an error.
-            if (!memoryExists) {
-                console.error(`ERROR: Memory with ID ${editMemoryId} not found in cache after loading.`);
-                toast({
-                    title: "Memory Not Found",
-                    description: "Returning to the timeline. The memory may have been deleted.",
-                    variant: "destructive",
-                });
-                // This is a GRACEFUL redirect back to the timeline page using the Next.js router.
-                // It does NOT cause a full page refresh.
-                router.push('/timeline');
-            }
-        }
-    }, [isLoading, memories, editMemoryId, router]);
-
-
-    // While the main memory cache is loading, show a spinner.
-    if (isLoading) {
+    // --- THIS IS THE ROBUST FIX ---
+    // 1. We must wait if the hook is in a loading state OR if the memories array hasn't been populated yet.
+    // This prevents any attempt to access `memories` when it is undefined, which was the cause of the crash.
+    if (isLoading || !memories) {
         return (
             <div className="container mx-auto py-8 px-4 text-center">
                 <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
@@ -53,23 +52,17 @@ function EditMemoryLoader() {
             </div>
         );
     }
-    
-    // Find the specific memory from the now-loaded centralized cache.
+
+    // 2. Only after we are sure data is loaded and available, we try to find the memory.
     const memoryToEdit = memories.find((m: Memory) => m.id === editMemoryId);
 
-    // If the useEffect hasn't redirected yet but the memory isn't found
-    // (e.g., during a brief re-render), show a verifying state instead of an error.
-    // The useEffect will catch the final error state.
+    // 3. If the memory is not found in the loaded data, we render the redirect component.
+    // This avoids calling hooks conditionally and ensures a graceful exit.
     if (!memoryToEdit) {
-         return (
-            <div className="container mx-auto py-8 px-4 text-center">
-                <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-                <p className="text-muted-foreground mt-4">Verifying memory...</p>
-            </div>
-        );
+        return <RedirectAndNotify />;
     }
-
-    // If the memory is found, pass it to the form component.
+    
+    // 4. If the memory is found, we can safely render the content.
     return <AddMemoryPageContent memory={memoryToEdit} />;
 }
 
