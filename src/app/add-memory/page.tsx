@@ -15,6 +15,12 @@ function EditMemoryLoader() {
     const editMemoryId = searchParams.get('editMemoryId');
     const { memories, isLoading } = useMemories();
 
+    // If we're not editing, we can render the form immediately for a new memory.
+    if (!editMemoryId) {
+        return <AddMemoryPageContent />;
+    }
+
+    // If we are editing, we MUST wait for the main memory cache to load.
     if (isLoading) {
         return (
             <div className="container mx-auto py-8 px-4 text-center">

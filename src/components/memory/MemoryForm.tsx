@@ -140,14 +140,16 @@ export function MemoryForm({ memoryToEdit }: MemoryFormProps) {
     return getDate(today);
   }, []);
 
+  // **REFACTORED LOGIC**: This useEffect now only initializes state from the prop.
+  // It no longer fetches data.
   useEffect(() => {
-    // If we're editing but the memory prop hasn't arrived yet, we just wait.
+    // If we're in edit mode but the memory prop hasn't arrived yet (due to parent loading), we wait.
     if (editMemoryId && !memory) {
       setIsLoading(true);
       return;
     }
 
-    if (memory) { // Editing
+    if (memory) { // Editing: Initialize form from the passed memory object
       setTitle(memory.title || '');
       setLocation(memory.location || '');
       setSelectedCategory(memory.category || memoryCategoriesList[0]);
@@ -189,7 +191,7 @@ export function MemoryForm({ memoryToEdit }: MemoryFormProps) {
       } else {
         setCurrentMedia(null); setCurrentMediaPreviewUrl(null);
       }
-    } else { // New memory
+    } else { // New memory: Initialize form for a new entry
       let determinedInitialTitle = '';
       if (initialCustomPromptText) {
         determinedInitialTitle = initialCustomPromptText;
@@ -288,7 +290,7 @@ export function MemoryForm({ memoryToEdit }: MemoryFormProps) {
     setTrimValues([0, mediaPayload.duration]);
     setCurrentMediaPreviewUrl(newPreviewUrlFromFile);
     
-    handleSetCurrentSlide(SLIDE_INDEX_MEDIA);
+    handleSetCurrentSlide(SLIDE_INDEX_PREVIEW);
   }, [currentMediaPreviewUrl, handleSetCurrentSlide]);
 
   const handleEmotionTagToggle = (tag: EmotionTag) => setSelectedEmotionTags(prevTags => prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]);
