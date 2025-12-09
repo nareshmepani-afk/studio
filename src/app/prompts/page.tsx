@@ -202,42 +202,31 @@ export default function LifeJourneyPage() {
   }, []);
 
   const handleStartChapter = useCallback((promptId: string, isCompleted: boolean) => {
-    // Re-introducing logs for diagnostics
-    console.log(`[DIAGNOSTIC] handleStartChapter called for promptId: ${promptId}, isCompleted: ${isCompleted}`);
-    
+    // This function should now only be callable when isDataLoading is false.
     const isFirstGroupPrompt = mockPromptGroups[0]?.prompts.some(p => p.id === promptId);
+    
     if (!canAccessFullJourney && !isCompleted && !isFirstGroupPrompt) {
-        console.log('[DIAGNOSTIC] Access denied. User does not have full journey access.');
         toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
         return;
     }
   
     if (isCompleted) {
-        console.log("[DIAGNOSTIC] Handling completed chapter. Current memories count:", memories.length);
-        console.log("[DIAGNOSTIC] Searching for memory with promptId:", promptId);
         const memory = memories.find((m: Memory) => m.promptId === promptId);
         
         if (memory) {
-            console.log(`[DIAGNOSTIC] Found memory for promptId ${promptId}:`, memory);
             const url = `/add-memory?editMemoryId=${encodeURIComponent(memory.id)}`;
-            console.log(`[DIAGNOSTIC] Bypassing router. Navigating with window.location.assign to: ${url}`);
-            
-            // *** THE DIAGNOSTIC CHANGE ***
+            // Using hard navigation to prevent state conflicts on the edit page.
             window.location.assign(url);
-
         } else {
-            console.error(`[DIAGNOSTIC] Could not find memory for completed promptId: ${promptId}`);
-            console.log("[DIAGNOSTIC] Available memories:", memories);
-            toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
+            console.error(`Could not find memory for completed promptId: ${promptId}`);
+            toast({ title: "Error", description: "Could not find the recorded memory for this chapter. The data might still be loading or an error occurred.", variant: "destructive" });
         }
     } else {
         const url = `/add-memory?promptId=${encodeURIComponent(promptId)}`;
-        console.log(`[DIAGNOSTIC] Bypassing router. Navigating with window.location.assign to: ${url}`);
-        
-        // *** THE DIAGNOSTIC CHANGE ***
+        // Using hard navigation for consistency.
         window.location.assign(url);
     }
-}, [memories, router, canAccessFullJourney]);
+  }, [memories, canAccessFullJourney, router]);
 
 
   const hostPassButtonText = useMemo(() => {
@@ -250,28 +239,32 @@ export default function LifeJourneyPage() {
   }, [hostPassStatus, isFetchingHostPassPrice, hostPassPriceDetails]);
 
   // The wrapper handles the auth splash screen. This handles the page's own data loading.
-  if (isDataLoading) {
+  if (isDataLoading && memories.length === 0) {
      return (
-        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <h2 className="text-2xl font-headline mb-2">Loading Life Journey...</h2>
-          <p className="text-muted-foreground">Please wait while your data is loaded.</p>
-        </div>
+        <AuthenticatedPageWrapper>
+            <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+              <h2 className="text-2xl font-headline mb-2">Loading Life Journey...</h2>
+              <p className="text-muted-foreground">Please wait while your data is loaded.</p>
+            </div>
+        </AuthenticatedPageWrapper>
      );
   }
   
   if (userMode === 'guest') {
     return (
-        <div className="container mx-auto py-8 px-4 text-center">
-          <HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-          <h1 className="font-headline text-3xl mb-2">Life Journey Not Available</h1>
-          <p className="text-muted-foreground mb-6">
-            This feature is for hosts to record their memories. Guests can view memories shared with them on the Timeline.
-          </p>
-          <Link href="/timeline" passHref>
-            <Button variant="outline">Go to Timeline</Button>
-          </Link>
-        </div>
+        <AuthenticatedPageWrapper>
+            <div className="container mx-auto py-8 px-4 text-center">
+              <HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+              <h1 className="font-headline text-3xl mb-2">Life Journey Not Available</h1>
+              <p className="text-muted-foreground mb-6">
+                This feature is for hosts to record their memories. Guests can view memories shared with them on the Timeline.
+              </p>
+              <Link href="/timeline" passHref>
+                <Button variant="outline">Go to Timeline</Button>
+              </Link>
+            </div>
+        </AuthenticatedPageWrapper>
     );
   }
   
@@ -359,6 +352,7 @@ export default function LifeJourneyPage() {
                         teleprompterScript={teleprompterScripts[prompt.id] || "No script available for this prompt."}
                         isCompleted={isCompleted}
                         isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
+                        isLoading={isDataLoading}
                         onStartChapter={handleStartChapter}
                         onToggleFlagPrompt={handleToggleFlagPrompt}
                         onShowQrCode={handleShowQrCode}
@@ -455,5 +449,3 @@ export default function LifeJourneyPage() {
     </AuthenticatedPageWrapper>
   );
 }
-
-    
