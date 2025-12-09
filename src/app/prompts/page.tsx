@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import {
   Dialog,
   DialogContent,
@@ -31,11 +32,11 @@ import { cn } from "@/lib/utils";
 import { app } from '@/lib/firebase';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
 import { addMonths, isBefore, parseISO, format, addDays } from 'date-fns';
-import QRCode from "qrcode.react";
 import type { Memory } from '@/types';
 import { useMemories } from '@/hooks/useMemories';
 import { usePromptFlags } from '@/hooks/usePromptFlags';
 
+const QrCodeDialog = dynamic(() => import('@/components/prompts/QrCodeDialog').then(mod => mod.QrCodeDialog), { ssr: false });
 
 const FIRESTORE_USER_PROMPT_FLAGS_COLLECTION = 'userPromptFlags';
 
@@ -428,24 +429,12 @@ export default function LifeJourneyPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={qrCodeDialog.open} onOpenChange={(open) => !open && setQrCodeDialog({ open: false, url: '', title: '' })}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-headline text-lg">Scan to View Prompt</DialogTitle>
-            <DialogDescription>
-              An interviewer can scan this QR code with their phone to open a webpage with the teleprompter script for the prompt: <strong>{qrCodeDialog.title}</strong>
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center justify-center p-4">
-            <QRCode value={qrCodeDialog.url} size={256} level={"H"} includeMargin={true} />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setQrCodeDialog({ open: false, url: '', title: '' })}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <QrCodeDialog 
+        open={qrCodeDialog.open} 
+        url={qrCodeDialog.url} 
+        title={qrCodeDialog.title} 
+        onClose={() => setQrCodeDialog({ open: false, url: '', title: '' })} 
+      />
     </AuthenticatedPageWrapper>
   );
 }

@@ -5,7 +5,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { BookText, CheckCircle, Edit, Star, Loader2, Info, QrCode } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useEffect, useState, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface PromptCardProps {
@@ -18,7 +17,7 @@ interface PromptCardProps {
   onStartChapter: (promptId: string, isCompleted: boolean) => void;
   onToggleFlagPrompt: (promptId: string) => void;
   onShowQrCode: (promptId: string, promptTitle: string) => void;
-  canAccess: boolean; 
+  canAccess: boolean;
   memoryDescription?: string;
 }
 
@@ -35,30 +34,25 @@ export function PromptCard({
   canAccess,
   memoryDescription,
 }: PromptCardProps) {
-  const [hasMounted, setHasMounted] = useState(false);
-
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
 
   const handleAction = () => {
-    if (isLoading || !hasMounted) return;
+    if (isLoading) return;
     onStartChapter(promptId, isCompleted);
   };
   
   const handleFlagToggle = (e: React.MouseEvent) => {
-    if (isLoading || !hasMounted) return;
+    if (isLoading) return;
     e.stopPropagation();
     onToggleFlagPrompt(promptId);
   };
   
   const handleQrCodeClick = (e: React.MouseEvent) => {
-    if (isLoading || !hasMounted) return;
+    if (isLoading) return;
     e.stopPropagation();
     onShowQrCode(promptId, promptText);
   };
 
-  if (!hasMounted) {
+  if (isLoading) {
     return (
         <Card className="shadow-lg flex flex-col h-full bg-card/50">
             <CardHeader className="pb-3">
@@ -84,12 +78,7 @@ export function PromptCard({
   return (
     <Card className={`shadow-lg transition-all hover:shadow-xl animate-fade-in flex flex-col h-full ${isCompleted ? 'bg-green-50 dark:bg-green-900/30 border-green-500' : 'bg-card'}`}>
       <CardHeader className="pb-3">
-        {isLoading ? (
-            <div className="flex items-center text-muted-foreground text-xs mb-1">
-                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                Loading...
-            </div>
-        ) : isCompleted && (
+        {isCompleted && (
             <div className="flex items-center text-green-600 dark:text-green-400 text-xs mb-1">
                 <CheckCircle className="h-4 w-4 mr-1.5" />
                 Chapter Recorded
@@ -161,9 +150,7 @@ export function PromptCard({
               className="w-full"
               disabled={isLoading || !canAccess}
             >
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : isCompleted ? (
+              {isCompleted ? (
                 <>
                   <Edit className="mr-2 h-4 w-4" /> View/Edit
                 </>

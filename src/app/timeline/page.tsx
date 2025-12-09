@@ -135,6 +135,11 @@ export default function TimelinePage() {
     }, 0);
   }, []);
 
+  const handleEditMemory = (mem: Memory) => {
+    console.log(`DEBUG: Navigating to edit page for memory ID: ${mem.id}`);
+    router.push(`/add-memory?editMemoryId=${mem.id}`);
+  };
+
   const filteredAndSortedMemories = useMemo(() => {
     let result = [...memories];
     if (searchTerm) {
@@ -354,7 +359,7 @@ export default function TimelinePage() {
               return (<MemoryCard
                           key={memory.id}
                           memory={memory}
-                          onEdit={userMode === 'host' ? (mem) => router.push(`/add-memory?editMemoryId=${mem.id}`) : undefined}
+                          onEdit={userMode === 'host' ? handleEditMemory : undefined}
                           onDelete={userMode === 'host' ? handleDeleteMemory : undefined}
                           onToggleLegacyStatus={userMode === 'host' ? handleToggleLegacyStatus : undefined}
                           isUnread={userMode === 'guest' ? isUnreadInGuestMode : undefined}
