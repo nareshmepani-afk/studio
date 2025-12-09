@@ -35,8 +35,10 @@ export function PromptCard({
   memoryDescription,
 }: PromptCardProps) {
 
-  const handleAction = () => {
+  const handleAction = (e: React.MouseEvent) => {
     if (isLoading) return;
+    e.stopPropagation();
+    console.log(`DEBUG: PromptCard handleAction called for promptId: ${promptId}, isCompleted: ${isCompleted}`);
     onStartChapter(promptId, isCompleted);
   };
   

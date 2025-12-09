@@ -136,8 +136,12 @@ export default function TimelinePage() {
   }, []);
 
   const handleEditMemory = (mem: Memory) => {
-    console.log(`DEBUG: Navigating to edit page for memory ID: ${mem.id}`);
-    router.push(`/add-memory?editMemoryId=${mem.id}`);
+    console.log(`INFO: Attempting to edit memory: ${mem.title} (ID: ${mem.id})`);
+    try {
+        router.push(`/add-memory?editMemoryId=${mem.id}`);
+    } catch (error) {
+        console.error(`ERROR: Failed to navigate for memory ID: ${mem.id}. Error: ${error}`);
+    }
   };
 
   const filteredAndSortedMemories = useMemo(() => {
