@@ -1,8 +1,7 @@
 
 "use client";
 
-import dynamic from 'next/dynamic';
-import { Loader2, ShieldAlert } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 import type { Memory } from '@/types';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { MemoryForm } from '@/components/memory/MemoryForm';
@@ -14,7 +13,10 @@ interface AddMemoryPageContentProps {
   error?: string | null;
 }
 
+// This component now acts as a simple client-side wrapper.
+// It receives all necessary data as props from the server component.
 export function AddMemoryPageContent({ memoryToEdit, promptId, initialCustomPrompt, error }: AddMemoryPageContentProps) {
+  
   if (error) {
     return (
       <div className="container mx-auto py-8 px-4">
@@ -27,7 +29,8 @@ export function AddMemoryPageContent({ memoryToEdit, promptId, initialCustomProm
     );
   }
 
-  // Pass the fetched memory object directly to the form.
+  // Pass the server-fetched memory object directly to the form.
+  // The form is now "dumb" and just renders the data it's given.
   return (
     <div className="container mx-auto py-8 px-4">
         <MemoryForm 

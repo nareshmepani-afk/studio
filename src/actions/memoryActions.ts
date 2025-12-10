@@ -6,13 +6,6 @@ import type { Memory, MediaAttachment, EmotionTag } from "@/types";
 import { addDoc, collection, doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
 
-// A map to keep track of storage usage calculations to avoid redundant operations.
-const storageUsageCalculationPromises = new Map<string, Promise<void>>();
-
-async function calculateAndUpdateStorageUsage(userId: string): Promise<void> {
-    // Implementation for storage calculation, can be added later if needed.
-}
-
 export async function saveMemory(
     formData: FormData,
     userId: string,
@@ -43,6 +36,8 @@ export async function saveMemory(
     try {
         let finalMediaAttachments: MediaAttachment[] = [];
         
+        // If there's an existing media attachment string, parse it.
+        // This is crucial for edits where the media isn't being changed.
         const existingAttachmentsString = formData.get('mediaAttachments') as string;
         if (existingAttachmentsString) {
              try {
@@ -53,7 +48,9 @@ export async function saveMemory(
         }
 
 
+        // If a new file is uploaded, it takes precedence.
         if (mediaFileToUpload) {
+            console.log(`[SERVER ACTION] Uploading new file: ${mediaFileToUpload.name}`);
             const filePath = `users/${userId}/memories/${Date.now()}_${mediaFileToUpload.name}`;
             const fileRef = storageRef(storage, filePath);
             await uploadBytes(fileRef, mediaFileToUpload);
@@ -65,13 +62,15 @@ export async function saveMemory(
                 url: downloadURL,
                 filename: mediaFileToUpload.name,
                 size: mediaFileToUpload.size,
-                // Duration would need to be extracted from the file, a more complex task
+                // Duration would ideally be extracted, but it's complex server-side.
+                // It's better to handle this on the client before upload if needed.
             };
             // When a new file is uploaded, it replaces any existing media
             finalMediaAttachments = [newAttachment]; 
+            console.log(`[SERVER ACTION] New attachment created:`, newAttachment);
         }
 
-        const dataToSave = {
+        const dataToSave: Omit<Memory, 'id' | 'userId' | 'createdAt' | 'updatedAt'> & { updatedAt: any } = {
             title,
             date,
             description,
@@ -86,31 +85,24 @@ export async function saveMemory(
         };
 
         if (editMemoryId) {
+            console.log(`[SERVER ACTION] Updating memory ID: ${editMemoryId}`);
             const memoryDocRef = doc(db, 'users', userId, 'memories', editMemoryId);
             await updateDoc(memoryDocRef, dataToSave);
         } else {
+            console.log(`[SERVER ACTION] Creating new memory for user: ${userId}`);
             const memoriesCollectionRef = collection(db, 'users', userId, 'memories');
-            await addDoc(memoriesCollectionRef, {
+            const dataWithCreationFields = {
                 ...dataToSave,
                 userId: userId,
                 createdAt: serverTimestamp(),
-            });
-        }
-
-        // Update storage usage without waiting for it to complete
-        const calcPromise = storageUsageCalculationPromises.get(userId);
-        if (!calcPromise) {
-            const newPromise = calculateAndUpdateStorageUsage(userId);
-            storageUsageCalculationPromises.set(userId, newPromise);
-            newPromise.finally(() => {
-                storageUsageCalculationPromises.delete(userId);
-            });
+            };
+            await addDoc(memoriesCollectionRef, dataWithCreationFields);
         }
 
         return { success: true, message: "Memory saved successfully!" };
 
     } catch (error) {
-        console.error("Error saving memory:", error);
-        return { success: false, message: "Failed to save memory." };
+        console.error("Error in saveMemory server action:", error);
+        return { success: false, message: "A server error occurred while saving the memory." };
     }
 }

@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { MemoryCard } from './MemoryCard';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft, Eye, Layers, Scissors, Timer } from 'lucide-react';
+import { Sparkles, Loader2, ArrowRight, Tag, MapPin, ArrowLeft, Eye, Layers, Scissors, Timer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, parseISO, getDate } from 'date-fns';
 import { enGB } from 'date-fns/locale';
@@ -44,6 +44,7 @@ type MediaFromRecorder = {
   size: number;
 };
 
+// Represents the client-side state for media being worked on.
 type CurrentMediaData = {
   file: File; 
   type: 'video' | 'audio';
@@ -80,23 +81,28 @@ interface MemoryFormProps {
   initialCustomPrompt?: string;
 }
 
+// This is now a "dumb" component. It receives all data via props and does NOT fetch data itself.
 export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: MemoryFormProps) {
   const { user } = useAuth();
   const router = useRouter();
   
   const isEditing = !!memoryToEdit;
 
+  // Refs for focusing on validation error
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const yearSelectRef = useRef<HTMLButtonElement>(null); 
 
+  // Refs for scrolling to the current step
   const step1AnchorRef = useRef<HTMLDivElement>(null);
   const step2AnchorRef = useRef<HTMLDivElement>(null);
   const step3AnchorRef = useRef<HTMLDivElement>(null);
 
+  // Timers for scroll management
   const visualScrollTimerRef = useRef<NodeJS.Timeout | null>();
   const initialScrollTimerRef = useRef<NodeJS.Timeout | null>();
 
+  // Form state
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
   const [country, setCountry] = useState('United Kingdom');
@@ -108,16 +114,19 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   const [selectedMonth, setSelectedMonth] = useState<number>(getMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState<number>(getDate(new Date()));
   
+  // Carousel state for multi-step form
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(SLIDE_INDEX_DETAILS);
   const currentSlideRef = useRef(currentSlide);
 
+  // Media state
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
   const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null); 
   const [trimValues, setTrimValues] = useState<[number, number]>([0, 100]);
   const [isTrimming, setIsTrimming] = useState(false);
   const [mediaKey, setMediaKey] = useState(Date.now().toString());
 
+  // Loading/submitting state
   const [isParentSubmitting, setIsParentSubmitting] = useState(false);
   const [isPreparingMedia, setIsPreparingMedia] = useState(false);
 
@@ -252,7 +261,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   };
 
   const onSubmitMemory = async (formData: FormData) => {
-    if (!user) { toast({ title: "Authentication Error", variant: "destructive" }); return; }
+    if (!user) { toast({ title: "Authentication Error", description: "You must be logged in to save a memory.", variant: "destructive" }); return; }
     setIsParentSubmitting(true);
     const result = await saveMemory(formData, user.id, memoryToEdit?.id || null);
     setIsParentSubmitting(false);
@@ -281,12 +290,16 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
 
     if (currentMedia) { 
       const isNewFile = currentMedia.file.size > 0 && currentMedia.file.name !== "existing_media_placeholder";
-      if (isNewFile) formData.append('mediaFile', currentMedia.file, currentMedia.file.name);
-      else if (memoryToEdit?.mediaAttachments) formData.append('mediaAttachments', JSON.stringify(memoryToEdit.mediaAttachments));
+      if (isNewFile) {
+        formData.append('mediaFile', currentMedia.file, currentMedia.file.name);
+      } else if (memoryToEdit?.mediaAttachments) {
+        // If no new file but we're editing, pass the existing attachments as JSON
+        formData.append('mediaAttachments', JSON.stringify(memoryToEdit.mediaAttachments));
+      }
     }
     
     onSubmitMemory(formData);
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memoryToEdit, location, country, selectedCategory, promptId, selectedEmotionTags, onSubmitMemory, router]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memoryToEdit, location, country, selectedCategory, promptId, selectedEmotionTags, router, user]);
 
   const handleActionButtonClick = useCallback(() => {
     if (isParentSubmitting || isTrimming || isPreparingMedia) return;
