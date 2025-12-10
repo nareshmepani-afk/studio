@@ -83,14 +83,11 @@ export function MemoryForm({ memoryToEdit }: MemoryFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // The memory object is now passed as a prop.
   const memory = memoryToEdit;
   const editMemoryId = memory?.id;
 
   const initialPromptId = searchParams.get('promptId') || undefined;
   const initialCustomPromptText = searchParams.get('prompt') || undefined;
-
-  const [isLoading, setIsLoading] = useState(true);
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -127,28 +124,8 @@ export function MemoryForm({ memoryToEdit }: MemoryFormProps) {
   const [isParentSubmitting, setIsParentSubmitting] = useState(false);
   const [isPreparingMedia, setIsPreparingMedia] = useState(false);
 
-  const getInitialDateComponent = useCallback((component: 'year' | 'month' | 'day', dateSource?: string) => {
-    const dateToParse = dateSource ? parseISO(dateSource) : new Date();
-    if (isValid(dateToParse)) {
-      if (component === 'year') return getYear(dateToParse);
-      if (component === 'month') return getMonth(dateToParse);
-      if (component === 'day') return getDate(dateToParse);
-    }
-    const today = new Date();
-    if (component === 'year') return getYear(today);
-    if (component === 'month') return getMonth(today);
-    return getDate(today);
-  }, []);
-
-  // **REFACTORED LOGIC**: This useEffect now only initializes state from the prop.
-  // It no longer fetches data.
+  // This useEffect now ONLY initializes state from props. It does NOT fetch data.
   useEffect(() => {
-    // If we're in edit mode but the memory prop hasn't arrived yet (due to parent loading), we wait.
-    if (editMemoryId && !memory) {
-      setIsLoading(true);
-      return;
-    }
-
     if (memory) { // Editing: Initialize form from the passed memory object
       setTitle(memory.title || '');
       setLocation(memory.location || '');
@@ -201,11 +178,11 @@ export function MemoryForm({ memoryToEdit }: MemoryFormProps) {
       }
       setTitle(determinedInitialTitle);
       setLocation(''); setCountry('United Kingdom'); setDescription(''); setSelectedEmotionTags([]); setSelectedCategory(memoryCategoriesList[0]);
-      setSelectedYear(getInitialDateComponent('year')); setSelectedMonth(getInitialDateComponent('month')); setSelectedDay(getInitialDateComponent('day'));
+      const today = new Date();
+      setSelectedYear(getYear(today)); setSelectedMonth(getMonth(today)); setSelectedDay(getDate(today));
       setCurrentMedia(null); setCurrentMediaPreviewUrl(null);
     }
-    setIsLoading(false);
-  }, [memory, editMemoryId, initialPromptId, initialCustomPromptText, getInitialDateComponent]);
+  }, [memory, initialPromptId, initialCustomPromptText]);
 
 
   const daysInSelectedMonth = useMemo(() => {
@@ -360,7 +337,7 @@ export function MemoryForm({ memoryToEdit }: MemoryFormProps) {
     }
     
     onSubmitMemory(formData);
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, location, country, selectedCategory, initialPromptId, selectedEmotionTags, onSubmitMemory, router]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memory, location, country, selectedCategory, initialPromptId, selectedEmotionTags, onSubmitMemory, router, editMemoryId]);
 
   const handleActionButtonClick = useCallback(() => {
     if (isParentSubmitting || isTrimming || isPreparingMedia) return;
@@ -384,15 +361,6 @@ export function MemoryForm({ memoryToEdit }: MemoryFormProps) {
   }, [ isParentSubmitting, isTrimming, isPreparingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, editMemoryId, triggerSubmitProcess, currentMedia, memory?.mediaAttachments, handleSetCurrentSlide ]);
 
   const handleFormSubmit = (event: FormEvent) => { event.preventDefault(); handleActionButtonClick(); };
-
-  if (isLoading) {
-    return (
-        <div className="container mx-auto py-8 px-4 text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-            <p className="text-muted-foreground mt-4">Loading memory editor...</p>
-        </div>
-    );
-  }
 
   let actionButtonText = 'Next'; let ActionButtonIcon: React.ElementType = ArrowRight;
   const isNextToPreviewEnabled = !!currentMedia || (!!editMemoryId && !!memory?.mediaAttachments?.length);

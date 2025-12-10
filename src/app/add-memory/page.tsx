@@ -1,58 +1,52 @@
 
 "use client";
 
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useMemories } from '@/hooks/useMemories';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import type { Memory } from '@/types';
+import { AddMemoryPageContent } from '@/components/memory/AddMemoryPageContent';
+import { Loader2 } from 'lucide-react';
 
-function DebuggerContent() {
-    const renderCount = useRef(1);
+function AddMemoryContentLoader() {
     const searchParams = useSearchParams();
     const editMemoryId = searchParams.get('editMemoryId');
-    const { memories, isLoading, isError } = useMemories();
+    const { memories, isLoading: isLoadingMemories } = useMemories();
 
-    useEffect(() => {
-        const targetMemory = memories?.find((m: Memory) => m.id === editMemoryId);
+    if (editMemoryId && (isLoadingMemories || memories.length === 0)) {
+        return (
+            <div className="container mx-auto py-8 px-4 text-center">
+                <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+                <p className="text-muted-foreground mt-4">Loading memory...</p>
+            </div>
+        );
+    }
+    
+    const memoryToEdit = editMemoryId ? memories.find((m: Memory) => m.id === editMemoryId) : undefined;
+    
+    // This condition is important for the initial render after a hard refresh on the edit page
+    if (editMemoryId && !memoryToEdit && !isLoadingMemories) {
+         return (
+            <div className="container mx-auto py-8 px-4 text-center">
+                <p className="text-destructive mt-4">Memory not found. It may have been deleted.</p>
+            </div>
+        );
+    }
 
-        console.log(`
------------------------------------------
-Render Cycle #${renderCount.current}
------------------------------------------
-Timestamp: ${new Date().toISOString()}
-isLoading: ${isLoading}
-isError: ${isError}
-memories is undefined: ${memories === undefined}
-memories is null: ${memories === null}
-memories array length: ${memories?.length ?? 'N/A'}
-editMemoryId: ${editMemoryId}
-Target memory found: ${!!targetMemory}
------------------------------------------
-        `);
-
-        renderCount.current += 1;
-    });
-
-    return (
-        <div style={{ padding: '2rem', fontFamily: 'monospace', lineHeight: '1.6' }}>
-            <h1>Debugging Memory State...</h1>
-            <p>Check the developer console for detailed logs on each render cycle.</p>
-            <p>This page is in a temporary diagnostic mode.</p>
-            <hr />
-            <h2>Live State:</h2>
-            <p><strong>isLoading:</strong> {String(isLoading)}</p>
-            <p><strong>Memories Array Length:</strong> {memories?.length ?? 'N/A'}</p>
-            <p><strong>editMemoryId:</strong> {editMemoryId}</p>
-        </div>
-    );
+    return <AddMemoryPageContent memory={memoryToEdit} />;
 }
 
 export default function AddMemoryPage() {
     return (
         <AuthenticatedPageWrapper>
-            <Suspense fallback={<div>Loading Suspense...</div>}>
-                <DebuggerContent />
+            <Suspense fallback={
+                <div className="container mx-auto py-8 px-4 text-center">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+                    <p className="text-muted-foreground mt-4">Loading editor...</p>
+                </div>
+            }>
+                <AddMemoryContentLoader />
             </Suspense>
         </AuthenticatedPageWrapper>
     );
