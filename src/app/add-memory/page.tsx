@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { Suspense } from 'react';
@@ -18,22 +17,22 @@ function AddMemoryContentWithParams() {
   // Safely extract parameters. They are guaranteed to be available here.
   const editMemoryId = searchParams.get('editMemoryId') || undefined;
   const promptId = searchParams.get('promptId') || undefined;
-  const initialPrompt = searchParams.get('prompt') || undefined;
+  const initialCustomPrompt = searchParams.get('prompt') || undefined;
 
   // We use a key to force React to destroy and recreate the form 
   // if we switch from "Edit" to "New" or vice versa.
   // This prevents the state "ghosting" issues.
-  const componentKey = editMemoryId ? `edit-${editMemoryId}` : `new-${promptId || initialPrompt || 'freeform'}`;
+  const componentKey = editMemoryId ? `edit-${editMemoryId}` : `new-${promptId || initialCustomPrompt || 'freeform'}`;
 
   // [DIAGNOSTIC] Log the IDs received at the page level
-  console.log(`[DIAGNOSTIC] add-memory/page.tsx wrapper: editMemoryId=${editMemoryId}, promptId=${promptId}, initialPrompt=${initialPrompt}`);
+  console.log(`[DIAGNOSTIC] add-memory/page.tsx wrapper: editMemoryId=${editMemoryId}, promptId=${promptId}, initialPrompt=${initialCustomPrompt}`);
 
   return (
     <AddMemoryPageContent 
       key={componentKey}
       editMemoryId={editMemoryId}
       promptId={promptId}
-      initialCustomPrompt={initialPrompt}
+      initialCustomPrompt={initialCustomPrompt}
     />
   );
 }
