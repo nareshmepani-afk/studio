@@ -49,11 +49,9 @@ export function useMemories() {
 
   const { data: memories, isError } = useQuery<Memory[]>({ 
     queryKey: ['memories', user?.id],
-    // THIS IS THE FIX: The query function CANNOT return undefined.
-    // We return an empty array as a valid placeholder.
-    // The query will be correctly populated by the snapshot listener, which
-    // overwrites this initial data.
-    queryFn: async () => [], 
+    // The queryFn is no longer needed as the onSnapshot listener populates the cache.
+    // We provide an empty array as the initial data.
+    initialData: [],
     enabled: !!user,
     staleTime: Infinity,
   });
