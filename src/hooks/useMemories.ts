@@ -19,6 +19,8 @@ export function useMemories() {
   useEffect(() => {
     if (!user) {
         setInitialSnapshotLoading(false);
+        // When user logs out, clear the memories data
+        queryClient.setQueryData(['memories', user?.id], []);
         return;
     }
 
@@ -29,9 +31,12 @@ export function useMemories() {
     const unsubscribe = onSnapshot(memoriesQuery, (snapshot) => {
       const fetchedMemories = snapshot.docs.map(docSnap => {
         const data = docSnap.data();
+        // ** THE FIX IS HERE **
+        // Ensure the ID from the document snapshot is always correctly assigned.
+        // This guarantees data integrity for all downstream components.
         return {
-          id: docSnap.id,
           ...data,
+          id: docSnap.id, // Explicitly assign the document ID
           date: (data.date as Timestamp)?.toDate ? (data.date as Timestamp).toDate().toISOString() : data.date,
         } as Memory;
       });
