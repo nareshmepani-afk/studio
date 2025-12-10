@@ -14,7 +14,7 @@ import { MemoryCard } from './MemoryCard';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft, Eye, Layers, Scissors, Timer, ShieldAlert } from 'lucide-react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, parseISO, getDate } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import {
@@ -78,18 +78,19 @@ function formatSecondsToTime(timeInSeconds: number | undefined): string {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-export function MemoryForm() {
+interface MemoryFormProps {
+  editMemoryId?: string;
+  promptId?: string;
+  initialCustomPrompt?: string;
+}
+
+export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: MemoryFormProps) {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
-
+  
   const [memoryToEdit, setMemoryToEdit] = useState<Memory | null>(null);
   const [isLoadingMemory, setIsLoadingMemory] = useState(true);
   const [errorLoadingMemory, setErrorLoadingMemory] = useState<string | null>(null);
-  
-  const editMemoryId = searchParams.get('editMemoryId');
-  const initialPromptId = searchParams.get('promptId') || undefined;
-  const initialCustomPromptText = searchParams.get('prompt') || undefined;
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -129,7 +130,7 @@ export function MemoryForm() {
   console.log(`[DIAGNOSTIC] MemoryForm render. authLoading: ${authLoading}, user: ${!!user}, editMemoryId: ${editMemoryId}`);
 
   useEffect(() => {
-    console.log('[DIAGNOSTIC] MemoryForm mount/update effect.');
+    console.log('[DIAGNOSTIC] MemoryForm mount/update effect. editMemoryId:', editMemoryId);
     const db = getFirestore(app);
 
     const fetchMemory = async () => {
@@ -149,9 +150,9 @@ export function MemoryForm() {
         setIsLoadingMemory(false);
         // Initialize for new memory
         let determinedInitialTitle = '';
-        if (initialCustomPromptText) determinedInitialTitle = initialCustomPromptText;
-        else if (initialPromptId) {
-            const foundPrompt = mockPromptGroups.flatMap(g => g.prompts).find(p => p.id === initialPromptId);
+        if (initialCustomPrompt) determinedInitialTitle = initialCustomPrompt;
+        else if (promptId) {
+            const foundPrompt = mockPromptGroups.flatMap(g => g.prompts).find(p => p.id === promptId);
             determinedInitialTitle = foundPrompt ? foundPrompt.text.en : '';
         }
         setTitle(determinedInitialTitle);
@@ -185,7 +186,7 @@ export function MemoryForm() {
     };
 
     fetchMemory();
-  }, [editMemoryId, user, authLoading, router, initialPromptId, initialCustomPromptText]);
+  }, [editMemoryId, user, authLoading, router, promptId, initialCustomPrompt]);
 
 
   // This useEffect now ONLY populates the form state from the fetched memoryToEdit state variable.
@@ -316,7 +317,7 @@ export function MemoryForm() {
 
     if (result.success) {
       toast({ title: result.message, variant: "success" });
-      router.push(initialPromptId ? '/prompts' : '/timeline');
+      router.push(promptId ? '/prompts' : '/timeline');
     } else {
       toast({ title: "Failed to Save Memory", description: result.message, variant: "destructive" });
     }
@@ -332,7 +333,7 @@ export function MemoryForm() {
     formData.append('category', selectedCategory || 'Other');
     if(location) formData.append('location', location);
     if(country) formData.append('country', country);
-    if (initialPromptId || memoryToEdit?.promptId) formData.append('promptId', initialPromptId || memoryToEdit?.promptId || '');
+    if (promptId || memoryToEdit?.promptId) formData.append('promptId', promptId || memoryToEdit?.promptId || '');
     formData.append('isLegacy', (memoryToEdit?.isLegacy || false).toString());
 
     if (currentMedia) { 
@@ -342,7 +343,7 @@ export function MemoryForm() {
     }
     
     onSubmitMemory(formData);
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memoryToEdit, location, country, selectedCategory, initialPromptId, selectedEmotionTags, onSubmitMemory, router, editMemoryId]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memoryToEdit, location, country, selectedCategory, promptId, selectedEmotionTags, onSubmitMemory, router, editMemoryId]);
 
   const handleActionButtonClick = useCallback(() => {
     if (isParentSubmitting || isTrimming || isPreparingMedia) return;
@@ -394,7 +395,7 @@ export function MemoryForm() {
   else if (currentSlide === SLIDE_INDEX_PREVIEW) { actionButtonText = editMemoryId ? 'Update Memory' : 'Save Memory'; ActionButtonIcon = Sparkles; }
 
   const mediaForRecorderProp = currentMedia && currentMediaPreviewUrl ? { type: currentMedia.type, previewUrl: currentMediaPreviewUrl, duration: currentMedia.duration, size: currentMedia.size } : undefined;
-  const currentPromptIdForTeleprompter = initialPromptId || memoryToEdit?.promptId;
+  const currentPromptIdForTeleprompter = promptId || memoryToEdit?.promptId;
 
   let mockMemoryForPreview: Memory | undefined = undefined;
   if (currentSlide === SLIDE_INDEX_PREVIEW) {
@@ -404,7 +405,7 @@ export function MemoryForm() {
       mediaAttachmentsForPreview = [{ id: memoryToEdit?.mediaAttachments?.[0]?.id || 'preview-media-1', type: currentMedia.type, url: currentMediaPreviewUrl, filename: currentMedia.file.name, startTime: trimValues[0], endTime: trimValues[1], duration: currentMedia.duration, size: currentMedia.size, isTrimmed: currentMedia.isTrimmed }];
     } else if (memoryToEdit?.mediaAttachments) { mediaAttachmentsForPreview = memoryToEdit.mediaAttachments; }
 
-    mockMemoryForPreview = { id: memoryToEdit?.id || 'preview-id', title: title.trim() || "Untitled Chapter", date: isValid(finalDate) ? finalDate.toISOString() : new Date().toISOString(), description: description.trim() || "No description.", emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForPreview, location: location.trim() || undefined, country: country.trim() || undefined, category: selectedCategory, userId: user?.id || 'preview-user-id', promptId: initialPromptId || memoryToEdit?.promptId, isLegacy: memoryToEdit?.isLegacy || false };
+    mockMemoryForPreview = { id: memoryToEdit?.id || 'preview-id', title: title.trim() || "Untitled Chapter", date: isValid(finalDate) ? finalDate.toISOString() : new Date().toISOString(), description: description.trim() || "No description.", emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForPreview, location: location.trim() || undefined, country: country.trim() || undefined, category: selectedCategory, userId: user?.id || 'preview-user-id', promptId: promptId || memoryToEdit?.promptId, isLegacy: memoryToEdit?.isLegacy || false };
   }
   
   const previewKey = `${mockMemoryForPreview?.id}-${mediaKey}`;

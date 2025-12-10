@@ -15,13 +15,22 @@ const MemoryForm = dynamic(() => import('@/components/memory/MemoryForm').then(m
   ),
 });
 
-export function AddMemoryPageContent() {
-  // This component is now just a simple wrapper that ensures MemoryForm is client-side only.
-  // The logic to find and fetch the memory is now co-located inside MemoryForm.
-  console.log('[DIAGNOSTIC] AddMemoryPageContent: Rendering MemoryForm.');
+interface AddMemoryPageContentProps {
+  editMemoryId?: string;
+  promptId?: string;
+  initialCustomPrompt?: string;
+}
+
+export function AddMemoryPageContent({ editMemoryId, promptId, initialCustomPrompt }: AddMemoryPageContentProps) {
+  // This component now receives the IDs as props and passes them to the form.
+  console.log(`[DIAGNOSTIC] AddMemoryPageContent: Rendering MemoryForm with editMemoryId=${editMemoryId}`);
   return (
     <div className="container mx-auto py-8 px-4">
-        <MemoryForm />
+        <MemoryForm 
+          editMemoryId={editMemoryId}
+          promptId={promptId}
+          initialCustomPrompt={initialCustomPrompt}
+        />
     </div>
   );
 }
