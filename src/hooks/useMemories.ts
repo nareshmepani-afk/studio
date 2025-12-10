@@ -31,9 +31,6 @@ export function useMemories() {
     const unsubscribe = onSnapshot(memoriesQuery, (snapshot) => {
       const fetchedMemories = snapshot.docs.map(docSnap => {
         const data = docSnap.data();
-        // ** THE FIX IS HERE **
-        // Ensure the ID from the document snapshot is always correctly assigned.
-        // This guarantees data integrity for all downstream components.
         return {
           ...data,
           id: docSnap.id, // Explicitly assign the document ID
@@ -54,8 +51,9 @@ export function useMemories() {
 
   const { data: memories, isError } = useQuery<Memory[]>({ 
     queryKey: ['memories', user?.id],
-    // The queryFn is no longer needed as the onSnapshot listener populates the cache.
-    // We provide an empty array as the initial data.
+    // A queryFn is required, but we are populating the cache with the onSnapshot listener.
+    // This function will rarely run, but prevents the app from crashing.
+    queryFn: () => Promise.resolve([]),
     initialData: [],
     enabled: !!user,
     staleTime: Infinity,
