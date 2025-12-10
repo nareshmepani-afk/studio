@@ -195,14 +195,16 @@ export default function LifeJourneyPage() {
   
     if (isCompleted) {
         const memory = memories.find((m: Memory) => m.promptId === promptId);
-        if (memory) {
+        if (memory && memory.id) {
+            console.log(`[DIAGNOSTIC] Navigating to edit memory. Memory ID: ${memory.id}`);
             const url = `/add-memory?editMemoryId=${encodeURIComponent(memory.id)}`;
             router.push(url);
         } else {
-            console.error(`Could not find memory for completed promptId: ${promptId}`);
+            console.error(`[DIAGNOSTIC] Could not find memory or memory.id for completed promptId: ${promptId}. Memory object:`, memory);
             toast({ title: "Error", description: "Could not find the recorded memory for this chapter. The data might still be loading or an error occurred.", variant: "destructive" });
         }
     } else {
+        console.log(`[DIAGNOSTIC] Navigating to create new memory for promptId: ${promptId}`);
         const url = `/add-memory?promptId=${encodeURIComponent(promptId)}`;
         router.push(url);
     }
@@ -217,7 +219,7 @@ export default function LifeJourneyPage() {
     return "Activate 6-Month Free Host Pass";
   }, [hostPassStatus, isFetchingHostPassPrice, hostPassPriceDetails]);
 
-  if (isDataLoading && memories.length === 0) {
+  if (isDataLoading) {
      return (
         <AuthenticatedPageWrapper>
             <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
