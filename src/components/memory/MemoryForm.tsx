@@ -9,11 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MemoryCard } from './MemoryCard';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft, Eye, Layers, Scissors, Timer, ShieldAlert } from 'lucide-react';
+import { Sparkles, Loader2, Paperclip, ArrowRight, Tag, MapPin, ArrowLeft, Eye, Layers, Scissors, Timer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getDaysInMonth, format, isValid, setDate, getMonth, getYear, parseISO, getDate } from 'date-fns';
 import { enGB } from 'date-fns/locale';
@@ -28,10 +28,6 @@ import { mockPromptGroups } from '@/lib/mockData';
 import { Slider } from '@/components/ui/slider';
 import dynamic from 'next/dynamic';
 import { saveMemory } from '@/actions/memoryActions';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { app } from '@/lib/firebase';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-
 
 const MediaCaptureControl = dynamic(
   () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
@@ -79,18 +75,16 @@ function formatSecondsToTime(timeInSeconds: number | undefined): string {
 }
 
 interface MemoryFormProps {
-  editMemoryId?: string;
+  memoryToEdit: Memory | null; // The form now accepts the full memory object or null
   promptId?: string;
   initialCustomPrompt?: string;
 }
 
-export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: MemoryFormProps) {
-  const { user, loading: authLoading } = useAuth();
+export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: MemoryFormProps) {
+  const { user } = useAuth();
   const router = useRouter();
   
-  const [memoryToEdit, setMemoryToEdit] = useState<Memory | null>(null);
-  const [isLoadingMemory, setIsLoadingMemory] = useState(true);
-  const [errorLoadingMemory, setErrorLoadingMemory] = useState<string | null>(null);
+  const isEditing = !!memoryToEdit;
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -127,72 +121,10 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
   const [isParentSubmitting, setIsParentSubmitting] = useState(false);
   const [isPreparingMedia, setIsPreparingMedia] = useState(false);
 
-  console.log(`[DIAGNOSTIC] MemoryForm render. authLoading: ${authLoading}, user: ${!!user}, editMemoryId: ${editMemoryId}`);
-
-  useEffect(() => {
-    console.log('[DIAGNOSTIC] MemoryForm mount/update effect. editMemoryId:', editMemoryId);
-    const db = getFirestore(app);
-
-    const fetchMemory = async () => {
-      // Guard against running without necessary info
-      if (authLoading) {
-        console.log('[DIAGNOSTIC] Data fetching waiting: auth is loading.');
-        return;
-      }
-      if (!user) {
-        console.log('[DIAGNOSTIC] Data fetching stopped: no user. Redirecting to login.');
-        toast({ title: "Authentication Required", description: "You must be logged in to edit memories.", variant: "destructive"});
-        router.push('/login');
-        return;
-      }
-      if (!editMemoryId) {
-        console.log('[DIAGNOSTIC] No editMemoryId found. Assuming new memory creation.');
-        setIsLoadingMemory(false);
-        // Initialize for new memory
-        let determinedInitialTitle = '';
-        if (initialCustomPrompt) determinedInitialTitle = initialCustomPrompt;
-        else if (promptId) {
-            const foundPrompt = mockPromptGroups.flatMap(g => g.prompts).find(p => p.id === promptId);
-            determinedInitialTitle = foundPrompt ? foundPrompt.text.en : '';
-        }
-        setTitle(determinedInitialTitle);
-        const today = new Date();
-        setSelectedYear(getYear(today)); setSelectedMonth(getMonth(today)); setSelectedDay(getDate(today));
-        return;
-      }
-
-      console.log(`[DIAGNOSTIC] Starting fetch for memory ID: ${editMemoryId} for user ID: ${user.id}`);
-      setIsLoadingMemory(true);
-      setErrorLoadingMemory(null);
-      
-      try {
-        const memoryDocRef = doc(db, 'users', user.id, 'memories', editMemoryId);
-        const memoryDocSnap = await getDoc(memoryDocRef);
-
-        if (memoryDocSnap.exists()) {
-          console.log('[DIAGNOSTIC] Successfully fetched memory document.');
-          const fetchedMemory = { id: memoryDocSnap.id, ...memoryDocSnap.data() } as Memory;
-          setMemoryToEdit(fetchedMemory);
-        } else {
-          console.error(`[DIAGNOSTIC] Memory not found in Firestore for ID: ${editMemoryId}`);
-          setErrorLoadingMemory("Memory not found. It may have been deleted or you may not have permission to view it.");
-        }
-      } catch (error) {
-        console.error("[DIAGNOSTIC] Error fetching memory from Firestore:", error);
-        setErrorLoadingMemory("An error occurred while trying to load the memory.");
-      } finally {
-        setIsLoadingMemory(false);
-      }
-    };
-
-    fetchMemory();
-  }, [editMemoryId, user, authLoading, router, promptId, initialCustomPrompt]);
-
-
-  // This useEffect now ONLY populates the form state from the fetched memoryToEdit state variable.
+  // This useEffect now ONLY populates the form state from the prop. NO data fetching.
   useEffect(() => {
     if (memoryToEdit) {
-      console.log('[DIAGNOSTIC] Populating form state from fetched memory:', memoryToEdit.id);
+      console.log(`[CLIENT] MemoryForm hydrating state from memoryToEdit prop: ${memoryToEdit.title}`);
       setTitle(memoryToEdit.title || '');
       setLocation(memoryToEdit.location || '');
       setSelectedCategory(memoryToEdit.category || memoryCategoriesList[0]);
@@ -214,7 +146,6 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
 
       if (memoryToEdit.mediaAttachments && memoryToEdit.mediaAttachments.length > 0 && memoryToEdit.mediaAttachments[0].url) {
         const firstMedia = memoryToEdit.mediaAttachments[0];
-        console.log('[DIAGNOSTIC] Populating form with existing media attachment:', firstMedia.url);
         const duration = (typeof firstMedia.duration === 'number' && !isNaN(firstMedia.duration)) ? firstMedia.duration : 0;
         const size = (typeof firstMedia.size === 'number' && !isNaN(firstMedia.size)) ? firstMedia.size : 0;
         const startTime = (typeof firstMedia.startTime === 'number' && !isNaN(firstMedia.startTime)) ? firstMedia.startTime : 0;
@@ -231,12 +162,24 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
         });
         setCurrentMediaPreviewUrl(firstMedia.url); 
         setTrimValues([startTime, endTime]);
-      } else {
-        console.log('[DIAGNOSTIC] Fetched memory has no media attachments.');
-        setCurrentMedia(null); setCurrentMediaPreviewUrl(null);
       }
+    } else {
+        // Initialize for a new memory
+        console.log(`[CLIENT] MemoryForm initializing for new memory.`);
+        let determinedInitialTitle = '';
+        if (initialCustomPrompt) determinedInitialTitle = initialCustomPrompt;
+        else if (promptId) {
+            const foundPrompt = mockPromptGroups.flatMap(g => g.prompts).find(p => p.id === promptId);
+            determinedInitialTitle = foundPrompt ? foundPrompt.text.en : '';
+        }
+        setTitle(determinedInitialTitle);
+        const today = new Date();
+        setSelectedYear(getYear(today));
+        setSelectedMonth(getMonth(today));
+        setSelectedDay(getDate(today));
     }
-  }, [memoryToEdit]);
+  }, [memoryToEdit, promptId, initialCustomPrompt]);
+
 
   const daysInSelectedMonth = useMemo(() => getDaysInMonth(new Date(selectedYear, selectedMonth)), [selectedYear, selectedMonth]);
   const dayOptions = useMemo(() => Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1), [daysInSelectedMonth]);
@@ -311,8 +254,7 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
   const onSubmitMemory = async (formData: FormData) => {
     if (!user) { toast({ title: "Authentication Error", variant: "destructive" }); return; }
     setIsParentSubmitting(true);
-    console.log('[DIAGNOSTIC] Submitting form data to server action.');
-    const result = await saveMemory(formData, user.id, editMemoryId || null);
+    const result = await saveMemory(formData, user.id, memoryToEdit?.id || null);
     setIsParentSubmitting(false);
 
     if (result.success) {
@@ -333,7 +275,8 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
     formData.append('category', selectedCategory || 'Other');
     if(location) formData.append('location', location);
     if(country) formData.append('country', country);
-    if (promptId || memoryToEdit?.promptId) formData.append('promptId', promptId || memoryToEdit?.promptId || '');
+    const finalPromptId = promptId || memoryToEdit?.promptId;
+    if (finalPromptId) formData.append('promptId', finalPromptId);
     formData.append('isLegacy', (memoryToEdit?.isLegacy || false).toString());
 
     if (currentMedia) { 
@@ -343,7 +286,7 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
     }
     
     onSubmitMemory(formData);
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memoryToEdit, location, country, selectedCategory, promptId, selectedEmotionTags, onSubmitMemory, router, editMemoryId]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memoryToEdit, location, country, selectedCategory, promptId, selectedEmotionTags, onSubmitMemory, router]);
 
   const handleActionButtonClick = useCallback(() => {
     if (isParentSubmitting || isTrimming || isPreparingMedia) return;
@@ -355,7 +298,7 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
       if (!selectedCategory) { toast({ title: "Category Required", description: "Please select a category.", variant: "default" }); return; }
       handleSetCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
-      if (!currentMedia && (!editMemoryId || !memoryToEdit?.mediaAttachments?.length)) {
+      if (!currentMedia && !isEditing) {
         toast({ title: "Media is Required", description: "Please record or upload media to proceed.", variant: "default" }); return;
       }
       setMediaKey(Date.now().toString());
@@ -363,36 +306,15 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
     } else if (currentSlide === SLIDE_INDEX_PREVIEW) {
       triggerSubmitProcess();
     }
-  }, [isParentSubmitting, isTrimming, isPreparingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, editMemoryId, triggerSubmitProcess, currentMedia, memoryToEdit?.mediaAttachments, handleSetCurrentSlide]);
+  }, [isParentSubmitting, isTrimming, isPreparingMedia, currentSlide, title, description, selectedYear, selectedMonth, selectedDay, selectedCategory, isEditing, triggerSubmitProcess, currentMedia, handleSetCurrentSlide]);
 
   const handleFormSubmit = (event: FormEvent) => { event.preventDefault(); handleActionButtonClick(); };
 
-  if (isLoadingMemory) {
-    return (
-      <div className="container mx-auto py-8 px-4 text-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-        <p className="text-muted-foreground mt-4">[DIAGNOSTIC] Loading memory data...</p>
-      </div>
-    );
-  }
-
-  if (errorLoadingMemory) {
-    return (
-      <div className="container mx-auto py-8 px-4">
-        <Alert variant="destructive">
-          <ShieldAlert className="h-4 w-4" />
-          <AlertTitle>Error Loading Memory</AlertTitle>
-          <AlertDescription>{errorLoadingMemory}</AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
   let actionButtonText = 'Next'; let ActionButtonIcon: React.ElementType = ArrowRight;
-  const isNextToPreviewEnabled = !!currentMedia || (!!editMemoryId && !!memoryToEdit?.mediaAttachments?.length);
+  const isNextToPreviewEnabled = !!currentMedia || isEditing;
 
   if (currentSlide === SLIDE_INDEX_MEDIA) { actionButtonText = 'Next to Preview'; ActionButtonIcon = Eye; }
-  else if (currentSlide === SLIDE_INDEX_PREVIEW) { actionButtonText = editMemoryId ? 'Update Memory' : 'Save Memory'; ActionButtonIcon = Sparkles; }
+  else if (currentSlide === SLIDE_INDEX_PREVIEW) { actionButtonText = isEditing ? 'Update Memory' : 'Save Memory'; ActionButtonIcon = Sparkles; }
 
   const mediaForRecorderProp = currentMedia && currentMediaPreviewUrl ? { type: currentMedia.type, previewUrl: currentMediaPreviewUrl, duration: currentMedia.duration, size: currentMedia.size } : undefined;
   const currentPromptIdForTeleprompter = promptId || memoryToEdit?.promptId;
@@ -417,7 +339,7 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
           <CarouselItem>
             <div ref={step1AnchorRef} />
             <Card className="w-full">
-              <CardHeader><CardTitle className="font-headline text-2xl">{memoryToEdit ? 'Edit Chapter' : 'New Chapter'} (Step {SLIDE_INDEX_DETAILS + 1} of {TOTAL_SLIDES})</CardTitle><CardDescription>Capture the details of your moment. Fields marked with * are mandatory.</CardDescription></CardHeader>
+              <CardHeader><CardTitle className="font-headline text-2xl">{isEditing ? 'Edit Chapter' : 'New Chapter'} (Step {SLIDE_INDEX_DETAILS + 1} of {TOTAL_SLIDES})</CardTitle><CardDescription>Capture the details of your moment. Fields marked with * are mandatory.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1"><Label htmlFor="title">Title *</Label><Input ref={titleInputRef} id="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g., Summer Vacation in Italy" /></div>
                 <div className="space-y-1">
@@ -449,10 +371,10 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
           </CarouselItem>
           <CarouselItem>
             <div ref={step3AnchorRef} />
-            <Card className="w-full"><CardHeader><CardTitle className="font-headline text-2xl">{memoryToEdit ? 'Preview Changes' : 'New Chapter'} (Step {SLIDE_INDEX_PREVIEW + 1} of {TOTAL_SLIDES})</CardTitle><CardDescription>Review your chapter details and media. Go back to make changes or click '{actionButtonText}' to save.</CardDescription></CardHeader>
+            <Card className="w-full"><CardHeader><CardTitle className="font-headline text-2xl">{isEditing ? 'Preview Changes' : 'New Chapter'} (Step {SLIDE_INDEX_PREVIEW + 1} of {TOTAL_SLIDES})</CardTitle><CardDescription>Review your chapter details and media. Go back to make changes or click '{actionButtonText}' to save.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
                 {mockMemoryForPreview && (<div className="border p-1 sm:p-2 rounded-lg bg-background shadow-sm"><MemoryCard key={previewKey} memory={mockMemoryForPreview} userMode="guest" /></div>)}
-                {!mockMemoryForPreview && currentSlide === SLIDE_INDEX_PREVIEW && (<p className="text-muted-foreground text-center py-8">[DIAGNOSTIC] Preparing preview...</p>)}
+                {!mockMemoryForPreview && currentSlide === SLIDE_INDEX_PREVIEW && (<p className="text-muted-foreground text-center py-8">Preparing preview...</p>)}
               </CardContent>
             </Card>
           </CarouselItem>
