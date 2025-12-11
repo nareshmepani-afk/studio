@@ -3,7 +3,7 @@
 
 import { db, storage } from "@/lib/firebase";
 import type { Memory, MediaAttachment, EmotionTag } from "@/types";
-import { addDoc, collection, doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { addDoc, collection, doc, serverTimestamp, updateDoc, Timestamp } from "firebase/firestore";
 import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
 
 export async function saveMemory(
@@ -15,7 +15,8 @@ export async function saveMemory(
     
     // Safely extract and parse form data
     const title = formData.get('title') as string || 'Untitled Memory';
-    const date = formData.get('date') as string || new Date().toISOString();
+    const dateStr = formData.get('date') as string || new Date().toISOString();
+    const date = new Date(dateStr); // Convert ISO string to Date object for Firestore
     const description = formData.get('description') as string || '';
     const location = formData.get('location') as string || undefined;
     const country = formData.get('country') as string || undefined;
@@ -70,9 +71,10 @@ export async function saveMemory(
             console.log(`[SERVER ACTION] New attachment created:`, newAttachment);
         }
 
-        const dataToSave: Omit<Memory, 'id' | 'userId' | 'createdAt' | 'updatedAt'> & { updatedAt: any } = {
+        // Prepare data with correct types for Firestore
+        const dataToSave = {
             title,
-            date,
+            date: Timestamp.fromDate(date), // Use Firestore Timestamp
             description,
             location,
             country,

@@ -53,9 +53,9 @@ export default async function AddMemoryPage({ searchParams }: AddMemoryPageProps
           ...data,
           id: memoryDocSnap.id,
           // Safely convert timestamps to strings
-          date: (data.date as FirebaseFirestore.Timestamp)?.toDate ? (data.date as FirebaseFirestore.Timestamp).toDate().toISOString() : new Date().toISOString(),
-          createdAt: (data.createdAt as FirebaseFirestore.Timestamp)?.toDate ? (data.createdAt as FirebaseFirestore.Timestamp).toDate().toISOString() : undefined,
-          updatedAt: (data.updatedAt as FirebaseFirestore.Timestamp)?.toDate ? (data.updatedAt as FirebaseFirestore.Timestamp).toDate().toISOString() : undefined,
+          date: (data.date as any)?.toDate ? (data.date as any).toDate().toISOString() : (typeof data.date === 'string' ? data.date : new Date().toISOString()),
+          createdAt: (data.createdAt as any)?.toDate ? (data.createdAt as any).toDate().toISOString() : undefined,
+          updatedAt: (data.updatedAt as any)?.toDate ? (data.updatedAt as any).toDate().toISOString() : undefined,
         } as Memory;
          console.log(`[SERVER] Memory found:`, memoryToEdit.title);
       } else {

@@ -31,10 +31,12 @@ export function useMemories() {
     const unsubscribe = onSnapshot(memoriesQuery, (snapshot) => {
       const fetchedMemories = snapshot.docs.map(docSnap => {
         const data = docSnap.data();
+        // Correctly handle Firestore Timestamp conversion
+        const date = data.date instanceof Timestamp ? data.date.toDate().toISOString() : data.date;
         return {
           ...data,
-          id: docSnap.id, // Explicitly assign the document ID
-          date: (data.date as Timestamp)?.toDate ? (data.date as Timestamp).toDate().toISOString() : data.date,
+          id: docSnap.id,
+          date: date,
         } as Memory;
       });
       
@@ -51,8 +53,6 @@ export function useMemories() {
 
   const { data: memories, isError } = useQuery<Memory[]>({ 
     queryKey: ['memories', user?.id],
-    // A queryFn is required, but we are populating the cache with the onSnapshot listener.
-    // This function will rarely run, but prevents the app from crashing.
     queryFn: () => Promise.resolve([]),
     initialData: [],
     enabled: !!user,
