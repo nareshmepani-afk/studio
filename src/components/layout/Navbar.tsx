@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { useMemories } from '@/hooks/useMemories';
+// import { useMemories } from '@/hooks/useMemories'; // Removed this import
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -18,24 +18,18 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { LogOut, PlusCircle, Settings, BellRing, Users, UserCog, Film, History, Home, UserCircle2 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from './ThemeToggle';
 import { useMemo } from 'react';
 
 export function Navbar() {
   const { isAuthenticated, user, logout, userMode, toggleUserMode, setUserMode } = useAuth();
-  const { memories } = useMemories();
+  // const { memories } = useMemories(); // Removed this line
   const router = useRouter();
   const pathname = usePathname();
 
   // This logic is now derived from the memories hook
-  const hasNewSharedMemories = useMemo(() => {
-    if (!user || !user.viewedSharedMemoryIds) {
-      return false;
-    }
-    const viewedIds = new Set(user.viewedSharedMemoryIds);
-    return memories.some(mem => !viewedIds.has(mem.id));
-  }, [memories, user]);
+  const hasNewSharedMemories = false; // Temporarily disabled this feature
   
   // This is a placeholder, as the original logic was removed from AuthContext.
   // A real implementation would involve fetching requests data.
