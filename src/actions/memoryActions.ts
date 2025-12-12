@@ -11,17 +11,20 @@ export async function saveMemory(
     userId: string,
     editMemoryId: string | null
 ): Promise<{ success: boolean; message: string; data?: Memory }> {
+    console.log(`[SAVE_MEMORY_ACTION] --- Initiating memory save for user: ${userId} ---`);
+
     const mediaFileToUpload = formData.get("mediaFile") as File | null;
     
-    // Safely extract and parse form data
+    const promptId = formData.get('promptId') as string | undefined;
+    console.log(`[SAVE_MEMORY_ACTION] Retrieved 'promptId' from FormData: ${promptId ? `'${promptId}'` : 'undefined'}`);
+
     const title = formData.get('title') as string || 'Untitled Memory';
     const dateStr = formData.get('date') as string || new Date().toISOString();
-    const date = new Date(dateStr); // Convert ISO string to Date object for Firestore
+    const date = new Date(dateStr);
     const description = formData.get('description') as string || '';
     const location = formData.get('location') as string || undefined;
     const country = formData.get('country') as string || undefined;
     const category = formData.get('category') as string || 'Other';
-    const promptId = formData.get('promptId') as string || undefined;
     const isLegacy = formData.get('isLegacy') === 'true';
     
     let emotionTags: EmotionTag[] = [];
@@ -30,68 +33,66 @@ export async function saveMemory(
         try {
             emotionTags = JSON.parse(emotionTagsString);
         } catch (e) {
-            console.warn("Could not parse emotionTags", e);
+            console.warn("[SAVE_MEMORY_ACTION] Could not parse emotionTags", e);
         }
     }
 
     try {
         let finalMediaAttachments: MediaAttachment[] = [];
-        
-        // If there's an existing media attachment string, parse it.
-        // This is crucial for edits where the media isn't being changed.
         const existingAttachmentsString = formData.get('mediaAttachments') as string;
         if (existingAttachmentsString) {
              try {
                 finalMediaAttachments = JSON.parse(existingAttachmentsString);
             } catch (e) {
-                console.warn("Could not parse existing mediaAttachments", e);
+                console.warn("[SAVE_MEMORY_ACTION] Could not parse existing mediaAttachments", e);
             }
         }
 
-
-        // If a new file is uploaded, it takes precedence.
         if (mediaFileToUpload) {
-            console.log(`[SERVER ACTION] Uploading new file: ${mediaFileToUpload.name}`);
             const filePath = `users/${userId}/memories/${Date.now()}_${mediaFileToUpload.name}`;
             const fileRef = storageRef(storage, filePath);
             await uploadBytes(fileRef, mediaFileToUpload);
             const downloadURL = await getDownloadURL(fileRef);
-
             const newAttachment: MediaAttachment = {
                 id: 'media' + Date.now(),
                 type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
                 url: downloadURL,
                 filename: mediaFileToUpload.name,
                 size: mediaFileToUpload.size,
-                // Duration would ideally be extracted, but it's complex server-side.
-                // It's better to handle this on the client before upload if needed.
             };
-            // When a new file is uploaded, it replaces any existing media
             finalMediaAttachments = [newAttachment]; 
-            console.log(`[SERVER ACTION] New attachment created:`, newAttachment);
         }
 
-        // Prepare data with correct types for Firestore
-        const dataToSave = {
+        const dataToSave: any = {
             title,
-            date: Timestamp.fromDate(date), // Use Firestore Timestamp
+            date: Timestamp.fromDate(date),
             description,
             location,
             country,
             category,
-            promptId,
             isLegacy,
             emotionTags,
             mediaAttachments: finalMediaAttachments,
             updatedAt: serverTimestamp(),
         };
 
+        if (promptId) {
+            dataToSave.promptId = promptId;
+        }
+        
+        console.log('[SAVE_MEMORY_ACTION] Assembled data object for Firestore. Checking for promptId...', dataToSave);
+        if (dataToSave.promptId) {
+            console.log(`[SAVE_MEMORY_ACTION] SUCCESS: promptId '${dataToSave.promptId}' is present in the object to be saved.`);
+        } else {
+            console.log(`[SAVE_MEMORY_ACTION] WARNING: promptId is NOT present in the final object. It will not be saved.`);
+        }
+
         if (editMemoryId) {
-            console.log(`[SERVER ACTION] Updating memory ID: ${editMemoryId}`);
+            console.log(`[SAVE_MEMORY_ACTION] Updating existing memory with ID: ${editMemoryId}`);
             const memoryDocRef = doc(db, 'users', userId, 'memories', editMemoryId);
             await updateDoc(memoryDocRef, dataToSave);
         } else {
-            console.log(`[SERVER ACTION] Creating new memory for user: ${userId}`);
+            console.log(`[SAVE_MEMORY_ACTION] Creating new memory for user: ${userId}`);
             const memoriesCollectionRef = collection(db, 'users', userId, 'memories');
             const dataWithCreationFields = {
                 ...dataToSave,
@@ -101,10 +102,13 @@ export async function saveMemory(
             await addDoc(memoriesCollectionRef, dataWithCreationFields);
         }
 
+        console.log('[SAVE_MEMORY_ACTION] --- Memory save operation completed successfully. ---\n');
         return { success: true, message: "Memory saved successfully!" };
 
     } catch (error) {
-        console.error("Error in saveMemory server action:", error);
-        return { success: false, message: "A server error occurred while saving the memory." };
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        console.error("[SAVE_MEMORY_ACTION] Error in saveMemory server action:", errorMessage);
+        console.log('[SAVE_MEMORY_ACTION] --- Memory save operation failed. ---\n');
+        return { success: false, message: `A server error occurred: ${errorMessage}` };
     }
 }
