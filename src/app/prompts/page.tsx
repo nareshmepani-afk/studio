@@ -9,9 +9,8 @@ import { getAuth } from 'firebase-admin/auth';
 import { mockPromptGroups } from '@/lib/mockData';
 import type { Memory } from '@/types';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
-import { PromptsPageContent } from '@/components/prompts/PromptsPageContent'; // We will create this client component next
+import { PromptsPageContent } from '@/components/prompts/PromptsPageContent';
 
-// Initialize Firebase Admin SDK (same as before)
 const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
   ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
   : null;
@@ -22,17 +21,16 @@ if (!getApps().length && serviceAccount) {
   });
 }
 
-// --- Server-Side Data Fetching --- //
-
 async function getUserIdFromCookie(): Promise<string | null> {
     if (!getApps().length) return null;
-    const token = cookies().get('firebase-auth-token')?.value;
-    if (!token) return null;
+    const sessionCookie = cookies().get('firebase-auth-token')?.value;
+    if (!sessionCookie) return null;
     try {
-        const decodedToken = await getAuth().verifyIdToken(token);
+        // ** THE FIX: Use verifySessionCookie, not verifyIdToken **
+        const decodedToken = await getAuth().verifySessionCookie(sessionCookie, true /** checkRevoked */);
         return decodedToken.uid;
     } catch (error) {
-        console.error('[PROMPTS_PAGE_SERVER] Error verifying auth token:', (error as Error).message);
+        console.error('[PROMPTS_PAGE_SERVER] Error verifying session cookie:', (error as Error).message);
         return null;
     }
 }
@@ -62,12 +60,9 @@ async function getUserPromptFlags(userId: string): Promise<Set<string>> {
     return new Set();
 }
 
-// --- The Server Component --- //
-
 export default async function LifeJourneyPage() {
   const userId = await getUserIdFromCookie();
 
-  // If no user, we can render a simple state without fetching data
   if (!userId) {
     return (
       <AuthenticatedPageWrapper>
@@ -80,13 +75,11 @@ export default async function LifeJourneyPage() {
     );
   }
 
-  // Fetch all necessary data on the server, in parallel
   const [memories, flaggedPromptIds] = await Promise.all([
     getUserMemories(userId),
     getUserPromptFlags(userId),
   ]);
 
-  // Now, render the client component with this fresh, reliable data
   return (
     <AuthenticatedPageWrapper>
       <PromptsPageContent 

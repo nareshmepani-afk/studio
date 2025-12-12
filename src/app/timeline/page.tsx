@@ -22,13 +22,14 @@ if (!getApps().length && serviceAccount) {
 
 async function getUserIdFromCookie(): Promise<string | null> {
     if (!getApps().length) return null;
-    const token = cookies().get('firebase-auth-token')?.value;
-    if (!token) return null;
+    const sessionCookie = cookies().get('firebase-auth-token')?.value;
+    if (!sessionCookie) return null;
     try {
-        const decodedToken = await getAuth().verifyIdToken(token);
+        // ** THE FIX: Use verifySessionCookie, not verifyIdToken **
+        const decodedToken = await getAuth().verifySessionCookie(sessionCookie, true /** checkRevoked */);
         return decodedToken.uid;
     } catch (error) {
-        console.error('[TIMELINE_PAGE_SERVER] Error verifying auth token:', (error as Error).message);
+        console.error('[TIMELINE_PAGE_SERVER] Error verifying session cookie:', (error as Error).message);
         return null;
     }
 }
