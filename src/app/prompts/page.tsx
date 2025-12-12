@@ -1,4 +1,6 @@
 
+export const dynamic = 'force-dynamic';
+
 import React from 'react';
 import { cookies } from 'next/headers';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';

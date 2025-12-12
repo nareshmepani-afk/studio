@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { User, UserMode, Memory as MemoryType } from '@/types';
+import type { User, UserMode } from '@/types';
 import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types';
 import React, { createContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -15,8 +15,9 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
+  type IdTokenResult,
 } from 'firebase/auth';
-import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, Timestamp, orderBy } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -27,12 +28,10 @@ interface AuthContextType {
   userMode: UserMode;
   toggleUserMode: () => void;
   setUserMode: (mode: UserMode) => void;
-  
   hostPassStatus: User['hostPassStatus'];
-  
   storageQuotaBytes: number;
   updateUserProfileInFirestore: (userId: string, updates: Partial<User>) => Promise<void>;
-  loading: boolean; // Centralized loading state
+  loading: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,9 +57,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [db]);
 
+  // This useEffect is the core of the authentication bridge.
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        // --- Start: Bridge to Server --- //
+        const token = await firebaseUser.getIdToken();
+        await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token }),
+        });
+        // --- End: Bridge to Server --- //
+
         const userDocRef = doc(db, "users", firebaseUser.uid);
         const userDocSnap = await getDoc(userDocRef);
 
@@ -81,6 +90,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       } else {
+        // --- Start: Bridge to Server (Logout) --- //
+        await fetch('/api/auth/session', { method: 'DELETE' });
+        // --- End: Bridge to Server (Logout) --- //
         setUser(null);
       }
       setIsLoading(false);

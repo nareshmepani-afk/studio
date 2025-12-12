@@ -1,4 +1,6 @@
 
+export const dynamic = 'force-dynamic';
+
 import React from 'react';
 import { cookies } from 'next/headers';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
@@ -6,9 +8,8 @@ import { getFirestore, collection, getDocs, query, orderBy } from 'firebase-admi
 import { getAuth } from 'firebase-admin/auth';
 import type { Memory } from '@/types';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
-import { TimelinePageContent } from '@/components/memory/TimelinePageContent'; // We will create this client component next
+import { TimelinePageContent } from '@/components/memory/TimelinePageContent';
 
-// Initialize Firebase Admin SDK
 const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
   ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
   : null;
@@ -18,8 +19,6 @@ if (!getApps().length && serviceAccount) {
     credential: cert(serviceAccount),
   });
 }
-
-// --- Server-Side Data Fetching --- //
 
 async function getUserIdFromCookie(): Promise<string | null> {
     if (!getApps().length) return null;
@@ -40,7 +39,6 @@ async function getUserMemories(userId: string): Promise<Memory[]> {
     const snapshot = await getDocs(memoriesQuery);
     return snapshot.docs.map(docSnap => {
         const data = docSnap.data();
-        // Ensure all necessary fields are correctly typed and handled, especially Timestamps
         return {
             id: docSnap.id,
             title: data.title || '',
@@ -54,8 +52,6 @@ async function getUserMemories(userId: string): Promise<Memory[]> {
     });
 }
 
-// --- The Server Component --- //
-
 export default async function TimelinePage() {
   const userId = await getUserIdFromCookie();
 
@@ -65,12 +61,9 @@ export default async function TimelinePage() {
       memories = await getUserMemories(userId);
     } catch (error) {
       console.error("[TIMELINE_PAGE_SERVER] Failed to fetch memories:", error);
-      // Render the client component with empty memories in case of an error
     }
   }
 
-  // Render the Client Component with the fetched data.
-  // The client component will handle all filtering, sorting, and user interactions.
   return (
     <AuthenticatedPageWrapper>
       <TimelinePageContent initialMemories={memories} />
