@@ -1,22 +1,8 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
+import { adminAuth } from '@/lib/firebase-admin';
 
-// This is a critical piece of server-side infrastructure. 
-// Its purpose is to create a secure bridge between the client-side Firebase 
-// authentication and the server-side rendering (SSR) context.
-
-// Initialize Firebase Admin SDK for server-side verification
-const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-  : null;
-
-if (!getApps().length && serviceAccount) {
-  initializeApp({
-    credential: cert(serviceAccount),
-  });
-}
+// This route no longer initializes the SDK. It imports the initialized adminAuth service.
 
 /**
  * @name POST /api/auth/session
@@ -34,16 +20,17 @@ export async function POST(request: NextRequest) {
   try {
     // The session cookie will be valid for 5 days.
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days in milliseconds
-    const sessionCookie = await getAuth().createSessionCookie(token, { expiresIn });
+    
+    // Use the imported adminAuth singleton
+    const sessionCookie = await adminAuth.createSessionCookie(token, { expiresIn });
 
     const response = NextResponse.json({ status: 'success' });
     
-    // Set the cookie on the response. This is the bridge.
     response.cookies.set('firebase-auth-token', sessionCookie, {
-      httpOnly: true, // The cookie is inaccessible to client-side scripts
-      secure: process.env.NODE_ENV === 'production', // Sent only over HTTPS
-      maxAge: expiresIn, // Corresponds to the session length
-      path: '/', // Available on all paths
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: expiresIn,
+      path: '/',
     });
 
     return response;
@@ -60,7 +47,6 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE() {
   const response = NextResponse.json({ status: 'success' });
-  // Instruct the browser to delete the cookie.
   response.cookies.delete('firebase-auth-token');
   return response;
 }

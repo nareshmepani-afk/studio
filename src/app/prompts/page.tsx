@@ -3,42 +3,31 @@ export const dynamic = 'force-dynamic';
 
 import React from 'react';
 import { cookies } from 'next/headers';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
+import { adminAuth, adminDb } from '@/lib/firebase-admin'; // Import the singletons
 import { mockPromptGroups } from '@/lib/mockData';
 import type { Memory } from '@/types';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { PromptsPageContent } from '@/components/prompts/PromptsPageContent';
 
-const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-  : null;
-
-if (!getApps().length && serviceAccount) {
-  initializeApp({
-    credential: cert(serviceAccount),
-  });
-}
+// The page no longer initializes the SDK. It uses the imported singletons.
 
 async function getUserIdFromCookie(): Promise<string | null> {
-    if (!getApps().length) return null;
     const sessionCookie = cookies().get('firebase-auth-token')?.value;
     if (!sessionCookie) return null;
     try {
-        // ** THE FIX: Use verifySessionCookie, not verifyIdToken **
-        const decodedToken = await getAuth().verifySessionCookie(sessionCookie, true /** checkRevoked */);
+        const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true /** checkRevoked */);
         return decodedToken.uid;
     } catch (error) {
+        // If the session cookie is invalid, it will be caught here.
+        // We can log this for debugging, but it's a normal part of the flow.
         console.error('[PROMPTS_PAGE_SERVER] Error verifying session cookie:', (error as Error).message);
         return null;
     }
 }
 
 async function getUserMemories(userId: string): Promise<Memory[]> {
-    const db = getFirestore();
-    const memoriesQuery = collection(db, "users", userId, "memories");
-    const snapshot = await getDocs(memoriesQuery);
+    const memoriesQuery = adminDb.collection("users").doc(userId).collection("memories");
+    const snapshot = await memoriesQuery.get();
     return snapshot.docs.map(docSnap => {
         const data = docSnap.data();
         return {
@@ -50,12 +39,12 @@ async function getUserMemories(userId: string): Promise<Memory[]> {
 }
 
 async function getUserPromptFlags(userId: string): Promise<Set<string>> {
-    const db = getFirestore();
-    const flagsDocRef = doc(db, 'userPromptFlags', userId);
-    const docSnap = await getDoc(flagsDocRef);
-    if (docSnap.exists()) {
+    const flagsDocRef = adminDb.collection('userPromptFlags').doc(userId);
+    const docSnap = await flagsDocRef.get();
+    if (docSnap.exists) {
         const data = docSnap.data();
-        return new Set(Object.keys(data).filter(key => data[key]));
+        // Filter out falsy values that might be stored from previous logic
+        return new Set(Object.keys(data!).filter(key => data![key]));
     }
     return new Set();
 }

@@ -3,30 +3,18 @@ export const dynamic = 'force-dynamic';
 
 import React from 'react';
 import { cookies } from 'next/headers';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore, collection, getDocs, query, orderBy } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
+import { adminAuth, adminDb } from '@/lib/firebase-admin'; // Import the singletons
 import type { Memory } from '@/types';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { TimelinePageContent } from '@/components/memory/TimelinePageContent';
 
-const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-  : null;
-
-if (!getApps().length && serviceAccount) {
-  initializeApp({
-    credential: cert(serviceAccount),
-  });
-}
+// The page no longer initializes the SDK. It uses the imported singletons.
 
 async function getUserIdFromCookie(): Promise<string | null> {
-    if (!getApps().length) return null;
     const sessionCookie = cookies().get('firebase-auth-token')?.value;
     if (!sessionCookie) return null;
     try {
-        // ** THE FIX: Use verifySessionCookie, not verifyIdToken **
-        const decodedToken = await getAuth().verifySessionCookie(sessionCookie, true /** checkRevoked */);
+        const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true /** checkRevoked */);
         return decodedToken.uid;
     } catch (error) {
         console.error('[TIMELINE_PAGE_SERVER] Error verifying session cookie:', (error as Error).message);
@@ -35,9 +23,8 @@ async function getUserIdFromCookie(): Promise<string | null> {
 }
 
 async function getUserMemories(userId: string): Promise<Memory[]> {
-    const db = getFirestore();
-    const memoriesQuery = query(collection(db, "users", userId, "memories"), orderBy('date', 'desc'));
-    const snapshot = await getDocs(memoriesQuery);
+    const memoriesQuery = adminDb.collection("users").doc(userId).collection("memories").orderBy('date', 'desc');
+    const snapshot = await memoriesQuery.get();
     return snapshot.docs.map(docSnap => {
         const data = docSnap.data();
         return {
