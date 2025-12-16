@@ -1,4 +1,3 @@
-
 "use client";
 
 import { ShieldAlert } from 'lucide-react';
@@ -10,7 +9,7 @@ import { AuthenticatedPageWrapper } from '../layout/AuthenticatedPageWrapper';
 interface AddMemoryPageContentProps {
   memoryToEdit: Memory | null;
   promptId?: string;
-  initialCustomPrompt?: string;
+  initialCustomPrompt?: string; // Renamed from initialPrompt
   error?: string | null;
 }
 
