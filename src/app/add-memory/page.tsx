@@ -1,12 +1,18 @@
 
 import React from 'react';
-import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
-import { AddMemoryPageContent } from '@/components/memory/AddMemoryPageContent';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
 import type { Memory } from '@/types';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { ShieldAlert } from 'lucide-react';
+import { AddMemoryPageContent } from '@/components/memory/AddMemoryPageContent';
+
+// This is the definitive check. If firebase-admin failed, this will throw a clear error.
+if (!adminAuth || !adminDb) {
+  throw new Error(
+    'CRITICAL: Firebase Admin SDK is not initialized. Check the server logs for the original error in firebase-admin.ts.'
+  );
+}
 
 async function getUserIdFromCookie(): Promise<string | null> {
     const sessionCookie = (await cookies()).get('firebase-auth-token')?.value;
@@ -71,7 +77,6 @@ export default async function AddMemoryPage({ searchParams }: AddMemoryPageProps
 
   if (!userId) {
       return (
-        <AuthenticatedPageWrapper>
           <div className="container mx-auto py-8 px-4">
               <Alert variant="destructive">
                   <ShieldAlert className="h-4 w-4" />
@@ -79,7 +84,6 @@ export default async function AddMemoryPage({ searchParams }: AddMemoryPageProps
                   <AlertDescription>You must be logged in to access this page. Your session may have expired.</AlertDescription>
               </Alert>
           </div>
-        </AuthenticatedPageWrapper>
       );
   }
 
@@ -89,27 +93,23 @@ export default async function AddMemoryPage({ searchParams }: AddMemoryPageProps
     const { memory, error } = await getMemory(editMemoryId, userId);
 
     return (
-      <AuthenticatedPageWrapper>
-        <AddMemoryPageContent
-          key={componentKey}
-          memoryToEdit={memory}
-          promptId={promptId}
-          initialCustomPrompt={initialCustomPrompt}
-          error={error}
-        />
-      </AuthenticatedPageWrapper>
+      <AddMemoryPageContent
+        key={componentKey}
+        memoryToEdit={memory}
+        promptId={promptId}
+        initialCustomPrompt={initialCustomPrompt}
+        error={error}
+      />
     );
   } else {
     return (
-      <AuthenticatedPageWrapper>
-        <AddMemoryPageContent
-          key={componentKey}
-          memoryToEdit={null}
-          promptId={promptId}
-          initialCustomPrompt={initialCustomPrompt}
-          error={null}
-        />
-      </AuthenticatedPageWrapper>
+      <AddMemoryPageContent
+        key={componentKey}
+        memoryToEdit={null}
+        promptId={promptId}
+        initialCustomPrompt={initialCustomPrompt}
+        error={null}
+      />
     );
   }
 }
