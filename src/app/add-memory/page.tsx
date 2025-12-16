@@ -62,7 +62,7 @@ interface AddMemoryPageProps {
 }
 
 export default async function AddMemoryPage({ searchParams }: AddMemoryPageProps) {
-  // *** THE CORRECTED LOGIC: Access searchParams directly, no await ***
+  // *** THE FINAL CORRECTED LOGIC: Access searchParams directly, no await ***
   const editMemoryId = typeof searchParams.editMemoryId === 'string' ? searchParams.editMemoryId : undefined;
   const promptId = typeof searchParams.promptId === 'string' ? searchParams.promptId : undefined;
   const initialCustomPrompt = typeof searchParams.prompt === 'string' ? searchParams.prompt : undefined;
