@@ -38,12 +38,9 @@ async function getMemory(editMemoryId: string, userId: string): Promise<{ memory
         return { memory: null, error: "Memory data is empty or corrupted." };
     }
 
-    // *** THE CRITICAL SERIALIZATION FIX ***
-    // Convert Firestore Timestamps to ISO strings before sending to the client.
     const memory: Memory = {
       ...data,
       id: memoryDocSnap.id,
-      // Safely convert Timestamps to ISO strings
       date: (data.date as any)?.toDate ? (data.date as any).toDate().toISOString() : new Date().toISOString(),
       createdAt: (data.createdAt as any)?.toDate ? (data.createdAt as any).toDate().toISOString() : undefined,
       updatedAt: (data.updatedAt as any)?.toDate ? (data.updatedAt as any).toDate().toISOString() : undefined,
@@ -83,7 +80,6 @@ export default async function AddMemoryPage({ searchParams }: AddMemoryPageProps
       );
   }
 
-  // Use a key to ensure the component re-renders completely if the ID changes
   const componentKey = editMemoryId ? `edit-${editMemoryId}` : `new-${promptId || initialCustomPrompt || 'freeform'}`;
 
   if (editMemoryId) {
@@ -101,7 +97,6 @@ export default async function AddMemoryPage({ searchParams }: AddMemoryPageProps
       </AuthenticatedPageWrapper>
     );
   } else {
-    // Handle the case for creating a new memory (no fetching required)
     return (
       <AuthenticatedPageWrapper>
         <AddMemoryPageContent
