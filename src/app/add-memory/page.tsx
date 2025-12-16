@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { AddMemoryPageContent } from '@/components/memory/AddMemoryPageContent';
@@ -61,6 +62,7 @@ interface AddMemoryPageProps {
 }
 
 export default async function AddMemoryPage({ searchParams }: AddMemoryPageProps) {
+  // *** THE CORRECTED LOGIC: Access searchParams directly, no await ***
   const editMemoryId = typeof searchParams.editMemoryId === 'string' ? searchParams.editMemoryId : undefined;
   const promptId = typeof searchParams.promptId === 'string' ? searchParams.promptId : undefined;
   const initialCustomPrompt = typeof searchParams.prompt === 'string' ? searchParams.prompt : undefined;
@@ -81,6 +83,7 @@ export default async function AddMemoryPage({ searchParams }: AddMemoryPageProps
       );
   }
 
+  // Use a key to ensure the component re-renders completely if the ID changes
   const componentKey = editMemoryId ? `edit-${editMemoryId}` : `new-${promptId || initialCustomPrompt || 'freeform'}`;
 
   if (editMemoryId) {
