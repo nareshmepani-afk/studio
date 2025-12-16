@@ -58,12 +58,10 @@ async function getMemory(editMemoryId: string, userId: string): Promise<{ memory
 }
 
 interface AddMemoryPageProps {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams: { [key: string]: string | string[] | undefined };
 }
 
-export default async function AddMemoryPage({ searchParams: searchParamsPromise }: AddMemoryPageProps) {
-  // *** THE FINAL CORRECTED LOGIC: Await the searchParams promise ***
-  const searchParams = await searchParamsPromise;
+export default async function AddMemoryPage({ searchParams }: AddMemoryPageProps) {
   
   const editMemoryId = typeof searchParams.editMemoryId === 'string' ? searchParams.editMemoryId : undefined;
   const promptId = typeof searchParams.promptId === 'string' ? searchParams.promptId : undefined;
