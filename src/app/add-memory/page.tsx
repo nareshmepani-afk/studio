@@ -1,51 +1,111 @@
-
 import React from 'react';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { AddMemoryPageContent } from '@/components/memory/AddMemoryPageContent';
-import { getMemory } from '@/actions/getMemoryAction'; // Import the new server action
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { cookies } from 'next/headers';
+import type { Memory } from '@/types';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { ShieldAlert } from 'lucide-react';
 
-// This is now a simple, clean Server Component.
-// Its only job is to orchestrate the data fetching and pass it to the client.
+async function getUserIdFromCookie(): Promise<string | null> {
+    const sessionCookie = (await cookies()).get('firebase-auth-token')?.value;
+    if (!sessionCookie) return null;
+    try {
+        const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
+        return decodedToken.uid;
+    } catch (error) {
+        console.error('[ADD_MEMORY_PAGE_SERVER] Error verifying session cookie:', (error as Error).message);
+        return null;
+    }
+}
+
+async function getMemory(editMemoryId: string, userId: string): Promise<{ memory: Memory | null; error: string | null; }> {
+  if (!userId) {
+    return { memory: null, error: "Authentication failed. You must be logged in to view this content." };
+  }
+
+  try {
+    const memoryDocRef = adminDb.collection('users').doc(userId).collection('memories').doc(editMemoryId);
+    const memoryDocSnap = await memoryDocRef.get();
+
+    if (!memoryDocSnap.exists) {
+      return { memory: null, error: "Memory not found. It may have been deleted or you don't have permission to view it." };
+    }
+
+    const data = memoryDocSnap.data();
+    if (!data) {
+        return { memory: null, error: "Memory data is empty or corrupted." };
+    }
+
+    // *** THE CRITICAL SERIALIZATION FIX ***
+    // Convert Firestore Timestamps to ISO strings before sending to the client.
+    const memory: Memory = {
+      ...data,
+      id: memoryDocSnap.id,
+      // Safely convert Timestamps to ISO strings
+      date: (data.date as any)?.toDate ? (data.date as any).toDate().toISOString() : new Date().toISOString(),
+      createdAt: (data.createdAt as any)?.toDate ? (data.createdAt as any).toDate().toISOString() : undefined,
+      updatedAt: (data.updatedAt as any)?.toDate ? (data.updatedAt as any).toDate().toISOString() : undefined,
+    } as Memory;
+    
+    return { memory, error: null };
+
+  } catch (e) {
+    console.error("[ADD_MEMORY_PAGE_SERVER] Error fetching memory:", e);
+    return { memory: null, error: "A server error occurred while loading the memory." };
+  }
+}
 
 interface AddMemoryPageProps {
   searchParams: { [key: string]: string | string[] | undefined };
 }
 
 export default async function AddMemoryPage({ searchParams }: AddMemoryPageProps) {
-
   const editMemoryId = typeof searchParams.editMemoryId === 'string' ? searchParams.editMemoryId : undefined;
   const promptId = typeof searchParams.promptId === 'string' ? searchParams.promptId : undefined;
   const initialCustomPrompt = typeof searchParams.prompt === 'string' ? searchParams.prompt : undefined;
+  
+  const userId = await getUserIdFromCookie();
 
-  // All authentication and data fetching is now handled by the getMemory server action.
-  // This completely bypasses the header propagation issue with client-side navigation.
+  if (!userId) {
+      return (
+        <AuthenticatedPageWrapper>
+          <div className="container mx-auto py-8 px-4">
+              <Alert variant="destructive">
+                  <ShieldAlert className="h-4 w-4" />
+                  <AlertTitle>Authentication Error</AlertTitle>
+                  <AlertDescription>You must be logged in to access this page. Your session may have expired.</AlertDescription>
+              </Alert>
+          </div>
+        </AuthenticatedPageWrapper>
+      );
+  }
+
+  const componentKey = editMemoryId ? `edit-${editMemoryId}` : `new-${promptId || initialCustomPrompt || 'freeform'}`;
+
   if (editMemoryId) {
-    const { memory, error } = await getMemory(editMemoryId);
-
-    // Generate a unique key to force a re-mount of the client component when the memory ID changes.
-    const componentKey = `edit-${editMemoryId}`;
+    const { memory, error } = await getMemory(editMemoryId, userId);
 
     return (
       <AuthenticatedPageWrapper>
         <AddMemoryPageContent
           key={componentKey}
-          memoryToEdit={memory} // Pass the fetched memory (or null)
+          memoryToEdit={memory}
           promptId={promptId}
           initialCustomPrompt={initialCustomPrompt}
-          error={error} // Pass any error that occurred
+          error={error}
         />
       </AuthenticatedPageWrapper>
     );
   } else {
     // Handle the case for creating a new memory (no fetching required)
-    const componentKey = `new-${promptId || initialCustomPrompt || 'freeform'}`;
     return (
       <AuthenticatedPageWrapper>
         <AddMemoryPageContent
           key={componentKey}
           memoryToEdit={null}
           promptId={promptId}
-          initialCustomPrompt={initialCustomPrompt} // Corrected typo here
+          initialCustomPrompt={initialCustomPrompt}
           error={null}
         />
       </AuthenticatedPageWrapper>

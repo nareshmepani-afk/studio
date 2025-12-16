@@ -1,5 +1,6 @@
-
-import type { Timestamp } from 'firebase/firestore';
+// Note: When fetching data in Server Components and passing to Client Components,
+// Firestore Timestamps must be converted to a serializable format like string or number.
+// The `Memory` type here reflects the shape of the data *after* serialization.
 
 export interface User {
   id: string;
@@ -55,7 +56,7 @@ export type MemoryCategory = typeof memoryCategoriesList[number];
 export interface Memory {
   id: string;
   title: string;
-  date: string; // ISO string
+  date: string; // ISO string (serialized from Firestore Timestamp)
   description?: string;
   emotionTags?: EmotionTag[];
   mediaAttachments?: MediaAttachment[];
@@ -66,8 +67,8 @@ export interface Memory {
   isLegacy?: boolean; // For designating memories for the Legacy Chest
   promptId?: string; // ID of the prompt this memory fulfills
   category?: MemoryCategory;
-  createdAt?: Timestamp; // Firestore Timestamp for when the memory was created
-  updatedAt?: Timestamp; // Firestore Timestamp for when the memory was last updated
+  createdAt?: string; // ISO string (serialized from Firestore Timestamp)
+  updatedAt?: string; // ISO string (serialized from Firestore Timestamp)
 }
 
 export interface PromptText {
@@ -95,7 +96,3 @@ export interface PromptGroup {
 // Storage Quotas
 export const FREE_TIER_STORAGE_QUOTA_BYTES = 10 * 1024 * 1024; // 10 MB (Kept for reference)
 export const STANDARD_HOST_STORAGE_QUOTA_BYTES = 600 * 1024 * 1024; // 600 MB - for users with an active host pass (interpreted as per-memory/chapter limit)
-
-
-
-
