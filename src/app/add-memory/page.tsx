@@ -38,6 +38,8 @@ async function getMemory(editMemoryId: string, userId: string): Promise<{ memory
         return { memory: null, error: "Memory data is empty or corrupted." };
     }
 
+    // *** THE CRITICAL SERIALIZATION FIX ***
+    // Ensure all Timestamp fields are converted to ISO strings before passing to client.
     const memory: Memory = {
       ...data,
       id: memoryDocSnap.id,
@@ -60,6 +62,7 @@ interface AddMemoryPageProps {
 
 export default async function AddMemoryPage({ searchParams }: AddMemoryPageProps) {
   
+  // THE FINAL, CORRECTED FIX: Access searchParams directly as it's passed as a plain object by Next.js in this version.
   const editMemoryId = typeof searchParams.editMemoryId === 'string' ? searchParams.editMemoryId : undefined;
   const promptId = typeof searchParams.promptId === 'string' ? searchParams.promptId : undefined;
   const initialCustomPrompt = typeof searchParams.prompt === 'string' ? searchParams.prompt : undefined;
