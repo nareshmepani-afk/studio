@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { adminDb } from '@/lib/firebase-admin';
 import { AddMemoryPageContent } from '@/components/memory/AddMemoryPageContent';
@@ -12,112 +13,108 @@ interface AddMemoryPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-async function getUserIdFromCookie(): Promise<string | null> {
-    const sessionCookie = (await cookies()).get('firebase-auth-token')?.value;
-    if (!sessionCookie) return null;
-    try {
-        // This part needs to import adminAuth to work, which is not available here.
-        // For now, we'll assume the cookie means a user is logged in, but proper verification is needed.
-        // A better approach would be to pass the adminAuth instance or move this logic.
-        // For the purpose of fixing the immediate crash, we'll proceed carefully.
-        // This is a placeholder for where full auth verification would go.
-        // const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
-        // return decodedToken.uid;
-        // Let's decode it naively for now to get the UID for the DB query
-         const decodedToken = JSON.parse(Buffer.from(sessionCookie.split('.')[1], 'base64').toString());
-         return decodedToken.uid;
-
-    } catch (error) {
-        console.error('[ADD_MEMORY_PAGE_SERVER] Error verifying session cookie:', (error as Error).message);
-        return null;
-    }
-}
-
-
-async function getMemory(editMemoryId: string, userId: string): Promise<{ memory: Memory | null; error: string | null; }> {
-  if (!userId) {
-    return { memory: null, error: "Authentication failed. You must be logged in to view this content." };
-  }
-
-  try {
-    const memoryDocRef = adminDb.collection('users').doc(userId).collection('memories').doc(editMemoryId);
-    const memoryDocSnap = await memoryDocRef.get();
-
-    if (!memoryDocSnap.exists) {
-      return { memory: null, error: "Memory not found. It may have been deleted or you don't have permission to view it." };
-    }
-
-    const data = memoryDocSnap.data();
-    if (!data) {
-        return { memory: null, error: "Memory data is empty or corrupted." };
-    }
-
-    // *** THE CRITICAL SERIALIZATION FIX ***
-    const memory: Memory = {
-      ...data,
-      id: memoryDocSnap.id,
-      date: (data.date as any)?.toDate ? (data.date as any).toDate().toISOString() : new Date().toISOString(),
-      createdAt: (data.createdAt as any)?.toDate ? (data.createdAt as any).toDate().toISOString() : undefined,
-      updatedAt: (data.updatedAt as any)?.toDate ? (data.updatedAt as any).toDate().toISOString() : undefined,
-    } as Memory;
-    
-    return { memory, error: null };
-
-  } catch (e) {
-    console.error("[ADD_MEMORY_PAGE_SERVER] Error fetching memory:", e);
-    return { memory: null, error: "A server error occurred while loading the memory." };
-  }
-}
-
-
 export default async function AddMemoryPage(props: AddMemoryPageProps) {
-  
-  // -------------------------------------------------------
-  // THE FIX: We MUST await searchParams before using it
-  // -------------------------------------------------------
-  const params = await props.searchParams;
+  // SAFETY NET: Wrap everything in a try/catch to prevent navigation cancellation
+  try {
+    console.log("[SERVER] AddMemoryPage execution started.");
 
-  const editMemoryId = typeof params.editMemoryId === 'string' ? params.editMemoryId : undefined;
-  const promptId = typeof params.promptId === 'string' ? params.promptId : undefined;
-  const initialCustomPrompt = typeof params.prompt === 'string' ? params.prompt : undefined;
-  
-  const userId = await getUserIdFromCookie();
+    // This function must be async to correctly handle the cookies() API.
+    const getUserIdFromCookie = async (): Promise<string | null> => {
+        const sessionCookie = (await cookies()).get('firebase-auth-token')?.value;
+        if (!sessionCookie) return null;
+        try {
+            // A placeholder for full auth verification
+            const decodedToken = JSON.parse(Buffer.from(sessionCookie.split('.')[1], 'base64').toString());
+            return decodedToken.uid;
+        } catch (error) {
+            console.error('[ADD_MEMORY_PAGE_SERVER] Error decoding session cookie:', (error as Error).message);
+            return null;
+        }
+    }
 
-  if (!userId) {
-      return (
-          <div className="container mx-auto py-8 px-4">
-              <Alert variant="destructive">
-                  <ShieldAlert className="h-4 w-4" />
-                  <AlertTitle>Authentication Error</AlertTitle>
-                  <AlertDescription>You must be logged in to access this page. Your session may have expired.</AlertDescription>
-              </Alert>
-          </div>
-      );
-  }
+    // 1. Await Params (Fixes the Next.js 15 error)
+    const params = await props.searchParams;
+    const editMemoryId = typeof params.editMemoryId === 'string' ? params.editMemoryId : undefined;
+    const promptId = typeof params.promptId === 'string' ? params.promptId : undefined;
+    const initialCustomPrompt = typeof params.prompt === 'string' ? params.prompt : undefined;
 
-  const componentKey = editMemoryId ? `edit-${editMemoryId}` : `new-${promptId || initialCustomPrompt || 'freeform'}`;
+    console.log(`[SERVER] Params resolved. editMemoryId: ${editMemoryId}, promptId: ${promptId}`);
 
-  if (editMemoryId) {
-    const { memory, error } = await getMemory(editMemoryId, userId);
+    // 2. Server-Side Fetching Logic
+    let memoryData: Memory | null = null;
+    let fetchError: string | null = null;
+    
+    const userId = await getUserIdFromCookie();
 
+    if (!userId) {
+        return (
+            <div className="container mx-auto py-8 px-4">
+                <Alert variant="destructive">
+                    <ShieldAlert className="h-4 w-4" />
+                    <AlertTitle>Authentication Error</AlertTitle>
+                    <AlertDescription>You must be logged in to access this page. Your session may have expired.</AlertDescription>
+                </Alert>
+            </div>
+        );
+    }
+
+    if (editMemoryId) {
+      if (!adminDb) {
+        throw new Error("adminDb is undefined. Check src/lib/firebase-admin.ts exports.");
+      }
+
+      console.log(`[SERVER] Fetching memory from Firestore: users/${userId}/memories/${editMemoryId}`);
+      const docRef = adminDb.collection('users').doc(userId).collection('memories').doc(editMemoryId);
+      const docSnap = await docRef.get();
+
+      if (docSnap.exists) {
+        const data = docSnap.data();
+        console.log("[SERVER] Memory found. Serializing data...");
+
+        // Serialize Timestamps to Strings
+        memoryData = {
+          id: docSnap.id,
+          ...data,
+          date: data?.date instanceof Timestamp ? data.date.toDate().toISOString() : new Date().toISOString(),
+          createdAt: data?.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : undefined,
+          updatedAt: data?.updatedAt instanceof Timestamp ? data.updatedAt.toDate().toISOString() : undefined,
+        } as Memory;
+
+      } else {
+        console.warn(`[SERVER] Memory ID ${editMemoryId} not found.`);
+        fetchError = "Memory not found. It may have been deleted or you don't have permission to view it.";
+      }
+    }
+
+    const componentKey = editMemoryId ? `edit-${editMemoryId}` : `new-${promptId || initialCustomPrompt || 'blank'}`;
+
+    // 3. Render Success
     return (
       <AddMemoryPageContent
         key={componentKey}
-        memoryToEdit={memory}
+        memoryToEdit={memoryData}
         promptId={promptId}
         initialCustomPrompt={initialCustomPrompt}
-        error={error}
+        error={fetchError}
       />
     );
-  } else {
+
+  } catch (error: any) {
+    // 4. ERROR BOUNDARY (Renders the error on screen so we can see it)
+    console.error("[SERVER CRITICAL ERROR]", error);
     return (
-      <AddMemoryPageContent
-        key={componentKey}
-        memoryToEdit={null}
-        promptId={promptId}
-        initialCustomPrompt={initialCustomPrompt}
-        error={null}
-      />
+      <div className="p-8 max-w-2xl mx-auto mt-10 bg-red-50 border border-red-200 rounded-lg">
+        <h1 className="text-xl font-bold text-red-700 mb-4">Server Component Error</h1>
+        <p className="text-red-600 mb-4">
+          The navigation was blocked because the server component crashed. Here is the error:
+        </p>
+        <pre className="bg-white p-4 rounded border border-red-100 text-sm font-mono overflow-auto">
+          {error?.message || "Unknown Error"}
+        </pre>
+        <div className="mt-4 text-xs text-gray-500">
+          Check your terminal logs for the full stack trace.
+        </div>
+      </div>
     );
   }
 }
