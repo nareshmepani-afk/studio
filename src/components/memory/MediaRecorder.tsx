@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,6 @@ import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/te
 import { mockPromptGroups } from '@/lib/mockData';
 import { MAX_RECORDING_HARD_LIMIT, MAX_UPLOAD_DURATION_SECONDS } from '@/lib/constants';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import type { MediaAttachment } from '@/types';
 import { useMediaTrimmer } from '@/hooks/use-media-trimmer';
 
 function formatSecondsToTime(timeInSeconds: number | undefined): string {
@@ -54,7 +52,7 @@ export function MediaCaptureControl({
   const [mediaType, setMediaType] = useState<'video' | 'audio' | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const { trim, isTrimming, isProcessing: isTrimmerProcessing } = useMediaTrimmer();
+  const { isTrimming, isProcessing: isTrimmerProcessing } = useMediaTrimmer();
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const mediaRecorderRef = useRef<globalThis.MediaRecorder | null>(null);
@@ -120,7 +118,7 @@ export function MediaCaptureControl({
         toast({
           variant: 'destructive',
           title: 'Permissions Denied',
-          description: `Please enable ${type === 'video' ? 'camera and microphone' : 'microphone'} permissions in your browser settings to use this feature. You may need to refresh the page.`,
+          description: `Please enable ${type === 'video' ? 'camera and microphone' : 'microphone'} permissions in your browser settings.`,
           duration: 7000
         }), 0
       );
@@ -132,8 +130,7 @@ export function MediaCaptureControl({
     if (fileSize > storageQuotaBytes) {
       const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
       const chapterQuotaMB = (storageQuotaBytes / (1024 * 1024)).toFixed(0);
-      const description = `This file (${fileSizeMB} MB) exceeds the maximum allowed size per memory of ${chapterQuotaMB} MB.`;
-      setTimeout(() => toast({ variant: 'destructive', title: 'File Size Exceeds Memory Limit', description: description, duration: 10000, icon: <ShieldAlert className="h-5 w-5" /> }), 0);
+      setTimeout(() => toast({ variant: 'destructive', title: 'File Too Large', description: `Max size is ${chapterQuotaMB} MB. Your file is ${fileSizeMB} MB.`, duration: 10000 }), 0);
       return false;
     }
     return true;
@@ -141,13 +138,7 @@ export function MediaCaptureControl({
 
   const checkHostPass = (): boolean => {
     if (!canRecordOrUpload) {
-      let passMessage = "Activate your free Host Pass in Settings to add media.";
-      if (hostPassStatus === 'free_host_pass_expired' || hostPassStatus === 'paid_host_pass_expired') {
-        passMessage = "Your Host Pass has expired. Renew in Settings to add media.";
-      } else if (hostPassStatus !== 'no_pass_initiated') {
-        passMessage = "An active Host Pass is required to add media. Check Settings.";
-      }
-      setTimeout(() => toast({ variant: 'destructive', title: 'Host Pass Required', description: passMessage, duration: 7000 }), 0);
+      setTimeout(() => toast({ variant: 'destructive', title: 'Host Pass Required', description: "Activate your Host Pass in Settings to add media.", duration: 7000 }), 0);
       return false;
     }
     return true;
@@ -163,9 +154,6 @@ export function MediaCaptureControl({
     if (initialMedia) {
       setMediaType(initialMedia.type);
       setPreviewUrl(initialMedia.previewUrl);
-    } else {
-      setMediaType(null);
-      setPreviewUrl(null);
     }
   }, [initialMedia]);
 
@@ -188,10 +176,8 @@ export function MediaCaptureControl({
     toast({ title: "Media Discarded" });
   }, [isRecording, revokeCurrentPreviewUrl, handleStopRecording]);
 
-
   const processAndFinalizeMedia = useCallback(async (blob: Blob, type: 'video' | 'audio', fileName: string) => {
     onPreparingChange(true);
-
     if (!checkStorageQuota(blob.size)) {
       handleDiscardMedia();
       onPreparingChange(false);
@@ -206,22 +192,18 @@ export function MediaCaptureControl({
             mediaElement.src = URL.createObjectURL(file);
             mediaElement.onloadedmetadata = () => {
                 URL.revokeObjectURL(mediaElement.src);
-                 if (mediaElement.duration > MAX_UPLOAD_DURATION_SECONDS) {
-                     reject(new Error(`Uploaded file is too long. Max duration is ${formatSecondsToTime(MAX_UPLOAD_DURATION_SECONDS)}.`));
-                     return;
+                if (mediaElement.duration > MAX_UPLOAD_DURATION_SECONDS) {
+                    reject(new Error(`File too long. Max: ${formatSecondsToTime(MAX_UPLOAD_DURATION_SECONDS)}.`));
+                    return;
                 }
                 resolve(mediaElement.duration);
             };
-            mediaElement.onerror = (e) => {
-                URL.revokeObjectURL(mediaElement.src);
-                console.error('[MediaRecorder] Error loading media metadata', e);
-                reject(new Error("Could not read the media file to determine its duration."));
-            };
+            mediaElement.onerror = () => reject(new Error("Could not read media duration."));
         });
 
         onMediaReady({ file, type, duration, size: file.size });
     } catch(error: any) {
-        toast({ title: "Processing Failed", description: error.message || "An unknown error occurred.", variant: "destructive" });
+        toast({ title: "Processing Failed", description: error.message, variant: "destructive" });
         handleDiscardMedia();
     } finally {
         onPreparingChange(false);
@@ -230,7 +212,6 @@ export function MediaCaptureControl({
 
   const handleStartRecording = async (type: 'video' | 'audio') => {
     if (isRecording || !checkHostPass()) return;
-
     onPreparingChange(true);
     const permissionGranted = await getPermissions(type);
     if (!permissionGranted || !streamRef.current) { onPreparingChange(false); return; }
@@ -239,8 +220,7 @@ export function MediaCaptureControl({
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
-      const bufferLength = analyserRef.current.frequencyBinCount;
-      dataArrayRef.current = new Uint8Array(bufferLength);
+      dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
       sourceRef.current = audioContextRef.current.createMediaStreamSource(streamRef.current);
       sourceRef.current.connect(analyserRef.current);
       
@@ -259,66 +239,66 @@ export function MediaCaptureControl({
     setMediaType(type);
     recordedChunks.current = [];
 
-    let scriptKey = promptIdForTeleprompter;
-    if (!scriptKey && chapterTitleForTeleprompter) {
-        for (const group of mockPromptGroups) {
-            const foundPrompt = group.prompts.find(p => p.text.en.toLowerCase() === chapterTitleForTeleprompter.toLowerCase() || p.text.gu === chapterTitleForTeleprompter);
-            if (foundPrompt) { scriptKey = foundPrompt.id; break; }
-        }
-    }
-    const script = scriptKey ? teleprompterScripts[scriptKey] : null;
-    if (script) {
-        setCurrentTeleprompterScript(script);
-    } else if (type === 'video') {
-        setCurrentTeleprompterScript(defaultTeleprompterFallbackScript);
-    }
+    const script = teleprompterScripts[promptIdForTeleprompter || ''] || (type === 'video' ? defaultTeleprompterFallbackScript : null);
+    if (script) setCurrentTeleprompterScript(script);
 
     try {
       const recorder = new window.MediaRecorder(streamRef.current, { mimeType: type === 'video' ? 'video/webm' : 'audio/webm' });
       mediaRecorderRef.current = recorder;
-      recorder.ondataavailable = (event) => { if (event.data.size > 0) recordedChunks.current.push(event.data); };
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.current.push(e.data); };
       recorder.onstop = () => {
         cleanupStream();
         const blob = new Blob(recordedChunks.current, { type: recorder.mimeType });
-        recordedChunks.current = [];
-        if (blob.size < 1024) {
-          toast({ title: 'Recording Error', description: 'Recorded data is too small. Please try a longer recording.' });
-          handleDiscardMedia();
-          return;
-        }
         processAndFinalizeMedia(blob, type, `recording.${type === 'video' ? 'webm' : 'webm'}`);
       };
       recorder.start();
       setIsRecording(true);
       onPreparingChange(false);
       setCurrentRecordingDuration(0);
-      if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
-      recordingIntervalRef.current = setInterval(() => { setCurrentRecordingDuration(prev => prev + 1); }, 1000);
-
-      if (hardLimitTimeoutRef.current) clearTimeout(hardLimitTimeoutRef.current);
-      hardLimitTimeoutRef.current = setTimeout(() => {
-        toast({ title: "Recording Limit Reached", description: `Recording automatically stopped at ${formatSecondsToTime(MAX_RECORDING_HARD_LIMIT)}.`, variant: "default" });
-        handleStopRecording();
-      }, MAX_RECORDING_HARD_LIMIT * 1000);
-      toast({ title: `${type.charAt(0).toUpperCase() + type.slice(1)} recording started.`, variant: "success" });
+      recordingIntervalRef.current = setInterval(() => setCurrentRecordingDuration(prev => prev + 1), 1000);
+      hardLimitTimeoutRef.current = setTimeout(handleStopRecording, MAX_RECORDING_HARD_LIMIT * 1000);
     } catch (err) {
-      console.error("[MediaRecorder] Error initializing MediaRecorder:", err);
       cleanupStream(); onPreparingChange(false);
-      toast({ variant: 'destructive', title: 'Recording Setup Failed', description: 'Could not start recording. Check device compatibility or permissions.' });
+      toast({ variant: 'destructive', title: 'Recording Failed' });
     }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!checkHostPass()) { event.target.value = ''; return; }
     const file = event.target.files?.[0];
-    if (!file) return;
-
-    const fileType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : null;
-    if (!fileType) { toast({ title: "Invalid File Type", description: "Please upload a valid video or audio file." }); return; }
-
-    processAndFinalizeMedia(file, fileType, file.name);
+    if (!file || !checkHostPass()) return;
+    const type = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : null;
+    if (type) processAndFinalizeMedia(file, type, file.name);
     event.target.value = '';
   };
+
+  /**
+   * ENHANCED TRIM LOGIC
+   * This effect ensures the player respects the start/end points.
+   */
+  useEffect(() => {
+    const media = videoRef.current || audioPreviewRef.current;
+    if (!media || !previewUrl) return;
+
+    const [start, end] = trimValues;
+
+    // 1. If the user changes the start handle, jump the playhead to that start
+    media.currentTime = start;
+
+    const handleTimeUpdate = () => {
+      // 2. Loop logic: if we pass the end, reset to start
+      if (media.currentTime >= end) {
+        media.pause();
+        media.currentTime = start;
+      }
+      // 3. Safety: if we somehow get before the start (manual scrubbing), jump back to start
+      if (media.currentTime < start) {
+        media.currentTime = start;
+      }
+    };
+
+    media.addEventListener('timeupdate', handleTimeUpdate);
+    return () => media.removeEventListener('timeupdate', handleTimeUpdate);
+  }, [previewUrl, trimValues]);
 
   useEffect(() => {
     if (isRecording && mediaType === 'video' && liveVideoRef.current && streamRef.current) {
@@ -333,25 +313,8 @@ export function MediaCaptureControl({
       if (hardLimitTimeoutRef.current) clearTimeout(hardLimitTimeoutRef.current);
     };
   }, [cleanupStream]);
-  
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video && trimValues) {
-        const [start, end] = trimValues;
-        const handleTimeUpdate = () => {
-            if (video.currentTime > end) {
-                video.pause();
-                video.currentTime = start;
-            }
-        };
-        video.addEventListener('timeupdate', handleTimeUpdate);
-        return () => video.removeEventListener('timeupdate', handleTimeUpdate);
-    }
-  }, [previewUrl, trimValues]);
 
-  const isProcessing = isTrimmerProcessing || isTrimming;
-  
-  if (isProcessing) {
+  if (isTrimmerProcessing || isTrimming) {
       return (
         <Card>
             <CardHeader><CardTitle className="font-headline text-lg">Processing Media</CardTitle></CardHeader>
@@ -367,16 +330,15 @@ export function MediaCaptureControl({
     <Card>
       <CardHeader><CardTitle className="font-headline text-lg">Record or Upload Media</CardTitle></CardHeader>
       <CardContent className="space-y-4">
-        {hasPermission === false && (<Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Permissions Required</AlertTitle><AlertDescription>Camera/mic permissions were denied. Please enable them in your browser settings and refresh the page.</AlertDescription></Alert>)}
-        {!canRecordOrUpload && (<Alert variant="destructive"><ShieldAlert className="h-4 w-4" /><AlertTitle>Host Pass Required</AlertTitle><AlertDescription>An active Host Pass is needed to record or upload new media. Please check your pass status in Settings.</AlertDescription></Alert>)}
+        {hasPermission === false && (<Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertTitle>Permissions Required</AlertTitle><AlertDescription>Please enable camera/mic in settings.</AlertDescription></Alert>)}
 
         {!previewUrl && !isRecording && (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-2">
-              <Button onClick={() => handleStartRecording('video')} className="flex-1" disabled={!canRecordOrUpload || isRecording}>
+              <Button onClick={() => handleStartRecording('video')} className="flex-1" disabled={!canRecordOrUpload}>
                 <Video className="mr-2" /> Record Video
               </Button>
-              <Button onClick={() => handleStartRecording('audio')} className="flex-1" disabled={!canRecordOrUpload || isRecording}>
+              <Button onClick={() => handleStartRecording('audio')} className="flex-1" disabled={!canRecordOrUpload}>
                 <Mic className="mr-2" /> Record Audio
               </Button>
             </div>
@@ -384,89 +346,57 @@ export function MediaCaptureControl({
               <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
               <div className="relative flex justify-center text-xs uppercase"><span className="bg-card px-2 text-muted-foreground">Or</span></div>
             </div>
-            <Label htmlFor="media-upload" className={cn("flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-secondary", !canRecordOrUpload && "cursor-not-allowed opacity-50")}>
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+            <Label htmlFor="media-upload" className={cn("flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-secondary", !canRecordOrUpload && "opacity-50 cursor-not-allowed")}>
                 <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
-                <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span></p>
-                <p className="text-xs text-muted-foreground">Video/Audio (max {formatSecondsToTime(MAX_UPLOAD_DURATION_SECONDS)})</p>
-              </div>
-              <Input id="media-upload" type="file" className="hidden" onChange={handleFileUpload} accept="video/*,audio/*" disabled={!canRecordOrUpload} />
+                <span className="text-sm font-semibold">Click to upload</span>
+                <Input id="media-upload" type="file" className="hidden" onChange={handleFileUpload} accept="video/*,audio/*" disabled={!canRecordOrUpload} />
             </Label>
           </div>
         )}
 
         {isRecording && (
           <div className="space-y-4">
-            {(mediaType === 'video') && (
-                <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
-                    <video ref={liveVideoRef} autoPlay muted playsInline className="w-full h-full object-contain" />
-                    {currentTeleprompterScript && (
-                      <div className="absolute bottom-0 left-0 right-0 z-10 p-2">
-                        <Accordion type="single" collapsible className="w-full bg-black/70 text-white rounded-md">
-                          <AccordionItem value="item-1" className="border-b-0">
-                            <AccordionTrigger className="text-sm font-semibold px-4 py-2 hover:no-underline">
-                              <div className="flex items-center">
-                                <BookOpen className="h-4 w-4 mr-2" />
-                                Show/Hide Teleprompter
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent>
-                              <ScrollArea className="h-40 w-full p-4">
-                                <p className="whitespace-pre-wrap text-base leading-relaxed">{currentTeleprompterScript}</p>
-                              </ScrollArea>
-                            </AccordionContent>
-                          </AccordionItem>
-                        </Accordion>
-                      </div>
-                    )}
-                </div>
+            {mediaType === 'video' && (
+              <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
+                <video ref={liveVideoRef} autoPlay muted playsInline className="w-full h-full object-contain" />
+                {currentTeleprompterScript && (
+                   <div className="absolute bottom-0 left-0 right-0 z-10 p-2">
+                     <Accordion type="single" collapsible className="w-full bg-black/70 text-white rounded-md">
+                       <AccordionItem value="item-1" className="border-b-0">
+                         <AccordionTrigger className="px-4 py-2 hover:no-underline text-sm"><BookOpen className="h-4 w-4 mr-2" /> Teleprompter</AccordionTrigger>
+                         <AccordionContent className="p-4 h-40 overflow-y-auto whitespace-pre-wrap">{currentTeleprompterScript}</AccordionContent>
+                       </AccordionItem>
+                     </Accordion>
+                   </div>
+                )}
+              </div>
             )}
-
             {mediaType === 'audio' && (
-                <div className="flex flex-col items-center justify-center p-8 bg-muted rounded-md space-y-4">
-                    <div className="flex items-end justify-center h-16 w-full gap-1">
-                      {audioData && Array.from(audioData).slice(0, 32).map((value, index) => (
-                        <div
-                          key={index}
-                          className="w-2 bg-primary rounded-full"
-                          style={{ height: `${Math.max(2, (value / 255) * 100)}%`, transition: 'height 0.1s ease-in-out' }}
-                        />
-                      ))}
-                      {!audioData && Array.from({length: 32}).map((_, index) => (
-                         <div key={index} className="w-2 h-1 bg-primary/50 rounded-full" />
-                      ))}
-                    </div>
-                    <p className="text-sm text-muted-foreground">Recording audio...</p>
-                </div>
+               <div className="flex flex-col items-center p-8 bg-muted rounded-md h-32 justify-center">
+                 <div className="flex items-end gap-1 h-12">
+                   {audioData ? Array.from(audioData).slice(0, 20).map((v, i) => (
+                     <div key={i} className="w-2 bg-primary rounded-full" style={{ height: `${(v / 255) * 100}%` }} />
+                   )) : <p>Initializing audio...</p>}
+                 </div>
+               </div>
             )}
-
             <Button onClick={handleStopRecording} className="w-full" variant="destructive">
-                <StopCircle className="mr-2"/>
-                <span>Stop Recording</span>
-                <span className="font-mono ml-2 text-sm tabular-nums">({formatSecondsToTime(currentRecordingDuration)} / {formatSecondsToTime(MAX_RECORDING_HARD_LIMIT)})</span>
+              <StopCircle className="mr-2"/> Stop ({formatSecondsToTime(currentRecordingDuration)})
             </Button>
           </div>
         )}
 
         {previewUrl && !isRecording && (
           <div className="space-y-4">
-            {mediaType === 'video' && (
-                <div className="w-full aspect-video bg-black rounded-md overflow-hidden">
-                    <video ref={videoRef} src={previewUrl} controls className="w-full h-full object-contain" />
-                </div>
-            )}
-            {mediaType === 'audio' && (
-              <div className="p-4 bg-muted rounded-md">
-                <audio ref={audioPreviewRef} src={previewUrl} controls className="w-full" />
-              </div>
+            {mediaType === 'video' ? (
+              <video ref={videoRef} src={previewUrl} controls className="w-full aspect-video bg-black rounded-md" />
+            ) : (
+              <audio ref={audioPreviewRef} src={previewUrl} controls className="w-full" />
             )}
             <Button onClick={handleDiscardMedia} className="w-full" variant="outline"><RotateCcw className="mr-2"/> Discard & Restart</Button>
           </div>
         )}
-
       </CardContent>
     </Card>
   );
 }
-
-    
