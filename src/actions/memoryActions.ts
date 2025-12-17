@@ -1,9 +1,18 @@
 "use server";
 
-import { db, storage } from "@/lib/firebase";
+import { adminDb, adminStorage } from "@/lib/firebase-admin";
 import type { Memory, MediaAttachment, EmotionTag } from "@/types";
-import { addDoc, collection, doc, serverTimestamp, updateDoc, Timestamp } from "firebase/firestore";
-import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
+
+// Helper to read the body of a file to a buffer
+async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+        const chunks: Buffer[] = [];
+        stream.on('data', (chunk) => chunks.push(chunk));
+        stream.on('end', () => resolve(Buffer.concat(chunks)));
+        stream.on('error', reject);
+    });
+}
 
 export async function saveMemory(
     formData: FormData,
@@ -11,57 +20,32 @@ export async function saveMemory(
     editMemoryId: string | null
 ): Promise<{ success: boolean; message: string; data?: Memory }> {
     console.log(`[SAVE_MEMORY_ACTION] --- Initiating memory save for user: ${userId} ---`);
-
-    const mediaFileToUpload = formData.get("mediaFile") as File | null;
-   
-    const promptId = formData.get('promptId') as string | undefined;
-    console.log(`[SAVE_MEMORY_ACTION] Retrieved 'promptId' from FormData: ${promptId ? `'${promptId}'` : 'undefined'}`);
-
-    const title = formData.get('title') as string || 'Untitled Memory';
-    const dateStr = formData.get('date') as string || new Date().toISOString();
-    const date = new Date(dateStr);
-    const description = formData.get('description') as string || '';
-    const location = formData.get('location') as string || undefined;
-    const country = formData.get('country') as string || undefined;
-    const category = formData.get('category') as string || 'Other';
-    const isLegacy = formData.get('isLegacy') === 'true';
-   
-    let emotionTags: EmotionTag[] = [];
-    const emotionTagsString = formData.get('emotionTags');
-    if (emotionTagsString && typeof emotionTagsString === 'string') {
-        try {
-            emotionTags = JSON.parse(emotionTagsString);
-        } catch (e) {
-            console.warn("[SAVE_MEMORY_ACTION] Could not parse emotionTags", e);
-        }
-    }
+    const isEditing = !!editMemoryId;
 
     try {
-        let finalMediaAttachments: MediaAttachment[] = [];
-        const existingAttachmentsString = formData.get('mediaAttachments') as string;
-        if (existingAttachmentsString) {
-             try {
-                finalMediaAttachments = JSON.parse(existingAttachmentsString);
-            } catch (e) {
-                console.warn("[SAVE_MEMORY_ACTION] Could not parse existing mediaAttachments", e);
-            }
-        }
+        const mediaFileToUpload = formData.get("mediaFile") as File | null;
+        const title = formData.get('title') as string || 'Untitled Memory';
+        const dateStr = formData.get('date') as string || new Date().toISOString();
+        const description = formData.get('description') as string || '';
 
-        if (mediaFileToUpload) {
+        let finalMediaAttachments: MediaAttachment[] = [];
+
+        // Scenario 1: A new file is being uploaded
+        if (mediaFileToUpload && mediaFileToUpload.size > 0) {
+            console.log(`[SAVE_MEMORY_ACTION] New media file detected: ${mediaFileToUpload.name}`);
             const filePath = `users/${userId}/memories/${Date.now()}_${mediaFileToUpload.name}`;
-            const fileRef = storageRef(storage, filePath);
-            await uploadBytes(fileRef, mediaFileToUpload);
-            const downloadURL = await getDownloadURL(fileRef);
+            const fileRef = adminStorage.bucket().file(filePath);
             
+            // Convert file stream to buffer to upload with Admin SDK
+            const fileBuffer = await streamToBuffer(mediaFileToUpload.stream());
+            
+            await fileRef.save(fileBuffer, { contentType: mediaFileToUpload.type });
+            await fileRef.makePublic(); // Make the file publicly accessible
+            const downloadURL = fileRef.publicUrl();
+
             const metadataStr = formData.get('mediaMetadata') as string;
-            let metadata = {};
-            if (metadataStr) {
-                try {
-                    metadata = JSON.parse(metadataStr);
-                } catch (e) {
-                    console.warn("[SAVE_MEMORY_ACTION] Could not parse mediaMetadata", e);
-                }
-            }
+            let metadata = { startTime: 0, endTime: 0, isTrimmed: false };
+            if (metadataStr) metadata = { ...metadata, ...JSON.parse(metadataStr) };
 
             const newAttachment: MediaAttachment = {
                 id: 'media' + Date.now(),
@@ -69,59 +53,64 @@ export async function saveMemory(
                 url: downloadURL,
                 filename: mediaFileToUpload.name,
                 size: mediaFileToUpload.size,
-                ...metadata // This spreads in the startTime/endTime from the client
+                ...metadata
             };
-            finalMediaAttachments = [newAttachment]; 
-        }
-
-        const dataToSave: any = {
-            title,
-            date: Timestamp.fromDate(date),
-            description,
-            location,
-            country,
-            category,
-            isLegacy,
-            emotionTags,
-            mediaAttachments: finalMediaAttachments,
-            updatedAt: serverTimestamp(),
-        };
-
-        if (promptId) {
-            dataToSave.promptId = promptId;
-        }
-       
-        console.log('[SAVE_MEMORY_ACTION] Assembled data object for Firestore. Checking for promptId...', dataToSave);
-        if (dataToSave.promptId) {
-            console.log(`[SAVE_MEMORY_ACTION] SUCCESS: promptId '${dataToSave.promptId}' is present in the object to be saved.`);
+            finalMediaAttachments = [newAttachment];
         } else {
-            console.log(`[SAVE_MEMORY_ACTION] WARNING: promptId is NOT present in the final object. It will not be saved.`);
+            // Scenario 2: No new file, check for existing attachments (e.g., just a trim update)
+            const existingAttachmentsString = formData.get('mediaAttachments') as string;
+            if (existingAttachmentsString) {
+                console.log(`[SAVE_MEMORY_ACTION] Existing media attachments detected.`);
+                finalMediaAttachments = JSON.parse(existingAttachmentsString);
+            }
         }
+
+        // Assemble the core data object for Firestore
+        const dataToSave: { [key: string]: any } = {
+            title,
+            date: Timestamp.fromDate(new Date(dateStr)),
+            description,
+            mediaAttachments: finalMediaAttachments,
+            updatedAt: FieldValue.serverTimestamp(),
+        };
+        
+        // Conditionally add fields to avoid saving 'undefined' or empty values
+        const location = formData.get('location') as string;
+        if (location) dataToSave.location = location;
+
+        const country = formData.get('country') as string;
+        if (country) dataToSave.country = country;
+        
+        const category = formData.get('category') as string;
+        if (category) dataToSave.category = category;
+
+        const promptId = formData.get('promptId') as string;
+        if (promptId) dataToSave.promptId = promptId;
+
+        dataToSave.isLegacy = formData.get('isLegacy') === 'true';
+
+        const emotionTagsString = formData.get('emotionTags') as string;
+        if (emotionTagsString) dataToSave.emotionTags = JSON.parse(emotionTagsString);
+
 
         if (editMemoryId) {
             console.log(`[SAVE_MEMORY_ACTION] Updating existing memory with ID: ${editMemoryId}`);
-            const memoryDocRef = doc(db, 'users', userId, 'memories', editMemoryId);
-            await updateDoc(memoryDocRef, dataToSave);
+            const memoryDocRef = adminDb.collection('users').doc(userId).collection('memories').doc(editMemoryId);
+            await memoryDocRef.update(dataToSave);
         } else {
             console.log(`[SAVE_MEMORY_ACTION] Creating new memory for user: ${userId}`);
-            const memoriesCollectionRef = collection(db, 'users', userId, 'memories');
-            const dataWithCreationFields = {
-                ...dataToSave,
-                userId: userId,
-                createdAt: serverTimestamp(),
-            };
-            await addDoc(memoriesCollectionRef, dataWithCreationFields);
+            const memoriesCollectionRef = adminDb.collection('users').doc(userId).collection('memories');
+            dataToSave.userId = userId;
+            dataToSave.createdAt = FieldValue.serverTimestamp();
+            await memoriesCollectionRef.add(dataToSave);
         }
 
-        console.log('[SAVE_MEMORY_ACTION] --- Memory save operation completed successfully. ---
-');
-        return { success: true, message: "Memory saved successfully!" };
+        console.log('[SAVE_MEMORY_ACTION] --- Memory save operation completed successfully. ---');
+        return { success: true, message: isEditing ? "Memory updated successfully!" : "Memory saved successfully!" };
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-        console.error("[SAVE_MEMORY_ACTION] Error in saveMemory server action:", errorMessage);
-        console.log('[SAVE_MEMORY_ACTION] --- Memory save operation failed. ---
-');
+        console.error("[SAVE_MEMORY_ACTION] Error in saveMemory server action:", error);
         return { success: false, message: `A server error occurred: ${errorMessage}` };
     }
 }
