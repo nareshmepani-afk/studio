@@ -1,10 +1,10 @@
-
 "use client";
 
 import { useAuth } from '@/hooks/useAuth';
 import { Navbar } from '@/components/layout/Navbar';
-import React, from 'react';
+import React, { useEffect } from 'react'; // Fixed the comma error here too
 import SplashScreen from './SplashScreen';
+import { useRouter } from 'next/navigation';
 
 interface AuthenticatedPageWrapperProps {
   children: React.ReactNode;
@@ -12,17 +12,29 @@ interface AuthenticatedPageWrapperProps {
 
 export function AuthenticatedPageWrapper({ children }: AuthenticatedPageWrapperProps) {
   const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
 
-  // This wrapper is now ONLY responsible for authentication.
-  // It shows a splash screen until the user object is available.
-  const isAuthenticating = authLoading || !user;
+  useEffect(() => {
+    // Only redirect to home if we are CERTAIN the user is not logged in.
+    // We wait for authLoading to be false.
+    if (!authLoading && !user) {
+      console.log("[WRAPPER] Definitively unauthenticated. Redirecting...");
+      router.push('/'); 
+    }
+  }, [user, authLoading, router]);
 
-  if (isAuthenticating) {
+  // While we are checking (loading is true), show the splash screen
+  if (authLoading) {
     return <SplashScreen />;
   }
 
-  // Once authenticated, it renders the Navbar and the page content.
-  // The child page is now responsible for its own data fetching and loading states.
+  // If loading is finished but no user, we return null 
+  // (the useEffect above will handle the redirect)
+  if (!user) {
+    return null;
+  }
+
+  // Success!
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />

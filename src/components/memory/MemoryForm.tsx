@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, type FormEvent, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -31,7 +30,7 @@ import { saveMemory } from '@/actions/memoryActions';
 
 const MediaCaptureControl = dynamic(
   () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
-  { 
+  {
     ssr: false,
     loading: () => <div className="flex items-center justify-center h-48"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
   }
@@ -40,17 +39,17 @@ const MediaCaptureControl = dynamic(
 type MediaFromRecorder = {
   file: File;
   type: 'video' | 'audio';
-  duration: number; 
+  duration: number;
   size: number;
 };
 
 // Represents the client-side state for media being worked on.
 type CurrentMediaData = {
-  file: File; 
+  file: File;
   type: 'video' | 'audio';
   startTime: number;
   endTime: number;
-  duration: number; 
+  duration: number;
   size: number;
   isTrimmed: boolean;
 };
@@ -85,13 +84,13 @@ interface MemoryFormProps {
 export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: MemoryFormProps) {
   const { user } = useAuth();
   const router = useRouter();
-  
+ 
   const isEditing = !!memoryToEdit;
 
   // Refs for focusing on validation error
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const yearSelectRef = useRef<HTMLButtonElement>(null); 
+  const yearSelectRef = useRef<HTMLButtonElement>(null);
 
   // Refs for scrolling to the current step
   const step1AnchorRef = useRef<HTMLDivElement>(null);
@@ -109,11 +108,11 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   const [selectedCategory, setSelectedCategory] = useState<MemoryCategory | undefined>(memoryCategoriesList[0]);
   const [description, setDescription] = useState('');
   const [selectedEmotionTags, setSelectedEmotionTags] = useState<EmotionTag[]>([]);
-  
+ 
   const [selectedYear, setSelectedYear] = useState<number>(globalCurrentYear);
   const [selectedMonth, setSelectedMonth] = useState<number>(getMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState<number>(getDate(new Date()));
-  
+ 
   // Carousel state for multi-step form
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(SLIDE_INDEX_DETAILS);
@@ -121,7 +120,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
 
   // Media state
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
-  const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null); 
+  const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null);
   const [trimValues, setTrimValues] = useState<[number, number]>([0, 100]);
   const [isTrimming, setIsTrimming] = useState(false);
   const [mediaKey, setMediaKey] = useState(Date.now().toString());
@@ -161,7 +160,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
         const endTime = (typeof firstMedia.endTime === 'number' && !isNaN(firstMedia.endTime) && firstMedia.endTime <= duration) ? firstMedia.endTime : duration;
 
         setCurrentMedia({
-            file: new File([], firstMedia.filename || "existing_media_placeholder", {type: firstMedia.type === 'video' ? 'video/mp4' : 'audio/mp3'}), 
+            file: new File([], firstMedia.filename || "existing_media_placeholder", {type: firstMedia.type === 'video' ? 'video/mp4' : 'audio/mp3'}),
             type: firstMedia.type,
             startTime: startTime,
             endTime: endTime,
@@ -169,7 +168,8 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
             size: size,
             isTrimmed: firstMedia.isTrimmed || false,
         });
-        setCurrentMediaPreviewUrl(firstMedia.url); 
+        setCurrentMediaPreviewUrl(firstMedia.url);
+        // Correctly initialize trimValues based on the media's actual start and end times
         setTrimValues([startTime, endTime]);
       }
     } else {
@@ -188,7 +188,6 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
         setSelectedDay(getDate(today));
     }
   }, [memoryToEdit, promptId, initialCustomPrompt]);
-
 
   const daysInSelectedMonth = useMemo(() => getDaysInMonth(new Date(selectedYear, selectedMonth)), [selectedYear, selectedMonth]);
   const dayOptions = useMemo(() => Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1), [daysInSelectedMonth]);
@@ -249,14 +248,10 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   }, [currentMediaPreviewUrl, handleSetCurrentSlide]);
 
   const handleEmotionTagToggle = (tag: EmotionTag) => setSelectedEmotionTags(prevTags => prevTags.includes(tag) ? prevTags.filter(t => t !== tag) : [...prevTags, tag]);
-  
+ 
   const handleTrimChange = (newValues: [number, number]) => {
     if (currentMedia) {
-      const [oldStart, oldEnd] = trimValues;
-      const [newStart, newEnd] = newValues;
-      if (newStart !== oldStart) setTrimValues([newStart, Math.max(newStart, oldEnd)]);
-      else if (newEnd !== oldEnd) setTrimValues([Math.min(newEnd, oldStart), newEnd]);
-      else setTrimValues(newValues);
+        setTrimValues(newValues);
     }
   };
 
@@ -288,18 +283,36 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
     if (finalPromptId) formData.append('promptId', finalPromptId);
     formData.append('isLegacy', (memoryToEdit?.isLegacy || false).toString());
 
-    if (currentMedia) { 
-      const isNewFile = currentMedia.file.size > 0 && currentMedia.file.name !== "existing_media_placeholder";
-      if (isNewFile) {
-        formData.append('mediaFile', currentMedia.file, currentMedia.file.name);
-      } else if (memoryToEdit?.mediaAttachments) {
-        // If no new file but we're editing, pass the existing attachments as JSON
-        formData.append('mediaAttachments', JSON.stringify(memoryToEdit.mediaAttachments));
-      }
+    // ** Corrected Media Handling Logic **
+    if (currentMedia) {
+        const isNewFile = currentMedia.file.size > 0 && currentMedia.file.name !== "existing_media_placeholder";
+
+        if (isNewFile) {
+            // User has recorded/uploaded a new file
+            formData.append('mediaFile', currentMedia.file, currentMedia.file.name);
+            const mediaMetadata = {
+                type: currentMedia.type,
+                duration: currentMedia.duration,
+                size: currentMedia.size,
+                startTime: trimValues[0],
+                endTime: trimValues[1],
+                isTrimmed: trimValues[0] > 0 || trimValues[1] < currentMedia.duration,
+            };
+            formData.append('mediaMetadata', JSON.stringify(mediaMetadata));
+        } else if (isEditing && memoryToEdit?.mediaAttachments) {
+            // User is editing but did NOT change the file. Send back existing info with new trim values.
+            const updatedAttachment = {
+                ...memoryToEdit.mediaAttachments[0], // Keep old URL, ID, etc.
+                startTime: trimValues[0],
+                endTime: trimValues[1],
+                isTrimmed: trimValues[0] > 0 || trimValues[1] < (memoryToEdit.mediaAttachments[0].duration || currentMedia.duration),
+            };
+            formData.append('mediaAttachments', JSON.stringify([updatedAttachment]));
+        }
     }
-    
+   
     onSubmitMemory(formData);
-  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memoryToEdit, location, country, selectedCategory, promptId, selectedEmotionTags, router, user]);
+  }, [title, selectedYear, selectedMonth, selectedDay, description, currentMedia, memoryToEdit, location, country, selectedCategory, promptId, selectedEmotionTags, router, user, isEditing, trimValues]);
 
   const handleActionButtonClick = useCallback(() => {
     if (isParentSubmitting || isTrimming || isPreparingMedia) return;
@@ -336,14 +349,28 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   if (currentSlide === SLIDE_INDEX_PREVIEW) {
     const finalDate = new Date(selectedYear, selectedMonth, selectedDay);
     let mediaAttachmentsForPreview: MediaAttachment[] | undefined = undefined;
-    if (currentMedia && currentMediaPreviewUrl) { 
-      mediaAttachmentsForPreview = [{ id: memoryToEdit?.mediaAttachments?.[0]?.id || 'preview-media-1', type: currentMedia.type, url: currentMediaPreviewUrl, filename: currentMedia.file.name, startTime: trimValues[0], endTime: trimValues[1], duration: currentMedia.duration, size: currentMedia.size, isTrimmed: currentMedia.isTrimmed }];
-    } else if (memoryToEdit?.mediaAttachments) { mediaAttachmentsForPreview = memoryToEdit.mediaAttachments; }
+    if (currentMedia && currentMediaPreviewUrl) {
+        const isNewFile = currentMedia.file.name !== "existing_media_placeholder";
+        mediaAttachmentsForPreview = [{ 
+            id: memoryToEdit?.mediaAttachments?.[0]?.id || 'preview-media-1', 
+            type: currentMedia.type, 
+            url: currentMediaPreviewUrl, // Use the live preview URL (blob or existing)
+            filename: currentMedia.file.name, 
+            // Use the live trim values from the slider
+            startTime: trimValues[0], 
+            endTime: trimValues[1], 
+            duration: currentMedia.duration, 
+            size: currentMedia.size, 
+            isTrimmed: trimValues[0] > 0 || trimValues[1] < currentMedia.duration 
+        }];
+    } else if (isEditing && memoryToEdit?.mediaAttachments) { 
+        mediaAttachmentsForPreview = memoryToEdit.mediaAttachments; 
+    }
 
     mockMemoryForPreview = { id: memoryToEdit?.id || 'preview-id', title: title.trim() || "Untitled Chapter", date: isValid(finalDate) ? finalDate.toISOString() : new Date().toISOString(), description: description.trim() || "No description.", emotionTags: selectedEmotionTags, mediaAttachments: mediaAttachmentsForPreview, location: location.trim() || undefined, country: country.trim() || undefined, category: selectedCategory, userId: user?.id || 'preview-user-id', promptId: promptId || memoryToEdit?.promptId, isLegacy: memoryToEdit?.isLegacy || false };
   }
-  
-  const previewKey = `${mockMemoryForPreview?.id}-${mediaKey}`;
+ 
+  const previewKey = `${mockMemoryForPreview?.id}-${mediaKey}-${trimValues[0]}-${trimValues[1]}`;
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-6" noValidate>
@@ -378,7 +405,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
             <Card className="w-full"><CardHeader><CardTitle className="font-headline text-lg">Media Attachment for {title ? `"${title}"` : 'this chapter'} * (Step {SLIDE_INDEX_MEDIA + 1} of {TOTAL_SLIDES})</CardTitle><CardDescription>Record or upload a video/audio for your memory.</CardDescription></CardHeader>
               <CardContent className="space-y-4">
                 <MediaCaptureControl key={mediaKey} onMediaReady={handleMediaReady} onPreparingChange={setIsPreparingMedia} initialMedia={mediaForRecorderProp} promptIdForTeleprompter={currentPromptIdForTeleprompter} chapterTitleForTeleprompter={title} trimValues={trimValues} />
-                {currentMedia && (<Card className="bg-muted/50"><CardHeader className="pb-2"><CardTitle className="text-base font-medium flex items-center"><Scissors className="mr-2 h-4 w-4"/>Trim Media</CardTitle><CardDescription className="text-xs">Drag the handles to select the part of the media you want to save.</CardDescription></CardHeader><CardContent><div className="space-y-2"><Slider min={0} max={currentMedia.duration} step={0.1} value={trimValues} onValueChange={(vals) => handleTrimChange(vals as [number, number])} minStepsBetweenThumbs={1} disabled={currentMedia.isTrimmed || isTrimming} /><div className="flex justify-between text-xs text-muted-foreground font-mono"><span>Start: {formatSecondsToTime(trimValues[0])}</span><span>Duration: {formatSecondsToTime(trimValues[1] - trimValues[0])}</span><span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1])}</span></div></div></CardContent></Card>)}
+                {currentMedia && (<Card className="bg-muted/50"><CardHeader className="pb-2"><CardTitle className="text-base font-medium flex items-center"><Scissors className="mr-2 h-4 w-4"/>Trim Media</CardTitle><CardDescription className="text-xs">Drag the handles to select the part of the media you want to save.</CardDescription></CardHeader><CardContent><div className="space-y-2"><Slider min={0} max={currentMedia.duration} step={0.1} value={trimValues} onValueChange={(vals) => handleTrimChange(vals as [number, number])} minStepsBetweenThumbs={1} disabled={isTrimming} /><div className="flex justify-between text-xs text-muted-foreground font-mono"><span>Start: {formatSecondsToTime(trimValues[0])}</span><span>Duration: {formatSecondsToTime(trimValues[1] - trimValues[0])}</span><span><Timer className="inline h-3 w-3 mr-1" />{formatSecondsToTime(trimValues[1])}</span></div></div></CardContent></Card>)}
               </CardContent>
             </Card>
           </CarouselItem>

@@ -104,12 +104,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!loading) {
       const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
-      const isPublic = publicPaths.some(p => pathname.startsWith(p));
+      
+      // CHANGE: Use an exact match for the root '/', but startsWith for others
+      const isPublic = pathname === '/' || publicPaths.filter(p => p !== '/').some(p => pathname.startsWith(p));
 
       if (user && isPublic) {
+        // Only redirect if they are actually on a landing/login page
         const destination = userMode === 'host' ? '/prompts' : '/timeline';
+        console.log("[AUTH] User is on public page, redirecting to:", destination);
         router.push(destination);
       } else if (!user && !isPublic) {
+        console.log("[AUTH] User is unauthenticated on private page, redirecting to login");
         router.push('/login');
       }
     }

@@ -1,4 +1,3 @@
-
 "use server";
 
 import { db, storage } from "@/lib/firebase";
@@ -14,7 +13,7 @@ export async function saveMemory(
     console.log(`[SAVE_MEMORY_ACTION] --- Initiating memory save for user: ${userId} ---`);
 
     const mediaFileToUpload = formData.get("mediaFile") as File | null;
-    
+   
     const promptId = formData.get('promptId') as string | undefined;
     console.log(`[SAVE_MEMORY_ACTION] Retrieved 'promptId' from FormData: ${promptId ? `'${promptId}'` : 'undefined'}`);
 
@@ -26,7 +25,7 @@ export async function saveMemory(
     const country = formData.get('country') as string || undefined;
     const category = formData.get('category') as string || 'Other';
     const isLegacy = formData.get('isLegacy') === 'true';
-    
+   
     let emotionTags: EmotionTag[] = [];
     const emotionTagsString = formData.get('emotionTags');
     if (emotionTagsString && typeof emotionTagsString === 'string') {
@@ -53,12 +52,24 @@ export async function saveMemory(
             const fileRef = storageRef(storage, filePath);
             await uploadBytes(fileRef, mediaFileToUpload);
             const downloadURL = await getDownloadURL(fileRef);
+            
+            const metadataStr = formData.get('mediaMetadata') as string;
+            let metadata = {};
+            if (metadataStr) {
+                try {
+                    metadata = JSON.parse(metadataStr);
+                } catch (e) {
+                    console.warn("[SAVE_MEMORY_ACTION] Could not parse mediaMetadata", e);
+                }
+            }
+
             const newAttachment: MediaAttachment = {
                 id: 'media' + Date.now(),
                 type: mediaFileToUpload.type.startsWith('video') ? 'video' : 'audio',
                 url: downloadURL,
                 filename: mediaFileToUpload.name,
                 size: mediaFileToUpload.size,
+                ...metadata // This spreads in the startTime/endTime from the client
             };
             finalMediaAttachments = [newAttachment]; 
         }
@@ -79,7 +90,7 @@ export async function saveMemory(
         if (promptId) {
             dataToSave.promptId = promptId;
         }
-        
+       
         console.log('[SAVE_MEMORY_ACTION] Assembled data object for Firestore. Checking for promptId...', dataToSave);
         if (dataToSave.promptId) {
             console.log(`[SAVE_MEMORY_ACTION] SUCCESS: promptId '${dataToSave.promptId}' is present in the object to be saved.`);
@@ -102,13 +113,15 @@ export async function saveMemory(
             await addDoc(memoriesCollectionRef, dataWithCreationFields);
         }
 
-        console.log('[SAVE_MEMORY_ACTION] --- Memory save operation completed successfully. ---\n');
+        console.log('[SAVE_MEMORY_ACTION] --- Memory save operation completed successfully. ---
+');
         return { success: true, message: "Memory saved successfully!" };
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         console.error("[SAVE_MEMORY_ACTION] Error in saveMemory server action:", errorMessage);
-        console.log('[SAVE_MEMORY_ACTION] --- Memory save operation failed. ---\n');
+        console.log('[SAVE_MEMORY_ACTION] --- Memory save operation failed. ---
+');
         return { success: false, message: `A server error occurred: ${errorMessage}` };
     }
 }
