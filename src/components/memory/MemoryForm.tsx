@@ -85,9 +85,6 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   const isEditing = !!memoryToEdit;
 
   // Refs
-  const titleInputRef = useRef<HTMLInputElement>(null);
-  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const yearSelectRef = useRef<HTMLButtonElement>(null);
   const step1AnchorRef = useRef<HTMLDivElement>(null);
   const step2AnchorRef = useRef<HTMLDivElement>(null);
   const step3AnchorRef = useRef<HTMLDivElement>(null);
@@ -110,15 +107,19 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   const currentSlideRef = useRef(currentSlide);
   const [currentMedia, setCurrentMedia] = useState<CurrentMediaData | null>(null);
   const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null);
-  const [trimValues, setTrimValues] = useState<[number, number]>([0, 100]);
+  const [trimValues, setTrimValues] = useState<[number, number]>([0, 0]); // Init to 0,0 for safety
   const [isTrimming, setIsTrimming] = useState(false);
-  const [mediaKey, setMediaKey] = useState(Date.now().toString());
+  const [mediaKey, setMediaKey] = useState("initial-key");
   const [isParentSubmitting, setIsParentSubmitting] = useState(false);
   const [isPreparingMedia, setIsPreparingMedia] = useState(false);
 
-  // Hydration logic
+  /**
+   * DIAGNOSTIC HYDRATION LOGIC
+   * Proves data is retrieved from Firebase and updates state.
+   */
   useEffect(() => {
     if (memoryToEdit) {
+      console.log("📂 [MEMORY_FORM_DIAGNOSTIC] Hydrating Edit Mode...");
       setTitle(memoryToEdit.title || '');
       setLocation(memoryToEdit.location || '');
       setSelectedCategory(memoryToEdit.category || memoryCategoriesList[0]);
@@ -139,6 +140,14 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
 
       if (memoryToEdit.mediaAttachments?.[0]?.url) {
         const firstMedia = memoryToEdit.mediaAttachments[0];
+        
+        console.log("🎬 [DIAGNOSTIC] Media Found:", {
+          url: firstMedia.url,
+          startTime: firstMedia.startTime,
+          endTime: firstMedia.endTime,
+          duration: firstMedia.duration
+        });
+
         const duration = firstMedia.duration || 0;
         const startTime = firstMedia.startTime || 0;
         const endTime = firstMedia.endTime || duration;
@@ -154,6 +163,9 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
         });
         setCurrentMediaPreviewUrl(firstMedia.url);
         setTrimValues([startTime, endTime]);
+        
+        // Critical: Update key so the recorder knows data is ready
+        setMediaKey(`edit-${Date.now()}`);
       }
     } else {
       let initialTitle = initialCustomPrompt || '';
@@ -246,18 +258,24 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
 
   const handleActionButtonClick = () => {
     if (isParentSubmitting || isTrimming || isPreparingMedia) return;
+    
     if (currentSlide === SLIDE_INDEX_DETAILS) {
       if (!title.trim() || !description.trim()) {
         toast({ title: "Required Fields", description: "Title and Description are mandatory.", variant: "destructive" });
         return;
       }
+      
+      // CRITICAL FIX: Force remount of MediaCaptureControl with the hydrated state
+      const newKey = `step2-${Date.now()}`;
+      console.log(`🔄 [NAVIGATION] Moving to Step 2. Forcing remount with key: ${newKey}`);
+      setMediaKey(newKey);
+      
       handleSetCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
       if (!currentMedia && !isEditing) {
         toast({ title: "Media Required", description: "Please record or upload media.", variant: "destructive" });
         return;
       }
-      setMediaKey(Date.now().toString());
       handleSetCurrentSlide(SLIDE_INDEX_PREVIEW);
     } else {
       triggerSubmitProcess();
@@ -301,7 +319,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                 <CardDescription>Enter the details of your moment.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-1"><Label htmlFor="title">Title *</Label><Input ref={titleInputRef} id="title" value={title} onChange={(e) => setTitle(e.target.value)} required /></div>
+                <div className="space-y-1"><Label htmlFor="title">Title *</Label><Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required /></div>
                 <div className="space-y-1">
                   <Label>Date *</Label>
                   <div className="grid grid-cols-3 gap-2">
@@ -315,7 +333,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                    <div className="space-y-1"><Label htmlFor="country">Country</Label><Select value={country} onValueChange={setCountry}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{countryOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select></div>
                 </div>
                 <div className="space-y-1"><Label>Category *</Label><Select value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as MemoryCategory)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{memoryCategoriesList.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
-                <div className="space-y-1"><Label htmlFor="description">Description *</Label><Textarea ref={descriptionTextareaRef} id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} /></div>
+                <div className="space-y-1"><Label htmlFor="description">Description *</Label><Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} /></div>
               </CardContent>
             </Card>
           </CarouselItem>
@@ -361,7 +379,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                 <CardTitle className="font-headline text-2xl">{isEditing ? 'Preview Changes' : 'New Chapter'} (3/3)</CardTitle>
               </CardHeader>
               <CardContent>
-                {mockMemoryForPreview && <MemoryCard key={`${mediaKey}-${trimValues[0]}`} memory={mockMemoryForPreview} userMode="guest" />}
+                {mockMemoryForPreview && <MemoryCard key={`preview-${trimValues[0]}-${trimValues[1]}`} memory={mockMemoryForPreview} userMode="guest" />}
               </CardContent>
             </Card>
           </CarouselItem>
