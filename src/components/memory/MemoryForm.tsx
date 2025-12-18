@@ -83,12 +83,6 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   const router = useRouter();
   const isEditing = !!memoryToEdit;
 
-  // Refs for scrolling
-  const step1AnchorRef = useRef<HTMLDivElement>(null);
-  const step2AnchorRef = useRef<HTMLDivElement>(null);
-  const step3AnchorRef = useRef<HTMLDivElement>(null);
-  const visualScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
-
   // Form State
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
@@ -112,12 +106,10 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   const [isPreparingMedia, setIsPreparingMedia] = useState(false);
 
   /**
-   * HYDRATION LOGIC
-   * Maps Firebase data into local state when memoryToEdit is provided.
+   * 1. HYDRATION (Load from DB)
    */
   useEffect(() => {
     if (memoryToEdit) {
-      console.log("📂 [MEMORY_FORM] Hydrating state from Firebase...");
       setTitle(memoryToEdit.title || '');
       setLocation(memoryToEdit.location || '');
       setSelectedCategory(memoryToEdit.category || memoryCategoriesList[0]);
@@ -138,22 +130,22 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
 
       if (memoryToEdit.mediaAttachments?.[0]?.url) {
         const firstMedia = memoryToEdit.mediaAttachments[0];
-        const duration = firstMedia.duration || 0;
+        
+        // Use saved values or fallback to 0
         const startTime = firstMedia.startTime || 0;
-        const endTime = firstMedia.endTime || duration;
+        const endTime = firstMedia.endTime || firstMedia.duration || 0;
 
         setCurrentMedia({
           file: new File([], firstMedia.filename || "existing_media_placeholder", { type: firstMedia.type === 'video' ? 'video/mp4' : 'audio/mp3' }),
           type: firstMedia.type,
           startTime,
           endTime,
-          duration,
+          duration: firstMedia.duration || 0,
           size: firstMedia.size || 0,
           isTrimmed: firstMedia.isTrimmed || false,
         });
         setCurrentMediaPreviewUrl(firstMedia.url);
-        setTrimValues([startTime, endTime]);
-        setMediaKey(`edit-${Date.now()}`);
+        setTrimValues([startTime, endTime]); // CRITICAL: Set trim values during hydration
       }
     } else {
       let initialTitle = initialCustomPrompt || '';
@@ -165,20 +157,41 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
     }
   }, [memoryToEdit, promptId, initialCustomPrompt]);
 
+  /**
+   * 2. REPAIR HANDSHAKE (Handle Metadata Load)
+   */
+  const handleMediaReady = useCallback((payload: MediaFromRecorder) => {
+    setCurrentMedia(prev => {
+      // Logic for Existing Media (Edit Mode Repair)
+      if (isEditing && prev && prev.file.name === "existing_media_placeholder") {
+        
+        // CHECK: If trimValues are still [0, 0], this is a "broken" record that needs a default.
+        // If trimValues are NOT [0, 0], it means Hydration worked, so DON'T overwrite them.
+        const shouldSetDefaultTrim = trimValues[0] === 0 && trimValues[1] === 0;
+        
+        if (shouldSetDefaultTrim) {
+          console.log("🛠️ [REPAIR] No saved trim found. Initializing to full duration.");
+          setTrimValues([0, payload.duration]);
+          return { ...payload, startTime: 0, endTime: payload.duration, isTrimmed: false };
+        } else {
+          console.log("✅ [PRESERVE] Metadata loaded. Keeping saved trim values:", trimValues);
+          return { ...payload, startTime: trimValues[0], endTime: trimValues[1], isTrimmed: true };
+        }
+      }
+
+      // Logic for Brand New Recording/Upload
+      if (currentMediaPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(currentMediaPreviewUrl);
+      const newUrl = URL.createObjectURL(payload.file);
+      setCurrentMediaPreviewUrl(newUrl);
+      setTrimValues([0, payload.duration]);
+      handleSetCurrentSlide(SLIDE_INDEX_PREVIEW);
+      return { ...payload, startTime: 0, endTime: payload.duration, isTrimmed: false };
+    });
+  }, [currentMediaPreviewUrl, handleSetCurrentSlide, isEditing, trimValues]);
+
+  // --- Helpers ---
   const daysInSelectedMonth = useMemo(() => getDaysInMonth(new Date(selectedYear, selectedMonth)), [selectedYear, selectedMonth]);
   const dayOptions = useMemo(() => Array.from({ length: daysInSelectedMonth }, (_, i) => i + 1), [daysInSelectedMonth]);
-
-  const performVisualScroll = useCallback((slideIndex: number) => {
-    if (visualScrollTimerRef.current) clearTimeout(visualScrollTimerRef.current);
-    visualScrollTimerRef.current = setTimeout(() => {
-      let targetRef = slideIndex === SLIDE_INDEX_DETAILS ? step1AnchorRef : slideIndex === SLIDE_INDEX_MEDIA ? step2AnchorRef : step3AnchorRef;
-      if (targetRef.current) {
-        const navbar = document.querySelector('header.sticky') as HTMLElement | null;
-        const targetScrollY = targetRef.current.getBoundingClientRect().top + window.scrollY - (navbar?.offsetHeight || 0);
-        window.scrollTo({ top: targetScrollY, behavior: 'auto' });
-      }
-    }, 350);
-  }, []);
 
   const handleSetCurrentSlide = useCallback((newSlide: number) => {
     if (newSlide !== currentSlideRef.current) {
@@ -190,27 +203,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   useEffect(() => {
     if (!carouselApi) return;
     carouselApi.scrollTo(currentSlide, true);
-    performVisualScroll(currentSlide);
-  }, [currentSlide, carouselApi, performVisualScroll]);
-
-  const handleMediaReady = useCallback((payload: MediaFromRecorder) => {
-    setCurrentMedia(prev => {
-      // If we're repairing an existing media's duration (which was 0)
-      if (isEditing && (!prev || prev.duration === 0)) {
-        console.log("🛠️ [REPAIR] Updating duration from media element:", payload.duration);
-        setTrimValues([0, payload.duration]);
-        return { ...payload, startTime: 0, endTime: payload.duration, isTrimmed: false };
-      }
-
-      // Handle brand new recording or upload
-      if (currentMediaPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(currentMediaPreviewUrl);
-      const newUrl = URL.createObjectURL(payload.file);
-      setCurrentMediaPreviewUrl(newUrl);
-      setTrimValues([0, payload.duration]);
-      handleSetCurrentSlide(SLIDE_INDEX_PREVIEW);
-      return { ...payload, startTime: 0, endTime: payload.duration, isTrimmed: false };
-    });
-  }, [currentMediaPreviewUrl, handleSetCurrentSlide, isEditing]);
+  }, [currentSlide, carouselApi]);
 
   const triggerSubmitProcess = useCallback(async () => {
     if (!user) return;
@@ -224,7 +217,6 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
     formData.append('emotionTags', JSON.stringify(selectedEmotionTags));
     if (location) formData.append('location', location);
     if (country) formData.append('country', country);
-    formData.append('promptId', promptId || memoryToEdit?.promptId || '');
 
     if (currentMedia) {
       const isNew = currentMedia.file.size > 0 && currentMedia.file.name !== "existing_media_placeholder";
@@ -246,28 +238,22 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
     setIsParentSubmitting(false);
     if (result.success) {
       toast({ title: result.message, variant: "success" });
-      router.push(promptId ? '/prompts' : '/timeline');
+      router.push('/timeline');
     } else {
       toast({ title: "Error", description: result.message, variant: "destructive" });
     }
-  }, [user, title, selectedYear, selectedMonth, selectedDay, description, selectedCategory, selectedEmotionTags, location, country, promptId, memoryToEdit, currentMedia, trimValues, isEditing, router]);
+  }, [user, title, selectedYear, selectedMonth, selectedDay, description, selectedCategory, selectedEmotionTags, location, country, memoryToEdit, currentMedia, trimValues, isEditing, router]);
 
   const handleActionButtonClick = () => {
     if (isParentSubmitting || isPreparingMedia) return;
-    
     if (currentSlide === SLIDE_INDEX_DETAILS) {
       if (!title.trim() || !description.trim()) {
         toast({ title: "Required Fields", description: "Title and Description are mandatory.", variant: "destructive" });
         return;
       }
-      // Force remount when entering step 2 to ensure media data is fresh
       setMediaKey(`step2-${Date.now()}`);
       handleSetCurrentSlide(SLIDE_INDEX_MEDIA);
     } else if (currentSlide === SLIDE_INDEX_MEDIA) {
-      if (!currentMedia && !isEditing) {
-        toast({ title: "Media Required", description: "Please record or upload media.", variant: "destructive" });
-        return;
-      }
       handleSetCurrentSlide(SLIDE_INDEX_PREVIEW);
     } else {
       triggerSubmitProcess();
@@ -299,16 +285,14 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   }, [currentSlide, title, selectedYear, selectedMonth, selectedDay, description, selectedCategory, selectedEmotionTags, currentMedia, currentMediaPreviewUrl, trimValues, memoryToEdit, location, country, user]);
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); handleActionButtonClick(); }} className="space-y-6" noValidate>
+    <form onSubmit={(e) => { e.preventDefault(); handleActionButtonClick(); }} className="space-y-6">
       <Carousel setApi={setCarouselApi} opts={{ watchDrag: false }} className="w-full max-w-3xl mx-auto py-4">
         <CarouselContent>
-          {/* Step 1: Details */}
+          {/* Step 1 */}
           <CarouselItem>
-            <div ref={step1AnchorRef} />
             <Card>
               <CardHeader>
-                <CardTitle className="font-headline text-2xl">{isEditing ? 'Edit Chapter' : 'New Chapter'} (1/3)</CardTitle>
-                <CardDescription>Enter the details of your moment.</CardDescription>
+                <CardTitle className="font-headline text-2xl">Details (1/3)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1"><Label htmlFor="title">Title *</Label><Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required /></div>
@@ -330,13 +314,11 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
             </Card>
           </CarouselItem>
 
-          {/* Step 2: Media */}
+          {/* Step 2 */}
           <CarouselItem>
-            <div ref={step2AnchorRef} />
             <Card>
               <CardHeader>
-                <CardTitle className="font-headline text-lg">{isEditing ? 'Edit Media' : 'Media Attachment'} (2/3)</CardTitle>
-                <CardDescription>Record or upload your video/audio.</CardDescription>
+                <CardTitle className="font-headline text-lg">Media (2/3)</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <MediaCaptureControl 
@@ -344,12 +326,11 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                   onMediaReady={handleMediaReady} 
                   onPreparingChange={setIsPreparingMedia} 
                   initialMedia={currentMedia && currentMediaPreviewUrl ? { type: currentMedia.type, previewUrl: currentMediaPreviewUrl, duration: currentMedia.duration, size: currentMedia.size } : undefined} 
-                  chapterTitleForTeleprompter={title} 
                   trimValues={trimValues} 
                 />
                 {currentMedia && currentMedia.duration > 0 && (
                   <Card className="bg-muted/50">
-                    <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center"><Scissors className="mr-2 h-4 w-4"/>Trim</CardTitle></CardHeader>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center"><Scissors className="mr-2 h-4 w-4"/>Trim Control</CardTitle></CardHeader>
                     <CardContent>
                       <Slider min={0} max={currentMedia.duration} step={0.1} value={trimValues} onValueChange={(v) => setTrimValues(v as [number, number])} />
                       <div className="flex justify-between text-[10px] mt-2 font-mono">
@@ -363,21 +344,12 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
             </Card>
           </CarouselItem>
 
-          {/* Step 3: Preview */}
+          {/* Step 3 */}
           <CarouselItem>
-            <div ref={step3AnchorRef} />
             <Card>
-              <CardHeader>
-                <CardTitle className="font-headline text-2xl">{isEditing ? 'Preview Changes' : 'New Chapter'} (3/3)</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="font-headline text-2xl">Preview (3/3)</CardTitle></CardHeader>
               <CardContent>
-                {mockMemoryForPreview && (
-                  <MemoryCard 
-                    key={`preview-${trimValues[0]}-${trimValues[1]}`} 
-                    memory={mockMemoryForPreview} 
-                    userMode="guest" 
-                  />
-                )}
+                {mockMemoryForPreview && <MemoryCard memory={mockMemoryForPreview} userMode="guest" />}
               </CardContent>
             </Card>
           </CarouselItem>
