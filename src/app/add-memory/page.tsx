@@ -5,6 +5,7 @@ import { AddMemoryPageContent } from "@/components/memory/AddMemoryPageContent";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { cookies } from "next/headers";
+import { SESSION_COOKIE_NAME } from "@/lib/constants";
 
 interface MemoryData {
   id: string;
@@ -35,10 +36,13 @@ export default async function AddMemoryPage(props: AddMemoryPageProps) {
     if (editMemoryId) {
       console.log(`[SERVER] Attempting to edit memory: ${editMemoryId}`);
       
-      // Since getUserIdFromCookie() is not available, we can't verify the user.
-      // This is a temporary measure to allow the build to pass.
-      // In a real application, you would need to implement a way to get the user's ID.
-      const userId = "temp-user-id"; 
+      const cookieStore = cookies();
+      const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
+      if (!sessionCookie) {
+        throw new Error("User not authenticated.");
+      }
+      const session = JSON.parse(sessionCookie.value);
+      const userId = session.uid;
 
       const memoryRef = doc(db, 'users', userId, 'memories', editMemoryId);
       const memorySnap = await getDoc(memoryRef);
