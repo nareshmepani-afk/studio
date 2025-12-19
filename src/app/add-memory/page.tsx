@@ -25,7 +25,6 @@ export default async function AddMemoryPage(props: AddMemoryPageProps) {
   let memoryData = null;
   let error: string | null = null;
   
-  // Extract params within the main scope to make them available in the catch block
   const params = props.searchParams;
   const editMemoryId = typeof params.editMemoryId === 'string' ? params.editMemoryId : undefined;
   const promptId = typeof params.promptId === 'string' ? params.promptId : undefined;
@@ -38,9 +37,11 @@ export default async function AddMemoryPage(props: AddMemoryPageProps) {
       
       const cookieStore = cookies();
       const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
-      if (!sessionCookie) {
+
+      if (!sessionCookie || !sessionCookie.value) {
         throw new Error("User not authenticated.");
       }
+
       const session = JSON.parse(sessionCookie.value);
       const userId = session.uid;
 
@@ -83,8 +84,8 @@ export default async function AddMemoryPage(props: AddMemoryPageProps) {
       <AddMemoryPageContent
         key={componentKey}
         memoryToEdit={null}
-        promptId={promptId} // Pass promptId here
-        initialCustomPrompt={promptText} // Pass promptText here
+        promptId={promptId}
+        initialCustomPrompt={promptText}
         error={error}
       />
     );
