@@ -1,4 +1,4 @@
-'''"use client";
+"use client";
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -17,7 +17,7 @@ interface UserProfile {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  hostPassHassStatus: 'free_host_pass_active' | 'paid_host_pass_active' | 'inactive';
+  hostPassStatus: 'free_host_pass_active' | 'paid_host_pass_active' | 'inactive';
   storageQuotaBytes: { total: number; used: number };
 }
 
@@ -95,4 +95,3 @@ export const useAuth = () => {
   }
   return context;
 };
-''

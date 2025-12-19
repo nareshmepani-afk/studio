@@ -1,7 +1,6 @@
-
 "use client";
 
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import React from "react";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
