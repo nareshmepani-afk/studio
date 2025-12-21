@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getMonth, getDate, getYear, parseISO, getDaysInMonth, format } from 'date-fns';
 import { emotionTagsList, memoryCategoriesList } from '@/types';
@@ -15,10 +15,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin } from 'lucide-react';
 import { saveMemory } from '@/actions/memoryActions';
-import { toast } from '@/hooks/use-toast';
+// 1. Correct Import for the Hook
+import { useToast } from '@/hooks/use-toast'; 
 import dynamic from 'next/dynamic';
 
-// Dynamically import Media Recorder to avoid SSR issues with Browser APIs
 const MediaCaptureControl = dynamic(
   () => import('./MediaRecorder').then((mod) => mod.MediaCaptureControl),
   { 
@@ -35,11 +35,12 @@ interface MemoryFormProps {
 
 export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: MemoryFormProps) {
   const router = useRouter();
-  const { toast } = useToast();
+  // 2. Initialize the Hook
+  const { toast } = useToast(); 
+  
   const isEditing = !!memoryToEdit;
 
-  // --- 1. LAZY INITIALIZATION (Fixes ReferenceError) ---
-  // We use functions () => ... for state defaults so constants aren't accessed before load.
+  // Lazy Init to prevent reference errors
   const [title, setTitle] = useState(() => initialCustomPrompt || '');
   const [description, setDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<MemoryCategory | undefined>(() => memoryCategoriesList?.[0]);
@@ -61,12 +62,12 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Helper arrays for Date Dropdowns
+  // Date helpers
   const years = Array.from({ length: 101 }, (_, i) => new Date().getFullYear() - i);
   const months = Array.from({ length: 12 }, (_, i) => ({ value: i, label: format(new Date(2000, i, 1), 'MMMM') }));
   const days = Array.from({ length: getDaysInMonth(new Date(selectedYear, selectedMonth)) }, (_, i) => i + 1);
 
-  // --- 2. HYDRATION (Populates Form on Edit) ---
+  // Load Data on Edit
   useEffect(() => {
     if (memoryToEdit) {
       setTitle(memoryToEdit.title || '');
@@ -82,43 +83,34 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
 
       if (memoryToEdit.mediaAttachments?.[0]) {
         const m = memoryToEdit.mediaAttachments[0];
-        // We use a specific flag 'existing' to know this isn't a new file upload
         setCurrentMedia({ 
           file: new File([], "existing"), 
           type: m.type, 
           duration: m.duration || 0 
         });
         setCurrentMediaPreviewUrl(m.url);
-        
-        // Load the saved trim values
         setTrimValues([m.startTime || 0, m.endTime || m.duration || 0]);
       }
     }
   }, [memoryToEdit]);
 
-  // --- 3. TRIM PROTECTION (Fixes Race Condition) ---
+  // Media Ready Handler
   const handleMediaReady = useCallback((payload: any) => {
     setCurrentMedia((prev: any) => {
-      // Logic: If we are editing, and we already have valid trim values (not 0,0),
-      // DO NOT overwrite them with the new file's full duration.
       const hasSavedTrim = trimValues[0] !== 0 || trimValues[1] !== 0;
       const isExistingFile = prev?.file?.name === "existing" || (memoryToEdit && payload.file.size === 0);
 
       if (isExistingFile && hasSavedTrim) {
-        console.log("🔒 Protecting existing trim values:", trimValues);
         return { 
           ...payload, 
           startTime: trimValues[0], 
           endTime: trimValues[1],
-          duration: payload.duration || prev.duration // Ensure duration isn't lost
+          duration: payload.duration || prev.duration
         };
       }
 
-      // If it's a fresh recording/upload, set trim to full length
-      console.log("✨ New media detected, resetting trim to full length");
       setTrimValues([0, payload.duration]);
       
-      // Update preview URL for new files
       if (payload.file.size > 0) {
         if (currentMediaPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(currentMediaPreviewUrl);
         setCurrentMediaPreviewUrl(URL.createObjectURL(payload.file));
@@ -128,7 +120,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
     });
   }, [isEditing, trimValues, currentMediaPreviewUrl, memoryToEdit]);
 
-  // --- 4. SUBMISSION LOGIC ---
+  // Save Logic
   const onSave = async () => {
     if (!title) {
       toast({ title: "Missing Title", description: "Please give your memory a title.", variant: "destructive" });
@@ -155,11 +147,9 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
       };
 
       if (isNewFile) {
-        // Upload new file
         formData.append('mediaFile', currentMedia.file);
         formData.append('mediaMetadata', JSON.stringify(metadata));
       } else if (memoryToEdit?.mediaAttachments?.[0]) {
-        // Update metadata for existing file
         const updatedAttachment = { ...memoryToEdit.mediaAttachments[0], ...metadata };
         formData.append('mediaAttachments', JSON.stringify([updatedAttachment]));
       }
@@ -172,7 +162,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
     if (result.success) {
       toast({ title: "Success", description: "Memory saved successfully!" });
       router.push('/timeline');
-      router.refresh(); // Refresh server components
+      router.refresh(); 
     } else {
       toast({ title: "Error", description: result.message, variant: "destructive" });
     }
@@ -180,7 +170,6 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
 
   return (
     <div className="max-w-3xl mx-auto pb-20">
-      {/* Progress Indicator */}
       <div className="flex justify-center mb-6 space-x-2">
         {[0, 1].map((step) => (
           <div key={step} className={`h-2 w-16 rounded-full transition-colors ${currentSlide === step ? 'bg-primary' : 'bg-secondary'}`} />
@@ -189,8 +178,6 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
 
       <Carousel setApi={setCarouselApi} opts={{ watchDrag: false }} className="w-full">
         <CarouselContent>
-          
-          {/* SLIDE 1: DETAILS */}
           <CarouselItem>
             <Card>
               <CardHeader>
@@ -198,14 +185,11 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                 <CardDescription>When and where did this happen?</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                
-                {/* Title */}
                 <div className="space-y-2">
                   <Label>Title</Label>
                   <Input placeholder="e.g. My 30th Birthday" value={title} onChange={e => setTitle(e.target.value)} />
                 </div>
 
-                {/* Date Selectors */}
                 <div className="space-y-2">
                   <Label>Date</Label>
                   <div className="grid grid-cols-3 gap-2">
@@ -224,7 +208,6 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                   </div>
                 </div>
 
-                {/* Category & Location */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Category</Label>
@@ -246,22 +229,14 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                   </div>
                 </div>
 
-                {/* Description */}
                 <div className="space-y-2">
                   <Label>Description</Label>
-                  <Textarea 
-                    placeholder="Describe the memory..." 
-                    className="min-h-[120px]" 
-                    value={description} 
-                    onChange={e => setDescription(e.target.value)} 
-                  />
+                  <Textarea placeholder="Describe the memory..." className="min-h-[120px]" value={description} onChange={e => setDescription(e.target.value)} />
                 </div>
-
               </CardContent>
             </Card>
           </CarouselItem>
           
-          {/* SLIDE 2: MEDIA */}
           <CarouselItem>
             <Card>
               <CardHeader>
@@ -269,74 +244,34 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                 <CardDescription>Upload or record a video/audio for this memory.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                
                 <MediaCaptureControl 
                   onMediaReady={handleMediaReady} 
-                  initialMedia={currentMediaPreviewUrl ? { 
-                    previewUrl: currentMediaPreviewUrl, 
-                    type: currentMedia?.type,
-                    duration: currentMedia?.duration 
-                  } : null} 
-                  trimValues={trimValues} // Passing this down helps the child component know current state
+                  initialMedia={currentMediaPreviewUrl ? { previewUrl: currentMediaPreviewUrl, type: currentMedia?.type, duration: currentMedia?.duration } : null} 
+                  trimValues={trimValues} 
                 />
 
-                {/* Trim Controls (Only show if we have duration > 0) */}
                 {currentMedia && currentMedia.duration > 0 && (
                   <div className="pt-4 space-y-4 border-t">
                     <div className="flex justify-between items-center">
                       <Label className="flex items-center text-primary"><Scissors className="w-4 h-4 mr-2"/> Trim Clip</Label>
-                      <span className="text-xs text-muted-foreground font-mono">
-                        {trimValues[0].toFixed(1)}s - {trimValues[1].toFixed(1)}s
-                      </span>
+                      <span className="text-xs text-muted-foreground font-mono">{trimValues[0].toFixed(1)}s - {trimValues[1].toFixed(1)}s</span>
                     </div>
-                    
-                    <Slider 
-                      min={0} 
-                      max={currentMedia.duration} 
-                      step={0.1} 
-                      minStepsBetweenThumbs={1}
-                      value={trimValues} 
-                      onValueChange={(v) => setTrimValues(v as [number, number])} 
-                    />
-                    
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>0:00</span>
-                      <span>Total: {currentMedia.duration.toFixed(1)}s</span>
-                    </div>
+                    <Slider min={0} max={currentMedia.duration} step={0.1} minStepsBetweenThumbs={1} value={trimValues} onValueChange={(v) => setTrimValues(v as [number, number])} />
                   </div>
                 )}
               </CardContent>
             </Card>
           </CarouselItem>
-
         </CarouselContent>
       </Carousel>
 
-      {/* Navigation Footer */}
       <div className="flex justify-between mt-8 px-1">
-        <Button 
-          variant="ghost" 
-          onClick={() => currentSlide === 0 ? router.back() : carouselApi?.scrollPrev()} 
-          disabled={isSubmitting}
-        >
+        <Button variant="ghost" onClick={() => currentSlide === 0 ? router.back() : carouselApi?.scrollPrev()} disabled={isSubmitting}>
           {currentSlide === 0 ? 'Cancel' : <><ArrowLeft className="w-4 h-4 mr-2" /> Back</>}
         </Button>
 
-        <Button 
-          onClick={() => {
-            if (currentSlide === 0) {
-               setCurrentSlide(1);
-               carouselApi?.scrollNext();
-            } else {
-               onSave();
-            }
-          }} 
-          disabled={isSubmitting}
-          className="min-w-[120px]"
-        >
-          {isSubmitting ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : 
-           currentSlide === 0 ? <><span className="mr-2">Next</span> <ArrowRight className="w-4 h-4" /></> : 
-           <><Sparkles className="w-4 h-4 mr-2" /> Save Memory</>}
+        <Button onClick={() => currentSlide === 0 ? (setCurrentSlide(1), carouselApi?.scrollNext()) : onSave()} disabled={isSubmitting} className="min-w-[120px]">
+          {isSubmitting ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : currentSlide === 0 ? <><span className="mr-2">Next</span> <ArrowRight className="w-4 h-4" /></> : <><Sparkles className="w-4 h-4 mr-2" /> Save Memory</>}
         </Button>
       </div>
     </div>
