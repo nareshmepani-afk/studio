@@ -1,42 +1,44 @@
-import { getMemoryById } from '@/actions/memoryActions';
 import { MemoryForm } from '@/components/memory/MemoryForm';
+import { getMemoryById } from '@/actions/memoryActions';
+import type { Memory } from '@/types';
 
-interface AddMemoryPageProps {
-  searchParams: { [key: string]: string | string[] | undefined };
+// Define the async props for Next.js 15
+interface PageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-// This is a Server Component by default
-export default async function AddMemoryPage({ searchParams }: AddMemoryPageProps) {
-  const editMemoryId = searchParams.editMemoryId as string | undefined;
-  const promptId = searchParams.promptId as string | undefined;
-  const promptText = searchParams.prompt as string | undefined;
+export default async function AddMemoryPage({ searchParams }: PageProps) {
+  // 1. MUST await searchParams in Next.js 15
+  const resolvedParams = await searchParams;
+  const editMemoryId = resolvedParams.editMemoryId as string | undefined;
+  const promptId = resolvedParams.promptId as string | undefined;
+  const promptText = resolvedParams.prompt as string | undefined;
 
-  let memoryToEdit = null;
+  let memoryToEdit: Memory | null = null;
 
+  // 2. Fetch memory data if we are in edit mode
   if (editMemoryId) {
+    console.log(`[SERVER] Fetching memory: ${editMemoryId}`);
     const result = await getMemoryById(editMemoryId);
-    if (result.success) {
+    if (result.success && result.data) {
       memoryToEdit = result.data;
     } else {
-      // Log the error or handle it as needed. 
-      // For now, we'll let the form render in a "new memory" state.
+      // The action itself will log the detailed error
       console.error(`[Page] Failed to fetch memory ${editMemoryId}:`, result.message);
     }
   }
 
   return (
     <main className="container mx-auto px-4 py-8">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-headline font-bold mb-8 text-center">
-          {editMemoryId ? 'Edit Your Memory' : 'Create a New Memory'}
-        </h1>
-        
-        <MemoryForm 
-          memoryToEdit={memoryToEdit}
-          promptId={promptId}
-          initialCustomPrompt={promptText}
-        />
-      </div>
+      <h1 className="text-3xl font-headline font-bold mb-8 text-center text-primary">
+        {editMemoryId ? 'Edit Your Memory' : 'Create a New Memory'}
+      </h1>
+      
+      <MemoryForm 
+        memoryToEdit={memoryToEdit}
+        promptId={promptId}
+        initialCustomPrompt={promptText}
+      />
     </main>
   );
 }

@@ -1,7 +1,7 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { db, storage } from '@/lib/firebase-admin'; 
+import { db, storage } from '@/lib/firebase-admin';
 import type { Memory, MediaAttachment } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { SESSION_COOKIE_NAME } from '@/lib/constants';
@@ -24,41 +24,50 @@ async function uploadToStorage(file: File, userId: string): Promise<{ publicUrl:
     },
   });
 
-  // In a real app, you'd likely use getSignedUrl for security, but for simplicity we use the public URL if the bucket is public.
   const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
-
   return { publicUrl, filePath };
 }
 
+// CORRECTED based on your accurate feedback
 export async function getMemoryById(id: string) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
-    if (!sessionCookie?.value) return { success: false, message: "Unauthorized" };
 
-    const session = JSON.parse(sessionCookie.value);
-    const userId = session.uid;
+    if (!sessionCookie?.value) {
+      return { success: false, message: "Unauthorized" };
+    }
 
-    const docRef = db.collection('users').doc(userId).collection('memories').doc(id);
+    const docRef = db.collection('memories').doc(id);
     const doc = await docRef.get();
 
     if (!doc.exists) {
-        return { success: false, message: "Memory not found" };
+      return { success: false, message: "Memory not found" };
     }
+
+    const data = doc.data();
+    
+    // CRITICAL FIX: Serialize the date object to an ISO string
+    const date = data?.date?.toDate ? data.date.toDate().toISOString() : data?.date;
 
     return { 
       success: true, 
-      data: { id: doc.id, ...doc.data() } as Memory 
+      data: { 
+        id: doc.id, 
+        ...data,
+        date,
+      } as Memory
     };
-  } catch (error) {
-    console.error("Fetch Error:", error);
-    return { success: false, message: "Server error fetching memory" };
+  } catch (error: any) {
+    console.error("[ACTION] getMemoryById error:", error.message);
+    return { success: false, message: error.message || "Server error fetching memory" };
   }
 }
 
+// CORRECTED to be consistent with the data model
 export async function saveMemory(formData: FormData, memoryId: string | null) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
     if (!sessionCookie?.value) return { success: false, message: "Unauthorized" };
 
@@ -74,26 +83,26 @@ export async function saveMemory(formData: FormData, memoryId: string | null) {
     let mediaAttachments: MediaAttachment[] = [];
 
     const mediaFile = formData.get('mediaFile') as File | null;
-    const mediaMetadataStr = formData.get('mediaMetadata') as string;
 
     if (mediaFile && mediaFile.size > 0) {
-      const { publicUrl } = await uploadToStorage(mediaFile, userId);
-      const meta = JSON.parse(mediaMetadataStr);
-      mediaAttachments.push({
-        id: crypto.randomUUID(),
-        url: publicUrl, 
-        type: mediaFile.type.startsWith('video') ? 'video' : 'audio',
-        startTime: meta.startTime,
-        endTime: meta.endTime,
-        isTrimmed: meta.isTrimmed,
-        duration: meta.duration || 0,
-        filename: mediaFile.name
-      });
+        const mediaMetadataStr = formData.get('mediaMetadata') as string;
+        const { publicUrl } = await uploadToStorage(mediaFile, userId);
+        const meta = JSON.parse(mediaMetadataStr);
+        mediaAttachments.push({
+            id: crypto.randomUUID(),
+            url: publicUrl, 
+            type: mediaFile.type.startsWith('video') ? 'video' : 'audio',
+            startTime: meta.startTime,
+            endTime: meta.endTime,
+            isTrimmed: meta.isTrimmed,
+            duration: meta.duration || 0,
+            filename: mediaFile.name
+        });
     } else {
-      const existingMediaStr = formData.get('mediaAttachments') as string;
-      if (existingMediaStr) {
-        mediaAttachments = JSON.parse(existingMediaStr);
-      }
+        const existingMediaStr = formData.get('mediaAttachments') as string;
+        if (existingMediaStr) {
+            mediaAttachments = JSON.parse(existingMediaStr);
+        }
     }
 
     const memoryData: Omit<Memory, 'id'> = {
@@ -101,14 +110,15 @@ export async function saveMemory(formData: FormData, memoryId: string | null) {
       description,
       date,
       category,
-      userId,
+      userId, // Ensure userId is saved with the memory
       mediaAttachments,
       emotionTags: [], // Placeholder
       updatedAt: new Date().toISOString(),
       ...(promptId && { promptId }),
     };
 
-    const collectionRef = db.collection('users').doc(userId).collection('memories');
+    // CRITICAL FIX: Write to the top-level 'memories' collection
+    const collectionRef = db.collection('memories');
 
     if (memoryId) {
       await collectionRef.doc(memoryId).update(memoryData);
@@ -117,11 +127,12 @@ export async function saveMemory(formData: FormData, memoryId: string | null) {
     }
 
     revalidatePath('/prompts');
+    revalidatePath('/timeline');
     revalidatePath('/memories');
     
     return { success: true, message: memoryId ? "Memory updated" : "Memory saved" };
-  } catch (error) {
-    console.error("Save Error:", error);
-    return { success: false, message: "Failed to save memory" };
+  } catch (error: any) {
+    console.error("[ACTION] Save Error:", error.message);
+    return { success: false, message: error.message || "Failed to save memory" };
   }
 }
