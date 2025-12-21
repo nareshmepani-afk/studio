@@ -1,93 +1,42 @@
-
-"use server";
-
-import { AddMemoryPageContent } from "@/components/memory/AddMemoryPageContent";
-import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { cookies } from "next/headers";
-import { SESSION_COOKIE_NAME } from "@/lib/constants";
-
-interface MemoryData {
-  id: string;
-  title: string;
-  date: string;
-  description: string;
-  userId: string;
-  promptId?: string;
-}
+import { getMemoryById } from '@/actions/memoryActions';
+import { MemoryForm } from '@/components/memory/MemoryForm';
 
 interface AddMemoryPageProps {
   searchParams: { [key: string]: string | string[] | undefined };
 }
 
-export default async function AddMemoryPage(props: AddMemoryPageProps) {
-  console.log("[SERVER] AddMemoryPage execution started.");
-  let memoryData = null;
-  let error: string | null = null;
-  
-  const params = props.searchParams;
-  const editMemoryId = typeof params.editMemoryId === 'string' ? params.editMemoryId : undefined;
-  const promptId = typeof params.promptId === 'string' ? params.promptId : undefined;
-  const promptText = typeof params.prompt === 'string' ? params.prompt : undefined;
-  const componentKey = Date.now().toString();
+// This is a Server Component by default
+export default async function AddMemoryPage({ searchParams }: AddMemoryPageProps) {
+  const editMemoryId = searchParams.editMemoryId as string | undefined;
+  const promptId = searchParams.promptId as string | undefined;
+  const promptText = searchParams.prompt as string | undefined;
 
-  try {
-    if (editMemoryId) {
-      console.log(`[SERVER] Attempting to edit memory: ${editMemoryId}`);
-      
-      const cookieStore = cookies();
-      const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
+  let memoryToEdit = null;
 
-      if (!sessionCookie || !sessionCookie.value) {
-        throw new Error("User not authenticated.");
-      }
-
-      const session = JSON.parse(sessionCookie.value);
-      const userId = session.uid;
-
-      const memoryRef = doc(db, 'users', userId, 'memories', editMemoryId);
-      const memorySnap = await getDoc(memoryRef);
-
-      if (!memorySnap.exists()) {
-        console.error(`[SERVER] Memory with ID ${editMemoryId} not found for user ${userId}.`);
-        throw new Error("Memory not found.");
-      }
-
-      const data = memorySnap.data();
-      memoryData = {
-        id: memorySnap.id,
-        title: data.title,
-        date: data.date,
-        description: data.description,
-        userId: data.userId,
-        promptId: data.promptId,
-      };
-      console.log(`[SERVER] Successfully loaded memory data for: ${editMemoryId}`);
+  if (editMemoryId) {
+    const result = await getMemoryById(editMemoryId);
+    if (result.success) {
+      memoryToEdit = result.data;
     } else {
-      console.log("[SERVER] No editMemoryId found, proceeding to render new memory page.");
+      // Log the error or handle it as needed. 
+      // For now, we'll let the form render in a "new memory" state.
+      console.error(`[Page] Failed to fetch memory ${editMemoryId}:`, result.message);
     }
-
-    return (
-      <AddMemoryPageContent
-        key={componentKey}
-        memoryToEdit={memoryData}
-        promptId={promptId}
-        initialCustomPrompt={promptText}
-        error={error}
-      />
-    );
-
-  } catch (e: any) {
-    console.error("[SERVER CRITICAL ERROR]", e);
-    error = e.message || "An unexpected error occurred while loading the page.";
-    return (
-      <AddMemoryPageContent
-        key={componentKey}
-        memoryToEdit={null}
-        promptId={promptId}
-        initialCustomPrompt={promptText}
-        error={error}
-      />
-    );
   }
+
+  return (
+    <main className="container mx-auto px-4 py-8">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-headline font-bold mb-8 text-center">
+          {editMemoryId ? 'Edit Your Memory' : 'Create a New Memory'}
+        </h1>
+        
+        <MemoryForm 
+          memoryToEdit={memoryToEdit}
+          promptId={promptId}
+          initialCustomPrompt={promptText}
+        />
+      </div>
+    </main>
+  );
 }
