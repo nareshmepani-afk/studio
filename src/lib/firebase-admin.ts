@@ -1,11 +1,12 @@
-
 import { initializeApp, getApps, cert, getApp, App } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { getAuth, Auth } from 'firebase-admin/auth';
+import { getStorage, Storage } from 'firebase-admin/storage'; // Added storage import
 
 let app: App;
 let adminDb: Firestore;
 let adminAuth: Auth;
+let adminStorage: Storage; // Added storage variable
 
 const formatPrivateKey = (key: string) => {
   return key.replace(/\\n/g, '\n');
@@ -29,30 +30,28 @@ try {
         const cleanedKey = formatPrivateKey(serviceAccountKey);
         serviceAccount = JSON.parse(cleanedKey);
       }
-
-      if (serviceAccount.private_key) {
-        serviceAccount.private_key = formatPrivateKey(serviceAccount.private_key);
-      }
-
+      
       app = initializeApp({
         credential: cert(serviceAccount),
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
       });
-      console.log('[FIREBASE ADMIN] Initialized with Service Account.');
+      console.log('[FIREBASE ADMIN] New app instance initialized.');
     } else {
-      console.log('[FIREBASE ADMIN] No service account found. Using default credentials.');
-      app = initializeApp();
+      throw new Error('[FIREBASE ADMIN] Service account key is missing in environment variables.');
     }
   }
 
   adminDb = getFirestore(app);
   adminAuth = getAuth(app);
-  console.log('[FIREBASE ADMIN] Firestore and Auth connected successfully.');
+  adminStorage = getStorage(app); // Initialize storage
+
+  console.log('[FIREBASE ADMIN] Firestore, Auth, and Storage are ready.');
 
 } catch (error: any) {
-  console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-  console.error('[FIREBASE ADMIN] CRITICAL INITIALIZATION ERROR:', error.message);
-  console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-  throw error; 
+  console.error('[FIREBASE ADMIN] Initialization failed:', error.message);
+  // To prevent the app from running with a broken admin setup, we throw the error.
+  // This will cause the server to fail to start, which is better than running in a broken state.
+  throw error;
 }
 
-export { adminDb, adminAuth };
+export { app, adminDb, adminAuth, adminStorage }; // Export adminStorage

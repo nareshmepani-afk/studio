@@ -1,55 +1,74 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { db, storage } from '@/lib/firebase-admin';
+import { adminDb, adminStorage } from '@/lib/firebase-admin';
 import type { Memory, MediaAttachment } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { SESSION_COOKIE_NAME } from '@/lib/constants';
 import { Buffer } from 'buffer';
 
-// Helper to upload a file to Firebase Storage
 async function uploadToStorage(file: File, userId: string): Promise<{ publicUrl: string; filePath: string }> {
   const fileId = crypto.randomUUID();
   const fileExtension = file.name.split('.').pop();
   const filePath = `users/${userId}/media/${fileId}.${fileExtension}`;
-
-  const bucket = storage.bucket(); 
+  const bucket = adminStorage.bucket();
   const fileRef = bucket.file(filePath);
-
   const fileBuffer = await file.arrayBuffer();
-  
-  await fileRef.save(Buffer.from(fileBuffer), {
-    metadata: {
-      contentType: file.type,
-    },
-  });
-
+  await fileRef.save(Buffer.from(fileBuffer), { metadata: { contentType: file.type } });
   const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
   return { publicUrl, filePath };
 }
 
-// CORRECTED based on your accurate feedback
 export async function getMemoryById(id: string) {
+  console.log(`[ACTION] getMemoryById: Initiated for memory ID: ${id}`);
   try {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
-
     if (!sessionCookie?.value) {
-      return { success: false, message: "Unauthorized" };
+      console.error('[ACTION] getMemoryById: Auth cookie not found.');
+      return { success: false, message: "Unauthorized: Missing session cookie." };
     }
 
-    const docRef = db.collection('memories').doc(id);
+    let session;
+    try {
+      session = JSON.parse(sessionCookie.value);
+    } catch (e) {
+      console.error('[ACTION] getMemoryById: Failed to parse session cookie.');
+      return { success: false, message: "Unauthorized: Invalid session format." };
+    }
+
+    const userId = session?.uid;
+    if (!userId) {
+      console.error('[ACTION] getMemoryById: Session is invalid or does not contain UID.');
+      return { success: false, message: "Unauthorized: Invalid session data." };
+    }
+    console.log(`[ACTION] getMemoryById: Authorized for user ${userId}`);
+
+    const docRef = adminDb.collection('memories').doc(id);
     const doc = await docRef.get();
 
     if (!doc.exists) {
+      console.warn(`[ACTION] getMemoryById: Memory not found for id ${id}`);
       return { success: false, message: "Memory not found" };
     }
 
     const data = doc.data();
-    
-    // CRITICAL FIX: Serialize the date object to an ISO string
-    const date = data?.date?.toDate ? data.date.toDate().toISOString() : data?.date;
 
+    // --- CORRECTED: Added guard clause for undefined data ---
+    if (!data) {
+        console.error(`[ACTION] getMemoryById: Document ${id} exists but has no data.`);
+        return { success: false, message: "Corrupt memory: document contains no data." };
+    }
+
+    if (data.userId !== userId) { // Optional chaining no longer needed here
+      console.error(`[ACTION] getMemoryById: SECURITY VIOLATION - User ${userId} attempted to access memory owned by ${data.userId}.`);
+      return { success: false, message: "Forbidden: You do not own this memory." };
+    }
+    console.log(`[ACTION] getMemoryById: Ownership verified for user ${userId}`);
+
+    const date = data.date?.toDate ? data.date.toDate().toISOString() : data.date;
+
+    console.log(`[ACTION] getMemoryById: Successfully fetched and returning memory titled \"${data.title}\".`);
     return { 
       success: true, 
       data: { 
@@ -58,13 +77,14 @@ export async function getMemoryById(id: string) {
         date,
       } as Memory
     };
+
   } catch (error: any) {
-    console.error("[ACTION] getMemoryById error:", error.message);
-    return { success: false, message: error.message || "Server error fetching memory" };
+    console.error(`[ACTION] getMemoryById CRASH for ID ${id}:`, error.message, error.stack);
+    return { success: false, message: error.message || "A server error occurred while fetching the memory." };
   }
 }
 
-// CORRECTED to be consistent with the data model
+
 export async function saveMemory(formData: FormData, memoryId: string | null) {
   try {
     const cookieStore = await cookies();
@@ -79,9 +99,11 @@ export async function saveMemory(formData: FormData, memoryId: string | null) {
     const date = formData.get('date') as string;
     const category = formData.get('category') as string;
     const promptId = formData.get('promptId') as string | undefined;
+    const location = formData.get('location') as string;
+    const emotionTagsStr = formData.get('emotionTags') as string;
+    const emotionTags = emotionTagsStr ? JSON.parse(emotionTagsStr) : [];
 
     let mediaAttachments: MediaAttachment[] = [];
-
     const mediaFile = formData.get('mediaFile') as File | null;
 
     if (mediaFile && mediaFile.size > 0) {
@@ -105,30 +127,34 @@ export async function saveMemory(formData: FormData, memoryId: string | null) {
         }
     }
 
-    const memoryData: Omit<Memory, 'id'> = {
+    const memoryData: Partial<Memory> = {
       title,
       description,
       date,
       category,
-      userId, // Ensure userId is saved with the memory
+      userId,
       mediaAttachments,
-      emotionTags: [], // Placeholder
+      emotionTags,
+      location,
       updatedAt: new Date().toISOString(),
       ...(promptId && { promptId }),
     };
-
-    // CRITICAL FIX: Write to the top-level 'memories' collection
-    const collectionRef = db.collection('memories');
+    
+    const collectionRef = adminDb.collection('memories');
 
     if (memoryId) {
+      const docToUpdate = await collectionRef.doc(memoryId).get();
+      if(docToUpdate.data()?.userId !== userId) {
+        return { success: false, message: "Forbidden: You cannot edit this memory." };
+      }
       await collectionRef.doc(memoryId).update(memoryData);
     } else {
-      await collectionRef.add({ ...memoryData, createdAt: new Date().toISOString() });
+      memoryData.createdAt = new Date().toISOString();
+      await collectionRef.add(memoryData);
     }
 
     revalidatePath('/prompts');
     revalidatePath('/timeline');
-    revalidatePath('/memories');
     
     return { success: true, message: memoryId ? "Memory updated" : "Memory saved" };
   } catch (error: any) {
