@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
+import { onIdTokenChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
-import Cookies from 'js-cookie'; // Using js-cookie to manage auth token
 
 interface UserProfile {
   hostPassStatus?: 'free_host_pass_active' | 'paid_host_pass_active' | 'inactive';
@@ -26,7 +25,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const PRIVATE_ROUTES = ['/timeline', '/add-memory', '/prompts', '/settings', '/requests'];
 const PUBLIC_ROUTES = ['/', '/login', '/register', '/reset-password'];
-const AUTH_COOKIE_NAME = 'firebase-auth-token';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -38,16 +36,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const pathname = usePathname();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
       setLoading(true);
       if (firebaseUser) {
-        console.log("[AUTH] User signed in. Setting cookie.");
-        const token = await firebaseUser.getIdToken();
-        Cookies.set(AUTH_COOKIE_NAME, token, { expires: 7, secure: true, sameSite: 'lax' });
-        setUser(firebaseUser);
+        const idToken = await firebaseUser.getIdToken();
+        try {
+          const response = await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ idToken }),
+          });
+          if (!response.ok) throw new Error('Failed to create session cookie');
+          setUser(firebaseUser);
+        } catch (error) {
+          console.error("Error creating session cookie:", error);
+          setUser(null);
+        }
       } else {
-        console.log("[AUTH] User signed out. Removing cookie.");
-        Cookies.remove(AUTH_COOKIE_NAME);
+        try {
+          await fetch('/api/auth/session', { method: 'DELETE' });
+        } catch (error) {
+          console.error("Error deleting session cookie:", error);
+        }
         setUser(null);
       }
       setLoading(false);
@@ -63,12 +75,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (user) {
         // If user is on a public page that is not the landing page, redirect to prompts.
         if (isPublicRoute && pathname !== '/') {
-          console.log(`[AUTH] User logged in on public page ${pathname}. Redirecting to /prompts.`);
           router.push('/prompts');
         }
       } else {
         if (isPrivateRoute) {
-          console.log(`[AUTH] User not logged in on private page. Redirecting to /login.`);
           router.push('/login');
         }
       }

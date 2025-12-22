@@ -1,57 +1,26 @@
-import { initializeApp, getApps, cert, getApp, App } from 'firebase-admin/app';
-import { getFirestore, Firestore } from 'firebase-admin/firestore';
-import { getAuth, Auth } from 'firebase-admin/auth';
-import { getStorage, Storage } from 'firebase-admin/storage'; // Added storage import
+import * as admin from 'firebase-admin';
 
-let app: App;
-let adminDb: Firestore;
-let adminAuth: Auth;
-let adminStorage: Storage; // Added storage variable
-
-const formatPrivateKey = (key: string) => {
-  return key.replace(/\\n/g, '\n');
+const serviceAccount: admin.ServiceAccount = {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'), // Important for Vercel/similar envs
 };
 
-try {
-  if (getApps().length > 0) {
-    app = getApp();
-    console.log('[FIREBASE ADMIN] Using existing app instance.');
-  } else {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-
-    if (serviceAccountKey) {
-      console.log('[FIREBASE ADMIN] Found service account key. Parsing...');
-      
-      let serviceAccount;
-      try {
-        serviceAccount = JSON.parse(serviceAccountKey);
-      } catch (e) {
-        console.error('[FIREBASE ADMIN] JSON Parse failed. Checking for unescaped newlines...');
-        const cleanedKey = formatPrivateKey(serviceAccountKey);
-        serviceAccount = JSON.parse(cleanedKey);
-      }
-      
-      app = initializeApp({
-        credential: cert(serviceAccount),
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-      });
-      console.log('[FIREBASE ADMIN] New app instance initialized.');
-    } else {
-      throw new Error('[FIREBASE ADMIN] Service account key is missing in environment variables.');
-    }
+if (!admin.apps.length) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+    console.log('[Firebase Admin] Initialized successfully.');
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('[Firebase Admin] Initialization failed:', errorMessage);
+     // Throwing the error is important to stop the process if admin fails to initialize
+    throw new Error(`Firebase Admin SDK initialization failed: ${errorMessage}`);
   }
-
-  adminDb = getFirestore(app);
-  adminAuth = getAuth(app);
-  adminStorage = getStorage(app); // Initialize storage
-
-  console.log('[FIREBASE ADMIN] Firestore, Auth, and Storage are ready.');
-
-} catch (error: any) {
-  console.error('[FIREBASE ADMIN] Initialization failed:', error.message);
-  // To prevent the app from running with a broken admin setup, we throw the error.
-  // This will cause the server to fail to start, which is better than running in a broken state.
-  throw error;
+} else {
+  console.log('[Firebase Admin] Already initialized.');
 }
 
-export { app, adminDb, adminAuth, adminStorage }; // Export adminStorage
+export const adminAuth = admin.auth();
+export const adminDb = admin.firestore();
