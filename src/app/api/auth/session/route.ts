@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     console.log('[API/AUTH/SESSION - POST] Setting session cookie on the response.');
     response.cookies.set('firebase-auth-token', sessionCookie, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true, // Always use secure cookies with HTTPS
       maxAge: expiresIn,
       path: '/',
       sameSite: 'lax',
