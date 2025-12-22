@@ -134,8 +134,8 @@ export function Navbar() {
             </nav>
           )}
 
-          <div className={`flex items-center space-x-2 sm:space-x-4 ${isAuthenticated ? '' : 'ml-auto'}`}>
-            <ThemeToggle /> {/* Added ThemeToggle */}
+          <div class="flex items-center ml-auto space-x-2 sm:space-x-4">
+            <ThemeToggle />
             {isAuthenticated && user ? (
               <>
                 <div className="flex items-center space-x-2" role="radiogroup" aria-label="User mode selector">
