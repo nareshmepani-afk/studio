@@ -15,7 +15,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin } from 'lucide-react';
 import { saveMemory } from '@/actions/memoryActions';
-// 1. Correct Import for the Hook
 import { useToast } from '@/hooks/use-toast'; 
 import dynamic from 'next/dynamic';
 
@@ -35,52 +34,65 @@ interface MemoryFormProps {
 
 export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: MemoryFormProps) {
   const router = useRouter();
-  // 2. Initialize the Hook
   const { toast } = useToast(); 
   
   const isEditing = !!memoryToEdit;
 
-  // Lazy Init to prevent reference errors
   const [title, setTitle] = useState(() => initialCustomPrompt || '');
   const [description, setDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<MemoryCategory | undefined>(() => memoryCategoriesList?.[0]);
   const [location, setLocation] = useState('');
   const [selectedEmotionTags, setSelectedEmotionTags] = useState<EmotionTag[]>([]);
 
-  // Date State
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(() => getMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState(() => getDate(new Date()));
 
-  // Media State
   const [currentMedia, setCurrentMedia] = useState<any>(null);
   const [currentMediaPreviewUrl, setCurrentMediaPreviewUrl] = useState<string | null>(null);
   const [trimValues, setTrimValues] = useState<[number, number]>([0, 0]);
   
-  // UI State
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Date helpers
   const years = Array.from({ length: 101 }, (_, i) => new Date().getFullYear() - i);
   const months = Array.from({ length: 12 }, (_, i) => ({ value: i, label: format(new Date(2000, i, 1), 'MMMM') }));
   const days = Array.from({ length: getDaysInMonth(new Date(selectedYear, selectedMonth)) }, (_, i) => i + 1);
 
-  // Load Data on Edit
+  // Load Data on Edit (CORRECTED based on your feedback)
   useEffect(() => {
     if (memoryToEdit) {
+      console.log("Form Hydrating with:", memoryToEdit.title); // Debug log
+      
       setTitle(memoryToEdit.title || '');
       setDescription(memoryToEdit.description || '');
       setLocation(memoryToEdit.location || '');
-      setSelectedCategory(memoryToEdit.category);
       setSelectedEmotionTags(memoryToEdit.emotionTags || []);
 
-      const date = memoryToEdit.date ? parseISO(memoryToEdit.date) : new Date();
-      setSelectedYear(getYear(date));
-      setSelectedMonth(getMonth(date));
-      setSelectedDay(getDate(date));
+      // FIX: Category Mismatch
+      const categoryId = typeof memoryToEdit.category === 'string' 
+        ? memoryToEdit.category 
+        : (memoryToEdit.category as any)?.id;
+        
+      const matchedCategory = memoryCategoriesList.find(c => c.id === categoryId);
+      if (matchedCategory) {
+        setSelectedCategory(matchedCategory);
+      }
 
+      // Handle Date Hydration
+      if (memoryToEdit.date) {
+        try {
+          const date = parseISO(memoryToEdit.date);
+          setSelectedYear(getYear(date));
+          setSelectedMonth(getMonth(date));
+          setSelectedDay(getDate(date));
+        } catch (e) {
+          console.error("Failed to parse date:", memoryToEdit.date);
+        }
+      }
+
+      // Handle Media Hydration
       if (memoryToEdit.mediaAttachments?.[0]) {
         const m = memoryToEdit.mediaAttachments[0];
         setCurrentMedia({ 
@@ -94,7 +106,6 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
     }
   }, [memoryToEdit]);
 
-  // Media Ready Handler
   const handleMediaReady = useCallback((payload: any) => {
     setCurrentMedia((prev: any) => {
       const hasSavedTrim = trimValues[0] !== 0 || trimValues[1] !== 0;
@@ -120,7 +131,6 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
     });
   }, [isEditing, trimValues, currentMediaPreviewUrl, memoryToEdit]);
 
-  // Save Logic
   const onSave = async () => {
     if (!title) {
       toast({ title: "Missing Title", description: "Please give your memory a title.", variant: "destructive" });
