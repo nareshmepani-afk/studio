@@ -1,31 +1,41 @@
 
 import * as admin from 'firebase-admin';
+import fs from 'fs';
+import path from 'path';
 
-// The service account key is imported directly from the JSON file
-// in the project root. The path has been corrected to be a standard
-// relative path that works correctly during the Next.js build process.
-import serviceAccount from '../../../serviceAccountKey.json';
+// --- The Final, Correct Fix ---
+// The application was failing to build because Next.js/Webpack cannot use an 'import'
+// statement to load a JSON file from outside the 'src' directory.
+//
+// The correct solution is to read the file directly from the file system at runtime
+// using Node.js's built-in 'fs' and 'path' modules. This is a robust method
+// for server-side code.
 
 if (!admin.apps.length) {
   try {
-    // The service account object from the JSON file needs to be cast to the
-    // type the Admin SDK expects. The property names also need to match.
-    // The JSON file uses 'private_key' and 'client_email', but the SDK
-    // expects 'privateKey' and 'clientEmail'.
-    const credential = admin.credential.cert({
-      projectId: serviceAccount.project_id,
-      clientEmail: serviceAccount.client_email,
-      // The private key also needs its newlines correctly formatted.
-      privateKey: serviceAccount.private_key.replace(/\\n/g, '\n'),
+    // 1. Construct the absolute path to the service account file.
+    const serviceAccountPath = path.join(process.cwd(), 'serviceAccountKey.json');
+
+    // 2. Read the file's contents.
+    const serviceAccountString = fs.readFileSync(serviceAccountPath, 'utf8');
+
+    // 3. Parse the string as JSON.
+    const serviceAccount = JSON.parse(serviceAccountString);
+
+    // 4. Initialize the Firebase Admin SDK with the parsed credentials.
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: serviceAccount.project_id,
+        clientEmail: serviceAccount.client_email,
+        // The private key's newlines must be correctly formatted.
+        privateKey: serviceAccount.private_key.replace(/\\n/g, '\n'),
+      }),
     });
 
-    admin.initializeApp({ credential });
-
-    console.log('[Firebase Admin] Initialized successfully using serviceAccountKey.json.');
+    console.log('[Firebase Admin] Initialized successfully using file system read.');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    console.error('[Firebase Admin] CRITICAL: Initialization from service account file failed:', errorMessage);
-    // Re-throw the error to ensure the server process stops if initialization fails.
+    console.error('[Firebase Admin] CRITICAL: Initialization failed:', errorMessage);
     throw new Error(`Firebase Admin SDK initialization failed: ${errorMessage}`);
   }
 }
