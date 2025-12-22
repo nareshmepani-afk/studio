@@ -134,7 +134,7 @@ export function Navbar() {
             </nav>
           )}
 
-          <div class="flex items-center ml-auto space-x-2 sm:space-x-4">
+          <div className="flex items-center ml-auto space-x-2 sm:space-x-4">
             <ThemeToggle />
             {isAuthenticated && user ? (
               <>
