@@ -8,8 +8,8 @@ import { Buffer } from 'buffer';
 
 // Helper function to get the authenticated user's ID from the cookie.
 async function getUserIdFromCookie(): Promise<string | null> {
-    // --- CORRECTED: Added await to the cookies() function call ---
-    const cookieStore = await cookies(); 
+    // --- The cookies() function from next/headers is synchronous and does not need 'await' ---
+    const cookieStore = cookies(); 
     const idTokenCookie = cookieStore.get('firebase-auth-token');
 
     if (!idTokenCookie?.value) {
