@@ -1,44 +1,116 @@
+'use client';
+
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { MemoryForm } from '@/components/memory/MemoryForm';
 import { getMemoryById } from '@/actions/memoryActions';
 import type { Memory } from '@/types';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
 
-// Define the async props for Next.js 15
-interface PageProps {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+// A fallback component to show while the main component is suspended.
+function AddMemoryLoading() {
+  return (
+    <div className="max-w-3xl mx-auto pb-20">
+      <div className="flex justify-center mb-6 space-x-2">
+        <Skeleton className="h-2 w-16 rounded-full" />
+        <Skeleton className="h-2 w-16 rounded-full" />
+      </div>
+      <Card>
+        <CardHeader>
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-4 w-3/4 mt-2" />
+        </CardHeader>
+        <CardContent className="space-y-6">
+            <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <div className="grid grid-cols-3 gap-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+            </div>
+             <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-24 w-full" />
+            </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
-export default async function AddMemoryPage({ searchParams }: PageProps) {
-  // 1. MUST await searchParams in Next.js 15
-  const resolvedParams = await searchParams;
-  const editMemoryId = resolvedParams.editMemoryId as string | undefined;
-  const promptId = resolvedParams.promptId as string | undefined;
-  const promptText = resolvedParams.prompt as string | undefined;
+function AddMemoryPage() {
+  const searchParams = useSearchParams();
+  // --- CORRECTED: Reads 'editMemoryId' from the URL --- 
+  const memoryId = searchParams.get('editMemoryId');
+  const promptId = searchParams.get('promptId');
+  const customPrompt = searchParams.get('customPrompt');
 
-  let memoryToEdit: Memory | null = null;
+  const [memoryToEdit, setMemoryToEdit] = useState<Memory | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // 2. Fetch memory data if we are in edit mode
-  if (editMemoryId) {
-    console.log(`[SERVER] Fetching memory: ${editMemoryId}`);
-    const result = await getMemoryById(editMemoryId);
-    if (result.success && result.data) {
-      memoryToEdit = result.data;
+  useEffect(() => {
+    // Only fetch if there is a memoryId
+    if (memoryId) {
+      setIsLoading(true);
+      getMemoryById(memoryId)
+        .then(result => {
+          if (result.success && result.data) {
+            setMemoryToEdit(result.data);
+          } else {
+            setError(result.message || 'Failed to load memory.');
+          }
+        })
+        .catch(err => {
+            console.error("Fetch error:", err);
+            setError("An unexpected error occurred.");
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     } else {
-      // The action itself will log the detailed error
-      console.error(`[Page] Failed to fetch memory ${editMemoryId}:`, result.message);
+      // If there's no ID, we are creating a new memory, so don't load.
+      setIsLoading(false);
     }
+  }, [memoryId]);
+
+  // Display loading skeleton
+  if (isLoading) {
+    return <AddMemoryLoading />;
   }
 
+  // Display error message if fetching failed
+  if (error) {
+    return <div className="text-center text-red-500">Error: {error}</div>;
+  }
+
+  // If we have an ID but no memory, it means it's still loading or failed.
+  // This check is important because memoryToEdit will be null on the first render.
+  if (memoryId && !memoryToEdit) {
+      return <AddMemoryLoading />;
+  }
+  
   return (
-    <main className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-headline font-bold mb-8 text-center text-primary">
-        {editMemoryId ? 'Edit Your Memory' : 'Create a New Memory'}
-      </h1>
-      
-      <MemoryForm 
-        memoryToEdit={memoryToEdit}
-        promptId={promptId}
-        initialCustomPrompt={promptText}
-      />
-    </main>
+    <MemoryForm 
+      memoryToEdit={memoryToEdit} 
+      promptId={promptId || undefined}
+      initialCustomPrompt={customPrompt || undefined}
+    />
   );
+}
+
+// Wrap the page in a Suspense boundary to handle the initial render
+// and use of searchParams.
+export default function AddMemoryPageWrapper() {
+    return (
+        <Suspense fallback={<AddMemoryLoading />}>
+            <AddMemoryPage />
+        </Suspense>
+    );
 }

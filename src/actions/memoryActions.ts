@@ -1,11 +1,31 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { adminDb, adminStorage } from '@/lib/firebase-admin';
+import { adminDb, adminStorage, adminAuth } from '@/lib/firebase-admin';
 import type { Memory, MediaAttachment } from '@/types';
 import { revalidatePath } from 'next/cache';
-import { SESSION_COOKIE_NAME } from '@/lib/constants';
 import { Buffer } from 'buffer';
+
+// Helper function to get the authenticated user's ID from the cookie.
+async function getUserIdFromCookie(): Promise<string | null> {
+    // --- CORRECTED: Added await to the cookies() function call ---
+    const cookieStore = await cookies(); 
+    const idTokenCookie = cookieStore.get('firebase-auth-token');
+
+    if (!idTokenCookie?.value) {
+        console.error('[AUTH_HELPER] Firebase auth token cookie not found.');
+        return null;
+    }
+
+    try {
+        const decodedToken = await adminAuth.verifyIdToken(idTokenCookie.value);
+        console.log(`[AUTH_HELPER] Token verified for UID: ${decodedToken.uid}`);
+        return decodedToken.uid;
+    } catch (error: any) {
+        console.error('[AUTH_HELPER] Failed to verify ID token:', error.message);
+        return null;
+    }
+}
 
 async function uploadToStorage(file: File, userId: string): Promise<{ publicUrl: string; filePath: string }> {
   const fileId = crypto.randomUUID();
@@ -22,26 +42,11 @@ async function uploadToStorage(file: File, userId: string): Promise<{ publicUrl:
 export async function getMemoryById(id: string) {
   console.log(`[ACTION] getMemoryById: Initiated for memory ID: ${id}`);
   try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
-    if (!sessionCookie?.value) {
-      console.error('[ACTION] getMemoryById: Auth cookie not found.');
+    const userId = await getUserIdFromCookie();
+    if (!userId) {
       return { success: false, message: "Unauthorized: Missing session cookie." };
     }
 
-    let session;
-    try {
-      session = JSON.parse(sessionCookie.value);
-    } catch (e) {
-      console.error('[ACTION] getMemoryById: Failed to parse session cookie.');
-      return { success: false, message: "Unauthorized: Invalid session format." };
-    }
-
-    const userId = session?.uid;
-    if (!userId) {
-      console.error('[ACTION] getMemoryById: Session is invalid or does not contain UID.');
-      return { success: false, message: "Unauthorized: Invalid session data." };
-    }
     console.log(`[ACTION] getMemoryById: Authorized for user ${userId}`);
 
     const docRef = adminDb.collection('memories').doc(id);
@@ -54,13 +59,12 @@ export async function getMemoryById(id: string) {
 
     const data = doc.data();
 
-    // --- CORRECTED: Added guard clause for undefined data ---
     if (!data) {
         console.error(`[ACTION] getMemoryById: Document ${id} exists but has no data.`);
         return { success: false, message: "Corrupt memory: document contains no data." };
     }
 
-    if (data.userId !== userId) { // Optional chaining no longer needed here
+    if (data.userId !== userId) {
       console.error(`[ACTION] getMemoryById: SECURITY VIOLATION - User ${userId} attempted to access memory owned by ${data.userId}.`);
       return { success: false, message: "Forbidden: You do not own this memory." };
     }
@@ -87,12 +91,10 @@ export async function getMemoryById(id: string) {
 
 export async function saveMemory(formData: FormData, memoryId: string | null) {
   try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
-    if (!sessionCookie?.value) return { success: false, message: "Unauthorized" };
-
-    const session = JSON.parse(sessionCookie.value);
-    const userId = session.uid;
+    const userId = await getUserIdFromCookie();
+    if (!userId) {
+        return { success: false, message: "Unauthorized: You must be logged in to save a memory." };
+    }
 
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
