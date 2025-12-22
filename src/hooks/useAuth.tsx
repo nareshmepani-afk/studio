@@ -1,10 +1,11 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
+import Cookies from 'js-cookie'; // Using js-cookie to manage auth token
 
 interface UserProfile {
   hostPassStatus?: 'free_host_pass_active' | 'paid_host_pass_active' | 'inactive';
@@ -25,6 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const PRIVATE_ROUTES = ['/timeline', '/add-memory', '/prompts', '/settings', '/requests'];
 const PUBLIC_ROUTES = ['/', '/login', '/register', '/reset-password'];
+const AUTH_COOKIE_NAME = 'firebase-auth-token';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -36,8 +38,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const pathname = usePathname();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setLoading(true);
+      if (firebaseUser) {
+        console.log("[AUTH] User signed in. Setting cookie.");
+        const token = await firebaseUser.getIdToken();
+        Cookies.set(AUTH_COOKIE_NAME, token, { expires: 7, secure: true, sameSite: 'lax' });
+        setUser(firebaseUser);
+      } else {
+        console.log("[AUTH] User signed out. Removing cookie.");
+        Cookies.remove(AUTH_COOKIE_NAME);
+        setUser(null);
+      }
       setLoading(false);
     });
     return () => unsubscribe();
@@ -49,8 +61,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
 
       if (user) {
-        if (isPublicRoute) {
-          console.log(`[AUTH] User logged in on public page. Redirecting to /prompts.`);
+        // If user is on a public page that is not the landing page, redirect to prompts.
+        if (isPublicRoute && pathname !== '/') {
+          console.log(`[AUTH] User logged in on public page ${pathname}. Redirecting to /prompts.`);
           router.push('/prompts');
         }
       } else {
