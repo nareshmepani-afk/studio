@@ -15,8 +15,8 @@ export interface Memory {
   title: string;
   description: string;
   date: string;
-  category: string;
-  emotionTags: string[];
+  category: string; // This is the category ID
+  emotionTags: string[]; // This is an array of tag IDs
   location?: string;
   country?: string;
   userId: string;
@@ -26,24 +26,36 @@ export interface Memory {
   promptId?: string;
 }
 
-// Placeholder data based on your MemoryForm component
-export const memoryCategoriesList = [
-  "Personal",
-  "Family",
-  "Travel",
-  "Work",
-  "Milestone",
-  "Dream",
-  "Other",
+// Corrected Type Definitions
+export interface MemoryCategory {
+  id: string;
+  label: string;
+}
+
+export interface EmotionTag {
+  id: string;
+  label: string;
+}
+
+// Corrected List of Category Objects
+export const memoryCategoriesList: MemoryCategory[] = [
+  { id: "personal", label: "Personal" },
+  { id: "family", label: "Family" },
+  { id: "travel", label: "Travel" },
+  { id: "work", label: "Work" },
+  { id: "milestone", label: "Milestone" },
+  { id: "dream", label: "Dream" },
+  { id: "other", label: "Other" },
 ];
 
-export const emotionTagsList = [
-  "Happy",
-  "Sad",
-  "Anxious",
-  "Excited",
-  "Peaceful",
-  "Angry",
-  "Grateful",
-  "Nostalgic",
+// Corrected List of Emotion Tag Objects
+export const emotionTagsList: EmotionTag[] = [
+  { id: 'happy', label: 'Happy' },
+  { id: 'sad', label: 'Sad' },
+  { id: 'anxious', label: 'Anxious' },
+  { id: 'excited', label: 'Excited' },
+  { id: 'peaceful', label: 'Peaceful' },
+  { id: 'angry', label: 'Angry' },
+  { id: 'grateful', label: 'Grateful' },
+  { id: 'nostalgic', label: 'Nostalgic' },
 ];

@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin } from 'lucide-react';
 import { saveMemory } from '@/actions/memoryActions';
-import { useToast } from '@/hooks/use-toast'; 
+import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 
 const MediaCaptureControl = dynamic(
@@ -35,12 +35,11 @@ interface MemoryFormProps {
 export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: MemoryFormProps) {
   const router = useRouter();
   const { toast } = useToast(); 
-  
   const isEditing = !!memoryToEdit;
 
   const [title, setTitle] = useState(() => initialCustomPrompt || '');
   const [description, setDescription] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<MemoryCategory | undefined>(() => memoryCategoriesList?.[0]);
+  const [selectedCategory, setSelectedCategory] = useState<MemoryCategory | undefined>(memoryCategoriesList[0]);
   const [location, setLocation] = useState('');
   const [selectedEmotionTags, setSelectedEmotionTags] = useState<EmotionTag[]>([]);
 
@@ -60,24 +59,25 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   const months = Array.from({ length: 12 }, (_, i) => ({ value: i, label: format(new Date(2000, i, 1), 'MMMM') }));
   const days = Array.from({ length: getDaysInMonth(new Date(selectedYear, selectedMonth)) }, (_, i) => i + 1);
 
-  // Load Data on Edit (CORRECTED based on your feedback)
+  // --- CORRECTED DATA HYDRATION ---
   useEffect(() => {
     if (memoryToEdit) {
-      console.log("Form Hydrating with:", memoryToEdit.title); // Debug log
-      
       setTitle(memoryToEdit.title || '');
       setDescription(memoryToEdit.description || '');
       setLocation(memoryToEdit.location || '');
-      setSelectedEmotionTags(memoryToEdit.emotionTags || []);
 
-      // FIX: Category Mismatch
-      const categoryId = typeof memoryToEdit.category === 'string' 
-        ? memoryToEdit.category 
-        : (memoryToEdit.category as any)?.id;
-        
-      const matchedCategory = memoryCategoriesList.find(c => c.id === categoryId);
+      // Correctly find and set the category object
+      const matchedCategory = memoryCategoriesList.find(c => c.id === memoryToEdit.category);
       if (matchedCategory) {
         setSelectedCategory(matchedCategory);
+      }
+
+      // Correctly find and set the emotion tag objects
+      if (memoryToEdit.emotionTags && memoryToEdit.emotionTags.length > 0) {
+        const matchedTags = memoryToEdit.emotionTags
+          .map(tagId => emotionTagsList.find(tag => tag.id === tagId))
+          .filter((tag): tag is EmotionTag => !!tag);
+        setSelectedEmotionTags(matchedTags);
       }
 
       // Handle Date Hydration
@@ -87,19 +87,13 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
           setSelectedYear(getYear(date));
           setSelectedMonth(getMonth(date));
           setSelectedDay(getDate(date));
-        } catch (e) {
-          console.error("Failed to parse date:", memoryToEdit.date);
-        }
+        } catch (e) { console.error("Failed to parse date:", memoryToEdit.date); }
       }
 
       // Handle Media Hydration
       if (memoryToEdit.mediaAttachments?.[0]) {
         const m = memoryToEdit.mediaAttachments[0];
-        setCurrentMedia({ 
-          file: new File([], "existing"), 
-          type: m.type, 
-          duration: m.duration || 0 
-        });
+        setCurrentMedia({ file: new File([], "existing"), type: m.type, duration: m.duration || 0 });
         setCurrentMediaPreviewUrl(m.url);
         setTrimValues([m.startTime || 0, m.endTime || m.duration || 0]);
       }
@@ -112,25 +106,19 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
       const isExistingFile = prev?.file?.name === "existing" || (memoryToEdit && payload.file.size === 0);
 
       if (isExistingFile && hasSavedTrim) {
-        return { 
-          ...payload, 
-          startTime: trimValues[0], 
-          endTime: trimValues[1],
-          duration: payload.duration || prev.duration
-        };
+        return { ...payload, startTime: trimValues[0], endTime: trimValues[1], duration: payload.duration || prev.duration };
       }
 
       setTrimValues([0, payload.duration]);
-      
       if (payload.file.size > 0) {
         if (currentMediaPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(currentMediaPreviewUrl);
         setCurrentMediaPreviewUrl(URL.createObjectURL(payload.file));
       }
-      
       return payload;
     });
   }, [isEditing, trimValues, currentMediaPreviewUrl, memoryToEdit]);
 
+  // --- CORRECTED SAVE LOGIC ---
   const onSave = async () => {
     if (!title) {
       toast({ title: "Missing Title", description: "Please give your memory a title.", variant: "destructive" });
@@ -144,7 +132,11 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
     formData.append('category', selectedCategory?.id || 'personal');
     formData.append('date', new Date(selectedYear, selectedMonth, selectedDay).toISOString());
     formData.append('location', location);
-    formData.append('emotionTags', JSON.stringify(selectedEmotionTags));
+
+    // Correctly map objects back to string IDs for saving
+    const emotionTagIds = selectedEmotionTags.map(tag => tag.id);
+    formData.append('emotionTags', JSON.stringify(emotionTagIds));
+
     if (promptId) formData.append('promptId', promptId);
 
     if (currentMedia) {
@@ -178,6 +170,14 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
     }
   };
 
+  const toggleEmotionTag = (tag: EmotionTag) => {
+    setSelectedEmotionTags(prev => 
+      prev.some(t => t.id === tag.id) 
+        ? prev.filter(t => t.id !== tag.id)
+        : [...prev, tag]
+    );
+  };
+
   return (
     <div className="max-w-3xl mx-auto pb-20">
       <div className="flex justify-center mb-6 space-x-2">
@@ -199,7 +199,6 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                   <Label>Title</Label>
                   <Input placeholder="e.g. My 30th Birthday" value={title} onChange={e => setTitle(e.target.value)} />
                 </div>
-
                 <div className="space-y-2">
                   <Label>Date</Label>
                   <div className="grid grid-cols-3 gap-2">
@@ -217,14 +216,13 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                     </Select>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Category</Label>
-                    <Select value={selectedCategory?.id} onValueChange={(val) => setSelectedCategory(memoryCategoriesList?.find(c => c.id === val))}>
+                    <Select value={selectedCategory?.id} onValueChange={(val) => setSelectedCategory(memoryCategoriesList.find(c => c.id === val))}>
                       <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
                       <SelectContent>
-                        {memoryCategoriesList?.map((cat) => (
+                        {memoryCategoriesList.map((cat) => (
                           <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>
                         ))}
                       </SelectContent>
@@ -238,15 +236,29 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                     </div>
                   </div>
                 </div>
-
                 <div className="space-y-2">
                   <Label>Description</Label>
                   <Textarea placeholder="Describe the memory..." className="min-h-[120px]" value={description} onChange={e => setDescription(e.target.value)} />
                 </div>
+                 {/* --- NEW UI FOR EMOTION TAGS --- */}
+                <div className="space-y-2">
+                  <Label>Emotions</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {emotionTagsList.map((tag) => (
+                      <Button 
+                        key={tag.id} 
+                        variant={selectedEmotionTags.some(t => t.id === tag.id) ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => toggleEmotionTag(tag)}
+                      >
+                        {tag.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </CarouselItem>
-          
           <CarouselItem>
             <Card>
               <CardHeader>
@@ -259,7 +271,6 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                   initialMedia={currentMediaPreviewUrl ? { previewUrl: currentMediaPreviewUrl, type: currentMedia?.type, duration: currentMedia?.duration } : null} 
                   trimValues={trimValues} 
                 />
-
                 {currentMedia && currentMedia.duration > 0 && (
                   <div className="pt-4 space-y-4 border-t">
                     <div className="flex justify-between items-center">
@@ -274,12 +285,10 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
           </CarouselItem>
         </CarouselContent>
       </Carousel>
-
       <div className="flex justify-between mt-8 px-1">
         <Button variant="ghost" onClick={() => currentSlide === 0 ? router.back() : carouselApi?.scrollPrev()} disabled={isSubmitting}>
           {currentSlide === 0 ? 'Cancel' : <><ArrowLeft className="w-4 h-4 mr-2" /> Back</>}
         </Button>
-
         <Button onClick={() => currentSlide === 0 ? (setCurrentSlide(1), carouselApi?.scrollNext()) : onSave()} disabled={isSubmitting} className="min-w-[120px]">
           {isSubmitting ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : currentSlide === 0 ? <><span className="mr-2">Next</span> <ArrowRight className="w-4 h-4" /></> : <><Sparkles className="w-4 h-4 mr-2" /> Save Memory</>}
         </Button>
