@@ -1,29 +1,30 @@
 
 import { NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase-admin'; // Ensure you have this admin setup
+import { adminAuth } from '@/lib/firebase-admin';
 
-// Note: It is not recommended to use this approach for production apps.
-// Instead, you should use a more robust authentication solution.
 export async function POST(request: Request) {
+  console.log('[API/AUTH/SESSION - POST] Received request to create session.');
   try {
     const body = await request.json();
     const idToken = body.idToken;
 
     if (!idToken) {
+      console.error('[API/AUTH/SESSION - POST] ID token is missing from request body.');
       return new NextResponse(JSON.stringify({ error: 'ID token is required' }), { status: 400 });
     }
+    console.log('[API/AUTH/SESSION - POST] Extracted ID token from request body.');
 
-    // Set session expiration to 5 days.
-    const expiresIn = 60 * 60 * 24 * 5 * 1000;
+    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
 
-    // Create the session cookie. This will also verify the ID token.
+    console.log('[API/AUTH/SESSION - POST] Creating session cookie with Firebase Admin SDK...');
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+    console.log('[API/AUTH/SESSION - POST] Successfully created session cookie.');
 
-    // Set cookie policy for session cookie.
     const response = new NextResponse(JSON.stringify({ status: 'success' }), {
       status: 200,
     });
 
+    console.log('[API/AUTH/SESSION - POST] Setting session cookie on the response.');
     response.cookies.set('firebase-auth-token', sessionCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -31,23 +32,27 @@ export async function POST(request: Request) {
       path: '/',
       sameSite: 'lax',
     });
+    console.log('[API/AUTH/SESSION - POST] Session cookie set. Returning successful response.');
 
     return response;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    console.error('[API/AUTH/SESSION - POST] Error creating session cookie:', errorMessage);
-    return new NextResponse(JSON.stringify({ error: 'Failed to create session' }), { status: 401 });
+    console.error('[API/AUTH/SESSION - POST] CRITICAL: Error creating session cookie:', errorMessage);
+    // Log the full error for more details
+    console.error(error);
+    return new NextResponse(JSON.stringify({ error: 'Failed to create session' }), { status: 500 });
   }
 }
 
-// Note: It is not recommended to use this approach for production apps.
-// Instead, you should use a more robust authentication solution.
 export async function DELETE() {
+  console.log('[API/AUTH/SESSION - DELETE] Received request to delete session.');
   try {
     const response = new NextResponse(JSON.stringify({ status: 'success' }), {
       status: 200,
     });
+    console.log('[API/AUTH/SESSION - DELETE] Deleting session cookie from the response.');
     response.cookies.delete('firebase-auth-token');
+    console.log('[API/AUTH/SESSION - DELETE] Session cookie deleted. Returning successful response.');
     return response;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';

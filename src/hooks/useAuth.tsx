@@ -36,55 +36,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const pathname = usePathname();
 
   useEffect(() => {
+    console.log('[AUTH_PROVIDER] Setting up Firebase auth state listener.');
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
+      console.log(`[AUTH_PROVIDER] Auth state changed. User is ${firebaseUser ? 'SIGNED IN' : 'SIGNED OUT'}.`);
       setLoading(true);
+
       if (firebaseUser) {
+        console.log('[AUTH_PROVIDER] User is signed in. Getting ID token...');
         const idToken = await firebaseUser.getIdToken();
+        console.log('[AUTH_PROVIDER] Got ID token. Sending to /api/auth/session to create session...');
+
         try {
           const response = await fetch('/api/auth/session', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ idToken }),
           });
-          if (!response.ok) throw new Error('Failed to create session cookie');
+
+          if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`[AUTH_PROVIDER] Failed to create session. Server responded with ${response.status}: ${errorBody}`);
+          }
+
+          console.log('[AUTH_PROVIDER] Successfully created session. Setting user in state.');
           setUser(firebaseUser);
+
         } catch (error) {
-          console.error("Error creating session cookie:", error);
-          setUser(null);
+          console.error('[AUTH_PROVIDER] CRITICAL: Error creating session cookie:', error);
+          setUser(null); // Ensure user is not authenticated in the app if session creation fails
         }
+
       } else {
+        console.log('[AUTH_PROVIDER] User is signed out. Sending request to /api/auth/session to delete session...');
         try {
           await fetch('/api/auth/session', { method: 'DELETE' });
+          console.log('[AUTH_PROVIDER] Successfully deleted session.');
         } catch (error) {
-          console.error("Error deleting session cookie:", error);
+          console.error('[AUTH_PROVIDER] Error deleting session cookie:', error);
         }
         setUser(null);
       }
       setLoading(false);
+      console.log(`[AUTH_PROVIDER] Finished processing auth state change. Loading is ${false}.`);
     });
-    return () => unsubscribe();
+
+    return () => {
+      console.log('[AUTH_PROVIDER] Cleaning up Firebase auth state listener.');
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
-    if (!loading) {
-      const isPrivateRoute = PRIVATE_ROUTES.some(route => pathname.startsWith(route));
-      const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+    if (loading) return; // Do not run routing logic while auth state is being determined
 
-      if (user) {
-        // If user is on a public page that is not the landing page, redirect to prompts.
-        if (isPublicRoute && pathname !== '/') {
-          router.push('/prompts');
-        }
-      } else {
-        if (isPrivateRoute) {
-          router.push('/login');
-        }
-      }
+    const isPrivateRoute = PRIVATE_ROUTES.some(route => pathname.startsWith(route));
+
+    if (!user && isPrivateRoute) {
+      console.log(`[AUTH_PROVIDER] User is not authenticated and is on a private route (${pathname}). Redirecting to /login.`);
+      router.push('/login');
     }
+    
+    const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+
+    if (user && isPublicRoute && pathname !== '/') {
+        console.log(`[AUTH_PROVIDER] User is authenticated and on a public route (${pathname}). Redirecting to /prompts.`);
+        router.push('/prompts');
+    }
+
   }, [user, loading, pathname, router]);
 
+  // ... (rest of the component is unchanged)
   useEffect(() => {
     if (user?.uid) {
       const userProfileRef = doc(db, 'users', user.uid);
