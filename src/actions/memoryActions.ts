@@ -8,24 +8,44 @@ import { Buffer } from 'buffer';
 
 // Helper function to get the authenticated user's ID from the cookie.
 async function getUserIdFromCookie(): Promise<string | null> {
-    // --- CORRECTED: The cookies() function IS asynchronous and MUST be awaited. ---
-    const cookieStore = await cookies(); 
-    const idTokenCookie = cookieStore.get('firebase-auth-token');
+    console.log('[AUTH_HELPER_ACTION] Attempting to get user ID from cookie...');
 
-    if (!idTokenCookie?.value) {
-        console.error('[AUTH_HELPER] Firebase auth token cookie not found.');
+    // 1. Get the full cookie store.
+    const cookieStore = await cookies();
+    console.log('[AUTH_HELPER_ACTION] Cookie store retrieved.');
+
+    // 2. Get the specific token cookie.
+    const idTokenCookie = cookieStore.get('firebase-auth-token');
+    if (idTokenCookie) {
+        console.log('[AUTH_HELPER_ACTION] Found 'firebase-auth-token' cookie.');
+    } else {
+        console.error('[AUTH_HELPER_ACTION] CRITICAL: 'firebase-auth-token' cookie NOT FOUND.');
+        // Log all cookies for debugging
+        console.log('[AUTH_HELPER_ACTION] All available cookies:', cookieStore.getAll());
         return null;
     }
 
+    const token = idTokenCookie.value;
+    if (!token) {
+        console.error('[AUTH_HELPER_ACTION] CRITICAL: Cookie found but its value is empty.');
+        return null;
+    }
+
+    // 3. Attempt to verify the token.
     try {
-        const decodedToken = await adminAuth.verifyIdToken(idTokenCookie.value);
-        console.log(`[AUTH_HELPER] Token verified for UID: ${decodedToken.uid}`);
+        console.log('[AUTH_HELPER_ACTION] Attempting to verify token with adminAuth.verifyIdToken...');
+        const decodedToken = await adminAuth.verifyIdToken(token);
+        console.log(`[AUTH_HELPER_ACTION] SUCCESS: Token verified for UID: ${decodedToken.uid}`);
         return decodedToken.uid;
     } catch (error: any) {
-        console.error('[AUTH_HELPER] Failed to verify ID token:', error.message);
+        // This is the most likely point of failure.
+        console.error('[AUTH_HELPER_ACTION] CRITICAL: Failed to verify ID token. Error:', error.message);
+        console.log('[AUTH_HELPER_ACTION] The token being verified was:', token);
+        console.error('[AUTH_HELPER_ACTION] Full error object:', error);
         return null;
     }
 }
+
 
 async function uploadToStorage(file: File, userId: string): Promise<{ publicUrl: string; filePath: string }> {
   const fileId = crypto.randomUUID();
