@@ -17,9 +17,9 @@ async function getUserIdFromCookie(): Promise<string | null> {
     // 2. Get the specific token cookie.
     const idTokenCookie = cookieStore.get('firebase-auth-token');
     if (idTokenCookie) {
-        console.log('[AUTH_HELPER_ACTION] Found 'firebase-auth-token' cookie.');
+        console.log("[AUTH_HELPER_ACTION] Found 'firebase-auth-token' cookie.");
     } else {
-        console.error('[AUTH_HELPER_ACTION] CRITICAL: 'firebase-auth-token' cookie NOT FOUND.');
+        console.error("[AUTH_HELPER_ACTION] CRITICAL: 'firebase-auth-token' cookie NOT FOUND.");
         // Log all cookies for debugging
         console.log('[AUTH_HELPER_ACTION] All available cookies:', cookieStore.getAll());
         return null;
