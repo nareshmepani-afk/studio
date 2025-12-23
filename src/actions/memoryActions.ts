@@ -7,9 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { Buffer } from 'buffer';
 
 // Helper function to get the authenticated user's ID from the cookie.
-// THIS IS THE CORRECT IMPLEMENTATION, using verifySessionCookie.
 async function getUserIdFromCookie(): Promise<string | null> {
-    // As seen in the working pages (timeline, prompts), we must use verifySessionCookie.
     const sessionCookie = (await cookies()).get('firebase-auth-token')?.value;
 
     if (!sessionCookie) {
@@ -18,7 +16,6 @@ async function getUserIdFromCookie(): Promise<string | null> {
     }
 
     try {
-        // Verify the session cookie. This is the correct method for server-side auth.
         const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true /** checkRevoked */);
         return decodedToken.uid;
     } catch (error: any) {
@@ -26,7 +23,6 @@ async function getUserIdFromCookie(): Promise<string | null> {
         return null;
     }
 }
-
 
 async function uploadToStorage(file: File, userId: string): Promise<{ publicUrl: string; filePath: string }> {
   const fileId = crypto.randomUUID();
@@ -45,17 +41,17 @@ export async function getMemoryById(id: string) {
   try {
     const userId = await getUserIdFromCookie();
     if (!userId) {
-      // This is the error the user sees.
       return { success: false, message: "Unauthorized: Missing session cookie." };
     }
 
     console.log(`[ACTION] getMemoryById: Authorized for user ${userId}`);
 
-    const docRef = adminDb.collection('memories').doc(id);
+    // CORRECTED QUERY PATH: Memories are in a subcollection under the user.
+    const docRef = adminDb.collection('users').doc(userId).collection('memories').doc(id);
     const doc = await docRef.get();
 
     if (!doc.exists) {
-      console.warn(`[ACTION] getMemoryById: Memory not found for id ${id}`);
+      console.warn(`[ACTION] getMemoryById: Memory not found for id ${id} in user's subcollection.`);
       return { success: false, message: "Memory not found" };
     }
 
@@ -144,7 +140,8 @@ export async function saveMemory(formData: FormData, memoryId: string | null) {
       ...(promptId && { promptId }),
     };
     
-    const collectionRef = adminDb.collection('memories');
+    // CORRECTED QUERY PATH: Save memories to the user's subcollection.
+    const collectionRef = adminDb.collection('users').doc(userId).collection('memories');
 
     if (memoryId) {
       const docToUpdate = await collectionRef.doc(memoryId).get();
