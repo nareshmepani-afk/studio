@@ -7,41 +7,22 @@ import { revalidatePath } from 'next/cache';
 import { Buffer } from 'buffer';
 
 // Helper function to get the authenticated user's ID from the cookie.
+// THIS IS THE CORRECT IMPLEMENTATION, using verifySessionCookie.
 async function getUserIdFromCookie(): Promise<string | null> {
-    console.log('[AUTH_HELPER_ACTION] Attempting to get user ID from cookie...');
+    // As seen in the working pages (timeline, prompts), we must use verifySessionCookie.
+    const sessionCookie = (await cookies()).get('firebase-auth-token')?.value;
 
-    // 1. Get the full cookie store.
-    const cookieStore = await cookies();
-    console.log('[AUTH_HELPER_ACTION] Cookie store retrieved.');
-
-    // 2. Get the specific token cookie.
-    const idTokenCookie = cookieStore.get('firebase-auth-token');
-    if (idTokenCookie) {
-        console.log("[AUTH_HELPER_ACTION] Found 'firebase-auth-token' cookie.");
-    } else {
-        console.error("[AUTH_HELPER_ACTION] CRITICAL: 'firebase-auth-token' cookie NOT FOUND.");
-        // Log all cookies for debugging
-        console.log('[AUTH_HELPER_ACTION] All available cookies:', cookieStore.getAll());
+    if (!sessionCookie) {
+        console.error('[AUTH_HELPER_ACTION] Session cookie not found.');
         return null;
     }
 
-    const token = idTokenCookie.value;
-    if (!token) {
-        console.error('[AUTH_HELPER_ACTION] CRITICAL: Cookie found but its value is empty.');
-        return null;
-    }
-
-    // 3. Attempt to verify the token.
     try {
-        console.log('[AUTH_HELPER_ACTION] Attempting to verify token with adminAuth.verifyIdToken...');
-        const decodedToken = await adminAuth.verifyIdToken(token);
-        console.log(`[AUTH_HELPER_ACTION] SUCCESS: Token verified for UID: ${decodedToken.uid}`);
+        // Verify the session cookie. This is the correct method for server-side auth.
+        const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true /** checkRevoked */);
         return decodedToken.uid;
     } catch (error: any) {
-        // This is the most likely point of failure.
-        console.error('[AUTH_HELPER_ACTION] CRITICAL: Failed to verify ID token. Error:', error.message);
-        console.log('[AUTH_HELPER_ACTION] The token being verified was:', token);
-        console.error('[AUTH_HELPER_ACTION] Full error object:', error);
+        console.error('[AUTH_HELPER_ACTION] CRITICAL: Failed to verify session cookie. Error:', error.message);
         return null;
     }
 }
@@ -64,6 +45,7 @@ export async function getMemoryById(id: string) {
   try {
     const userId = await getUserIdFromCookie();
     if (!userId) {
+      // This is the error the user sees.
       return { success: false, message: "Unauthorized: Missing session cookie." };
     }
 
