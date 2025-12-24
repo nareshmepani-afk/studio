@@ -1,4 +1,4 @@
-'''
+
 import { z } from 'zod';
 
 export const memoryCategorySchema = z.object({
@@ -26,6 +26,22 @@ export const memoryCategoriesList: MemoryCategory[] = [
     { id: "cultural_traditions", label: "Cultural Traditions" },
 ];
 
+// Added EmotionTag interface and list
+export interface EmotionTag {
+    id: string;
+    label: string;
+}
+
+export const emotionTagsList: EmotionTag[] = [
+    { id: 'happy', label: 'Happy' },
+    { id: 'sad', label: 'Sad' },
+    { id: 'anxious', label: 'Anxious' },
+    { id: 'excited', label: 'Excited' },
+    { id: 'peaceful', label: 'Peaceful' },
+    { id: 'angry', label: 'Angry' },
+    { id: 'grateful', label: 'Grateful' },
+    { id: 'nostalgic', label: 'Nostalgic' },
+];
 
 export interface MediaAttachment {
     id: string;
@@ -50,7 +66,7 @@ export interface Memory {
     mediaAttachments: MediaAttachment[];
     isLegacy?: boolean;
     location?: string;
-    emotionTags?: string[];
+    emotionTags?: string[]; // Array of emotion tag IDs
     promptId?: string;
 }
 
@@ -66,7 +82,6 @@ export interface PromptGroup {
   prompts: Prompt[];
 }
 
-
 export interface UserDetails {
   id: string;
   email: string;
@@ -76,5 +91,3 @@ export interface UserDetails {
   birthDate?: string;
   location?: string;
 }
-
-''

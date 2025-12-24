@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getMonth, getDate, getYear, parseISO, getDaysInMonth, format } from 'date-fns';
-import { emotionTagsList, memoryCategoriesList } from '@/types';
-import type { Memory, EmotionTag, MemoryCategory } from '@/types';
+import { emotionTagsList, memoryCategoriesList, type EmotionTag, type MemoryCategory } from '@/types';
+import type { Memory } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -59,28 +59,27 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   const months = Array.from({ length: 12 }, (_, i) => ({ value: i, label: format(new Date(2000, i, 1), 'MMMM') }));
   const days = Array.from({ length: getDaysInMonth(new Date(selectedYear, selectedMonth)) }, (_, i) => i + 1);
 
-  // --- CORRECTED DATA HYDRATION ---
   useEffect(() => {
     if (memoryToEdit) {
       setTitle(memoryToEdit.title || '');
       setDescription(memoryToEdit.description || '');
       setLocation(memoryToEdit.location || '');
 
-      // Correctly find and set the category object
-      const matchedCategory = memoryCategoriesList.find(c => c.id === memoryToEdit.category);
+      const matchedCategory = memoryCategoriesList.find(c => {
+        if (typeof memoryToEdit.category === 'string') return c.id === memoryToEdit.category;
+        return c.id === memoryToEdit.category?.id;
+      });
       if (matchedCategory) {
         setSelectedCategory(matchedCategory);
       }
 
-      // Correctly find and set the emotion tag objects
       if (memoryToEdit.emotionTags && memoryToEdit.emotionTags.length > 0) {
         const matchedTags = memoryToEdit.emotionTags
-          .map(tagId => emotionTagsList.find(tag => tag.id === tagId))
+          .map(tagId => emotionTagsList.find((tag: EmotionTag) => tag.id === tagId))
           .filter((tag): tag is EmotionTag => !!tag);
         setSelectedEmotionTags(matchedTags);
       }
 
-      // Handle Date Hydration
       if (memoryToEdit.date) {
         try {
           const date = parseISO(memoryToEdit.date);
@@ -90,7 +89,6 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
         } catch (e) { console.error("Failed to parse date:", memoryToEdit.date); }
       }
 
-      // Handle Media Hydration
       if (memoryToEdit.mediaAttachments?.[0]) {
         const m = memoryToEdit.mediaAttachments[0];
         setCurrentMedia({ file: new File([], "existing"), type: m.type, duration: m.duration || 0 });
@@ -99,6 +97,14 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
       }
     }
   }, [memoryToEdit]);
+
+  useEffect(() => {
+    if (!carouselApi) return;
+    const onSelect = () => setCurrentSlide(carouselApi.selectedScrollSnap());
+    carouselApi.on("select", onSelect);
+    onSelect();
+    return () => { carouselApi.off("select", onSelect); };
+  }, [carouselApi]);
 
   const handleMediaReady = useCallback((payload: any) => {
     setCurrentMedia((prev: any) => {
@@ -118,7 +124,6 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
     });
   }, [isEditing, trimValues, currentMediaPreviewUrl, memoryToEdit]);
 
-  // --- CORRECTED SAVE LOGIC ---
   const onSave = async () => {
     if (!title) {
       toast({ title: "Missing Title", description: "Please give your memory a title.", variant: "destructive" });
@@ -133,7 +138,6 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
     formData.append('date', new Date(selectedYear, selectedMonth, selectedDay).toISOString());
     formData.append('location', location);
 
-    // Correctly map objects back to string IDs for saving
     const emotionTagIds = selectedEmotionTags.map(tag => tag.id);
     formData.append('emotionTags', JSON.stringify(emotionTagIds));
 
@@ -240,11 +244,10 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                   <Label>Description</Label>
                   <Textarea placeholder="Describe the memory..." className="min-h-[120px]" value={description} onChange={e => setDescription(e.target.value)} />
                 </div>
-                 {/* --- NEW UI FOR EMOTION TAGS --- */}
                 <div className="space-y-2">
                   <Label>Emotions</Label>
                   <div className="flex flex-wrap gap-2">
-                    {emotionTagsList.map((tag) => (
+                    {emotionTagsList.map((tag: EmotionTag) => (
                       <Button 
                         key={tag.id} 
                         variant={selectedEmotionTags.some(t => t.id === tag.id) ? 'default' : 'outline'}
@@ -289,7 +292,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
         <Button variant="ghost" onClick={() => currentSlide === 0 ? router.back() : carouselApi?.scrollPrev()} disabled={isSubmitting}>
           {currentSlide === 0 ? 'Cancel' : <><ArrowLeft className="w-4 h-4 mr-2" /> Back</>}
         </Button>
-        <Button onClick={() => currentSlide === 0 ? (setCurrentSlide(1), carouselApi?.scrollNext()) : onSave()} disabled={isSubmitting} className="min-w-[120px]">
+        <Button onClick={() => currentSlide === 0 ? carouselApi?.scrollNext() : onSave()} disabled={isSubmitting} className="min-w-[120px]">
           {isSubmitting ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : currentSlide === 0 ? <><span className="mr-2">Next</span> <ArrowRight className="w-4 h-4" /></> : <><Sparkles className="w-4 h-4 mr-2" /> Save Memory</>}
         </Button>
       </div>
