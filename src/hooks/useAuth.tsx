@@ -3,7 +3,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { onIdTokenChanged, type User } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 
 interface UserProfile {
@@ -12,11 +12,14 @@ interface UserProfile {
     total: number;
     used: number;
   };
+  // Add any other fields that might be in your user profile document
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  userMode: 'host' | 'guest'; // Added userMode
+  updateUserProfileInFirestore: (data: Partial<UserProfile>) => Promise<void>; // Added function
   hostPassStatus: 'free_host_pass_active' | 'paid_host_pass_active' | 'inactive';
   storageQuotaBytes: { total: number; used: number };
 }
@@ -31,81 +34,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [hostPassStatus, setHostPassStatus] = useState<'free_host_pass_active' | 'paid_host_pass_active' | 'inactive'>('inactive');
   const [storageQuotaBytes, setStorageQuotaBytes] = useState({ total: 100 * 1024 * 1024, used: 0 });
+  const [userMode, setUserMode] = useState<'host' | 'guest'>('host'); // Default to 'host'
 
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    console.log('[AUTH_PROVIDER] Setting up Firebase auth state listener.');
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
-      console.log(`[AUTH_PROVIDER] Auth state changed. User is ${firebaseUser ? 'SIGNED IN' : 'SIGNED OUT'}.`);
       setLoading(true);
-
       if (firebaseUser) {
-        console.log('[AUTH_PROVIDER] User is signed in. Getting ID token...');
         const idToken = await firebaseUser.getIdToken();
-        console.log('[AUTH_PROVIDER] Got ID token. Sending to /api/auth/session to create session...');
-
         try {
-          const response = await fetch('/api/auth/session', {
+          await fetch('/api/auth/session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ idToken }),
           });
-
-          if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`[AUTH_PROVIDER] Failed to create session. Server responded with ${response.status}: ${errorBody}`);
-          }
-
-          console.log('[AUTH_PROVIDER] Successfully created session. Setting user in state.');
           setUser(firebaseUser);
-
         } catch (error) {
           console.error('[AUTH_PROVIDER] CRITICAL: Error creating session cookie:', error);
-          setUser(null); // Ensure user is not authenticated in the app if session creation fails
+          setUser(null);
         }
-
       } else {
-        console.log('[AUTH_PROVIDER] User is signed out. Sending request to /api/auth/session to delete session...');
         try {
           await fetch('/api/auth/session', { method: 'DELETE' });
-          console.log('[AUTH_PROVIDER] Successfully deleted session.');
         } catch (error) {
           console.error('[AUTH_PROVIDER] Error deleting session cookie:', error);
         }
         setUser(null);
       }
       setLoading(false);
-      console.log(`[AUTH_PROVIDER] Finished processing auth state change. Loading is ${false}.`);
     });
-
-    return () => {
-      console.log('[AUTH_PROVIDER] Cleaning up Firebase auth state listener.');
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (loading) return; // Do not run routing logic while auth state is being determined
-
+    if (loading) return;
     const isPrivateRoute = PRIVATE_ROUTES.some(route => pathname.startsWith(route));
-
     if (!user && isPrivateRoute) {
-      console.log(`[AUTH_PROVIDER] User is not authenticated and is on a private route (${pathname}). Redirecting to /login.`);
       router.push('/login');
     }
-    
     const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
-
     if (user && isPublicRoute && pathname !== '/') {
-        console.log(`[AUTH_PROVIDER] User is authenticated and on a public route (${pathname}). Redirecting to /prompts.`);
         router.push('/prompts');
     }
-
   }, [user, loading, pathname, router]);
 
-  // ... (rest of the component is unchanged)
   useEffect(() => {
     if (user?.uid) {
       const userProfileRef = doc(db, 'users', user.uid);
@@ -125,8 +99,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user?.uid]);
 
+  const updateUserProfileInFirestore = async (data: Partial<UserProfile>) => {
+    if (!user?.uid) {
+      throw new Error("User not authenticated to update profile");
+    }
+    try {
+      const userProfileRef = doc(db, 'users', user.uid);
+      await updateDoc(userProfileRef, data);
+    } catch (error) {
+      console.error("[AUTH_PROVIDER] Error updating user profile:", error);
+      throw error;
+    }
+  };
+
+  const value = {
+    user,
+    loading,
+    userMode,
+    updateUserProfileInFirestore,
+    hostPassStatus,
+    storageQuotaBytes,
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, hostPassStatus, storageQuotaBytes }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

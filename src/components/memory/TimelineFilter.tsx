@@ -47,7 +47,19 @@ export function TimelineFilter({ onSortChange, onCategoryFilterChange, onLegacyF
         </div>
         <div>
           <label htmlFor="category-filter" className="block text-sm font-medium text-muted-foreground mb-1">Category</label>
-          <Select onValueChange={(value) => onCategoryFilterChange(value as MemoryCategory | 'all')} defaultValue="all">
+          <Select 
+            onValueChange={(value) => {
+              if (value === 'all') {
+                onCategoryFilterChange('all');
+              } else {
+                const selectedCategory = memoryCategoriesList.find(c => c.id === value);
+                if (selectedCategory) {
+                  onCategoryFilterChange(selectedCategory);
+                }
+              }
+            }}
+            defaultValue="all"
+          >
             <SelectTrigger id="category-filter">
               <Layers className="mr-2 h-4 w-4 text-muted-foreground" />
               <SelectValue placeholder="Filter by category..." />
@@ -55,7 +67,7 @@ export function TimelineFilter({ onSortChange, onCategoryFilterChange, onLegacyF
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
               {memoryCategoriesList.map(category => (
-                <SelectItem key={category} value={category}>{category}</SelectItem>
+                <SelectItem key={category.id} value={category.id}>{category.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -78,4 +90,3 @@ export function TimelineFilter({ onSortChange, onCategoryFilterChange, onLegacyF
     </div>
   );
 }
-
