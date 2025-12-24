@@ -3,7 +3,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { onIdTokenChanged, type User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, setDoc } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 import type { User } from '@/types';
 
@@ -47,14 +47,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (doc.exists()) {
               const userProfile = doc.data() as User;
-              setUser({ ...firebaseUser, ...userProfile });
+              setUser({ ...firebaseUser, ...userProfile, uid: firebaseUser.uid });
               setHostPassStatus(userProfile.hostPassStatus || 'no_pass_initiated');
               if (userProfile.storageQuota) {
                 setStorageQuotaBytes(userProfile.storageQuota);
               }
             } else {
               // Handle case where user exists in Auth but not in Firestore
-              setUser(firebaseUser as (FirebaseUser & User)); 
+              const newUser: User & FirebaseUser = {
+                ...firebaseUser,
+                uid: firebaseUser.uid,
+                hostPassStatus: 'no_pass_initiated',
+                sharedAccessStatus: 'no_pass_initiated',
+                storageQuota: { total: 0, used: 0 },
+                createdAt: new Date().toISOString(),
+              } as User & FirebaseUser;
+              await setDoc(userProfileRef, newUser);
+              setUser(newUser);
             }
           } catch (error) {
             console.error("Error during auth state change:", error);
