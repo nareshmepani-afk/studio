@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import type { User } from '@/types';
-import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/types'; 
+import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/lib/constants'; 
 import { Loader2, UploadCloud, Camera, ShieldCheck, CalendarClock, Gift, ShoppingCart, Info, UserCircle2, HardDrive, Star, Zap } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState, useEffect, type FormEvent, useRef, useMemo, useCallback } from 'react';
@@ -79,9 +79,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (user) {
-      setName(user.name || '');
+      setName(user.name || user.displayName || '');
       setEmail(user.email || '');
-      setAvatarPreviewUrl(user.avatarUrl || null);
+      setAvatarPreviewUrl(user.avatarUrl || user.photoURL || null);
 
       if (user.dateOfBirth && isValid(parseISO(user.dateOfBirth))) {
         const dob = parseISO(user.dateOfBirth);
@@ -150,7 +150,7 @@ export default function SettingsPage() {
     const activateFreeGuestPass = useCallback(async () => {
         if (user && user.sharedAccessStatus === 'no_pass_initiated') {
         const now = new Date();
-        await updateUserProfileInFirestore(user.id, { sharedAccessStatus: 'free_pass_active', freePassActivatedDate: now.toISOString() });
+        await updateUserProfileInFirestore({ sharedAccessStatus: 'free_pass_active', freePassActivatedDate: now.toISOString() });
         toast({ title: "Free Guest Pass Activated!", description: `Your 6-month free access starts now. Ends ${format(addMonths(now, 6), 'PPP')}.`, duration: 7000, variant: "success" });
         }
     }, [user, updateUserProfileInFirestore]);
@@ -160,7 +160,7 @@ export default function SettingsPage() {
             const now = new Date(); let startDate = now;
             if (user.sharedAccessStatus === 'paid_pass_active' && user.paidPassExpiryDate && isBefore(now, parseISO(user.paidPassExpiryDate))) { startDate = parseISO(user.paidPassExpiryDate); }
             const newExpiryDate = addDays(startDate, 31);
-            await updateUserProfileInFirestore(user.id, { sharedAccessStatus: 'paid_pass_active', paidPassExpiryDate: newExpiryDate.toISOString() });
+            await updateUserProfileInFirestore({ sharedAccessStatus: 'paid_pass_active', paidPassExpiryDate: newExpiryDate.toISOString() });
             toast({ title: "Guest Pass Activated (Payment Simulated)!", description: `Your 31-day pass is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000, variant: "success" });
         }
     }, [user, updateUserProfileInFirestore]);
@@ -168,7 +168,7 @@ export default function SettingsPage() {
     const activateFreeHostPass = useCallback(async () => {
         if (user && user.hostPassStatus === 'no_pass_initiated') {
         const now = new Date();
-        await updateUserProfileInFirestore(user.id, { hostPassStatus: 'free_host_pass_active', freeHostPassActivatedDate: now.toISOString() });
+        await updateUserProfileInFirestore({ hostPassStatus: 'free_host_pass_active', freeHostPassActivatedDate: now.toISOString() });
         toast({ title: "Free Host Pass Activated!", description: `Your 6-month free host pass starts now. Ends ${format(addMonths(now, 6), 'PPP')}.`, duration: 7000, variant: "success" });
         }
     }, [user, updateUserProfileInFirestore]);
@@ -178,7 +178,7 @@ export default function SettingsPage() {
         const now = new Date(); let startDate = now;
         if (user.hostPassStatus === 'paid_host_pass_active' && user.paidHostPassExpiryDate && isBefore(now, parseISO(user.paidHostPassExpiryDate))) { startDate = parseISO(user.paidHostPassExpiryDate); }
         const newExpiryDate = addDays(startDate, 31);
-        await updateUserProfileInFirestore(user.id, { hostPassStatus: 'paid_host_pass_active', paidHostPassExpiryDate: newExpiryDate.toISOString() });
+        await updateUserProfileInFirestore({ hostPassStatus: 'paid_host_pass_active', paidHostPassExpiryDate: newExpiryDate.toISOString() });
         toast({ title: "Host Pass Activated (Payment Simulated)!", description: `Your 31-day host pass is active. Ends ${format(newExpiryDate, 'PPP')}.`, duration: 7000, variant: "success" });
         }
     }, [user, updateUserProfileInFirestore]);
@@ -193,7 +193,7 @@ export default function SettingsPage() {
     const oldAvatarUrl = user.avatarUrl;
 
     if (avatarFile) {
-      const avatarStoragePath = `avatars/${user.id}/${Date.now()}-${avatarFile.name}`;
+      const avatarStoragePath = `avatars/${user.uid}/${Date.now()}-${avatarFile.name}`;
       const fileRef = storageRef(storage, avatarStoragePath);
       try {
         await uploadBytes(fileRef, avatarFile);
@@ -252,7 +252,7 @@ export default function SettingsPage() {
     };
     
     try {
-        await updateUserProfileInFirestore(user.id, updatedUserDetails);
+        await updateUserProfileInFirestore(updatedUserDetails);
         toast({ title: "Settings Saved!", description: "Your profile information has been updated.", variant: "success" });
         setAvatarFile(null);
     } catch (error) {
@@ -383,13 +383,14 @@ export default function SettingsPage() {
     );
   };
 
-  const formatBytes = (bytes: number, decimals = 2) => {
+  const formatBytes = (bytes: number | { total: number, used: number }, decimals = 2) => {
+    if (typeof bytes === 'object') bytes = bytes.used;
     if (!bytes || bytes === 0) return '0 Bytes'; const k = 1024; const dm = decimals < 0 ? 0 : decimals;
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']; const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
   const storageUsed = user.storageUsedBytes || 0;
-  const perMemoryLimitBytes = storageQuotaBytes;
+  const perMemoryLimitBytes = storageQuotaBytes.total;
 
   return (
     <AuthenticatedPageWrapper>
@@ -401,7 +402,7 @@ export default function SettingsPage() {
               <CardHeader><CardTitle className="font-headline text-2xl">User Profile</CardTitle><CardDescription>Manage your account information.</CardDescription></CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center space-x-4">
-                  <Avatar className="h-20 w-20"><AvatarImage src={imageSrcForDisplay} alt={user.name || user.email} /><AvatarFallback>{showIconAsFallback ? (<UserCircle2 className="h-12 w-12 text-muted-foreground" />) : (user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?'))}</AvatarFallback></Avatar>
+                  <Avatar className="h-20 w-20"><AvatarImage src={imageSrcForDisplay} alt={user.name || user.email || undefined} /><AvatarFallback>{showIconAsFallback ? (<UserCircle2 className="h-12 w-12 text-muted-foreground" />) : (user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?'))}</AvatarFallback></Avatar>
                   <div className="space-y-2">
                     <Button type="button" variant="outline" onClick={() => avatarInputRef.current?.click()}><UploadCloud className="mr-2 h-4 w-4" /> Upload Photo</Button>
                     <input type="file" accept="image/*" ref={avatarInputRef} onChange={handleAvatarUpload} className="hidden" />
@@ -410,7 +411,8 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="space-y-1"><Label htmlFor="name">Name</Label><Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your Name" /></div>
-                <div className="space-y-1"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" disabled /><p className="text-xs text-muted-foreground">Email cannot be changed.</p></div>
+                <div className="space-y-1
+                "><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" disabled /><p className="text-xs text-muted-foreground">Email cannot be changed.</p></div>
               </CardContent>
             </Card>
             <Card>

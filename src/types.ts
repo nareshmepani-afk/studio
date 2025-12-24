@@ -82,12 +82,21 @@ export interface PromptGroup {
   prompts: Prompt[];
 }
 
-export interface UserDetails {
-  id: string;
-  email: string;
-  displayName: string;
-  avatarUrl?: string;
-  bio?: string;
-  birthDate?: string;
-  location?: string;
+export interface User {
+    id: string;
+    email: string;
+    name?: string;
+    avatarUrl?: string;
+    dateOfBirth?: string;
+    countryOfBirth?: string;
+    city?: string;
+    townArea?: string;
+    sharedAccessStatus: 'no_pass_initiated' | 'free_pass_active' | 'paid_pass_active' | 'free_pass_expired' | 'paid_pass_expired';
+    freePassActivatedDate?: string;
+    paidPassExpiryDate?: string;
+    hostPassStatus: 'no_pass_initiated' | 'free_host_pass_active' | 'paid_host_pass_active' | 'free_host_pass_expired' | 'paid_host_pass_expired';
+    freeHostPassActivatedDate?: string;
+    paidHostPassExpiryDate?: string;
+    storageUsedBytes: number;
+    storageQuota: { total: number; used: number };
 }

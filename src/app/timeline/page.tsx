@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import React from 'react';
 import { cookies } from 'next/headers';
 import { adminAuth, adminDb } from '@/lib/firebase-admin'; // Import the singletons
-import type { Memory } from '@/types';
+import type { Memory } from '@/types.ts';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { TimelinePageContent } from '@/components/memory/TimelinePageContent';
 

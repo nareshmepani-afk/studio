@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MemoryForm } from '@/components/memory/MemoryForm';
 import { getMemoryById } from '@/actions/memoryActions';
-import type { Memory } from '@/types';
+import type { Memory } from '@/types.ts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 

@@ -2,7 +2,7 @@
 "use client";
 
 import { ShieldAlert } from 'lucide-react';
-import type { Memory } from '@/types';
+import type { Memory } from '@/types.ts';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { MemoryForm } from '@/components/memory/MemoryForm';
 import { AuthenticatedPageWrapper } from '../layout/AuthenticatedPageWrapper';

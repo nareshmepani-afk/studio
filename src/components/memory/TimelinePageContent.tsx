@@ -4,7 +4,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import type { Memory, MemoryCategory } from '@/types';
+import type { Memory, MemoryCategory } from '@/types.ts';
 import { getFirestore, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';

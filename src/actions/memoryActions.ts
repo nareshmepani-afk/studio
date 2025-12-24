@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { adminDb, adminStorage, adminAuth } from '@/lib/firebase-admin';
-import type { Memory, MediaAttachment } from '@/types';
+import type { Memory, MediaAttachment } from '@/types.ts';
 import { revalidatePath } from 'next/cache';
 import { Buffer } from 'buffer';
 

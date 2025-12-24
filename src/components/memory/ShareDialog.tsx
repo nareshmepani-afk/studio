@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from 'react';
-import type { Memory } from '@/types';
+import type { Memory } from '@/types.ts';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';

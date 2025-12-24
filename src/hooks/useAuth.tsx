@@ -1,26 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { onIdTokenChanged, type User } from 'firebase/auth';
+import { onIdTokenChanged, type User as FirebaseUser } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
-
-interface UserProfile {
-  hostPassStatus?: 'free_host_pass_active' | 'paid_host_pass_active' | 'inactive';
-  storageQuota?: {
-    total: number;
-    used: number;
-  };
-  // Add any other fields that might be in your user profile document
-}
+import type { User } from '@/types';
 
 interface AuthContextType {
-  user: User | null;
+  user: (FirebaseUser & User) | null;
   loading: boolean;
-  userMode: 'host' | 'guest'; // Added userMode
-  updateUserProfileInFirestore: (data: Partial<UserProfile>) => Promise<void>; // Added function
-  hostPassStatus: 'free_host_pass_active' | 'paid_host_pass_active' | 'inactive';
+  userMode: 'host' | 'guest';
+  updateUserProfileInFirestore: (data: Partial<User>) => Promise<void>; 
+  hostPassStatus: 'no_pass_initiated' | 'free_host_pass_active' | 'paid_host_pass_active' | 'free_host_pass_expired' | 'paid_host_pass_expired';
   storageQuotaBytes: { total: number; used: number };
 }
 
@@ -30,42 +22,57 @@ const PRIVATE_ROUTES = ['/timeline', '/add-memory', '/prompts', '/settings', '/r
 const PUBLIC_ROUTES = ['/', '/login', '/register', '/reset-password'];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<(FirebaseUser & User) | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hostPassStatus, setHostPassStatus] = useState<'free_host_pass_active' | 'paid_host_pass_active' | 'inactive'>('inactive');
+  const [hostPassStatus, setHostPassStatus] = useState<'no_pass_initiated' | 'free_host_pass_active' | 'paid_host_pass_active' | 'free_host_pass_expired' | 'paid_host_pass_expired'>('no_pass_initiated');
   const [storageQuotaBytes, setStorageQuotaBytes] = useState({ total: 100 * 1024 * 1024, used: 0 });
-  const [userMode, setUserMode] = useState<'host' | 'guest'>('host'); // Default to 'host'
+  const [userMode, setUserMode] = useState<'host' | 'guest'>('host');
 
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
-      setLoading(true);
+    const authUnsubscribe = onIdTokenChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-        const idToken = await firebaseUser.getIdToken();
-        try {
-          await fetch('/api/auth/session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idToken }),
-          });
-          setUser(firebaseUser);
-        } catch (error) {
-          console.error('[AUTH_PROVIDER] CRITICAL: Error creating session cookie:', error);
-          setUser(null);
-        }
+        const userProfileRef = doc(db, 'users', firebaseUser.uid);
+        const profileUnsubscribe = onSnapshot(userProfileRef, async (doc) => {
+          setLoading(true);
+          try {
+            const idToken = await firebaseUser.getIdToken();
+            await fetch('/api/auth/session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ idToken }),
+            });
+
+            if (doc.exists()) {
+              const userProfile = doc.data() as User;
+              setUser({ ...firebaseUser, ...userProfile });
+              setHostPassStatus(userProfile.hostPassStatus || 'no_pass_initiated');
+              if (userProfile.storageQuota) {
+                setStorageQuotaBytes(userProfile.storageQuota);
+              }
+            } else {
+              // Handle case where user exists in Auth but not in Firestore
+              setUser(firebaseUser as (FirebaseUser & User)); 
+            }
+          } catch (error) {
+            console.error("Error during auth state change:", error);
+            setUser(null);
+          } finally {
+            setLoading(false);
+          }
+        });
+        return () => profileUnsubscribe();
       } else {
-        try {
-          await fetch('/api/auth/session', { method: 'DELETE' });
-        } catch (error) {
-          console.error('[AUTH_PROVIDER] Error deleting session cookie:', error);
-        }
+        // User is signed out
+        fetch('/api/auth/session', { method: 'DELETE' }).catch(err => console.error("error deleting session", err));
         setUser(null);
+        setLoading(false);
+        return;
       }
-      setLoading(false);
     });
-    return () => unsubscribe();
+    return () => authUnsubscribe();
   }, []);
 
   useEffect(() => {
@@ -80,26 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user, loading, pathname, router]);
 
-  useEffect(() => {
-    if (user?.uid) {
-      const userProfileRef = doc(db, 'users', user.uid);
-      const unsubscribe = onSnapshot(userProfileRef, (doc) => {
-        if (doc.exists()) {
-          const data = doc.data() as UserProfile;
-          setHostPassStatus(data.hostPassStatus || 'inactive');
-          if (data.storageQuota) {
-            setStorageQuotaBytes(data.storageQuota);
-          }
-        }
-      });
-      return () => unsubscribe();
-    } else {
-      setHostPassStatus('inactive');
-      setStorageQuotaBytes({ total: 100 * 1024 * 1024, used: 0 });
-    }
-  }, [user?.uid]);
-
-  const updateUserProfileInFirestore = async (data: Partial<UserProfile>) => {
+  const updateUserProfileInFirestore = async (data: Partial<User>) => {
     if (!user?.uid) {
       throw new Error("User not authenticated to update profile");
     }

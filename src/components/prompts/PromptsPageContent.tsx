@@ -4,7 +4,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import type { Memory, PromptGroup } from '@/types';
+import type { Memory, PromptGroup } from '@/types.ts';
 import { teleprompterScripts } from '@/lib/teleprompterScripts';
 import { toast } from '@/hooks/use-toast';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
