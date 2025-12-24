@@ -46,7 +46,6 @@ export async function getMemoryById(id: string) {
 
     console.log(`[ACTION] getMemoryById: Authorized for user ${userId}`);
 
-    // CORRECTED QUERY PATH: Memories are in a subcollection under the user.
     const docRef = adminDb.collection('users').doc(userId).collection('memories').doc(id);
     const doc = await docRef.get();
 
@@ -68,15 +67,16 @@ export async function getMemoryById(id: string) {
     }
     console.log(`[ACTION] getMemoryById: Ownership verified for user ${userId}`);
 
-    const date = data.date?.toDate ? data.date.toDate().toISOString() : data.date;
-
     console.log(`[ACTION] getMemoryById: Successfully fetched and returning memory titled \"${data.title}\".`);
     return { 
       success: true, 
       data: { 
         id: doc.id, 
         ...data,
-        date,
+        // CORRECTED: Convert all Firestore Timestamps to serializable ISO strings.
+        date: data.date?.toDate ? data.date.toDate().toISOString() : data.date,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : data.updatedAt,
       } as Memory
     };
 
@@ -140,7 +140,6 @@ export async function saveMemory(formData: FormData, memoryId: string | null) {
       ...(promptId && { promptId }),
     };
     
-    // CORRECTED QUERY PATH: Save memories to the user's subcollection.
     const collectionRef = adminDb.collection('users').doc(userId).collection('memories');
 
     if (memoryId) {
