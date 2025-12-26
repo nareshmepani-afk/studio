@@ -265,8 +265,12 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
           <CarouselItem>
             <Card>
               <CardHeader>
-                <CardTitle>Add Media</CardTitle>
-                <CardDescription>Upload or record a video/audio for this memory.</CardDescription>
+                <CardTitle>{isEditing ? 'Edit Media' : 'Add Media'}</CardTitle>
+                <CardDescription>
+                  {isEditing
+                    ? 'Replace or trim the existing media for this memory.'
+                    : 'Upload or record a video/audio for this memory.'}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <MediaCaptureControl 
