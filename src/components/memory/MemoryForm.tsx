@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -282,7 +282,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                   <div className="pt-4 space-y-4 border-t">
                     <div className="flex justify-between items-center">
                       <Label className="flex items-center text-primary"><Scissors className="w-4 h-4 mr-2"/> Trim Clip</Label>
-                      <span className="text-xs text-muted-foreground font-mono">{trimValues[0].toFixed(1)}s - {trimValues[1].toFixed(1)}s</span>
+                      <span className="text-xs text-muted-foreground font-mono">{`${trimValues[0].toFixed(1)}s - ${trimValues[1].toFixed(1)}s`}</span>
                     </div>
                     <Slider min={0} max={currentMedia.duration} step={0.1} minStepsBetweenThumbs={1} value={trimValues} onValueChange={(v) => setTrimValues(v as [number, number])} />
                   </div>
