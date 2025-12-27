@@ -19,6 +19,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
   const [media, setMedia] = useState<any>(null);
   const [recordingType, setRecordingType] = useState<'video' | 'audio'>('video');
 
+  // Effect to handle initial media passed as a prop
   useEffect(() => {
     if (initialMedia?.previewUrl) {
       setMedia({
@@ -31,20 +32,15 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
     }
   }, [initialMedia]);
 
+  // Effect for component cleanup
   useEffect(() => {
-    if (status === 'recording' && recordingType === 'video' && mediaStreamRef.current && videoRef.current) {
-      videoRef.current.srcObject = mediaStreamRef.current;
-      videoRef.current.muted = true;
-      videoRef.current.play().catch(console.error);
-    }
-
-    // Clean up stream on component unmount or when recording stops
+    // This function will run when the component unmounts
     return () => {
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
       }
     };
-  }, [status, recordingType]);
+  }, []); // Empty dependency array ensures this runs only on mount and unmount
 
   const handleMetadata = useCallback(() => {
     const videoEl = videoRef.current;
@@ -59,7 +55,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
 
   const handlePlay = useCallback(() => {
     const video = videoRef.current;
-    if (!video || !trimValues || (trimValues[0] === 0 && trimValues[1] === media.duration)) return;
+    if (!video || !trimValues || (trimValues[0] === 0 && trimValues[1] === media?.duration)) return;
     if (video.currentTime < trimValues[0] || video.currentTime >= trimValues[1]) {
       video.currentTime = trimValues[0];
     }
@@ -67,7 +63,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
 
   const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current;
-    if (!video || !trimValues || (trimValues[0] === 0 && trimValues[1] === media.duration)) return;
+    if (!video || !trimValues || (trimValues[0] === 0 && trimValues[1] === media?.duration)) return;
     if (video.currentTime >= trimValues[1]) {
       video.pause();
     }
@@ -76,13 +72,27 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
 
   const startRecording = async (type: 'audio' | 'video') => {
     try {
+      // Stop any existing stream before starting a new one
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+
       setRecordingType(type);
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: type === 'video', 
-        audio: true 
+      setStatus('recording');
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: type === 'video',
+        audio: true
       });
       mediaStreamRef.current = stream;
-      
+
+      // If video, show live preview
+      if (type === 'video' && videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.muted = true; // Mute preview to prevent feedback
+        videoRef.current.play().catch(console.error);
+      }
+
       const mimeType = type === 'video' ? 'video/webm' : 'audio/webm';
       if (!MediaRecorder.isTypeSupported(mimeType)) {
         throw new Error(`${mimeType} is not supported`);
@@ -111,9 +121,18 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
             onMediaReady(newMedia);
             setStatus('preview');
         };
+        // Clean up stream resources
+        if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach(track => track.stop());
+            mediaStreamRef.current = null;
+        }
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
       };
+
       recorder.start();
-      setStatus('recording');
+
     } catch (err: any) {
         console.error("Error starting recording:", err);
         toast({ title: "Recording Error", description: err.message, variant: "destructive" });
@@ -123,12 +142,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && status === 'recording') {
-      mediaRecorderRef.current.stop();
-      mediaStreamRef.current?.getTracks().forEach(track => track.stop());
-      if (videoRef.current) {
-          videoRef.current.srcObject = null;
-          videoRef.current.muted = false;
-      }
+      mediaRecorderRef.current.stop(); // This will trigger onstop handler which does the cleanup
       setStatus('idle');
     }
   };
@@ -156,7 +170,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
         onMediaReady(newMedia);
         setStatus('preview');
     };
-    event.target.value = ''; 
+    event.target.value = '';
   };
 
   const clearMedia = () => {
@@ -165,7 +179,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
     onMediaReady(null);
     setStatus('idle');
   };
-  
+
   if (status === 'preview' && media?.url) {
     return (
       <div className="space-y-4">
