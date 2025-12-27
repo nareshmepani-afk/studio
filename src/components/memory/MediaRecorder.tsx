@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const MAX_FILE_SIZE_MB = 100;
 
-export function MediaCaptureControl({ onMediaReady, initialMedia }: any) {
+export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: any) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -40,6 +40,23 @@ export function MediaCaptureControl({ onMediaReady, initialMedia }: any) {
       });
     }
   }, [media, onMediaReady]);
+
+  const handlePlay = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || !trimValues || (trimValues[0] === 0 && trimValues[1] === media.duration)) return;
+    if (video.currentTime < trimValues[0] || video.currentTime >= trimValues[1]) {
+      video.currentTime = trimValues[0];
+    }
+  }, [trimValues, media]);
+
+  const handleTimeUpdate = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || !trimValues || (trimValues[0] === 0 && trimValues[1] === media.duration)) return;
+    if (video.currentTime >= trimValues[1]) {
+      video.pause();
+    }
+  }, [trimValues, media]);
+
 
   const startRecording = async (type: 'audio' | 'video') => {
     try {
@@ -78,7 +95,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia }: any) {
                 type: type,
                 duration: videoEl.duration
             };
-            setMedia({ url, type, source: 'new' });
+            setMedia({ url, type, source: 'new', duration: videoEl.duration });
             onMediaReady(newMedia);
             setStatus('preview');
         };
@@ -114,16 +131,16 @@ export function MediaCaptureControl({ onMediaReady, initialMedia }: any) {
     }
 
     const url = URL.createObjectURL(file);
-    const videoEl = document.createElement(file.type.startsWith('video') ? 'video' : 'audio');
-    videoEl.src = url;
+    const mediaEl = document.createElement(file.type.startsWith('video') ? 'video' : 'audio');
+    mediaEl.src = url;
 
-    videoEl.onloadedmetadata = () => {
+    mediaEl.onloadedmetadata = () => {
         const newMedia = {
             file,
             type: file.type.startsWith('video') ? 'video' : 'audio',
-            duration: videoEl.duration
+            duration: mediaEl.duration
         };
-        setMedia({ url, type: newMedia.type, source: 'new' });
+        setMedia({ url, type: newMedia.type, source: 'new', duration: mediaEl.duration });
         onMediaReady(newMedia);
         setStatus('preview');
     };
@@ -145,6 +162,8 @@ export function MediaCaptureControl({ onMediaReady, initialMedia }: any) {
             ref={videoRef}
             src={media.url}
             onLoadedMetadata={handleMetadata}
+            onPlay={handlePlay}
+            onTimeUpdate={handleTimeUpdate}
             controls
             className="w-full rounded bg-black aspect-video"
           />
