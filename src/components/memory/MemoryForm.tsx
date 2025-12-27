@@ -107,6 +107,13 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   }, [carouselApi]);
 
   const handleMediaReady = useCallback((payload: any) => {
+    if (!payload) {
+        setCurrentMedia(null);
+        setCurrentMediaPreviewUrl(null);
+        setTrimValues([0, 0]);
+        return;
+    }
+
     setCurrentMedia((prev: any) => {
       const hasSavedTrim = trimValues[0] !== 0 || trimValues[1] !== 0;
       const isExistingFile = prev?.file?.name === "existing" || (memoryToEdit && payload.file.size === 0);
