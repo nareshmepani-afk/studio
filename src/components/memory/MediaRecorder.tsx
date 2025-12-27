@@ -6,7 +6,7 @@ import { Upload, Mic, Video, XCircle, CheckCircle, Loader2, StopCircle } from 'l
 import { useToast } from '@/hooks/use-toast';
 
 const MAX_FILE_SIZE_MB = 100;
-const MAX_RECORDING_SECONDS = 300; // 5 minutes
+const MAX_RECORDING_SECONDS = 330; // 5 minutes and 30 seconds
 const RECORDING_INTERVAL_MS = 1000;
 
 // Helper to format time
