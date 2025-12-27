@@ -6,18 +6,29 @@ import { Upload, Mic, Video, XCircle, CheckCircle, Loader2, StopCircle } from 'l
 import { useToast } from '@/hooks/use-toast';
 
 const MAX_FILE_SIZE_MB = 100;
+const MAX_RECORDING_SECONDS = 300; // 5 minutes
+const RECORDING_INTERVAL_MS = 1000;
+
+// Helper to format time
+const formatTime = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
 
 export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: any) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const { toast } = useToast();
 
   const [status, setStatus] = useState('idle'); // idle, recording, preview, error
   const [media, setMedia] = useState<any>(null);
   const [recordingType, setRecordingType] = useState<'video' | 'audio'>('video');
+  const [recordingTime, setRecordingTime] = useState(0);
 
   // Effect to handle initial media passed as a prop
   useEffect(() => {
@@ -34,13 +45,15 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
 
   // Effect for component cleanup
   useEffect(() => {
-    // This function will run when the component unmounts
     return () => {
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
       }
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
     };
-  }, []); // Empty dependency array ensures this runs only on mount and unmount
+  }, []);
 
   const handleMetadata = useCallback(() => {
     const videoEl = videoRef.current;
@@ -72,31 +85,25 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
 
   const startRecording = async (type: 'audio' | 'video') => {
     try {
-      // Stop any existing stream before starting a new one
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
       }
 
       setRecordingType(type);
       setStatus('recording');
+      setRecordingTime(0);
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: type === 'video',
-        audio: true
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: type === 'video', audio: true });
       mediaStreamRef.current = stream;
 
-      // If video, show live preview
       if (type === 'video' && videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.muted = true; // Mute preview to prevent feedback
+        videoRef.current.muted = true;
         videoRef.current.play().catch(console.error);
       }
 
       const mimeType = type === 'video' ? 'video/webm' : 'audio/webm';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        throw new Error(`${mimeType} is not supported`);
-      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) throw new Error(`${mimeType} is not supported`);
 
       const recorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = recorder;
@@ -121,29 +128,43 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
             onMediaReady(newMedia);
             setStatus('preview');
         };
-        // Clean up stream resources
         if (mediaStreamRef.current) {
             mediaStreamRef.current.getTracks().forEach(track => track.stop());
             mediaStreamRef.current = null;
         }
-        if (videoRef.current) {
-            videoRef.current.srcObject = null;
-        }
+        if (videoRef.current) videoRef.current.srcObject = null;
+        if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
       };
 
       recorder.start();
+      
+      // Start timer
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prevTime => {
+          const newTime = prevTime + 1;
+          if (newTime >= MAX_RECORDING_SECONDS) {
+            stopRecording();
+          }
+          return newTime;
+        });
+      }, RECORDING_INTERVAL_MS);
 
     } catch (err: any) {
         console.error("Error starting recording:", err);
         toast({ title: "Recording Error", description: err.message, variant: "destructive" });
         setStatus('error');
+        if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
     }
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && status === 'recording') {
-      mediaRecorderRef.current.stop(); // This will trigger onstop handler which does the cleanup
+      mediaRecorderRef.current.stop();
       setStatus('idle');
+       if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+      }
     }
   };
 
@@ -202,6 +223,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
   }
 
   if (status === 'recording') {
+    const timerDisplay = `${formatTime(recordingTime)} / ${formatTime(MAX_RECORDING_SECONDS)}`;
     if (recordingType === 'video') {
         return (
             <div className="space-y-4">
@@ -217,6 +239,9 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
                         <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
                         <span>REC</span>
                     </div>
+                    <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded font-mono">
+                        {timerDisplay}
+                    </div>
                 </div>
                 <Button onClick={stopRecording} variant="destructive" className="w-full">
                     <StopCircle className="mr-2 h-4 w-4" />
@@ -227,11 +252,14 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
     } else { // audio
          return (
             <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border-2 border-dashed border-primary bg-background p-8 text-center h-48">
-                <div className="flex items-center text-primary">
+                <div className="flex items-center text-primary mb-2">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
                     <span>Recording Audio...</span>
                 </div>
-                <Button onClick={stopRecording} variant="destructive" size="icon" className="rounded-full">
+                <div className="text-primary font-mono text-lg">
+                    {timerDisplay}
+                </div>
+                <Button onClick={stopRecording} variant="destructive" size="icon" className="rounded-full mt-2">
                     <StopCircle className="h-6 w-6" />
                 </Button>
             </div>
