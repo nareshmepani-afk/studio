@@ -181,6 +181,12 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
         : [...prev, tag]
     );
   };
+  
+  const leftValueLabel = currentMedia ? `${trimValues[0].toFixed(1)}s` : '';
+  const rightValueLabel = currentMedia ? `${trimValues[1].toFixed(1)}s` : '';
+  const leftPosition = currentMedia ? `calc(${(trimValues[0] / currentMedia.duration) * 100}% - ${leftValueLabel.length / 2}ch)` : '0%';
+  const rightPosition = currentMedia ? `calc(${(trimValues[1] / currentMedia.duration) * 100}% - ${rightValueLabel.length / 2}ch)`: '100%';
+
 
   return (
     <div className="max-w-3xl mx-auto pb-20">
@@ -217,7 +223,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                     <Select value={selectedYear.toString()} onValueChange={v => setSelectedYear(parseInt(v))}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
-                    </Select>
+                    </select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -279,13 +285,32 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                   trimValues={trimValues} 
                 />
                 {currentMedia && currentMedia.duration > 0 && (
-                  <div className="pt-4 space-y-4 border-t">
-                    <div className="flex justify-between items-center">
-                      <Label className="flex items-center text-primary"><Scissors className="w-4 h-4 mr-2"/> Trim Clip</Label>
-                      <span className="text-xs text-muted-foreground font-mono">{`${trimValues[0].toFixed(1)}s - ${trimValues[1].toFixed(1)}s`}</span>
+                    <div className="pt-4 space-y-4 border-t">
+                        <Label className="flex items-center text-primary"><Scissors className="w-4 h-4 mr-2"/> Trim Clip</Label>
+                        <div className="relative">
+                            <div className="relative h-8">
+                                <span className="text-xs text-muted-foreground font-mono absolute" style={{ left: leftPosition }}>
+                                    {leftValueLabel}
+                                </span>
+                                <span className="text-xs text-muted-foreground font-mono absolute" style={{ left: rightPosition }}>
+                                    {rightValueLabel}
+                                </span>
+                            </div>
+                            <Slider 
+                                min={0} 
+                                max={currentMedia.duration} 
+                                step={0.1} 
+                                minStepsBetweenThumbs={1} 
+                                value={trimValues} 
+                                onValueChange={(v) => setTrimValues(v as [number, number])} 
+                                aria-label="Video trim slider"
+                            />
+                             <div className="flex justify-between mt-1">
+                                <span className="text-xs text-muted-foreground font-mono">0.0s</span>
+                                <span className="text-xs text-muted-foreground font-mono">{currentMedia.duration.toFixed(1)}s</span>
+                            </div>
+                        </div>
                     </div>
-                    <Slider min={0} max={currentMedia.duration} step={0.1} minStepsBetweenThumbs={1} value={trimValues} onValueChange={(v) => setTrimValues(v as [number, number])} />
-                  </div>
                 )}
               </CardContent>
             </Card>
