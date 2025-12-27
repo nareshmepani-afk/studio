@@ -17,6 +17,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
 
   const [status, setStatus] = useState('idle'); // idle, recording, preview, error
   const [media, setMedia] = useState<any>(null);
+  const [recordingType, setRecordingType] = useState<'video' | 'audio'>('video');
 
   useEffect(() => {
     if (initialMedia?.previewUrl) {
@@ -29,6 +30,21 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
       setStatus('preview');
     }
   }, [initialMedia]);
+
+  useEffect(() => {
+    if (status === 'recording' && recordingType === 'video' && mediaStreamRef.current && videoRef.current) {
+      videoRef.current.srcObject = mediaStreamRef.current;
+      videoRef.current.muted = true;
+      videoRef.current.play().catch(console.error);
+    }
+
+    // Clean up stream on component unmount or when recording stops
+    return () => {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [status, recordingType]);
 
   const handleMetadata = useCallback(() => {
     const videoEl = videoRef.current;
@@ -60,16 +76,12 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
 
   const startRecording = async (type: 'audio' | 'video') => {
     try {
+      setRecordingType(type);
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: type === 'video', 
         audio: true 
       });
       mediaStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.muted = true;
-        videoRef.current.play().catch(console.error);
-      }
       
       const mimeType = type === 'video' ? 'video/webm' : 'audio/webm';
       if (!MediaRecorder.isTypeSupported(mimeType)) {
@@ -87,15 +99,15 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
       recorder.onstop = () => {
         const blob = new Blob(recordedChunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(blob);
-        const videoEl = document.createElement(type === 'video' ? 'video' : 'audio');
-        videoEl.src = url;
-        videoEl.onloadedmetadata = () => {
+        const mediaEl = document.createElement(type === 'video' ? 'video' : 'audio');
+        mediaEl.src = url;
+        mediaEl.onloadedmetadata = () => {
             const newMedia = {
                 file: new File([blob], `recording.${type === 'video' ? 'webm' : 'mp3'}`),
                 type: type,
-                duration: videoEl.duration
+                duration: mediaEl.duration
             };
-            setMedia({ url, type, source: 'new', duration: videoEl.duration });
+            setMedia({ url, type, source: 'new', duration: mediaEl.duration });
             onMediaReady(newMedia);
             setStatus('preview');
         };
@@ -175,19 +187,42 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
     );
   }
 
-  if(status === 'recording') {
-      return (
-        <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border-2 border-dashed border-primary bg-background p-8 text-center h-48">
-            <div className="flex items-center text-primary">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
-                <span>Recording...</span>
+  if (status === 'recording') {
+    if (recordingType === 'video') {
+        return (
+            <div className="space-y-4">
+                <div className="relative w-full rounded bg-black aspect-video overflow-hidden">
+                    <video
+                        ref={videoRef}
+                        className="w-full h-full object-cover scale-x-[-1]"
+                        autoPlay
+                        muted
+                        playsInline
+                    />
+                     <div className="absolute top-2 left-2 flex items-center space-x-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                        <span>REC</span>
+                    </div>
+                </div>
+                <Button onClick={stopRecording} variant="destructive" className="w-full">
+                    <StopCircle className="mr-2 h-4 w-4" />
+                    Stop Recording
+                </Button>
             </div>
-            <video ref={videoRef} className="w-full h-full object-contain absolute top-0 left-0 scale-x-[-1] opacity-50"></video>
-            <Button onClick={stopRecording} variant="destructive" size="icon" className="rounded-full">
-                <StopCircle className="h-6 w-6" />
-            </Button>
-        </div>
-      )
+        );
+    } else { // audio
+         return (
+            <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border-2 border-dashed border-primary bg-background p-8 text-center h-48">
+                <div className="flex items-center text-primary">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                    <span>Recording Audio...</span>
+                </div>
+                <Button onClick={stopRecording} variant="destructive" size="icon" className="rounded-full">
+                    <StopCircle className="h-6 w-6" />
+                </Button>
+            </div>
+        )
+    }
   }
 
   return (
