@@ -184,9 +184,8 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   
   const leftValueLabel = currentMedia ? `${trimValues[0].toFixed(1)}s` : '';
   const rightValueLabel = currentMedia ? `${trimValues[1].toFixed(1)}s` : '';
-  const leftPosition = currentMedia ? `calc(${(trimValues[0] / currentMedia.duration) * 100}% - ${leftValueLabel.length / 2}ch)` : '0%';
-  const rightPosition = currentMedia ? `calc(${(trimValues[1] / currentMedia.duration) * 100}% - ${rightValueLabel.length / 2}ch)`: '100%';
-
+  const leftPosition = currentMedia && currentMedia.duration > 0 ? `calc(${(trimValues[0] / currentMedia.duration) * 100}% - ${leftValueLabel.length / 2}ch)` : '0%';
+  const rightPosition = currentMedia && currentMedia.duration > 0 ? `calc(${(trimValues[1] / currentMedia.duration) * 100}% - ${rightValueLabel.length / 2}ch)` : '100%';
 
   return (
     <div className="max-w-3xl mx-auto pb-20">
@@ -223,7 +222,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                     <Select value={selectedYear.toString()} onValueChange={v => setSelectedYear(parseInt(v))}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
-                    </select>
+                    </Select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
