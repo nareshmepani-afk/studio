@@ -212,7 +212,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
           />
         </div>
         <Button onClick={clearMedia} variant="outline" className="w-full">
-          Replace Media
+          {media.source === 'initial' ? 'Replace Media' : 'Start Over'}
         </Button>
       </div>
     );
