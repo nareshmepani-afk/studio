@@ -128,12 +128,6 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
             onMediaReady(newMedia);
             setStatus('preview');
         };
-        if (mediaStreamRef.current) {
-            mediaStreamRef.current.getTracks().forEach(track => track.stop());
-            mediaStreamRef.current = null;
-        }
-        if (videoRef.current) videoRef.current.srcObject = null;
-        if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
       };
 
       recorder.start();
@@ -159,14 +153,24 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && status === 'recording') {
-      mediaRecorderRef.current.stop();
-      setStatus('idle');
-       if (recordingIntervalRef.current) {
-        clearInterval(recordingIntervalRef.current);
-        recordingIntervalRef.current = null;
-      }
+        mediaRecorderRef.current.stop();
+
+        if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach(track => track.stop());
+            mediaStreamRef.current = null;
+        }
+
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
+
+        if (recordingIntervalRef.current) {
+            clearInterval(recordingIntervalRef.current);
+            recordingIntervalRef.current = null;
+        }
+        setStatus('idle');
     }
-  };
+};
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -235,11 +239,11 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
                         muted
                         playsInline
                     />
-                     <div className="absolute top-2 left-2 flex items-center space-x-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                     <div className="absolute top-2 left-2 flex items-center space-x-2 bg-black/50 text-white text-xs px-2 py-1 rounded z-10">
                         <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
                         <span>REC</span>
                     </div>
-                    <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded font-mono">
+                    <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded font-mono z-10">
                         {timerDisplay}
                     </div>
                 </div>
