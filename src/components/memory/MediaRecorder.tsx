@@ -30,7 +30,24 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
   const [recordingType, setRecordingType] = useState<'video' | 'audio'>('video');
   const [recordingTime, setRecordingTime] = useState(0);
 
-  // Effect to handle initial media passed as a prop
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+        mediaRecorderRef.current.stop();
+    }
+    if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+        mediaStreamRef.current = null;
+    }
+    if (videoRef.current) {
+        videoRef.current.srcObject = null;
+    }
+    if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+    }
+    setStatus('idle');
+  }, []);
+
   useEffect(() => {
     if (initialMedia?.previewUrl) {
       setMedia({
@@ -43,17 +60,18 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
     }
   }, [initialMedia]);
 
-  // Effect for component cleanup
   useEffect(() => {
     return () => {
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (recordingIntervalRef.current) {
-        clearInterval(recordingIntervalRef.current);
-      }
+      stopRecording();
     };
-  }, []);
+  }, [stopRecording]);
+
+  useEffect(() => {
+      if (status === 'recording' && recordingTime >= MAX_RECORDING_SECONDS) {
+          toast({ title: "Recording Limit Reached", description: `Recording stopped automatically after ${formatTime(MAX_RECORDING_SECONDS)}.` });
+          stopRecording();
+      }
+  }, [recordingTime, status, stopRecording, toast]);
 
   const handleMetadata = useCallback(() => {
     const videoEl = videoRef.current;
@@ -85,9 +103,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
 
   const startRecording = async (type: 'audio' | 'video') => {
     try {
-      if (mediaStreamRef.current) {
-        mediaStreamRef.current.getTracks().forEach(track => track.stop());
-      }
+      stopRecording();
 
       setRecordingType(type);
       setStatus('recording');
@@ -128,49 +144,22 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
             onMediaReady(newMedia);
             setStatus('preview');
         };
+        recordedChunksRef.current = [];
       };
 
       recorder.start();
       
-      // Start timer
       recordingIntervalRef.current = setInterval(() => {
-        setRecordingTime(prevTime => {
-          const newTime = prevTime + 1;
-          if (newTime >= MAX_RECORDING_SECONDS) {
-            stopRecording();
-          }
-          return newTime;
-        });
+        setRecordingTime(prevTime => prevTime + 1);
       }, RECORDING_INTERVAL_MS);
 
     } catch (err: any) {
         console.error("Error starting recording:", err);
         toast({ title: "Recording Error", description: err.message, variant: "destructive" });
+        stopRecording();
         setStatus('error');
-        if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
     }
   };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && status === 'recording') {
-        mediaRecorderRef.current.stop();
-
-        if (mediaStreamRef.current) {
-            mediaStreamRef.current.getTracks().forEach(track => track.stop());
-            mediaStreamRef.current = null;
-        }
-
-        if (videoRef.current) {
-            videoRef.current.srcObject = null;
-        }
-
-        if (recordingIntervalRef.current) {
-            clearInterval(recordingIntervalRef.current);
-            recordingIntervalRef.current = null;
-        }
-        setStatus('idle');
-    }
-};
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -272,7 +261,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
   }
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border-2 border-dashed border-muted bg-background p-8 text-center h-48">
+    <div className="flex flex-.col items-center justify-center space-y-4 rounded-lg border-2 border-dashed border-muted bg-background p-8 text-center h-48">
         <div className="flex items-center space-x-4">
             <Button onClick={() => startRecording('video')} variant="outline" size="icon" className="h-16 w-16 rounded-full">
                 <Video className="h-8 w-8" />
