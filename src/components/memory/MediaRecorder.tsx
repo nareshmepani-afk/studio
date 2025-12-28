@@ -261,7 +261,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
   }
 
   return (
-    <div className="flex flex-.col items-center justify-center space-y-4 rounded-lg border-2 border-dashed border-muted bg-background p-8 text-center h-48">
+    <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border-2 border-dashed border-muted bg-background p-8 text-center h-48">
         <div className="flex items-center space-x-4">
             <Button onClick={() => startRecording('video')} variant="outline" size="icon" className="h-16 w-16 rounded-full">
                 <Video className="h-8 w-8" />
