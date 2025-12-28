@@ -99,7 +99,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
 
       if (memoryToEdit.mediaAttachments?.[0]) {
         const m = memoryToEdit.mediaAttachments[0];
-        setCurrentMedia({ file: new File([], "existing"), type: m.type, duration: m.duration || 0 });
+        setCurrentMedia({ file: new File([], "existing"), type: m.type, duration: m.duration || 0, source: 'initial' });
         setCurrentMediaPreviewUrl(m.url);
         setTrimValues([m.startTime || 0, m.endTime || m.duration || 0]);
       }
@@ -127,7 +127,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
       const isExistingFile = prev?.file?.name === "existing" || (memoryToEdit && payload.file.size === 0);
 
       if (isExistingFile && hasSavedTrim) {
-        return { ...payload, startTime: trimValues[0], endTime: trimValues[1], duration: payload.duration || prev.duration };
+        return { ...payload, startTime: trimValues[0], endTime: trimValues[1], duration: payload.duration || prev.duration, source: 'initial' };
       }
 
       setTrimValues([0, payload.duration]);
@@ -135,13 +135,19 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
         if (currentMediaPreviewUrl?.startsWith('blob:')) URL.revokeObjectURL(currentMediaPreviewUrl);
         setCurrentMediaPreviewUrl(URL.createObjectURL(payload.file));
       }
-      return payload;
+      return { ...payload, source: 'new' };
     });
   }, [isEditing, trimValues, currentMediaPreviewUrl, memoryToEdit]);
 
   const onSave = async () => {
     if (!title) {
       toast({ title: "Missing Title", description: "Please give your memory a title.", variant: "destructive" });
+      return;
+    }
+
+    if (!currentMedia) {
+      toast({ title: "Missing Media", description: "Please add a video or audio to your memory.", variant: "destructive" });
+      carouselApi?.scrollTo(1);
       return;
     }
     
@@ -295,7 +301,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
               <CardContent className="space-y-6">
                 <MediaCaptureControl 
                   onMediaReady={handleMediaReady} 
-                  initialMedia={currentMediaPreviewUrl ? { previewUrl: currentMediaPreviewUrl, type: currentMedia?.type, duration: currentMedia?.duration } : null} 
+                  initialMedia={currentMediaPreviewUrl ? { previewUrl: currentMediaPreviewUrl, type: currentMedia?.type, duration: currentMedia?.duration, source: currentMedia?.source } : null} 
                   trimValues={trimValues} 
                 />
                 {currentMedia && currentMedia.duration > 0 && (
