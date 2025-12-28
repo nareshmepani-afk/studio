@@ -26,6 +26,14 @@ const MediaCaptureControl = dynamic(
   }
 );
 
+// Helper to format time
+const formatTime = (seconds: number) => {
+    const totalSeconds = Math.round(seconds);
+    const minutes = Math.floor(totalSeconds / 60);
+    const remainingSeconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
 interface MemoryFormProps {
   memoryToEdit: Memory | null;
   promptId?: string;
@@ -189,8 +197,8 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
     );
   };
   
-  const leftValueLabel = currentMedia ? `${trimValues[0].toFixed(1)}s` : '';
-  const rightValueLabel = currentMedia ? `${trimValues[1].toFixed(1)}s` : '';
+  const leftValueLabel = currentMedia ? formatTime(trimValues[0]) : '';
+  const rightValueLabel = currentMedia ? formatTime(trimValues[1]) : '';
   const leftPosition = currentMedia && currentMedia.duration > 0 ? `calc(${(trimValues[0] / currentMedia.duration) * 100}% - ${leftValueLabel.length / 2}ch)` : '0%';
   const rightPosition = currentMedia && currentMedia.duration > 0 ? `calc(${(trimValues[1] / currentMedia.duration) * 100}% - ${rightValueLabel.length / 2}ch)` : '100%';
 
@@ -312,8 +320,8 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                                 aria-label="Video trim slider"
                             />
                              <div className="flex justify-between mt-1">
-                                <span className="text-xs text-muted-foreground font-mono">0.0s</span>
-                                <span className="text-xs text-muted-foreground font-mono">{currentMedia.duration.toFixed(1)}s</span>
+                                <span className="text-xs text-muted-foreground font-mono">{formatTime(0)}</span>
+                                <span className="text-xs text-muted-foreground font-mono">{currentMedia ? formatTime(currentMedia.duration) : '00:00'}</span>
                             </div>
                         </div>
                     </div>

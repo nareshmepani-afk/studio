@@ -11,8 +11,9 @@ const RECORDING_INTERVAL_MS = 1000;
 
 // Helper to format time
 const formatTime = (seconds: number) => {
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
+  const totalSeconds = Math.round(seconds);
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainingSeconds = totalSeconds % 60;
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
@@ -60,12 +61,14 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
     }
   }, [initialMedia]);
 
+  // Cleanup effect
   useEffect(() => {
     return () => {
       stopRecording();
     };
   }, [stopRecording]);
 
+  // Timer effect
   useEffect(() => {
       if (status === 'recording' && recordingTime >= MAX_RECORDING_SECONDS) {
           toast({ title: "Recording Limit Reached", description: `Recording stopped automatically after ${formatTime(MAX_RECORDING_SECONDS)}.` });
@@ -103,7 +106,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
 
   const startRecording = async (type: 'audio' | 'video') => {
     try {
-      stopRecording();
+      stopRecording(); // Clear previous instances
 
       setRecordingType(type);
       setStatus('recording');
@@ -144,7 +147,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
             onMediaReady(newMedia);
             setStatus('preview');
         };
-        recordedChunksRef.current = [];
+        recordedChunksRef.current = []; // Clear chunks
       };
 
       recorder.start();
