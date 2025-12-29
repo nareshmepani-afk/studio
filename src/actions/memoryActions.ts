@@ -127,6 +127,11 @@ export async function saveMemory(formData: FormData, memoryId: string | null) {
         }
     }
 
+    if (mediaAttachments.length === 0) {
+        console.error("[ACTION] Save Error: Attempted to save memory without media.");
+        return { success: false, message: "A memory must have an associated media file." };
+    }
+
     const memoryData: Partial<Memory> = {
       title,
       description,

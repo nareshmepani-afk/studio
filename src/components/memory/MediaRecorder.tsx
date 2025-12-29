@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Mic, Video, XCircle, CheckCircle, Loader2, StopCircle } from 'lucide-react';
+import { Upload, Mic, Video, Loader2, StopCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const MAX_FILE_SIZE_MB = 100;
@@ -26,12 +26,12 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
 
   const { toast } = useToast();
 
-  const [status, setStatus] = useState('idle'); // idle, recording, preview, error
+  const [status, setStatus] = useState('idle'); // idle, recording, preview
   const [media, setMedia] = useState<any>(null);
   const [recordingType, setRecordingType] = useState<'video' | 'audio'>('video');
   const [recordingTime, setRecordingTime] = useState(0);
 
-  const stopRecording = useCallback(() => {
+  const stopRecordingAndCleanup = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
         mediaRecorderRef.current.stop();
     }
@@ -46,46 +46,42 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
     }
-    setStatus('idle');
+    // Don't reset status here, onstop will handle it
   }, []);
 
   useEffect(() => {
-    if (initialMedia?.previewUrl) {
-      setMedia({
+    // Set initial media if it exists
+    if (initialMedia?.previewUrl && !media) {
+      const newMedia = {
         type: initialMedia.type || 'video',
         url: initialMedia.previewUrl,
         source: 'initial',
         duration: initialMedia.duration || 0
-      });
+      };
+      setMedia(newMedia);
       setStatus('preview');
+      onMediaReady({
+        file: new File([], "existing"),
+        type: newMedia.type,
+        duration: newMedia.duration
+      });
     }
-  }, [initialMedia]);
+  }, [initialMedia, media, onMediaReady]);
 
-  // Cleanup effect
+  // Cleanup effect for streams
   useEffect(() => {
     return () => {
-      stopRecording();
+      stopRecordingAndCleanup();
     };
-  }, [stopRecording]);
+  }, [stopRecordingAndCleanup]);
 
-  // Timer effect
+  // Auto-stop timer effect
   useEffect(() => {
       if (status === 'recording' && recordingTime >= MAX_RECORDING_SECONDS) {
           toast({ title: "Recording Limit Reached", description: `Recording stopped automatically after ${formatTime(MAX_RECORDING_SECONDS)}.` });
-          stopRecording();
+          stopRecordingAndCleanup();
       }
-  }, [recordingTime, status, stopRecording, toast]);
-
-  const handleMetadata = useCallback(() => {
-    const videoEl = videoRef.current;
-    if (videoEl && media?.source === 'initial' && videoEl.duration !== Infinity && onMediaReady) {
-      onMediaReady({
-        file: new File([], "existing"),
-        type: media.type,
-        duration: videoEl.duration
-      });
-    }
-  }, [media, onMediaReady]);
+  }, [recordingTime, status, stopRecordingAndCleanup, toast]);
 
   const handlePlay = useCallback(() => {
     const video = videoRef.current;
@@ -103,10 +99,12 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
     }
   }, [trimValues, media]);
 
-
   const startRecording = async (type: 'audio' | 'video') => {
     try {
-      stopRecording(); // Clear previous instances
+      if (media?.url && media.source === 'new') {
+        URL.revokeObjectURL(media.url);
+      }
+      stopRecordingAndCleanup();
 
       setRecordingType(type);
       setStatus('recording');
@@ -117,8 +115,6 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
 
       if (type === 'video' && videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.muted = true;
-        videoRef.current.play().catch(console.error);
       }
 
       const mimeType = type === 'video' ? 'video/webm' : 'audio/webm';
@@ -138,35 +134,34 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
         const mediaEl = document.createElement(type === 'video' ? 'video' : 'audio');
         mediaEl.src = url;
         mediaEl.onloadedmetadata = () => {
-            const newMedia = {
+            const newMediaPayload = {
                 file: new File([blob], `recording.${type === 'video' ? 'webm' : 'mp3'}`),
                 type: type,
                 duration: mediaEl.duration
             };
             setMedia({ url, type, source: 'new', duration: mediaEl.duration });
-            onMediaReady(newMedia);
+            onMediaReady(newMediaPayload);
             setStatus('preview');
         };
-        recordedChunksRef.current = []; // Clear chunks
+        recordedChunksRef.current = [];
+        // Stream is stopped in stopRecordingAndCleanup
       };
 
       recorder.start();
-      
-      recordingIntervalRef.current = setInterval(() => {
-        setRecordingTime(prevTime => prevTime + 1);
-      }, RECORDING_INTERVAL_MS);
+      recordingIntervalRef.current = setInterval(() => setRecordingTime(prev => prev + 1), RECORDING_INTERVAL_MS);
 
     } catch (err: any) {
         console.error("Error starting recording:", err);
         toast({ title: "Recording Error", description: err.message, variant: "destructive" });
-        stopRecording();
-        setStatus('error');
+        setStatus(initialMedia ? 'preview' : 'idle');
     }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (media?.url && media.source === 'new') URL.revokeObjectURL(media.url);
 
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
         toast({ title: "File too large", description: `Please select a file smaller than ${MAX_FILE_SIZE_MB}MB.`, variant: "destructive" });
@@ -178,93 +173,41 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
     mediaEl.src = url;
 
     mediaEl.onloadedmetadata = () => {
-        const newMedia = {
+        const newMediaPayload = {
             file,
             type: file.type.startsWith('video') ? 'video' : 'audio',
             duration: mediaEl.duration
         };
-        setMedia({ url, type: newMedia.type, source: 'new', duration: mediaEl.duration });
-        onMediaReady(newMedia);
+        setMedia({ url, type: newMediaPayload.type, source: 'new', duration: mediaEl.duration });
+        onMediaReady(newMediaPayload);
         setStatus('preview');
     };
     event.target.value = '';
   };
 
-  const clearMedia = () => {
+  const resetToInitial = useCallback(() => {
     if (media?.url && media.source === 'new') URL.revokeObjectURL(media.url);
-    setMedia(null);
-    onMediaReady(null);
-    setStatus('idle');
-  };
-
-  if (status === 'preview' && media?.url) {
-    return (
-      <div className="space-y-4">
-        <div className="relative">
-          <video
-            ref={videoRef}
-            src={media.url}
-            onLoadedMetadata={handleMetadata}
-            onPlay={handlePlay}
-            onTimeUpdate={handleTimeUpdate}
-            controls
-            className="w-full rounded bg-black aspect-video"
-          />
-        </div>
-        <Button onClick={clearMedia} variant="outline" className="w-full">
-          {media.source === 'initial' ? 'Replace Media' : 'Start Over'}
-        </Button>
-      </div>
-    );
-  }
-
-  if (status === 'recording') {
-    const timerDisplay = `${formatTime(recordingTime)} / ${formatTime(MAX_RECORDING_SECONDS)}`;
-    if (recordingType === 'video') {
-        return (
-            <div className="space-y-4">
-                <div className="relative w-full rounded bg-black aspect-video overflow-hidden">
-                    <video
-                        ref={videoRef}
-                        className="w-full h-full object-cover scale-x-[-1]"
-                        autoPlay
-                        muted
-                        playsInline
-                    />
-                     <div className="absolute top-2 left-2 flex items-center space-x-2 bg-black/50 text-white text-xs px-2 py-1 rounded z-10">
-                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                        <span>REC</span>
-                    </div>
-                    <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded font-mono z-10">
-                        {timerDisplay}
-                    </div>
-                </div>
-                <Button onClick={stopRecording} variant="destructive" className="w-full">
-                    <StopCircle className="mr-2 h-4 w-4" />
-                    Stop Recording
-                </Button>
-            </div>
-        );
-    } else { // audio
-         return (
-            <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border-2 border-dashed border-primary bg-background p-8 text-center h-48">
-                <div className="flex items-center text-primary mb-2">
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
-                    <span>Recording Audio...</span>
-                </div>
-                <div className="text-primary font-mono text-lg">
-                    {timerDisplay}
-                </div>
-                <Button onClick={stopRecording} variant="destructive" size="icon" className="rounded-full mt-2">
-                    <StopCircle className="h-6 w-6" />
-                </Button>
-            </div>
-        )
+    
+    if (initialMedia?.previewUrl) {
+      const newMedia = {
+        type: initialMedia.type || 'video',
+        url: initialMedia.previewUrl,
+        source: 'initial',
+        duration: initialMedia.duration || 0
+      };
+      setMedia(newMedia);
+      setStatus('preview');
+      onMediaReady({ file: new File([], "existing"), type: newMedia.type, duration: newMedia.duration });
+    } else {
+      setMedia(null);
+      onMediaReady(null);
+      setStatus('idle');
     }
-  }
+  }, [media, initialMedia, onMediaReady]);
 
-  return (
-    <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border-2 border-dashed border-muted bg-background p-8 text-center h-48">
+  const renderCaptureOptions = () => (
+    <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border-2 border-dashed border-muted bg-background p-8 text-center min-h-[200px]">
+        <p className="text-sm text-muted-foreground">Record a new clip or upload a file.</p>
         <div className="flex items-center space-x-4">
             <Button onClick={() => startRecording('video')} variant="outline" size="icon" className="h-16 w-16 rounded-full">
                 <Video className="h-8 w-8" />
@@ -274,14 +217,76 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
             </Button>
         </div>
          <div className="text-sm text-muted-foreground">or</div>
-        <div className="relative">
-            <Button asChild>
-                <label htmlFor="file-upload">
-                    <Upload className="mr-2 h-4 w-4" /> Upload File
-                </label>
-            </Button>
-            <input id="file-upload" type="file" className="sr-only" onChange={handleFileUpload} accept="video/*,audio/*" />
-        </div>
+        <Button asChild>
+            <label htmlFor="file-upload" className="cursor-pointer">
+                <Upload className="mr-2 h-4 w-4" /> Upload File
+            </label>
+        </Button>
+        <input id="file-upload" type="file" className="sr-only" onChange={handleFileUpload} accept="video/*,audio/*" />
     </div>
   );
+
+  if (status === 'recording') {
+    const timerDisplay = `${formatTime(recordingTime)} / ${formatTime(MAX_RECORDING_SECONDS)}`;
+    const content = recordingType === 'video' ? (
+        <video ref={videoRef} className="w-full h-full object-cover scale-x-[-1]" autoPlay muted playsInline />
+    ) : (
+        <div className="flex flex-col items-center justify-center h-full text-primary">
+            <Loader2 className="mr-2 h-8 w-8 animate-spin"/>
+            <span className="mt-2">Recording Audio...</span>
+        </div>
+    );
+    return (
+        <div className="space-y-4">
+            <div className="relative w-full rounded bg-black aspect-video overflow-hidden">
+                {content}
+                <div className="absolute top-2 left-2 flex items-center space-x-2 bg-black/50 text-white text-xs px-2 py-1 rounded z-10">
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                    <span>REC</span>
+                </div>
+                <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded font-mono z-10">
+                    {timerDisplay}
+                </div>
+            </div>
+            <Button onClick={stopRecordingAndCleanup} variant="destructive" className="w-full">
+                <StopCircle className="mr-2 h-4 w-4" /> Stop Recording
+            </Button>
+        </div>
+    );
+  }
+
+  if (status === 'preview' && media?.url) {
+    return (
+      <div className="space-y-4">
+        <div className="relative">
+          <video
+            ref={videoRef}
+            src={media.url}
+            onPlay={handlePlay}
+            onTimeUpdate={handleTimeUpdate}
+            controls
+            className="w-full rounded bg-black aspect-video"
+          />
+        </div>
+        
+        {media.source === 'new' && (
+          <Button onClick={resetToInitial} variant="outline" className="w-full">
+            {initialMedia ? 'Cancel and Revert to Original' : 'Start Over'}
+          </Button>
+        )}
+
+        {media.source === 'initial' && (
+          <>
+            <div className="relative flex items-center justify-center my-6">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t"></span></div>
+                <span className="relative bg-background px-2 text-sm text-muted-foreground uppercase">Or Replace Media</span>
+            </div>
+            {renderCaptureOptions()}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return renderCaptureOptions();
 }
