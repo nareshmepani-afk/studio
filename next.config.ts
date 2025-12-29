@@ -37,6 +37,9 @@ const nextConfig: NextConfig = {
       }
     ],
   },
+  serverActions: {
+    bodySizeLimit: '100mb',
+  },
   env: {
     NEXT_PUBLIC_CRASHLYTICS_ENABLED: process.env.NODE_ENV === 'production' ? 'true' : 'false',
   },
