@@ -2,13 +2,14 @@
 'use client';
 
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
-import { onIdTokenChanged, type User as FirebaseUser, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { onIdTokenChanged, type User as FirebaseUser, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, onSnapshot, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from './use-toast';
 import type { User } from '@/types';
 import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/lib/constants';
+import { createSessionAction, deleteSessionAction } from '@/actions/createSessionAction';
 
 type CombinedUser = FirebaseUser & Partial<User>;
 
@@ -17,10 +18,12 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
   userMode: 'host' | 'guest';
   updateUserProfileInFirestore: (data: Partial<User>) => Promise<void>;
   hostPassStatus: 'no_pass_initiated' | 'free_host_pass_active' | 'paid_host_pass_active' | 'free_host_pass_expired' | 'paid_host_pass_expired';
   storageQuotaBytes: { total: number; used: number };
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,37 +36,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [userMode, setUserMode] = useState<'host' | 'guest'>('host');
   
-  // These will be derived from user object now
   const hostPassStatus = user?.hostPassStatus || 'no_pass_initiated';
   const storageQuotaBytes = user?.storageQuota || { total: 0, used: 0 };
+  const isAuthenticated = !!user;
 
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    const unsubscribe = onIdTokenChanged(auth, (firebaseUser) => {
+    const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        const idToken = await firebaseUser.getIdToken();
+        await createSessionAction(idToken);
+        
         const userProfileRef = doc(db, 'users', firebaseUser.uid);
         const profileUnsubscribe = onSnapshot(userProfileRef, (doc) => {
           if (doc.exists()) {
             const userProfile = doc.data() as User;
             setUser({ ...firebaseUser, ...userProfile });
           } else {
-            // This case might occur on first registration before Firestore doc is created
             setUser(firebaseUser as CombinedUser);
           }
           setLoading(false);
         }, (error) => {
-           console.error("Firestore onSnapshot error:", error);
-           setUser(firebaseUser as CombinedUser); // Fallback to firebaseUser if profile fails to load
+           setUser(firebaseUser as CombinedUser); 
            setLoading(false);
         });
         return () => profileUnsubscribe();
       } else {
-        // User is signed out
+        await deleteSessionAction();
         setUser(null);
         setLoading(false);
-        fetch('/api/auth/session', { method: 'DELETE' });
       }
     });
 
@@ -74,39 +77,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (loading) return;
     
     const isPrivateRoute = PRIVATE_ROUTES.some(route => pathname.startsWith(route));
-    const isPublicOnlyRoute = PUBLIC_ONLY_ROUTES.includes(pathname);
+    const isPublicOnlyRoute = PUBLIC_ONLY_ROUTES.some(route => pathname.startsWith(route));
 
-    if (!user && isPrivateRoute) {
+    if (!isAuthenticated && isPrivateRoute) {
       router.push('/login');
-    } else if (user && isPublicOnlyRoute) {
+    } else if (isAuthenticated && isPublicOnlyRoute) {
       router.push('/prompts');
     }
-  }, [user, loading, pathname, router]);
-
-  const createSession = useCallback(async (firebaseUser: FirebaseUser) => {
-    const idToken = await firebaseUser.getIdToken();
-    const res = await fetch('/api/auth/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken }),
-    });
-    if (!res.ok) {
-      throw new Error('Failed to create session');
-    }
-  }, []);
+  }, [isAuthenticated, loading, pathname, router]);
 
   const login = useCallback(async (email: string, password: string) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      await createSession(userCredential.user);
+      await signInWithEmailAndPassword(auth, email, password);
       toast({ title: 'Login Successful', description: "Welcome back!", variant: 'success' });
-      // Redirection is handled by the useEffect hook
     } catch (error: any) {
-      console.error("Login error:", error);
       toast({ title: 'Login Failed', description: error.message, variant: 'destructive' });
       throw error;
     }
-  }, [createSession]);
+  }, []);
 
   const register = useCallback(async (name: string, email: string, password: string) => {
     try {
@@ -128,15 +116,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       await setDoc(doc(db, 'users', firebaseUser.uid), userProfile);
       
-      await createSession(firebaseUser);
       toast({ title: 'Registration Successful', description: "Welcome to Memory Weaver!", variant: 'success' });
-      // Redirection is handled by the useEffect hook
     } catch (error: any) {
-      console.error("Registration error:", error);
       toast({ title: 'Registration Failed', description: error.message, variant: 'destructive' });
       throw error;
     }
-  }, [createSession]);
+  }, []);
+
+  const logout = useCallback(async () => {
+    await signOut(auth);
+    router.push('/');
+    toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
+  }, [router]);
 
   const updateUserProfileInFirestore = useCallback(async (data: Partial<User>) => {
     if (!user?.uid) throw new Error("User not authenticated to update profile");
@@ -149,10 +140,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     login,
     register,
+    logout,
     userMode,
     updateUserProfileInFirestore,
     hostPassStatus,
     storageQuotaBytes,
+    isAuthenticated,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

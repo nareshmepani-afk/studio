@@ -17,10 +17,8 @@ import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/com
 import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
-import { getAuth } from 'firebase/auth';
-import { doc, getDoc, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Skeleton } from '../ui/skeleton';
+import { useAuth } from '@/hooks/useAuth';
+import { revalidatePath } from 'next/cache';
 
 const MediaCaptureControl = dynamic(
   () => import('./MediaRecorder').then((mod) => mod.MediaCaptureControl),
@@ -38,26 +36,25 @@ const formatTime = (seconds: number) => {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
-// --- SERVER ACTION TO SAVE MEMORY ---
-// This action is self-contained and runs on the server.
 async function saveMemoryAction(
   formData: FormData
 ): Promise<{ success: boolean; message: string }> {
   'use server';
   
-  // Dynamically import server-only modules inside the action.
   const { adminAuth, adminDb, adminStorage } = await import('@/lib/firebase-admin');
   const { cookies } = await import('next/headers');
-  const { revalidatePath } = await import('next/cache');
 
+  if (!adminAuth || !adminDb || !adminStorage) {
+    return { success: false, message: 'Server-side services are not available.' };
+  }
+  
   let userId: string;
   try {
-      const sessionCookie = cookies().get('firebase-auth-token')?.value;
+      const sessionCookie = cookies().get('firebase-session')?.value;
       if (!sessionCookie) throw new Error("Authentication session not found.");
       const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
       userId = decodedToken.uid;
   } catch (error: any) {
-      console.error("[ACTION/saveMemory] Auth Error:", error.message);
       return { success: false, message: 'Authentication failed: ' + error.message };
   }
 
@@ -71,9 +68,8 @@ async function saveMemoryAction(
       category: formData.get('category') as string,
       location: formData.get('location') as string,
       emotionTags: JSON.parse(formData.get('emotionTags') as string),
-      promptId: formData.get('promptId') as string | undefined,
-      userId: userId, // Ensure userId is set
-      updatedAt: new Date().toISOString(),
+      promptId: formData.get('promptId') as string || undefined,
+      userId: userId,
     };
 
     const mediaFile = formData.get('mediaFile') as File | null;
@@ -99,7 +95,6 @@ async function saveMemoryAction(
       }];
     }
     
-    // Apply trim data to the primary media attachment
     const trimData = JSON.parse(formData.get('trimData') as string);
     if(newOrUpdatedAttachments[0]){
       newOrUpdatedAttachments[0] = { ...newOrUpdatedAttachments[0], ...trimData };
@@ -108,50 +103,38 @@ async function saveMemoryAction(
     memoryData.mediaAttachments = newOrUpdatedAttachments;
 
     if (memoryId) {
+      memoryData.updatedAt = new Date().toISOString();
       const memRef = adminDb.collection('users').doc(userId).collection('memories').doc(memoryId);
       await memRef.update(memoryData as { [key: string]: any });
     } else {
-      const newId = crypto.randomUUID(); // Generate a client-side ID for the new memory
-      memoryData.id = newId;
       memoryData.createdAt = new Date().toISOString();
-      const newMemRef = adminDb.collection('users').doc(userId).collection('memories').doc(newId);
+      const newMemRef = adminDb.collection('users').doc(userId).collection('memories').doc();
       await newMemRef.set(memoryData);
     }
-    
-    // Revalidate paths to ensure fresh data is shown on navigation.
-    revalidatePath('/prompts');
-    revalidatePath('/timeline');
     
     return { success: true, message: memoryId ? "Memory updated successfully" : "Memory saved successfully" };
 
   } catch (error: any) {
-    console.error("[ACTION/saveMemory] Save Error:", { message: error.message, stack: error.stack });
     return { success: false, message: 'An unexpected error occurred on the server: ' + error.message };
   }
 }
-// --- END OF SERVER ACTION ---
-
 
 interface MemoryFormProps {
-  editMemoryId?: string;
+  memoryToEdit: Memory | null;
   promptId?: string;
   initialCustomPrompt?: string;
 }
 
-// This is now a pure Client Component.
-export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: MemoryFormProps) {
+export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: MemoryFormProps) {
   const router = useRouter();
   const { toast } = useToast(); 
-  const isEditing = !!editMemoryId;
+  const { user } = useAuth();
+  const isEditing = !!memoryToEdit;
 
-  // Form state is initialized from props passed down by the server component.
-  const [memoryToEdit, setMemoryToEdit] = useState<Memory | null>(null);
-  const [isLoadingMemory, setIsLoadingMemory] = useState(isEditing);
-
-  const [title, setTitle] = useState(() => initialCustomPrompt || '');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState(() => initialCustomPrompt || memoryToEdit?.title || '');
+  const [description, setDescription] = useState(memoryToEdit?.description || '');
   const [selectedCategory, setSelectedCategory] = useState<MemoryCategory | undefined>();
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState(memoryToEdit?.location || '');
   const [selectedEmotionTags, setSelectedEmotionTags] = useState<EmotionTag[]>([]);
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -170,58 +153,8 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
   const months = Array.from({ length: 12 }, (_, i) => ({ value: i, label: format(new Date(2000, i, 1), 'MMMM') }));
   const days = Array.from({ length: getDaysInMonth(new Date(selectedYear, selectedMonth)) }, (_, i) => i + 1);
 
-  // Fetch memory data on the client if we're editing
-  useEffect(() => {
-    async function fetchMemory() {
-      if (!editMemoryId) {
-          setIsLoadingMemory(false);
-          return;
-      };
-
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (!user) {
-        toast({ title: "Authentication Error", description: "You must be logged in to edit memories.", variant: "destructive" });
-        setIsLoadingMemory(false);
-        router.push('/login');
-        return;
-      }
-      
-      try {
-        const docRef = doc(db, 'users', user.uid, 'memories', editMemoryId);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data() as Omit<Memory, 'id'>;
-          const memory = {
-              id: docSnap.id,
-              ...data,
-              date: (data?.date as any)?.toDate ? (data.date as any).toDate().toISOString() : data?.date,
-          } as Memory
-          setMemoryToEdit(memory);
-        } else {
-          toast({ title: "Not Found", description: "The memory you are trying to edit does not exist.", variant: "destructive" });
-          router.push('/timeline');
-        }
-      } catch (error) {
-        toast({ title: "Error", description: "Failed to load the memory for editing.", variant: "destructive" });
-        console.error("Error fetching memory for edit:", error);
-      } finally {
-        setIsLoadingMemory(false);
-      }
-    }
-    
-    fetchMemory();
-  }, [editMemoryId, router]);
-
-
-  // Effect to hydrate the form state when editing
   useEffect(() => {
     if (memoryToEdit) {
-      setTitle(memoryToEdit.title || '');
-      setDescription(memoryToEdit.description || '');
-      setLocation(memoryToEdit.location || '');
-
       const matchedCategory = memoryCategoriesList.find(c => c.id === (typeof memoryToEdit.category === 'string' ? memoryToEdit.category : memoryToEdit.category?.id));
       setSelectedCategory(matchedCategory || memoryCategoriesList[0]);
       
@@ -273,7 +206,10 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    
+    if (!user) {
+        toast({ title: "Not Authenticated", description: "You must be logged in to save a memory.", variant: "destructive" });
+        return;
+    }
     if (!title) {
       toast({ title: "Missing Title", description: "Please give your memory a title.", variant: "destructive" });
       carouselApi?.scrollTo(0);
@@ -302,7 +238,6 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
     };
     formData.append('trimData', JSON.stringify(trimData));
     
-    // Call the server action directly.
     const result = await saveMemoryAction(formData);
     
     setIsSubmitting(false);
@@ -310,7 +245,7 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
     if (result.success) {
       toast({ title: "Success", description: result.message, variant: 'success' });
       router.push('/timeline');
-      // No need for router.refresh() here because revalidatePath in the action handles it.
+      router.refresh(); 
     } else {
       toast({ title: "Error Saving Memory", description: result.message, variant: "destructive" });
     }
@@ -329,44 +264,9 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
   const leftPosition = currentMediaDuration > 0 ? `calc(${(trimValues[0] / currentMediaDuration) * 100}% - ${leftValueLabel.length / 2}ch)` : '0%';
   const rightPosition = currentMediaDuration > 0 ? `calc(${(trimValues[1] / currentMediaDuration) * 100}% - ${rightValueLabel.length / 2}ch)` : '100%';
 
-  if (isLoadingMemory) {
-    return (
-      <div className="max-w-3xl mx-auto pb-20">
-        <div className="flex justify-center mb-6 space-x-2">
-          <Skeleton className="h-2 w-16 rounded-full" />
-          <Skeleton className="h-2 w-16 rounded-full" />
-        </div>
-        <Card>
-          <CardHeader>
-              <Skeleton className="h-8 w-1/2" />
-              <Skeleton className="h-4 w-3/4 mt-2" />
-          </CardHeader>
-          <CardContent className="space-y-6">
-              <div className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <div className="grid grid-cols-3 gap-2">
-                      <Skeleton className="h-10 w-full" />
-                      <Skeleton className="h-10 w-full" />
-                      <Skeleton className="h-10 w-full" />
-                  </div>
-              </div>
-               <div className="space-y-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-24 w-full" />
-              </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   return (
     <form onSubmit={handleSubmit}>
-      <div className="max-w-3xl mx-auto pb-20">
+      <div className="max-w-3xl mx-auto py-8 px-4">
         <div className="flex justify-center mb-6 space-x-2">
           {[0, 1].map((step) => (
             <div key={step} className={`h-2 w-16 rounded-full transition-colors ${currentSlide === step ? 'bg-primary' : 'bg-secondary'}`} />

@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -16,30 +17,24 @@ import { LogOut, PlusCircle, Settings, Film, History, Home, UserCircle2 } from '
 import { useRouter, usePathname } from 'next/navigation';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from './ThemeToggle';
-import { auth } from '@/lib/firebase';
-import { signOut } from 'firebase/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function Navbar() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-      // The onAuthStateChanged listener in useAuth will handle the redirect.
-      router.push('/');
+      await logout();
     } catch (error) {
       console.error("Error signing out: ", error);
-      // Optionally, show an error message to the user.
     }
   };
 
   const navLinkClass = "text-sm font-medium text-muted-foreground transition-colors hover:text-primary flex items-center";
   const activeNavLinkClass = "text-primary";
 
-  // When auth state is loading, show a skeleton navbar
   if (loading) {
     return (
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -107,7 +102,7 @@ export function Navbar() {
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="relative h-8 w-8 rounded-full" aria-label="User account and settings">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || 'User'} />
+                            <AvatarImage src={user.avatarUrl || user.photoURL || undefined} alt={user.displayName || user.email || 'User'} />
                             <AvatarFallback>
                               {user.displayName ? user.displayName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : <UserCircle2 className="h-6 w-6 text-muted-foreground" />)}
                             </AvatarFallback>
