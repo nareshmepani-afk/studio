@@ -139,16 +139,17 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
     });
   }, [isEditing, trimValues, currentMediaPreviewUrl, memoryToEdit]);
 
-  const onSave = async () => {
+ const onSave = async () => {
     if (!title) {
-      toast({ title: "Missing Title", description: "Please give your memory a title.", variant: "destructive" });
-      return;
+        toast({ title: "Missing Title", description: "Please give your memory a title.", variant: "destructive" });
+        carouselApi?.scrollTo(0);
+        return;
     }
 
     if (!currentMedia) {
-      toast({ title: "Missing Media", description: "Please add a video or audio to your memory.", variant: "destructive" });
-      carouselApi?.scrollTo(1);
-      return;
+        toast({ title: "Missing Media", description: "Please add a video or audio to your memory.", variant: "destructive" });
+        carouselApi?.scrollTo(1);
+        return;
     }
     
     setIsSubmitting(true);
@@ -164,22 +165,27 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
 
     if (promptId) formData.append('promptId', promptId);
 
-    if (currentMedia) {
-      const isNewFile = currentMedia.file.name !== "existing";
-      const metadata = {
-        startTime: trimValues[0],
-        endTime: trimValues[1],
-        isTrimmed: trimValues[0] > 0 || trimValues[1] < currentMedia.duration,
-        duration: currentMedia.duration
-      };
-
-      if (isNewFile) {
+    // FIX: Correctly handle media attachments to prevent sending empty files.
+    if (currentMedia && currentMedia.file && currentMedia.file.size > 0) {
+        // A new file has been selected or recorded.
+        const metadata = {
+            startTime: trimValues[0],
+            endTime: trimValues[1],
+            isTrimmed: trimValues[0] > 0 || trimValues[1] < currentMedia.duration,
+            duration: currentMedia.duration
+        };
         formData.append('mediaFile', currentMedia.file);
         formData.append('mediaMetadata', JSON.stringify(metadata));
-      } else if (memoryToEdit?.mediaAttachments?.[0]) {
+    } else if (isEditing && memoryToEdit?.mediaAttachments?.[0]) {
+        // An existing media file is being kept, potentially with new trim values.
+        const metadata = {
+            startTime: trimValues[0],
+            endTime: trimValues[1],
+            isTrimmed: trimValues[0] > 0 || trimValues[1] < currentMedia.duration,
+            duration: currentMedia.duration
+        };
         const updatedAttachment = { ...memoryToEdit.mediaAttachments[0], ...metadata };
         formData.append('mediaAttachments', JSON.stringify([updatedAttachment]));
-      }
     }
 
     const result = await saveMemory(formData, memoryToEdit?.id || null);
@@ -297,7 +303,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                     ? 'Replace or trim the existing media for this memory.'
                     : 'Upload or record a video/audio for this memory.'}
                 </CardDescription>
-              </CardHeader>
+              </Header>
               <CardContent className="space-y-6">
                 <MediaCaptureControl 
                   onMediaReady={handleMediaReady} 
