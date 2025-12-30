@@ -31,6 +31,12 @@ export function useMediaTrimmer() {
     startTime: number,
     endTime: number
   ): Promise<File | null> => {
+    // ** THE FIX **: Add a defensive check to prevent server-side build crashes.
+    if (!sourceFile || !sourceFile.name) {
+      console.error("Trim function called without a valid source file.");
+      return null;
+    }
+
     setIsTrimming(true);
     setIsProcessing(true);
     try {

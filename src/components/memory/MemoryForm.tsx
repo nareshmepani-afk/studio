@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
@@ -18,12 +17,14 @@ import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin } from 'luci
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/useAuth';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import Loading from '@/app/add-memory/loading';
+import { doc, getDoc, addDoc, updateDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db, storage } from '@/lib/firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
+
 
 const MediaCaptureControl = dynamic(
-  () => import('./MediaRecorder').then((mod) => mod.MediaCaptureControl),
+  () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
   { 
     ssr: false, 
     loading: () => <div className="h-48 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div> 
@@ -38,101 +39,17 @@ const formatTime = (seconds: number) => {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
-async function saveMemoryAction(
-  formData: FormData
-): Promise<{ success: boolean; message: string }> {
-  'use server';
-  
-  const { adminAuth, adminDb, adminStorage } = await import('@/lib/firebase-admin');
-  const { cookies } = await import('next/headers');
 
-  if (!adminAuth || !adminDb || !adminStorage) {
-    return { success: false, message: 'Server-side services are not available.' };
-  }
-  
-  let userId: string;
-  try {
-      const sessionCookie = cookies().get('firebase-session')?.value;
-      if (!sessionCookie) throw new Error("Authentication session not found.");
-      const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
-      userId = decodedToken.uid;
-  } catch (error: any) {
-      return { success: false, message: 'Authentication failed: ' + error.message };
-  }
-
-  try {
-    const memoryId = formData.get('memoryId') as string | null;
-    const mediaFile = formData.get('mediaFile') as File | null;
-
-    const memoryData: Partial<Memory> & { userId: string } = {
-      title: formData.get('title') as string,
-      date: formData.get('date') as string,
-      description: formData.get('description') as string,
-      category: formData.get('category') as string,
-      location: formData.get('location') as string,
-      emotionTags: JSON.parse(formData.get('emotionTags') as string),
-      promptId: formData.get('promptId') as string || undefined,
-      userId: userId,
-      mediaAttachments: [],
-    };
-    
-    let newOrUpdatedAttachments: MediaAttachment[] = JSON.parse(formData.get('existingAttachments') as string);
-    
-    // **THE FIX**: Only process the file if it exists and has content.
-    if (mediaFile && mediaFile.size > 0) {
-      const bucket = adminStorage.bucket();
-      const fileId = crypto.randomUUID();
-      const fileExtension = mediaFile.name.split('.').pop() || 'tmp';
-      const filePath = `users/${userId}/media/${fileId}.${fileExtension}`;
-      
-      const fileBuffer = await mediaFile.arrayBuffer();
-      
-      await bucket.file(filePath).save(Buffer.from(fileBuffer), { metadata: { contentType: mediaFile.type } });
-      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
-      
-      newOrUpdatedAttachments = [{
-        id: fileId,
-        url: publicUrl,
-        type: mediaFile.type.startsWith('video') ? 'video' : 'audio',
-        filename: mediaFile.name,
-      }];
-    }
-    
-    const trimData = JSON.parse(formData.get('trimData') as string);
-    if (newOrUpdatedAttachments.length > 0) {
-      newOrUpdatedAttachments[0] = { ...newOrUpdatedAttachments[0], ...trimData };
-    }
-    
-    memoryData.mediaAttachments = newOrUpdatedAttachments;
-
-    if (memoryId) {
-      memoryData.updatedAt = new Date().toISOString();
-      const memRef = adminDb.collection('users').doc(userId).collection('memories').doc(memoryId);
-      await memRef.update(memoryData as { [key: string]: any });
-    } else {
-      memoryData.createdAt = new Date().toISOString();
-      const newMemRef = adminDb.collection('users').doc(userId).collection('memories').doc();
-      await newMemRef.set(memoryData);
-    }
-    
-    return { success: true, message: memoryId ? "Memory updated successfully" : "Memory saved successfully" };
-
-  } catch (error: any) {
-    console.error('[saveMemoryAction Error]', error);
-    return { success: false, message: 'An unexpected error occurred on the server: ' + error.message };
-  }
-}
-
-interface MemoryFormProps {
-  editMemoryId?: string;
-  promptId?: string;
-  initialCustomPrompt?: string;
-}
-
-export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: MemoryFormProps) {
+function MemoryForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast(); 
   const { user } = useAuth();
+  
+  const editMemoryId = searchParams.get('editMemoryId') || undefined;
+  const promptId = searchParams.get('promptId') || undefined;
+  const initialCustomPrompt = searchParams.get('customPrompt') || undefined;
+
   const isEditing = !!editMemoryId;
 
   const [memoryToEdit, setMemoryToEdit] = useState<Memory | null>(null);
@@ -148,7 +65,7 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
   const [selectedMonth, setSelectedMonth] = useState(getMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState(getDate(new Date()));
 
-  const [mediaPayload, setMediaPayload] = useState<{ file: File | null, type: 'video' | 'audio', duration: number } | null>(null);
+  const [mediaPayload, setMediaPayload] = useState<{ file: File, type: 'video' | 'audio', duration: number } | null>(null);
   const [initialMedia, setInitialMedia] = useState<MediaAttachment | null>(null);
   const [trimValues, setTrimValues] = useState<[number, number]>([0, 0]);
   
@@ -260,31 +177,82 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
     
     setIsSubmitting(true);
     
-    const formData = new FormData(event.currentTarget);
-    if(memoryToEdit?.id) formData.append('memoryId', memoryToEdit.id);
-    if(mediaPayload?.file) formData.append('mediaFile', mediaPayload.file);
-    
-    const existingAttachments = memoryToEdit?.mediaAttachments || [];
-    formData.append('existingAttachments', JSON.stringify(existingAttachments));
+    try {
+        let newOrUpdatedAttachments: MediaAttachment[] = memoryToEdit?.mediaAttachments || [];
 
-    const trimData = {
-      startTime: trimValues[0],
-      endTime: trimValues[1],
-      isTrimmed: trimValues[0] > 0 || (currentMediaDuration && trimValues[1] < currentMediaDuration),
-      duration: currentMediaDuration
-    };
-    formData.append('trimData', JSON.stringify(trimData));
-    
-    const result = await saveMemoryAction(formData);
-    
-    setIsSubmitting(false);
-    
-    if (result.success) {
-      toast({ title: "Success", description: result.message, variant: 'success' });
-      router.push('/timeline');
-      router.refresh(); 
-    } else {
-      toast({ title: "Error Saving Memory", description: result.message, variant: "destructive" });
+        // If a new file was provided, upload it
+        if (mediaPayload?.file) {
+            const file = mediaPayload.file;
+            const fileId = crypto.randomUUID();
+            const fileExtension = file.name.split('.').pop() || 'tmp';
+            const filePath = `users/${user.uid}/media/${fileId}.${fileExtension}`;
+            const fileRef = storageRef(storage, filePath);
+
+            await uploadBytes(fileRef, file);
+            const publicUrl = await getDownloadURL(fileRef);
+
+            // If there was an old file, delete it from storage
+            if (initialMedia?.url && initialMedia.url.includes('firebasestorage.googleapis.com')) {
+                try {
+                    const oldFileRef = storageRef(storage, initialMedia.url);
+                    await deleteObject(oldFileRef);
+                } catch (deleteError: any) {
+                    if (deleteError.code !== 'storage/object-not-found') {
+                        console.warn("Could not delete old media from storage:", deleteError);
+                    }
+                }
+            }
+
+            newOrUpdatedAttachments = [{
+                id: fileId,
+                url: publicUrl,
+                type: file.type.startsWith('video') ? 'video' : 'audio',
+                filename: file.name,
+            }];
+        }
+
+        // Apply trim data to the attachment
+        if (newOrUpdatedAttachments.length > 0) {
+            newOrUpdatedAttachments[0] = { 
+                ...newOrUpdatedAttachments[0], 
+                startTime: trimValues[0],
+                endTime: trimValues[1],
+                isTrimmed: trimValues[0] > 0 || (currentMediaDuration && trimValues[1] < currentMediaDuration),
+                duration: currentMediaDuration
+            };
+        }
+
+        const memoryData: Omit<Memory, 'id'> = {
+            title,
+            date: new Date(selectedYear, selectedMonth, selectedDay).toISOString(),
+            description,
+            category: selectedCategory?.id || 'personal_reflection',
+            location,
+            emotionTags: selectedEmotionTags.map(t => t.id),
+            promptId: promptId || memoryToEdit?.promptId,
+            userId: user.uid,
+            mediaAttachments: newOrUpdatedAttachments,
+            updatedAt: new Date().toISOString(),
+        };
+
+        if (isEditing && editMemoryId) {
+            const memRef = doc(db, 'users', user.uid, 'memories', editMemoryId);
+            await updateDoc(memRef, memoryData);
+            toast({ title: "Success", description: "Memory updated successfully", variant: 'success' });
+        } else {
+            const collectionRef = collection(db, 'users', user.uid, 'memories');
+            await addDoc(collectionRef, { ...memoryData, createdAt: new Date().toISOString() });
+            toast({ title: "Success", description: "Memory saved successfully", variant: 'success' });
+        }
+        
+        router.push('/timeline');
+        router.refresh();
+
+    } catch (error: any) {
+        console.error('Error saving memory:', error);
+        toast({ title: "Error Saving Memory", description: error.message, variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -306,7 +274,14 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
   const rightPosition = currentMediaDuration > 0 ? `calc(${(trimValues[1] / currentMediaDuration) * 100}% - ${rightValueLabel.length / 2}ch)` : '100%';
 
   if (isLoadingMemory) {
-    return <Loading />;
+      return (
+        <div className="container mx-auto py-8 px-4 flex justify-center items-center h-[calc(100vh-8rem)]">
+            <div className="flex flex-col items-center space-y-4">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-muted-foreground">Loading memory...</p>
+            </div>
+        </div>
+      );
   }
 
   return (
@@ -327,14 +302,12 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
                   <CardDescription>When and where did this happen?</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <input type="hidden" name="promptId" value={promptId || memoryToEdit?.promptId || ''} />
                   <div className="space-y-2">
                     <Label>Title</Label>
                     <Input name="title" placeholder="e.g. My 30th Birthday" value={title} onChange={e => setTitle(e.target.value)} required/>
                   </div>
                   <div className="space-y-2">
                     <Label>Date</Label>
-                    <input type="hidden" name="date" value={new Date(selectedYear, selectedMonth, selectedDay).toISOString()} />
                     <div className="grid grid-cols-3 gap-2">
                       <Select value={selectedDay.toString()} onValueChange={v => setSelectedDay(parseInt(v))}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
@@ -353,7 +326,6 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Category</Label>
-                      <input type="hidden" name="category" value={selectedCategory?.id || 'personal_reflection'} />
                       <Select value={selectedCategory?.id} onValueChange={(val) => setSelectedCategory(memoryCategoriesList.find(c => c.id === val))}>
                         <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
                         <SelectContent>
@@ -377,7 +349,6 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
                   </div>
                   <div className="space-y-2">
                     <Label>Emotions</Label>
-                    <input type="hidden" name="emotionTags" value={JSON.stringify(selectedEmotionTags.map(t => t.id))} />
                     <div className="flex flex-wrap gap-2">
                       {emotionTagsList.map((tag: EmotionTag) => (
                         <Button 
@@ -461,20 +432,13 @@ export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: Memo
   );
 }
 
-// Wrapper component to handle search params
-export default function MemoryFormPage() {
-  const searchParams = useSearchParams();
-  const editMemoryId = searchParams.get('editMemoryId') || undefined;
-  const promptId = searchParams.get('promptId') || undefined;
-  const initialCustomPrompt = searchParams.get('customPrompt') || undefined;
 
-  return (
-    <Suspense fallback={<Loading />}>
-      <MemoryForm 
-        editMemoryId={editMemoryId}
-        promptId={promptId}
-        initialCustomPrompt={initialCustomPrompt}
-      />
-    </Suspense>
-  )
+export default function AddMemoryPage() {
+    return (
+        <AuthenticatedPageWrapper>
+            <Suspense fallback={<div>Loading...</div>}>
+                <MemoryForm />
+            </Suspense>
+        </AuthenticatedPageWrapper>
+    )
 }
