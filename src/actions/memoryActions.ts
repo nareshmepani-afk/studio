@@ -1,3 +1,4 @@
+// Forcing a server refresh to fix a caching issue.
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -58,23 +59,24 @@ async function getAuthenticatedUser(sessionCookie: string | undefined) {
 }
 
 export async function getMemoryById(memoryId: string): Promise<{ success: boolean; data?: Memory; message?: string }> {
+    console.log(`[ACTION] getMemoryById: Function invoked. Attempting to retrieve memory with ID: ${memoryId}`);
     try {
-        // --- START DEFINITIVE FIX ---
-        // The previous code had a critical bug where it was querying for the literal string 'memoryId'
-        // instead of the actual memoryId variable. This is the root cause of the "Failed to retrieve memory" error.
+        console.log(`[ACTION] getMemoryById: Constructing Firestore query: collectionGroup('memories').where('id', '==', '${memoryId}')`);
         const memorySnapshot = await adminDb.collectionGroup('memories').where('id', '==', memoryId).limit(1).get();
-        // --- END DEFINITIVE FIX ---
+        console.log(`[ACTION] getMemoryById: Query executed. Found ${memorySnapshot.size} documents.`);
 
         if (memorySnapshot.empty) {
-            console.warn('[ACTION] getMemoryById: Memory with ID "' + memoryId + '" not found.');
+            console.warn(`[ACTION] getMemoryById: No memory found with ID '${memoryId}'. Returning failure.`);
             return { success: false, message: 'Memory not found.' };
         }
 
-        const memory = memorySnapshot.docs[0].data() as Memory;
-        console.log('[ACTION] getMemoryById: Successfully retrieved memory "' + memory.title + '"');
+        const memoryDoc = memorySnapshot.docs[0];
+        const memory = memoryDoc.data() as Memory;
+        console.log(`[ACTION] getMemoryById: Successfully retrieved memory titled '${memory.title}' from path ${memoryDoc.ref.path}`);
         return { success: true, data: memory };
+
     } catch (error: any) {
-        console.error("[ACTION] GetMemoryById Error:", error);
+        console.error(`[ACTION] getMemoryById: CRITICAL ERROR while fetching memory ID ${memoryId}. Error:`, error);
         return { success: false, message: 'Failed to retrieve memory. Check server logs for details (likely a missing index).' };
     }
 }
