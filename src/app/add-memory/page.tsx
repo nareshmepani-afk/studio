@@ -1,26 +1,14 @@
 
 import React, { Suspense } from 'react';
-import { cookies } from 'next/headers';
-import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { MemoryForm } from '@/components/memory/MemoryForm';
-import type { Memory } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
-import { Timestamp } from 'firebase-admin/firestore';
-import { notFound } from 'next/navigation';
+import { doc, getDoc, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { Memory } from '@/types';
+import { getAuth } from 'firebase/auth';
 
-async function getUserIdFromCookie(): Promise<string | null> {
-    const sessionCookie = cookies().get('firebase-auth-token')?.value;
-    if (!sessionCookie) return null;
-    try {
-        const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
-        return decodedToken.uid;
-    } catch (error) {
-        console.error('[SERVER/add-memory] Error verifying session cookie:', (error as Error).message);
-        return null;
-    }
-}
-
+// This is the loading skeleton for the page.
 function AddMemoryLoading() {
   return (
     <div className="max-w-3xl mx-auto pb-20">
@@ -56,61 +44,52 @@ function AddMemoryLoading() {
   );
 }
 
+// Define the props for the server component
 interface AddMemoryPageProps {
   searchParams: { [key: string]: string | string[] | undefined };
 }
 
-async function AddMemoryPage({ searchParams }: AddMemoryPageProps) {
-  const { editMemoryId, promptId, customPrompt } = searchParams;
-  const userId = await getUserIdFromCookie();
-  
-  if (!userId) {
-    // This should be caught by middleware or auth context, but as a fallback
-    return <div className="text-center text-red-500">You must be logged in to view this page.</div>;
-  }
 
-  let memoryToEdit: Memory | null = null;
-  
-  if (typeof editMemoryId === 'string' && editMemoryId) {
+// This is the main Server Component for the page.
+// It is responsible for fetching data on the server.
+async function getMemory(memoryId: string, userId: string): Promise<Memory | null> {
+    if (!userId) return null;
     try {
-        const docRef = adminDb.collection('users').doc(userId).collection('memories').doc(editMemoryId);
-        const docSnap = await docRef.get();
+        const docRef = doc(db, 'users', userId, 'memories', memoryId);
+        const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists) {
+        if (docSnap.exists()) {
             const data = docSnap.data();
-            // Serialize data for client
-            memoryToEdit = {
+            // Serialize Timestamps to ISO strings to safely pass to the client component.
+            return {
                 id: docSnap.id,
                 ...data,
-                date: data?.date instanceof Timestamp ? data.date.toDate().toISOString() : data?.date,
-                createdAt: data?.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data?.createdAt,
-                updatedAt: data?.updatedAt instanceof Timestamp ? data.updatedAt.toDate().toISOString() : data?.updatedAt,
+                date: (data?.date as any)?.toDate ? (data.date as any).toDate().toISOString() : data?.date,
+                createdAt: (data?.createdAt as any)?.toDate ? (data.createdAt as any).toDate().toISOString() : undefined,
+                updatedAt: (data?.updatedAt as any)?.toDate ? (data.updatedAt as any).toDate().toISOString() : undefined,
             } as Memory;
-        } else {
-            console.warn(`[SERVER/add-memory] Memory ID ${editMemoryId} not found for user ${userId}.`);
-            notFound();
         }
-    } catch(error) {
-        console.error(`[SERVER/add-memory] Failed to fetch memory ${editMemoryId}:`, error);
-        // Render an error state or redirect
-        return <div className="text-center text-red-500">Failed to load memory. Please try again.</div>;
+        return null;
+    } catch (error) {
+        console.error("Failed to fetch memory:", error);
+        return null;
     }
-  }
-
-  return (
-    <MemoryForm 
-      memoryToEdit={memoryToEdit} 
-      promptId={typeof promptId === 'string' ? promptId : undefined}
-      initialCustomPrompt={typeof customPrompt === 'string' ? customPrompt : undefined}
-    />
-  );
 }
 
 
-export default function AddMemoryPageWrapper(props: AddMemoryPageProps) {
+// The wrapper component handles suspense for a better loading experience.
+export default function AddMemoryPageWrapper({ searchParams }: AddMemoryPageProps) {
+    const editMemoryId = typeof searchParams.editMemoryId === 'string' ? searchParams.editMemoryId : undefined;
+    const promptId = typeof searchParams.promptId === 'string' ? searchParams.promptId : undefined;
+    const initialCustomPrompt = typeof searchParams.customPrompt === 'string' ? searchParams.customPrompt : undefined;
+    
     return (
         <Suspense fallback={<AddMemoryLoading />}>
-            <AddMemoryPage {...props} />
+            <MemoryForm 
+              editMemoryId={editMemoryId}
+              promptId={promptId}
+              initialCustomPrompt={initialCustomPrompt}
+            />
         </Suspense>
     );
 }
