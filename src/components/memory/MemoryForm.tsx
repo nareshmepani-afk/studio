@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -46,16 +47,19 @@ async function saveMemoryAction(
 
   let userId: string;
   try {
+      console.log('[ACTION/saveMemory] Verifying user authentication...');
       const sessionCookie = cookies().get('firebase-auth-token')?.value;
       if (!sessionCookie) throw new Error("Session cookie is missing. User is not authenticated.");
       const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
       userId = decodedToken.uid;
+      console.log(`[ACTION/saveMemory] User ${userId} authenticated.`);
   } catch (error: any) {
       console.error("[ACTION/saveMemory] Auth Error:", error.message);
       return { success: false, message: 'Authentication failed: ' + error.message };
   }
 
   try {
+    console.log('[ACTION/saveMemory] Processing form data...');
     const memoryId = formData.get('memoryId') as string | null;
 
     const memoryData: Partial<Memory> = {
@@ -73,19 +77,22 @@ async function saveMemoryAction(
     const mediaFile = formData.get('mediaFile') as File | null;
     let existingAttachments: MediaAttachment[] = JSON.parse(formData.get('existingAttachments') as string);
     let newOrUpdatedAttachments = existingAttachments;
+    console.log(`[ACTION/saveMemory] Memory ID: ${memoryId}, Has Media File: ${!!mediaFile}`);
 
     if (mediaFile && mediaFile.size > 0) {
-      // If there's a new file, upload it and replace the old attachment.
+      console.log(`[ACTION/saveMemory] New media file detected: ${mediaFile.name}, size: ${mediaFile.size}`);
       const bucket = adminStorage.bucket();
       const fileId = crypto.randomUUID();
-      const fileExtension = mediaFile.name.split('.').pop();
+      const fileExtension = mediaFile.name.split('.').pop() || 'tmp';
       const filePath = `users/${userId}/media/${fileId}.${fileExtension}`;
       const fileRef = bucket.file(filePath);
       
       const fileBuffer = await mediaFile.arrayBuffer();
       
+      console.log(`[ACTION/saveMemory] Uploading to Storage path: ${filePath}`);
       await fileRef.save(Buffer.from(fileBuffer), { metadata: { contentType: mediaFile.type } });
       const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+      console.log(`[ACTION/saveMemory] Upload successful. Public URL: ${publicUrl}`);
       
       newOrUpdatedAttachments = [{
         id: fileId,
@@ -103,17 +110,21 @@ async function saveMemoryAction(
     memoryData.mediaAttachments = newOrUpdatedAttachments;
 
     if (memoryId) {
+      console.log(`[ACTION/saveMemory] Updating existing memory ${memoryId} in Firestore...`);
       const memRef = adminDb.collection('users').doc(userId).collection('memories').doc(memoryId);
       await memRef.update(memoryData as { [key: string]: any });
+      console.log(`[ACTION/saveMemory] Update successful for memory ${memoryId}.`);
     } else {
       const newId = crypto.randomUUID();
       memoryData.id = newId;
       memoryData.createdAt = new Date().toISOString();
+      console.log(`[ACTION/saveMemory] Creating new memory with ID ${newId} in Firestore...`);
       const newMemRef = adminDb.collection('users').doc(userId).collection('memories').doc(newId);
       await newMemRef.set(memoryData);
+      console.log(`[ACTION/saveMemory] New memory ${newId} created successfully.`);
     }
     
-    // Revalidate paths to ensure fresh data is shown on navigation
+    console.log('[ACTION/saveMemory] Revalidating paths: /prompts, /timeline');
     revalidatePath('/prompts');
     revalidatePath('/timeline');
     

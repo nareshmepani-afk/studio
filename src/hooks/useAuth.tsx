@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
@@ -39,6 +40,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLoading(true);
           try {
             const idToken = await firebaseUser.getIdToken();
+            // This fetch is now only for debugging or if a server-side session API is still desired for other reasons.
+            // With the new server-side rendering logic, the cookie is read directly by server components,
+            // making this POST less critical for the main authentication flow.
             await fetch('/api/auth/session', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
