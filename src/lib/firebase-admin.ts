@@ -15,7 +15,8 @@ if (!admin.apps.length) {
     const storageBucketEnv = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET; 
     console.log(`[Firebase Admin] Storage bucket from env (may be incorrect): ${storageBucketEnv}`);
 
-    if (serviceAccountEnv && storageBucketEnv) {
+    if (serviceAccountEnv) {
+      console.log('[Firebase Admin] Found SERVICE_ACCOUNT_JSON environment variable.');
       try {
         const serviceAccount = JSON.parse(serviceAccountEnv);
         admin.initializeApp({
@@ -28,10 +29,15 @@ if (!admin.apps.length) {
       } catch (e) {
         console.warn('[Firebase Admin] Failed to initialize from environment variable. Falling back to file system.', e);
       }
+    } else {
+      console.log('[Firebase Admin] SERVICE_ACCOUNT_JSON environment variable not found.');
     }
 
     if (!initialized) {
+      console.log('[Firebase Admin] Attempting to initialize from file system.');
       const serviceAccountPath = path.join(process.cwd(), 'serviceAccountKey.json');
+      console.log(`[Firebase Admin] Looking for service account file at: ${serviceAccountPath}`);
+
       if (fs.existsSync(serviceAccountPath)) {
         const serviceAccountString = fs.readFileSync(serviceAccountPath, 'utf8');
         const serviceAccount = JSON.parse(serviceAccountString);
@@ -45,6 +51,7 @@ if (!admin.apps.length) {
         });
         console.log(`[Firebase Admin] Initialized successfully using file system. DEFINITIVE BUCKET: ${bucketName}`);
       } else {
+        console.error(`[Firebase Admin] CRITICAL: serviceAccountKey.json not found at ${serviceAccountPath}`);
         throw new Error('serviceAccountKey.json not found and SERVICE_ACCOUNT_JSON env var not set.');
       }
     }
