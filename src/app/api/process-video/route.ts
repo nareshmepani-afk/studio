@@ -1,113 +1,137 @@
 
-import { type NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps, App } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { NextRequest, NextResponse } from 'next/server';
+import * as admin from 'firebase-admin';
 import { getStorage } from 'firebase-admin/storage';
+import { Buffer } from 'buffer';
+import fs from 'fs';
 import path from 'path';
-import { Readable } from 'stream';
 
-// Helper to initialize Firebase Admin SDK safely, ensuring it only runs once.
-function initializeFirebaseAdmin(): { db: FirebaseFirestore.Firestore; storage: import('firebase-admin/storage').Storage } {
-  if (getApps().length > 0) {
-    return {
-      db: getFirestore(),
-      storage: getStorage(),
-    };
+// --- START DEFINITIVE FIX ---
+
+// Initialize Firebase Admin SDK if not already initialized
+if (!admin.apps.length) {
+  console.log('[API/process-video] Initializing Firebase Admin...');
+  try {
+    let serviceAccount;
+    // Try to get service account from environment variable first
+    if (process.env.SERVICE_ACCOUNT_JSON) {
+      serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_JSON);
+      console.log('[API/process-video] Loaded service account from environment variable.');
+    } else {
+      // Fallback to file system
+      const serviceAccountPath = path.join(process.cwd(), 'serviceAccountKey.json');
+      if (fs.existsSync(serviceAccountPath)) {
+        const serviceAccountString = fs.readFileSync(serviceAccountPath, 'utf8');
+        serviceAccount = JSON.parse(serviceAccountString);
+        console.log('[API/process-video] Loaded service account from file system.');
+      } else {
+        throw new Error('Could not find service account credentials in env var or file.');
+      }
+    }
+    
+    // THE DEFINITIVE FIX: Hardcode the correct bucket name.
+    const bucketName = 'memory-weaver-8rk9t.appspot.com';
+
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      storageBucket: bucketName
+    });
+    
+    console.log(`[API/process-video] Initialized successfully. DEFINITIVE BUCKET: ${bucketName}`);
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[API/process-video] CRITICAL: Initialization failed:', errorMessage);
+    // We will let the request fail downstream if services are unavailable.
   }
-
-  // When deployed to App Hosting, the Admin SDK automatically detects the
-  // environment and uses the Application Default Credentials.
-  initializeApp({
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  });
-
-  return {
-    db: getFirestore(),
-    storage: getStorage(),
-  };
 }
 
+const db = admin.firestore();
+const auth = admin.auth();
+const storage = getStorage();
+
+// --- END DEFINITIVE FIX ---
+
 export async function POST(req: NextRequest) {
+  console.log('[API/process-video] Received POST request.');
+  
   try {
-    const { db, storage } = initializeFirebaseAdmin();
-    const formData = await req.formData();
-
-    const file = formData.get('file') as File | null;
-    const userId = formData.get('userId') as string | null;
-
-    if (!file || !userId) {
-      return NextResponse.json({ error: 'Missing file or user ID.' }, { status: 400 });
+    const sessionCookie = req.cookies.get('firebase-auth-token')?.value;
+    if (!sessionCookie) {
+      console.error('[API/process-video] Unauthorized: Missing session cookie.');
+      return NextResponse.json({ error: 'Unauthorized: Missing session cookie.' }, { status: 401 });
     }
 
+    let decodedToken;
+    try {
+      decodedToken = await auth.verifySessionCookie(sessionCookie, true);
+    } catch (error) {
+      console.error('[API/process-video] Error verifying session cookie:', error);
+      return NextResponse.json({ error: 'Unauthorized: Invalid session cookie.' }, { status: 401 });
+    }
+    const userId = decodedToken.uid;
+    console.log(`[API/process-video] Authenticated user: ${userId}`);
+
+    const formData = await req.formData();
+    const file = formData.get('mediaFile') as File | null;
+    const memoryDataStr = formData.get('memoryData') as string | null;
+
+    if (!file || !memoryDataStr) {
+      console.error('[API/process-video] Bad Request: Missing media file or memory data.');
+      return NextResponse.json({ error: 'Bad Request: Missing media file or memory data.' }, { status: 400 });
+    }
+
+    const memoryData = JSON.parse(memoryDataStr);
+    console.log(`[API/process-video] Processing memory titled: "${memoryData.title}"`);
+
     const bucket = storage.bucket();
-    // Create a unique filename to prevent overwrites.
-    const finalFileName = `${Date.now()}_${path.basename(file.name) || 'memory.webm'}`;
-    const permanentPath = `users/${userId}/memories/${finalFileName}`;
+    console.log(`[API/process-video] Using storage bucket: ${bucket.name}`);
 
-    // --- Start of Streaming Fix ---
-    // Instead of loading the whole file into a buffer, we create a readable stream.
-    const uploadedFile = bucket.file(permanentPath);
-    const fileStream = uploadedFile.createWriteStream({
-      metadata: {
-        contentType: file.type || "video/webm",
-      },
+    const fileId = crypto.randomUUID();
+    const fileExtension = file.name.split('.').pop();
+    const filePath = `users/${userId}/media/${fileId}.${fileExtension}`;
+    
+    const fileRef = bucket.file(filePath);
+    
+    const fileBuffer = await file.arrayBuffer();
+    
+    await fileRef.save(Buffer.from(fileBuffer), {
+      metadata: { contentType: file.type }
     });
 
-    // Create a passthrough stream from the file's arrayBuffer
-    const passthrough = new Readable();
-    passthrough.push(Buffer.from(await file.arrayBuffer()));
-    passthrough.push(null);
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+    console.log(`[API/process-video] File uploaded successfully. Public URL: ${publicUrl}`);
 
-    await new Promise((resolve, reject) => {
-        passthrough.pipe(fileStream)
-            .on('finish', resolve)
-            .on('error', reject);
-    });
-    // --- End of Streaming Fix ---
-
-    // Make the file publicly readable. This is crucial.
-    await uploadedFile.makePublic();
-
-    // Construct the public, permanent URL directly. This avoids the need for getSignedUrl and the associated IAM permission.
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${permanentPath}`;
-
-    // Prepare the data for the Firestore document.
-    const title = (formData.get('title') as string) || 'Untitled Memory';
-    const date = (formData.get('date') as string) || new Date().toISOString();
-    const description = (formData.get('description') as string) || '';
-    const category = (formData.get('category') as string) || '';
-    const promptId = (formData.get('promptId') as string) || '';
-
-    const memoryDocData = {
-      title,
-      date,
-      description,
-      category,
-      promptId,
-      userId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      mediaAttachments: [
-        {
-          id: 'media' + Date.now(),
-          type: file.type.startsWith('video') ? 'video' : 'audio',
-          url: publicUrl,
-          processingStatus: 'complete',
-          filename: finalFileName,
-          duration: 0, // Duration is hard to get reliably server-side without heavy libraries.
-          size: file.size,
-        },
-      ],
+    const newMediaAttachment = {
+      id: crypto.randomUUID(),
+      url: publicUrl,
+      type: file.type.startsWith('video') ? 'video' : 'audio',
+      filename: file.name,
+      ...memoryData.mediaMetadata 
     };
 
-    // Add the new memory document to Firestore.
+    const memoryDocData = {
+      ...memoryData,
+      userId: userId,
+      mediaAttachments: [newMediaAttachment], 
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    
+    delete memoryDocData.mediaMetadata;
+
+    console.log('[API/process-video] Saving memory document to Firestore.');
     const docRef = await db.collection('users').doc(userId).collection('memories').add(memoryDocData);
 
     return NextResponse.json({ success: true, memoryId: docRef.id, message: 'Media uploaded and memory created successfully.' }, { status: 200 });
 
   } catch (e: any) {
-    // Log the full error object for better server-side debugging
-    console.error('API Error in process-video:', e.message || e.toString());
+    console.error('--- [API/process-video] UNHANDLED CRASH ---');
+    console.error('Error Message:', e.message);
+    console.error('Error Stack:', e.stack);
+    console.error('Full Error Object:', e);
+    console.error('--- END UNHANDLED CRASH ---');
+    
     const errorMessage = e.message || 'An unknown server error occurred';
     return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }
