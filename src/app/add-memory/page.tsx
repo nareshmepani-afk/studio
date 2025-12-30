@@ -1,14 +1,26 @@
-'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import React, { Suspense } from 'react';
+import { cookies } from 'next/headers';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { MemoryForm } from '@/components/memory/MemoryForm';
-import { getMemoryById } from '@/actions/memoryActions';
-import type { Memory } from '@/types.ts';
+import type { Memory } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Timestamp } from 'firebase-admin/firestore';
+import { notFound } from 'next/navigation';
 
-// A fallback component to show while the main component is suspended.
+async function getUserIdFromCookie(): Promise<string | null> {
+    const sessionCookie = cookies().get('firebase-auth-token')?.value;
+    if (!sessionCookie) return null;
+    try {
+        const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
+        return decodedToken.uid;
+    } catch (error) {
+        console.error('[SERVER/add-memory] Error verifying session cookie:', (error as Error).message);
+        return null;
+    }
+}
+
 function AddMemoryLoading() {
   return (
     <div className="max-w-3xl mx-auto pb-20">
@@ -44,73 +56,61 @@ function AddMemoryLoading() {
   );
 }
 
-function AddMemoryPage() {
-  const searchParams = useSearchParams();
-  // --- CORRECTED: Reads 'editMemoryId' from the URL --- 
-  const memoryId = searchParams.get('editMemoryId');
-  const promptId = searchParams.get('promptId');
-  const customPrompt = searchParams.get('customPrompt');
+interface AddMemoryPageProps {
+  searchParams: { [key: string]: string | string[] | undefined };
+}
 
-  const [memoryToEdit, setMemoryToEdit] = useState<Memory | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Only fetch if there is a memoryId
-    if (memoryId) {
-      setIsLoading(true);
-      getMemoryById(memoryId)
-        .then(result => {
-          if (result.success && result.data) {
-            setMemoryToEdit(result.data);
-          } else {
-            setError(result.message || 'Failed to load memory.');
-          }
-        })
-        .catch(err => {
-            console.error("Fetch error:", err);
-            setError("An unexpected error occurred.");
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    } else {
-      // If there's no ID, we are creating a new memory, so don't load.
-      setIsLoading(false);
-    }
-  }, [memoryId]);
-
-  // Display loading skeleton
-  if (isLoading) {
-    return <AddMemoryLoading />;
-  }
-
-  // Display error message if fetching failed
-  if (error) {
-    return <div className="text-center text-red-500">Error: {error}</div>;
-  }
-
-  // If we have an ID but no memory, it means it's still loading or failed.
-  // This check is important because memoryToEdit will be null on the first render.
-  if (memoryId && !memoryToEdit) {
-      return <AddMemoryLoading />;
-  }
+async function AddMemoryPage({ searchParams }: AddMemoryPageProps) {
+  const { editMemoryId, promptId, customPrompt } = searchParams;
+  const userId = await getUserIdFromCookie();
   
+  if (!userId) {
+    // This should be caught by middleware or auth context, but as a fallback
+    return <div className="text-center text-red-500">You must be logged in to view this page.</div>;
+  }
+
+  let memoryToEdit: Memory | null = null;
+  
+  if (typeof editMemoryId === 'string' && editMemoryId) {
+    try {
+        const docRef = adminDb.collection('users').doc(userId).collection('memories').doc(editMemoryId);
+        const docSnap = await docRef.get();
+
+        if (docSnap.exists) {
+            const data = docSnap.data();
+            // Serialize data for client
+            memoryToEdit = {
+                id: docSnap.id,
+                ...data,
+                date: data?.date instanceof Timestamp ? data.date.toDate().toISOString() : data?.date,
+                createdAt: data?.createdAt instanceof Timestamp ? data.createdAt.toDate().toISOString() : data?.createdAt,
+                updatedAt: data?.updatedAt instanceof Timestamp ? data.updatedAt.toDate().toISOString() : data?.updatedAt,
+            } as Memory;
+        } else {
+            console.warn(`[SERVER/add-memory] Memory ID ${editMemoryId} not found for user ${userId}.`);
+            notFound();
+        }
+    } catch(error) {
+        console.error(`[SERVER/add-memory] Failed to fetch memory ${editMemoryId}:`, error);
+        // Render an error state or redirect
+        return <div className="text-center text-red-500">Failed to load memory. Please try again.</div>;
+    }
+  }
+
   return (
     <MemoryForm 
       memoryToEdit={memoryToEdit} 
-      promptId={promptId || undefined}
-      initialCustomPrompt={customPrompt || undefined}
+      promptId={typeof promptId === 'string' ? promptId : undefined}
+      initialCustomPrompt={typeof customPrompt === 'string' ? customPrompt : undefined}
     />
   );
 }
 
-// Wrap the page in a Suspense boundary to handle the initial render
-// and use of searchParams.
-export default function AddMemoryPageWrapper() {
+
+export default function AddMemoryPageWrapper(props: AddMemoryPageProps) {
     return (
         <Suspense fallback={<AddMemoryLoading />}>
-            <AddMemoryPage />
+            <AddMemoryPage {...props} />
         </Suspense>
     );
 }
