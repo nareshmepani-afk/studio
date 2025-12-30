@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getMonth, getDate, getYear, parseISO, getDaysInMonth, format } from 'date-fns';
 import { emotionTagsList, memoryCategoriesList, type EmotionTag, type MemoryCategory } from '@/types';
 import type { Memory, MediaAttachment } from '@/types';
@@ -18,7 +18,9 @@ import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin } from 'luci
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/useAuth';
-import { revalidatePath } from 'next/cache';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import Loading from '@/app/add-memory/loading';
 
 const MediaCaptureControl = dynamic(
   () => import('./MediaRecorder').then((mod) => mod.MediaCaptureControl),
@@ -60,8 +62,9 @@ async function saveMemoryAction(
 
   try {
     const memoryId = formData.get('memoryId') as string | null;
+    const mediaFile = formData.get('mediaFile') as File | null;
 
-    const memoryData: Partial<Memory> = {
+    const memoryData: Partial<Memory> & { userId: string } = {
       title: formData.get('title') as string,
       date: formData.get('date') as string,
       description: formData.get('description') as string,
@@ -70,12 +73,12 @@ async function saveMemoryAction(
       emotionTags: JSON.parse(formData.get('emotionTags') as string),
       promptId: formData.get('promptId') as string || undefined,
       userId: userId,
+      mediaAttachments: [],
     };
-
-    const mediaFile = formData.get('mediaFile') as File | null;
-    let existingAttachments: MediaAttachment[] = JSON.parse(formData.get('existingAttachments') as string);
-    let newOrUpdatedAttachments = existingAttachments;
-
+    
+    let newOrUpdatedAttachments: MediaAttachment[] = JSON.parse(formData.get('existingAttachments') as string);
+    
+    // **THE FIX**: Only process the file if it exists and has content.
     if (mediaFile && mediaFile.size > 0) {
       const bucket = adminStorage.bucket();
       const fileId = crypto.randomUUID();
@@ -96,7 +99,7 @@ async function saveMemoryAction(
     }
     
     const trimData = JSON.parse(formData.get('trimData') as string);
-    if(newOrUpdatedAttachments[0]){
+    if (newOrUpdatedAttachments.length > 0) {
       newOrUpdatedAttachments[0] = { ...newOrUpdatedAttachments[0], ...trimData };
     }
     
@@ -115,26 +118,30 @@ async function saveMemoryAction(
     return { success: true, message: memoryId ? "Memory updated successfully" : "Memory saved successfully" };
 
   } catch (error: any) {
+    console.error('[saveMemoryAction Error]', error);
     return { success: false, message: 'An unexpected error occurred on the server: ' + error.message };
   }
 }
 
 interface MemoryFormProps {
-  memoryToEdit: Memory | null;
+  editMemoryId?: string;
   promptId?: string;
   initialCustomPrompt?: string;
 }
 
-export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: MemoryFormProps) {
+export function MemoryForm({ editMemoryId, promptId, initialCustomPrompt }: MemoryFormProps) {
   const router = useRouter();
   const { toast } = useToast(); 
   const { user } = useAuth();
-  const isEditing = !!memoryToEdit;
+  const isEditing = !!editMemoryId;
 
-  const [title, setTitle] = useState(() => initialCustomPrompt || memoryToEdit?.title || '');
-  const [description, setDescription] = useState(memoryToEdit?.description || '');
+  const [memoryToEdit, setMemoryToEdit] = useState<Memory | null>(null);
+  const [isLoadingMemory, setIsLoadingMemory] = useState(isEditing);
+
+  const [title, setTitle] = useState(initialCustomPrompt || '');
+  const [description, setDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<MemoryCategory | undefined>();
-  const [location, setLocation] = useState(memoryToEdit?.location || '');
+  const [location, setLocation] = useState('');
   const [selectedEmotionTags, setSelectedEmotionTags] = useState<EmotionTag[]>([]);
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -149,14 +156,44 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const years = Array.from({ length: 101 }, (_, i) => new Date().getFullYear() - i);
-  const months = Array.from({ length: 12 }, (_, i) => ({ value: i, label: format(new Date(2000, i, 1), 'MMMM') }));
-  const days = Array.from({ length: getDaysInMonth(new Date(selectedYear, selectedMonth)) }, (_, i) => i + 1);
+  useEffect(() => {
+    if (!editMemoryId || !user) {
+      setIsLoadingMemory(false);
+      return;
+    }
+
+    const fetchMemory = async () => {
+      try {
+        const memoryRef = doc(db, 'users', user.uid, 'memories', editMemoryId);
+        const docSnap = await getDoc(memoryRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const memory = {
+            id: docSnap.id,
+            ...data,
+            date: (data.date as any)?.toDate ? data.date.toDate().toISOString() : data.date,
+          } as Memory;
+          setMemoryToEdit(memory);
+        } else {
+          toast({ title: 'Error', description: 'Memory not found.', variant: 'destructive'});
+          router.push('/timeline');
+        }
+      } catch (error) {
+        toast({ title: 'Error', description: 'Failed to load memory.', variant: 'destructive'});
+      } finally {
+        setIsLoadingMemory(false);
+      }
+    };
+    fetchMemory();
+  }, [editMemoryId, user, router, toast]);
 
   useEffect(() => {
     if (memoryToEdit) {
+      setTitle(memoryToEdit.title || '');
+      setDescription(memoryToEdit.description || '');
       const matchedCategory = memoryCategoriesList.find(c => c.id === (typeof memoryToEdit.category === 'string' ? memoryToEdit.category : memoryToEdit.category?.id));
       setSelectedCategory(matchedCategory || memoryCategoriesList[0]);
+      setLocation(memoryToEdit.location || '');
       
       const matchedTags = (memoryToEdit.emotionTags || []).map(tagId => emotionTagsList.find(tag => tag.id === tagId)).filter((tag): tag is EmotionTag => !!tag);
       setSelectedEmotionTags(matchedTags);
@@ -215,7 +252,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
       carouselApi?.scrollTo(0);
       return;
     }
-    if (!mediaPayload && !initialMedia) {
+    if (!mediaPayload?.file && !initialMedia) {
       toast({ title: "Missing Media", description: "Please add a video or audio to your memory.", variant: "destructive" });
       carouselApi?.scrollTo(1);
       return;
@@ -259,10 +296,18 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
     );
   };
   
+  const years = Array.from({ length: 101 }, (_, i) => new Date().getFullYear() - i);
+  const months = Array.from({ length: 12 }, (_, i) => ({ value: i, label: format(new Date(2000, i, 1), 'MMMM') }));
+  const days = Array.from({ length: getDaysInMonth(new Date(selectedYear, selectedMonth)) }, (_, i) => i + 1);
+
   const leftValueLabel = currentMediaDuration > 0 ? formatTime(trimValues[0]) : '';
   const rightValueLabel = currentMediaDuration > 0 ? formatTime(trimValues[1]) : '';
   const leftPosition = currentMediaDuration > 0 ? `calc(${(trimValues[0] / currentMediaDuration) * 100}% - ${leftValueLabel.length / 2}ch)` : '0%';
   const rightPosition = currentMediaDuration > 0 ? `calc(${(trimValues[1] / currentMediaDuration) * 100}% - ${rightValueLabel.length / 2}ch)` : '100%';
+
+  if (isLoadingMemory) {
+    return <Loading />;
+  }
 
   return (
     <form onSubmit={handleSubmit}>
@@ -414,4 +459,22 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
       </div>
     </form>
   );
+}
+
+// Wrapper component to handle search params
+export default function MemoryFormPage() {
+  const searchParams = useSearchParams();
+  const editMemoryId = searchParams.get('editMemoryId') || undefined;
+  const promptId = searchParams.get('promptId') || undefined;
+  const initialCustomPrompt = searchParams.get('customPrompt') || undefined;
+
+  return (
+    <Suspense fallback={<Loading />}>
+      <MemoryForm 
+        editMemoryId={editMemoryId}
+        promptId={promptId}
+        initialCustomPrompt={initialCustomPrompt}
+      />
+    </Suspense>
+  )
 }

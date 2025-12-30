@@ -72,13 +72,19 @@ export interface Memory {
 
 export interface Prompt {
   id: string;
-  title: string;
-  question: string;
-  category: MemoryCategory | string; // Can be a string for backward compatibility
+  text: {
+    en: string;
+    gu: string;
+  };
+  isFlaggedForReuse: boolean;
 }
 
 export interface PromptGroup {
-  group: string;
+  id: string;
+  title: {
+    en: string;
+    gu: string;
+  };
   prompts: Prompt[];
 }
 
