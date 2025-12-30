@@ -25,14 +25,17 @@ async function getUserIdFromCookie(): Promise<string | null> {
 }
 
 async function uploadToStorage(file: File, userId: string): Promise<{ publicUrl: string; filePath: string }> {
+  console.log(`[ACTION] uploadToStorage: Starting upload for user ${userId}, file: ${file.name}, size: ${file.size}, type: ${file.type}`);
   const fileId = crypto.randomUUID();
   const fileExtension = file.name.split('.').pop();
   const filePath = `users/${userId}/media/${fileId}.${fileExtension}`;
   const bucket = adminStorage.bucket();
+  console.log(`[ACTION] uploadToStorage: Using bucket: ${bucket.name}`);
   const fileRef = bucket.file(filePath);
   const fileBuffer = await file.arrayBuffer();
   await fileRef.save(Buffer.from(fileBuffer), { metadata: { contentType: file.type } });
   const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+  console.log(`[ACTION] uploadToStorage: File uploaded successfully. Public URL: ${publicUrl}`);
   return { publicUrl, filePath };
 }
 
@@ -88,11 +91,14 @@ export async function getMemoryById(id: string) {
 
 
 export async function saveMemory(formData: FormData, memoryId: string | null) {
+  console.log(`[ACTION] saveMemory: Initiated for memoryId: ${memoryId}`);
   try {
     const userId = await getUserIdFromCookie();
     if (!userId) {
+        console.error("[ACTION] saveMemory: Unauthorized - no user ID from cookie.");
         return { success: false, message: "Unauthorized: You must be logged in to save a memory." };
     }
+    console.log(`[ACTION] saveMemory: Authorized for user: ${userId}`);
 
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
@@ -103,10 +109,13 @@ export async function saveMemory(formData: FormData, memoryId: string | null) {
     const emotionTagsStr = formData.get('emotionTags') as string;
     const emotionTags = emotionTagsStr ? JSON.parse(emotionTagsStr) : [];
 
+    console.log(`[ACTION] saveMemory: Parsed form data for title: ${title}`);
+
     let mediaAttachments: MediaAttachment[] = [];
     const mediaFile = formData.get('mediaFile') as File | null;
 
     if (mediaFile && mediaFile.size > 0) {
+        console.log(`[ACTION] saveMemory: Found media file: ${mediaFile.name}, size: ${mediaFile.size}, type: ${mediaFile.type}`);
         const mediaMetadataStr = formData.get('mediaMetadata') as string;
         const { publicUrl } = await uploadToStorage(mediaFile, userId);
         const meta = JSON.parse(mediaMetadataStr);
@@ -120,10 +129,12 @@ export async function saveMemory(formData: FormData, memoryId: string | null) {
             duration: meta.duration || 0,
             filename: mediaFile.name
         });
+        console.log('[ACTION] saveMemory: New media attachment created.');
     } else {
         const existingMediaStr = formData.get('mediaAttachments') as string;
         if (existingMediaStr) {
             mediaAttachments = JSON.parse(existingMediaStr);
+            console.log('[ACTION] saveMemory: Using existing media attachments.');
         }
     }
 
@@ -145,15 +156,20 @@ export async function saveMemory(formData: FormData, memoryId: string | null) {
       ...(promptId && { promptId }),
     };
     
+    console.log('[ACTION] saveMemory: Final memoryData object:', JSON.stringify(memoryData, null, 2));
+    
     const collectionRef = adminDb.collection('users').doc(userId).collection('memories');
 
     if (memoryId) {
+      console.log(`[ACTION] saveMemory: Updating existing memory with ID: ${memoryId}`);
       const docToUpdate = await collectionRef.doc(memoryId).get();
       if(docToUpdate.data()?.userId !== userId) {
+        console.error(`[ACTION] saveMemory: Security violation - User ${userId} attempting to edit memory owned by another user.`);
         return { success: false, message: "Forbidden: You cannot edit this memory." };
       }
       await collectionRef.doc(memoryId).update(memoryData);
     } else {
+      console.log('[ACTION] saveMemory: Creating new memory.');
       memoryData.createdAt = new Date().toISOString();
       await collectionRef.add(memoryData);
     }
@@ -161,9 +177,10 @@ export async function saveMemory(formData: FormData, memoryId: string | null) {
     revalidatePath('/prompts');
     revalidatePath('/timeline');
     
+    console.log(`[ACTION] saveMemory: Successfully saved memory. Memory ID: ${memoryId}`);
     return { success: true, message: memoryId ? "Memory updated" : "Memory saved" };
   } catch (error: any) {
-    console.error("[ACTION] Save Error:", error.message);
+    console.error("[ACTION] Save Error CRASH:", error.message, error.stack);
     return { success: false, message: error.message || "Failed to save memory" };
   }
 }
