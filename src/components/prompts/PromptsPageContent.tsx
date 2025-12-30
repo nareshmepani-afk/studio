@@ -35,15 +35,12 @@ interface PromptsPageContentProps {
   initialMemories: Memory[];
   initialFlaggedPromptIds: Set<string>;
   mockPromptGroups: PromptGroup[];
+  isLoading: boolean;
 }
 
-export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, mockPromptGroups }: PromptsPageContentProps) {
-  // --- PROOF OF CONCEPT LOGGING --- //
-  console.log('[PROMPTS_PAGE_CONTENT] Component rendered. Received initialMemories from server:', initialMemories);
-
+export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, mockPromptGroups, isLoading }: PromptsPageContentProps) {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
-  const isMountedRef = useRef(true);
   
   const [memories, setMemories] = useState(initialMemories);
   const [flaggedPromptIds, setFlaggedPromptIds] = useState(initialFlaggedPromptIds);
@@ -62,11 +59,6 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
 
   const db = getFirestore(app);
 
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => { isMountedRef.current = false; };
-  }, []);
-
   useEffect(() => { if (user?.profileInfo) setCustomChapterUserProfile(user.profileInfo); }, [user?.profileInfo]);
   
   // Re-sync state if server-provided props change
@@ -76,10 +68,7 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
   }, [initialMemories, initialFlaggedPromptIds]);
 
   const completedPromptIds = useMemo(() => {
-    const ids = new Set((memories ?? []).map(m => m.promptId).filter(Boolean) as string[]);
-    // --- PROOF OF CONCEPT LOGGING --- //
-    console.log('[PROMPTS_PAGE_CONTENT] Calculated completedPromptIds from state:', ids);
-    return ids;
+    return new Set((memories ?? []).map(m => m.promptId).filter(Boolean) as string[]);
   }, [memories]);
 
   const canAccessFullJourney = useMemo(() => {
@@ -89,10 +78,7 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
   const availablePromptGroups = useMemo(() => {
     if (canAccessFullJourney || mockPromptGroups.length === 0) return mockPromptGroups;
     return [mockPromptGroups[0]];
-  }, [canAccessFullJourney]);
-
-
-  // --- All handlers from the original page are below --- //
+  }, [canAccessFullJourney, mockPromptGroups]);
 
   const handleStartChapter = useCallback((promptId: string, isCompleted: boolean) => {
     const isFirstGroupPrompt = mockPromptGroups[0]?.prompts.some(p => p.id === promptId);
@@ -105,14 +91,11 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
     if (isCompleted) {
         const memory = memories.find((m: Memory) => m.promptId === promptId);
         if (memory && memory.id) {
-            console.log(`[PROMPTS_PAGE_CONTENT] Navigating to EDIT memory. Memory ID: ${memory.id}`);
             router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}`);
         } else {
-            console.error(`[PROMPTS_PAGE_CONTENT] Could not find memory for completed promptId: ${promptId}.`);
             toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
         }
     } else {
-        console.log(`[PROMPTS_PAGE_CONTENT] Navigating to CREATE new memory for promptId: ${promptId}`);
         router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
     }
   }, [memories, canAccessFullJourney, router, mockPromptGroups]);
@@ -139,9 +122,7 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
     setQrCodeDialog({ open: true, url, title: promptTitle });
   }, []);
 
-  // --- JSX from original page --- //
-
-   if (authLoading) {
+   if (authLoading || isLoading) {
      return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -197,10 +178,6 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {group.prompts.map((prompt) => {
                   const isCompleted = completedPromptIds.has(prompt.id);
-                  // --- PROOF OF CONCEPT LOGGING --- //
-                  if (prompt.id === 'p1' || prompt.id === 'p2') { // Log for first two prompts for clarity
-                    console.log(`[PROMPTS_PAGE_CONTENT] Rendering PromptCard for promptId: ${prompt.id}. isCompleted: ${isCompleted}`);
-                  }
                   const memoryForPrompt = isCompleted ? memories.find(m => m.promptId === prompt.id) : undefined;
                   
                   return (
@@ -224,6 +201,12 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
             </section>
           ))}
         </div>
+         <QrCodeDialog
+          open={qrCodeDialog.open}
+          url={qrCodeDialog.url}
+          title={qrCodeDialog.title}
+          onClose={() => setQrCodeDialog({ open: false, url: '', title: '' })}
+        />
       </div>
   );
 }

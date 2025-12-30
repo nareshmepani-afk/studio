@@ -1,63 +1,64 @@
 
-export const dynamic = 'force-dynamic';
+"use client";
 
-import React from 'react';
-import { cookies } from 'next/headers';
-import { adminAuth, adminDb } from '@/lib/firebase-admin'; // Import the singletons
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import type { Memory } from '@/types.ts';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { TimelinePageContent } from '@/components/memory/TimelinePageContent';
+import { Loader2 } from 'lucide-react';
 
-// The page no longer initializes the SDK. It uses the imported singletons.
+export default function TimelinePage() {
+  const { user, loading: authLoading } = useAuth();
+  const [memories, setMemories] = useState<Memory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-// *** THE CRITICAL COOKIE FIX ***
-// This function must be async to correctly handle the cookies() API.
-async function getUserIdFromCookie(): Promise<string | null> {
-    const sessionCookie = (await cookies()).get('firebase-auth-token')?.value;
-    if (!sessionCookie) return null;
-    try {
-        const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true /** checkRevoked */);
-        return decodedToken.uid;
-    } catch (error) {
-        console.error('[TIMELINE_PAGE_SERVER] Error verifying session cookie:', (error as Error).message);
-        return null;
+  useEffect(() => {
+    if (!user) {
+      if (!authLoading) setIsLoading(false);
+      return;
     }
-}
 
-async function getUserMemories(userId: string): Promise<Memory[]> {
-    const memoriesQuery = adminDb.collection("users").doc(userId).collection("memories").orderBy('date', 'desc');
-    const snapshot = await memoriesQuery.get();
-    return snapshot.docs.map(docSnap => {
+    setIsLoading(true);
+    const memoriesQuery = query(collection(db, "users", user.uid, "memories"), orderBy('date', 'desc'));
+    
+    const unsubscribe = onSnapshot(memoriesQuery, (snapshot) => {
+      const fetchedMemories = snapshot.docs.map(docSnap => {
         const data = docSnap.data();
-        // *** THE CRITICAL SERIALIZATION FIX ***
         return {
-            id: docSnap.id,
-            title: data.title || '',
-            date: (data.date as any)?.toDate ? (data.date as any).toDate().toISOString() : new Date().toISOString(),
-            description: data.description || '',
-            mediaAttachments: data.mediaAttachments || [],
-            imageUrl: data.imageUrl || '',
-            category: data.category || 'personal',
-            isLegacy: data.isLegacy || false,
-            promptId: data.promptId || null,
-            // Safely add createdAt and updatedAt
-            createdAt: (data.createdAt as any)?.toDate ? (data.createdAt as any).toDate().toISOString() : undefined,
-            updatedAt: (data.updatedAt as any)?.toDate ? (data.updatedAt as any).toDate().toISOString() : undefined,
+          id: docSnap.id,
+          title: data.title || '',
+          date: (data.date as any)?.toDate ? (data.date as any).toDate().toISOString() : new Date().toISOString(),
+          description: data.description || '',
+          mediaAttachments: data.mediaAttachments || [],
+          category: data.category || 'personal',
+          isLegacy: data.isLegacy || false,
+          promptId: data.promptId || null,
+          createdAt: (data.createdAt as any)?.toDate ? (data.createdAt as any).toDate().toISOString() : undefined,
+          updatedAt: (data.updatedAt as any)?.toDate ? (data.updatedAt as any).toDate().toISOString() : undefined,
         } as Memory;
+      });
+      setMemories(fetchedMemories);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("[TIMELINE_PAGE_CLIENT] Failed to fetch memories:", error);
+      setIsLoading(false);
     });
-}
 
-export default async function TimelinePage() {
-  const userId = await getUserIdFromCookie();
-
-  let memories: Memory[] = [];
-  if (userId) {
-    try {
-      memories = await getUserMemories(userId);
-    } catch (error) {
-      console.error("[TIMELINE_PAGE_SERVER] Failed to fetch memories:", error);
-      // We can render an empty state if fetching fails
-    }
+    return () => unsubscribe();
+  }, [user, authLoading]);
+  
+  if (isLoading || authLoading) {
+      return (
+        <AuthenticatedPageWrapper>
+            <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
+                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                <h2 className="text-2xl font-headline mb-2">Loading Timeline...</h2>
+            </div>
+        </AuthenticatedPageWrapper>
+      )
   }
 
   return (
