@@ -180,7 +180,10 @@ export async function saveMemory(formData: FormData, memoryId: string | null) {
     console.log(`[ACTION] saveMemory: Successfully saved memory. Memory ID: ${memoryId}`);
     return { success: true, message: memoryId ? "Memory updated" : "Memory saved" };
   } catch (error: any) {
-    console.error("[ACTION] Save Error CRASH:", error.message, error.stack);
-    return { success: false, message: error.message || "Failed to save memory" };
+    console.error("[ACTION] Save Error CRASH:", { message: error.message, stack: error.stack, details: error.details });
+    return { 
+      success: false, 
+      message: `Server Action Failed: ${error.message}. Review the server console for the full error stack.`
+    };
   }
 }

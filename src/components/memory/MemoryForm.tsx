@@ -165,9 +165,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
 
     if (promptId) formData.append('promptId', promptId);
 
-    // FIX: Correctly handle media attachments to prevent sending empty files.
     if (currentMedia && currentMedia.file && currentMedia.file.size > 0) {
-        // A new file has been selected or recorded.
         const metadata = {
             startTime: trimValues[0],
             endTime: trimValues[1],
@@ -177,7 +175,6 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
         formData.append('mediaFile', currentMedia.file);
         formData.append('mediaMetadata', JSON.stringify(metadata));
     } else if (isEditing && memoryToEdit?.mediaAttachments?.[0]) {
-        // An existing media file is being kept, potentially with new trim values.
         const metadata = {
             startTime: trimValues[0],
             endTime: trimValues[1],
@@ -303,7 +300,7 @@ export function MemoryForm({ memoryToEdit, promptId, initialCustomPrompt }: Memo
                     ? 'Replace or trim the existing media for this memory.'
                     : 'Upload or record a video/audio for this memory.'}
                 </CardDescription>
-              </Header>
+              </CardHeader>
               <CardContent className="space-y-6">
                 <MediaCaptureControl 
                   onMediaReady={handleMediaReady} 
