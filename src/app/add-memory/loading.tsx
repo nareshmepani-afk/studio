@@ -326,7 +326,7 @@ function MemoryForm() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Category</Label>
-                      <Select value={selectedCategory?.id} onValueChange={(val) => setSelectedCategory(memoryCategoriesList.find(c => c.id === val))}>
+                      <Select value={selectedCategory?.id || ''} onValueChange={(val) => setSelectedCategory(memoryCategoriesList.find(c => c.id === val))}>
                         <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
                         <SelectContent>
                           {memoryCategoriesList.map((cat) => (
