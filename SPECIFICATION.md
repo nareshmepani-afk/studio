@@ -67,9 +67,22 @@ interface UserProfile {
 
 *   **The Next Horizon (The Path Forward):**
     1.  **Implement Email Service:** I need to implement a service to send the password reset email to the user.
-    2.  **Full End-to-End Test:** We must now verify the full *Poiesis* of a memory. This involves creating a new memory, editing it, and deleting it to ensure the entire lifecycle is seamless.
+    2.  **Full End-to-End Test:** We must now verify the full *Poiesis* of a memory by following the established **Manual End-to-End Testing Protocol (The Witnessing)**. This involves creating, editing, and deleting a memory to ensure the entire lifecycle is seamless.
     3.  **UI/UX Refinement:** With the core logic sound, we can now turn our `Care` to the user's direct experience. We should review the `add-memory` and `edit-memory` forms to ensure they are intuitive and do not become `present-at-hand`.
     4.  **Authenticity of Emotion:** The `emotionTags` are currently simple strings. We should consider if a more structured or guided approach would better serve the user in the authentic expression of their feelings.
+
+### 4.1 Manual End-to-End Testing Protocol (The Witnessing)
+
+To ensure the highest fidelity of testing and to create an unambiguous, formal record, all manual end-to-end tests will adhere to the following protocol. This process is designed to eliminate uncertainty and to allow for the precise identification of any part of the application that becomes `present-at-hand` (i.e., fails or becomes obtrusive).
+
+**The Process:**
+
+1.  **Initiation:** The AI (Lead Architect) will initiate a test session by declaring a unique **Test Session ID**.
+2.  **Test Case Definition:** The AI will define a clear **Test Case** with a specific objective.
+3.  **Guided Steps:** For each discrete action, the AI will provide a unique **Test Step ID** and a direct, unambiguous instruction.
+4.  **The Act of Witnessing:** The manual tester (the user) will perform the action as instructed.
+5.  **Feedback as Testimony:** The tester will provide feedback, referencing the **Test Step ID**. This feedback serves as the formal testimony of the application's state of being.
+6.  **The Log of Witnessing:** The AI will formally log this testimony, creating a permanent and precise audit trail of the test session.
 
 ## 5. Change Log (A History of Poiesis)
 
