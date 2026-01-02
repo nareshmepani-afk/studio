@@ -76,7 +76,7 @@ export interface Prompt {
     en: string;
     gu: string;
   };
-  isFlaggedForReuse: boolean;
+  isFlaggedForReuse?: boolean;
   subPrompts?: Prompt[];
 }
 
