@@ -1,94 +1,5 @@
 
-import type { Memory, Prompt, PromptGroup, MediaAttachment, EmotionTag, MemoryCategory } from '@/types';
-import { memoryCategoriesList } from '@/types'; // Import the categories list
-
-// const videoPlaceholderUrl = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"; // A real video for testing trim
-// const audioPlaceholderUrl = "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3"; // A real audio for testing
-
-// export const mockMemories: Memory[] = [
-//   {
-//     id: '1',
-//     title: 'Trip to the Mountains (Video)',
-//     date: '2023-07-15T10:00:00.000Z',
-//     description: 'A wonderful weekend getaway with breathtaking views and challenging hikes. This video is trimmed.',
-//     emotionTags: ['Happy', 'Excitement', 'Peace'],
-//     userId: '1', // This will be replaced by actual Firebase user ID
-//     location: 'Swiss Alps',
-//     country: 'Switzerland',
-//     mediaAttachments: [{
-//         id: 'media1-1',
-//         type: 'video',
-//         url: videoPlaceholderUrl,
-//         filename: 'mountain_trip.mp4',
-//         startTime: 5, // Start at 5 seconds
-//         endTime: 15,   // End at 15 seconds
-//         duration: 596, // Actual duration of BigBuckBunny is ~596s
-//         size: 5 * 1024 * 1024, // Approx 5MB for the sample segment
-//     }],
-//     imageUrl: 'https://placehold.co/600x400.png', // Fallback or cover image
-//     isLegacy: true, // Marked for Legacy Chest
-//     promptId: 'p1', // Linked to "A Child of Two Worlds"
-//     category: 'Travel',
-//   },
-//   {
-//     id: '2',
-//     title: 'Family Reunion 2023 (Full Audio)',
-//     date: '2023-12-23T18:30:00.000Z',
-//     description: 'Gathered with the whole family for the holidays. So much food and laughter! This is a full audio.',
-//     emotionTags: ['Joy', 'Love', 'Nostalgia'],
-//     userId: '1', // This will be replaced by actual Firebase user ID
-//     location: 'Grandma\'s House, Devon',
-//     country: 'UK',
-//     mediaAttachments: [{
-//         id: 'media2-1',
-//         type: 'audio',
-//         url: audioPlaceholderUrl,
-//         filename: 'family_reunion.mp3',
-//         duration: 2, // Actual duration of t-rex-roar is ~2s
-//         size: 45 * 1024, // Approx 45KB
-//     }],
-//     imageUrl: 'https://placehold.co/600x400.png',
-//     isLegacy: false,
-//     promptId: 'p2', // Linked to "The House I Grew Up In"
-//     category: 'Family',
-//   },
-//   {
-//     id: '3',
-//     title: 'Project Alpha Launch (Untrimmed Video)',
-//     date: '2024-01-20T14:00:00.000Z',
-//     description: 'Successfully launched Project Alpha after months of hard work. Proud of the team! This video plays in full.',
-//     emotionTags: ['Gratitude', 'Excitement'],
-//     userId: '1', // This will be replaced by actual Firebase user ID
-//     mediaAttachments: [{
-//         id: 'media3-1',
-//         type: 'video',
-//         url: videoPlaceholderUrl, // Using same video for variety
-//         filename: 'project_alpha.mp4',
-//         duration: 596,
-//         size: 5 * 1024 * 1024, // Approx 5MB for the sample segment
-//     }],
-//     imageUrl: 'https://placehold.co/600x400.png',
-//     isLegacy: true, // Also marked for Legacy Chest
-//     category: 'Work',
-//   },
-//   {
-//     id: '4',
-//     title: 'Learning to Bake Sourdough',
-//     date: '2023-04-10T09:00:00.000Z',
-//     description: 'My journey into the world of sourdough. Many failed attempts but finally got a good loaf!',
-//     emotionTags: ['Reflective', 'Hope', 'Funny'],
-//     imageUrl: 'https://placehold.co/600x400.png', // No media attachment for this one
-//     userId: '1', // This will be replaced by actual Firebase user ID
-//     location: 'Home Kitchen',
-//     country: 'UK',
-//     isLegacy: false,
-//     category: 'Hobbies',
-//   },
-// ];
-// mockMemories is now obsolete as data comes from Firestore.
-// Keeping it commented out for reference or potential future seeding logic.
-export const mockMemories: Memory[] = [];
-
+import type { Prompt, PromptGroup } from '@/types';
 
 export const mockPromptGroups: PromptGroup[] = [
   {
@@ -105,7 +16,14 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'બે દુનિયાનું બાળક – તમારું જન્મસ્થળ, કુટુંબના મૂળ, સાંસ્કૃતિક પ્રભાવો',
         },
         isFlaggedForReuse: false,
-        // userId will be determined by auth context
+        subPrompts: [
+            { id: 'p1_1', text: { en: "Let's start right at the beginning. Could you share some details about your birthplace – perhaps a specific memory of that place that stands out?", gu: "ચાલો શરૂઆતથી જ શરૂ કરીએ. શું તમે તમારા જન્મસ્થળ વિશે કેટલીક વિગતો શેર કરી શકો છો - કદાચ તે સ્થાનની કોઈ વિશિષ્ટ સ્મૃતિ જે અલગ તરી આવે છે?" } },
+            { id: 'p1_2', text: { en: "And tell us about your family roots; were there any particular traditions, stories, or values passed down through generations that significantly influenced you?", gu: "અને અમને તમારા કુટુંબના મૂળ વિશે કહો; શું કોઈ ચોક્કસ પરંપરાઓ, વાર્તાઓ અથવા મૂલ્યો પેઢીઓથી પસાર થયા હતા જેણે તમને નોંધપાત્ર રીતે પ્રભાવિત કર્યા?" } },
+            { id: 'p1_3', text: { en: "How did the cultural environment you grew up in—whether it was a blend of different cultures or a very specific one—shape your early perspectives and who you are today?", gu: "તમે જે સાંસ્કૃતિક વાતાવરણમાં ઉછર્યા છો - ભલે તે વિવિધ સંસ્કૃતિઓનું મિશ્રણ હોય કે ખૂબ જ વિશિષ્ટ - તેણે તમારા પ્રારંભિક દ્રષ્ટિકોણને અને આજે તમે કોણ છો તે કેવી રીતે આકાર આપ્યો?" } },
+            { id: 'p1_4', text: { en: "Were there specific customs, foods, or languages that were central to your upbringing?", gu: "શું તમારા ઉછેરમાં કોઈ ચોક્કસ રિવાજો, ખોરાક અથવા ભાષાઓ કેન્દ્રિય હતી?" } },
+            { id: 'p1_5', text: { en: "And thinking about your parents or primary caregivers, what were some of their core values or beliefs that they instilled in you from a young age?", gu: "અને તમારા માતાપિતા અથવા પ્રાથમિક સંભાળ રાખનારાઓ વિશે વિચારીએ તો, તેમના કેટલાક મુખ્ય મૂલ્યો અથવા માન્યતાઓ શું હતી જે તેઓએ નાની ઉંમરથી તમારામાં સ્થાપિત કરી હતી?" } },
+            { id: 'p1_6', text: { en: "How did those foundational elements contribute to your initial understanding of the world?", gu: "તે પાયાના તત્વોએ વિશ્વની તમારી પ્રારંભિક સમજમાં કેવી રીતે ફાળો આપ્યો?" } },
+        ]
       },
       {
         id: 'p2',
@@ -114,281 +32,33 @@ export const mockPromptGroups: PromptGroup[] = [
           gu: 'હું જે ઘરમાં મોટો થયો – દૈનિક જીવન, પર્યાવરણ, પ્રથમ યાદો',
         },
         isFlaggedForReuse: false,
+        subPrompts: [
+            { id: 'p2_1', text: { en: "Now, let's turn our attention to the house itself. What was daily life like within those walls? Describe the atmosphere, the routines, the sounds, and even the smells that you remember most vividly.", gu: "હવે, ચાલો ઘર પર જ આપણું ધ્યાન કેન્દ્રિત કરીએ. તે દિવાલોની અંદરનું દૈનિક જીવન કેવું હતું? વાતાવરણ, દિનચર્યા, અવાજો અને તે ગંધનું વર્ણન કરો જે તમને સૌથી વધુ સ્પષ્ટ રીતે યાદ છે." } },
+            { id: 'p2_2', text: { en: "What were the different rooms like, and what significant moments happened in them?", gu: "જુદા જુદા ઓરડાઓ કેવા હતા, અને તેમાં કઈ મહત્વપૂર્ણ ક્ષણો બની?" } },
+            { id: 'p2_3', text: { en: "Thinking back to your very first memories, what specific scenes or feelings come to mind when you recall your childhood home?", gu: "તમારી પ્રથમ યાદો વિશે વિચારીએ તો, જ્યારે તમે તમારા બાળપણના ઘરને યાદ કરો છો ત્યારે કયા ચોક્કસ દ્રશ્યો અથવા લાગણીઓ મનમાં આવે છે?" } },
+            { id: 'p2_4', text: { en: "Were there particular chores, family meals, or weekend activities that stand out in your memory?", gu: "શું કોઈ ચોક્કસ કામકાજ, કૌટુંબિક ભોજન અથવા સપ્તાહના અંતની પ્રવૃત્તિઓ હતી જે તમારી યાદમાં અલગ છે?" } },
+            { id: 'p2_5', text: { en: "And how did that physical environment, the very structure and feeling of your home, shape your sense of comfort, security, or even your earliest adventures and curiosities?", gu: "અને તે ભૌતિક વાતાવરણ, તમારા ઘરની રચના અને અનુભૂતિએ તમારા આરામ, સુરક્ષા અથવા તો તમારા પ્રારંભિક સાહસો અને જિજ્ઞાસાઓની ભાવનાને કેવી રીતે આકાર આપ્યો?" } },
+        ]
       },
-      {
+       {
         id: 'p3',
         text: {
           en: 'Innocence and Curiosity – School days, early dreams, moments of wonder',
           gu: 'નિર્દોષતા અને જિજ્ઞાસા – શાળાના દિવસો, પ્રારંભિક સપના, આશ્ચર્યની ક્ષણો',
         },
         isFlaggedForReuse: false,
-      },
-      {
-        id: 'p4',
-        text: {
-          en: 'Echoes of a Brother, Sister or Friends – Memories and lessons from key people you have met',
-          gu: 'ભાઈ, બહેન કે મિત્રોના પડઘા – તમે મળેલા મુખ્ય લોકો પાસેથી યાદો અને પાઠ',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p5',
-        text: {
-          en: 'The Shape of Loss – First encounters with grief and challenges in youth',
-          gu: 'નુકશાનનો આકાર – યુવાનીમાં દુઃખ અને પડકારો સાથે પ્રથમ મુલાકાત',
-        },
-        isFlaggedForReuse: false,
+        subPrompts: [
+            { id: 'p3_1', text: { en: "Moving into your early years, let's talk about your school days. What subjects captivated you, or perhaps challenged you the most, and why?", gu: "તમારા પ્રારંભિક વર્ષોમાં આગળ વધીએ, ચાલો તમારા શાળાના દિવસો વિશે વાત કરીએ. કયા વિષયોએ તમને મોહિત કર્યા, અથવા કદાચ તમને સૌથી વધુ પડકાર્યા, અને શા માટે?" } },
+            { id: 'p3_2', text: { en: "Were there any teachers who left a lasting impression on you, and if so, how did they influence your thinking or your path?", gu: "શું એવા કોઈ શિક્ષકો હતા જેમણે તમારા પર કાયમી છાપ છોડી હોય, અને જો એમ હોય, તો તેઓએ તમારી વિચારસરણી અથવા તમારા માર્ગને કેવી રીતે પ્રભાવિત કર્યો?" } },
+            { id: 'p3_3', text: { en: "Beyond academics, what were your early dreams and aspirations as a child? Did you imagine yourself doing something extraordinary, or were your dreams simpler and more immediate?", gu: "શિક્ષણ ઉપરાંત, બાળક તરીકે તમારા પ્રારંભિક સપના અને આકાંક્ષાઓ શું હતી? શું તમે કલ્પના કરી હતી કે તમે કંઈક અસાધારણ કરી રહ્યા છો, અથવા તમારા સપના સરળ અને વધુ તાત્કાલિક હતા?" } },
+            { id: 'p3_4', text: { en: "What moments from your childhood truly filled you with a sense of wonder or insatiable curiosity? This could be anything from discovering a new book, exploring a natural space, or learning something profound for the first time.", gu: "તમારા બાળપણની કઈ ક્ષણોએ તમને ખરેખર આશ્ચર્ય અથવા અતૃપ્ત જિજ્ઞાસાની ભાવનાથી ભરી દીધા? આ નવી પુસ્તક શોધવાથી લઈને, કુદરતી જગ્યાની શોધખોળ કરવા અથવા પ્રથમ વખત કંઈક ગહન શીખવા સુધી કંઈપણ હોઈ શકે છે." } },
+            { id: 'p3_5', text: { en: "What ignited that spark of curiosity in you back then, and how did it guide your early explorations?", gu: "તે સમયે તમારામાં જિજ્ઞાસાની તે ચિનગારી શું પ્રગટાવી, અને તેણે તમારી પ્રારંભિક શોધખોળને કેવી રીતે માર્ગદર્શન આપ્યું?" } },
+        ]
       },
     ],
   },
-  {
-    id: 'part-ii',
-    title: {
-      en: 'Part II: Coming of Age',
-      gu: 'ભાગ II: યુવાનીમાં આગમન',
-    },
-    prompts: [
-      {
-        id: 'p6',
-        text: {
-          en: 'Crossroads and Choices – Adolescence, identity, early dilemmas',
-          gu: 'ક્રોસરોડ્સ અને પસંદગીઓ – કિશોરાવસ્થા, ઓળખ, પ્રારંભિક દ્વિધાઓ',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p7',
-        text: {
-          en: 'Learning the Hard Way – Mistakes, guidance, mentors, self-discovery',
-          gu: 'કઠિન રીતે શીખવું – ભૂલો, માર્ગદર્શન, માર્ગદર્શકો, આત્મ-શોધ',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p8',
-        text: {
-          en: 'Journeys Within and Without – Travel, education, and pivotal personal experiences',
-          gu: 'અંદર અને બહારની મુસાફરી – પ્રવાસ, શિક્ષણ અને મુખ્ય વ્યક્તિગત અનુભવો',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p9',
-        text: {
-          en: 'A Person Becoming – Entering adulthood, facing reality, carving your place',
-          gu: 'એક વ્યક્તિ બની રહી છે – પુખ્તાવસ્થામાં પ્રવેશ, વાસ્તવિકતાનો સામનો કરવો, તમારું સ્થાન બનાવવું',
-        },
-        isFlaggedForReuse: false,
-      },
-    ],
-  },
-  {
-    id: 'part-iii',
-    title: {
-      en: 'Part III: Family, Faith, and Struggles',
-      gu: 'ભાગ III: કુટુંબ, શ્રદ્ધા અને સંઘર્ષો',
-    },
-    prompts: [
-      {
-        id: 'p10',
-        text: {
-          en: 'Falling in Love with Life – Love, marriage, and parenthood',
-          gu: 'જીવન સાથે પ્રેમમાં પડવું – પ્રેમ, લગ્ન અને વાલીપણું',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p11',
-        text: {
-          en: 'The Birth of Children – The arrival of your child and your transformation as a parent',
-          gu: 'બાળકોનો જન્મ – તમારા બાળકનું આગમન અને માતાપિતા તરીકે તમારું પરિવર્તન',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p12',
-        text: {
-          en: 'Holding On, Letting Go – Life’s challenges: financial, emotional, and spiritual',
-          gu: 'પકડી રાખવું, જવા દેવું – જીવનના પડકારો: નાણાકીય, ભાવનાત્મક અને આધ્યાત્મિક',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p13',
-        text: {
-          en: 'The Test of Fire – Moments of deep struggle and how you rose again',
-          gu: 'અગ્નિપરીક્ષા – ઊંડા સંઘર્ષની ક્ષણો અને તમે ફરીથી કેવી રીતે ઉભા થયા',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p14',
-        text: {
-          en: 'Faith in the Invisible – Spiritual awakenings, beliefs, and guidance from within',
-          gu: 'અદ્રશ્યમાં વિશ્વાસ – આધ્યાત્મિક જાગૃતિ, માન્યતાઓ અને અંદરથી માર્ગદર્શન',
-        },
-        isFlaggedForReuse: false,
-      },
-    ],
-  },
-  {
-    id: 'part-iv',
-    title: {
-      en: 'Part IV: Legacy and Lessons',
-      gu: 'ભાગ IV: વારસો અને પાઠ',
-    },
-    prompts: [
-      {
-        id: 'p15',
-        text: {
-          en: 'Wounds into Wisdom – Lessons learned from pain, regret, and healing',
-          gu: 'ઘામાંથી શાણપણ – પીડા, પસ્તાવો અને ઉપચારમાંથી શીખેલા પાઠ',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p16',
-        text: {
-          en: 'Letters to Those Who Are Watching – Life advice, reflections on others’ growth, and your pride',
-          gu: 'જેઓ જોઈ રહ્યા છે તેમને પત્રો – જીવન સલાહ, અન્યોના વિકાસ પર પ્રતિબિંબ અને તમારો ગર્વ',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p17',
-        text: {
-          en: 'Conversations with Myself – Philosophy, doubts, humour, and contradictions',
-          gu: 'મારી સાથે વાતચીત – ફિલોસોફી, શંકાઓ, રમૂજ અને વિરોધાભાસ',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p18',
-        text: {
-          en: 'The Person in the Mirror – Honest self-assessment: habits, joys, and regrets',
-          gu: 'અરીસામાં વ્યક્તિ – પ્રમાણિક સ્વ-મૂલ્યાંકન: ટેવો, આનંદ અને પસ્તાવો',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p19',
-        text: {
-          en: 'The Quiet Victories – Small, unseen moments that shaped your soul',
-          gu: 'શાંત વિજયો – નાની, અદ્રશ્ય ક્ષણો જેણે તમારા આત્માને આકાર આપ્યો',
-        },
-        isFlaggedForReuse: false,
-      },
-    ],
-  },
-  {
-    id: 'part-v',
-    title: {
-      en: 'Part V: Looking Ahead',
-      gu: 'ભાગ V: આગળ જોવું',
-    },
-    prompts: [
-      {
-        id: 'p20',
-        text: {
-          en: 'What Still Lies Ahead – Dreams yet to pursue, hopes for the next generation',
-          gu: 'આગળ શું છે – હજુ સિદ્ધ કરવાના સપના, આગામી પેઢી માટે આશાઓ',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p21',
-        text: {
-          en: 'If I Could Do It Again – Reflections on what you’d repeat or change',
-          gu: 'જો હું ફરીથી કરી શકું – તમે શું પુનરાવર્તન કરશો અથવા બદલશો તેના પર પ્રતિબિંબ',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p22',
-        text: {
-          en: 'My Final Experiment with Truth – Defining your truth, values, and spiritual clarity',
-          gu: 'સત્ય સાથેનો મારો અંતિમ પ્રયોગ – તમારું સત્ય, મૂલ્યો અને આધ્યાત્મિક સ્પષ્ટતા વ્યાખ્યાયિત કરવી',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p23',
-        text: {
-          en: 'The Story Continues – A hopeful note on legacy, family, and the unknown',
-          gu: 'વાર્તા ચાલુ રહે છે – વારસો, કુટુંબ અને અજ્ઞાત પર એક આશાસ્પદ નોંધ',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'p24',
-        text: {
-          en: 'Time Travel, Reflections — Reminders to revisit and reflect on older entries',
-          gu: 'સમય યાત્રા, પ્રતિબિંબ — જૂની એન્ટ્રીઓની ફરી મુલાકાત લેવા અને તેના પર પ્રતિબિંબિત કરવા માટેના રીમાઇન્ડર્સ',
-        },
-        isFlaggedForReuse: false,
-      },
-    ],
-  },
-  {
-    id: 'family-stories',
-    title: {
-      en: 'Family Storytelling & Oral History',
-      gu: 'કૌટુંબિક વાર્તાકથન અને મૌખિક ઇતિહાસ',
-    },
-    prompts: [
-      {
-        id: 'fs1',
-        text: {
-          en: 'Share a cherished memory of a grandparent or elder.',
-          gu: 'દાદા-દાદી અથવા કોઈ વડીલની વહાલી યાદ શેર કરો.',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'fs2',
-        text: {
-          en: 'What is a family tradition that has been passed down through generations?',
-          gu: 'એવી કઈ પારિવારિક પરંપરા છે જે પેઢીઓથી ચાલી આવી રહી છે?',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'fs3',
-        text: {
-          en: 'Describe a significant historical event that impacted your family.',
-          gu: 'તમારા પરિવાર પર અસર કરનાર કોઈ મહત્વપૂર્ણ ઐતિહાસિક ઘટનાનું વર્ણન કરો.',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'fs4',
-        text: {
-          en: 'What values did your parents or guardians instill in you?',
-          gu: 'તમારા માતાપિતા અથવા વાલીઓએ તમારામાં કયા મૂલ્યો રોપ્યા?',
-        },
-        isFlaggedForReuse: false,
-      },
-      {
-        id: 'fs5',
-        text: {
-          en: 'Tell a story about an ancestor that you admire.',
-          gu: 'તમે જે પૂર્વજની પ્રશંસા કરો છો તેમના વિશે એક વાર્તા કહો.',
-        },
-        isFlaggedForReuse: false,
-      },
-       {
-        id: 'fs6',
-        text: {
-          en: 'Record a message for your children or grandchildren to hear in the future.',
-          gu: 'તમારા બાળકો અથવા પૌત્ર-પૌત્રીઓ માટે ભવિષ્યમાં સાંભળવા માટે એક સંદેશ રેકોર્ડ કરો.',
-        },
-        isFlaggedForReuse: false,
-      },
-    ]
-  }
 ];
 
-
-// For MemoryForm inspiration prompts, we'll keep a flat list for easier random selection
-// This is derived from the groups above.
-export const mockPrompts: Prompt[] = mockPromptGroups.reduce((acc, group) => acc.concat(group.prompts), [] as Prompt[]);
+export const mockPrompts: Prompt[] = mockPromptGroups.flatMap(group => 
+    group.prompts.flatMap(prompt => prompt.subPrompts ? [prompt, ...prompt.subPrompts] : [prompt])
+);

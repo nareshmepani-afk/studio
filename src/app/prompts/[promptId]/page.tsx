@@ -17,9 +17,25 @@ export default function PromptPage({ params }: PromptPageProps) {
   const { promptId } = params;
 
   const prompt = mockPromptGroups.flatMap(group => group.prompts).find(p => p.id === promptId);
-  const script = teleprompterScripts[promptId];
 
-  if (!prompt || !script) {
+  if (!prompt) {
+    notFound();
+  }
+
+  // Check for sub-prompts and gather the relevant scripts
+  const scriptsToDisplay = prompt.subPrompts && prompt.subPrompts.length > 0
+    ? prompt.subPrompts.map(subPrompt => ({
+        id: subPrompt.id,
+        text: subPrompt.text.en, // Or handle localization as needed
+        script: teleprompterScripts[subPrompt.id]
+      })).filter(item => item.script) // Filter out any with no script
+    : [{
+        id: prompt.id,
+        text: prompt.text.en,
+        script: teleprompterScripts[prompt.id]
+      }];
+
+  if (scriptsToDisplay.length === 0) {
     notFound();
   }
 
@@ -45,11 +61,14 @@ export default function PromptPage({ params }: PromptPageProps) {
           </CardHeader>
           <CardContent className="p-6 md:p-8 lg:p-10">
             <h2 className="font-headline text-2xl mb-4 text-primary">Interviewer Questions (Teleprompter)</h2>
-            <div className="prose prose-lg dark:prose-invert max-w-none whitespace-pre-wrap text-base md:text-lg leading-relaxed space-y-4">
-              {script.split('\n').map((paragraph, index) => (
-                <p key={index}>{paragraph}</p>
-              ))}
-            </div>
+            {scriptsToDisplay.map((item, index) => (
+              <div key={item.id} className="prose prose-lg dark:prose-invert max-w-none whitespace-pre-wrap text-base md:text-lg leading-relaxed space-y-4 mb-6">
+                <h3 className="font-semibold text-xl">{item.text}</h3>
+                {item.script.split('\n').map((paragraph, pIndex) => (
+                  <p key={pIndex}>{paragraph}</p>
+                ))}
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
