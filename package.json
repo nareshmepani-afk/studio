@@ -9,8 +9,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "test": "node node_modules/@playwright/test/cli.js test"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.10",
@@ -67,7 +66,6 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@playwright/test": "^1.55.0",
     "@types/node": "^20",
     "@types/qrcode.react": "^1.0.5",
     "@types/react": "^18",

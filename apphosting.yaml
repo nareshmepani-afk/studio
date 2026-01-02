@@ -7,6 +7,21 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+  # You can specify secrets that will be exposed as environment variables to your application.
+  # Secrets are stored in Cloud Secret Manager. You can add a secret to Secret Manager by
+  # running the following command:
+  #
+  # gcloud secrets create <secret-name> --replication-policy=automatic
+  #
+  # You can then add the secret to your application by adding the following to this file:
+  #
+  # secrets: [ <secret-name> ]
+  #
+  # You can also specify the version of the secret to use. For example:
+  #
+  # secrets: [ projects/<project-number>/secrets/<secret-name>/versions/<version-id> ]
+  #
+  secrets: [ RESEND_API_KEY ]
 
 # This is a basic serve rule. It will route all requests to the Next.js backend.
 serve: /**

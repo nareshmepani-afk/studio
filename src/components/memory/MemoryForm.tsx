@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getMonth, getDate, getYear, parseISO, getDaysInMonth, format } from 'date-fns';
 import { emotionTagsList, memoryCategoriesList, type EmotionTag, type MemoryCategory } from '@/types';
@@ -17,11 +17,9 @@ import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin } from 'luci
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/useAuth';
-import { doc, getDoc, addDoc, updateDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, addDoc, updateDoc, collection } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
-
 
 const MediaCaptureControl = dynamic(
   () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
@@ -31,7 +29,6 @@ const MediaCaptureControl = dynamic(
   }
 );
 
-// Helper to format time
 const formatTime = (seconds: number) => {
     const totalSeconds = Math.round(seconds);
     const minutes = Math.floor(totalSeconds / 60);
@@ -39,8 +36,7 @@ const formatTime = (seconds: number) => {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
-
-function MemoryForm() {
+export function MemoryForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast(); 
@@ -180,7 +176,6 @@ function MemoryForm() {
     try {
         let newOrUpdatedAttachments: MediaAttachment[] = memoryToEdit?.mediaAttachments || [];
 
-        // If a new file was provided, upload it
         if (mediaPayload?.file) {
             const file = mediaPayload.file;
             const fileId = crypto.randomUUID();
@@ -191,7 +186,6 @@ function MemoryForm() {
             await uploadBytes(fileRef, file);
             const publicUrl = await getDownloadURL(fileRef);
 
-            // If there was an old file, delete it from storage
             if (initialMedia?.url && initialMedia.url.includes('firebasestorage.googleapis.com')) {
                 try {
                     const oldFileRef = storageRef(storage, initialMedia.url);
@@ -211,7 +205,6 @@ function MemoryForm() {
             }];
         }
 
-        // Apply trim data to the attachment
         if (newOrUpdatedAttachments.length > 0) {
             newOrUpdatedAttachments[0] = { 
                 ...newOrUpdatedAttachments[0], 
@@ -326,7 +319,7 @@ function MemoryForm() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Category</Label>
-                      <Select value={selectedCategory?.id} onValueChange={(val) => setSelectedCategory(memoryCategoriesList.find(c => c.id === val))}>
+                      <Select value={selectedCategory?.id || ''} onValueChange={(val) => setSelectedCategory(memoryCategoriesList.find(c => c.id === val))}>
                         <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
                         <SelectContent>
                           {memoryCategoriesList.map((cat) => (
@@ -430,15 +423,4 @@ function MemoryForm() {
       </div>
     </form>
   );
-}
-
-
-export default function AddMemoryPage() {
-    return (
-        <AuthenticatedPageWrapper>
-            <Suspense fallback={<div>Loading...</div>}>
-                <MemoryForm />
-            </Suspense>
-        </AuthenticatedPageWrapper>
-    )
 }
