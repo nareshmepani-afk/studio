@@ -93,6 +93,8 @@ export interface User {
     id: string;
     email: string;
     name?: string;
+    createdAt: string;
+    updatedAt?: string;
     avatarUrl?: string;
     dateOfBirth?: string;
     countryOfBirth?: string;

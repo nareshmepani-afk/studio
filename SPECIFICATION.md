@@ -94,4 +94,27 @@ To ensure the highest fidelity of testing and to create an unambiguous, formal r
     *   Refactore the `MemoryForm` component, creating a single, authentic component in `src/components/memory/MemoryForm.tsx` and removing duplicated code from `src/app/add-memory/loading.tsx` and `src/app/add-memory/page.tsx`. This resolved the "uncontrolled to controlled" warning.
     *   Re-implemented the `requestPasswordResetAction` after discovering it had been removed due to a server crash.
 
+## 6. User Management (The Care of the Other)
+
+### 6.1 Deleting a User
+
+The process of deleting a user and their associated data involves two distinct steps: deleting their data from Firestore and deleting their authentication record.
+
+**1. Deleting User Data from Firestore:**
+
+This is the primary method for removing a user's presence from the application. It deletes all their memories, media, and any other data stored in the Firestore database. This is achieved using the Firebase CLI.
+
+*   **Command:** `firebase firestore:delete users/{UID} --recursive`
+*   **Description:** This command recursively deletes a document and all its subcollections.
+*   **Usage:** Replace `{UID}` with the user's unique ID. The `--recursive` flag is crucial to ensure all associated data is removed.
+
+**2. Deleting a User's Authentication Record:**
+
+Deleting the user's authentication record (their login credentials) has proven to be challenging through the command-line interface. The `firebase auth:delete` command, which was expected to perform this action, is not functioning as anticipated.
+
+*   **Current Status:** As of the last update, a reliable command-line method for deleting a user's authentication record has not been identified. Further investigation is required to find a solution or a viable alternative.
+
+This means that while a user's data can be effectively purged from the application, their authentication record might persist in the Firebase Authentication system.
+
+
 ---
