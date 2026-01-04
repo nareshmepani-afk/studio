@@ -28,17 +28,6 @@ export default function LoginPage() {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setIsSubmitting(true);
-
-    // Log email and password
-    console.log("Submitting login form with:");
-    console.log("Email:", email);
-    console.log("Password:", password ? '********' : ''); // Mask password for security in logs
-
-    // Log form action and method
-    const form = event.currentTarget as HTMLFormElement;
-    console.log("Form action:", form.action);
-    console.log("Form method:", form.method);
-
     try {
       await login(email, password);
       // AuthContext will handle redirection
