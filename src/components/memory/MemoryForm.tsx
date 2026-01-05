@@ -107,6 +107,7 @@ export function MemoryForm() {
     if (!user || !promptId) return;
     const userRef = doc(db, 'users', user.uid);
     try {
+      console.log(`Completed Test Step: ${isFlagged ? 'am-tc1-ts3' : 'am-tc1-ts1'}`)
       await updateDoc(userRef, {
         flaggedPrompts: isFlagged ? arrayRemove(promptId) : arrayUnion(promptId)
       });
@@ -382,7 +383,7 @@ export function MemoryForm() {
                                     </Dialog>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                             <Button type="button" variant="ghost" size="icon" onClick={handleToggleFlag} disabled={isLoadingFlag}>
+                                             <Button type="button" variant="ghost" size="icon" onClick={(e) => { console.log(`Executing Test Step: ${isFlagged ? 'am-tc1-ts3' : 'am-tc1-ts1'}`); handleToggleFlag(e); }} disabled={isLoadingFlag}>
                                                 <Flag className={`h-5 w-5 transition-colors ${isFlagged ? 'fill-primary text-primary' : 'text-muted-foreground hover:text-primary'}`} />
                                             </Button>
                                         </TooltipTrigger>
