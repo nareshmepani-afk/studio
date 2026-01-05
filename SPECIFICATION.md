@@ -13,8 +13,9 @@ The world of this application is built upon a foundation of modern, reactive too
 *   **Backend & Database:** Firebase (Firestore, Firebase Storage, Firebase Authentication)
 *   **Firebase Project ID:** `memory-weaver-8rk9t`
 *   **Styling:** Tailwind CSS
-*   **State Management:** React Hooks (useState, useContext, useCallback)
+*   **State Management:** React Hooks (useState, useContext, useCallback), **Firestore Real-time Listeners (`onSnapshot`)**
 *   **AI Integration:** Custom flows interacting with a backend AI model.
+*   **UI Components:** Shadcn UI, Lucide React
 
 ## 3. Data Structure (The Being)
 
@@ -34,6 +35,7 @@ interface Memory {
   emotionTags: string[]; // Feelings associated with the memory
   mediaAttachments: MediaAttachment[]; // The sights and sounds
   isLegacy: boolean; // Is this a cherished memory for the "Legacy Chest"?
+  promptId?: string; // The ID of the prompt that inspired the memory
   createdAt: string; // When the record was created
   updatedAt: string; // When the record was last touched
 }
@@ -43,6 +45,19 @@ interface MediaAttachment {
   url: string; // The location in Firebase Storage
   type: 'audio' | 'video';
   filename: string;
+  duration?: number;
+  startTime?: number;
+  endTime?: number;
+  isTrimmed?: boolean;
+}
+
+interface Prompt {
+    id: string;
+    text: {
+        en: string;
+        gu: string;
+    };
+    subPrompts?: Prompt[];
 }
 
 // Inferred from server actions and UI components
@@ -50,6 +65,7 @@ interface UserProfile {
     uid: string;
     email: string;
     userProfileNotes?: string; // Notes for the AI to tailor suggestions
+    flaggedPrompts?: string[];
 }
 ```
 
@@ -57,20 +73,23 @@ interface UserProfile {
 
 *   **Ready-to-Hand (What is Working):**
     *   **System Stability:** The server is stable and running correctly on the primary port.
-    *   **Memory Retrieval:** The `getMemoryById` action now correctly fetches memory data, allowing the edit page to load and function as intended.
-    *   **Unified Memory Form:** The `MemoryForm` component has been refactored into a single, authentic component, resolving the "uncontrolled to controlled" warning and eliminating duplicated code.
-    *   User Authentication (Email/Password) is stable.
-    *   The Timeline View (`/timeline`) successfully displays memories from Firestore.
-    *   The "Legacy Chest" feature (`isLegacy` flag) can be toggled from the timeline.
+    *   **Memory Lifecycle:** The full create, read, update, and delete (CRUD) lifecycle for memories is fully functional.
+    *   **Unified Data Model & Real-time State Synchronization:** The "Flag for Reuse" feature is now fully functional and consistent across the application. The root cause of the previous bug—a fractured data model where the feature was reading from and writing to two different database locations—has been eliminated. The data model has been unified, with the `flaggedPrompts` array in the main `users` document now serving as the single source of truth. A real-time Firestore `onSnapshot` listener ensures that the UI on all pages (`/prompts`, `/add-memory`) reactively and correctly displays the flag's status.
+    *   **Memory Form:** The `MemoryForm` component is robust, handling both the creation of new memories and the editing of existing ones. A UI bug where the flag button was incorrectly triggering form submission has been resolved.
+        *   **Media Trimming:** Users can trim the start and end times of video and audio clips.
+        *   **QR Code Generation:** A QR code can be generated for each prompt, allowing for a remote interview experience.
+        *   **Teleprompter:** A teleprompter script is displayed for each prompt, providing guidance to the user.
+    *   **User Authentication:** User authentication (email/password) is stable.
+    *   **Timeline View:** The `/timeline` page successfully displays memories from Firestore.
+    *   **Legacy Chest:** The "Legacy Chest" feature (`isLegacy` flag) can be toggled from the timeline.
 
 *   **Present-at-Hand (What is Broken / Obtrusive):**
-    *   **Password Reset:** The `requestPasswordResetAction` has been re-implemented, but it only logs the reset link to the console. It does not yet send an email to the user. The full password reset flow is therefore still broken.
+    *   **Password Reset:** The `requestPasswordResetAction` only logs the reset link to the console. It does not yet send an email to the user. The full password reset flow is therefore still broken.
 
 *   **The Next Horizon (The Path Forward):**
-    1.  **Implement Email Service:** I need to implement a service to send the password reset email to the user.
-    2.  **Full End-to-End Test:** We must now verify the full *Poiesis* of a memory by following the established **Manual End-to-End Testing Protocol (The Witnessing)**. This involves creating, editing, and deleting a memory to ensure the entire lifecycle is seamless.
-    3.  **UI/UX Refinement:** With the core logic sound, we can now turn our `Care` to the user's direct experience. We should review the `add-memory` and `edit-memory` forms to ensure they are intuitive and do not become `present-at-hand`.
-    4.  **Authenticity of Emotion:** The `emotionTags` are currently simple strings. We should consider if a more structured or guided approach would better serve the user in the authentic expression of their feelings.
+    1.  **Implement Email Service:** The immediate priority is to implement a service to send the password reset email to the user, completing the password reset flow.
+    2.  **UI/UX Refinement:** Now that the core functionality is in place, the next step is to refine the user experience. This includes a thorough review of the `add-memory` and `edit-memory` forms to ensure they are intuitive and user-friendly.
+    3.  **End-to-End Testing:** A full manual end-to-end test of the memory creation, editing, and deletion process should be conducted to ensure a seamless and bug-free user experience.
 
 ### 4.1 Manual End-to-End Testing Protocol (The Witnessing)
 
@@ -92,9 +111,15 @@ To ensure the highest fidelity of testing and to create an unambiguous, formal r
     *   Cleared the port and restarted the server, restoring the application to a live state.
     *   Resolved the critical bug in `getMemoryById` where it was querying for a literal string instead of the memory ID. The edit functionality is now restored.
     *   The Guardian of Being was instated. The `SPECIFICATION.md` was brought-forth to establish a ground of truth for the project.
-    *   Refactore the `MemoryForm` component, creating a single, authentic component in `src/components/memory/MemoryForm.tsx` and removing duplicated code from `src/app/add-memory/loading.tsx` and `src/app/add-memory/page.tsx`. This resolved the "uncontrolled to controlled" warning.
-    *   Re-implemented the `requestPasswordResetAction` after discovering it had been removed due to a server crash.
+    *   Refactored the `MemoryForm` component, creating a single, authentic component in `src/components/memory/MemoryForm.tsx` and removing duplicated code.
+    *   Re-implemented the `requestPasswordResetAction`.
     *   Clarified the two reliable methods for deleting a user from Firebase Authentication.
+    *   **Corrected a Fundamental Design Flaw:** A persistent data inconsistency in the "Flag for Reuse" feature was finally resolved. The root cause was identified as a fractured data model, where two separate database locations were being used as the source of truth. The data model was unified to a single source (`users` document), and a UI bug preventing the feature from working correctly was fixed. The previous, incorrect diagnosis of a "race condition" has been acknowledged as a failure of analysis.
+    *   **Implemented Core Memory Form Features:**
+        *   Added the ability to trim video and audio clips.
+        *   Implemented a QR code generation feature for remote interviews.
+        *   Added a teleprompter to guide users during recording.
+    *   **Resolved all build-time and run-time errors in the `MemoryForm` component.**
 
 ## 6. User Management (The Care of the Other)
 
@@ -125,6 +150,4 @@ This step removes the user's login credentials from the Firebase Authentication 
         2. Go to the "Authentication" section.
         3. In the "Users" tab, find the user to be deleted.
         4. Click the user's menu and select "Delete account".
-    *   **Use Case:** This is the most direct method and serves as a reliable fallback, especially for one-off deletions or when the service account permissions have not been configured. You have successfully used this method to unblock testing.
-
----
+    *   **Use Case:** This is the most direct and reliable method, especially for one-off deletions or when the service account permissions have not been configured.

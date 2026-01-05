@@ -11,7 +11,6 @@ import { db } from '@/lib/firebase';
 import type { Memory } from '@/types';
 import { useState, useEffect } from 'react';
 
-// This page is now a client component to handle client-side data fetching.
 export default function LifeJourneyPage() {
   const { user } = useAuth();
   const [initialMemories, setInitialMemories] = useState<Memory[]>([]);
@@ -24,7 +23,6 @@ export default function LifeJourneyPage() {
       return;
     }
 
-    // Fetch initial memories
     const memoriesRef = collection(db, 'users', user.uid, 'memories');
     const memoriesPromise = getDocs(memoriesRef).then(snapshot => 
         snapshot.docs.map(docSnap => {
@@ -39,19 +37,16 @@ export default function LifeJourneyPage() {
         })
     );
 
-    // Set up listener for prompt flags
-    const flagsDocRef = doc(db, 'userPromptFlags', user.uid);
-    const flagsUnsubscribe = onSnapshot(flagsDocRef, (docSnap) => {
+    const userDocRef = doc(db, 'users', user.uid);
+    const flagsUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
         if (docSnap.exists()) {
-            const data = docSnap.data();
-            setInitialFlaggedPromptIds(new Set(Object.keys(data).filter(key => data[key])));
-        } else {
-            setInitialFlaggedPromptIds(new Set());
+            const userData = docSnap.data();
+            setInitialFlaggedPromptIds(new Set(userData.flaggedPrompts || []));
         }
     });
 
-    Promise.all([memoriesPromise])
-      .then(([memories]) => {
+    memoriesPromise
+      .then(memories => {
         setInitialMemories(memories);
       })
       .catch(console.error)
@@ -59,9 +54,7 @@ export default function LifeJourneyPage() {
         setIsLoading(false);
       });
 
-    return () => {
-      flagsUnsubscribe();
-    };
+    return () => flagsUnsubscribe();
 
   }, [user]);
 

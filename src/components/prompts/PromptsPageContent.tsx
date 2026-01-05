@@ -7,8 +7,8 @@ import { useAuth } from '@/hooks/useAuth';
 import type { Memory, PromptGroup } from '@/types.ts';
 import { teleprompterScripts } from '@/lib/teleprompterScripts';
 import { toast } from '@/hooks/use-toast';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
-import { app } from '@/lib/firebase';
+import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { addMonths, isBefore, parseISO, format, addDays } from 'date-fns';
 
 // UI Components
@@ -45,22 +45,10 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
   const [memories, setMemories] = useState(initialMemories);
   const [flaggedPromptIds, setFlaggedPromptIds] = useState(initialFlaggedPromptIds);
 
-  const { user, loading: authLoading, userMode, hostPassStatus, updateUserProfileInFirestore } = useAuth();
+  const { user, loading: authLoading, userMode, hostPassStatus } = useAuth();
   
-  const [hostPassPriceDetails, setHostPassPriceDetails] = useState<GetHostPassPriceOutput | null>(null);
-  const [isFetchingHostPassPrice, setIsFetchingHostPassPrice] = useState(false);
-  
-  const [showCustomChapterDialog, setShowCustomChapterDialog] = useState(false);
-  const [customChapterUserProfile, setCustomChapterUserProfile] = useState('');
-  const [customChapterLanguage, setCustomChapterLanguage] = useState<'en' | 'gu'>('en');
-  const [generatedChapterIdeas, setGeneratedChapterIdeas] = useState<string[]>([]);
-  const [isLoadingChapterIdeas, setIsLoadingChapterIdeas] = useState(false);
   const [qrCodeDialog, setQrCodeDialog] = useState<{ open: boolean; url: string; title: string; }>({ open: false, url: '', title: '' });
 
-  const db = getFirestore(app);
-
-  useEffect(() => { if (user?.profileInfo) setCustomChapterUserProfile(user.profileInfo); }, [user?.profileInfo]);
-  
   // Re-sync state if server-provided props change
   useEffect(() => {
     setMemories(initialMemories);
@@ -102,20 +90,18 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
 
   const handleToggleFlagPrompt = useCallback(async (promptIdToToggle: string) => {
     if (!user) return;
-    const newFlaggedStatus = !flaggedPromptIds.has(promptIdToToggle);
-    const promptFlagsDocRef = doc(db, 'userPromptFlags', user.id);
+    const userRef = doc(db, 'users', user.uid);
+    const isFlagged = flaggedPromptIds.has(promptIdToToggle);
     try {
-      await setDoc(promptFlagsDocRef, { [promptIdToToggle]: newFlaggedStatus }, { merge: true });
-      setFlaggedPromptIds(prev => {
-        const newSet = new Set(prev);
-        if (newFlaggedStatus) newSet.add(promptIdToToggle); else newSet.delete(promptIdToToggle);
-        return newSet;
+      await updateDoc(userRef, {
+        flaggedPrompts: isFlagged ? arrayRemove(promptIdToToggle) : arrayUnion(promptIdToToggle)
       });
-      toast({ title: newFlaggedStatus ? "Prompt Flagged" : "Prompt Unflagged", variant: "success" });
+      // The onSnapshot listener in the parent component will handle the state update.
+      toast({ title: isFlagged ? "Prompt Unflagged" : "Prompt Flagged", variant: "success" });
     } catch (error) {
-      toast({ title: "Flagging Error", variant: "destructive" });
+      toast({ title: "Flagging Error", description: "Could not update flag status.", variant: "destructive" });
     }
-  }, [user, flaggedPromptIds, db]);
+  }, [user, flaggedPromptIds]);
   
   const handleShowQrCode = useCallback((promptId: string, promptTitle: string) => {
     const url = `${window.location.origin}/prompts/${promptId}`;

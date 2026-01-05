@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getMonth, getDate, getYear, parseISO, getDaysInMonth, format } from 'date-fns';
-import { emotionTagsList, memoryCategoriesList, type EmotionTag, type MemoryCategory } from '@/types';
+import { mockPrompts as lifePrompts } from '@/lib/mockData';
+import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
+import { emotionTagsList, memoryCategoriesList, type EmotionTag, type MemoryCategory, type Prompt as LifePrompt } from '@/types';
 import type { Memory, MediaAttachment } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,13 +15,16 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
-import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin, Info, QrCode, Flag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/useAuth';
-import { doc, getDoc, addDoc, updateDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, addDoc, updateDoc, collection, arrayUnion, arrayRemove, onSnapshot } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import QRCode from 'qrcode.react';
 
 const MediaCaptureControl = dynamic(
   () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
@@ -44,14 +49,17 @@ export function MemoryForm() {
   
   const editMemoryId = searchParams.get('editMemoryId') || undefined;
   const promptId = searchParams.get('promptId') || undefined;
-  const initialCustomPrompt = searchParams.get('customPrompt') || undefined;
+  
+  const prompt = lifePrompts.flatMap((p: LifePrompt) => [p, ...(p.subPrompts || [])]).find((p: LifePrompt) => p.id === promptId);
+  const teleprompterScript = teleprompterScripts[promptId || ''] || defaultTeleprompterFallbackScript;
+  const initialTitle = prompt?.text.en || searchParams.get('customPrompt') || '';
 
   const isEditing = !!editMemoryId;
 
   const [memoryToEdit, setMemoryToEdit] = useState<Memory | null>(null);
   const [isLoadingMemory, setIsLoadingMemory] = useState(isEditing);
 
-  const [title, setTitle] = useState(initialCustomPrompt || '');
+  const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<MemoryCategory | undefined>();
   const [location, setLocation] = useState('');
@@ -68,6 +76,45 @@ export function MemoryForm() {
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFlagged, setIsFlagged] = useState(false);
+  const [isLoadingFlag, setIsLoadingFlag] = useState(!!promptId);
+  const [isQrCodeDialogOpen, setQrCodeDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (!promptId || !user) {
+      setIsLoadingFlag(false);
+      return;
+    }
+    const userRef = doc(db, 'users', user.uid);
+    const unsubscribe = onSnapshot(userRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+        setIsFlagged(userData.flaggedPrompts?.includes(promptId));
+      }
+      setIsLoadingFlag(false);
+    }, (error) => {
+      console.error("Error listening to user document:", error);
+      toast({ title: 'Error', description: 'Could not sync prompt flag status.', variant: 'destructive'});
+      setIsLoadingFlag(false);
+    });
+
+    return () => unsubscribe();
+  }, [promptId, user, toast]);
+
+  const handleToggleFlag = async (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!user || !promptId) return;
+    const userRef = doc(db, 'users', user.uid);
+    try {
+      await updateDoc(userRef, {
+        flaggedPrompts: isFlagged ? arrayRemove(promptId) : arrayUnion(promptId)
+      });
+      toast({ title: isFlagged ? 'Prompt unflagged' : 'Prompt flagged for re-use', variant: 'success' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Could not update flag status.', variant: 'destructive'});
+    }
+  };
 
   useEffect(() => {
     if (!editMemoryId || !user) {
@@ -102,7 +149,9 @@ export function MemoryForm() {
 
   useEffect(() => {
     if (memoryToEdit) {
-      setTitle(memoryToEdit.title || '');
+      if (!prompt) {
+          setTitle(memoryToEdit.title || '');
+      }
       setDescription(memoryToEdit.description || '');
       const matchedCategory = memoryCategoriesList.find(c => c.id === (typeof memoryToEdit.category === 'string' ? memoryToEdit.category : memoryToEdit.category?.id));
       setSelectedCategory(matchedCategory || memoryCategoriesList[0]);
@@ -132,7 +181,7 @@ export function MemoryForm() {
         setTrimValues([m.startTime || 0, m.endTime || m.duration || 0]);
       }
     }
-  }, [memoryToEdit]);
+  }, [memoryToEdit, prompt]);
 
   useEffect(() => {
     if (!carouselApi) return;
@@ -210,7 +259,7 @@ export function MemoryForm() {
                 ...newOrUpdatedAttachments[0], 
                 startTime: trimValues[0],
                 endTime: trimValues[1],
-                isTrimmed: trimValues[0] > 0 || (currentMediaDuration && trimValues[1] < currentMediaDuration),
+                isTrimmed: trimValues[0] > 0 || (!!currentMediaDuration && trimValues[1] < currentMediaDuration),
                 duration: currentMediaDuration
             };
         }
@@ -291,8 +340,60 @@ export function MemoryForm() {
             <CarouselItem>
               <Card>
                 <CardHeader>
-                  <CardTitle>The Details</CardTitle>
-                  <CardDescription>When and where did this happen?</CardDescription>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle>The Details</CardTitle>
+                            <CardDescription>When and where did this happen?</CardDescription>
+                        </div>
+                        {promptId && (
+                            <TooltipProvider>
+                                <div className="flex items-center space-x-2">
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
+                                                <Info className="h-5 w-5" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="max-w-xs">
+                                            <p className="text-sm">{teleprompterScript}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    <Dialog open={isQrCodeDialogOpen} onOpenChange={setQrCodeDialogOpen}>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <DialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
+                                                        <QrCode className="h-5 w-5" />
+                                                    </Button>
+                                                </DialogTrigger>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">
+                                                <p>Show QR code for remote interview</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                        <DialogContent className="sm:max-w-md">
+                                            <DialogHeader>
+                                                <DialogTitle>Scan for Prompt</DialogTitle>
+                                            </DialogHeader>
+                                            <div className="flex items-center justify-center p-4 bg-white">
+                                                <QRCode value={`${window.location.origin}/interview?promptId=${promptId}`} />
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                             <Button type="button" variant="ghost" size="icon" onClick={handleToggleFlag} disabled={isLoadingFlag}>
+                                                <Flag className={`h-5 w-5 transition-colors ${isFlagged ? 'fill-primary text-primary' : 'text-muted-foreground hover:text-primary'}`} />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                             <p>{isFlagged ? 'Unflag this prompt' : 'Flag this prompt to easily find and reuse it for future interviews.'}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </div>
+                            </TooltipProvider>
+                        )}
+                    </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">

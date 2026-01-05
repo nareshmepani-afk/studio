@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookText, CheckCircle, Edit, Star, Loader2, Info, QrCode } from 'lucide-react';
+import { BookText, CheckCircle, Edit, Flag, Loader2, Info, QrCode } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -38,7 +38,6 @@ export function PromptCard({
   const handleAction = (e: React.MouseEvent) => {
     if (isLoading) return;
     e.stopPropagation();
-    console.log(`DEBUG: PromptCard handleAction called for promptId: ${promptId}, isCompleted: ${isCompleted}`);
     onStartChapter(promptId, isCompleted);
   };
   
@@ -137,11 +136,11 @@ export function PromptCard({
                     aria-label={isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}
                     disabled={isLoading}
                   >
-                    <Star className={`h-5 w-5 ${isFlaggedForReuse ? 'fill-amber-400 text-amber-500' : 'text-muted-foreground hover:text-amber-500'}`} />
+                    <Flag className={`h-5 w-5 transition-colors ${isFlaggedForReuse ? 'fill-primary text-primary' : 'text-muted-foreground hover:text-primary'}`} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}</p>
+                  <p>{isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt to easily find and reuse it for future interviews."}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
