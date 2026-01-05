@@ -151,6 +151,7 @@ export function PromptCard({
               variant={isCompleted ? "outline" : "default"}
               className="w-full"
               disabled={isLoading || !canAccess}
+              data-testid={`prompt-start-button-${promptId}`}
             >
               {isCompleted ? (
                 <>

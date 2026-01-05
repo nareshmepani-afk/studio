@@ -11,6 +11,7 @@ The world of this application is built upon a foundation of modern, reactive too
 *   **Framework:** Next.js (React)
 *   **Language:** TypeScript
 *   **Backend & Database:** Firebase (Firestore, Firebase Storage, Firebase Authentication)
+*   **Firebase Project ID:** `memory-weaver-8rk9t`
 *   **Styling:** Tailwind CSS
 *   **State Management:** React Hooks (useState, useContext, useCallback)
 *   **AI Integration:** Custom flows interacting with a backend AI model.
@@ -93,6 +94,7 @@ To ensure the highest fidelity of testing and to create an unambiguous, formal r
     *   The Guardian of Being was instated. The `SPECIFICATION.md` was brought-forth to establish a ground of truth for the project.
     *   Refactore the `MemoryForm` component, creating a single, authentic component in `src/components/memory/MemoryForm.tsx` and removing duplicated code from `src/app/add-memory/loading.tsx` and `src/app/add-memory/page.tsx`. This resolved the "uncontrolled to controlled" warning.
     *   Re-implemented the `requestPasswordResetAction` after discovering it had been removed due to a server crash.
+    *   Clarified the two reliable methods for deleting a user from Firebase Authentication.
 
 ## 6. User Management (The Care of the Other)
 
@@ -110,11 +112,19 @@ This is the primary method for removing a user's presence from the application. 
 
 **2. Deleting a User's Authentication Record:**
 
-Deleting the user's authentication record (their login credentials) has proven to be challenging through the command-line interface. The `firebase auth:delete` command, which was expected to perform this action, is not functioning as anticipated.
+This step removes the user's login credentials from the Firebase Authentication system. There are two confirmed methods to achieve this:
 
-*   **Current Status:** As of the last update, a reliable command-line method for deleting a user's authentication record has not been identified. Further investigation is required to find a solution or a viable alternative.
+*   **Method A: Programmatic Deletion (Server-Side Action)**
+    *   **Implementation:** The application contains a server-side action located at `src/actions/deleteUserAction.ts` specifically for this purpose. This action uses the Firebase Admin SDK to delete a user by their UID.
+    *   **Prerequisite:** For this action to succeed, the service account used by the application's backend (defined in the `SERVICE_ACCOUNT_JSON` environment variable) must be granted the **"Firebase Authentication Admin"** IAM role in the associated Google Cloud project. Failure to grant this permission will result in an "insufficient permission" error.
 
-This means that while a user's data can be effectively purged from the application, their authentication record might persist in the Firebase Authentication system.
-
+*   **Method B: Manual Deletion (Firebase Console)**
+    *   **Process:** A user can be deleted directly from the Firebase Console.
+    *   **Steps:**
+        1. Navigate to the project's Firebase Console.
+        2. Go to the "Authentication" section.
+        3. In the "Users" tab, find the user to be deleted.
+        4. Click the user's menu and select "Delete account".
+    *   **Use Case:** This is the most direct method and serves as a reliable fallback, especially for one-off deletions or when the service account permissions have not been configured. You have successfully used this method to unblock testing.
 
 ---
