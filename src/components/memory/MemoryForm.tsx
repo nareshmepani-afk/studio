@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin, Info, QrCode, Flag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
@@ -391,22 +391,17 @@ export function MemoryForm() {
                                             <p className="text-sm">{teleprompterScript}</p>
                                         </TooltipContent>
                                     </Tooltip>
-                                    <Dialog open={isQrCodeDialogOpen} onOpenChange={(open) => {
-                                        if (open) console.log('[TEST-LOG] am-tc2-ts1 - QR Code Dialog opened');
-                                        setQrCodeDialogOpen(open);
-                                    }}>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <DialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-                                                        <QrCode className="h-5 w-5" />
-                                                    </Button>
-                                                </DialogTrigger>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="top">
-                                                <p>Show QR code for remote interview</p>
-                                            </TooltipContent>
-                                        </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onClick={() => setQrCodeDialogOpen(true)}>
+                                                <QrCode className="h-5 w-5" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            <p>Show QR code for remote interview</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    <Dialog open={isQrCodeDialogOpen} onOpenChange={setQrCodeDialogOpen}>
                                         <DialogContent className="sm:max-w-md">
                                             <DialogHeader>
                                                 <DialogTitle>Scan for Prompt</DialogTitle>
