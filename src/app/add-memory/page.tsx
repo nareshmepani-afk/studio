@@ -29,9 +29,9 @@ import QRCode from 'qrcode.react';
 
 const MediaCaptureControl = dynamic(
   () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
-  { 
-    ssr: false, 
-    loading: () => <div className="h-48 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div> 
+  {
+    ssr: false,
+    loading: () => <div className="h-48 flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>
   }
 );
 
@@ -45,12 +45,12 @@ const formatTime = (seconds: number) => {
 function MemoryForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { toast } = useToast(); 
+  const { toast } = useToast();
   const { user } = useAuth();
-  
+
   const editMemoryId = searchParams.get('editMemoryId') || undefined;
   const promptId = searchParams.get('promptId') || undefined;
-  
+
   const prompt = lifePrompts.flatMap((p: LifePrompt) => [p, ...(p.subPrompts || [])]).find((p: LifePrompt) => p.id === promptId);
   const teleprompterScript = teleprompterScripts[promptId || ''] || defaultTeleprompterFallbackScript;
   const initialTitle = prompt?.text.en || searchParams.get('customPrompt') || '';
@@ -73,7 +73,7 @@ function MemoryForm() {
   const [mediaPayload, setMediaPayload] = useState<{ file: File, type: 'video' | 'audio', duration: number } | null>(null);
   const [initialMedia, setInitialMedia] = useState<MediaAttachment | null>(null);
   const [trimValues, setTrimValues] = useState<[number, number]>([0, 0]);
-  
+
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,11 +84,11 @@ function MemoryForm() {
   // LOG INITIAL STATE FOR TEST PROTOCOL
   useEffect(() => {
     if (promptId && !isLoadingFlag) {
-      console.log(`Test Step am-tc1-ts0: Initial prompt flag state for ${promptId} is ${isFlagged}`);
+      console.log(`[TEST-LOG] am-tc1-ts0: Initial prompt flag state for ${promptId} is ${isFlagged}`);
     }
   }, [promptId, isLoadingFlag, isFlagged]);
 
-  // ADDED: REAL-TIME LISTENER FOR FLAG STATUS
+  // REAL-TIME LISTENER FOR FLAG STATUS
   useEffect(() => {
     if (!promptId || !user) {
       setIsLoadingFlag(false);
@@ -98,7 +98,11 @@ function MemoryForm() {
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         const userData = docSnap.data();
-        setIsFlagged(userData.flaggedPrompts?.includes(promptId));
+        const newFlagState = userData.flaggedPrompts?.includes(promptId);
+        if (isFlagged !== newFlagState) {
+            console.log(`[TEST-LOG] Prompt Flag Sync: promptId=${promptId}, isFlagged=${newFlagState}`);
+            setIsFlagged(newFlagState);
+        }
       }
       setIsLoadingFlag(false);
     }, (error) => {
@@ -108,33 +112,25 @@ function MemoryForm() {
     });
 
     return () => unsubscribe();
-  }, [promptId, user, toast]);
-
-  // ADDED: LOG STATE CHANGE FOR TEST PROTOCOL
-  const isInitialMount = useRef(true);
-  useEffect(() => {
-    if (isInitialMount.current) {
-        isInitialMount.current = false;
-        return;
-    }
-    if (promptId && !isLoadingFlag) {
-        console.log(`Prompt flag state for ${promptId} confirmed as: ${isFlagged}`);
-    }
-  }, [isFlagged, promptId, isLoadingFlag]);
+  }, [promptId, user, toast, isFlagged]);
 
 
   const handleToggleFlag = async (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
     if (!user || !promptId) return;
+
+    const actionId = isFlagged ? 'am-tc1-ts3' : 'am-tc1-ts1';
+    console.log(`[TEST-LOG] ${actionId} - Action: ${isFlagged ? 'unflag' : 'flag'}, promptId: ${promptId}, previousState: ${isFlagged}`);
+
     const userRef = doc(db, 'users', user.uid);
     try {
-      console.log(`Executing Test Step: ${isFlagged ? 'am-tc1-ts3' : 'am-tc1-ts1'}`);
       await updateDoc(userRef, {
         flaggedPrompts: isFlagged ? arrayRemove(promptId) : arrayUnion(promptId)
       });
-      // State will update via the onSnapshot listener
+      toast({ title: isFlagged ? 'Prompt unflagged' : 'Prompt flagged for re-use', variant: 'success' });
     } catch (error) {
+      console.error(`[TEST-LOG] ${actionId} - Failed`, error);
       toast({ title: 'Error', description: 'Could not update flag status.', variant: 'destructive'});
     }
   };
@@ -179,7 +175,7 @@ function MemoryForm() {
       const matchedCategory = memoryCategoriesList.find(c => c.id === (typeof memoryToEdit.category === 'string' ? memoryToEdit.category : memoryToEdit.category?.id));
       setSelectedCategory(matchedCategory || memoryCategoriesList[0]);
       setLocation(memoryToEdit.location || '');
-      
+
       const matchedTags = (memoryToEdit.emotionTags || []).map(tagId => emotionTagsList.find(tag => tag.id === tagId)).filter((tag): tag is EmotionTag => !!tag);
       setSelectedEmotionTags(matchedTags);
 
@@ -208,7 +204,11 @@ function MemoryForm() {
 
   useEffect(() => {
     if (!carouselApi) return;
-    const onSelect = () => setCurrentSlide(carouselApi.selectedScrollSnap());
+    const onSelect = () => {
+        const index = carouselApi.selectedScrollSnap();
+        console.log(`[TEST-LOG] Carousel changed to slide ${index}`);
+        setCurrentSlide(index);
+    };
     carouselApi.on("select", onSelect);
     onSelect();
     return () => { carouselApi.off("select", onSelect); };
@@ -220,14 +220,18 @@ function MemoryForm() {
       setTrimValues([0, 0]);
       return;
     }
+    console.log(`[TEST-LOG] Media ready: type=${payload.type}, duration=${payload.duration}`);
     setTrimValues([0, payload.duration]);
     setMediaPayload(payload);
   }, []);
-  
+
   const currentMediaDuration = mediaPayload?.duration || initialMedia?.duration || 0;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const actionId = 'am-tc4-ts5';
+    console.log(`[TEST-LOG] ${actionId} - Initiating Memory Save. isEditing=${isEditing}, title=${title}`);
+
     if (!user) {
         toast({ title: "Not Authenticated", description: "You must be logged in to save a memory.", variant: "destructive" });
         return;
@@ -242,13 +246,14 @@ function MemoryForm() {
       carouselApi?.scrollTo(1);
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
         let newOrUpdatedAttachments: MediaAttachment[] = memoryToEdit?.mediaAttachments || [];
 
         if (mediaPayload?.file) {
+            console.log(`[TEST-LOG] ${actionId} - Uploading new media file.`);
             const file = mediaPayload.file;
             const fileId = crypto.randomUUID();
             const fileExtension = file.name.split('.').pop() || 'tmp';
@@ -278,8 +283,8 @@ function MemoryForm() {
         }
 
         if (newOrUpdatedAttachments.length > 0) {
-            newOrUpdatedAttachments[0] = { 
-                ...newOrUpdatedAttachments[0], 
+            newOrUpdatedAttachments[0] = {
+                ...newOrUpdatedAttachments[0],
                 startTime: trimValues[0],
                 endTime: trimValues[1],
                 isTrimmed: trimValues[0] > 0 || (!!currentMediaDuration && trimValues[1] < currentMediaDuration),
@@ -303,18 +308,21 @@ function MemoryForm() {
         if (isEditing && editMemoryId) {
             const memRef = doc(db, 'users', user.uid, 'memories', editMemoryId);
             await updateDoc(memRef, memoryData);
+            console.log(`[TEST-LOG] ${actionId} - Memory updated successfully: ${editMemoryId}`);
             toast({ title: "Success", description: "Memory updated successfully", variant: 'success' });
         } else {
             const collectionRef = collection(db, 'users', user.uid, 'memories');
-            await addDoc(collectionRef, { ...memoryData, createdAt: new Date().toISOString() });
+            const docRef = await addDoc(collectionRef, { ...memoryData, createdAt: new Date().toISOString() });
+            console.log(`[TEST-LOG] ${actionId} - Memory created successfully: ${docRef.id}`);
             toast({ title: "Success", description: "Memory saved successfully", variant: 'success' });
         }
-        
+
+        console.log(`[TEST-LOG] ${actionId} - Redirecting to /timeline`);
         router.push('/timeline');
         router.refresh();
 
     } catch (error: any) {
-        console.error('Error saving memory:', error);
+        console.error(`[TEST-LOG] ${actionId} - Error saving memory:`, error);
         toast({ title: "Error Saving Memory", description: error.message, variant: "destructive" });
     } finally {
         setIsSubmitting(false);
@@ -322,13 +330,13 @@ function MemoryForm() {
   };
 
   const toggleEmotionTag = (tag: EmotionTag) => {
-    setSelectedEmotionTags(prev => 
-      prev.some(t => t.id === tag.id) 
+    setSelectedEmotionTags(prev =>
+      prev.some(t => t.id === tag.id)
         ? prev.filter(t => t.id !== tag.id)
         : [...prev, tag]
     );
   };
-  
+
   const years = Array.from({ length: 101 }, (_, i) => new Date().getFullYear() - i);
   const months = Array.from({ length: 12 }, (_, i) => ({ value: i, label: format(new Date(2000, i, 1), 'MMMM') }));
   const days = Array.from({ length: getDaysInMonth(new Date(selectedYear, selectedMonth)) }, (_, i) => i + 1);
@@ -355,7 +363,7 @@ function MemoryForm() {
         <div className="flex justify-center mb-6 space-x-2">
           {[0, 1].map((step) => (
             <div key={step} className={`h-2 w-16 rounded-full transition-colors ${currentSlide === step ? 'bg-primary' : 'bg-secondary'}`} />
-          ))}
+          ))}\
         </div>
 
         <Carousel setApi={setCarouselApi} opts={{ watchDrag: false }} className="w-full">
@@ -373,7 +381,7 @@ function MemoryForm() {
                                 <div className="flex items-center space-x-2">
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onClick={(e) => { e.preventDefault(); e.stopPropagation(); console.log('Executing Test Step: am-tc3-ts1'); }}>
+                                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onMouseEnter={() => console.log('[TEST-LOG] am-tc3-ts1 - Hovered Info icon')}>
                                                 <Info className="h-5 w-5" />
                                             </Button>
                                         </TooltipTrigger>
@@ -381,28 +389,18 @@ function MemoryForm() {
                                             <p className="text-sm">{teleprompterScript}</p>
                                         </TooltipContent>
                                     </Tooltip>
-                                    <Dialog open={isQrCodeDialogOpen} onOpenChange={setQrCodeDialogOpen}>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <DialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onClick={(e) => { e.preventDefault(); e.stopPropagation(); console.log('Executing Test Step: am-tc2-ts1'); }}>
-                                                        <QrCode className="h-5 w-5" />
-                                                    </Button>
-                                                </DialogTrigger>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="top">
-                                                <p>Show QR code for remote interview</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                        <DialogContent className="sm:max-w-md">
-                                            <DialogHeader>
-                                                <DialogTitle>Scan for Prompt</DialogTitle>
-                                            </DialogHeader>
-                                            <div className="flex items-center justify-center p-4 bg-white">
-                                                <QRCode value={`${window.location.origin}/prompts/${promptId}`} />
-                                            </div>
-                                        </DialogContent>
-                                    </Dialog>
+                                    
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onClick={(e) => { e.preventDefault(); e.stopPropagation(); console.log('[TEST-LOG] am-tc2-ts1'); setQrCodeDialogOpen(true); }}>
+                                                <QrCode className="h-5 w-5" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            <p>Show QR code for remote interview</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                              <Button type="button" variant="ghost" size="icon" onClick={handleToggleFlag} disabled={isLoadingFlag}>
@@ -415,7 +413,7 @@ function MemoryForm() {
                                     </Tooltip>
                                 </div>
                             </TooltipProvider>
-                        )}
+                        )}\
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -468,8 +466,8 @@ function MemoryForm() {
                     <Label>Emotions</Label>
                     <div className="flex flex-wrap gap-2">
                       {emotionTagsList.map((tag: EmotionTag) => (
-                        <Button 
-                          key={tag.id} 
+                        <Button
+                          key={tag.id}
                           type="button"
                           variant={selectedEmotionTags.some(t => t.id === tag.id) ? 'default' : 'outline'}
                           size="sm"
@@ -492,10 +490,10 @@ function MemoryForm() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <MediaCaptureControl 
-                    onMediaReady={handleMediaReady} 
-                    initialMedia={initialMedia ? { previewUrl: initialMedia.url, type: initialMedia.type, duration: initialMedia.duration } : null} 
-                    trimValues={trimValues} 
+                  <MediaCaptureControl
+                    onMediaReady={handleMediaReady}
+                    initialMedia={initialMedia ? { previewUrl: initialMedia.url, type: initialMedia.type, duration: initialMedia.duration } : null}
+                    trimValues={trimValues}
                   />
                   {(mediaPayload || initialMedia) && currentMediaDuration > 0 && (
                       <div className="pt-4 space-y-4 border-t">
@@ -509,13 +507,17 @@ function MemoryForm() {
                                       {rightValueLabel}
                                   </span>
                               </div>
-                              <Slider 
-                                  min={0} 
-                                  max={currentMediaDuration} 
-                                  step={0.1} 
-                                  minStepsBetweenThumbs={1} 
-                                  value={trimValues} 
-                                  onValueChange={(v) => setTrimValues(v as [number, number])} 
+                              <Slider
+                                  min={0}
+                                  max={currentMediaDuration}
+                                  step={0.1}
+                                  minStepsBetweenThumbs={1}
+                                  value={trimValues}
+                                  onValueChange={(v) => {
+                                      const newTrim = v as [number, number];
+                                      console.log(`[TEST-LOG] Trim values adjusted: start=${newTrim[0]}, end=${newTrim[1]}`);
+                                      setTrimValues(newTrim);
+                                  }}
                                   aria-label="Video trim slider"
                               />
                                <div className="flex justify-between mt-1">
@@ -530,17 +532,32 @@ function MemoryForm() {
             </CarouselItem>
           </CarouselContent>
         </Carousel>
+
+        <Dialog open={isQrCodeDialogOpen} onOpenChange={setQrCodeDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Scan for Prompt</DialogTitle>
+                </DialogHeader>
+                <div className="flex items-center justify-center p-4 bg-white">
+                    {promptId && <QRCode value={`${window.location.origin}/interview?promptId=${promptId}`} />}
+                </div>
+            </DialogContent>
+        </Dialog>
+
         <div className="flex justify-between mt-8 px-1">
           <Button type="button" variant="ghost" onClick={() => currentSlide === 0 ? router.back() : carouselApi?.scrollPrev()} disabled={isSubmitting}>
-            {currentSlide === 0 ? 'Cancel' : <><ArrowLeft className="w-4 h-4 mr-2" /> Back</>}
+            {currentSlide === 0 ? 'Cancel' : <><ArrowLeft className="w-4 h-4 mr-2" /> Back</>}\
           </Button>
           {currentSlide === 0 ? (
-             <Button type="button" onClick={() => { console.log('Executing Test Step: am-tc4-ts2'); carouselApi?.scrollNext(); }} disabled={isSubmitting}>
+             <Button type="button" onClick={() => {
+                 console.log('[TEST-LOG] am-tc4-ts2 - Clicked Next button');
+                 carouselApi?.scrollNext();
+             }} disabled={isSubmitting}>
               <span className="mr-2">Next</span> <ArrowRight className="w-4 h-4" />
              </Button>
           ) : (
             <Button type="submit" disabled={isSubmitting} className="min-w-[120px]">
-              {isSubmitting ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <><Sparkles className="w-4 h-4 mr-2" /> {isEditing ? 'Update Memory' : 'Save Memory'}</>}
+              {isSubmitting ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <><Sparkles className="w-4 h-4 mr-2" /> {isEditing ? 'Update Memory' : 'Save Memory'}</>}\
             </Button>
           )}
         </div>
@@ -555,5 +572,3 @@ export default function AddMemoryPage() {
         <MemoryForm />
     )
 }
-
-    
