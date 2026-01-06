@@ -16,10 +16,12 @@ This document is the living record of all manual end-to-end testing performed on
 
 ## Test Session: `add-memory-2024-05-20-protocol-alpha`
 
+**Base URL:** `https://9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev/`
+
 ### Test Case 1: Flag/Unflag Prompt
 
 *   **Test Step ID:** `am-tc1-ts0`
-    *   **Instruction:** With the developer console open, navigate to the URL: `https://9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev/add-memory?promptId=p1`. 
+    *   **Instruction:** With the developer console open, navigate to the URL: `${Base URL}add-memory?promptId=p1`. 
     *   **Expected Result:** The console should log the initial state of the prompt flag for `p1`.
 
 *   **Test Step ID:** `am-tc1-ts1`

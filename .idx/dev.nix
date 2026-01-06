@@ -26,6 +26,11 @@
       # Runs when a workspace is created
       onCreate = {
         default.openFiles = [ "src/app/page.tsx" ];
+        # Periodic cleanup can be simulated on start
+        cleanup = "chmod +x scripts/cleanup-logs.sh && ./scripts/cleanup-logs.sh";
+      };
+      onStart = {
+        cleanup = "./scripts/cleanup-logs.sh";
       };
     };
 

@@ -89,7 +89,11 @@ export function MemoryForm() {
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         const userData = docSnap.data();
-        setIsFlagged(userData.flaggedPrompts?.includes(promptId));
+        const newFlagState = userData.flaggedPrompts?.includes(promptId);
+        if (isFlagged !== newFlagState) {
+            console.log(`[TEST-LOG] Prompt Flag Sync: promptId=${promptId}, isFlagged=${newFlagState}`);
+            setIsFlagged(newFlagState);
+        }
       }
       setIsLoadingFlag(false);
     }, (error) => {
@@ -99,20 +103,31 @@ export function MemoryForm() {
     });
 
     return () => unsubscribe();
-  }, [promptId, user, toast]);
+  }, [promptId, user, toast, isFlagged]);
+
+  useEffect(() => {
+      if (promptId) {
+          console.log(`[TEST-LOG] am-tc1-ts0: Initial prompt flag state for ${promptId} is ${isFlagged}`);
+      }
+  }, [promptId, isFlagged]);
 
   const handleToggleFlag = async (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
     if (!user || !promptId) return;
+    
+    const actionId = isFlagged ? 'am-tc1-ts3' : 'am-tc1-ts1';
+    console.log(`[TEST-LOG] ${actionId} - Action: ${isFlagged ? 'unflag' : 'flag'}, promptId: ${promptId}, previousState: ${isFlagged}`);
+    
     const userRef = doc(db, 'users', user.uid);
     try {
-      console.log(`Completed Test Step: ${isFlagged ? 'am-tc1-ts3' : 'am-tc1-ts1'}`)
       await updateDoc(userRef, {
         flaggedPrompts: isFlagged ? arrayRemove(promptId) : arrayUnion(promptId)
       });
+      // The state will be updated via the onSnapshot listener, which will log the completion.
       toast({ title: isFlagged ? 'Prompt unflagged' : 'Prompt flagged for re-use', variant: 'success' });
     } catch (error) {
+      console.error(`[TEST-LOG] ${actionId} - Failed`, error);
       toast({ title: 'Error', description: 'Could not update flag status.', variant: 'destructive'});
     }
   };
@@ -186,7 +201,11 @@ export function MemoryForm() {
 
   useEffect(() => {
     if (!carouselApi) return;
-    const onSelect = () => setCurrentSlide(carouselApi.selectedScrollSnap());
+    const onSelect = () => {
+        const index = carouselApi.selectedScrollSnap();
+        console.log(`[TEST-LOG] Carousel changed to slide ${index}`);
+        setCurrentSlide(index);
+    };
     carouselApi.on("select", onSelect);
     onSelect();
     return () => { carouselApi.off("select", onSelect); };
@@ -198,6 +217,7 @@ export function MemoryForm() {
       setTrimValues([0, 0]);
       return;
     }
+    console.log(`[TEST-LOG] Media ready: type=${payload.type}, duration=${payload.duration}`);
     setTrimValues([0, payload.duration]);
     setMediaPayload(payload);
   }, []);
@@ -206,6 +226,9 @@ export function MemoryForm() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const actionId = 'am-tc4-ts5';
+    console.log(`[TEST-LOG] ${actionId} - Initiating Memory Save. isEditing=${isEditing}, title=${title}`);
+
     if (!user) {
         toast({ title: "Not Authenticated", description: "You must be logged in to save a memory.", variant: "destructive" });
         return;
@@ -227,6 +250,7 @@ export function MemoryForm() {
         let newOrUpdatedAttachments: MediaAttachment[] = memoryToEdit?.mediaAttachments || [];
 
         if (mediaPayload?.file) {
+            console.log(`[TEST-LOG] ${actionId} - Uploading new media file.`);
             const file = mediaPayload.file;
             const fileId = crypto.randomUUID();
             const fileExtension = file.name.split('.').pop() || 'tmp';
@@ -281,18 +305,21 @@ export function MemoryForm() {
         if (isEditing && editMemoryId) {
             const memRef = doc(db, 'users', user.uid, 'memories', editMemoryId);
             await updateDoc(memRef, memoryData);
+            console.log(`[TEST-LOG] ${actionId} - Memory updated successfully: ${editMemoryId}`);
             toast({ title: "Success", description: "Memory updated successfully", variant: 'success' });
         } else {
             const collectionRef = collection(db, 'users', user.uid, 'memories');
-            await addDoc(collectionRef, { ...memoryData, createdAt: new Date().toISOString() });
+            const docRef = await addDoc(collectionRef, { ...memoryData, createdAt: new Date().toISOString() });
+            console.log(`[TEST-LOG] ${actionId} - Memory created successfully: ${docRef.id}`);
             toast({ title: "Success", description: "Memory saved successfully", variant: 'success' });
         }
         
+        console.log(`[TEST-LOG] ${actionId} - Redirecting to /timeline`);
         router.push('/timeline');
         router.refresh();
 
     } catch (error: any) {
-        console.error('Error saving memory:', error);
+        console.error(`[TEST-LOG] ${actionId} - Error saving memory:`, error);
         toast({ title: "Error Saving Memory", description: error.message, variant: "destructive" });
     } finally {
         setIsSubmitting(false);
@@ -351,7 +378,12 @@ export function MemoryForm() {
                                 <div className="flex items-center space-x-2">
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="text-muted-foreground hover:text-primary"
+                                                onMouseEnter={() => console.log('[TEST-LOG] am-tc3-ts1 - Hovered Info icon')}
+                                            >
                                                 <Info className="h-5 w-5" />
                                             </Button>
                                         </TooltipTrigger>
@@ -359,7 +391,10 @@ export function MemoryForm() {
                                             <p className="text-sm">{teleprompterScript}</p>
                                         </TooltipContent>
                                     </Tooltip>
-                                    <Dialog open={isQrCodeDialogOpen} onOpenChange={setQrCodeDialogOpen}>
+                                    <Dialog open={isQrCodeDialogOpen} onOpenChange={(open) => {
+                                        if (open) console.log('[TEST-LOG] am-tc2-ts1 - QR Code Dialog opened');
+                                        setQrCodeDialogOpen(open);
+                                    }}>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <DialogTrigger asChild>
@@ -383,7 +418,7 @@ export function MemoryForm() {
                                     </Dialog>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                             <Button type="button" variant="ghost" size="icon" onClick={(e) => { console.log(`Executing Test Step: ${isFlagged ? 'am-tc1-ts3' : 'am-tc1-ts1'}`); handleToggleFlag(e); }} disabled={isLoadingFlag}>
+                                             <Button type="button" variant="ghost" size="icon" onClick={handleToggleFlag} disabled={isLoadingFlag}>
                                                 <Flag className={`h-5 w-5 transition-colors ${isFlagged ? 'fill-primary text-primary' : 'text-muted-foreground hover:text-primary'}`} />
                                             </Button>
                                         </TooltipTrigger>
@@ -493,7 +528,11 @@ export function MemoryForm() {
                                   step={0.1} 
                                   minStepsBetweenThumbs={1} 
                                   value={trimValues} 
-                                  onValueChange={(v) => setTrimValues(v as [number, number])} 
+                                  onValueChange={(v) => {
+                                      const newTrim = v as [number, number];
+                                      console.log(`[TEST-LOG] Trim values adjusted: start=${newTrim[0]}, end=${newTrim[1]}`);
+                                      setTrimValues(newTrim);
+                                  }} 
                                   aria-label="Video trim slider"
                               />
                                <div className="flex justify-between mt-1">
@@ -513,7 +552,10 @@ export function MemoryForm() {
             {currentSlide === 0 ? 'Cancel' : <><ArrowLeft className="w-4 h-4 mr-2" /> Back</>}
           </Button>
           {currentSlide === 0 ? (
-             <Button type="button" onClick={() => carouselApi?.scrollNext()} disabled={isSubmitting}>
+             <Button type="button" onClick={() => {
+                 console.log('[TEST-LOG] am-tc4-ts2 - Clicked Next button');
+                 carouselApi?.scrollNext();
+             }} disabled={isSubmitting}>
               <span className="mr-2">Next</span> <ArrowRight className="w-4 h-4" />
              </Button>
           ) : (
