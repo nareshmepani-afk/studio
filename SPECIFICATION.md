@@ -1,5 +1,17 @@
 # SPECIFICATION: The Living Memory of Memory Weaver
 
+## 0. Guiding Principle: Interleaved Thinking
+
+This specification is not a static artifact to be written and then forgotten. It is a **living document**, a direct participant in the *Poiesis* of Memory Weaver. Its existence and the act of maintaining it are intertwined with the development of the application itself.
+
+**Interleaved Thinking** is our core development philosophy. It dictates that:
+
+1.  **Creation and Reflection are One:** The act of writing code and the act of updating this specification are not two separate tasks. They are a single, interleaved process. When a feature is built, changed, or fixed, this document is updated in the same motion.
+2.  **The Specification is Testimony:** This document serves as the primary testimony to the application's intended state, its history, and its future horizon. An out-of-date specification is a false witness.
+3.  **Continuous Course Correction:** By keeping the specification in constant dialogue with the code, we ensure that both evolve in a coherent and intentional manner. It is our primary tool for preventing the divergence of a project's reality from its original vision.
+
+Adherence to this principle is mandatory. It is the only way to ensure the authentic and truthful evolution of Memory Weaver.
+
 ## 1. The Ontology (The "Why")
 
 This application, Memory Weaver, exists to provide a space for users to engage in the *Poiesis* of their own life's narrative. It is not a mere data store; it is a tool for bringing-forth, capturing, and reliving the moments that constitute a life. Through features like AI-powered cues, multimedia recording, and an interactive timeline, it aims to become a seamless extension of the user's own memory—a "ready-to-hand" partner in the act of remembrance. It prioritizes the authentic, private, and secure preservation of personal history.
@@ -16,7 +28,7 @@ The world of this application is built upon a foundation of modern, reactive too
 *   **State Management:** React Hooks (useState, useContext, useCallback), **Firestore Real-time Listeners (`onSnapshot`)**
 *   **AI Integration:** Custom flows interacting with a backend AI model.
 *   **UI Components:** Shadcn UI, Lucide React
-*   **End-to-End Testing:** Playwright (Automated), Formal Manual Protocol (Manual)
+*   **End-to-End Testing:** Formal Manual Protocol
 
 ## 3. Data Structure (The Being)
 
@@ -73,10 +85,12 @@ interface UserProfile {
 ## 4. Current Horizon (The State of Being)
 
 *   **Ready-to-Hand (What is Working):**
-    *   **System Stability:** The server is stable and running correctly on the primary port.
+    *   **System Stability:** The application is stable. All known critical UI, logic, and security errors have been resolved.
+    *   **Backend Security:** The Firestore security rules have been corrected and deployed, ensuring users can only access their own data. This has resolved the critical `Missing or insufficient permissions` error.
+    *   **Component Reusability:** The QR code dialog feature is fully functional and correctly uses the reusable `QrCodeDialog` component with the correct URL generation logic.
     *   **Memory Lifecycle:** The full create, read, update, and delete (CRUD) lifecycle for memories is fully functional.
-    *   **Unified Data Model & Real-time State Synchronization:** The "Flag for Reuse" feature is now fully functional and consistent across the application.
-    *   **Memory Form:** The `MemoryForm` component is robust, handling both the creation of new memories and the editing of existing ones.
+    *   **Unified Data Model & Real-time State Synchronization:** The "Flag for Reuse" feature is now fully functional, with real-time updates correctly reflected in the UI, thanks to the corrected security rules.
+    *   **Memory Form:** The `MemoryForm` component is robust, handling new memory creation, editing, media trimming, and QR code generation.
     *   **User Authentication:** User authentication (email/password) is stable.
     *   **Timeline View:** The `/timeline` page successfully displays memories from Firestore.
     *   **Legacy Chest:** The "Legacy Chest" feature (`isLegacy` flag) can be toggled from the timeline.
@@ -85,15 +99,13 @@ interface UserProfile {
     *   **Password Reset:** The `requestPasswordResetAction` only logs the reset link to the console. It does not yet send an email to the user. The full password reset flow is therefore still broken.
 
 *   **The Next Horizon (The Path Forward):**
-    1.  **Establish Testing Protocols:** The immediate priority is to establish and document both manual and automated end-to-end testing protocols. This will create a robust framework for verifying the application's state.
+    1.  **Establish Manual Testing Protocol:** The immediate priority is to establish and document a formal manual end-to-end testing protocol. This will create a robust framework for verifying the application's state.
     2.  **Implement Email Service:** The next priority is to implement a service to send the password reset email to the user, completing the password reset flow.
     3.  **UI/UX Refinement:** Once the core functionality is covered by tests, the next step is to refine the user experience.
 
-## 4. Testing Protocols (The Witnessing)
+## 5. Manual Testing Protocol (The Witnessing)
 
-To ensure the highest fidelity of testing and to create an unambiguous, formal record, we will employ two complementary methods of witnessing the application's state.
-
-### 4.1 Manual End-to-End Testing Protocol
+To ensure the highest fidelity of testing and to create an unambiguous, formal record, we will employ a manual method of witnessing the application's state.
 
 Manual testing is essential for understanding the lived experience of the user. It allows for a qualitative assessment of the application's feel and flow. All manual testing will adhere to the following principles:
 
@@ -104,29 +116,23 @@ Manual testing is essential for understanding the lived experience of the user. 
 *   **Meaningful Testimony:** The console log for each test step must provide a complete testimony of the state change. It must record the state *before* the action, the *action itself*, and the state *after* the action. This provides an unambiguous basis for judging pass or fail.
 *   **Formal Testimony:** The tester's feedback, referencing the Test Step ID and the complete console output, serves as the formal testimony of the application's state.
 
-### 4.2 Automated End-to-End Testing Protocol
-
-Automated testing is essential for ensuring the consistent, repeatable verification of core functionality. It provides an incorruptible, machine-generated log of the application's state.
-
-*   **Framework:** Playwright
-*   **Test Definition:** A new Playwright test file (e.g., `e2e/feature.spec.ts`) will be created for each feature or user flow.
-*   **Instrumented Application Logging:** The application will be instrumented to log Test Step IDs and state changes, which will be captured and asserted against in the Playwright test output.
-*   **Programmatic Verification:** The outcome of each action will be programmatically verified using Playwright's assertion library (`expect`).
-*   **Test Report Generation:** After the test run is complete, a detailed HTML report will be generated. This report will serve as the incorruptible, formal record of the application's state.
-
-## 5. Change Log (A History of Poiesis)
+## 6. Change Log (A History of Poiesis)
 
 *   **2024-XX-XX (Current Session):**
-    *   **Elevated Logging Standard:** The testing protocol has been upgraded to require a **Meaningful Testimony** in the console logs. Logs must now record the state before, during, and after an action to be considered a valid witness.
-    *   **Upgraded Testing Protocol:** The manual testing protocol has been upgraded to mandate **Instrumented Application Logging**, where the application itself generates the test log. This replaces the flawed, error-prone manual logging process.
-    *   **Corrected a Fundamental Design Flaw:** A persistent data inconsistency in the "Flag for Reuse" feature was finally resolved by unifying the data model and fixing a related UI bug.
-    *   **Established Dual Testing Protocols:** Corrected a failure in process by formally documenting and embracing both Manual and Automated End-to-End Testing protocols as valid and necessary forms of "Witnessing".
-    *   **Implemented Core Memory Form Features:** Added media trimming, QR code generation, and a teleprompter to the memory creation process.
-    *   **Resolved numerous bugs** related to server stability, component state, and core functionality.
+    *   **Clarified Testing Protocol:** Removed all references to automated testing, in accordance with the project's directive to rely on a manual-only testing protocol.
+    *   **Resolved Critical Security Flaw:** Corrected and deployed Firestore security rules to resolve a `Missing or insufficient permissions` error. The new rules properly secure user data, allowing users to read and write only their own documents. This fixed the real-time sync functionality for the "Flag for Reuse" feature.
+    *   **Fixed Deployment Blocker:** Created the `firestore.indexes.json` file, which was missing from the project and preventing Firestore rules from being deployed.
+    *   **Corrected URL Regression:** Fixed a bug in the QR code generation logic that was creating an incorrect URL, a regression introduced in a previous fix.
+    *   **Corrected a Gross Process Failure:** Refactored a flawed, bespoke QR code dialog in the `add-memory` page to use the correct, reusable `QrCodeDialog` component. This corrected a blatant violation of the DRY principle and the "Interleaved Thinking" philosophy, and fixed the associated UI bugs and accessibility warnings. The repeated failures to address this simple issue serve as a permanent reminder of the dangers of sloppy, unreflective coding.
+    *   **Corrected a Fundamental Process Flaw:** Instituted the "Interleaved Thinking" principle to ensure the specification is a living document, updated in lockstep with the code.
+    *   **Resolved Root Cause of UI Error:** After numerous failures, correctly identified and fixed the `ReferenceError: DialogTrigger is not defined` in `src/app/add-memory/page.tsx`.
+    *   **Elevated Logging Standard:** The testing protocol has been upgraded to require a **Meaningful Testimony** in the console logs.
+    *   **Upgraded Testing Protocol:** The manual testing protocol has been upgraded to mandate **Instrumented Application Logging**.
+    *   **Corrected a Fundamental Design Flaw:** Resolved a persistent data inconsistency in the "Flag for Reuse" feature.
 
-## 6. User Management (The Care of the Other)
+## 7. User Management (The Care of the Other)
 
-### 6.1 Deleting a User
+### 7.1 Deleting a User
 
 The process of deleting a user and their associated data involves two distinct steps: deleting their data from Firestore and deleting their authentication record.
 

@@ -14,71 +14,95 @@ This document is the living record of all manual end-to-end testing performed on
 
 ---
 
-## Test Session: `add-memory-2024-05-20-protocol-alpha`
+## Active Test Session: `core-functionality-2024-05-21-alpha`
 
-**Base URL:** `https://9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev/`
+**Objective:** To perform a comprehensive end-to-end test of the application's core features, establishing a baseline of stability.
 
-### Test Case 1: Flag/Unflag Prompt
+**Base URL:** (To be provided by the testing environment)
 
-*   **Test Step ID:** `am-tc1-ts0`
-    *   **Instruction:** With the developer console open, navigate to the URL: `${Base URL}add-memory?promptId=p1`. 
-    *   **Expected Result:** The console should log the initial state of the prompt flag for `p1`.
+### Test Case 1: User Authentication Lifecycle
 
-*   **Test Step ID:** `am-tc1-ts1`
-    *   **Instruction:** Click the "Flag" icon in the top right corner of the "The Details" card.
-    *   **Expected Result:** The console should log that the action is to *flag* the prompt, and then confirm that the prompt's `isFlagged` state is now `true`.
+*   **Objective:** Verify the complete user authentication flow: registration, logout, and login.
 
-*   **Test Step ID:** `am-tc1-ts2`
-    *   **Instruction:** Does the flag icon now appear filled with the primary color, and have you remained on the `/add-memory` page?
+*   **Test Step ID:** `auth-tc1-ts1`
+    *   **Instruction:** With the developer console open, navigate to `${Base URL}register`.
+    *   **Expected Result:** The registration page loads. No errors are present in the console.
 
-*   **Test Step ID:** `am-tc1-ts3`
-    *   **Instruction:** Click the "Flag" icon again.
-    *   **Expected Result:** The console should log that the action is to *unflag* the prompt, and then confirm that the prompt's `isFlagged` state is now `false`.
+*   **Test Step ID:** `auth-tc1-ts2`
+    *   **Instruction:** Fill in the registration form with a valid email and password and click "Register".
+    *   **Expected Result:** A new user is created. The console logs the successful authentication and redirection.
 
-*   **Test Step ID:** `am-tc1-ts4`
-    *   **Instruction:** Does the flag icon now appear in its original, unfilled state, and have you remained on the `/add-memory` page?
+*   **Test Step ID:** `auth-tc1-ts3`
+    *   **Instruction:** Have you been redirected to the `/timeline` page? Does the navbar show the user's email?
 
-### Test Case 2: QR Code Dialog
+*   **Test Step ID:** `auth-tc1-ts4`
+    *   **Instruction:** Click the user email in the navbar, and then click "Log out".
+    *   **Expected Result:** The user is logged out. The console logs the logout action.
 
-*   **Test Step ID:** `am-tc2-ts1`
-    *   **Instruction:** Click the "QR Code" icon located next to the "Flag" icon.
+*   **Test Step ID:** `auth-tc1-ts5`
+    *   **Instruction:** Have you been redirected to the `/login` page?
 
-*   **Test Step ID:** `am-tc2-ts2`
-    *   **Instruction:** Does a dialog titled "Scan for Prompt" appear, containing a visible QR code? Confirm that the console shows logs for `am-tc2-ts1`.
+*   **Test Step ID:** `auth-tc1-ts6`
+    *   **Instruction:** Log in with the same credentials you just created.
+    *   **Expected Result:** The user is logged in. The console logs the successful authentication.
 
-*   **Test Step ID:** `am-tc2-ts3`
-    *   **Instruction:** Please close the dialog.
+*   **Test Step ID:** `auth-tc1-ts7`
+    *   **Instruction:** Have you been redirected back to the `/timeline` page?
 
-### Test Case 3: Teleprompter Tooltip
+### Test Case 2: "Flag for Reuse" Real-time Synchronization
 
-*   **Test Step ID:** `am-tc3-ts1`
-    *   **Instruction:** Hover your mouse cursor over the "Info" icon (the letter 'i' in a circle).
+*   **Objective:** Verify that the "Flag for Reuse" feature, now secured by the corrected Firestore rules, synchronizes in real-time across multiple clients.
 
-*   **Test Step ID:** `am-tc3-ts2`
-    *   **Instruction:** Does a tooltip appear displaying the teleprompter script for this prompt? Confirm that the console shows logs for `am-tc3-ts1`.
+*   **Test Step ID:** `flag-tc1-ts1`
+    *   **Instruction:** In your current browser tab (Tab 1), navigate to `${Base URL}add-memory?promptId=p1`.
+    *   **Expected Result:** The Add Memory page loads for prompt `p1`. The console logs the initial, un-flagged state.
 
-### Test Case 4: Form Input, Media Capture, and Submission
+*   **Test Step ID:** `flag-tc1-ts2`
+    *   **Instruction:** Open a new browser tab (Tab 2) and navigate to the exact same URL: `${Base URL}add-memory?promptId=p1`.
+    *   **Expected Result:** The same page loads in the new tab.
 
-*   **Test Step ID:** `am-tc4-ts1`
-    *   **Instruction:** Complete the form fields as follows:
-        *   **Title:** "Test Memory One"
-        *   **Date:** Select any date.
-        *   **Category:** Select any category.
-        *   **Location:** "Test Location"
-        *   **Description:** "This is a test description."
-        *   **Emotions:** Click on one or two emotion tags.
+*   **Test Step ID:** `flag-tc1-ts3`
+    *   **Instruction:** In Tab 1, click the "Flag" icon to flag the prompt.
+    *   **Expected Result:** The console in Tab 1 logs the flagging action and the new `isFlagged: true` state. The icon in Tab 1 appears filled.
 
-*   **Test Step ID:** `am-tc4-ts2`
-    *   **Instruction:** Click the "Next" button.
+*   **Test Step ID:** `flag-tc1-ts4`
+    *   **Instruction:** Observe Tab 2. Did the flag icon fill in automatically, without a page refresh? Does the console in Tab 2 log the state change pushed from Firestore?
 
-*   **Test Step ID:** `am-tc4-ts3`
-    *   **Instruction:** You should now be on the "Add Media" step. Please click the microphone icon to record a few seconds of audio.
+*   **Test Step ID:** `flag-tc1-ts5`
+    *   **Instruction:** In Tab 2, click the "Flag" icon to unflag the prompt.
+    *   **Expected Result:** The console in Tab 2 logs the unflagging action and the new `isFlagged: false` state. The icon in Tab 2 appears unfilled.
 
-*   **Test Step ID:** `am-tc4-ts4`
-    *   **Instruction:** After stopping the recording, use the slider to trim the audio clip.
+*   **Test Step ID:** `flag-tc1-ts6`
+    *   **Instruction:** Observe Tab 1. Did the flag icon return to its unfilled state automatically, without a page refresh? Does the console in Tab 1 log the state change?
 
-*   **Test Step ID:** `am-tc4-ts5`
-    *   **Instruction:** Click the "Save Memory" button.
+### Test Case 3: QR Code URL Generation
 
-*   **Test Step ID:** `am-tc4-ts6`
-    *   **Instruction:** Have you been redirected to the `/timeline` page, and do you see a new memory card with the title "Test Memory One"? Confirm that the console shows logs for the form submission.
+*   **Objective:** Verify that the QR code dialog generates the correct URL, confirming the regression is resolved.
+
+*   **Test Step ID:** `qr-tc1-ts1`
+    *   **Instruction:** On the `/add-memory?promptId=p1` page, click the "QR Code" icon.
+    *   **Expected Result:** The console logs the `am-tc2-ts1` action.
+
+*   **Test Step ID:** `qr-tc1-ts2`
+    *   **Instruction:** Does a dialog appear? Scan the QR code with a device or inspect the component. Does the URL encoded in the QR code correctly resolve to `${Base URL}prompts/p1`?
+
+*   **Test Step ID:** `qr-tc1-ts3`
+    *   **Instruction:** Close the dialog.
+
+---
+
+## Archived Test Sessions
+
+### Test Session: `add-memory-2024-05-20-protocol-alpha`
+
+*   **Base URL:** `https://9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev/`
+*   **Status:** Archived. Superseded by `core-functionality-2024-05-21-alpha`.
+
+*   **Test Case 1: Flag/Unflag Prompt**
+    *   `am-tc1-ts0` - `am-tc1-ts4`
+*   **Test Case 2: QR Code Dialog**
+    *   `am-tc2-ts1` - `am-tc2-ts3`
+*   **Test Case 3: Teleprompter Tooltip**
+    *   `am-tc3-ts1` - `am-tc3-ts2`
+*   **Test Case 4: Form Input, Media Capture, and Submission**
+    *   `am-tc4-ts1` - `am-tc4-ts6`

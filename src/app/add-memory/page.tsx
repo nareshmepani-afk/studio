@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getMonth, getDate, getYear, parseISO, getDaysInMonth, format } from 'date-fns';
 import { mockPrompts as lifePrompts } from '@/lib/mockData';
@@ -17,7 +16,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin, Info, QrCode, Flag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
@@ -25,7 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { doc, getDoc, addDoc, updateDoc, collection, arrayUnion, arrayRemove, onSnapshot } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import QRCode from 'qrcode.react';
+import { QrCodeDialog } from '@/components/prompts/QrCodeDialog';
 
 const MediaCaptureControl = dynamic(
   () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
@@ -79,16 +77,14 @@ function MemoryForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFlagged, setIsFlagged] = useState(false);
   const [isLoadingFlag, setIsLoadingFlag] = useState(!!promptId);
-  const [isQrCodeDialogOpen, setQrCodeDialogOpen] = useState(false);
+  const [qrCodeDialog, setQrCodeDialog] = useState<{ open: boolean; url: string; title: string; }>({ open: false, url: '', title: '' });
 
-  // LOG INITIAL STATE FOR TEST PROTOCOL
   useEffect(() => {
     if (promptId && !isLoadingFlag) {
       console.log(`[TEST-LOG] am-tc1-ts0: Initial prompt flag state for ${promptId} is ${isFlagged}`);
     }
   }, [promptId, isLoadingFlag, isFlagged]);
 
-  // REAL-TIME LISTENER FOR FLAG STATUS
   useEffect(() => {
     if (!promptId || !user) {
       setIsLoadingFlag(false);
@@ -225,6 +221,13 @@ function MemoryForm() {
     setMediaPayload(payload);
   }, []);
 
+  const handleShowQrCode = useCallback(() => {
+    if (!promptId) return;
+    console.log('[TEST-LOG] am-tc2-ts1');
+    const url = `${window.location.origin}/prompts/${promptId}`;
+    setQrCodeDialog({ open: true, url, title: title || 'this prompt' });
+  }, [promptId, title]);
+
   const currentMediaDuration = mediaPayload?.duration || initialMedia?.duration || 0;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -302,7 +305,7 @@ function MemoryForm() {
             promptId: promptId || memoryToEdit?.promptId,
             userId: user.uid,
             mediaAttachments: newOrUpdatedAttachments,
-            updatedAt: new Date().toISOString(),
+            updatedat: new Date().toISOString(),
         };
 
         if (isEditing && editMemoryId) {
@@ -363,7 +366,7 @@ function MemoryForm() {
         <div className="flex justify-center mb-6 space-x-2">
           {[0, 1].map((step) => (
             <div key={step} className={`h-2 w-16 rounded-full transition-colors ${currentSlide === step ? 'bg-primary' : 'bg-secondary'}`} />
-          ))}\
+          ))}
         </div>
 
         <Carousel setApi={setCarouselApi} opts={{ watchDrag: false }} className="w-full">
@@ -392,7 +395,7 @@ function MemoryForm() {
                                     
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onClick={(e) => { e.preventDefault(); e.stopPropagation(); console.log('[TEST-LOG] am-tc2-ts1'); setQrCodeDialogOpen(true); }}>
+                                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleShowQrCode(); }}>
                                                 <QrCode className="h-5 w-5" />
                                             </Button>
                                         </TooltipTrigger>
@@ -413,7 +416,7 @@ function MemoryForm() {
                                     </Tooltip>
                                 </div>
                             </TooltipProvider>
-                        )}\
+                        )}
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -533,20 +536,16 @@ function MemoryForm() {
           </CarouselContent>
         </Carousel>
 
-        <Dialog open={isQrCodeDialogOpen} onOpenChange={setQrCodeDialogOpen}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Scan for Prompt</DialogTitle>
-                </DialogHeader>
-                <div className="flex items-center justify-center p-4 bg-white">
-                    {promptId && <QRCode value={`${window.location.origin}/interview?promptId=${promptId}`} />}
-                </div>
-            </DialogContent>
-        </Dialog>
+        <QrCodeDialog
+          open={qrCodeDialog.open}
+          url={qrCodeDialog.url}
+          title={qrCodeDialog.title}
+          onClose={() => setQrCodeDialog({ open: false, url: '', title: '' })}
+        />
 
         <div className="flex justify-between mt-8 px-1">
           <Button type="button" variant="ghost" onClick={() => currentSlide === 0 ? router.back() : carouselApi?.scrollPrev()} disabled={isSubmitting}>
-            {currentSlide === 0 ? 'Cancel' : <><ArrowLeft className="w-4 h-4 mr-2" /> Back</>}\
+            {currentSlide === 0 ? 'Cancel' : <><ArrowLeft className="w-4 h-4 mr-2" /> Back</>}
           </Button>
           {currentSlide === 0 ? (
              <Button type="button" onClick={() => {
@@ -557,7 +556,7 @@ function MemoryForm() {
              </Button>
           ) : (
             <Button type="submit" disabled={isSubmitting} className="min-w-[120px]">
-              {isSubmitting ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <><Sparkles className="w-4 h-4 mr-2" /> {isEditing ? 'Update Memory' : 'Save Memory'}</>}\
+              {isSubmitting ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <><Sparkles className="w-4 h-4 mr-2" /> {isEditing ? 'Update Memory' : 'Save Memory'}</>}
             </Button>
           )}
         </div>
