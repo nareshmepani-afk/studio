@@ -120,7 +120,7 @@ function MemoryForm() {
     });
 
     return () => unsubscribe();
-  }, [promptId, user, authLoading, toast]); // Add authLoading to dependencies
+  }, [promptId, user, authLoading, toast, isFlagged, isLoadingFlag]); // Correctly add dependencies to fix stale closure
 
 
   const handleToggleFlag = async (event: React.MouseEvent) => {
@@ -582,3 +582,5 @@ export default function AddMemoryPage() {
       </AuthenticatedPageWrapper>
     )
 }
+
+    
