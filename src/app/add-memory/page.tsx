@@ -253,11 +253,12 @@ function MemoryForm() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const testCaseId = isEditing ? 'e2e-edit-memory' : 'e2e-add-memory';
+    setIsSubmitting(true);
     console.log(`TESTIMONY - ${testCaseId}-ts-submit - START`);
 
     try {
-      console.log('State Before: User has filled the form and clicked the submit button.');
-
+      console.log('State Before: User has filled the form and is attempting to submit.');
+      
       if (!user) {
         throw new Error("You must be logged in to save a memory.");
       }
@@ -270,10 +271,8 @@ function MemoryForm() {
         throw new Error("Please add a video or audio to your memory.");
       }
 
-      console.log('Action: Setting isSubmitting to true.');
-      setIsSubmitting(true);
-      console.log(`State After: isSubmitting is now true. The submit button is disabled.`);
-
+      console.log('Action: Form validation passed. Proceeding with submission.');
+      
       let newOrUpdatedAttachments: MediaAttachment[] = memoryToEdit?.mediaAttachments || [];
 
       if (mediaPayload?.file) {
@@ -366,7 +365,7 @@ function MemoryForm() {
       const errorMessage = error.message || "An unknown error occurred.";
       console.error(`TESTIMONY - ${testCaseId}-ts-submit - FATAL_ERROR: An error occurred during the submission process.`, error);
       toast({
-        title: error.message ? "Error" : "An Unknown Error Occurred",
+        title: "Error",
         description: errorMessage,
         variant: "destructive"
       });
@@ -593,7 +592,8 @@ function MemoryForm() {
             {currentSlide === 0 ? 'Cancel' : <><ArrowLeft className="w-4 h-4 mr-2" /> Back</>}
           </Button>
           {currentSlide === 0 ? (
-             <Button type="button" onClick={() => {
+             <Button type="button" onClick={(e) => {
+                 e.preventDefault();
                  carouselApi?.scrollNext();
              }} disabled={isSubmitting}>
               <span className="mr-2">Next</span> <ArrowRight className="w-4 h-4" />
