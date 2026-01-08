@@ -1,5 +1,4 @@
-
-"use client"
+'use client';
 
 // Inspired by react-hot-toast library
 import * as React from "react"
@@ -64,7 +63,6 @@ const addToRemoveQueue = (toastId: string, duration?: number) => {
     return
   }
 
-  // Use provided duration or the long default for persistent toasts
   const timeoutDuration = duration && duration > 0 ? duration : TOAST_REMOVE_DELAY;
 
   const timeout = setTimeout(() => {
@@ -98,8 +96,6 @@ export const reducer = (state: State, action: Action): State => {
       const { toastId } = action
 
       if (toastId) {
-        // Dismissing a specific toast, remove it from queue if it's there.
-        // We will add it back with its duration if it has one.
         if(toastTimeouts.has(toastId)) {
             clearTimeout(toastTimeouts.get(toastId));
             toastTimeouts.delete(toastId);
@@ -109,7 +105,6 @@ export const reducer = (state: State, action: Action): State => {
            addToRemoveQueue(toastId, toast.duration);
         }
       } else {
-        // Dismissing all toasts
         state.toasts.forEach((toast) => {
            if(toastTimeouts.has(toast.id)) {
               clearTimeout(toastTimeouts.get(toast.id));
@@ -123,10 +118,7 @@ export const reducer = (state: State, action: Action): State => {
         ...state,
         toasts: state.toasts.map((t) =>
           t.id === toastId || toastId === undefined
-            ? {
-                ...t,
-                open: false,
-              }
+            ? { ...t, open: false }
             : t
         ),
       }
@@ -158,7 +150,7 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ ...props }: Toast) {
+function toast(props: Toast) { // Changed signature
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -167,6 +159,11 @@ function toast({ ...props }: Toast) {
       toast: { ...props, id },
     })
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
+
+  // Log destructive toasts to the console
+  if (props.variant === "destructive") {
+    console.error("Toast Error:", props);
+  }
 
   dispatch({
     type: "ADD_TOAST",
@@ -180,14 +177,12 @@ function toast({ ...props }: Toast) {
     },
   })
 
-  // If a duration is provided, use it to auto-dismiss, otherwise it persists
   if (props.duration) {
       const timeout = setTimeout(() => {
           dismiss();
       }, props.duration);
       toastTimeouts.set(id, timeout);
   }
-
 
   return {
     id: id,
@@ -196,7 +191,6 @@ function toast({ ...props }: Toast) {
   }
 }
 
-// Add a new update method to the exported toast object
 toast.update = (id: string, props: ToasterToast) => {
     dispatch({ type: "UPDATE_TOAST", toast: { ...props, id } });
 };
