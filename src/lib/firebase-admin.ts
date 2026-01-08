@@ -1,28 +1,29 @@
-
 import * as admin from 'firebase-admin';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getStorage } from 'firebase-admin/storage';
 
-const serviceAccountEnv = process.env.SERVICE_ACCOUNT_JSON;
+let adminDb: admin.firestore.Firestore;
+let adminAuth: admin.auth.Auth;
 
 if (!admin.apps.length) {
-  if (serviceAccountEnv) {
-    try {
-      const serviceAccount = JSON.parse(serviceAccountEnv);
+  try {
+    // App Hosting provides the service account credentials via this environment variable.
+    const serviceAccount = process.env.SERVICE_ACCOUNT_JSON;
+    if (serviceAccount) {
       admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+        credential: admin.credential.cert(JSON.parse(serviceAccount)),
+        storageBucket: 'memory-weaver-8rk9t.appspot.com' // Make sure this is your correct storage bucket
       });
-      console.log('[firebase-admin] Firebase Admin SDK initialized successfully from environment variable.');
-    } catch (error) {
-      console.error('[firebase-admin] Error initializing from SERVICE_ACCOUNT_JSON:', error);
+      console.log('[firebase-admin] Admin SDK initialized successfully.');
+    } else {
+      console.warn('[firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.');
     }
-  } else {
-    console.warn('[firebase-admin] SERVICE_ACCOUNT_JSON environment variable is not set. Admin SDK not initialized.');
+  } catch (error: any) {
+    console.error('[firebase-admin] CRITICAL: Firebase Admin initialization failed:', error);
   }
 }
 
-export const adminAuth = admin.apps.length ? getAuth() : null;
-export const adminDb = admin.apps.length ? getFirestore() : null;
-export const adminStorage = admin.apps.length ? getStorage() : null;
+if (admin.apps.length > 0) {
+    adminDb = admin.firestore();
+    adminAuth = admin.auth();
+}
+
+export { adminDb, adminAuth };

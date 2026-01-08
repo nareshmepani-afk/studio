@@ -21,9 +21,10 @@ import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin, Info, QrCod
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/useAuth';
-import { doc, getDoc, addDoc, updateDoc, collection, arrayUnion, arrayRemove, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, arrayUnion, arrayRemove, onSnapshot } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
-import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
+import { saveMemory } from '@/actions/memoryActions';
 import QRCode from 'qrcode.react';
 
 const MediaCaptureControl = dynamic(
@@ -45,7 +46,7 @@ export function MemoryForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast(); 
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   
   const editMemoryId = searchParams.get('editMemoryId') || undefined;
   const promptId = searchParams.get('promptId') || undefined;
@@ -76,12 +77,13 @@ export function MemoryForm() {
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isFlagged, setIsFlagged] = useState(false);
   const [isLoadingFlag, setIsLoadingFlag] = useState(!!promptId);
   const [isQrCodeDialogOpen, setQrCodeDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (!promptId || !user) {
+    if (authLoading || !user || !promptId) {
       setIsLoadingFlag(false);
       return;
     }
@@ -103,37 +105,26 @@ export function MemoryForm() {
     });
 
     return () => unsubscribe();
-  }, [promptId, user, toast, isFlagged]);
-
-  useEffect(() => {
-      if (promptId) {
-          console.log(`[TEST-LOG] am-tc1-ts0: Initial prompt flag state for ${promptId} is ${isFlagged}`);
-      }
-  }, [promptId, isFlagged]);
+  }, [promptId, user, toast, isFlagged, authLoading]);
 
   const handleToggleFlag = async (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
     if (!user || !promptId) return;
     
-    const actionId = isFlagged ? 'am-tc1-ts3' : 'am-tc1-ts1';
-    console.log(`[TEST-LOG] ${actionId} - Action: ${isFlagged ? 'unflag' : 'flag'}, promptId: ${promptId}, previousState: ${isFlagged}`);
-    
     const userRef = doc(db, 'users', user.uid);
     try {
       await updateDoc(userRef, {
         flaggedPrompts: isFlagged ? arrayRemove(promptId) : arrayUnion(promptId)
       });
-      // The state will be updated via the onSnapshot listener, which will log the completion.
       toast({ title: isFlagged ? 'Prompt unflagged' : 'Prompt flagged for re-use', variant: 'success' });
     } catch (error) {
-      console.error(`[TEST-LOG] ${actionId} - Failed`, error);
       toast({ title: 'Error', description: 'Could not update flag status.', variant: 'destructive'});
     }
   };
 
   useEffect(() => {
-    if (!editMemoryId || !user) {
+    if (!editMemoryId || !user || authLoading) {
       setIsLoadingMemory(false);
       return;
     }
@@ -161,7 +152,7 @@ export function MemoryForm() {
       }
     };
     fetchMemory();
-  }, [editMemoryId, user, router, toast]);
+  }, [editMemoryId, user, router, toast, authLoading]);
 
   useEffect(() => {
     if (memoryToEdit) {
@@ -187,13 +178,7 @@ export function MemoryForm() {
 
       if (memoryToEdit.mediaAttachments?.[0]) {
         const m = memoryToEdit.mediaAttachments[0];
-        setInitialMedia({
-          id: m.id,
-          url: m.url,
-          type: m.type,
-          filename: m.filename,
-          duration: m.duration || 0,
-        });
+        setInitialMedia(m);
         setTrimValues([m.startTime || 0, m.endTime || m.duration || 0]);
       }
     }
@@ -203,7 +188,6 @@ export function MemoryForm() {
     if (!carouselApi) return;
     const onSelect = () => {
         const index = carouselApi.selectedScrollSnap();
-        console.log(`[TEST-LOG] Carousel changed to slide ${index}`);
         setCurrentSlide(index);
     };
     carouselApi.on("select", onSelect);
@@ -217,112 +201,124 @@ export function MemoryForm() {
       setTrimValues([0, 0]);
       return;
     }
-    console.log(`[TEST-LOG] Media ready: type=${payload.type}, duration=${payload.duration}`);
     setTrimValues([0, payload.duration]);
     setMediaPayload(payload);
   }, []);
   
   const currentMediaDuration = mediaPayload?.duration || initialMedia?.duration || 0;
 
+  const finishSubmission = async (attachments: MediaAttachment[]) => {
+    if (!user) return;
+
+    if (attachments.length > 0) {
+        attachments[0] = {
+          ...attachments[0],
+          startTime: trimValues[0],
+          endTime: trimValues[1],
+          isTrimmed: trimValues[0] > 0 || (!!currentMediaDuration && trimValues[1] < currentMediaDuration),
+          duration: currentMediaDuration
+        };
+    }
+
+    const memoryData: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'> = {
+      title,
+      date: new Date(selectedYear, selectedMonth, selectedDay).toISOString(),
+      description,
+      category: selectedCategory?.id || 'personal_reflection',
+      location,
+      emotionTags: selectedEmotionTags.map(t => t.id),
+      promptId: promptId || memoryToEdit?.promptId,
+      userId: user.uid,
+      mediaAttachments: attachments,
+    };
+
+    const result = await saveMemory(memoryData, editMemoryId || null);
+
+    if (result.success) {
+      toast({ title: "Success", description: result.message, variant: 'success' });
+      router.push('/timeline');
+      router.refresh();
+    } else {
+      throw new Error(result.message);
+    }
+
+    setIsSubmitting(false);
+    setUploadProgress(null);
+  }
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const actionId = 'am-tc4-ts5';
-    console.log(`[TEST-LOG] ${actionId} - Initiating Memory Save. isEditing=${isEditing}, title=${title}`);
+    const testCaseId = isEditing ? 'e2e-edit-memory' : 'e2e-add-memory';
+    console.log(`TESTIMONY - ${testCaseId}-ts-submit - START`);
 
-    if (!user) {
-        toast({ title: "Not Authenticated", description: "You must be logged in to save a memory.", variant: "destructive" });
-        return;
-    }
-    if (!title) {
-      toast({ title: "Missing Title", description: "Please give your memory a title.", variant: "destructive" });
-      carouselApi?.scrollTo(0);
-      return;
-    }
-    if (!mediaPayload?.file && !initialMedia) {
-      toast({ title: "Missing Media", description: "Please add a video or audio to your memory.", variant: "destructive" });
-      carouselApi?.scrollTo(1);
-      return;
-    }
-    
     setIsSubmitting(true);
-    
+
     try {
-        let newOrUpdatedAttachments: MediaAttachment[] = memoryToEdit?.mediaAttachments || [];
+      if (!user) throw new Error("You must be logged in.");
+      if (!title) {
+        carouselApi?.scrollTo(0);
+        throw new Error("Please give your memory a title.");
+      }
+      if (!mediaPayload?.file && !initialMedia) {
+        carouselApi?.scrollTo(1);
+        throw new Error("Please add media to your memory.");
+      }
 
-        if (mediaPayload?.file) {
-            console.log(`[TEST-LOG] ${actionId} - Uploading new media file.`);
-            const file = mediaPayload.file;
-            const fileId = crypto.randomUUID();
-            const fileExtension = file.name.split('.').pop() || 'tmp';
-            const filePath = `users/${user.uid}/media/${fileId}.${fileExtension}`;
-            const fileRef = storageRef(storage, filePath);
+      let newOrUpdatedAttachments: MediaAttachment[] = memoryToEdit?.mediaAttachments || [];
 
-            await uploadBytes(fileRef, file);
-            const publicUrl = await getDownloadURL(fileRef);
+      if (mediaPayload?.file) {
+        const file = mediaPayload.file;
+        const fileId = crypto.randomUUID();
+        const fileExtension = file.name.split('.').pop() || 'tmp';
+        const filePath = `users/${user.uid}/media/${fileId}.${fileExtension}`;
+        const fileRef = storageRef(storage, filePath);
 
+        console.log(`TESTIMONY - ${testCaseId}-ts-upload-media - START`);
+        const uploadTask = uploadBytesResumable(fileRef, file);
+
+        uploadTask.on('state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setUploadProgress(progress);
+            console.log(`TESTIMONY - ${testCaseId}-ts-upload-progress - Progress: ${progress.toFixed(2)}%`);
+          },
+          (error) => {
+            console.error(`TESTIMONY - ${testCaseId}-ts-upload-media - ERROR:`, error);
+            throw new Error('File upload failed: ' + error.message);
+          },
+          async () => {
+            const publicUrl = await getDownloadURL(uploadTask.snapshot.ref);
+            console.log(`TESTIMONY - ${testCaseId}-ts-upload-media - END - URL: ${publicUrl}`);
+            
             if (initialMedia?.url && initialMedia.url.includes('firebasestorage.googleapis.com')) {
                 try {
                     const oldFileRef = storageRef(storage, initialMedia.url);
                     await deleteObject(oldFileRef);
                 } catch (deleteError: any) {
-                    if (deleteError.code !== 'storage/object-not-found') {
-                        console.warn("Could not delete old media from storage:", deleteError);
-                    }
+                    if (deleteError.code !== 'storage/object-not-found') console.warn("Could not delete old media:", deleteError);
                 }
             }
 
             newOrUpdatedAttachments = [{
-                id: fileId,
-                url: publicUrl,
-                type: file.type.startsWith('video') ? 'video' : 'audio',
-                filename: file.name,
+              id: fileId,
+              url: publicUrl,
+              type: file.type.startsWith('video') ? 'video' : 'audio',
+              filename: file.name,
             }];
-        }
 
-        if (newOrUpdatedAttachments.length > 0) {
-            newOrUpdatedAttachments[0] = { 
-                ...newOrUpdatedAttachments[0], 
-                startTime: trimValues[0],
-                endTime: trimValues[1],
-                isTrimmed: trimValues[0] > 0 || (!!currentMediaDuration && trimValues[1] < currentMediaDuration),
-                duration: currentMediaDuration
-            };
-        }
-
-        const memoryData: Omit<Memory, 'id'> = {
-            title,
-            date: new Date(selectedYear, selectedMonth, selectedDay).toISOString(),
-            description,
-            category: selectedCategory?.id || 'personal_reflection',
-            location,
-            emotionTags: selectedEmotionTags.map(t => t.id),
-            promptId: promptId || memoryToEdit?.promptId,
-            userId: user.uid,
-            mediaAttachments: newOrUpdatedAttachments,
-            updatedAt: new Date().toISOString(),
-        };
-
-        if (isEditing && editMemoryId) {
-            const memRef = doc(db, 'users', user.uid, 'memories', editMemoryId);
-            await updateDoc(memRef, memoryData);
-            console.log(`[TEST-LOG] ${actionId} - Memory updated successfully: ${editMemoryId}`);
-            toast({ title: "Success", description: "Memory updated successfully", variant: 'success' });
-        } else {
-            const collectionRef = collection(db, 'users', user.uid, 'memories');
-            const docRef = await addDoc(collectionRef, { ...memoryData, createdAt: new Date().toISOString() });
-            console.log(`[TEST-LOG] ${actionId} - Memory created successfully: ${docRef.id}`);
-            toast({ title: "Success", description: "Memory saved successfully", variant: 'success' });
-        }
-        
-        console.log(`[TEST-LOG] ${actionId} - Redirecting to /timeline`);
-        router.push('/timeline');
-        router.refresh();
-
+            await finishSubmission(newOrUpdatedAttachments);
+          }
+        );
+      } else {
+        // No new media to upload, just update metadata
+        await finishSubmission(newOrUpdatedAttachments);
+      }
     } catch (error: any) {
-        console.error(`[TEST-LOG] ${actionId} - Error saving memory:`, error);
-        toast({ title: "Error Saving Memory", description: error.message, variant: "destructive" });
-    } finally {
-        setIsSubmitting(false);
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      setIsSubmitting(false);
+      setUploadProgress(null);
+      console.error(`TESTIMONY - ${testCaseId}-ts-submit - FATAL_ERROR:`, error);
+      console.log(`TESTIMONY - ${testCaseId}-ts-submit - END`);
     }
   };
 
@@ -343,7 +339,7 @@ export function MemoryForm() {
   const leftPosition = currentMediaDuration > 0 ? `calc(${(trimValues[0] / currentMediaDuration) * 100}% - ${leftValueLabel.length / 2}ch)` : '0%';
   const rightPosition = currentMediaDuration > 0 ? `calc(${(trimValues[1] / currentMediaDuration) * 100}% - ${rightValueLabel.length / 2}ch)` : '100%';
 
-  if (isLoadingMemory) {
+  if (isLoadingMemory || authLoading) {
       return (
         <div className="container mx-auto py-8 px-4 flex justify-center items-center h-[calc(100vh-8rem)]">
             <div className="flex flex-col items-center space-y-4">
@@ -378,12 +374,7 @@ export function MemoryForm() {
                                 <div className="flex items-center space-x-2">
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                className="text-muted-foreground hover:text-primary"
-                                                onMouseEnter={() => console.log('[TEST-LOG] am-tc3-ts1 - Hovered Info icon')}
-                                            >
+                                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
                                                 <Info className="h-5 w-5" />
                                             </Button>
                                         </TooltipTrigger>
@@ -413,7 +404,7 @@ export function MemoryForm() {
                                     </Dialog>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                             <Button type="button" variant="ghost" size="icon" onClick={handleToggleFlag} disabled={isLoadingFlag}>
+                                             <Button type="button" variant="ghost" size="icon" onClick={handleToggleFlag} disabled={isLoadingFlag || authLoading}>
                                                 <Flag className={`h-5 w-5 transition-colors ${isFlagged ? 'fill-primary text-primary' : 'text-muted-foreground hover:text-primary'}`} />
                                             </Button>
                                         </TooltipTrigger>
@@ -525,7 +516,6 @@ export function MemoryForm() {
                                   value={trimValues} 
                                   onValueChange={(v) => {
                                       const newTrim = v as [number, number];
-                                      console.log(`[TEST-LOG] Trim values adjusted: start=${newTrim[0]}, end=${newTrim[1]}`);
                                       setTrimValues(newTrim);
                                   }} 
                                   aria-label="Video trim slider"
@@ -548,14 +538,15 @@ export function MemoryForm() {
           </Button>
           {currentSlide === 0 ? (
              <Button type="button" onClick={() => {
-                 console.log('[TEST-LOG] am-tc4-ts2 - Clicked Next button');
                  carouselApi?.scrollNext();
              }} disabled={isSubmitting}>
               <span className="mr-2">Next</span> <ArrowRight className="w-4 h-4" />
              </Button>
           ) : (
-            <Button type="submit" disabled={isSubmitting} className="min-w-[120px]">
-              {isSubmitting ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <><Sparkles className="w-4 h-4 mr-2" /> {isEditing ? 'Update Memory' : 'Save Memory'}</>}
+            <Button type="submit" disabled={isSubmitting || authLoading} className="min-w-[120px]">
+              {isSubmitting ? 
+                <><Loader2 className="animate-spin w-4 h-4 mr-2" /> {uploadProgress !== null ? `${Math.round(uploadProgress)}%` : 'Saving...'}</> : 
+                <><Sparkles className="w-4 h-4 mr-2" /> {isEditing ? 'Update Memory' : 'Save Memory'}</>}
             </Button>
           )}
         </div>

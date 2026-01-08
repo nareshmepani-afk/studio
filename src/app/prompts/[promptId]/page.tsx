@@ -7,13 +7,7 @@ import { ArrowLeft, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-interface PromptPageProps {
-  params: {
-    promptId: string;
-  };
-}
-
-export default function PromptPage({ params }: PromptPageProps) {
+export default function PromptPage({ params }: { params: { promptId: string } }) {
   const { promptId } = params;
 
   const prompt = mockPromptGroups.flatMap(group => group.prompts).find(p => p.id === promptId);
