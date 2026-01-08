@@ -9,6 +9,7 @@ This specification is not a static artifact to be written and then forgotten. It
 1.  **Creation and Reflection are One:** The act of writing code and the act of updating this specification are not two separate tasks. They are a single, interleaved process. When a feature is built, changed, or fixed, this document is updated in the same motion.
 2.  **The Specification is Testimony:** This document serves as the primary testimony to the application's intended state, its history, and its future horizon. An out-of-date specification is a false witness.
 3.  **Continuous Course Correction:** By keeping the specification in constant dialogue with the code, we ensure that both evolve in a coherent and intentional manner. It is our primary tool for preventing the divergence of a project's reality from its original vision.
+4.  **Plan Mode as a Bridge:** To prevent the divergence between intent and action, a new workflow layer, **Plan Mode**, is introduced. Before undertaking any complex or critical multi-step action (such as implementing a new feature, performing a significant refactor, or executing a manual test case), the AI assistant must first generate a detailed, step-by-step plan. This plan serves as a proposal to be witnessed and approved by the developer. It bridges the gap between the initial idea and the final code, ensuring clarity, alignment, and a shared understanding of the intended action before execution begins.
 
 Adherence to this principle is mandatory. It is the only way to ensure the authentic and truthful evolution of Memory Weaver.
 

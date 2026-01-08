@@ -32,6 +32,10 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
   const [recordingTime, setRecordingTime] = useState(0);
 
   const stopRecordingAndCleanup = useCallback(() => {
+    const testStepId = 'media-capture-ts-stop-record';
+    console.log(`TESTIMONY - ${testStepId} - START`);
+    console.log(`State Before: Media recorder is in state: ${mediaRecorderRef.current?.state}`);
+    console.log('Action: Stopping media recording and cleaning up resources.');
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
         mediaRecorderRef.current.stop();
     }
@@ -46,7 +50,8 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
     }
-    // Don't reset status here, onstop will handle it
+    console.log('State After: Recording stopped, streams and timers cleaned up.');
+    console.log(`TESTIMONY - ${testStepId} - END`);
   }, []);
 
   useEffect(() => {
@@ -84,11 +89,26 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
   }, [recordingTime, status, stopRecordingAndCleanup, toast]);
 
   const handlePlay = useCallback(() => {
+    const testStepId = 'media-capture-ts-play-preview';
+    console.log(`TESTIMONY - ${testStepId} - START`);
     const video = videoRef.current;
-    if (!video || !trimValues || (trimValues[0] === 0 && trimValues[1] === media?.duration)) return;
+    if (!video) {
+        console.log('State Before: Video element not available.');
+        console.log(`TESTIMONY - ${testStepId} - END`);
+        return;
+    }
+    console.log(`State Before: Video playback paused at ${video.currentTime}. Trim values: [${trimValues[0]}, ${trimValues[1]}].`);
+    console.log('Action: Playing media preview, ensuring it starts within trim boundaries.');
+    if (!trimValues || (trimValues[0] === 0 && trimValues[1] === media?.duration)) {
+        console.log('State After: No trim values, default playback initiated.');
+        console.log(`TESTIMONY - ${testStepId} - END`);
+        return;
+    }
     if (video.currentTime < trimValues[0] || video.currentTime >= trimValues[1]) {
       video.currentTime = trimValues[0];
     }
+    console.log(`State After: Video playback initiated at ${video.currentTime}.`);
+    console.log(`TESTIMONY - ${testStepId} - END`);
   }, [trimValues, media]);
 
   const handleTimeUpdate = useCallback(() => {
@@ -100,6 +120,10 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
   }, [trimValues, media]);
 
   const startRecording = async (type: 'audio' | 'video') => {
+    const testStepId = 'media-capture-ts-start-record';
+    console.log(`TESTIMONY - ${testStepId} - START`);
+    console.log(`State Before: Status is 'idle'. Requested recording type: ${type}.`);
+    console.log('Action: User initiated recording.');
     try {
       if (media?.url && media.source === 'new') {
         URL.revokeObjectURL(media.url);
@@ -142,29 +166,43 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
             setMedia({ url, type, source: 'new', duration: mediaEl.duration });
             onMediaReady(newMediaPayload);
             setStatus('preview');
+            console.log(`State After: Recording finished. Media payload is ready for preview.`);
         };
         recordedChunksRef.current = [];
-        // Stream is stopped in stopRecordingAndCleanup
       };
 
       recorder.start();
       recordingIntervalRef.current = setInterval(() => setRecordingTime(prev => prev + 1), RECORDING_INTERVAL_MS);
+      console.log(`State After: Media stream acquired. Recorder started.`);
 
     } catch (err: any) {
         console.error("Error starting recording:", err);
         toast({ title: "Recording Error", description: err.message, variant: "destructive" });
         setStatus(initialMedia ? 'preview' : 'idle');
+        console.log(`State After: Error occurred. Status reset to '${initialMedia ? 'preview' : 'idle'}'.`);
+    } finally {
+        console.log(`TESTIMONY - ${testStepId} - END`);
     }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const testStepId = 'media-capture-ts-upload-file';
+    console.log(`TESTIMONY - ${testStepId} - START`);
+    console.log('State Before: No file is selected.');
+    console.log('Action: User selected a file for upload.');
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+        console.log('State After: No file was selected. Aborting.');
+        console.log(`TESTIMONY - ${testStepId} - END`);
+        return;
+    }
 
     if (media?.url && media.source === 'new') URL.revokeObjectURL(media.url);
 
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
         toast({ title: "File too large", description: `Please select a file smaller than ${MAX_FILE_SIZE_MB}MB.`, variant: "destructive" });
+        console.log(`State After: File is too large. Upload aborted.`);
+        console.log(`TESTIMONY - ${testStepId} - END`);
         return;
     }
 
@@ -181,11 +219,18 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
         setMedia({ url, type: newMediaPayload.type, source: 'new', duration: mediaEl.duration });
         onMediaReady(newMediaPayload);
         setStatus('preview');
+        console.log(`State After: File uploaded and media payload is ready for preview.`);
     };
     event.target.value = '';
+    console.log(`TESTIMONY - ${testStepId} - END`);
   };
 
   const resetToInitial = useCallback(() => {
+    const testStepId = 'media-capture-ts-discard-media';
+    console.log(`TESTIMONY - ${testStepId} - START`);
+    console.log('State Before: A new media clip is in the preview state.');
+    console.log('Action: User clicked "Start Over" or "Cancel and Revert".');
+    
     if (media?.url && media.source === 'new') URL.revokeObjectURL(media.url);
     
     if (initialMedia?.previewUrl) {
@@ -198,26 +243,29 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
       setMedia(newMedia);
       setStatus('preview');
       onMediaReady({ file: new File([], "existing"), type: newMedia.type, duration: newMedia.duration });
+      console.log('State After: Reverted to the initial media.');
     } else {
       setMedia(null);
       onMediaReady(null);
       setStatus('idle');
+      console.log('State After: Media discarded. Component reset to idle state.');
     }
+    console.log(`TESTIMONY - ${testStepId} - END`);
   }, [media, initialMedia, onMediaReady]);
 
   const renderCaptureOptions = () => (
     <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border-2 border-dashed border-muted bg-background p-8 text-center min-h-[200px]">
         <p className="text-sm text-muted-foreground">Record a new clip or upload a file.</p>
         <div className="flex items-center space-x-4">
-            <Button onClick={() => startRecording('video')} variant="outline" size="icon" className="h-16 w-16 rounded-full">
+            <Button type="button" onClick={() => startRecording('video')} variant="outline" size="icon" className="h-16 w-16 rounded-full">
                 <Video className="h-8 w-8" />
             </Button>
-            <Button onClick={() => startRecording('audio')} variant="outline" size="icon" className="h-16 w-16 rounded-full">
+            <Button type="button" onClick={() => startRecording('audio')} variant="outline" size="icon" className="h-16 w-16 rounded-full">
                 <Mic className="h-8 w-8" />
             </Button>
         </div>
          <div className="text-sm text-muted-foreground">or</div>
-        <Button asChild>
+        <Button asChild type="button">
             <label htmlFor="file-upload" className="cursor-pointer">
                 <Upload className="mr-2 h-4 w-4" /> Upload File
             </label>
@@ -248,7 +296,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
                     {timerDisplay}
                 </div>
             </div>
-            <Button onClick={stopRecordingAndCleanup} variant="destructive" className="w-full">
+            <Button type="button" onClick={stopRecordingAndCleanup} variant="destructive" className="w-full">
                 <StopCircle className="mr-2 h-4 w-4" /> Stop Recording
             </Button>
         </div>
@@ -270,7 +318,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
         </div>
         
         {media.source === 'new' && (
-          <Button onClick={resetToInitial} variant="outline" className="w-full">
+          <Button type="button" onClick={resetToInitial} variant="outline" className="w-full">
             {initialMedia ? 'Cancel and Revert to Original' : 'Start Over'}
           </Button>
         )}

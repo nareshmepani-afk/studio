@@ -2,15 +2,18 @@
 
 This document is the living record of all manual end-to-end testing performed on the Memory Weaver application. It is a formal process of "Witnessing" designed to be executed by a human tester to assess the qualitative, lived experience of using the application.
 
-## The Process
+## The Protocol
 
-1.  **Initiation:** The AI (Lead Architect) will define a new Test Session.
-2.  **Test Case Definition:** The AI will define a clear Test Case with a specific objective.
-3.  **Guided Steps:** For each discrete action, the AI will provide a unique Test Step ID and a direct, unambiguous instruction.
-4.  **The Act of Witnessing:** The manual tester (the user) will perform the action as instructed.
-5.  **Instrumented Application Logging:** The application itself has been instrumented to automatically log the full context of each Test Step to the browser's developer console. The tester must have the console open to witness this log.
-6.  **Meaningful Testimony:** The console log for each test step must provide a complete testimony of the state change. It must record the state *before* the action, the *action itself*, and the state *after* the action. This provides an unambiguous basis for judging pass or fail.
-7.  **Feedback as Testimony:** The tester will provide feedback, referencing the Test Step ID and confirming that the console output provides a complete and meaningful testimony of the action's outcome. This feedback serves as the formal testimony of the application's state of being.
+To bridge the gap between idea and execution, the testing process now incorporates **Plan Mode**. Before initiating a new Test Case, the AI assistant will first generate a detailed, step-by-step plan for the test. This plan will be presented to the developer for witnessing and approval. This ensures that the intent of the test is fully understood and agreed upon before the formal, witnessed execution begins.
+
+1.  **Plan Mode Initiation:** The AI will propose a new Test Case by generating a detailed plan.
+2.  **Witness and Approve:** The developer will review and approve the plan, ensuring it aligns with the testing objectives.
+3.  **Formal Test Initiation:** Once the plan is approved, the AI will define a new Test Session.
+4.  **Guided Steps:** For each discrete action, the AI will provide a unique Test Step ID and a direct, unambiguous instruction.
+5.  **The Act of Witnessing:** The manual tester (the user) will perform the action as instructed.
+6.  **Instrumented Application Logging:** The application itself has been instrumented to automatically log the full context of each Test Step to the browser's developer console. The tester must have the console open to witness this log.
+7.  **Meaningful Testimony:** The console log for each test step must provide a complete testimony of the state change. It must record the state *before* the action, the *action itself*, and the state *after* the action. This provides an unambiguous basis for judging pass or fail.
+8.  **Feedback as Testimony:** The tester will provide feedback, referencing the Test Step ID and confirming that the console output provides a complete and meaningful testimony of the action's outcome. This feedback serves as the formal testimony of the application's state of being.
 
 ---
 
