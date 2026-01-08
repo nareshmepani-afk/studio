@@ -399,7 +399,7 @@ function MemoryForm() {
                                                 <Info className="h-5 w-5" />
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="top" align="end" className="max-w-xs">
+                                        <TooltipContent side="bottom" align="end" className="max-w-xs">
                                             <p className="text-sm">{teleprompterScript}</p>
                                         </TooltipContent>
                                     </Tooltip>
@@ -410,7 +410,7 @@ function MemoryForm() {
                                                 <QrCode className="h-5 w-5" />
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="top" align="end">
+                                        <TooltipContent side="bottom" align="end">
                                             <p>Show QR code for remote interview</p>
                                         </TooltipContent>
                                     </Tooltip>
@@ -421,7 +421,7 @@ function MemoryForm() {
                                                 <Flag className={`h-5 w-5 transition-colors ${isFlagged ? 'fill-primary text-primary' : 'text-muted-foreground hover:text-primary'}`} />
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="top" align="end">
+                                        <TooltipContent side="bottom" align="end">
                                              <p>{isFlagged ? 'Unflag this prompt' : 'Flag this prompt to easily find and reuse it for future interviews.'}</p>
                                         </TooltipContent>
                                     </Tooltip>
