@@ -60,5 +60,5 @@ export const mockPromptGroups: PromptGroup[] = [
 ];
 
 export const mockPrompts: Prompt[] = mockPromptGroups.flatMap(group => 
-    group.prompts.flatMap(prompt => prompt.subPrompts ? [prompt, ...prompt.subPrompts] : [prompt])
+    group.prompts.flatMap(prompt => [prompt, ...(prompt.subPrompts || [])])
 );

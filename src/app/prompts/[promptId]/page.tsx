@@ -1,5 +1,5 @@
 
-import { mockPromptGroups } from '@/lib/mockData';
+import { mockPrompts } from '@/lib/mockData';
 import { teleprompterScripts } from '@/lib/teleprompterScripts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,26 +10,19 @@ import { notFound } from 'next/navigation';
 export default function PromptPage({ params }: { params: { promptId: string } }) {
   const { promptId } = params;
 
-  const prompt = mockPromptGroups.flatMap(group => group.prompts).find(p => p.id === promptId);
+  const prompt = mockPrompts.find(p => p.id === promptId);
 
   if (!prompt) {
     notFound();
   }
 
-  // Check for sub-prompts and gather the relevant scripts
-  const scriptsToDisplay = prompt.subPrompts && prompt.subPrompts.length > 0
-    ? prompt.subPrompts.map(subPrompt => ({
-        id: subPrompt.id,
-        text: subPrompt.text.en, // Or handle localization as needed
-        script: teleprompterScripts[subPrompt.id]
-      })).filter(item => item.script) // Filter out any with no script
-    : [{
-        id: prompt.id,
-        text: prompt.text.en,
-        script: teleprompterScripts[prompt.id]
-      }];
+  // Find the parent prompt if the current one is a sub-prompt, to display the main title
+  const parentPrompt = mockPrompts.find(p => p.subPrompts?.some(sp => sp.id === promptId));
+  const displayPrompt = parentPrompt || prompt;
 
-  if (scriptsToDisplay.length === 0) {
+  const script = teleprompterScripts[prompt.id];
+
+  if (!script) {
     notFound();
   }
 
@@ -50,19 +43,18 @@ export default function PromptPage({ params }: { params: { promptId: string } })
             <div className="inline-flex justify-center items-center mb-4">
                 <BookOpen className="h-12 w-12 text-primary" />
             </div>
-            <CardTitle className="font-headline text-3xl md:text-4xl">{prompt.text.en}</CardTitle>
-            <CardDescription className="text-lg text-muted-foreground mt-2">{prompt.text.gu}</CardDescription>
+            {/* Display the main chapter title */}
+            <CardTitle className="font-headline text-3xl md:text-4xl">{displayPrompt.text.en}</CardTitle>
+            <CardDescription className="text-lg text-muted-foreground mt-2">{displayPrompt.text.gu}</CardDescription>
           </CardHeader>
           <CardContent className="p-6 md:p-8 lg:p-10">
-            <h2 className="font-headline text-2xl mb-4 text-primary">Interviewer Questions (Teleprompter)</h2>
-            {scriptsToDisplay.map((item, index) => (
-              <div key={item.id} className="prose prose-lg dark:prose-invert max-w-none whitespace-pre-wrap text-base md:text-lg leading-relaxed space-y-4 mb-6">
-                <h3 className="font-semibold text-xl">{item.text}</h3>
-                {item.script.split('\n').map((paragraph, pIndex) => (
-                  <p key={pIndex}>{paragraph}</p>
-                ))}
-              </div>
-            ))}
+            {/* Display the specific sub-prompt question and its script */}
+            <h2 className="font-headline text-2xl mb-4 text-primary">{prompt.text.en}</h2>
+            <div className="prose prose-lg dark:prose-invert max-w-none whitespace-pre-wrap text-base md:text-lg leading-relaxed space-y-4">
+              {script.split('\n').map((paragraph, pIndex) => (
+                <p key={pIndex}>{paragraph}</p>
+              ))}
+            </div>
           </CardContent>
         </Card>
       </div>
