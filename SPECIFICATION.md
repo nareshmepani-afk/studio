@@ -134,13 +134,19 @@ Manual testing is essential for understanding the lived experience of the user. 
 
 ### 7.1 Deleting a User
 
-The process of deleting a user and their associated data involves two distinct steps: deleting their data from Firestore and deleting their authentication record.
+The process of deleting a user and their associated data is a critical operation that requires careful, verifiable steps. It involves two distinct stages: deleting their data from Firestore and deleting their authentication record.
 
 **1. Deleting User Data from Firestore:**
 
 *   **Command:** `firebase firestore:delete users/{UID} --recursive`
+*   **Note:** This command should be executed with care, as it permanently removes all data associated with the user in the Firestore database.
 
 **2. Deleting a User's Authentication Record:**
 
-*   **Method A: Programmatic Deletion (Server-Side Action)**
-*   **Method B: Manual Deletion (Firebase Console)**
+*   **Primary Method (For Formal Testing): Manual Deletion**
+    *   **Action:** The user's authentication record must be deleted manually from the Firebase Console.
+    *   **URL:** [https://console.firebase.google.com/project/memory-weaver-8rk9t/authentication/users](https://console.firebase.google.com/project/memory-weaver-8rk9t/authentication/users)
+    *   **Justification:** Manual deletion provides a clear, auditable trail for the purpose of formal witnessing. It eliminates the risk of script errors and ensures the action is performed with deliberate intent.
+
+*   **Secondary Method (For Programmatic Needs): Server-Side Action**
+    *   A server-side action (`deleteUserAction.ts`) exists for programmatic user deletion. This should be used for automated processes, not for formal manual testing.

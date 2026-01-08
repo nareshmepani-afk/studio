@@ -24,6 +24,7 @@ import { doc, getDoc, addDoc, updateDoc, collection, arrayUnion, arrayRemove, on
 import { db, storage } from '@/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { QrCodeDialog } from '@/components/prompts/QrCodeDialog';
+import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 
 const MediaCaptureControl = dynamic(
   () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
@@ -44,7 +45,7 @@ function MemoryForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth(); // Destructure authLoading
 
   const editMemoryId = searchParams.get('editMemoryId') || undefined;
   const promptId = searchParams.get('promptId') || undefined;
@@ -76,39 +77,50 @@ function MemoryForm() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFlagged, setIsFlagged] = useState(false);
-  const [isLoadingFlag, setIsLoadingFlag] = useState(!!promptId);
+  const [isLoadingFlag, setIsLoadingFlag] = useState(true); // Start as true
   const [qrCodeDialog, setQrCodeDialog] = useState<{ open: boolean; url: string; title: string; }>({ open: false, url: '', title: '' });
 
   useEffect(() => {
-    if (promptId && !isLoadingFlag) {
-      console.log(`[TEST-LOG] am-tc1-ts0: Initial prompt flag state for ${promptId} is ${isFlagged}`);
+    // Wait for auth to finish loading and for a user to be present.
+    if (authLoading || !user || !promptId) {
+        return;
     }
-  }, [promptId, isLoadingFlag, isFlagged]);
 
-  useEffect(() => {
-    if (!promptId || !user) {
-      setIsLoadingFlag(false);
-      return;
-    }
     const userRef = doc(db, 'users', user.uid);
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const userData = docSnap.data();
-        const newFlagState = userData.flaggedPrompts?.includes(promptId);
-        if (isFlagged !== newFlagState) {
-            console.log(`[TEST-LOG] Prompt Flag Sync: promptId=${promptId}, isFlagged=${newFlagState}`);
-            setIsFlagged(newFlagState);
+        if (!docSnap.exists()) {
+            setIsLoadingFlag(false);
+            return;
         }
-      }
-      setIsLoadingFlag(false);
+
+        const userData = docSnap.data();
+        const newFlagState = userData.flaggedPrompts?.includes(promptId) || false;
+
+        if (isLoadingFlag) { // First valid run
+            console.log(`TESTIMONY - flag-tc1-ts1 - START`);
+            console.log(`State Before: The initial state of the prompt flag is unknown.`);
+            console.log(`Action: Listening for real-time updates to the prompt flag status.`);
+            console.log(`State After: The initial state of prompt ${promptId} is isFlagged: ${newFlagState}.`);
+            console.log(`TESTIMONY - flag-tc1-ts1 - END`);
+            setIsLoadingFlag(false); // Mark initial load as complete
+        } else if (isFlagged !== newFlagState) { // Subsequent updates from another client
+            const testStepId = newFlagState ? 'flag-tc1-ts4' : 'flag-tc1-ts6';
+            console.log(`TESTIMONY - ${testStepId} - START`);
+            console.log(`State Before: The flag state is isFlagged: ${isFlagged}.`);
+            console.log(`Action: Received a real-time update from Firestore.`);
+            console.log(`State After: The flag state has been updated to isFlagged: ${newFlagState}.`);
+            console.log(`TESTIMONY - ${testStepId} - END`);
+        }
+
+        setIsFlagged(newFlagState);
     }, (error) => {
-      console.error("Error listening to user document:", error);
-      toast({ title: 'Error', description: 'Could not sync prompt flag status.', variant: 'destructive'});
-      setIsLoadingFlag(false);
+        console.error("Error listening to user document for flag status:", error);
+        toast({ title: 'Error', description: 'Could not sync prompt flag status.', variant: 'destructive'});
+        setIsLoadingFlag(false);
     });
 
     return () => unsubscribe();
-  }, [promptId, user, toast, isFlagged]);
+  }, [promptId, user, authLoading, toast]); // Add authLoading to dependencies
 
 
   const handleToggleFlag = async (event: React.MouseEvent) => {
@@ -116,8 +128,10 @@ function MemoryForm() {
     event.stopPropagation();
     if (!user || !promptId) return;
 
-    const actionId = isFlagged ? 'am-tc1-ts3' : 'am-tc1-ts1';
-    console.log(`[TEST-LOG] ${actionId} - Action: ${isFlagged ? 'unflag' : 'flag'}, promptId: ${promptId}, previousState: ${isFlagged}`);
+    const testStepId = isFlagged ? 'flag-tc1-ts5' : 'flag-tc1-ts3';
+    console.log(`TESTIMONY - ${testStepId} - START`);
+    console.log(`State Before: The prompt is currently ${isFlagged ? 'flagged' : 'unflagged'} (isFlagged: ${isFlagged}).`);
+    console.log(`Action: User clicked the flag icon to ${isFlagged ? 'unflag' : 'flag'} the prompt.`);
 
     const userRef = doc(db, 'users', user.uid);
     try {
@@ -126,13 +140,15 @@ function MemoryForm() {
       });
       toast({ title: isFlagged ? 'Prompt unflagged' : 'Prompt flagged for re-use', variant: 'success' });
     } catch (error) {
-      console.error(`[TEST-LOG] ${actionId} - Failed`, error);
+      console.error(`TESTIMONY - ${testStepId} - ERROR: Failed to update flag status.`, error);
       toast({ title: 'Error', description: 'Could not update flag status.', variant: 'destructive'});
+    } finally {
+      console.log(`TESTIMONY - ${testStepId} - END`);
     }
   };
 
   useEffect(() => {
-    if (!editMemoryId || !user) {
+    if (authLoading || !user || !editMemoryId) {
       setIsLoadingMemory(false);
       return;
     }
@@ -160,7 +176,7 @@ function MemoryForm() {
       }
     };
     fetchMemory();
-  }, [editMemoryId, user, router, toast]);
+  }, [editMemoryId, user, authLoading, router, toast]);
 
   useEffect(() => {
     if (memoryToEdit) {
@@ -202,7 +218,6 @@ function MemoryForm() {
     if (!carouselApi) return;
     const onSelect = () => {
         const index = carouselApi.selectedScrollSnap();
-        console.log(`[TEST-LOG] Carousel changed to slide ${index}`);
         setCurrentSlide(index);
     };
     carouselApi.on("select", onSelect);
@@ -216,25 +231,26 @@ function MemoryForm() {
       setTrimValues([0, 0]);
       return;
     }
-    console.log(`[TEST-LOG] Media ready: type=${payload.type}, duration=${payload.duration}`);
     setTrimValues([0, payload.duration]);
     setMediaPayload(payload);
   }, []);
 
-  const handleShowQrCode = useCallback(() => {
+ const handleShowQrCode = useCallback(() => {
+    const testStepId = 'qr-tc1-ts1';
+    console.log(`TESTIMONY - ${testStepId} - START`);
+    console.log('State Before: The QR code dialog is not visible.');
+    console.log('Action: User clicked the QR code icon.');
     if (!promptId) return;
-    console.log('[TEST-LOG] am-tc2-ts1');
     const url = `${window.location.origin}/prompts/${promptId}`;
     setQrCodeDialog({ open: true, url, title: title || 'this prompt' });
-  }, [promptId, title]);
+    console.log(`State After: The QR code dialog is now visible with URL: ${url}`);
+    console.log(`TESTIMONY - ${testStepId} - END`);
+}, [promptId, title]);
 
   const currentMediaDuration = mediaPayload?.duration || initialMedia?.duration || 0;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const actionId = 'am-tc4-ts5';
-    console.log(`[TEST-LOG] ${actionId} - Initiating Memory Save. isEditing=${isEditing}, title=${title}`);
-
     if (!user) {
         toast({ title: "Not Authenticated", description: "You must be logged in to save a memory.", variant: "destructive" });
         return;
@@ -256,7 +272,6 @@ function MemoryForm() {
         let newOrUpdatedAttachments: MediaAttachment[] = memoryToEdit?.mediaAttachments || [];
 
         if (mediaPayload?.file) {
-            console.log(`[TEST-LOG] ${actionId} - Uploading new media file.`);
             const file = mediaPayload.file;
             const fileId = crypto.randomUUID();
             const fileExtension = file.name.split('.').pop() || 'tmp';
@@ -311,21 +326,17 @@ function MemoryForm() {
         if (isEditing && editMemoryId) {
             const memRef = doc(db, 'users', user.uid, 'memories', editMemoryId);
             await updateDoc(memRef, memoryData);
-            console.log(`[TEST-LOG] ${actionId} - Memory updated successfully: ${editMemoryId}`);
             toast({ title: "Success", description: "Memory updated successfully", variant: 'success' });
         } else {
             const collectionRef = collection(db, 'users', user.uid, 'memories');
-            const docRef = await addDoc(collectionRef, { ...memoryData, createdAt: new Date().toISOString() });
-            console.log(`[TEST-LOG] ${actionId} - Memory created successfully: ${docRef.id}`);
+            await addDoc(collectionRef, { ...memoryData, createdAt: new Date().toISOString() });
             toast({ title: "Success", description: "Memory saved successfully", variant: 'success' });
         }
 
-        console.log(`[TEST-LOG] ${actionId} - Redirecting to /timeline`);
         router.push('/timeline');
         router.refresh();
 
     } catch (error: any) {
-        console.error(`[TEST-LOG] ${actionId} - Error saving memory:`, error);
         toast({ title: "Error Saving Memory", description: error.message, variant: "destructive" });
     } finally {
         setIsSubmitting(false);
@@ -349,7 +360,7 @@ function MemoryForm() {
   const leftPosition = currentMediaDuration > 0 ? `calc(${(trimValues[0] / currentMediaDuration) * 100}% - ${leftValueLabel.length / 2}ch)` : '0%';
   const rightPosition = currentMediaDuration > 0 ? `calc(${(trimValues[1] / currentMediaDuration) * 100}% - ${rightValueLabel.length / 2}ch)` : '100%';
 
-  if (isLoadingMemory) {
+  if (isLoadingMemory || authLoading) { // Also consider authLoading
       return (
         <div className="container mx-auto py-8 px-4 flex justify-center items-center h-[calc(100vh-8rem)]">
             <div className="flex flex-col items-center space-y-4">
@@ -384,7 +395,7 @@ function MemoryForm() {
                                 <div className="flex items-center space-x-2">
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onMouseEnter={() => console.log('[TEST-LOG] am-tc3-ts1 - Hovered Info icon')}>
+                                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
                                                 <Info className="h-5 w-5" />
                                             </Button>
                                         </TooltipTrigger>
@@ -406,7 +417,7 @@ function MemoryForm() {
 
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                             <Button type="button" variant="ghost" size="icon" onClick={handleToggleFlag} disabled={isLoadingFlag}>
+                                             <Button type="button" variant="ghost" size="icon" onClick={handleToggleFlag} disabled={isLoadingFlag || authLoading}>
                                                 <Flag className={`h-5 w-5 transition-colors ${isFlagged ? 'fill-primary text-primary' : 'text-muted-foreground hover:text-primary'}`} />
                                             </Button>
                                         </TooltipTrigger>
@@ -518,7 +529,6 @@ function MemoryForm() {
                                   value={trimValues}
                                   onValueChange={(v) => {
                                       const newTrim = v as [number, number];
-                                      console.log(`[TEST-LOG] Trim values adjusted: start=${newTrim[0]}, end=${newTrim[1]}`);
                                       setTrimValues(newTrim);
                                   }}
                                   aria-label="Video trim slider"
@@ -549,13 +559,12 @@ function MemoryForm() {
           </Button>
           {currentSlide === 0 ? (
              <Button type="button" onClick={() => {
-                 console.log('[TEST-LOG] am-tc4-ts2 - Clicked Next button');
                  carouselApi?.scrollNext();
              }} disabled={isSubmitting}>
               <span className="mr-2">Next</span> <ArrowRight className="w-4 h-4" />
              </Button>
           ) : (
-            <Button type="submit" disabled={isSubmitting} className="min-w-[120px]">
+            <Button type="submit" disabled={isSubmitting || authLoading} className="min-w-[120px]">
               {isSubmitting ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <><Sparkles className="w-4 h-4 mr-2" /> {isEditing ? 'Update Memory' : 'Save Memory'}</>}
             </Button>
           )}
@@ -568,6 +577,8 @@ function MemoryForm() {
 
 export default function AddMemoryPage() {
     return (
+      <AuthenticatedPageWrapper>
         <MemoryForm />
+      </AuthenticatedPageWrapper>
     )
 }

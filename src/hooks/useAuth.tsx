@@ -87,16 +87,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [isAuthenticated, loading, pathname, router]);
 
   const login = useCallback(async (email: string, password: string) => {
+    const testStepId = 'auth-tc1-ts6';
+    console.log(`TESTIMONY - ${testStepId} - START`);
+    console.log('State Before: Not authenticated.');
+    console.log(`Action: Attempting login for user: ${email}`);
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('State After: Login successful.');
+      console.log('New User State:', {
+        uid: userCredential.user.uid,
+        email: userCredential.user.email,
+        displayName: userCredential.user.displayName,
+      });
       toast({ title: 'Login Successful', description: "Welcome back!", variant: 'success' });
     } catch (error: any) {
+      console.error(`TESTIMONY - ${testStepId} - ERROR: Login failed.`, error);
       toast({ title: 'Login Failed', description: error.message, variant: 'destructive' });
       throw error;
+    } finally {
+        console.log(`TESTIMONY - ${testStepId} - END`);
     }
   }, []);
 
   const register = useCallback(async (name: string, email: string, password: string) => {
+    const testStepId = 'auth-tc1-ts2';
+    console.log(`TESTIMONY - ${testStepId} - START`);
+    console.log('State Before: No user is registered or logged in.');
+    console.log(`Action: Attempting to register new user with email: ${email} and name: ${name}.`);
+
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
@@ -116,18 +135,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       await setDoc(doc(db, 'users', firebaseUser.uid), userProfile);
       
+      console.log('State After: Registration successful. New user created in Firebase Auth and Firestore.');
+      console.log('New User State (Auth):', {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+      });
+      console.log('New User State (Firestore):', userProfile);
+
       toast({ title: 'Registration Successful', description: "Welcome to Memory Weaver!", variant: 'success' });
     } catch (error: any) {
+      console.error(`TESTIMONY - ${testStepId} - ERROR: Registration failed.`, error);
       toast({ title: 'Registration Failed', description: error.message, variant: 'destructive' });
       throw error;
+    } finally {
+        console.log(`TESTIMONY - ${testStepId} - END`);
     }
   }, []);
 
   const logout = useCallback(async () => {
+    const testStepId = 'auth-tc1-ts4';
+    console.log(`TESTIMONY - ${testStepId} - START`);
+    console.log(`State Before: User is logged in. User:`, { email: user?.email, uid: user?.uid });
+    console.log('Action: Logging out user.');
+
     await signOut(auth);
+    
+    console.log('State After: User is logged out. Redirecting to homepage.');
     router.push('/');
     toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
-  }, [router]);
+    console.log(`TESTIMONY - ${testStepId} - END`);
+  }, [user, router]);
 
   const updateUserProfileInFirestore = useCallback(async (data: Partial<User>) => {
     if (!user?.uid) throw new Error("User not authenticated to update profile");

@@ -33,7 +33,7 @@ This document is the living record of all manual end-to-end testing performed on
     *   **Expected Result:** A new user is created. The console logs the successful authentication and redirection.
 
 *   **Test Step ID:** `auth-tc1-ts3`
-    *   **Instruction:** Have you been redirected to the `/timeline` page? Does the navbar show the user's email?
+    *   **Instruction:** Have you been redirected to the `/prompts` page? Does the navbar show the user's email?
 
 *   **Test Step ID:** `auth-tc1-ts4`
     *   **Instruction:** Click the user email in the navbar, and then click "Log out".
@@ -47,7 +47,7 @@ This document is the living record of all manual end-to-end testing performed on
     *   **Expected Result:** The user is logged in. The console logs the successful authentication.
 
 *   **Test Step ID:** `auth-tc1-ts7`
-    *   **Instruction:** Have you been redirected back to the `/timeline` page?
+    *   **Instruction:** Have you been redirected back to the `/prompts` page?
 
 ### Test Case 2: "Flag for Reuse" Real-time Synchronization
 
