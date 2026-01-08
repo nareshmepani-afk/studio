@@ -254,131 +254,127 @@ function MemoryForm() {
     event.preventDefault();
     const testCaseId = isEditing ? 'e2e-edit-memory' : 'e2e-add-memory';
     console.log(`TESTIMONY - ${testCaseId}-ts-submit - START`);
-    console.log('State Before: User has filled the form and clicked the submit button.');
-
-    if (!user) {
-        toast({ title: "Not Authenticated", description: "You must be logged in to save a memory.", variant: "destructive" });
-        console.error(`TESTIMONY - ${testCaseId}-ts-submit - ERROR: User not authenticated.`);
-        console.log(`TESTIMONY - ${testCaseId}-ts-submit - END`);
-        return;
-    }
-    if (!title) {
-      toast({ title: "Missing Title", description: "Please give your memory a title.", variant: "destructive" });
-      carouselApi?.scrollTo(0);
-      console.error(`TESTIMONY - ${testCaseId}-ts-submit - ERROR: Title is missing.`);
-      console.log(`TESTIMONY - ${testCaseId}-ts-submit - END`);
-      return;
-    }
-    if (!mediaPayload?.file && !initialMedia) {
-      toast({ title: "Missing Media", description: "Please add a video or audio to your memory.", variant: "destructive" });
-      carouselApi?.scrollTo(1);
-      console.error(`TESTIMONY - ${testCaseId}-ts-submit - ERROR: Media is missing.`);
-      console.log(`TESTIMONY - ${testCaseId}-ts-submit - END`);
-      return;
-    }
-
-    console.log('Action: Setting isSubmitting to true.');
-    setIsSubmitting(true);
-    console.log(`State After: isSubmitting is now true. The submit button is disabled.`);
 
     try {
-        let newOrUpdatedAttachments: MediaAttachment[] = memoryToEdit?.mediaAttachments || [];
+      console.log('State Before: User has filled the form and clicked the submit button.');
 
-        if (mediaPayload?.file) {
-            console.log(`TESTIMONY - ${testCaseId}-ts-upload-media - START`);
-            const file = mediaPayload.file;
-            const fileId = crypto.randomUUID();
-            const fileExtension = file.name.split('.').pop() || 'tmp';
-            const filePath = `users/${user.uid}/media/${fileId}.${fileExtension}`;
-            const fileRef = storageRef(storage, filePath);
+      if (!user) {
+        throw new Error("You must be logged in to save a memory.");
+      }
+      if (!title) {
+        carouselApi?.scrollTo(0);
+        throw new Error("Please give your memory a title.");
+      }
+      if (!mediaPayload?.file && !initialMedia) {
+        carouselApi?.scrollTo(1);
+        throw new Error("Please add a video or audio to your memory.");
+      }
 
-            console.log(`Action: Uploading file to Firebase Storage at path: ${filePath}`);
-            await uploadBytes(fileRef, file);
-            console.log(`State After: File upload completed successfully.`);
+      console.log('Action: Setting isSubmitting to true.');
+      setIsSubmitting(true);
+      console.log(`State After: isSubmitting is now true. The submit button is disabled.`);
 
-            console.log(`Action: Getting download URL for the uploaded file.`);
-            const publicUrl = await getDownloadURL(fileRef);
-            console.log(`State After: Successfully retrieved download URL: ${publicUrl}`);
+      let newOrUpdatedAttachments: MediaAttachment[] = memoryToEdit?.mediaAttachments || [];
 
-            if (initialMedia?.url && initialMedia.url.includes('firebasestorage.googleapis.com')) {
-                console.log(`Action: Deleting old media file from storage at URL: ${initialMedia.url}`);
-                try {
-                    const oldFileRef = storageRef(storage, initialMedia.url);
-                    await deleteObject(oldFileRef);
-                    console.log(`State After: Successfully deleted old media file.`);
-                } catch (deleteError: any) {
-                    if (deleteError.code !== 'storage/object-not-found') {
-                        console.warn("Could not delete old media from storage:", deleteError);
-                    } else {
-                        console.log("State After: Old media file was not found in storage, which is acceptable.");
-                    }
-                }
+      if (mediaPayload?.file) {
+        console.log(`TESTIMONY - ${testCaseId}-ts-upload-media - START`);
+        const file = mediaPayload.file;
+        const fileId = crypto.randomUUID();
+        const fileExtension = file.name.split('.').pop() || 'tmp';
+        const filePath = `users/${user.uid}/media/${fileId}.${fileExtension}`;
+        const fileRef = storageRef(storage, filePath);
+
+        console.log(`Action: Uploading file to Firebase Storage at path: ${filePath}`);
+        await uploadBytes(fileRef, file);
+        console.log(`State After: File upload completed successfully.`);
+
+        console.log(`Action: Getting download URL for the uploaded file.`);
+        const publicUrl = await getDownloadURL(fileRef);
+        console.log(`State After: Successfully retrieved download URL: ${publicUrl}`);
+
+        if (initialMedia?.url && initialMedia.url.includes('firebasestorage.googleapis.com')) {
+          console.log(`Action: Deleting old media file from storage at URL: ${initialMedia.url}`);
+          try {
+            const oldFileRef = storageRef(storage, initialMedia.url);
+            await deleteObject(oldFileRef);
+            console.log(`State After: Successfully deleted old media file.`);
+          } catch (deleteError: any) {
+            if (deleteError.code !== 'storage/object-not-found') {
+              console.warn("Could not delete old media from storage:", deleteError);
+            } else {
+              console.log("State After: Old media file was not found in storage, which is acceptable.");
             }
-
-            newOrUpdatedAttachments = [{
-                id: fileId,
-                url: publicUrl,
-                type: file.type.startsWith('video') ? 'video' : 'audio',
-                filename: file.name,
-            }];
-            console.log(`TESTIMONY - ${testCaseId}-ts-upload-media - END`);
+          }
         }
 
-        console.log(`TESTIMONY - ${testCaseId}-ts-prepare-data - START`);
-        if (newOrUpdatedAttachments.length > 0) {
-            newOrUpdatedAttachments[0] = {
-                ...newOrUpdatedAttachments[0],
-                startTime: trimValues[0],
-                endTime: trimValues[1],
-                isTrimmed: trimValues[0] > 0 || (!!currentMediaDuration && trimValues[1] < currentMediaDuration),
-                duration: currentMediaDuration
-            };
-        }
+        newOrUpdatedAttachments = [{
+          id: fileId,
+          url: publicUrl,
+          type: file.type.startsWith('video') ? 'video' : 'audio',
+          filename: file.name,
+        }];
+        console.log(`TESTIMONY - ${testCaseId}-ts-upload-media - END`);
+      }
 
-        const memoryData: Omit<Memory, 'id'> = {
-            title,
-            date: new Date(selectedYear, selectedMonth, selectedDay).toISOString(),
-            description,
-            category: selectedCategory?.id || 'personal_reflection',
-            location,
-            emotionTags: selectedEmotionTags.map(t => t.id),
-            promptId: promptId || memoryToEdit?.promptId,
-            userId: user.uid,
-            mediaAttachments: newOrUpdatedAttachments,
-            updatedAt: new Date().toISOString(),
+      console.log(`TESTIMONY - ${testCaseId}-ts-prepare-data - START`);
+      if (newOrUpdatedAttachments.length > 0) {
+        newOrUpdatedAttachments[0] = {
+          ...newOrUpdatedAttachments[0],
+          startTime: trimValues[0],
+          endTime: trimValues[1],
+          isTrimmed: trimValues[0] > 0 || (!!currentMediaDuration && trimValues[1] < currentMediaDuration),
+          duration: currentMediaDuration
         };
-        console.log('Action: Assembled memory data object for Firestore.', memoryData);
-        console.log(`TESTIMONY - ${testCaseId}-ts-prepare-data - END`);
+      }
 
+      const memoryData: Omit<Memory, 'id'> = {
+        title,
+        date: new Date(selectedYear, selectedMonth, selectedDay).toISOString(),
+        description,
+        category: selectedCategory?.id || 'personal_reflection',
+        location,
+        emotionTags: selectedEmotionTags.map(t => t.id),
+        promptId: promptId || memoryToEdit?.promptId,
+        userId: user.uid,
+        mediaAttachments: newOrUpdatedAttachments,
+        updatedAt: new Date().toISOString(),
+      };
+      console.log('Action: Assembled memory data object for Firestore.', memoryData);
+      console.log(`TESTIMONY - ${testCaseId}-ts-prepare-data - END`);
 
-        console.log(`TESTIMONY - ${testCaseId}-ts-save-to-db - START`);
-        if (isEditing && editMemoryId) {
-            console.log(`Action: Updating existing memory document in Firestore with ID: ${editMemoryId}`);
-            const memRef = doc(db, 'users', user.uid, 'memories', editMemoryId);
-            await updateDoc(memRef, memoryData);
-            console.log(`State After: Successfully updated memory document.`);
-            toast({ title: "Success", description: "Memory updated successfully", variant: 'success' });
-        } else {
-            console.log(`Action: Creating new memory document in Firestore.`);
-            const collectionRef = collection(db, 'users', user.uid, 'memories');
-            const docRef = await addDoc(collectionRef, { ...memoryData, createdAt: new Date().toISOString() });
-            console.log(`State After: Successfully created new memory document with ID: ${docRef.id}`);
-            toast({ title: "Success", description: "Memory saved successfully", variant: 'success' });
-        }
-        console.log(`TESTIMONY - ${testCaseId}-ts-save-to-db - END`);
+      console.log(`TESTIMONY - ${testCaseId}-ts-save-to-db - START`);
+      if (isEditing && editMemoryId) {
+        console.log(`Action: Updating existing memory document in Firestore with ID: ${editMemoryId}`);
+        const memRef = doc(db, 'users', user.uid, 'memories', editMemoryId);
+        await updateDoc(memRef, memoryData);
+        console.log(`State After: Successfully updated memory document.`);
+        toast({ title: "Success", description: "Memory updated successfully", variant: 'success' });
+      } else {
+        console.log(`Action: Creating new memory document in Firestore.`);
+        const collectionRef = collection(db, 'users', user.uid, 'memories');
+        const docRef = await addDoc(collectionRef, { ...memoryData, createdAt: new Date().toISOString() });
+        console.log(`State After: Successfully created new memory document with ID: ${docRef.id}`);
+        toast({ title: "Success", description: "Memory saved successfully", variant: 'success' });
+      }
+      console.log(`TESTIMONY - ${testCaseId}-ts-save-to-db - END`);
 
-        console.log(`Action: Navigating to /timeline and refreshing the page.`);
-        router.push('/timeline');
-        router.refresh();
+      console.log(`Action: Navigating to /timeline and refreshing the page.`);
+      router.push('/timeline');
+      router.refresh();
 
     } catch (error: any) {
-        console.error(`TESTIMONY - ${testCaseId}-ts-submit - FATAL_ERROR: An error occurred during the submission process.`, error);
-        toast({ title: "Error Saving Memory", description: error.message, variant: "destructive" });
+      const errorMessage = error.message || "An unknown error occurred.";
+      console.error(`TESTIMONY - ${testCaseId}-ts-submit - FATAL_ERROR: An error occurred during the submission process.`, error);
+      toast({
+        title: error.message ? "Error" : "An Unknown Error Occurred",
+        description: errorMessage,
+        variant: "destructive"
+      });
     } finally {
-        console.log('Action: Setting isSubmitting to false.');
-        setIsSubmitting(false);
-        console.log(`State After: isSubmitting is now false. The submit button is re-enabled.`);
-        console.log(`TESTIMONY - ${testCaseId}-ts-submit - END`);
+      console.log('Action: Setting isSubmitting to false.');
+      setIsSubmitting(false);
+      console.log(`State After: isSubmitting is now false. The submit button is re-enabled.`);
+      console.log(`TESTIMONY - ${testCaseId}-ts-submit - END`);
     }
   };
 
