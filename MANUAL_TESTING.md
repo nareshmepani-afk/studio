@@ -81,13 +81,25 @@ This document is the living record of all manual end-to-end testing performed on
 
 *   **Test Step ID:** `qr-tc1-ts1`
     *   **Instruction:** On the `/add-memory?promptId=p1` page, click the "QR Code" icon.
-    *   **Expected Result:** The console logs the `am-tc2-ts1` action.
+    *   **Expected Result:** The console logs the `qr-tc1-ts1` action.
 
 *   **Test Step ID:** `qr-tc1-ts2`
     *   **Instruction:** Does a dialog appear? Scan the QR code with a device or inspect the component. Does the URL encoded in the QR code correctly resolve to `${Base URL}prompts/p1`?
 
 *   **Test Step ID:** `qr-tc1-ts3`
     *   **Instruction:** Close the dialog.
+
+### Test Case 4: Teleprompter Tooltip Verification
+
+*   **Objective:** To verify that hovering over the "Info" icon on the Add Memory page displays the correct teleprompter script for the given prompt.
+
+*   **Test Step ID:** `tele-tc1-ts1`
+    *   **Instruction:** On the `/add-memory?promptId=p1` page, hover your mouse over the "Info" icon.
+    *   **Expected Result:** A tooltip appears containing the teleprompter script for prompt `p1`.
+
+*   **Test Step ID:** `tele-tc1-ts2`
+    *   **Instruction:** Verify that the text in the tooltip matches the script for `p1` in `src/lib/teleprompterScripts.ts`.
+    *   **Expected Result:** The text is an exact match.
 
 ---
 
