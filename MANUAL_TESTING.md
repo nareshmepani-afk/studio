@@ -17,6 +17,37 @@ To bridge the gap between idea and execution, the testing process now incorporat
 
 ---
 
+## Active Test Session: `git-integrity-2024-05-22-beta`
+
+**Objective:** To verify the integrity of the Git repository, ensuring that no sensitive files are present in the history and that the `.gitignore` file is functioning correctly.
+
+**Base URL:** (N/A - This test is performed in the terminal)
+
+### Test Case 0: Git History Verification
+
+*   **Objective:** To ensure that no sensitive files exist anywhere in the Git history.
+
+*   **Test Step ID:** `git-tc0-ts1`
+    *   **Instruction:** Run the command `git filter-branch --force --index-filter "git rm --cached --ignore-unmatch serviceAccountKey.json .env .env.local .env.copy" --prune-empty --tag-name-filter cat -- --all`
+    *   **Expected Result:** The command should complete and state that the history has been rewritten. If it fails, the test fails.
+
+### Test Case 1: `.gitignore` Verification
+
+*   **Objective:** To ensure that the `.gitignore` file is correctly preventing sensitive files from being staged.
+
+*   **Test Step ID:** `git-tc1-ts1`
+    *   **Instruction:** Create a new file named `serviceAccountKey.json` in the root of the project.
+    *   **Expected Result:** The file is created.
+
+*   **Test Step ID:** `git-tc1-ts2`
+    *   **Instruction:** Run `git status`.
+    *   **Expected Result:** The `serviceAccountKey.json` file should NOT appear in the list of untracked files.
+
+*   **Test Step ID:** `git-tc1-ts3`
+    *   **Instruction:** Delete the `serviceAccountKey.json` file.
+
+---
+
 ## Active Test Session: `project-integrity-2024-05-22-alpha`
 
 **Objective:** To verify the fundamental integrity of the project setup and ensure a clean, reproducible build.
