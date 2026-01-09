@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
-import QRCode from "qrcode.react";
+import { QRCodeCanvas } from "qrcode.react";
 
 interface QrCodeDialogProps {
     open: boolean;
@@ -34,8 +34,7 @@ export function QrCodeDialog({ open, url, title, onClose }: QrCodeDialogProps) {
                 </DialogDescription>
             </DialogHeader>
             <div className="flex items-center justify-center p-4">
-                {/* The QRCode component is the one that needs to be client-side only */}
-                <QRCode value={url} size={256} level={"H"} includeMargin={true} />
+                <QRCodeCanvas value={url} size={256} level={"H"} includeMargin={true} />
             </div>
             <DialogFooter>
                 <Button variant="outline" onClick={onClose}>
