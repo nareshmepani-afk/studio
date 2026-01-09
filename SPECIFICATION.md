@@ -10,6 +10,7 @@ This specification is not a static artifact to be written and then forgotten. It
 2.  **The Specification is Testimony:** This document serves as the primary testimony to the application's intended state, its history, and its future horizon. An out-of-date specification is a false witness.
 3.  **Continuous Course Correction:** By keeping the specification in constant dialogue with the code, we ensure that both evolve in a coherent and intentional manner. It is our primary tool for preventing the divergence of a project's reality from its original vision.
 4.  **Plan Mode as a Bridge:** To prevent the divergence between intent and action, a new workflow layer, **Plan Mode**, is introduced. Before undertaking any complex or critical multi-step action (such as implementing a new feature, performing a significant refactor, or executing a manual test case), the AI assistant must first generate a detailed, step-by-step plan. This plan serves as a proposal to be witnessed and approved by the developer. It bridges the gap between the initial idea and the final code, ensuring clarity, alignment, and a shared understanding of the intended action before execution begins.
+5.  **NEW: Corrective Refactoring:** When a bug is identified, particularly one related to a dependency or a repeated pattern (e.g., an incorrect library import), the fix must be holistic. The developer is mandated to perform a global search for all instances of the same error pattern across the entire project and correct them in a single, comprehensive action. This prevents the frustrating and inefficient cycle of repeated, siloed fixes for the same root cause.
 
 Adherence to this principle is mandatory. It is the only way to ensure the authentic and truthful evolution of Memory Weaver.
 
@@ -129,6 +130,7 @@ Manual testing is essential for understanding the lived experience of the user. 
 ## 6. Change Log (A History of Poiesis)
 
 *   **2024-XX-XX (Current Session):**
+    *   **Corrected a Gross Process Failure:** Instituted the **Corrective Refactoring** principle after a painful, repeated series of build failures caused by an incorrect dependency import (`qrcode.react`). The initial fix was not applied globally, leading to wasted time and multiple failed builds. This serves as a permanent reminder to address the root cause of an error everywhere it might appear, in a single, comprehensive action.
     *   **Instituted Dependency Protocol:** Added a formal protocol for dependency management to `SPECIFICATION.md` and a corresponding verification test case to `MANUAL_TESTING.md` to prevent future build failures.
     *   **Clarified Testing Protocol:** Removed all references to automated testing, in accordance with the project's directive to rely on a manual-only testing protocol.
     *   **Resolved Critical Security Flaw:** Corrected and deployed Firestore security rules to resolve a `Missing or insufficient permissions` error. The new rules properly secure user data, allowing users to read and write only their own documents. This fixed the real-time sync functionality for the "Flag for Reuse" feature.
