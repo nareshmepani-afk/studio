@@ -31,6 +31,15 @@ The world of this application is built upon a foundation of modern, reactive too
 *   **UI Components:** Shadcn UI, Lucide React
 *   **End-to-End Testing:** Formal Manual Protocol
 
+### 2.1. Dependency Management and Project Setup
+
+To prevent the recurrence of build failures due to missing dependencies, the following protocol is instituted:
+
+1.  **Single Source of Truth:** The `package.json` file is the definitive and exhaustive list of all project dependencies.
+2.  **Clean Installation:** Any developer or build system must be able to achieve a successful build (`npm run build`) and launch the development server (`npm run dev`) after a fresh clone of the repository followed by a single `npm install` command.
+3.  **Dependency-First Development:** When adding new functionality that requires a new dependency, the developer *must first* install and save the dependency (e.g., `npm install new-package`) and verify its inclusion in `package.json` and `package-lock.json` *before* committing the code that imports or uses it.
+4.  **Verification as a Mandate:** The 'Project Setup Verification' test case (see `MANUAL_TESTING.md`) is now the first and most critical test to be run to ensure the integrity of the project's foundation.
+
 ## 3. Data Structure (The Being)
 
 The core entities that inhabit this world are defined as follows. Their structure reveals their purpose.
@@ -120,6 +129,7 @@ Manual testing is essential for understanding the lived experience of the user. 
 ## 6. Change Log (A History of Poiesis)
 
 *   **2024-XX-XX (Current Session):**
+    *   **Instituted Dependency Protocol:** Added a formal protocol for dependency management to `SPECIFICATION.md` and a corresponding verification test case to `MANUAL_TESTING.md` to prevent future build failures.
     *   **Clarified Testing Protocol:** Removed all references to automated testing, in accordance with the project's directive to rely on a manual-only testing protocol.
     *   **Resolved Critical Security Flaw:** Corrected and deployed Firestore security rules to resolve a `Missing or insufficient permissions` error. The new rules properly secure user data, allowing users to read and write only their own documents. This fixed the real-time sync functionality for the "Flag for Reuse" feature.
     *   **Fixed Deployment Blocker:** Created the `firestore.indexes.json` file, which was missing from the project and preventing Firestore rules from being deployed.

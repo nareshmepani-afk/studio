@@ -17,6 +17,26 @@ To bridge the gap between idea and execution, the testing process now incorporat
 
 ---
 
+## Active Test Session: `project-integrity-2024-05-22-alpha`
+
+**Objective:** To verify the fundamental integrity of the project setup and ensure a clean, reproducible build.
+
+**Base URL:** (To be provided by the testing environment)
+
+### Test Case 0: Project Setup Verification
+
+*   **Objective:** To ensure that a fresh clone of the repository can be installed and run without errors. This is the foundational test for all development.
+
+*   **Test Step ID:** `setup-tc0-ts1`
+    *   **Instruction:** From a clean state (no `node_modules` or `.next` directories), run `npm install`.
+    *   **Expected Result:** The command completes without any errors.
+
+*   **Test Step ID:** `setup-tc0-ts2`
+    *   **Instruction:** Run `npm run dev`.
+    *   **Expected Result:** The development server starts successfully and the application is accessible in the browser. No build errors are present in the terminal.
+
+---
+
 ## Active Test Session: `core-functionality-2024-05-21-alpha`
 
 **Objective:** To perform a comprehensive end-to-end test of the application's core features, establishing a baseline of stability.

@@ -21,11 +21,11 @@ import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin, Info, QrCod
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/useAuth';
-import { doc, getDoc, updateDoc, collection, arrayUnion, arrayRemove, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, arrayUnion, arrayRemove, onSnapshot, addDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
-import { ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject, uploadBytes } from 'firebase/storage';
 import { saveMemory } from '@/actions/memoryActions';
-import QRCode from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 const MediaCaptureControl = dynamic(
   () => import('@/components/memory/MediaRecorder').then((mod) => mod.MediaCaptureControl),
@@ -207,51 +207,11 @@ export function MemoryForm() {
   
   const currentMediaDuration = mediaPayload?.duration || initialMedia?.duration || 0;
 
-  const finishSubmission = async (attachments: MediaAttachment[]) => {
-    if (!user) return;
-
-    if (attachments.length > 0) {
-        attachments[0] = {
-          ...attachments[0],
-          startTime: trimValues[0],
-          endTime: trimValues[1],
-          isTrimmed: trimValues[0] > 0 || (!!currentMediaDuration && trimValues[1] < currentMediaDuration),
-          duration: currentMediaDuration
-        };
-    }
-
-    const memoryData: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'> = {
-      title,
-      date: new Date(selectedYear, selectedMonth, selectedDay).toISOString(),
-      description,
-      category: selectedCategory?.id || 'personal_reflection',
-      location,
-      emotionTags: selectedEmotionTags.map(t => t.id),
-      promptId: promptId || memoryToEdit?.promptId,
-      userId: user.uid,
-      mediaAttachments: attachments,
-    };
-
-    const result = await saveMemory(memoryData, editMemoryId || null);
-
-    if (result.success) {
-      toast({ title: "Success", description: result.message, variant: 'success' });
-      router.push('/timeline');
-      router.refresh();
-    } else {
-      throw new Error(result.message);
-    }
-
-    setIsSubmitting(false);
-    setUploadProgress(null);
-  }
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const testCaseId = isEditing ? 'e2e-edit-memory' : 'e2e-add-memory';
-    console.log(`TESTIMONY - ${testCaseId}-ts-submit - START`);
-
     setIsSubmitting(true);
+    console.log(`TESTIMONY - ${testCaseId}-ts-submit - START`);
 
     try {
       if (!user) throw new Error("You must be logged in.");
@@ -267,57 +227,97 @@ export function MemoryForm() {
       let newOrUpdatedAttachments: MediaAttachment[] = memoryToEdit?.mediaAttachments || [];
 
       if (mediaPayload?.file) {
+        console.log(`TESTIMONY - ${testCaseId}-ts-upload-media - START`);
         const file = mediaPayload.file;
         const fileId = crypto.randomUUID();
         const fileExtension = file.name.split('.').pop() || 'tmp';
         const filePath = `users/${user.uid}/media/${fileId}.${fileExtension}`;
         const fileRef = storageRef(storage, filePath);
 
-        console.log(`TESTIMONY - ${testCaseId}-ts-upload-media - START`);
-        const uploadTask = uploadBytesResumable(fileRef, file);
+        console.log(`Action: Uploading file to Firebase Storage at path: ${filePath}`);
+        await uploadBytes(fileRef, file);
+        console.log(`State After: File upload completed successfully.`);
 
-        uploadTask.on('state_changed',
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            setUploadProgress(progress);
-            console.log(`TESTIMONY - ${testCaseId}-ts-upload-progress - Progress: ${progress.toFixed(2)}%`);
-          },
-          (error) => {
-            console.error(`TESTIMONY - ${testCaseId}-ts-upload-media - ERROR:`, error);
-            throw new Error('File upload failed: ' + error.message);
-          },
-          async () => {
-            const publicUrl = await getDownloadURL(uploadTask.snapshot.ref);
-            console.log(`TESTIMONY - ${testCaseId}-ts-upload-media - END - URL: ${publicUrl}`);
-            
-            if (initialMedia?.url && initialMedia.url.includes('firebasestorage.googleapis.com')) {
-                try {
-                    const oldFileRef = storageRef(storage, initialMedia.url);
-                    await deleteObject(oldFileRef);
-                } catch (deleteError: any) {
-                    if (deleteError.code !== 'storage/object-not-found') console.warn("Could not delete old media:", deleteError);
-                }
-            }
+        console.log(`Action: Getting download URL for the uploaded file.`);
+        const publicUrl = await getDownloadURL(fileRef);
+        console.log(`State After: Successfully retrieved download URL: ${publicUrl}`);
 
-            newOrUpdatedAttachments = [{
-              id: fileId,
-              url: publicUrl,
-              type: file.type.startsWith('video') ? 'video' : 'audio',
-              filename: file.name,
-            }];
-
-            await finishSubmission(newOrUpdatedAttachments);
+        if (initialMedia?.url && initialMedia.url.includes('firebasestorage.googleapis.com')) {
+          console.log(`Action: Deleting old media file from storage at URL: ${initialMedia.url}`);
+          try {
+              const oldFileRef = storageRef(storage, initialMedia.url);
+              await deleteObject(oldFileRef);
+              console.log(`State After: Successfully deleted old media file.`);
+          } catch (deleteError: any) {
+              if (deleteError.code !== 'storage/object-not-found') {
+                  console.warn("Could not delete old media from storage:", deleteError);
+              } else {
+                  console.log("State After: Old media file was not found in storage, which is acceptable.");
+              }
           }
-        );
-      } else {
-        // No new media to upload, just update metadata
-        await finishSubmission(newOrUpdatedAttachments);
+        }
+
+        newOrUpdatedAttachments = [{
+          id: fileId,
+          url: publicUrl,
+          type: file.type.startsWith('video') ? 'video' : 'audio',
+          filename: file.name,
+        }];
+        console.log(`TESTIMONY - ${testCaseId}-ts-upload-media - END`);
       }
+
+      console.log(`TESTIMONY - ${testCaseId}-ts-prepare-data - START`);
+      if (newOrUpdatedAttachments.length > 0) {
+        newOrUpdatedAttachments[0] = {
+            ...newOrUpdatedAttachments[0],
+            startTime: trimValues[0],
+            endTime: trimValues[1],
+            isTrimmed: trimValues[0] > 0 || (!!currentMediaDuration && trimValues[1] < currentMediaDuration),
+            duration: currentMediaDuration
+        };
+      }
+
+      const memoryData: Omit<Memory, 'id'> = {
+        title,
+        date: new Date(selectedYear, selectedMonth, selectedDay).toISOString(),
+        description,
+        category: selectedCategory?.id || 'personal_reflection',
+        location,
+        emotionTags: selectedEmotionTags.map(t => t.id),
+        promptId: promptId || memoryToEdit?.promptId,
+        userId: user.uid,
+        mediaAttachments: newOrUpdatedAttachments,
+        updatedAt: new Date().toISOString(),
+      };
+      console.log('Action: Assembled memory data object for Firestore.', memoryData);
+      console.log(`TESTIMONY - ${testCaseId}-ts-prepare-data - END`);
+
+      console.log(`TESTIMONY - ${testCaseId}-ts-save-to-db - START`);
+      if (isEditing && editMemoryId) {
+        console.log(`Action: Updating existing memory document in Firestore with ID: ${editMemoryId}`);
+        const memRef = doc(db, 'users', user.uid, 'memories', editMemoryId);
+        await updateDoc(memRef, memoryData);
+        console.log(`State After: Successfully updated memory document.`);
+        toast({ title: "Success", description: "Memory updated successfully", variant: 'success' });
+      } else {
+        console.log(`Action: Creating new memory document in Firestore.`);
+        const collectionRef = collection(db, 'users', user.uid, 'memories');
+        const docRef = await addDoc(collectionRef, { ...memoryData, createdAt: new Date().toISOString() });
+        console.log(`State After: Successfully created new memory document with ID: ${docRef.id}`);
+        toast({ title: "Success", description: "Memory saved successfully", variant: 'success' });
+      }
+      console.log(`TESTIMONY - ${testCaseId}-ts-save-to-db - END`);
+
+      console.log(`Action: Navigating to /timeline and refreshing the page.`);
+      router.push('/timeline');
+      router.refresh();
+
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error Saving Memory", description: error.message, variant: "destructive" });
+      console.error(`TESTIMONY - ${testCaseId}-ts-submit - FATAL_ERROR: An error occurred during the submission process.`, error);
+    } finally {
       setIsSubmitting(false);
       setUploadProgress(null);
-      console.error(`TESTIMONY - ${testCaseId}-ts-submit - FATAL_ERROR:`, error);
       console.log(`TESTIMONY - ${testCaseId}-ts-submit - END`);
     }
   };
@@ -398,7 +398,7 @@ export function MemoryForm() {
                                                 <DialogTitle>Scan for Prompt</DialogTitle>
                                             </DialogHeader>
                                             <div className="flex items-center justify-center p-4 bg-white">
-                                                <QRCode value={`${window.location.origin}/interview?promptId=${promptId}`} />
+                                                <QRCodeCanvas value={`${window.location.origin}/interview?promptId=${promptId}`} />
                                             </div>
                                         </DialogContent>
                                     </Dialog>
@@ -537,7 +537,8 @@ export function MemoryForm() {
             {currentSlide === 0 ? 'Cancel' : <><ArrowLeft className="w-4 h-4 mr-2" /> Back</>}
           </Button>
           {currentSlide === 0 ? (
-             <Button type="button" onClick={() => {
+             <Button type="button" onClick={(e) => {
+                 e.preventDefault();
                  carouselApi?.scrollNext();
              }} disabled={isSubmitting}>
               <span className="mr-2">Next</span> <ArrowRight className="w-4 h-4" />
@@ -554,3 +555,5 @@ export function MemoryForm() {
     </form>
   );
 }
+
+    
