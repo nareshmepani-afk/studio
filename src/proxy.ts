@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server';
 const protectedRoutes = ['/dashboard', '/prompts', '/profile'];
 const authRoutes = ['/login', '/signup'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // 2. Get the session cookie (Middleware uses a different API than Server Actions)
   const session = request.cookies.get('firebase-session')?.value;
   

@@ -72,6 +72,7 @@ export interface Memory {
 
 export interface Prompt {
   id: string;
+  title: string;
   text: {
     en: string;
     gu: string;
