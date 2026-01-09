@@ -2,7 +2,7 @@
 
 import { adminDb } from '@/lib/firebase-admin';
 import { getSession } from "@/lib/session";
-import { Memory } from '@/lib/types';
+import { Memory } from '@/types';
 
 export async function getMemories(userId: string): Promise<Memory[]> {
   if (!adminDb) {

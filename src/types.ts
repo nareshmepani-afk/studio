@@ -109,3 +109,14 @@ export interface User {
     storageUsedBytes: number;
     storageQuota: { total: number; used: number };
 }
+
+/**
+ * A standard response format for server-side actions.
+ * Provides a clear success/failure status and a corresponding message.
+ */
+export interface ActionResponse {
+  success: boolean;
+  message: string;
+  // Can optionally include data in the response
+  data?: any;
+}
