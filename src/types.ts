@@ -66,13 +66,16 @@ export interface Memory {
     mediaAttachments: MediaAttachment[];
     isLegacy?: boolean;
     location?: string;
+    country?: string;
     emotionTags?: string[]; // Array of emotion tag IDs
     promptId?: string;
+    imageUrl?: string;
 }
 
 export interface Prompt {
   id: string;
   title: string;
+  description: string;
   text: {
     en: string;
     gu: string;
@@ -121,3 +124,5 @@ export interface ActionResponse {
   // Can optionally include data in the response
   data?: any;
 }
+
+export type UserMode = 'host' | 'guest';

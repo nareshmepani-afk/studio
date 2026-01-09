@@ -2,6 +2,16 @@
 
 This document is the living record of all manual end-to-end testing performed on the Memory Weaver application. It is a formal process of "Witnessing" designed to be executed by a human tester to assess the qualitative, lived experience of using the application.
 
+## The Two Modes of Testing: The Clean Room and the Mosh Pit
+
+Our testing, like our development, unfolds in two distinct modes:
+
+1.  **"The Clean Room" (The Ideal):** This is our formal, structured testing protocol. It is a process of **Witnessing** where we execute pre-defined **Test Cases** to verify the application's functionality. The AI assistant generates a detailed, step-by-step plan for each test, which is then approved by the developer. This is the mode we use to ensure the application is working as intended.
+
+2.  **"The Mosh Pit" (The Real):** This is the state of **Forensic Debugging**. It is a non-linear, exploratory, and often surprising search for the root cause of a problem. In the Mosh Pit, the clean, linear process of the "Clean Room" is abandoned in favor of a more flexible and exploratory approach. We are forced to engage in a process of trial and error, to follow dead ends, and to backtrack. This is not a failure of the process, but an honest acknowledgment of the nature of complex systems.
+
+**The goal is not to avoid the Mosh Pit, but to learn from it.** Each descent into the Mosh Pit is an opportunity to strengthen the Clean Room. When we emerge, we must update this specification and our testing protocols to reflect the lessons learned.
+
 ## The Protocol
 
 To bridge the gap between idea and execution, the testing process now incorporates **Plan Mode**. Before initiating a new Test Case, the AI assistant will first generate a detailed, step-by-step plan for the test. This plan will be presented to the developer for witnessing and approval. This ensures that the intent of the test is fully understood and agreed upon before the formal, witnessed execution begins.

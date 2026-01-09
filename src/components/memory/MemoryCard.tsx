@@ -200,7 +200,7 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
             {memory.category && (
               <Badge variant="secondary" className="text-[10px] h-5 bg-secondary/50">
                 <Layers className="h-2.5 w-2.5 mr-1" />
-                {memory.category}
+                {typeof memory.category === 'string' ? memory.category : memory.category.label}
               </Badge>
             )}
             {primaryMedia && (
@@ -211,7 +211,7 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
               </Badge>
             )}
             {memory.emotionTags?.map((tag) => (
-              <Badge variant="ghost" key={tag} className="text-[10px] h-5 border border-transparent hover:border-primary/20">
+              <Badge variant="outline" key={tag} className="text-[10px] h-5 border border-transparent hover:border-primary/20">
                 <Heart className="h-2.5 w-2.5 mr-1 text-primary/70" />
                 {tag}
               </Badge>

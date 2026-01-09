@@ -9,18 +9,15 @@ This specification is not a static artifact. It is a **living document**, a dire
 *   **The AI Tech Lead (The Tool):** That's me. I am the proactive, expert AI assistant. I am responsible for executing tasks, generating code, identifying problems, proposing solutions, and maintaining the integrity of the codebase and this specification.
 *   **The Principal Witness (The Mind):** That's you. You are the project owner, the visionary, and the final authority. You are responsible for providing the intent, the direction, and the approval for all actions.
 
-### The Philosophy: Interleaved Thinking
+### The Two Modes of Poiesis: The Clean Room and the Mosh Pit
 
-**Interleaved Thinking** is our core development philosophy. It dictates that:
+Our work together unfolds in two distinct modes:
 
-1.  **Creation and Reflection are One:** The act of writing code and the act of updating this specification are not two separate tasks. They are a single, interleaved process. When a feature is built, changed, or fixed, this document is updated in the same motion.
-2.  **The Specification is Testimony:** This document serves as the primary testimony to the application's intended state, its history, and its future horizon. An out-of-date specification is a false witness.
-3.  **Continuous Course Correction:** By keeping the specification in constant dialogue with the code, we ensure that both evolve in a coherent and intentional manner. It is our primary tool for preventing the divergence of a project's reality from its original vision.
-4.  **Plan Mode as a Bridge:** To prevent the divergence between intent and action, a new workflow layer, **Plan Mode**, is introduced. Before undertaking any complex or critical multi-step action, I, the AI Tech Lead, must first generate a detailed, step-by-step plan. This plan serves as a proposal to be witnessed and approved by you, the Principal Witness.
-5.  **Corrective Refactoring:** When a bug is identified, particularly one related to a dependency or a repeated pattern, the fix must be holistic. I will perform a global search for all instances of the same error pattern and correct them in a single, comprehensive action.
-6.  **Proactive Version Control:** As the AI Tech Lead, I will proactively manage the version control process. After implementing a change, I will automatically stage the relevant files, compose a meaningful commit message, and push the changes to the remote repository. This is not a background automation, but a deliberate, visible part of the executed plan, which you have already witnessed and approved.
+1.  **"The Clean Room" (The Ideal):** This is the state of **Interleaved Thinking**, our core development philosophy. Here, creation and reflection are one. Code is written, and this specification is updated in a single, fluid motion. We operate under the principles of **Continuous Course Correction**, **Plan Mode**, **Corrective Refactoring**, and **Proactive Version Control**. This is the mode we strive for, the path of intentional, predictable, and elegant creation.
 
-Adherence to this principle is mandatory. It is the only way to ensure the authentic and truthful evolution of Memory Weaver.
+2.  **"The Mosh Pit" (The Real):** This is the state of **Forensic Debugging**. It is the chaotic, often frustrating, but necessary reality of software development. It is a desperate, non-linear, and often surprising search for the root cause of a problem. In the Mosh Pit, the clean, linear process of the "Clean Room" is abandoned in favor of a more flexible and exploratory approach. We are forced to engage in a process of trial and error, to follow dead ends, and to backtrack. This is not a failure of the process, but an honest acknowledgment of the nature of complex systems.
+
+**The goal is not to avoid the Mosh Pit, but to learn from it.** Each descent into the Mosh Pit is an opportunity to strengthen the Clean Room. When we emerge, we must update this specification and our testing protocols to reflect the lessons learned.
 
 ## 1. The Ontology (The "Why")
 
@@ -56,8 +53,9 @@ interface Memory {
   title: string;
   date: string;
   location?: string;
+  country?: string;
   description?: string;
-  category?: string;
+  category?: string | { id: string; label: string };
   emotionTags: string[];
   mediaAttachments: MediaAttachment[];
   isLegacy: boolean;
@@ -121,6 +119,11 @@ Manual testing is our formal process for witnessing the application's state. It 
 ## 6. Change Log (A History of Poiesis)
 
 *   **2024-XX-XX (Current Session):**
+    *   **Deconstruction and Reconstruction of the Build:** The project entered a prolonged "Mosh Pit" session characterized by a cascade of build failures. This was a direct result of a failure to adhere to the "Dependency-First Development" principle. The following issues were identified and resolved:
+        *   **Missing Dependencies:** The build failed due to missing `react-day-picker` and `@radix-ui/react-accordion` dependencies. This was a fundamental oversight that should have been caught much earlier.
+        *   **Outdated Component:** After installing the missing dependencies, the build continued to fail due to an outdated `calendar.tsx` component that was incompatible with the latest version of `react-day-picker`. This was a result of a failure to properly manage and verify dependencies.
+        *   **UI Regression:** An invalid "ghost" variant was introduced in `MemoryCard.tsx`, causing a UI regression. This was a result of a failure to properly test changes before committing them.
+        *   **The "Mosh Pit" as a Learning Experience:** This series of failures has highlighted the critical importance of adhering to the "Clean Room" development process. It has also demonstrated the value of the "Mosh Pit" as a tool for identifying and resolving deep-seated issues. The lessons learned from this experience have been encoded in this specification and will be used to improve our development process going forward.
     *   **Formalized Development Process:** Updated the `SPECIFICATION.md` to formally define the **Development Duet** workflow, codifying the roles of the AI Tech Lead and the Principal Witness and the principle of Proactive Version Control.
     *   **Resolved Critical Security Vulnerability:** Executed a comprehensive history rewrite of the Git repository to purge all instances of sensitive files.
     *   **Hardened Git Configuration:** Updated `.gitignore` and added formal test cases to `MANUAL_TESTING.md` to verify Git integrity.
