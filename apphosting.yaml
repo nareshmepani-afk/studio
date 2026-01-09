@@ -1,35 +1,15 @@
-# Settings to manage and configure a Firebase App Hosting backend.
-# https://firebase.google.com/docs/app-hosting/configure
+kind: 'publishedConfig'
+apiVersion: 'v1'
 
-# The following line is VERY IMPORTANT. It tells App Hosting to serve your Next.js application.
-# Do not remove this line.
-runConfig:
-  # Increase this value if you'd like to automatically spin up
-  # more instances in response to increased traffic.
-  maxInstances: 1
-  # You can specify secrets that will be exposed as environment variables to your application.
-  # Secrets are stored in Cloud Secret Manager. You can add a secret to Secret Manager by
-  # running the following command:
-  #
-  # gcloud secrets create <secret-name> --replication-policy=automatic
-  #
-  # You can then add the secret to your application by adding the following to this file:
-  #
-  # secrets: [ <secret-name> ]
-  #
-  # You can also specify the version of the secret to use. For example:
-  #
-  # secrets: [ projects/<project-number>/secrets/<secret-name>/versions/<version-id> ]
-  #
-  secrets: [ RESEND_API_KEY ]
+env:
+  # Public variables made available to the Next.js build process and client-side code.
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: 'memory-weaver-8rk9t'
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: 'memory-weaver-8rk9t.firebaseapp.com'
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: 'memory-weaver-8rk9t.appspot.com'
 
-# This is a basic serve rule. It will route all requests to the Next.js backend.
-serve: /**
-
-headers:
-  - source: /**
-    headers:
-      - key: Cross-Origin-Opener-Policy
-        value: same-origin
-      - key: Cross-origin-Embedder-Policy
-        value: require-corp
+  # Secret variables are securely stored in Secret Manager and exposed to the server at runtime.
+  - variable: SERVICE_ACCOUNT_JSON
+    secret: SERVICE_ACCOUNT_JSON

@@ -2,7 +2,8 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-    const session = cookies().get('session')?.value || '';
+    const cookieStore = await cookies();
+    const session = cookieStore.get('firebase-session')?.value || '';
 
     if (!session) {
         return NextResponse.json({ isLogged: false }, { status: 200 });

@@ -1,20 +1,38 @@
-// src/middleware.ts
-// This middleware exists to establish a foundation for future route-based logic (e.g., authentication).
-// For now, its purpose is to simply exist correctly, allowing the Next.js server to run without crashing.
-// It demonstrates Care (Sorge) by providing a stable ground upon which the rest of the application can Be.
-
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// The middleware function. It currently allows all requests to pass through unchanged.
+// 1. Define which routes are protected and which are "auth" routes
+const protectedRoutes = ['/dashboard', '/prompts', '/profile'];
+const authRoutes = ['/login', '/signup'];
+
 export function middleware(request: NextRequest) {
-  // As the project evolves, we will add logic here to protect routes
-  // and guide the user, ensuring their journey is seamless.
+  // 2. Get the session cookie (Middleware uses a different API than Server Actions)
+  const session = request.cookies.get('firebase-session')?.value;
+  
+  const { pathname } = request.nextUrl;
+
+  // 3. If the user is trying to access a protected route without a session
+  if (!session && protectedRoutes.some(route => pathname.startsWith(route))) {
+    const loginUrl = new URL('/login', request.url);
+    // Optional: Store the attempted URL to redirect back after login
+    loginUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // 4. If the user is logged in, don't let them see the login/signup pages
+  if (session && authRoutes.some(route => pathname.startsWith(route))) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
   return NextResponse.next();
 }
 
-// The config object specifies which paths this middleware should apply to.
-// We exclude asset paths to ensure efficiency.
+// 5. Configure the middleware to only run on specific paths for performance
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    '/dashboard/:path*',
+    '/prompts/:path*',
+    '/login',
+    '/signup'
+  ],
 };

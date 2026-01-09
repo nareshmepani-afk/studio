@@ -1,8 +1,9 @@
 
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "react-hot-toast";
 import { Providers } from "@/components/layout/Providers";
+import SessionWatcher from "@/components/auth/SessionWatcher";
 import "./globals.css";
 import React from "react";
 
@@ -27,6 +28,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-background text-foreground`} suppressHydrationWarning>
         <Providers>
+          <SessionWatcher />
           {children}
         </Providers>
         <Toaster />
