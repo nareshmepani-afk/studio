@@ -1,44 +1,8 @@
-[00:00:08.874] Server  LOG     ✓ Ready in 8.2s
-[00:00:11.910] Server  LOG     ○ Compiling / ...
-[00:00:21.986] Server  ERROR   ⨯ FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:00:22.914] Server  WARN    ⚠ Cross origin request detected from 6000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+[00:00:10.548] Server  LOG     ✓ Ready in 9.8s
+[00:00:13.582] Server  LOG     ○ Compiling / ...
+[00:00:22.903] Server  WARN    ⚠ Cross origin request detected from 6000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
 Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
-[00:00:23.316] Browser ERROR   uncaughtError: FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:01:40.701] Server  ERROR   ⨯ FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:01:43.650] Server  ERROR   ⨯ FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:01:44.980] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+[00:00:23.048] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
+[00:00:50.683] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
 Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
-[00:01:45.542] Browser ERROR   {"code":"auth/invalid-api-key","customData":{"appName":"[DEFAULT]"},"name":"FirebaseError"}
-[00:01:45.542] Browser ERROR   uncaughtError: FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:28:30.999] Server  LOG       Reload env: .env.local
-[00:28:40.895] Server  ERROR   ⨯ FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:28:40.930] Server  LOG     ✓ Compiled in 8.2s
-[00:28:40.960] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
-[00:28:40.960] Server  WARN    ⚠ Fast Refresh had to perform a full reload when ./src/lib/firebase.ts changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-[00:28:40.961] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
-[00:28:41.545] Server  ERROR   ⨯ FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:28:42.998] Browser ERROR   {"code":"auth/invalid-api-key","customData":{"appName":"[DEFAULT]"},"name":"FirebaseError"}
-[00:28:42.998] Browser ERROR   uncaughtError: FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:40:25.349] Server  LOG       Reload env: .env.local
-[00:40:28.524] Server  LOG     ✓ Compiled in 0ms
-[00:40:28.525] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
-[00:40:28.525] Server  WARN    ⚠ Fast Refresh had to perform a full reload when ./src/lib/firebase.ts changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
-[00:40:28.526] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
-[00:40:33.300] Server  LOG     ○ Compiling /login ...
-[00:40:37.477] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
-[00:41:01.060] Server  LOG       Reload env: .env.local
-[00:41:01.332] Server  LOG     ✓ Compiled in 215ms
-[00:43:49.465] Server  LOG       Reload env: .env.local
-[00:43:49.638] Server  LOG     ✓ Compiled in 119ms
-[00:44:44.307] Server  LOG       Reload env: .env.local
-[00:44:44.450] Server  LOG     ✓ Compiled in 102ms
-[00:47:55.010] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
-[00:50:17.092] Server  LOG       Reload env: .env.local
-[00:50:17.249] Server  LOG     ✓ Compiled in 99ms
-[01:03:06.193] Server  LOG       Reload env: .env.local
-[01:03:06.924] Server  LOG     ✓ Compiled in 209ms
-[02:23:05.371] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
-[02:23:05.375] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
-[02:34:21.854] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
-[03:55:31.832] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
-[04:07:11.611] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:00:51.422] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.

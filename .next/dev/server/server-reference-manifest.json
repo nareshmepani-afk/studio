@@ -2,12 +2,6 @@
   "node": {
     "40283785d06fe4a4ff265b05f767de2bc35f02b5a1": {
       "workers": {
-        "app/login/page": {
-          "moduleId": "[project]/.next-internal/server/app/login/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": false,
-          "exportedName": "createSessionAction",
-          "filename": "src/actions/createSessionAction.ts"
-        },
         "app/page": {
           "moduleId": "[project]/.next-internal/server/app/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": false,
@@ -16,7 +10,6 @@
         }
       },
       "layer": {
-        "app/login/page": "action-browser",
         "app/page": "action-browser"
       },
       "filename": "src/actions/createSessionAction.ts",
@@ -24,12 +17,6 @@
     },
     "00d38ff2ea3f621d1e67e4caa6ce7f03f8bb16059a": {
       "workers": {
-        "app/login/page": {
-          "moduleId": "[project]/.next-internal/server/app/login/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": false,
-          "exportedName": "deleteSessionAction",
-          "filename": "src/actions/createSessionAction.ts"
-        },
         "app/page": {
           "moduleId": "[project]/.next-internal/server/app/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": false,
@@ -38,7 +25,6 @@
         }
       },
       "layer": {
-        "app/login/page": "action-browser",
         "app/page": "action-browser"
       },
       "filename": "src/actions/createSessionAction.ts",
