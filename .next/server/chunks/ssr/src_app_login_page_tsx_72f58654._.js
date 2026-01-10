@@ -1,0 +1,3 @@
+module.exports=[93482,a=>{"use strict";var b=a.i(87924),c=a.i(50944);let d=()=>(0,b.jsx)("div",{children:(0,b.jsx)("h1",{children:"Login Form"})});function e(){let a=(0,c.useSearchParams)().get("reason");return(0,b.jsxs)("div",{children:["expired"===a&&(0,b.jsx)("div",{className:"bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-4",children:(0,b.jsx)("p",{className:"text-sm text-yellow-700",children:"For your security, your session has timed out. Please sign in to continue."})}),(0,b.jsx)(d,{})]})}a.s(["default",()=>e],93482)}];
+
+//# sourceMappingURL=src_app_login_page_tsx_72f58654._.js.map

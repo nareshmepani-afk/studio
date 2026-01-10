@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///home/user/studio/src/app/error.tsx"],"sourcesContent":["'use client' // Error components must be Client Components\n \nimport { useEffect } from 'react'\n \nexport default function Error({\n  error,\n  reset,\n}: {\n  error: Error & { digest?: string }\n  reset: () => void\n}) {\n  useEffect(() => {\n    // Log the error to an error reporting service\n    console.error(error)\n  }, [error])\n \n  return (\n    <div>\n      <h2>Something went wrong!</h2>\n      <button\n        onClick={() => reset()}\n      >\n        Try again\n      </button>\n    </div>\n  )\n}"],"names":[],"mappings":";;;;;AAEA;;;AAFA,cAAa,6CAA6C;;AAI3C,SAAS,MAAM,EAC5B,KAAK,EACL,KAAK,EAIN;;IACC,IAAA,0KAAS;2BAAC;YACR,8CAA8C;YAC9C,QAAQ,KAAK,CAAC;QAChB;0BAAG;QAAC;KAAM;IAEV,qBACE,6LAAC;;0BACC,6LAAC;0BAAG;;;;;;0BACJ,6LAAC;gBACC,SAAS,IAAM;0BAChB;;;;;;;;;;;;AAKP;GAtBwB;KAAA"}}]
+}

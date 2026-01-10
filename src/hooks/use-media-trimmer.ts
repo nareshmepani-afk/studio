@@ -58,7 +58,7 @@ export function useMediaTrimmer() {
       await ffmpeg.deleteFile(inputFileName);
       await ffmpeg.deleteFile(outputFileName);
 
-      const trimmedFile = new File([data.buffer], outputFileName, { type: sourceFile.type });
+      const trimmedFile = new File([data.slice()], outputFileName, { type: sourceFile.type });
       toast({ title: "Trimming Successful", variant: "success" });
       return trimmedFile;
 

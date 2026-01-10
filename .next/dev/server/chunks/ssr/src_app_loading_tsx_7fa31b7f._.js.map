@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///home/user/studio/src/app/loading.tsx"],"sourcesContent":["export default function Loading() {\n  // You can add any UI inside Loading, including a Skeleton.\n  return <div>Loading...</div>\n}"],"names":[],"mappings":";;;;;;AAAe,SAAS;IACtB,2DAA2D;IAC3D,qBAAO,8OAAC;kBAAI;;;;;;AACd"}}]
+}

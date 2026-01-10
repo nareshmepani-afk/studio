@@ -1,7 +1,2 @@
-serviceAccountKey.json
-.env copy
-.local
 .env.local
-.next/
-node_modules/
-.vscode/
+node_modules

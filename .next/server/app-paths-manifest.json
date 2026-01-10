@@ -1,0 +1,16 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/add-memory/page": "app/add-memory/page.js",
+  "/api/auth/session/route": "app/api/auth/session/route.js",
+  "/api/temp-delete-user/route": "app/api/temp-delete-user/route.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/prompts/[promptId]/page": "app/prompts/[promptId]/page.js",
+  "/prompts/page": "app/prompts/page.js",
+  "/register/page": "app/register/page.js",
+  "/requests/page": "app/requests/page.js",
+  "/settings/page": "app/settings/page.js",
+  "/timeline/page": "app/timeline/page.js"
+}

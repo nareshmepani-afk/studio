@@ -1,0 +1,16 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/add-memory/page": "/add-memory",
+  "/api/auth/session/route": "/api/auth/session",
+  "/api/temp-delete-user/route": "/api/temp-delete-user",
+  "/dashboard/page": "/dashboard",
+  "/login/page": "/login",
+  "/page": "/",
+  "/prompts/[promptId]/page": "/prompts/[promptId]",
+  "/prompts/page": "/prompts",
+  "/register/page": "/register",
+  "/requests/page": "/requests",
+  "/settings/page": "/settings",
+  "/timeline/page": "/timeline"
+}

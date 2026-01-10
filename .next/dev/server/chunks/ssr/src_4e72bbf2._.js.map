@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///home/user/studio/src/components/auth/LoginForm.tsx"],"sourcesContent":["\nimport React from 'react';\n\nconst LoginForm = () => {\n  return (\n    <div>\n      <h1>Login Form</h1>\n    </div>\n  );\n};\n\nexport default LoginForm;\n"],"names":[],"mappings":";;;;;;AAGA,MAAM,YAAY;IAChB,qBACE,8OAAC;kBACC,cAAA,8OAAC;sBAAG;;;;;;;;;;;AAGV;uCAEe"}},
+    {"offset": {"line": 30, "column": 0}, "map": {"version":3,"sources":["file:///home/user/studio/src/app/login/page.tsx"],"sourcesContent":["'use client';\n\nimport { useSearchParams } from 'next/navigation';\nimport LoginForm from '@/components/auth/LoginForm';\n\nexport default function LoginPage() {\n  const searchParams = useSearchParams();\n  const reason = searchParams.get('reason');\n\n  return (\n    <div>\n      {reason === 'expired' && (\n        <div className=\"bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-4\">\n          <p className=\"text-sm text-yellow-700\">\n            For your security, your session has timed out. Please sign in to continue.\n          </p>\n        </div>\n      )}\n      <LoginForm />\n    </div>\n  );\n}\n"],"names":[],"mappings":";;;;;AAEA;AACA;AAHA;;;;AAKe,SAAS;IACtB,MAAM,eAAe,IAAA,qJAAe;IACpC,MAAM,SAAS,aAAa,GAAG,CAAC;IAEhC,qBACE,8OAAC;;YACE,WAAW,2BACV,8OAAC;gBAAI,WAAU;0BACb,cAAA,8OAAC;oBAAE,WAAU;8BAA0B;;;;;;;;;;;0BAK3C,8OAAC,kJAAS;;;;;;;;;;;AAGhB"}}]
+}
