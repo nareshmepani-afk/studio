@@ -33,3 +33,12 @@ Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allow
 [00:44:44.307] Server  LOG       Reload env: .env.local
 [00:44:44.450] Server  LOG     ✓ Compiled in 102ms
 [00:47:55.010] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
+[00:50:17.092] Server  LOG       Reload env: .env.local
+[00:50:17.249] Server  LOG     ✓ Compiled in 99ms
+[01:03:06.193] Server  LOG       Reload env: .env.local
+[01:03:06.924] Server  LOG     ✓ Compiled in 209ms
+[02:23:05.371] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
+[02:23:05.375] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[02:34:21.854] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[03:55:31.832] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[04:07:11.611] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.

@@ -1,2 +1,12 @@
+# Next.js
+.next/
+
+# Environment variables
 .env.local
+
+# Firebase
+.firebase/
+
+# Static export
+out/
 node_modules

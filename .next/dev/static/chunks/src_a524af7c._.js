@@ -26,12 +26,12 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2
 ;
 ;
 const firebaseConfig = {
-    apiKey: ("TURBOPACK compile-time value", '"// Import the functions you need from the SDKs you need'),
+    apiKey: ("TURBOPACK compile-time value", "AIzaSyANRmF5M5guN3PJ-IDw-3a8W3WaIvk-NJE"),
     authDomain: ("TURBOPACK compile-time value", "memory-weaver-8rk9t.firebaseapp.com"),
     projectId: ("TURBOPACK compile-time value", "memory-weaver-8rk9t"),
     storageBucket: ("TURBOPACK compile-time value", "memory-weaver-8rk9t.appspot.com"),
-    messagingSenderId: ("TURBOPACK compile-time value", "PASTE_YOUR_MESSAGING_SENDER_ID_HERE"),
-    appId: ("TURBOPACK compile-time value", "PASTE_YOUR_APP_ID_HERE")
+    messagingSenderId: ("TURBOPACK compile-time value", "67296998103"),
+    appId: ("TURBOPACK compile-time value", "1:67296998103:web:f48699405c37bcf4567692")
 };
 // Initialize Firebase
 const app = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$app$2f$dist$2f$esm$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getApps"])().length ? (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$app$2f$dist$2f$esm$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getApp"])() : (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$app$2f$dist$2f$esm$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["initializeApp"])(firebaseConfig);
@@ -666,12 +666,12 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$firebase$2f$
 ;
 ;
 const firebaseConfig = {
-    apiKey: ("TURBOPACK compile-time value", '"// Import the functions you need from the SDKs you need'),
+    apiKey: ("TURBOPACK compile-time value", "AIzaSyANRmF5M5guN3PJ-IDw-3a8W3WaIvk-NJE"),
     authDomain: ("TURBOPACK compile-time value", "memory-weaver-8rk9t.firebaseapp.com"),
     projectId: ("TURBOPACK compile-time value", "memory-weaver-8rk9t"),
     storageBucket: ("TURBOPACK compile-time value", "memory-weaver-8rk9t.appspot.com"),
-    messagingSenderId: ("TURBOPACK compile-time value", "PASTE_YOUR_MESSAGING_SENDER_ID_HERE"),
-    appId: ("TURBOPACK compile-time value", "PASTE_YOUR_APP_ID_HERE")
+    messagingSenderId: ("TURBOPACK compile-time value", "67296998103"),
+    appId: ("TURBOPACK compile-time value", "1:67296998103:web:f48699405c37bcf4567692")
 };
 // Singleton pattern to prevent "Multiple App" errors
 const app = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$app$2f$dist$2f$esm$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getApps"])().length > 0 ? (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$app$2f$dist$2f$esm$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["getApp"])() : (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$app$2f$dist$2f$esm$2f$index$2e$esm2017$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["initializeApp"])(firebaseConfig);

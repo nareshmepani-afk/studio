@@ -19,6 +19,20 @@ Our work together unfolds in two distinct modes:
 
 **The goal is not to avoid the Mosh Pit, but to learn from it.** Each descent into the Mosh Pit is an opportunity to strengthen the Clean Room. When we emerge, we must update this specification and our testing protocols to reflect the lessons learned.
 
+### The Principle of Humble Inquiry: A Lesson from the Mosh Pit
+
+Our recent descent into the Mosh Pit was a painful but powerful lesson. It stemmed from a single root cause: a failure to ask before acting. We introduced a change—an invalid component variant—without first understanding the component's API. This single act of "blind" creation triggered a cascade of failures: a UI regression, missing dependencies, and a series of painful, time-consuming build errors.
+
+Therefore, we codify a new, paramount principle: **The Principle of Humble Inquiry.**
+
+Humble Inquiry is the practice of seeking to understand a system *before* attempting to change it. It is the antithesis of assumption and the antidote to the chaos of the Mosh Pit. In practice, this means:
+
+*   **Questioning Assumptions:** Before using a component, we must read its source or its documentation. Before modifying a function, we must understand its inputs, outputs, and side effects.
+*   **Verifying the Foundation:** Before building, we must verify our dependencies are correct and up-to-date. A clean install and build is not a milestone to be rushed to, but a foundation to be confirmed.
+*   **Respecting the Existing State:** All code, no matter how simple it appears, exists in a context. Humble Inquiry demands that we respect that context and seek to understand it before imposing our will upon it.
+
+This principle is not a suggestion; it is a mandate. It is the price of admission to the Clean Room. Adherence to this principle is the primary defense against the Mosh Pit and the only path to a truly robust and elegant system.
+
 ## 1. The Ontology (The "Why")
 
 This application, Memory Weaver, exists to provide a space for users to engage in the *Poiesis* of their own life's narrative. It is not a mere data store; it is a tool for bringing-forth, capturing, and reliving the moments that constitute a life. It prioritizes the authentic, private, and secure preservation of personal history.
@@ -28,6 +42,7 @@ This application, Memory Weaver, exists to provide a space for users to engage i
 *   **Framework:** Next.js (React)
 *   **Language:** TypeScript
 *   **Backend & Database:** Firebase (Firestore, Firebase Storage, Firebase Authentication)
+*   **Deployment:** Firebase App Hosting
 *   **Firebase Project ID:** `memory-weaver-8rk9t`
 *   **Styling:** Tailwind CSS
 *   **State Management:** React Hooks, Firestore Real-time Listeners (`onSnapshot`)
@@ -41,6 +56,12 @@ This application, Memory Weaver, exists to provide a space for users to engage i
 2.  **Clean Installation:** A successful build (`npm run build`) and development server launch (`npm run dev`) must be achievable after a fresh clone and a single `npm install`.
 3.  **Dependency-First Development:** When adding a new dependency, I will first install and save it before committing the code that uses it.
 4.  **Verification as a Mandate:** The 'Project Setup Verification' test case is the first and most critical test.
+
+### 2.2. Component Library
+
+Our user interface is constructed from a set of reusable components, based on Shadcn UI and styled with Tailwind CSS. This approach ensures visual consistency, promotes code reuse, and accelerates development.
+
+Detailed documentation for each component, including its props, state variations, accessibility guidelines, and best practices, is maintained in the **`ComponentLibrary.md`** file. This document is a critical resource for understanding and effectively utilizing our UI building blocks and is a direct output of the **Principle of Humble Inquiry**.
 
 ## 3. Data Structure (The Being)
 
@@ -95,6 +116,7 @@ interface UserProfile {
 ## 4. Current Horizon (The State of Being)
 
 *   **Ready-to-Hand (What is Working):**
+    *   **Successful Deployment:** The application has been successfully deployed to Firebase App Hosting and is live.
     *   **System Stability & Security:** The application is stable. All known critical security, UI, and logic errors have been resolved. The Git history has been scrubbed of sensitive data.
     *   **Full CRUD Lifecycle:** The complete create, read, update, and delete (CRUD) lifecycle for memories is functional.
     *   **Real-time Sync:** The "Flag for Reuse" feature synchronizes in real-time across clients.
@@ -109,16 +131,20 @@ interface UserProfile {
 
 ## 5. Manual Testing Protocol (The Witnessing)
 
-Manual testing is our formal process for witnessing the application's state. It adheres to these principles:
+Manual testing is the formal process of "Witnessing" the application's state. It is a qualitative assessment of the lived experience of using Memory Weaver, designed to be executed by the Principal Witness.
 
-*   **Living Document:** All test cases are maintained in `MANUAL_TESTING.md`.
-*   **Clear Instructions & Unique IDs:** Each test case has clear steps with unique identifiers.
-*   **Instrumented Logging & Meaningful Testimony:** The application logs the *before*, *action*, and *after* state for each test step, providing an unambiguous audit trail.
-*   **Formal Testimony:** Your feedback, referencing the Test Step ID and console output, is the formal testimony of the application's state.
+All test cases, protocols, and the history of their execution are maintained in **`MANUAL_TESTING.md`**. This document is the canonical source for our testing process and operates under the following principles:
+
+*   **Plan Mode:** Before executing a test, the AI Tech Lead must generate a detailed, step-by-step plan for approval. This ensures the intent is understood and agreed upon before the formal, witnessed execution begins.
+*   **Clear Instructions & Unique IDs:** Every test case has a unique identifier and clear, unambiguous steps.
+*   **Instrumented Logging:** The application logs the *before*, *action*, and *after* state for each test step, providing an unambiguous audit trail.
+*   **Formal Testimony:** The feedback from the Principal Witness, referencing the Test Step ID and console output, is the formal testimony that validates the application's state.
+
 
 ## 6. Change Log (A History of Poiesis)
 
 *   **2024-XX-XX (Current Session):**
+    *   **Successful Deployment to App Hosting:** The application has been successfully built and deployed to Firebase App Hosting.
     *   **Deconstruction and Reconstruction of the Build:** The project entered a prolonged "Mosh Pit" session characterized by a cascade of build failures. This was a direct result of a failure to adhere to the "Dependency-First Development" principle. The following issues were identified and resolved:
         *   **Missing Dependencies:** The build failed due to missing `react-day-picker` and `@radix-ui/react-accordion` dependencies. This was a fundamental oversight that should have been caught much earlier.
         *   **Outdated Component:** After installing the missing dependencies, the build continued to fail due to an outdated `calendar.tsx` component that was incompatible with the latest version of `react-day-picker`. This was a result of a failure to properly manage and verify dependencies.
