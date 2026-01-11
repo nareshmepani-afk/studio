@@ -44,6 +44,7 @@ This application, Memory Weaver, exists to provide a space for users to engage i
 *   **Backend & Database:** Firebase (Firestore, Firebase Storage, Firebase Authentication)
 *   **Deployment:** Firebase App Hosting
 *   **Firebase Project ID:** `memory-weaver-8rk9t`
+*   **Email Service:** Resend
 *   **Styling:** Tailwind CSS
 *   **State Management:** React Hooks, Firestore Real-time Listeners (`onSnapshot`)
 *   **AI Integration:** Custom flows interacting with a backend AI model.
@@ -62,6 +63,26 @@ This application, Memory Weaver, exists to provide a space for users to engage i
 Our user interface is constructed from a set of reusable components, based on Shadcn UI and styled with Tailwind CSS. This approach ensures visual consistency, promotes code reuse, and accelerates development.
 
 Detailed documentation for each component, including its props, state variations, accessibility guidelines, and best practices, is maintained in the **`ComponentLibrary.md`** file. This document is a critical resource for understanding and effectively utilizing our UI building blocks and is a direct output of the **Principle of Humble Inquiry**.
+
+### 2.3. Environment Strategy
+
+The application will exist in multiple environments to ensure a stable and predictable lifecycle from development to production. Each environment is a self-contained instance of the application with its own configuration, database, and services.
+
+**Environments:**
+
+1.  **Development (`dev`):** The local environment used for active development and initial testing.
+2.  **Staging (`staging`):** A pre-production environment that mirrors the production setup. This is used for formal user acceptance testing (UAT) and final validation before a public release. It may be hosted at a subdomain like `test.memory-weaver.com` or `staging.memory-weaver.com`.
+3.  **Production (`prod`):** The live, public-facing application, accessible at `memory-weaver.com`.
+
+**Principle of Environmental Parity & Secrets Management:**
+
+To ensure security and prevent cross-contamination, **each environment MUST use its own set of API keys and configuration secrets.** This includes, but is not limited to, keys for Firebase services and third-party APIs like Resend.
+
+-   Secrets will be managed as environment variables within the Firebase environment.
+-   Under no circumstances will a secret from one environment be used in another.
+-   The process of creating a new environment must include the generation and configuration of a full new set of secrets.
+
+This strict separation is a cornerstone of our security and stability posture.
 
 ## 3. Data Structure (The Being)
 
