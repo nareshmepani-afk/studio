@@ -1,8 +1,8 @@
-[00:00:10.548] Server  LOG     ✓ Ready in 9.8s
-[00:00:13.582] Server  LOG     ○ Compiling / ...
-[00:00:22.903] Server  WARN    ⚠ Cross origin request detected from 6000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+[00:00:16.174] Server  LOG     ✓ Ready in 12s
+[00:00:19.220] Server  LOG     ○ Compiling / ...
+[00:00:28.643] Server  WARN    ⚠ Cross origin request detected from 6000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
 Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
-[00:00:23.048] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
-[00:00:50.683] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+[00:00:29.733] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
+[00:02:30.077] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
 Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
-[00:00:51.422] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:02:31.078] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
