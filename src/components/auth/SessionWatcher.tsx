@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onIdTokenChanged } from 'firebase/auth';
-import { auth } from '@/lib/firebase/client'; // Import the singleton
+import { auth } from '@/lib/firebase'; // Import the singleton
 import { toast } from 'react-hot-toast';
 
 export default function SessionWatcher() {
