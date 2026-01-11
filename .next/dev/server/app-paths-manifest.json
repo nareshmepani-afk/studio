@@ -1,5 +1,8 @@
 {
   "/add-memory/page": "app/add-memory/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/login/page": "app/login/page.js",
   "/page": "app/page.js",
-  "/prompts/page": "app/prompts/page.js"
+  "/prompts/page": "app/prompts/page.js",
+  "/register/page": "app/register/page.js"
 }

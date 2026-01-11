@@ -20,3 +20,21 @@ Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allow
 [00:00:30.914] Browser LOG     State After: Recording stopped, streams and timers cleaned up.
 [00:00:30.914] Browser LOG     TESTIMONY - media-capture-ts-stop-record - END
 [00:01:12.100] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:27:27.073] Browser LOG     TESTIMONY - auth-tc1-ts4 - START
+[00:27:27.074] Browser LOG     State Before: User is logged in. User: {"email":"nareshmepani@yahoo.com","uid":"pZHGqC5xKXhRTIqVyAJCckYqlMA2"}
+[00:27:27.074] Browser LOG     Action: Logging out user.
+[00:27:27.074] Browser LOG     State After: User is logged out. Redirecting to homepage.
+[00:27:27.074] Browser LOG     TESTIMONY - auth-tc1-ts4 - END
+[00:27:27.219] Browser LOG     TESTIMONY - media-capture-ts-stop-record - START
+[00:27:27.219] Browser LOG     State Before: Media recorder is in state: undefined
+[00:27:27.219] Browser LOG     Action: Stopping media recording and cleaning up resources.
+[00:27:27.219] Browser LOG     State After: Recording stopped, streams and timers cleaned up.
+[00:27:27.219] Browser LOG     TESTIMONY - media-capture-ts-stop-record - END
+[00:27:29.997] Server  ERROR   Session verification failed: undefined
+[00:28:13.079] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:29:07.906] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:29:38.897] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:29:53.820] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:29:59.157] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:30:10.710] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:30:26.343] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold

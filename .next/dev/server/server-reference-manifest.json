@@ -8,6 +8,18 @@
           "exportedName": "createSessionAction",
           "filename": "src/actions/createSessionAction.ts"
         },
+        "app/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "createSessionAction",
+          "filename": "src/actions/createSessionAction.ts"
+        },
+        "app/login/page": {
+          "moduleId": "[project]/.next-internal/server/app/login/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "createSessionAction",
+          "filename": "src/actions/createSessionAction.ts"
+        },
         "app/page": {
           "moduleId": "[project]/.next-internal/server/app/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": false,
@@ -19,12 +31,21 @@
           "async": false,
           "exportedName": "createSessionAction",
           "filename": "src/actions/createSessionAction.ts"
+        },
+        "app/register/page": {
+          "moduleId": "[project]/.next-internal/server/app/register/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "createSessionAction",
+          "filename": "src/actions/createSessionAction.ts"
         }
       },
       "layer": {
         "app/add-memory/page": "action-browser",
+        "app/dashboard/page": "action-browser",
+        "app/login/page": "action-browser",
         "app/page": "action-browser",
-        "app/prompts/page": "action-browser"
+        "app/prompts/page": "action-browser",
+        "app/register/page": "action-browser"
       },
       "filename": "src/actions/createSessionAction.ts",
       "exportedName": "createSessionAction"
@@ -37,6 +58,18 @@
           "exportedName": "deleteSessionAction",
           "filename": "src/actions/createSessionAction.ts"
         },
+        "app/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "deleteSessionAction",
+          "filename": "src/actions/createSessionAction.ts"
+        },
+        "app/login/page": {
+          "moduleId": "[project]/.next-internal/server/app/login/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "deleteSessionAction",
+          "filename": "src/actions/createSessionAction.ts"
+        },
         "app/page": {
           "moduleId": "[project]/.next-internal/server/app/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": false,
@@ -48,12 +81,21 @@
           "async": false,
           "exportedName": "deleteSessionAction",
           "filename": "src/actions/createSessionAction.ts"
+        },
+        "app/register/page": {
+          "moduleId": "[project]/.next-internal/server/app/register/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "deleteSessionAction",
+          "filename": "src/actions/createSessionAction.ts"
         }
       },
       "layer": {
         "app/add-memory/page": "action-browser",
+        "app/dashboard/page": "action-browser",
+        "app/login/page": "action-browser",
         "app/page": "action-browser",
-        "app/prompts/page": "action-browser"
+        "app/prompts/page": "action-browser",
+        "app/register/page": "action-browser"
       },
       "filename": "src/actions/createSessionAction.ts",
       "exportedName": "deleteSessionAction"
