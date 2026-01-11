@@ -28,7 +28,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const PRIVATE_ROUTES = ['/timeline', '/add-memory', '/prompts', '/settings', '/requests'];
+const PRIVATE_ROUTES = ['/dashboard', '/timeline', '/add-memory', '/prompts', '/settings', '/requests'];
 const PUBLIC_ONLY_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password'];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isAuthenticated && isPrivateRoute) {
       router.push('/login');
     } else if (isAuthenticated && isPublicOnlyRoute) {
-      router.push('/prompts');
+      router.push('/dashboard');
     }
   }, [isAuthenticated, loading, pathname, router]);
 
@@ -144,6 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('New User State (Firestore):', userProfile);
 
       toast({ title: 'Registration Successful', description: "Welcome to Memory Weaver!", variant: 'success' });
+      router.push('/dashboard');
     } catch (error: any) {
       console.error(`TESTIMONY - ${testStepId} - ERROR: Registration failed.`, error);
       toast({ title: 'Registration Failed', description: error.message, variant: 'destructive' });
@@ -151,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
         console.log(`TESTIMONY - ${testStepId} - END`);
     }
-  }, []);
+  }, [router]);
 
   const logout = useCallback(async () => {
     const testStepId = 'auth-tc1-ts4';
