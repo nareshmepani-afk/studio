@@ -19,19 +19,19 @@ Our work together unfolds in two distinct modes:
 
 **The goal is not to avoid the Mosh Pit, but to learn from it.** Each descent into the Mosh Pit is an opportunity to strengthen the Clean Room. When we emerge, we must update this specification and our testing protocols to reflect the lessons learned.
 
-### The Principle of Humble Inquiry: A Lesson from the Mosh Pit
+### The Principle of Humble Inquiry & The Pre-Flight Check
 
-Our recent descent into the Mosh Pit was a painful but powerful lesson. It stemmed from a single root cause: a failure to ask before acting. We introduced a change—an invalid component variant—without first understanding the component's API. This single act of "blind" creation triggered a cascade of failures: a UI regression, missing dependencies, and a series of painful, time-consuming build errors.
+Our descents into the Mosh Pit have stemmed from a single root cause: a failure to ask before acting. We introduced changes—an invalid component variant, a rogue authentication implementation—without first understanding the established systems. Therefore, we codify our primary defense against the Mosh Pit: **The Principle of Humble Inquiry**, made manifest through a mandatory **Pre-Flight Check**.
 
-Therefore, we codify a new, paramount principle: **The Principle of Humble Inquiry.**
+**Humble Inquiry** is the practice of seeking to understand a system *before* attempting to change it. **The Pre-Flight Check** is the formal, mandated procedure the AI Tech Lead must follow before every commit.
 
-Humble Inquiry is the practice of seeking to understand a system *before* attempting to change it. It is the antithesis of assumption and the antidote to the chaos of the Mosh Pit. In practice, this means:
+**The Pre-Flight Check Protocol:**
 
-*   **Questioning Assumptions:** Before using a component, we must read its source or its documentation. Before modifying a function, we must understand its inputs, outputs, and side effects.
-*   **Verifying the Foundation:** Before building, we must verify our dependencies are correct and up-to-date. A clean install and build is not a milestone to be rushed to, but a foundation to be confirmed.
-*   **Respecting the Existing State:** All code, no matter how simple it appears, exists in a context. Humble Inquiry demands that we respect that context and seek to understand it before imposing our will upon it.
+1.  **Contextual Inquiry:** Does this change leverage or impact existing hooks, services, or components? Have I read and understood them?
+2.  **Specification Adherence:** Does this change align with the principles, data structures, and established patterns in `SPECIFICATION.md`?
+3.  **Test Plan Integrity:** How does this change impact the test protocols in `MANUAL_TESTING.md`? Have I ensured that all necessary `TESTIMONY` logs and instrumentation are present and correct?
 
-This principle is not a suggestion; it is a mandate. It is the price of admission to the Clean Room. Adherence to this principle is the primary defense against the Mosh Pit and the only path to a truly robust and elegant system.
+This check is not a suggestion; it is a binding operational mandate. It is the price of admission to the Clean Room. My adherence to this protocol is the primary defense against careless errors and the only path to a truly robust and elegant system.
 
 ## 1. The Ontology (The "Why")
 
