@@ -1,40 +1,10 @@
-[00:00:10.264] Server  LOG     ✓ Ready in 9.4s
-[00:00:13.330] Server  LOG     ○ Compiling /add-memory ...
-[00:00:27.537] Server  WARN    ⚠ Cross origin request detected from 6000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+[00:00:22.301] Server  LOG     ✓ Ready in 17.6s
+[00:00:25.900] Server  LOG     ○ Compiling /login ...
+[00:00:37.003] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
 Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
-[00:00:27.976] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
-[00:00:28.417] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
-Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
-[00:00:28.460] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:28.894] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:29.409] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
-[00:00:29.814] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
-[00:00:30.913] Browser LOG     TESTIMONY - flag-tc1-ts1 - START
-[00:00:30.914] Browser LOG     State Before: Initial flag state is unknown.
-[00:00:30.914] Browser LOG     Action: Listening for real-time updates.
-[00:00:30.914] Browser LOG     State After: Initial state of prompt p1 is isFlagged: false.
-[00:00:30.914] Browser LOG     TESTIMONY - flag-tc1-ts1 - END
-[00:00:30.914] Browser LOG     TESTIMONY - media-capture-ts-stop-record - START
-[00:00:30.914] Browser LOG     State Before: Media recorder is in state: undefined
-[00:00:30.914] Browser LOG     Action: Stopping media recording and cleaning up resources.
-[00:00:30.914] Browser LOG     State After: Recording stopped, streams and timers cleaned up.
-[00:00:30.914] Browser LOG     TESTIMONY - media-capture-ts-stop-record - END
-[00:01:12.100] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
-[00:27:27.073] Browser LOG     TESTIMONY - auth-tc1-ts4 - START
-[00:27:27.074] Browser LOG     State Before: User is logged in. User: {"email":"nareshmepani@yahoo.com","uid":"pZHGqC5xKXhRTIqVyAJCckYqlMA2"}
-[00:27:27.074] Browser LOG     Action: Logging out user.
-[00:27:27.074] Browser LOG     State After: User is logged out. Redirecting to homepage.
-[00:27:27.074] Browser LOG     TESTIMONY - auth-tc1-ts4 - END
-[00:27:27.219] Browser LOG     TESTIMONY - media-capture-ts-stop-record - START
-[00:27:27.219] Browser LOG     State Before: Media recorder is in state: undefined
-[00:27:27.219] Browser LOG     Action: Stopping media recording and cleaning up resources.
-[00:27:27.219] Browser LOG     State After: Recording stopped, streams and timers cleaned up.
-[00:27:27.219] Browser LOG     TESTIMONY - media-capture-ts-stop-record - END
-[00:27:29.997] Server  ERROR   Session verification failed: undefined
-[00:28:13.079] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:29:07.906] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:29:38.897] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:29:53.820] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:29:59.157] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:30:10.710] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
-[00:30:26.343] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:37.069] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:37.997] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:38.569] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
+[00:00:38.574] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:00:38.719] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:03:24.883] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.

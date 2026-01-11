@@ -29,7 +29,7 @@ const firebaseConfig = {
     apiKey: ("TURBOPACK compile-time value", "AIzaSyANRmF5M5guN3PJ-IDw-3a8W3WaIvk-NJE"),
     authDomain: ("TURBOPACK compile-time value", "memory-weaver-8rk9t.firebaseapp.com"),
     projectId: ("TURBOPACK compile-time value", "memory-weaver-8rk9t"),
-    storageBucket: ("TURBOPACK compile-time value", "memory-weaver-8rk9t.appspot.com"),
+    storageBucket: ("TURBOPACK compile-time value", "memory-weaver-8rk9t.firebasestorage.app"),
     messagingSenderId: ("TURBOPACK compile-time value", "67296998103"),
     appId: ("TURBOPACK compile-time value", "1:67296998103:web:f48699405c37bcf4567692")
 };
@@ -669,7 +669,7 @@ const firebaseConfig = {
     apiKey: ("TURBOPACK compile-time value", "AIzaSyANRmF5M5guN3PJ-IDw-3a8W3WaIvk-NJE"),
     authDomain: ("TURBOPACK compile-time value", "memory-weaver-8rk9t.firebaseapp.com"),
     projectId: ("TURBOPACK compile-time value", "memory-weaver-8rk9t"),
-    storageBucket: ("TURBOPACK compile-time value", "memory-weaver-8rk9t.appspot.com"),
+    storageBucket: ("TURBOPACK compile-time value", "memory-weaver-8rk9t.firebasestorage.app"),
     messagingSenderId: ("TURBOPACK compile-time value", "67296998103"),
     appId: ("TURBOPACK compile-time value", "1:67296998103:web:f48699405c37bcf4567692")
 };

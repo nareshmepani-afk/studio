@@ -1048,6 +1048,10 @@ body {
   max-width: 20rem;
 }
 
+.max-w-sm {
+  max-width: 24rem;
+}
+
 .flex-1 {
   flex: 1;
 }
@@ -1997,6 +2001,10 @@ body {
 .text-yellow-700 {
   --tw-text-opacity: 1;
   color: rgb(161 98 7 / var(--tw-text-opacity, 1));
+}
+
+.underline {
+  text-decoration-line: underline;
 }
 
 .underline-offset-4 {
