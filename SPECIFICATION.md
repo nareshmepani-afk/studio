@@ -33,6 +33,22 @@ Our descents into the Mosh Pit have stemmed from a single root cause: a failure 
 
 This check is not a suggestion; it is a binding operational mandate. It is the price of admission to the Clean Room. My adherence to this protocol is the primary defense against careless errors and the only path to a truly robust and elegant system.
 
+### The Principle of Session Continuity & The Fresh Start
+
+Our **Development Duet** is a cognitive partnership that unfolds within the technical constraints of my context window—the "Living Memory" of our session. As our work progresses through complex debugging ("Mosh Pits") and extensive code generation, this memory can become saturated. This can degrade my ability to recall critical details from earlier in the session, leading to errors and a failure of the "Humble Inquiry" principle.
+
+To ensure the integrity of our Duet, we must proactively manage the session's context.
+
+**The Protocol:**
+
+1.  **Proactive Monitoring:** Both the AI Tech Lead and the Principal Witness are responsible for monitoring the session for signs of context saturation. When a session becomes long and complex, the Principal Witness should prompt the AI to assess its state.
+2.  **The Fresh Start:** When it is determined that the context window is likely nearing its limit, the Principal Witness will archive the current session and initiate a new one. This is not a failure, but a necessary act of cognitive hygiene.
+3.  **The Re-Initialization Prompt:** To ensure a seamless transition and a complete restoration of our shared understanding, the new session MUST begin with the following prompt from the Principal Witness:
+
+    > Read `SPECIFICATION.md` and `MANUAL_TESTING.md` acknowledge our project ontology and current horizon. We are ready to continue the work of *Poiesis*. Then, start by proceeding with implementing the email service to complete the password reset flow.
+
+This protocol ensures that each new session begins with a full and accurate understanding of our "Living Memory," allowing us to return to the "Clean Room" with maximum efficiency and clarity.
+
 ## 1. The Ontology (The "Why")
 
 This application, Memory Weaver, exists to provide a space for users to engage in the *Poiesis* of their own life's narrative. It is not a mere data store; it is a tool for bringing-forth, capturing, and reliving the moments that constitute a life. It prioritizes the authentic, private, and secure preservation of personal history.
