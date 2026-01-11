@@ -44,6 +44,7 @@ This application, Memory Weaver, exists to provide a space for users to engage i
 *   **Backend & Database:** Firebase (Firestore, Firebase Storage, Firebase Authentication)
 *   **Deployment:** Firebase App Hosting
 *   **Firebase Project ID:** `memory-weaver-8rk9t`
+*   **Domain:** `memoryweaver.studio`
 *   **Email Service:** Resend
 *   **Styling:** Tailwind CSS
 *   **State Management:** React Hooks, Firestore Real-time Listeners (`onSnapshot`)
@@ -71,8 +72,8 @@ The application will exist in multiple environments to ensure a stable and predi
 **Environments:**
 
 1.  **Development (`dev`):** The local environment used for active development and initial testing.
-2.  **Staging (`staging`):** A pre-production environment that mirrors the production setup. This is used for formal user acceptance testing (UAT) and final validation before a public release. It may be hosted at a subdomain like `test.memory-weaver.com` or `staging.memory-weaver.com`.
-3.  **Production (`prod`):** The live, public-facing application, accessible at `memory-weaver.com`.
+2.  **Staging (`staging`):** A pre-production environment that mirrors the production setup. This is used for formal user acceptance testing (UAT) and final validation before a public release. It may be hosted at a subdomain like `staging.memoryweaver.studio`.
+3.  **Production (`prod`):** The live, public-facing application, accessible at `memoryweaver.studio`.
 
 **Principle of Environmental Parity & Secrets Management:**
 
