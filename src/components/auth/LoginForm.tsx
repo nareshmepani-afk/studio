@@ -2,10 +2,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { toast } from 'react-hot-toast';
+import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,46 +15,23 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import Link from 'next/link';
 
 const LoginForm = () => {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { login } = useAuth();
+  const [email, setEmail] = useState('test@example.com');
+  const [password, setPassword] = useState('password');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsSubmitting(true);
-    
-    if (!email || !password) {
-      toast.error('Please enter both email and password.');
-      setIsSubmitting(false);
-      return;
-    }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // The onIdTokenChanged listener in SessionWatcher will likely handle the redirect
-      // but we can also push it here as a fallback.
-      router.push('/dashboard');
-    } catch (error: any) {
-      console.error('Login failed:', error);
-      let errorMessage = 'An unknown error occurred. Please try again.';
-      switch (error.code) {
-        case 'auth/user-not-found':
-        case 'auth/wrong-password':
-        case 'auth/invalid-credential':
-          errorMessage = 'Invalid email or password. Please try again.';
-          break;
-        case 'auth/invalid-email':
-          errorMessage = 'Please enter a valid email address.';
-          break;
-        case 'auth/too-many-requests':
-          errorMessage = 'Too many failed login attempts. Please try again later.';
-          break;
-      }
-      toast.error(errorMessage);
+      await login(email, password);
+      // The AuthProvider will handle the redirect on successful login
+    } catch (error) {
+      // The useAuth hook handles error toasts, so we just log here
+      console.error("Login failed from form submission");
     } finally {
       setIsSubmitting(false);
     }
