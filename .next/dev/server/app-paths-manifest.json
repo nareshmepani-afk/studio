@@ -1,3 +1,5 @@
 {
-  "/page": "app/page.js"
+  "/add-memory/page": "app/add-memory/page.js",
+  "/page": "app/page.js",
+  "/prompts/page": "app/prompts/page.js"
 }

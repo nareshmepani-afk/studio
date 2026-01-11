@@ -6,3 +6,21 @@ Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allow
 [00:02:30.077] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
 Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
 [00:02:31.078] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:57:31.124] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[01:05:38.704] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[01:26:49.421] Server  LOG     ○ Compiling /add-memory ...
+[01:27:06.162] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:27:06.587] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[01:27:07.572] Browser LOG     TESTIMONY - flag-tc1-ts1 - START
+[01:27:07.572] Browser LOG     State Before: Initial flag state is unknown.
+[01:27:07.572] Browser LOG     Action: Listening for real-time updates.
+[01:27:07.573] Browser LOG     State After: Initial state of prompt p1 is isFlagged: false.
+[01:27:07.573] Browser LOG     TESTIMONY - flag-tc1-ts1 - END
+[01:27:07.671] Browser LOG     TESTIMONY - media-capture-ts-stop-record - START
+[01:27:07.671] Browser LOG     State Before: Media recorder is in state: undefined
+[01:27:07.671] Browser LOG     Action: Stopping media recording and cleaning up resources.
+[01:27:07.672] Browser LOG     State After: Recording stopped, streams and timers cleaned up.
+[01:27:07.672] Browser LOG     TESTIMONY - media-capture-ts-stop-record - END
+[01:27:27.945] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:27:28.621] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[01:31:16.852] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
