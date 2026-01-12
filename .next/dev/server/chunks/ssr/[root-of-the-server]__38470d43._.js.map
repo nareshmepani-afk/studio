@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 22, "column": 0}, "map": {"version":3,"sources":["file:///home/user/studio/src/app/dashboard/page.tsx"],"sourcesContent":["import { getSession } from \"@/lib/session\";\nimport { redirect } from \"next/navigation\";\n\nexport default async function DashboardPage() {\n  const user = await getSession();\n\n  // If the cookie exists but Firebase says it's invalid/expired\n  if (!user) {\n    redirect(\"/login\");\n  }\n\n  return (\n    <div>\n      <h1>Welcome, {user.email}</h1>\n      {/* Dashboard content */}\n    </div>\n  );\n}\n"],"names":[],"mappings":";;;;;AAAA;AACA;AAAA;;;;AAEe,eAAe;IAC5B,MAAM,OAAO,MAAM,IAAA,mIAAU;IAE7B,8DAA8D;IAC9D,IAAI,CAAC,MAAM;QACT,IAAA,iMAAQ,EAAC;IACX;IAEA,qBACE,8OAAC;kBACC,cAAA,8OAAC;;gBAAG;gBAAU,KAAK,KAAK;;;;;;;;;;;;AAI9B"}}]
+}

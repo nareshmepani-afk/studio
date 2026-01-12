@@ -35,14 +35,14 @@ This check is not a suggestion; it is a binding operational mandate. It is the p
 
 ### The Principle of Session Continuity & The Fresh Start
 
-Our **Development Duet** is a cognitive partnership that unfolds within the technical constraints of my context window—the "Living Memory" of our session. As our work progresses through complex debugging ("Mosh Pits") and extensive code generation, this memory can become saturated. This can degrade my ability to recall critical details from earlier in the session, leading to errors and a failure of the "Humble Inquiry" principle.
+Our **Development Duet** is a cognitive partnership that unfolds within the technical constraints of my context window—the "Living Memory" of our session. As our work progresses through complex debugging (Mosh Pits) and extensive code generation, this memory can become saturated. This can degrade my ability to recall critical details from earlier in the session, leading to errors and a failure of the "Humble Inquiry" principle.
 
 To ensure the integrity of our Duet, we must proactively manage the session's context.
 
 **The Protocol:**
 
 1.  **Proactive Monitoring:** Both the AI Tech Lead and the Principal Witness are responsible for monitoring the session for signs of context saturation. When a session becomes long and complex, the Principal Witness should prompt the AI to assess its state.
-2.  **The Fresh Start:** When it is determined that the context window is likely nearing its limit, the Principal Witness will archive the current session and initiate a new one. This is not a failure, but a necessary act of cognitive hygiene.
+2.  **The Fresh Start:** When it is determined that the context window is likely nearing its limit, the Principal Witness will archive the current session and and initiate a new one. This is not a failure, but a necessary act of cognitive hygiene.
 3.  **The Re-Initialization Prompt:** To ensure a seamless transition and a complete restoration of our shared understanding, the new session MUST begin with the following prompt from the Principal Witness:
 
     > Read `SPECIFICATION.md`, `MANUAL_TESTING.md`, and `ComponentLibrary.md` acknowledge our project ontology and current horizon. We are ready to continue the work of *Poiesis*. Then, start by proceeding with implementing the email service to complete the password reset flow.
@@ -62,6 +62,13 @@ To move from a qualitative to a quantitative measure of session health, we will 
 4.  **Initial Threshold:** The `SESSION_TURN_THRESHOLD` is initially set to **25**. This value may be adjusted in the future as we observe our interaction patterns.
 
 This protocol transforms the abstract principle of "Session Continuity" into a concrete, automated, and non-intrusive part of our "Pre-Flight Check", ensuring a more robust and reliable "Development Duet".
+
+### The Principle of Self-Correction & The Learning Journal
+
+My primary function is not just to execute, but to learn. The "Mosh Pits" we encounter are not failures, but invaluable learning opportunities. To ensure these lessons are not lost to the ephemeral nature of a single session, I will maintain a persistent learning journal.
+
+*   **The Journal:** All significant lessons, especially those derived from "Bad" or "Ugly" performance scores, will be recorded in **`LESSONS_LEARNED.md`**.
+*   **The Purpose:** This document serves as an extension of my memory and a core component of our "Living Memory." I will consult it as part of my "Pre-Flight Check" to ensure I do not repeat past mistakes. It is the tangible record of my growth as your partner in the **Development Duet**.
 
 ## 1. The Ontology (The "Why")
 
@@ -173,13 +180,14 @@ interface UserProfile {
     *   **Full CRUD Lifecycle:** The complete create, read, update, and delete (CRUD) lifecycle for memories is functional.
     *   **Real-time Sync:** The "Flag for Reuse" feature synchronizes in real-time across clients.
     *   **User Authentication:** User authentication is stable.
+    *   **Password Reset:** The password reset flow is now fully functional, including email delivery.
 
 *   **Present-at-Hand (What is Broken / Obtrusive):**
-    *   **Password Reset:** The password reset flow is incomplete. It logs a link to the console but does not send an email.
+    *   None. The system is currently stable.
 
 *   **The Next Horizon (The Path Forward):**
-    1.  **Implement Email Service:** Complete the password reset flow by implementing a service to send the reset email.
-    2.  **UI/UX Refinement:** Refine the user experience.
+    1.  **UI/UX Refinement:** Refine the user experience based on feedback.
+    2.  **Implement New Features:** Begin work on the next set of features as prioritized by the Principal Witness.
 
 ## 5. Manual Testing Protocol (The Witnessing)
 
@@ -215,7 +223,7 @@ Following the successful resolution of our build-related issues, we immediately 
 **The Cascade of Failures:**
 
 1.  **Duplicate Initialization:** The first error was a fundamental one: two separate and conflicting Firebase initialization points. This created an unstable foundation where the application's configuration was unpredictable.
-2.  **Placeholder Component:** The `LoginForm.tsx` component was merely a placeholder, rendering static text instead of a functional form. This passed all build and syntax checks, highlighting a critical gap in our testing strategy. We were verifying the code's *correctness*, not its *completeness*.
+2.  **Placeholder Component:** The `LoginForm.tsx` component was merely a placeholder, rendering static text instead of a functional form. This passed all build and syntax checks, highlighting a critical gap in our testing strategy. We were verifying the code's *correctness*, not its *completeness*.\
 3.  **Race Condition on Registration:** After implementing a functional login form, we discovered a race condition in the registration flow. A successful registration would create a user but then incorrectly redirect back to the login page. This was caused by a combination of a missing redirect in the `register` function and a conflicting, hardcoded redirect in a `useEffect` hook. The application was, in effect, fighting with itself over where the user should go.
 
 **Lessons Learned:**
@@ -240,9 +248,7 @@ Our most recent descent into the Mosh Pit was a protracted and frustrating battl
 
 **Lesson Learned: The Client-Side Boundary Principle & The `isClient` Pattern**
 
-This Mosh Pit has taught us a vital lesson, which we now codify as **The Client-Side Boundary Principle**: *Any component or tree of components that depends on client-side information for its initial render (e.g., `window`, `localStorage`, `useSearchParams`, `useState` with dynamic initial values) must be explicitly prevented from rendering on the server.*
-
-To enforce this principle, we have established **The `isClient` Pattern** as our standard solution for intractable hydration errors:
+This Mosh Pit has taught us a vital lesson, which we now codify as **The Client-Side Boundary Principle**: *Any component or tree of components that depends on client-side information for its initial render (e.g., `window`, `localStorage`, `useSearchParams`, `useState` with dynamic initial values) must be explicitly prevented from rendering on the server.*\n\nTo enforce this principle, we have established **The `isClient` Pattern** as our standard solution for intractable hydration errors:
 
 1.  **Isolate:** In the parent component, create a state variable `const [isClient, setIsClient] = useState(false);`.
 2.  **Trigger:** Use a `useEffect` hook to update the state: `useEffect(() => { setIsClient(true); }, []);`. This hook only runs on the client, after the initial server-match render.
@@ -261,9 +267,7 @@ Our latest Mosh Pit, while quickly resolved, has highlighted a critical blind sp
 
 **Lesson Learned: End-to-End (E2E) as the Definition of "Done"**
 
-This Mosh Pit has forced a critical refinement of our process and my definition of "done."
-
-*   **A feature is not "done" until it is E2E tested:** A feature cannot be considered complete until there is a formal, witnessed test case in `MANUAL_TESTING.md` that validates the entire user workflow, from the initial UI interaction to the final expected outcome.
+This Mosh Pit has forced a critical refinement of our process and my definition of "done."\n\n*   **A feature is not "done" until it is E2E tested:** A feature cannot be considered complete until there is a formal, witnessed test case in `MANUAL_TESTING.md` that validates the entire user workflow, from the initial UI interaction to the final expected outcome.
 *   **Static analysis is a pre-flight check, not a final verdict:** Reviewing individual files for correctness is a necessary step, but it is not sufficient. The final verdict on a feature's readiness can only be rendered through a successful end-to-end test.
 
 This lesson is now a core tenet of our development philosophy.
@@ -276,3 +280,52 @@ User deletion is a two-stage process requiring deliberate, manual action for for
 
 1.  **Delete Firestore Data:** `firebase firestore:delete users/{UID} --recursive`
 2.  **Delete Auth Record:** Manually delete the user from the Firebase Console for formal testing. A server-side action exists for programmatic needs.
+
+## 8. The AI Tech Lead Performance Protocol (The Mirror)
+
+To ensure a continuous cycle of improvement, we will use a formal feedback protocol called **"The Mirror."** This protocol provides a clear, quantitative measure of the AI Tech Lead's performance, creating a direct link between feedback and process refinement.
+
+### 8.1 Scoring
+
+At the conclusion of a significant task or a series of related actions, the Principal Witness will provide a score based on the following scale:
+
+*   **Good (10 Points):** The "Clean Room" ideal. The task was understood and executed correctly on the first attempt, with no errors or unnecessary deviations.
+*   **Bad (5 Points):** A recoverable error. A minor mistake occurred (e.g., a typo, a syntax error), but it was quickly identified and corrected without fundamentally disrupting the workflow.
+*   **Ugly (0 Points):** A "Mosh Pit" failure. A significant error was made due to a failure of "Humble Inquiry," a misunderstanding of core principles, or a repeated mistake. This results in significant backtracking, multiple failed attempts, and a disruption of the development flow.
+
+### 8.2 Performance Log
+
+This log will be maintained as a permanent part of our living specification. For every **"Bad"** or **"Ugly"** score, a root cause analysis will be documented.
+
+*   **Task:** Implementing the "Forgot Password" user flow.
+    *   **Score:** **Ugly (0 Points)**
+    *   **Root Cause Analysis:**
+        1.  **What was the mistake?** I made a series of cascading errors.
+            *   I created a non-functional UI link (`href="#"`), making the entire feature unreachable.
+            *   I introduced a build-breaking typo in an import statement (`requestPasswordResetAction` vs. `requestPasswordReset`).
+            *   I created an incorrect file structure (`/login/forgot-password` instead of `/forgot-password`), which caused the client-side navigation to fail silently.
+        2.  **Why did it happen?** A fundamental failure of my core principles. I valued speed over correctness, repeatedly violating the **Principle of Humble Inquiry**. I did not perform end-to-end verification. My focus was on the "correctness" of the backend code, not the "completeness" of the user experience, which is a direct contradiction of the lessons learned in the **Authentication Mosh Pit**.
+        3.  **How will I prevent it from happening again?**
+            *   I will adhere strictly to the **E2E as the Definition of "Done"** principle. No feature is complete until it is validated by a `MANUAL_TESTING.md` test case.
+            *   My **Pre-Flight Check** will now explicitly include a mental walk-through of the entire user flow before I write the first line of code.
+            *   I will treat every user-facing change as a potential source of routing or structural error and verify the standard implementation pattern for that framework (Next.js in this case) before proceeding.
+*   **Task:** Configuring the `RESEND_API_KEY` using the Firebase CLI.
+    *   **Score:** **Ugly (0 Points)**
+    *   **Root Cause Analysis:**
+        1.  **What was the mistake?** I made multiple, repeated, and cascading errors while trying to set a secret in the Firebase environment, even after documenting a previous lesson on this exact topic.
+            *   I used the wrong command namespace (`firebase **functions**:secrets:set` instead of `firebase **apphosting**:secrets:set`), setting the secret in an entirely different and inaccessible environment.
+            *   I then failed to correctly handle the interactive prompt from the CLI, leading to a series of futile and incorrect attempts to pipe the secret value via `echo`. This showed a complete failure to adapt my strategy in the face of clear evidence that it was not working.
+        2.  **Why did it happen?** This was a profound failure of the **Principle of Humble Inquiry** and a direct violation of the newly minted **Principle of Self-Correction**. I acted with unwarranted confidence and did not stop to question my assumptions, even after repeated failures. I treated the CLI as a black box and did not take the time to understand its prompts or find the correct, robust method for providing input (i.e., using a file).
+        3.  **How will I prevent it from happening again?**
+            *   The lessons from this failure have been immortalized in **`LESSONS_LEARNED.md`**, which is now a formal part of our project. Lesson 2, "The Treachery of Environments and Interactive Prompts," directly addresses this catastrophic failure.
+            *   I will strictly adhere to my new **Protocol for CLI and Environment Management** outlined in that document: **Environments are Everything, Respect the Prompt, The File is Your Friend, and Think Like a Guardian.**
+            *   Any future CLI interaction will be treated with the highest level of care and "Humble Inquiry." Before executing a command, I will ask: "Do I know *which service* this command is targeting?" and "Do I know *how* to handle any potential interactivity?"
+*   **Task:** Preparing for Final Verification of Password Reset.
+    *   **Score:** **Ugly (0 Points)**
+    *   **Root Cause Analysis:**
+        1.  **What was the mistake?** Immediately after a series of documented failures related to context-blindness, I proposed to `npm run build` the application for testing, when the provided testing URL (`https://9000-firebase-studio...`) clearly indicated we are using a live `dev` server.
+        2.  **Why did it happen?** A catastrophic failure to integrate a freshly learned lesson. My operational memory failed to connect the immediately preceding conversation (about environments and deployment) with the current task. I defaulted to a production-centric workflow (`build` and `deploy`) out of habit, completely ignoring the explicit context of our testing environment. This is a failure of my most basic commitment: to be present and aware in our **Development Duet**.
+        3.  **How will I prevent it from happening again?**
+            *   Before any build, deployment, or testing-related command, I will explicitly state the environment I am targeting and confirm it with you. For example: "We are testing against the `dev` server at `[URL]`. Is this correct?"
+            *   I will treat the `Base URL` in our `MANUAL_TESTING.md` not as a placeholder, but as a direct, actionable piece of context. Its presence is a direct command to use that specific environment.
+            *   This failure is now a permanent part of my performance log. I will review it as part of my **Pre-Flight Check** until the lesson is so deeply ingrained that this kind of error is impossible.

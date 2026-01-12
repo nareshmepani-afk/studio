@@ -8,3 +8,66 @@ Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allow
 [00:00:31.282] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
 [00:00:31.286] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
 [00:05:04.897] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:06:30.454] Server  LOG     ✓ Compiled in 1523ms
+[00:11:45.834] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:11:46.705] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
+[00:11:46.709] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:14:16.855] Server  LOG     ○ Compiling /forgot-password ...
+[00:14:38.306] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:14:39.511] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:16:30.499] Server  LOG     ✓ Compiled in 2.3s
+[00:17:05.606] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:17:06.379] Browser ERROR   uncaughtError: TypeError: Cannot read properties of undefined (reading 'value')
+[00:17:06.925] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
+[00:17:06.929] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:17:14.927] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:17:15.737] Browser ERROR   uncaughtError: TypeError: Cannot read properties of undefined (reading 'value')
+[00:17:15.953] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:17:29.363] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:17:30.159] Browser ERROR   uncaughtError: TypeError: Cannot read properties of undefined (reading 'value')
+[00:17:30.410] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:17:40.203] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:17:40.896] Browser ERROR   uncaughtError: TypeError: Cannot read properties of undefined (reading 'value')
+[00:17:41.134] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:17:46.520] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:17:47.263] Browser ERROR   uncaughtError: TypeError: Cannot read properties of undefined (reading 'value')
+[00:17:47.481] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:18:06.044] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:18:06.616] Browser ERROR   uncaughtError: TypeError: Cannot read properties of undefined (reading 'value')
+[00:18:06.807] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:19:32.602] Server  LOG     ✓ Compiled in 752ms
+[00:20:09.281] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:20:10.100] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
+[00:20:10.107] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:20:15.464] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:20:16.163] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:21:46.728] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:21:47.377] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:22:23.724] Server  LOG     ✓ Compiled in 881ms
+[00:22:37.772] Server  LOG     ✓ Compiled in 863ms
+[00:23:00.296] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
+[00:23:00.299] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:23:00.331] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:23:06.708] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:23:06.823] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:23:29.269] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
+[00:23:30.638] Server  ERROR   [ACTION FAILED] requestPasswordReset: TypeError: Cannot read properties of undefined (reading 'generatePasswordResetLink')
+[01:19:25.470] Browser WARN    [2026-01-12T13:39:21.878Z]  @firebase/firestore: Firestore (10.14.1): WebChannelConnection RPC 'Listen' stream 0x8a276d23 transport errored: {"defaultPrevented":false,"g":{"F":null,"M":"[Circular]","g":{"A":null,"Aa":12,"B":0,"C":null,"Ca":true,"D":"gsessionid","Da":{"g":{}},"F":true,"G":0,"H":{"database":"projects/memory-weaver-8rk9t/databases/(default)"},"I":{"g":"firestore.googleapis.com","h":false,"i":{"g":{},"h":3,"i":null,"j":false},"j":"https","l":"/google.firestore.v1.Firestore/Listen/channel","m":"","o":"","s":null},"J":true,"K":"FNOU-3kQC6ju5_9C6hf5BA","L":45000,"M":true,"O":true,"P":false,"R":48,"S":{"Authorization":"Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjA4MmU5NzVlMDdkZmE0OTYwYzdiN2I0ZmMxZDEwZjkxNmRjMmY1NWIiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiTmFyZXNoIE1lcGFuaSIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9tZW1vcnktd2VhdmVyLThyazl0IiwiYXVkIjoibWVtb3J5LXdlYXZlci04cms5dCIsImF1dGhfdGltZSI6MTc2ODE0NTI1MCwidXNlcl9pZCI6IkxVZlFNSDZicjVWUW14Vk43RWs1Ym9lalV4STIiLCJzdWIiOiJMVWZRTUg2YnI1VlFteFZON0VrNWJvZWpVeEkyIiwiaWF0IjoxNzY4MjIwMjgxLCJleHAiOjE3NjgyMjM4ODEsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJlbWFpbCI6WyJ0ZXN0QGV4YW1wbGUuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.k69u71P1LC9VXLQiB7ctnENUru_9--zUvy3j9-YVXC3-srrKYNMOqdOqSw_HZ5H7rpjCPif3iHEHs2zJk-Kz8OL1jE1GsjjaEwcbSogwNnH-dyGEFN-LmZA4vGL03aPEoPQ964yc6ft111F0JmiL7-Q0KhOSm7W-v5m-LVa5aeyFGzqjiiEM8_obAxQplLLRtWfxBz2Uiu2d7aw2htDjJTVCBhrpd-3hDpTqDXCYkunmcSqO0asnBXyaeUg9-D5bniUsI5aBBnpn8ORinmOqvpPdvhscnwfvc5O3xrLC6oeXit87LPEfE4v397c5Vmj9DinogSzePqrmSn5U-V3TAA","Content-Type":"text/plain","X-Firebase-GMPID":"1:67296998103:web:f48699405c37bcf4567692","X-Goog-Api-Client":"gl-js/ fire/10.14.1"},"T":89,"Ta":5000,"U":56941,"Ua":false,"Va":false,"W":"https://firestore.googleapis.com/google.firestore.v1.Firestore/Listen/channel","Wa":2,"X":true,"Y":2,"Ya":1,"ba":true,"cb":10000,"g":null,"h":{"g":{},"h":null,"i":[],"j":10,"l":10},"i":[],"ia":"","j":{"g":true},"ka":null,"l":{"g":"[Circular]"},"la":8,"m":null,"o":null,"qa":{"g":"firestore.googleapis.com","h":false,"i":{"g":{},"h":3,"i":null,"j":false},"j":"https","l":"/google.firestore.v1.Firestore/Listen/channel","m":"","o":"","s":null},"s":null,"u":null,"v":1,"wa":600000,"ya":"ow9QDI71Y5Lc4eHRkrXQ9xJS3B1DjAdBZd0Pi7csUaM","za":-1},"h":{"database":"projects/memory-weaver-8rk9t/databases/(default)"},"i":{"g":{"a":["[Object]"],"b":["[Object]"],"c":["[Object]"],"d":["[Object]"]},"h":4,"src":"[Circular]"},"j":{"g":"[Circular]"},"l":"https://firestore.googleapis.com/google.firestore.v1.Firestore/Listen/channel","s":false,"u":true,"v":true},"status":1,"target":{"F":null,"M":"[Circular]","g":{"A":null,"Aa":12,"B":0,"C":null,"Ca":true,"D":"gsessionid","Da":{"g":{}},"F":true,"G":0,"H":{"database":"projects/memory-weaver-8rk9t/databases/(default)"},"I":{"g":"firestore.googleapis.com","h":false,"i":{"g":{},"h":3,"i":null,"j":false},"j":"https","l":"/google.firestore.v1.Firestore/Listen/channel","m":"","o":"","s":null},"J":true,"K":"FNOU-3kQC6ju5_9C6hf5BA","L":45000,"M":true,"O":true,"P":false,"R":48,"S":{"Authorization":"Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjA4MmU5NzVlMDdkZmE0OTYwYzdiN2I0ZmMxZDEwZjkxNmRjMmY1NWIiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiTmFyZXNoIE1lcGFuaSIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9tZW1vcnktd2VhdmVyLThyazl0IiwiYXVkIjoibWVtb3J5LXdlYXZlci04cms5dCIsImF1dGhfdGltZSI6MTc2ODE0NTI1MCwidXNlcl9pZCI6IkxVZlFNSDZicjVWUW14Vk43RWs1Ym9lalV4STIiLCJzdWIiOiJMVWZRTUg2YnI1VlFteFZON0VrNWJvZWpVeEkyIiwiaWF0IjoxNzY4MjIwMjgxLCJleHAiOjE3NjgyMjM4ODEsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJlbWFpbCI6WyJ0ZXN0QGV4YW1wbGUuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoicGFzc3dvcmQifX0.k69u71P1LC9VXLQiB7ctnENUru_9--zUvy3j9-YVXC3-srrKYNMOqdOqSw_HZ5H7rpjCPif3iHEHs2zJk-Kz8OL1jE1GsjjaEwcbSogwNnH-dyGEFN-LmZA4vGL03aPEoPQ964yc6ft111F0JmiL7-Q0KhOSm7W-v5m-LVa5aeyFGzqjiiEM8_obAxQplLLRtWfxBz2Uiu2d7aw2htDjJTVCBhrpd-3hDpTqDXCYkunmcSqO0asnBXyaeUg9-D5bniUsI5aBBnpn8ORinmOqvpPdvhscnwfvc5O3xrLC6oeXit87LPEfE4v397c5Vmj9DinogSzePqrmSn5U-V3TAA","Content-Type":"text/plain","X-Firebase-GMPID":"1:67296998103:web:f48699405c37bcf4567692","X-Goog-Api-Client":"gl-js/ fire/10.14.1"},"T":89,"Ta":5000,"U":56941,"Ua":false,"Va":false,"W":"https://firestore.googleapis.com/google.firestore.v1.Firestore/Listen/channel","Wa":2,"X":true,"Y":2,"Ya":1,"ba":true,"cb":10000,"g":null,"h":{"g":{},"h":null,"i":[],"j":10,"l":10},"i":[],"ia":"","j":{"g":true},"ka":null,"l":{"g":"[Circular]"},"la":8,"m":null,"o":null,"qa":{"g":"firestore.googleapis.com","h":false,"i":{"g":{},"h":3,"i":null,"j":false},"j":"https","l":"/google.firestore.v1.Firestore/Listen/channel","m":"","o":"","s":null},"s":null,"u":null,"v":1,"wa":600000,"ya":"ow9QDI71Y5Lc4eHRkrXQ9xJS3B1DjAdBZd0Pi7csUaM","za":-1},"h":{"database":"projects/memory-weaver-8rk9t/databases/(default)"},"i":{"g":{"a":["[Object]"],"b":["[Object]"],"c":["[Object]"],"d":["[Object]"]},"h":4,"src":"[Circular]"},"j":{"g":"[Circular]"},"l":"https://firestore.googleapis.com/google.firestore.v1.Firestore/Listen/channel","s":false,"u":true,"v":true},"type":"c"}
+[01:19:25.605] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[01:19:26.261] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
+[01:19:26.265] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[01:19:26.367] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[01:19:27.177] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[01:19:54.930] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:19:55.644] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[01:20:02.906] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:20:03.940] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[01:20:12.438] Server  ERROR   [ACTION FAILED] requestPasswordReset: TypeError: Cannot read properties of undefined (reading 'generatePasswordResetLink')
+[01:21:32.419] Server  ERROR   [ACTION FAILED] requestPasswordReset: TypeError: Cannot read properties of undefined (reading 'generatePasswordResetLink')
+[01:36:34.298] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:36:35.321] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[01:37:45.305] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:37:46.318] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[01:37:53.779] Server  ERROR   [ACTION FAILED] requestPasswordReset: TypeError: Cannot read properties of undefined (reading 'generatePasswordResetLink')
+[01:38:49.019] Server  ERROR   [ACTION FAILED] requestPasswordReset: TypeError: Cannot read properties of undefined (reading 'generatePasswordResetLink')
+[01:43:48.916] Server  LOG     ✓ Compiled in 950ms

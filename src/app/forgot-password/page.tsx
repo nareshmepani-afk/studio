@@ -40,7 +40,7 @@ const ForgotPasswordForm = () => {
     <div className="flex justify-center items-center min-h-screen">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Forgot Password</CardTitle>
+          <CardTitle className="text-2xl">Reset Your Password</CardTitle>
           <CardDescription>
             Enter your email and we'll send you a link to reset your password.
           </CardDescription>

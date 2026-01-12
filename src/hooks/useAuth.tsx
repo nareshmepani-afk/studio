@@ -29,7 +29,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const PRIVATE_ROUTES = ['/dashboard', '/timeline', '/add-memory', '/prompts', '/settings', '/requests'];
-const PUBLIC_ONLY_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password'];
+const PUBLIC_ROUTES = ['/', '/forgot-password', '/reset-password'];
+const PUBLIC_ONLY_ROUTES = ['/login', '/register'];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<CombinedUser | null>(null);
@@ -75,14 +76,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (loading) return;
-    
+
     const isPrivateRoute = PRIVATE_ROUTES.some(route => pathname.startsWith(route));
+    const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route));
     const isPublicOnlyRoute = PUBLIC_ONLY_ROUTES.some(route => pathname.startsWith(route));
 
-    if (!isAuthenticated && isPrivateRoute) {
-      router.push('/login');
-    } else if (isAuthenticated && isPublicOnlyRoute) {
-      router.push('/dashboard');
+    if (isAuthenticated) {
+      if (isPublicOnlyRoute) {
+        router.push('/dashboard');
+      }
+    } else {
+      if (isPrivateRoute) {
+        router.push('/login');
+      }
     }
   }, [isAuthenticated, loading, pathname, router]);
 
