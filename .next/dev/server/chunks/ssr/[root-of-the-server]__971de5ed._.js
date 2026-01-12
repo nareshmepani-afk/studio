@@ -101,7 +101,9 @@ async function setSessionCookie(sessionCookie, expiresIn) {
 }
 async function deleteSession() {
     const cookieStore = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$headers$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["cookies"])();
-    cookieStore.delete("firebase-session");
+    cookieStore.set("firebase-session", "", {
+        expires: new Date(0)
+    });
 }
 }),
 "[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)", ((__turbopack_context__) => {
