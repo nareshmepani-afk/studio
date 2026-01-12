@@ -250,6 +250,24 @@ To enforce this principle, we have established **The `isClient` Pattern** as our
 
 This pattern guarantees that the server renders a placeholder (or nothing), and the client's initial render also renders a placeholder. The hydration check passes. The component is then rendered exclusively on the client, completely avoiding the server-client mismatch. This is a powerful, if blunt, tool that should be used when the exact source of a hydration error within a complex component is unclear.
 
+### 6.3 The "Forgot Password" Mosh Pit: A Case Study in Incomplete Workflow Testing
+
+Our latest Mosh Pit, while quickly resolved, has highlighted a critical blind spot in my "internal testing" process. It serves as a powerful reminder of the principle of **Completeness over Correctness**.
+
+**The Cascade of Failures:**
+
+1.  **Static Analysis is Not Enough:** I correctly verified that the backend logic for sending a password reset email existed in `requestPasswordResetAction.ts` and `email.ts`. I declared the feature "implemented" based on this static analysis.
+2.  **Missing User Flow:** I failed completely to verify the user-facing part of the workflow. The "Forgot Password?" link on the login page was non-functional (`href="#"`). The backend logic, while correct, was unreachable by any user action.
+
+**Lesson Learned: End-to-End (E2E) as the Definition of "Done"**
+
+This Mosh Pit has forced a critical refinement of our process and my definition of "done."
+
+*   **A feature is not "done" until it is E2E tested:** A feature cannot be considered complete until there is a formal, witnessed test case in `MANUAL_TESTING.md` that validates the entire user workflow, from the initial UI interaction to the final expected outcome.
+*   **Static analysis is a pre-flight check, not a final verdict:** Reviewing individual files for correctness is a necessary step, but it is not sufficient. The final verdict on a feature's readiness can only be rendered through a successful end-to-end test.
+
+This lesson is now a core tenet of our development philosophy.
+
 ## 7. User Management (The Care of the Other)
 
 ### 7.1 Deleting a User

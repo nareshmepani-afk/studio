@@ -1,9 +1,7 @@
-
 'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,23 +13,24 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { requestPasswordReset } from '@/actions/requestPasswordResetAction';
 
-const LoginForm = () => {
-  const { login } = useAuth();
-  const [email, setEmail] = useState('test@example.com');
-  const [password, setPassword] = useState('password');
+const ForgotPasswordForm = () => {
+  const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState('');
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsSubmitting(true);
+    setMessage('');
 
     try {
-      await login(email, password);
-      // The AuthProvider will handle the redirect on successful login
+      const response = await requestPasswordReset(email);
+      setMessage(response.message);
     } catch (error) {
-      // The useAuth hook handles error toasts, so we just log here
-      console.error("Login failed from form submission");
+      console.error("Password reset request failed unexpectedly:", error);
+      setMessage('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -41,9 +40,9 @@ const LoginForm = () => {
     <div className="flex justify-center items-center min-h-screen">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Sign In</CardTitle>
+          <CardTitle className="text-2xl">Forgot Password</CardTitle>
           <CardDescription>
-            Enter your email below to sign in to your account.
+            Enter your email and we'll send you a link to reset your password.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -60,27 +59,15 @@ const LoginForm = () => {
                 disabled={isSubmitting}
               />
             </div>
-            <div className="grid gap-2">
-              <div className="flex items-center">
-                <Label htmlFor="password">Password</Label>
-                <Link href="/login/forgot-password" className="ml-auto inline-block text-sm underline">
-                  Forgot your password?
-                </Link>
-              </div>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isSubmitting}
-              />
-            </div>
+            {message && <p className="text-sm text-gray-500 mt-2">{message}</p>}
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col gap-4">
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Signing In...' : 'Sign In'}
+              {isSubmitting ? 'Sending Link...' : 'Send Reset Link'}
             </Button>
+            <Link href="/login" className="text-sm underline">
+              Back to Sign In
+            </Link>
           </CardFooter>
         </form>
       </Card>
@@ -88,4 +75,4 @@ const LoginForm = () => {
   );
 };
 
-export default LoginForm;
+export default ForgotPasswordForm;

@@ -1,8 +1,10 @@
-[00:00:18.338] Server  LOG     ✓ Ready in 14.3s
-[00:00:21.371] Server  LOG     ○ Compiling / ...
-[00:00:32.049] Server  WARN    ⚠ Cross origin request detected from 6000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+[00:00:14.765] Server  LOG     ✓ Ready in 13.9s
+[00:00:17.818] Server  LOG     ○ Compiling / ...
+[00:00:29.564] Server  WARN    ⚠ Cross origin request detected from 6000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
 Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
-[00:00:32.942] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
-[00:15:14.840] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+[00:00:29.957] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
 Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
-[00:15:16.483] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:00:30.095] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:31.282] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
+[00:00:31.286] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:05:04.897] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
