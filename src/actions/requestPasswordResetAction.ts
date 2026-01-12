@@ -31,9 +31,8 @@ export async function requestPasswordReset(email: string): Promise<ActionRespons
         return { success: true, message: 'If an account with that email exists, a password reset link has been sent.' };
     }
 
-    // For all other errors, log them and return a more informative failure message for debugging.
+    // For all other errors, log them and re-throw to provide a full stack trace on the client.
     console.error('[ACTION FAILED] requestPasswordReset:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-    return { success: false, message: `Action failed: ${errorMessage}. Please check server logs.` };
+    throw error;
   }
 }

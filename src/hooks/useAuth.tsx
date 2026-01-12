@@ -47,9 +47,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const idToken = await firebaseUser.getIdToken();
-        await createSessionAction(idToken);
-        
         const userProfileRef = doc(db, 'users', firebaseUser.uid);
         const profileUnsubscribe = onSnapshot(userProfileRef, (doc) => {
           if (doc.exists()) {
@@ -65,7 +62,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         return () => profileUnsubscribe();
       } else {
-        await deleteSessionAction();
         setUser(null);
         setLoading(false);
       }
@@ -100,6 +96,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await userCredential.user.getIdToken();
+      await createSessionAction(idToken);
       console.log('State After: Login successful.');
       console.log('New User State:', {
         uid: userCredential.user.uid,
@@ -125,6 +123,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
+      
+      const idToken = await firebaseUser.getIdToken();
+      await createSessionAction(idToken);
 
       await updateProfile(firebaseUser, { displayName: name });
       
@@ -167,6 +168,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('Action: Logging out user.');
 
     await signOut(auth);
+    await deleteSessionAction();
+    setUser(null);
     
     console.log('State After: User is logged out. Redirecting to homepage.');
     router.push('/');

@@ -2,6 +2,30 @@
   "node": {
     "40283785d06fe4a4ff265b05f767de2bc35f02b5a1": {
       "workers": {
+        "app/_not-found/page": {
+          "moduleId": "[project]/.next-internal/server/app/_not-found/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "createSessionAction",
+          "filename": "src/actions/createSessionAction.ts"
+        },
+        "app/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "createSessionAction",
+          "filename": "src/actions/createSessionAction.ts"
+        },
+        "app/forgot-password/page": {
+          "moduleId": "[project]/.next-internal/server/app/forgot-password/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/actions/requestPasswordResetAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "createSessionAction",
+          "filename": "src/actions/createSessionAction.ts"
+        },
+        "app/login/page": {
+          "moduleId": "[project]/.next-internal/server/app/login/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "createSessionAction",
+          "filename": "src/actions/createSessionAction.ts"
+        },
         "app/page": {
           "moduleId": "[project]/.next-internal/server/app/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": false,
@@ -10,6 +34,10 @@
         }
       },
       "layer": {
+        "app/_not-found/page": "action-browser",
+        "app/dashboard/page": "action-browser",
+        "app/forgot-password/page": "action-browser",
+        "app/login/page": "action-browser",
         "app/page": "action-browser"
       },
       "filename": "src/actions/createSessionAction.ts",
@@ -17,6 +45,30 @@
     },
     "00d38ff2ea3f621d1e67e4caa6ce7f03f8bb16059a": {
       "workers": {
+        "app/_not-found/page": {
+          "moduleId": "[project]/.next-internal/server/app/_not-found/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "deleteSessionAction",
+          "filename": "src/actions/createSessionAction.ts"
+        },
+        "app/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "deleteSessionAction",
+          "filename": "src/actions/createSessionAction.ts"
+        },
+        "app/forgot-password/page": {
+          "moduleId": "[project]/.next-internal/server/app/forgot-password/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/actions/requestPasswordResetAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "deleteSessionAction",
+          "filename": "src/actions/createSessionAction.ts"
+        },
+        "app/login/page": {
+          "moduleId": "[project]/.next-internal/server/app/login/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "deleteSessionAction",
+          "filename": "src/actions/createSessionAction.ts"
+        },
         "app/page": {
           "moduleId": "[project]/.next-internal/server/app/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
           "async": false,
@@ -25,10 +77,29 @@
         }
       },
       "layer": {
+        "app/_not-found/page": "action-browser",
+        "app/dashboard/page": "action-browser",
+        "app/forgot-password/page": "action-browser",
+        "app/login/page": "action-browser",
         "app/page": "action-browser"
       },
       "filename": "src/actions/createSessionAction.ts",
       "exportedName": "deleteSessionAction"
+    },
+    "40ae70ceb949f230ee2c0656f962c4630e31932372": {
+      "workers": {
+        "app/forgot-password/page": {
+          "moduleId": "[project]/.next-internal/server/app/forgot-password/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/actions/requestPasswordResetAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "requestPasswordReset",
+          "filename": "src/actions/requestPasswordResetAction.ts"
+        }
+      },
+      "layer": {
+        "app/forgot-password/page": "action-browser"
+      },
+      "filename": "src/actions/requestPasswordResetAction.ts",
+      "exportedName": "requestPasswordReset"
     }
   },
   "edge": {},

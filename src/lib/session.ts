@@ -48,5 +48,5 @@ export async function setSessionCookie(sessionCookie: string, expiresIn: number)
 
 export async function deleteSession() {
   const cookieStore = await cookies();
-  cookieStore.delete("firebase-session");
+  cookieStore.set("firebase-session", "", { expires: new Date(0) });
 }

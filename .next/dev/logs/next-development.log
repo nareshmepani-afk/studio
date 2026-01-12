@@ -23,3 +23,1143 @@ Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allow
 [00:02:14.135] Server  LOG       Reload env: .env.local
 [00:02:23.246] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
 [00:02:23.253] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:19:27.514] Server  LOG     ✓ Compiled in 10.7s
+[00:26:37.684] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:26:38.258] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:26:48.212] Server  LOG     ○ Compiling /forgot-password ...
+[00:26:50.628] Server  ERROR   ⨯ ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:26:50.994] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:26:50.994] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:26:52.443] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:26:52.677] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:26:54.041] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:26:54.108] Server  ERROR   ⨯ ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:26:55.386] Browser ERROR   uncaughtError: Error: ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:26:55.639] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:26:55.639] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:27:18.928] Browser ERROR   uncaughtError: Error: ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:27:19.691] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:27:19.829] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:27:19.829] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:27:22.000] Browser ERROR   uncaughtError: Error: ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:27:22.227] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:27:22.227] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:27:26.366] Browser ERROR   uncaughtError: Error: ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:27:26.498] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:27:26.619] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:27:39.814] Browser ERROR   uncaughtError: Error: ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:27:40.076] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:27:40.076] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authActions'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/app/actions/authActions';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authActions' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:29:23.255] Server  ERROR   ⨯ ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authAction'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordReset } from '@/app/actions/authAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authAction' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:29:23.274] Server  ERROR   ⨯ ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authAction'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordReset } from '@/app/actions/authAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authAction' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:29:23.292] Server  ERROR   ⨯ ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authAction'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordReset } from '@/app/actions/authAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authAction' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:29:23.305] Server  ERROR   ⨯ ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authAction'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordReset } from '@/app/actions/authAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authAction' inside of [project]/
+
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[00:29:23.453] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Module not found: Can't resolve '@/app/actions/authAction'
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordReset } from '@/app/actions/authAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+Import map: aliased to relative './src/app/actions/authAction' inside of [project]/
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+[00:31:04.750] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Export requestPasswordResetAction doesn't exist in target module
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/actions/requestPasswordResetAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+The export requestPasswordResetAction was not found in module [project]/src/actions/requestPasswordResetAction.ts [app-client] (ecmascript).
+Did you mean to import requestPasswordReset?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:31:04.750] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Export requestPasswordResetAction doesn't exist in target module
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordResetAction } from '@/actions/requestPasswordResetAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import { Button } from '@/components/ui/button';
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+
+The export requestPasswordResetAction was not found in module [project]/src/actions/requestPasswordResetAction.ts [app-ssr] (ecmascript).
+Did you mean to import requestPasswordReset?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:32:27.368] Browser ERROR   ./src/app/forgot-password/page.tsx:60:18
+Parsing ecmascript source code failed
+  58 |             Enter your email and we'll send you a link to reset your password.
+  59 |           </CardDescription>
+> 60 |         </Header>
+     |                  ^
+> 61 |         <form onSubmit={handleSubmit}>
+     | ^^^^^^^^^
+  62 |           <CardContent className="grid gap-4">
+  63 |             <div className="grid gap-2">
+  64 |               <Label htmlFor="email">Email</Label>
+
+Expected '</', got 'jsx text (
+        )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:32:27.368] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Export requestPasswordResetAction doesn't exist in target module
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordReset } from '@/actions/requestPasswordResetAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 6 | import { Button } from '@/components/ui/button';
+    | ^^^^^^
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+  9 | import {
+
+The export requestPasswordResetAction was not found in module [project]/src/actions/requestPasswordResetAction.ts [app-client] (ecmascript).
+Did you mean to import requestPasswordReset?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:32:27.368] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Export requestPasswordResetAction doesn't exist in target module
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordReset } from '@/actions/requestPasswordResetAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 6 | import { Button } from '@/components/ui/button';
+    | ^^^^^^
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+  9 | import {
+
+The export requestPasswordResetAction was not found in module [project]/src/actions/requestPasswordResetAction.ts [app-ssr] (ecmascript).
+Did you mean to import requestPasswordReset?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:35:43.003] Browser ERROR   uncaughtError: Error: ./src/app/forgot-password/page.tsx:60:18
+Parsing ecmascript source code failed
+  58 |             Enter your email and we'll send you a link to reset your password.
+  59 |           </CardDescription>
+> 60 |         </Header>
+     |                  ^
+> 61 |         <form onSubmit={handleSubmit}>
+     | ^^^^^^^^^
+  62 |           <CardContent className="grid gap-4">
+  63 |             <div className="grid gap-2">
+  64 |               <Label htmlFor="email">Email</Label>
+
+Expected '</', got 'jsx text (
+        )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+
+[00:35:43.532] Browser ERROR   ./src/app/forgot-password/page.tsx:60:18
+Parsing ecmascript source code failed
+  58 |             Enter your email and we'll send you a link to reset your password.
+  59 |           </CardDescription>
+> 60 |         </Header>
+     |                  ^
+> 61 |         <form onSubmit={handleSubmit}>
+     | ^^^^^^^^^
+  62 |           <CardContent className="grid gap-4">
+  63 |             <div className="grid gap-2">
+  64 |               <Label htmlFor="email">Email</Label>
+
+Expected '</', got 'jsx text (
+        )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:35:43.532] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Export requestPasswordResetAction doesn't exist in target module
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordReset } from '@/actions/requestPasswordResetAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 6 | import { Button } from '@/components/ui/button';
+    | ^^^^^^
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+  9 | import {
+
+The export requestPasswordResetAction was not found in module [project]/src/actions/requestPasswordResetAction.ts [app-client] (ecmascript).
+Did you mean to import requestPasswordReset?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:35:43.532] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Export requestPasswordResetAction doesn't exist in target module
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordReset } from '@/actions/requestPasswordResetAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 6 | import { Button } from '@/components/ui/button';
+    | ^^^^^^
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+  9 | import {
+
+The export requestPasswordResetAction was not found in module [project]/src/actions/requestPasswordResetAction.ts [app-ssr] (ecmascript).
+Did you mean to import requestPasswordReset?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:35:43.532] Browser ERROR   ./src/app/forgot-password/page.tsx:60:18
+Parsing ecmascript source code failed
+  58 |             Enter your email and we'll send you a link to reset your password.
+  59 |           </CardDescription>
+> 60 |         </Header>
+     |                  ^
+> 61 |         <form onSubmit={handleSubmit}>
+     | ^^^^^^^^^
+  62 |           <CardContent className="grid gap-4">
+  63 |             <div className="grid gap-2">
+  64 |               <Label htmlFor="email">Email</Label>
+
+Expected '</', got 'jsx text (
+        )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:35:43.532] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Export requestPasswordResetAction doesn't exist in target module
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordReset } from '@/actions/requestPasswordResetAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 6 | import { Button } from '@/components/ui/button';
+    | ^^^^^^
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+  9 | import {
+
+The export requestPasswordResetAction was not found in module [project]/src/actions/requestPasswordResetAction.ts [app-client] (ecmascript).
+Did you mean to import requestPasswordReset?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:35:43.532] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Export requestPasswordResetAction doesn't exist in target module
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordReset } from '@/actions/requestPasswordResetAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 6 | import { Button } from '@/components/ui/button';
+    | ^^^^^^
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+  9 | import {
+
+The export requestPasswordResetAction was not found in module [project]/src/actions/requestPasswordResetAction.ts [app-ssr] (ecmascript).
+Did you mean to import requestPasswordReset?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:37:50.496] Browser ERROR   uncaughtError: Error: ./src/app/forgot-password/page.tsx:60:18
+Parsing ecmascript source code failed
+  58 |             Enter your email and we'll send you a link to reset your password.
+  59 |           </CardDescription>
+> 60 |         </Header>
+     |                  ^
+> 61 |         <form onSubmit={handleSubmit}>
+     | ^^^^^^^^^
+  62 |           <CardContent className="grid gap-4">
+  63 |             <div className="grid gap-2">
+  64 |               <Label htmlFor="email">Email</Label>
+
+Expected '</', got 'jsx text (
+        )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+
+[00:37:50.970] Browser ERROR   ./src/app/forgot-password/page.tsx:60:18
+Parsing ecmascript source code failed
+  58 |             Enter your email and we'll send you a link to reset your password.
+  59 |           </CardDescription>
+> 60 |         </Header>
+     |                  ^
+> 61 |         <form onSubmit={handleSubmit}>
+     | ^^^^^^^^^
+  62 |           <CardContent className="grid gap-4">
+  63 |             <div className="grid gap-2">
+  64 |               <Label htmlFor="email">Email</Label>
+
+Expected '</', got 'jsx text (
+        )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:37:50.970] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Export requestPasswordResetAction doesn't exist in target module
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordReset } from '@/actions/requestPasswordResetAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 6 | import { Button } from '@/components/ui/button';
+    | ^^^^^^
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+  9 | import {
+
+The export requestPasswordResetAction was not found in module [project]/src/actions/requestPasswordResetAction.ts [app-client] (ecmascript).
+Did you mean to import requestPasswordReset?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:37:50.970] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Export requestPasswordResetAction doesn't exist in target module
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordReset } from '@/actions/requestPasswordResetAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 6 | import { Button } from '@/components/ui/button';
+    | ^^^^^^
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+  9 | import {
+
+The export requestPasswordResetAction was not found in module [project]/src/actions/requestPasswordResetAction.ts [app-ssr] (ecmascript).
+Did you mean to import requestPasswordReset?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:37:50.970] Browser ERROR   ./src/app/forgot-password/page.tsx:60:18
+Parsing ecmascript source code failed
+  58 |             Enter your email and we'll send you a link to reset your password.
+  59 |           </CardDescription>
+> 60 |         </Header>
+     |                  ^
+> 61 |         <form onSubmit={handleSubmit}>
+     | ^^^^^^^^^
+  62 |           <CardContent className="grid gap-4">
+  63 |             <div className="grid gap-2">
+  64 |               <Label htmlFor="email">Email</Label>
+
+Expected '</', got 'jsx text (
+        )'
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:37:50.970] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Export requestPasswordResetAction doesn't exist in target module
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordReset } from '@/actions/requestPasswordResetAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 6 | import { Button } from '@/components/ui/button';
+    | ^^^^^^
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+  9 | import {
+
+The export requestPasswordResetAction was not found in module [project]/src/actions/requestPasswordResetAction.ts [app-client] (ecmascript).
+Did you mean to import requestPasswordReset?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:37:50.970] Browser ERROR   ./src/app/forgot-password/page.tsx:5:1
+Export requestPasswordResetAction doesn't exist in target module
+  3 |
+  4 | import React, { useState, useTransition } from 'react';
+> 5 | import { requestPasswordReset } from '@/actions/requestPasswordResetAction';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 6 | import { Button } from '@/components/ui/button';
+    | ^^^^^^
+  7 | import { Input } from '@/components/ui/input';
+  8 | import { Label } from '@/components/ui/label';
+  9 | import {
+
+The export requestPasswordResetAction was not found in module [project]/src/actions/requestPasswordResetAction.ts [app-ssr] (ecmascript).
+Did you mean to import requestPasswordReset?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./src/app/forgot-password/page.tsx [Client Component Browser]
+    ./src/app/forgot-password/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/forgot-password/page.tsx [Client Component SSR]
+    ./src/app/forgot-password/page.tsx [Server Component]
+[00:38:43.832] Server  LOG     ✓ Compiled in 667ms
+[00:38:45.869] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:38:47.257] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:41:56.588] Browser ERROR   {}
+[00:41:56.588] Browser ERROR   {}
+[00:42:10.373] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:42:11.176] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:42:23.883] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:42:24.670] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:42:27.948] Browser ERROR   {}
+[00:42:27.948] Browser ERROR   {}
+[00:43:33.897] Server  LOG     ✓ Compiled in 715ms
+[00:45:02.305] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:45:02.950] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
+[00:45:02.993] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:45:15.424] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:45:16.574] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:45:48.616] Server  ERROR   [ACTION FAILED] requestPasswordReset: TypeError: Cannot read properties of undefined (reading 'generatePasswordResetLink')
+[00:47:49.545] Server  LOG     ✓ Compiled in 0ms
+[00:50:39.801] Server  LOG     ✓ Compiled in 26ms
+[00:56:27.203] Server  LOG     [firebase-admin] Admin SDK initialized successfully with hardcoded service account.
+[01:05:22.499] Server  LOG     ○ Compiling /_not-found/page ...
+[01:05:29.337] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:05:48.695] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:14:55.643] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:15:39.177] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:19:46.612] Server  LOG     ✓ Compiled in 109ms
+[01:24:57.778] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:25:02.002] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:27:06.365] Server  LOG     ✓ Compiled in 61ms
+[01:28:41.571] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:28:45.922] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:30:13.066] Server  LOG     ✓ Compiled in 122ms
+[01:31:07.881] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:31:13.812] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:32:22.148] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:33:54.186] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[01:33:59.655] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold

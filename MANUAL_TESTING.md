@@ -27,6 +27,41 @@ To bridge the gap between idea and execution, the testing process now incorporat
 
 ---
 
+## Active Test Session: `password-reset-2024-05-23-final-witnessed`
+
+**Objective:** To provide a definitive, witnessed validation of the end-to-end password reset functionality, confirming the fix for the Firebase Admin SDK initialization and the `RESEND_API_KEY` configuration.
+
+**Base URL:** (To be provided by the testing environment)
+
+### Test Case 0: Full Password Reset and Login
+
+*   **Objective:** To ensure a user can successfully request a password reset, receive the email, change their password, and log in with the new credentials.
+
+*   **Test Step ID:** `witness-reset-tc0-ts1`
+    *   **Instruction:** Navigate to the login page. Click the "Forgot Password?" link.
+    *   **Expected Result:** You are navigated to the `/forgot-password` page.
+
+*   **Test Step ID:** `witness-reset-tc0-ts2`
+    *   **Instruction:** Enter the email address of a registered test user (`test@example.com`) and click the "Send Reset Link" button.
+    *   **Expected Result:** A success message is displayed. The console logs a successful call to the `requestPasswordResetAction`, and, crucially, **no errors related to the email service or Firebase Admin SDK** are present.
+
+*   **Test Step ID:** `witness-reset-tc0-ts3`
+    *   **Instruction:** Check the inbox for the email address you entered. Did you receive a password reset email from `noreply@memoryweaver.studio`?
+
+*   **Test Step ID:** `witness-reset-tc0-ts4`
+    *   **Instruction:** Click the reset link in the email.
+    *   **Expected Result:** You are navigated to the password reset page, which allows you to set a new password.
+
+*   **Test Step ID:** `witness-reset-tc0-ts5`
+    *   **Instruction:** Enter and confirm a new password and submit the form.
+    *   **Expected Result:** The password is changed successfully. You are redirected to the login page with a success message.
+
+*   **Test Step ID:** `witness-reset-tc0-ts6`
+    *   **Instruction:** Log in with the new password.
+    *   **Expected Result:** Login is successful. You are redirected to the `/dashboard` page and a welcome message is displayed.
+
+---
+
 ## Active Test Session: `password-reset-2024-05-23-final`
 
 **Objective:** To provide a definitive, witnessed validation of the end-to-end password reset functionality, confirming the fix for the `RESEND_API_KEY` configuration.
