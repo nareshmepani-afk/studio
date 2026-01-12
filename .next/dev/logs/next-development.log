@@ -1,21 +1,322 @@
-[00:00:11.392] Server  LOG     ✓ Ready in 8.4s
-[00:00:11.408] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+[00:00:04.833] Server  LOG     ✓ Ready in 3.7s
+[00:00:04.842] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
 Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
-[00:00:15.676] Server  LOG     ○ Compiling / ...
-[00:00:18.532] Server  LOG     [firebase-admin] Admin SDK initialized successfully with hardcoded service account.
-[00:00:22.518] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:29.786] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:34.550] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:01:08.199] Server  LOG     ○ Compiling /forgot-password ...
-[00:01:14.520] Server  ERROR   [ACTION FAILED] requestPasswordReset: Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
-[00:01:15.430] Server  ERROR   ⨯ Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
-[00:05:21.196] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:25:29.514] Server  LOG       Reload env: .env.local
-[00:26:45.883] Server  LOG       Reload env: .env
-[00:26:49.163] Server  LOG       Reload env: .env
-[01:29:49.939] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[01:33:40.517] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[01:33:53.652] Server  WARN    ⚠ Cross origin request detected from 6000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
-Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
-[01:35:37.859] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[01:35:50.261] Server  LOG     Password reset email successfully sent to test@example.com
+[00:00:05.809] Server  ERROR   ⨯ ./src/actions/createSessionAction.ts:4:1
+Export adminAuth doesn't exist in target module
+  2 |
+  3 | import { setSessionCookie, deleteSession } from "@/lib/session";
+> 4 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 |
+  6 | export async function createSessionAction(idToken: string) {
+  7 |   if (!adminAuth) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+
+
+./src/actions/requestPasswordResetAction.ts:4:1
+Export adminAuth doesn't exist in target module
+  2 |
+  3 | import { ActionResponse } from '@/types';
+> 4 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { sendPasswordResetEmail } from '@/lib/email';
+  6 |
+  7 | /**
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+
+
+./src/lib/session.ts:2:1
+Export adminAuth doesn't exist in target module
+  1 | import { cookies } from "next/headers";
+> 2 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | // This function is now centralized here.
+  5 | async function getAuthenticatedUser(sessionCookie: string) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/lib/session.ts
+    ./src/actions/createSessionAction.ts
+
+
+[00:00:05.839] Server  ERROR   ⨯ ./src/actions/createSessionAction.ts:4:1
+Export adminAuth doesn't exist in target module
+  2 |
+  3 | import { setSessionCookie, deleteSession } from "@/lib/session";
+> 4 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 |
+  6 | export async function createSessionAction(idToken: string) {
+  7 |   if (!adminAuth) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+
+
+./src/lib/session.ts:2:1
+Export adminAuth doesn't exist in target module
+  1 | import { cookies } from "next/headers";
+> 2 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | // This function is now centralized here.
+  5 | async function getAuthenticatedUser(sessionCookie: string) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/lib/session.ts
+    ./src/actions/createSessionAction.ts
+
+
+[00:00:07.472] Browser ERROR   {"name":"Error"}
+[00:00:07.472] Browser ERROR   uncaughtError: Error: ./src/actions/createSessionAction.ts:4:1
+Export adminAuth doesn't exist in target module
+  2 |
+  3 | import { setSessionCookie, deleteSession } from "@/lib/session";
+> 4 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 |
+  6 | export async function createSessionAction(idToken: string) {
+  7 |   if (!adminAuth) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+
+[00:00:07.663] Browser ERROR   uncaughtError: Error: ./src/actions/createSessionAction.ts:4:1
+Export adminAuth doesn't exist in target module
+  2 |
+  3 | import { setSessionCookie, deleteSession } from "@/lib/session";
+> 4 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 |
+  6 | export async function createSessionAction(idToken: string) {
+  7 |   if (!adminAuth) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+
+[00:00:08.708] Browser ERROR   ./src/actions/createSessionAction.ts:4:1
+Export adminAuth doesn't exist in target module
+  2 |
+  3 | import { setSessionCookie, deleteSession } from "@/lib/session";
+> 4 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 |
+  6 | export async function createSessionAction(idToken: string) {
+  7 |   if (!adminAuth) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+[00:00:08.708] Browser ERROR   ./src/actions/requestPasswordResetAction.ts:4:1
+Export adminAuth doesn't exist in target module
+  2 |
+  3 | import { ActionResponse } from '@/types';
+> 4 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { sendPasswordResetEmail } from '@/lib/email';
+  6 |
+  7 | /**
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+[00:00:08.708] Browser ERROR   ./src/lib/session.ts:2:1
+Export adminAuth doesn't exist in target module
+  1 | import { cookies } from "next/headers";
+> 2 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | // This function is now centralized here.
+  5 | async function getAuthenticatedUser(sessionCookie: string) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/lib/session.ts
+    ./src/actions/createSessionAction.ts
+[00:00:08.708] Browser ERROR   ./src/actions/createSessionAction.ts:4:1
+Export adminAuth doesn't exist in target module
+  2 |
+  3 | import { setSessionCookie, deleteSession } from "@/lib/session";
+> 4 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 |
+  6 | export async function createSessionAction(idToken: string) {
+  7 |   if (!adminAuth) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+[00:00:08.708] Browser ERROR   ./src/actions/requestPasswordResetAction.ts:4:1
+Export adminAuth doesn't exist in target module
+  2 |
+  3 | import { ActionResponse } from '@/types';
+> 4 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { sendPasswordResetEmail } from '@/lib/email';
+  6 |
+  7 | /**
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+[00:00:08.708] Browser ERROR   ./src/lib/session.ts:2:1
+Export adminAuth doesn't exist in target module
+  1 | import { cookies } from "next/headers";
+> 2 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | // This function is now centralized here.
+  5 | async function getAuthenticatedUser(sessionCookie: string) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/lib/session.ts
+    ./src/actions/createSessionAction.ts
+[00:00:08.708] Browser ERROR   ./src/actions/createSessionAction.ts:4:1
+Export adminAuth doesn't exist in target module
+  2 |
+  3 | import { setSessionCookie, deleteSession } from "@/lib/session";
+> 4 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 |
+  6 | export async function createSessionAction(idToken: string) {
+  7 |   if (!adminAuth) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+[00:00:08.708] Browser ERROR   ./src/lib/session.ts:2:1
+Export adminAuth doesn't exist in target module
+  1 | import { cookies } from "next/headers";
+> 2 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | // This function is now centralized here.
+  5 | async function getAuthenticatedUser(sessionCookie: string) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/lib/session.ts
+    ./src/actions/createSessionAction.ts
+[00:00:08.708] Browser ERROR   ./src/actions/createSessionAction.ts:4:1
+Export adminAuth doesn't exist in target module
+  2 |
+  3 | import { setSessionCookie, deleteSession } from "@/lib/session";
+> 4 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 |
+  6 | export async function createSessionAction(idToken: string) {
+  7 |   if (!adminAuth) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+[00:00:08.708] Browser ERROR   ./src/actions/requestPasswordResetAction.ts:4:1
+Export adminAuth doesn't exist in target module
+  2 |
+  3 | import { ActionResponse } from '@/types';
+> 4 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { sendPasswordResetEmail } from '@/lib/email';
+  6 |
+  7 | /**
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+[00:00:08.708] Browser ERROR   ./src/lib/session.ts:2:1
+Export adminAuth doesn't exist in target module
+  1 | import { cookies } from "next/headers";
+> 2 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | // This function is now centralized here.
+  5 | async function getAuthenticatedUser(sessionCookie: string) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/lib/session.ts
+    ./src/actions/createSessionAction.ts
+[00:00:08.708] Browser ERROR   ./src/actions/createSessionAction.ts:4:1
+Export adminAuth doesn't exist in target module
+  2 |
+  3 | import { setSessionCookie, deleteSession } from "@/lib/session";
+> 4 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 |
+  6 | export async function createSessionAction(idToken: string) {
+  7 |   if (!adminAuth) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+[00:00:08.708] Browser ERROR   ./src/actions/requestPasswordResetAction.ts:4:1
+Export adminAuth doesn't exist in target module
+  2 |
+  3 | import { ActionResponse } from '@/types';
+> 4 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  5 | import { sendPasswordResetEmail } from '@/lib/email';
+  6 |
+  7 | /**
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+[00:00:08.708] Browser ERROR   ./src/lib/session.ts:2:1
+Export adminAuth doesn't exist in target module
+  1 | import { cookies } from "next/headers";
+> 2 | import { adminAuth } from '@/lib/firebase-admin';
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | // This function is now centralized here.
+  5 | async function getAuthenticatedUser(sessionCookie: string) {
+
+The export adminAuth was not found in module [project]/src/lib/firebase-admin.ts [app-rsc] (ecmascript).
+Did you mean to import getAdminApp?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./src/lib/session.ts
+    ./src/actions/createSessionAction.ts

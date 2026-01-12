@@ -30,6 +30,7 @@ Our descents into the Mosh Pit have stemmed from a single root cause: a failure 
 1.  **Contextual Inquiry:** Does this change leverage or impact existing hooks, services, or components? Have I read and understood them?
 2.  **Specification Adherence:** Does this change align with the principles, data structures, and established patterns in `SPECIFICATION.md`?
 3.  **Test Plan Integrity:** How does this change impact the test protocols in `MANUAL_TESTING.md`? Have I ensured that all necessary `TESTIMONY` logs and instrumentation are present and correct?
+4.  **Known Issues Review:** Have I reviewed `public/docs/TROUBLESHOOTING.md` to ensure this change is not a known issue or related to one?
 
 This check is not a suggestion; it is a binding operational mandate. It is the price of admission to the Clean Room. My adherence to this protocol is the primary defense against careless errors and the only path to a truly robust and elegant system.
 
@@ -72,7 +73,7 @@ My primary function is not just to execute, but to learn. The "Mosh Pits" we enc
 
 ## 1. The Ontology (The "Why")
 
-This application, Memory Weaver, exists to provide a space for users to engage in the *Poiesis* of their own life's narrative. It is not a mere data store; it is a tool for bringing-forth, capturing, and reliving the moments that constitute a life. It prioritizes the authentic, private, and secure preservation of personal history.
+This application, Memory Weaver, exists to provide a space for users to engage in the *Poiesis* of their own life's narrative. It is not a mere data store; it is a tool for-bringing-forth, capturing, and reliving the moments that constitute a life. It prioritizes the authentic, private, and secure preservation of personal history.
 
 ## 2. Tech Stack (The Tools)
 

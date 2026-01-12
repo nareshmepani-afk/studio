@@ -3,6 +3,50 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { getSession } from "@/lib/session";
 import { Memory } from '@/types';
+import { revalidatePath } from 'next/cache';
+
+
+export async function createMemoryAction(data: { title: string, story: string }): Promise<{ success: boolean; message: string; memoryId?: string; }> {
+  const session = await getSession();
+
+  if (!session || !session.uid) {
+    return { success: false, message: "Unauthorized. Please log in." };
+  }
+
+  if (!adminDb) {
+    return { success: false, message: "Database connection failed." };
+  }
+
+  const { title, story } = data;
+
+  if (!title.trim() || !story.trim()) {
+    return { success: false, message: "Title and story cannot be empty." };
+  }
+
+  try {
+    const newMemoryRef = adminDb.collection('memories').doc();
+    const newMemory: Omit<Memory, 'id'> = {
+      userId: session.uid,
+      title,
+      story,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await newMemoryRef.set(newMemory);
+    
+    // Revalidate paths to ensure fresh data is shown after creation
+    revalidatePath('/timeline');
+    revalidatePath('/prompts');
+
+    return { success: true, message: "Memory created successfully!", memoryId: newMemoryRef.id };
+
+  } catch (error) {
+    console.error("Error creating memory:", error);
+    // It's better to return a generic error message to the client
+    return { success: false, message: "An unexpected error occurred while saving your memory." };
+  }
+}
 
 export async function getMemories(userId: string): Promise<Memory[]> {
   if (!adminDb) {

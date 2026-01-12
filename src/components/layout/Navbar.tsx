@@ -89,6 +89,14 @@ export function Navbar() {
                 </TooltipTrigger>
                 <TooltipContent><p>View all your recorded memories</p></TooltipContent>
               </Tooltip>
+               <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link href="/create" className={`${navLinkClass} ${pathname === '/create' ? activeNavLinkClass : ''}`}>
+                    <PlusCircle className="mr-1.5 h-4 w-4" /> Create Memory
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent><p>Create a new freeform memory</p></TooltipContent>
+              </Tooltip>
             </nav>
           )}
 
@@ -120,10 +128,6 @@ export function Navbar() {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                     <DropdownMenuItem onClick={() => router.push('/add-memory')}>
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      <span>Add Freeform Memory</span>
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/settings')}>
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Settings</span>
