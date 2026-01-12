@@ -17,3 +17,9 @@ Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allow
 [00:01:22.389] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
 [00:01:22.389] Server  WARN    ⚠ Fast Refresh had to perform a full reload when ./src/lib/firebase.ts changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
 [00:01:22.389] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[00:01:25.458] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:01:28.395] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
+[00:01:28.457] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
+[00:02:14.135] Server  LOG       Reload env: .env.local
+[00:02:23.246] Server  WARN    [firebase-admin] SERVICE_ACCOUNT_JSON env var not set. SDK not initialized.
+[00:02:23.253] Server  ERROR   [createSessionAction] Firebase Admin SDK is not initialized.
