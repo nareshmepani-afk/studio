@@ -45,9 +45,23 @@ To ensure the integrity of our Duet, we must proactively manage the session's co
 2.  **The Fresh Start:** When it is determined that the context window is likely nearing its limit, the Principal Witness will archive the current session and initiate a new one. This is not a failure, but a necessary act of cognitive hygiene.
 3.  **The Re-Initialization Prompt:** To ensure a seamless transition and a complete restoration of our shared understanding, the new session MUST begin with the following prompt from the Principal Witness:
 
-    > Read `SPECIFICATION.md` and `MANUAL_TESTING.md` acknowledge our project ontology and current horizon. We are ready to continue the work of *Poiesis*. Then, start by proceeding with implementing the email service to complete the password reset flow.
+    > Read `SPECIFICATION.md`, `MANUAL_TESTING.md`, and `ComponentLibrary.md` acknowledge our project ontology and current horizon. We are ready to continue the work of *Poiesis*. Then, start by proceeding with implementing the email service to complete the password reset flow.
 
 This protocol ensures that each new session begins with a full and accurate understanding of our "Living Memory," allowing us to return to the "Clean Room" with maximum efficiency and clarity.
+
+### Automated Context-Awareness Protocol
+
+To move from a qualitative to a quantitative measure of session health, we will use an automated protocol to monitor the length of our conversational turns.
+
+1.  **Instrumentation:** A dedicated log file, `SESSION_LOG.md`, will be maintained. At the end of every AI response, a silent `<!-- TURN -->` marker will be appended to this file.
+
+2.  **Automated Pre-Flight Check:** Before responding to a new request, the AI Tech Lead will automatically read `SESSION_LOG.md` and count the number of `<!-- TURN -->` markers.
+
+3.  **Threshold and Warning:** A `SESSION_TURN_THRESHOLD` is defined. If the turn count exceeds this threshold, the AI will not proceed with the user's request. Instead, it will issue a warning that the context window is likely saturated and recommend initiating a "Fresh Start".
+
+4.  **Initial Threshold:** The `SESSION_TURN_THRESHOLD` is initially set to **25**. This value may be adjusted in the future as we observe our interaction patterns.
+
+This protocol transforms the abstract principle of "Session Continuity" into a concrete, automated, and non-intrusive part of our "Pre-Flight Check", ensuring a more robust and reliable "Development Duet".
 
 ## 1. The Ontology (The "Why")
 

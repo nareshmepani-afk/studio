@@ -27,6 +27,41 @@ To bridge the gap between idea and execution, the testing process now incorporat
 
 ---
 
+## Active Test Session: `auth-password-reset-2024-05-23-alpha`
+
+**Objective:** To verify the end-to-end password reset functionality.
+
+**Base URL:** (To be provided by the testing environment)
+
+### Test Case 0: Password Reset Request
+
+*   **Objective:** To ensure that a user can request a password reset and that the system correctly sends a reset email.
+
+*   **Test Step ID:** `reset-tc0-ts1`
+    *   **Instruction:** Navigate to the login page. Click the "Forgot Password?" link.
+    *   **Expected Result:** You are navigated to the password reset request page.
+
+*   **Test Step ID:** `reset-tc0-ts2`
+    *   **Instruction:** Enter the email address of a registered user and click the "Send Reset Link" button.
+    *   **Expected Result:** The console logs a successful call to the `requestPasswordResetAction`. A success message is displayed to the user.
+
+*   **Test Step ID:** `reset-tc0-ts3`
+    *   **Instruction:** Check the inbox for the email address you entered. Did you receive a password reset email from `noreply@memoryweaver.studio`? Does the email contain a valid password reset link?
+
+*   **Test Step ID:** `reset-tc0-ts4`
+    *   **Instruction:** Click the reset link in the email.
+    *   **Expected Result:** You are navigated to a page where you can enter a new password.
+
+*   **Test Step ID:** `reset-tc0-ts5`
+    *   **Instruction:** Enter and confirm a new password.
+    *   **Expected Result:** The password is changed successfully. You are redirected to the login page with a success message.
+
+*   **Test Step ID:** `reset-tc0-ts6`
+    *   **Instruction:** Log in with the new password.
+    *   **Expected Result:** Login is successful.
+
+---
+
 ## Active Test Session: `git-integrity-2024-05-22-beta`
 
 **Objective:** To verify the integrity of the Git repository, ensuring that no sensitive files are present in the history and that the `.gitignore` file is functioning correctly.
@@ -34,8 +69,6 @@ To bridge the gap between idea and execution, the testing process now incorporat
 **Base URL:** (N/A - This test is performed in the terminal)
 
 ### Test Case 0: Git History Verification
-
-*   **Objective:** To ensure that no sensitive files exist anywhere in the Git history.
 
 *   **Test Step ID:** `git-tc0-ts1`
     *   **Instruction:** Run the command `git filter-branch --force --index-filter "git rm --cached --ignore-unmatch serviceAccountKey.json .env .env.local .env.copy" --prune-empty --tag-name-filter cat -- --all`
