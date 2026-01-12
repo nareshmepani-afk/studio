@@ -1,9 +1,10 @@
 'use server';
 
 import { ActionResponse } from '@/types';
+import { adminAuth } from '@/lib/firebase-admin';
 
 /**
- * Server-side action to reset a user's password using the Firebase Auth REST API.
+ * Server-side action to reset a user's password using the Firebase Admin SDK.
  */
 export async function resetPassword(
   oobCode: string,
@@ -15,42 +16,35 @@ export async function resetPassword(
       return { success: false, message: 'Action code and new password are required.' };
     }
 
-    // 2. We use the REST API because Admin SDK doesn't verify oobCodes
-    const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY; 
-    const url = `https://identitytoolkit.googleapis.com/v1/accounts:resetPassword?key=${FIREBASE_API_KEY}`;
+    // 2. Use the Admin SDK to apply the password reset.
+    // This is more secure as it's a trusted server-side operation.
+    await adminAuth.verifyPasswordResetCode(oobCode);
+    const user = await adminAuth.getUserByEmail((await adminAuth.verifyPasswordResetCode(oobCode)).email!);
+    await adminAuth.updateUser(user.uid, { password: newPassword });
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        oobCode,
-        newPassword,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      // Map REST API errors to friendly messages
-      const errorCode = data.error?.message;
-      
-      if (errorCode === 'EXPIRED_OOB_CODE') {
-        return { success: false, message: 'The link has expired. Please request a new one.' };
-      }
-      if (errorCode === 'INVALID_OOB_CODE') {
-        return { success: false, message: 'The link is invalid or has already been used.' };
-      }
-      if (errorCode === 'WEAK_PASSWORD') {
-        return { success: false, message: 'The new password is too weak.' };
-      }
-      
-      throw new Error(errorCode || 'REST_API_ERROR');
-    }
 
     return { success: true, message: 'Your password has been reset successfully.' };
 
   } catch (error: any) {
     console.error('[ACTION FAILED] resetPassword:', error);
-    return { success: false, message: 'An unexpected error occurred. Please try again later.' };
+    
+    // Map Firebase Admin SDK errors to friendly messages
+    let message = 'An unexpected error occurred. Please try again later.';
+    switch (error.code) {
+      case 'auth/expired-action-code':
+        message = 'The link has expired. Please request a new one.';
+        break;
+      case 'auth/invalid-action-code':
+        message = 'The link is invalid or has already been used.';
+        break;
+      case 'auth/user-disabled':
+        message = 'Your account has been disabled.';
+        break;
+      case 'auth/weak-password':
+        message = 'The new password is too weak.';
+        break;
+    }
+
+    return { success: false, message: message };
   }
 }

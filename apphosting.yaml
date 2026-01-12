@@ -3,6 +3,8 @@ apiVersion: 'v1'
 
 env:
   # Public variables made available to the Next.js build process and client-side code.
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    secret: FIREBASE_API_KEY
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
     value: 'memory-weaver-8rk9t'
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
@@ -13,3 +15,5 @@ env:
   # Secret variables are securely stored in Secret Manager and exposed to the server at runtime.
   - variable: SERVICE_ACCOUNT_JSON
     secret: SERVICE_ACCOUNT_JSON
+  - variable: RESEND_API_KEY
+    secret: RESEND_API_KEY

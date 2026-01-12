@@ -1,14 +1,19 @@
-[00:00:10.969] Server  LOG     ✓ Ready in 9.2s
-[00:00:10.991] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+[00:00:03.807] Server  LOG     ✓ Ready in 2.7s
+[00:00:06.739] Server  ERROR   ⨯ FirebaseError: Firebase: Error (auth/invalid-api-key).
+[00:00:07.501] Server  ERROR   ⨯ FirebaseError: Firebase: Error (auth/invalid-api-key).
+[00:00:09.003] Server  WARN    ⚠ Cross origin request detected from 6000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
 Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
-[00:00:21.038] Server  ERROR   ⨯ FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:00:23.581] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:25.378] Browser ERROR   uncaughtError: FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:00:38.898] Server  ERROR   ⨯ FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:00:41.514] Server  ERROR   ⨯ FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:00:41.707] Server  LOG       Reload env: .env.local
-[00:00:44.933] Server  ERROR   ⨯ FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:00:47.787] Browser ERROR   {"code":"auth/invalid-api-key","customData":{"appName":"[DEFAULT]"},"name":"FirebaseError"}
-[00:00:47.787] Browser ERROR   uncaughtError: FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:00:47.931] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:49.144] Browser ERROR   uncaughtError: FirebaseError: Firebase: Error (auth/invalid-api-key).
+[00:00:09.732] Browser ERROR   uncaughtError: FirebaseError: Firebase: Error (auth/invalid-api-key).
+[00:00:10.015] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+[00:00:10.074] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:11.009] Browser ERROR   uncaughtError: FirebaseError: Firebase: Error (auth/invalid-api-key).
+[00:00:46.110] Server  ERROR   ⨯ FirebaseError: Firebase: Error (auth/invalid-api-key).
+[00:01:11.975] Server  LOG       Reload env: .env
+[00:01:22.338] Server  LOG     ✓ Compiled in 9.4s
+[00:01:22.386] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[00:01:22.386] Server  WARN    ⚠ Fast Refresh had to perform a full reload when ./src/lib/firebase.ts changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[00:01:22.387] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[00:01:22.389] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[00:01:22.389] Server  WARN    ⚠ Fast Refresh had to perform a full reload when ./src/lib/firebase.ts changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+[00:01:22.389] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.

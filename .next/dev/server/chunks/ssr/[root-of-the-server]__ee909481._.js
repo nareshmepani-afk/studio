@@ -241,12 +241,12 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2
 ;
 ;
 const firebaseConfig = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+    apiKey: ("TURBOPACK compile-time value", "AIzaSyANRmF5M5guN3PJ-IDw-3a8W3WaIvk-NJE"),
+    authDomain: ("TURBOPACK compile-time value", "memory-weaver-8rk9t.firebaseapp.com"),
+    projectId: ("TURBOPACK compile-time value", "memory-weaver-8rk9t"),
+    storageBucket: ("TURBOPACK compile-time value", "memory-weaver-8rk9t.appspot.com"),
+    messagingSenderId: ("TURBOPACK compile-time value", "67296998103"),
+    appId: ("TURBOPACK compile-time value", "1:67296998103:web:e2b08f9187175693567692")
 };
 // Initialize Firebase
 const app = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$app$2f$dist$2f$esm$2f$index$2e$esm2017$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["getApps"])().length ? (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$app$2f$dist$2f$esm$2f$index$2e$esm2017$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["getApp"])() : (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$firebase$2f$app$2f$dist$2f$esm$2f$index$2e$esm2017$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["initializeApp"])(firebaseConfig);
