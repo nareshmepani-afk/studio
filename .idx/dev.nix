@@ -33,7 +33,7 @@
       # It runs in the interactive workspace after the build, so it has access to the secret.txt file.
       # It creates a standard .env file that will be automatically loaded by the Next.js dev server.
       onStart = {
-        create-env = "cp /home/user/studio/secret.txt .env";
+        create-env = "cp /home/user/studio/secret.txt .env.local";
         cleanup = "./scripts/cleanup-logs.sh";
       };
     };
