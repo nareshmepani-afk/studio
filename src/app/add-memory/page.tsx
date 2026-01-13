@@ -82,7 +82,7 @@ function MemoryForm() {
   const [qrCodeDialog, setQrCodeDialog] = useState<{ open: boolean; url: string; title: string; }>({ open: false, url: '', title: '' });
 
   useEffect(() => {
-    if (authLoading || !user || !promptId) return;
+    if (authLoading || !user || !promptId || !db) return;
 
     const userRef = doc(db, 'users', user.uid);
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
@@ -123,7 +123,7 @@ function MemoryForm() {
   const handleToggleFlag = async (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    if (!user || !promptId) return;
+    if (!user || !promptId || !db) return;
 
     const testStepId = isFlagged ? 'flag-tc1-ts5' : 'flag-tc1-ts3';
     console.log(`TESTIMONY - ${testStepId} - START`);
@@ -145,7 +145,7 @@ function MemoryForm() {
   };
 
   useEffect(() => {
-    if (!editMemoryId || !user || authLoading) {
+    if (!editMemoryId || !user || authLoading || !db) {
       setIsLoadingMemory(false);
       return;
     }
@@ -231,7 +231,7 @@ function MemoryForm() {
     console.log(`TESTIMONY - ${testCaseId}-ts-submit - START`);
 
     try {
-      if (!user) throw new Error("You must be logged in.");
+      if (!user || !db) throw new Error("User or database not available.");
       if (!title) {
         carouselApi?.scrollTo(0);
         throw new Error("Please give your memory a title.");
