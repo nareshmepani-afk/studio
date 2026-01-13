@@ -1,81 +1,78 @@
-
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { collection, onSnapshot, query, orderBy, Unsubscribe } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { Memory } from '@/types.ts';
+import { useEffect, useState } from 'react';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
-import { TimelinePageContent } from '@/components/memory/TimelinePageContent';
-import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { db } from '@/lib/firebase';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { MemoryCard } from '@/components/memory/MemoryCard';
+import { Loader2, Calendar } from 'lucide-react';
+import type { Memory } from '@/types';
 
 export default function TimelinePage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize an unsubscribe function to be a no-op.
-    let unsubscribe: Unsubscribe = () => {};
+    let unsubscribe: () => void = () => {};
 
-    if (user) {
+    // Guard: Ensure both user and db are initialized
+    if (user && db) {
       setIsLoading(true);
-      const memoriesQuery = query(collection(db, "users", user.uid, "memories"), orderBy('date', 'desc'));
       
-      // Assign the onSnapshot unsubscribe function.
+      // Use non-null assertion db! and ensure user.uid exists
+      const memoriesQuery = query(
+        collection(db, "users", user.uid, "memories"), 
+        orderBy('date', 'desc')
+      );
+        
       unsubscribe = onSnapshot(memoriesQuery, 
         (snapshot) => {
-          const fetchedMemories = snapshot.docs.map(docSnap => {
-            const data = docSnap.data();
-            return {
-              id: docSnap.id,
-              title: data.title || '',
-              date: (data.date as any)?.toDate ? (data.date as any).toDate().toISOString() : new Date().toISOString(),
-              description: data.description || '',
-              mediaAttachments: data.mediaAttachments || [],
-              category: data.category || 'personal',
-              isLegacy: data.isLegacy || false,
-              promptId: data.promptId || null,
-              createdAt: (data.createdAt as any)?.toDate ? (data.createdAt as any).toDate().toISOString() : undefined,
-              updatedAt: (data.updatedAt as any)?.toDate ? (data.updatedAt as any).toDate().toISOString() : undefined,
-            } as Memory;
-          });
-          setMemories(fetchedMemories);
+          const memoriesData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Memory[];
+          setMemories(memoriesData);
           setIsLoading(false);
-        }, 
+        },
         (error) => {
-          // The error is now expected on logout, so we can log it less severely or ignore.
-          // console.warn("[TIMELINE_PAGE_CLIENT] Snapshot listener error:", error.message);
-          setMemories([]); // Clear memories on error/permission issue
+          console.error("Timeline: Error fetching memories:", error);
           setIsLoading(false);
         }
       );
-    } else {
-      // If there is no user, clear memories and ensure loading is false.
-      setMemories([]);
+    } else if (!user) {
+      // If there's no user, we stop loading but don't try to fetch
       setIsLoading(false);
     }
 
-    // Return the cleanup function. On re-render or unmount, this will
-    // be called, ensuring the listener is detached.
     return () => unsubscribe();
-  }, [user]); // Depend only on the user object to manage the listener lifecycle.
-  
-  if (isLoading || authLoading) {
-      return (
-        <AuthenticatedPageWrapper>
-            <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
-                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-                <h2 className="text-2xl font-headline mb-2">Loading Timeline...</h2>
-            </div>
-        </AuthenticatedPageWrapper>
-      )
-  }
+  }, [user]);
 
   return (
     <AuthenticatedPageWrapper>
-      <TimelinePageContent initialMemories={memories} />
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex items-center space-x-2 mb-8">
+          <Calendar className="h-8 w-8 text-primary" />
+          <h1 className="font-headline text-4xl">Your Timeline</h1>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          </div>
+        ) : memories.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {memories.map((memory) => (
+              <MemoryCard key={memory.id} memory={memory} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 bg-muted/30 rounded-lg">
+            <p className="text-muted-foreground text-lg">No memories found. Start by creating one!</p>
+          </div>
+        )}
+      </div>
     </AuthenticatedPageWrapper>
   );
 }

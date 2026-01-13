@@ -1,35 +1,25 @@
 
 "use client";
 
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import type { Memory, PromptGroup } from '@/types.ts';
+import type { Memory, PromptGroup } from '@/types';
 import { teleprompterScripts } from '@/lib/teleprompterScripts';
 import { toast } from '@/hooks/use-toast';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { addMonths, isBefore, parseISO, format, addDays } from 'date-fns';
 
 // UI Components
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PromptCard } from './PromptCard';
 import { QrCodeDialog } from './QrCodeDialog';
 import Link from 'next/link';
 
 // Icons
-import { Film, CheckCircle, Loader2, Languages, HelpCircle, Sparkles, Lightbulb, Zap, Star as StarIcon, Info, QrCode } from 'lucide-react';
-
-// Actions
-import { generateMemoryCuesAction } from '@/actions/generateMemoryCuesAction';
-import { getHostPassPriceAction } from '@/actions/getHostPassPriceAction';
-import type { GetHostPassPriceOutput } from '@/ai/flows/get-host-pass-price-flow';
-
+import { Film, CheckCircle, Loader2, Languages, HelpCircle, Info } from 'lucide-react';
 
 interface PromptsPageContentProps {
   initialMemories: Memory[];

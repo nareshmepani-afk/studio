@@ -1,6 +1,6 @@
 "use client";
 
-import type { Memory, MediaAttachment, EmotionTag, UserMode } from '@/types.ts';
+import type { Memory, MediaAttachment, EmotionTag, UserMode } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
