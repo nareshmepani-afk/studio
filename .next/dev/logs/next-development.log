@@ -174,3 +174,6 @@ Import trace:
     ./src/lib/session.ts
     ./src/actions/createSessionAction.ts
 [00:44:07.699] Server  LOG     ✓ Compiled in 7.1s
+[01:04:50.121] Server  LOG       Reload env: .env.local
+[01:04:58.795] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins

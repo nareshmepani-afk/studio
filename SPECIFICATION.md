@@ -90,20 +90,30 @@ This application, Memory Weaver, exists to provide a space for users to engage i
 *   **UI Components:** Shadcn UI, Lucide React
 *   **End-to-End Testing:** Formal Manual Protocol
 
-### 2.1. Dependency Management and Project Setup
+### 2.1. The Central Service Provider Protocol
+
+To prevent systemic build failures and ensure architectural consistency, all core services MUST be implemented as singleton providers. This protocol is a direct lesson from the `adminAuth` Mosh Pit.
+
+*   **Single Source of Truth:** For any core service (e.g., Firebase Admin SDK, database connections, external APIs), a dedicated module must be created (e.g., `src/lib/firebase-admin.ts`).
+*   **Initialize and Export:** This module is responsible for all one-time initialization and configuration. It must then export the ready-to-use service objects or functions directly.
+*   **Mandatory Consumption:** All other parts of the application **MUST** import and consume the service from this single, canonical source. This prevents configuration drift and eliminates inconsistent initialization logic, which has been a primary source of build failures.
+
+This protocol transforms a previously flawed pattern into a robust, non-negotiable architectural principle.
+
+### 2.2. Dependency Management and Project Setup
 
 1.  **Single Source of Truth:** The `package.json` file is the definitive list of all project dependencies.
 2.  **Clean Installation:** A successful build (`npm run build`) and development server launch (`npm run dev`) must be achievable after a fresh clone and a single `npm install`.
 3.  **Dependency-First Development:** When adding a new dependency, I will first install and save it before committing the code that uses it.
 4.  **Verification as a Mandate:** The 'Project Setup Verification' test case is the first and most critical test.
 
-### 2.2. Component Library
+### 2.3. Component Library
 
 Our user interface is constructed from a set of reusable components, based on Shadcn UI and styled with Tailwind CSS. This approach ensures visual consistency, promotes code reuse, and accelerates development.
 
 Detailed documentation for each component, including its props, state variations, accessibility guidelines, and best practices, is maintained in the **`ComponentLibrary.md`** file. This document is a critical resource for understanding and effectively utilizing our UI building blocks and is a direct output of the **Principle of Humble Inquiry**.
 
-### 2.3. Environment Strategy
+### 2.4. Environment Strategy
 
 The application will exist in multiple environments to ensure a stable and predictable lifecycle from development to production. Each environment is a self-contained instance of the application with its own configuration, database, and services.
 
@@ -205,6 +215,7 @@ All test cases, protocols, and the history of their execution are maintained in 
 ## 6. Change Log (A History of Poiesis)
 
 *   **2024-XX-XX (Current Session):**
+    *   **Corrective Refactoring of Firebase Admin SDK:** Successfully diagnosed and resolved a systemic build failure caused by an `Export adminAuth doesn't exist` error. This was a symptom of a flawed architectural pattern in `firebase-admin.ts`. A **Corrective Refactoring** was performed, strengthening the central service provider and updating all consumer files (`createSessionAction.ts`, `requestPasswordResetAction.ts`, `resetPasswordAction.ts`, `memoryActions.ts`). This reinforced the "Central Service Provider" protocol, which is now a core part of our architecture.
     *   **Successful Deployment to App Hosting:** The application has been successfully built and deployed to Firebase App Hosting.
     *   **Deconstruction and Reconstruction of the Build:** The project entered a prolonged "Mosh Pit" session characterized by a cascade of build failures. This was a direct result of a failure to adhere to the "Dependency-First Development" principle. The following issues were identified and resolved:
         *   **Missing Dependencies:** The build failed due to missing `react-day-picker` and `@radix-ui/react-accordion` dependencies. This was a fundamental oversight that should have been caught much earlier.
