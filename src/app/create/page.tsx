@@ -36,7 +36,7 @@ export default function CreateMemoryPage() {
     setIsSubmitting(true);
 
     try {
-      const result = await createMemoryAction({ title, story });
+      const result = await createMemoryAction({ title, description: story });
 
       if (result.success) {
         toast({
