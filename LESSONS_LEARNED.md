@@ -8,3 +8,10 @@
 - **[ACTIVE] Protocol: The Central Service Provider.** The repeated build failures related to `adminAuth` were symptoms of a deeper architectural flaw. The `firebase-admin.ts` file was a weak service provider, forcing each consumer to handle its own initialization logic. This created inconsistency and fragility. The successful resolution came from refactoring `firebase-admin.ts` into a strong, central provider that initializes the services once and exports them directly. **New Protocol:** For any core service (e.g., database connections, authentication clients, external APIs), I will always implement it as a singleton service provider. This module will be responsible for all initialization and configuration and will export ready-to-use service objects or functions. All other parts of the application **MUST** import and consume the service from this single, canonical source. This prevents configuration drift and ensures systemic consistency.
 
 - **[ACTIVE] Protocol: Verify, Then Act.** When dealing with external services and configurations, especially through a CLI, never assume. Always verify. Before executing a command that relies on a specific configuration (e.g., a backend name, a project ID), first use a command to list the available configurations. This eliminates guesswork and prevents repeated errors.
+
+- **[ACTIVE] Protocol: Compiler Error Pattern Recognition.** When a compiler reports an error, and a fix for that error subsequently reveals the *same type of error* elsewhere in the code, I must immediately pivot from a localized fix to a holistic analysis.
+    1.  **Stop:** Do not apply another piecemeal patch.
+    2.  **Search:** Perform a search across the entire file (and related components, if necessary) for all instances of the error-producing pattern (e.g., all uses of a potentially null object).
+    3.  **Analyze & Plan:** Formulate a single, comprehensive plan that addresses all identified instances of the pattern.
+    4.  **Announce:** Present the full plan for review before executing.
+This protocol elevates the "Corrective Refactoring" principle into a mandatory workflow for all compiler-related bug fixes.
