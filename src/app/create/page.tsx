@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -36,6 +35,7 @@ export default function CreateMemoryPage() {
     setIsSubmitting(true);
 
     try {
+      // Mapping local 'story' state to the 'description' parameter expected by createMemoryAction
       const result = await createMemoryAction({ title, description: story });
 
       if (result.success) {
@@ -44,7 +44,6 @@ export default function CreateMemoryPage() {
           description: "Your new memory has been successfully created.",
           variant: "success",
         });
-        // Redirect to the timeline to see the new memory
         router.push('/timeline');
       } else {
         toast({
@@ -52,6 +51,7 @@ export default function CreateMemoryPage() {
           description: result.message,
           variant: "destructive",
         });
+        setIsSubmitting(false);
       }
     } catch (error) {
         console.error("Unexpected error in handleSubmit:", error);
@@ -60,12 +60,7 @@ export default function CreateMemoryPage() {
             description: "Something went wrong on our end. Please try again.",
             variant: "destructive",
         });
-    } finally {
-        // Only set isSubmitting to false if there was an error and the user is staying on the page
-       // If successful, the redirect will happen, so we don't need to change the state
-      if (!isSubmitting) {
         setIsSubmitting(false);
-      }
     }
   };
 
