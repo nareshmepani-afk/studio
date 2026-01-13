@@ -10,6 +10,11 @@ export async function resetPassword(
   oobCode: string,
   newPassword: string
 ): Promise<ActionResponse> {
+  if (!adminAuth) {
+    console.error("[resetPassword] Firebase Admin SDK is not initialized.");
+    return { success: false, message: "Server-side authentication is not configured." };
+  }
+
   try {
     // 1. Validate inputs
     if (!oobCode || !newPassword) {
@@ -18,8 +23,8 @@ export async function resetPassword(
 
     // 2. Use the Admin SDK to apply the password reset.
     // This is more secure as it's a trusted server-side operation.
-    await adminAuth.verifyPasswordResetCode(oobCode);
-    const user = await adminAuth.getUserByEmail((await adminAuth.verifyPasswordResetCode(oobCode)).email!);
+    const email = (await adminAuth.verifyPasswordResetCode(oobCode)).email!;
+    const user = await adminAuth.getUserByEmail(email);
     await adminAuth.updateUser(user.uid, { password: newPassword });
 
 

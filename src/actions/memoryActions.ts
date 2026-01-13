@@ -6,7 +6,7 @@ import { Memory } from '@/types';
 import { revalidatePath } from 'next/cache';
 
 
-export async function createMemoryAction(data: { title: string, story: string }): Promise<{ success: boolean; message: string; memoryId?: string; }> {
+export async function createMemoryAction(data: { title: string, description: string }): Promise<{ success: boolean; message: string; memoryId?: string; }> {
   const session = await getSession();
 
   if (!session || !session.uid) {
@@ -17,20 +17,20 @@ export async function createMemoryAction(data: { title: string, story: string })
     return { success: false, message: "Database connection failed." };
   }
 
-  const { title, story } = data;
+  const { title, description } = data;
 
-  if (!title.trim() || !story.trim()) {
+  if (!title.trim() || !description.trim()) {
     return { success: false, message: "Title and story cannot be empty." };
   }
 
   try {
-    const newMemoryRef = adminDb.collection('memories').doc();
-    const newMemory: Omit<Memory, 'id'> = {
+    const newMemoryRef = adminDb.collection('users').doc(session.uid).collection('memories').doc();
+    const newMemory: Omit<Memory, 'id' | 'date' | 'mediaAttachments' | 'category' > = {
       userId: session.uid,
       title,
-      story,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      description,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     await newMemoryRef.set(newMemory);
@@ -52,57 +52,19 @@ export async function getMemories(userId: string): Promise<Memory[]> {
   if (!adminDb) {
     throw new Error("Firestore is not initialized.");
   }
-  const memoriesSnapshot = await adminDb.collection('memories').where('userId', '==', userId).get();
+  const memoriesSnapshot = await adminDb.collection('users').doc(userId).collection('memories').get();
   const memories = memoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Memory[];
   return memories;
 }
 
 export async function getMemory(memoryId: string): Promise<Memory | null> {
-  if (!adminDb) {
-    throw new Error("Firestore is not initialized.");
-  }
-  const memoryDoc = await adminDb.collection('memories').doc(memoryId).get();
-  if (!memoryDoc.exists) {
-    return null;
-  }
-  return { id: memoryDoc.id, ...memoryDoc.data() } as Memory;
-}
-
-export async function saveMemory(
-  memoryData: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'>,
-  memoryId: string | null
-): Promise<{ success: boolean; message: string; data?: { id: string } }> {
-
-  try {
     const session = await getSession();
-    if (!session || session.uid !== memoryData.userId) {
-      return { success: false, message: "Unauthorized or mismatched user."};
+    if (!session?.uid || !adminDb) {
+        throw new Error("Unauthorized or DB not initialized.");
     }
-
-    if (!adminDb) {
-      throw new Error("Firestore is not initialized.");
+    const memoryDoc = await adminDb.collection('users').doc(session.uid).collection('memories').doc(memoryId).get();
+    if (!memoryDoc.exists) {
+        return null;
     }
-
-    if (memoryId) {
-      // Update existing memory
-      const memoryRef = adminDb.collection('memories').doc(memoryId);
-      await memoryRef.update({
-        ...memoryData,
-        updatedAt: new Date(),
-      });
-      return { success: true, message: 'Memory updated successfully.', data: { id: memoryId } };
-    } else {
-      // Create new memory
-      const newMemoryRef = adminDb.collection('memories').doc();
-      await newMemoryRef.set({
-        ...memoryData,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-      return { success: true, message: 'Memory saved successfully.', data: { id: newMemoryRef.id } };
-    }
-  } catch (error: any) {
-    console.error("Error saving memory:", error);
-    return { success: false, message: error.message };
-  }
+    return { id: memoryDoc.id, ...memoryDoc.data() } as Memory;
 }

@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { createMemoryAction } from '@/actions/memoryActions';
+import { createMemoryAction } from '@/actions';
 
 export default function CreateMemoryPage() {
   const { user, loading: authLoading } = useAuth();

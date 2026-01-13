@@ -1,13 +1,13 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Memory } from '@/types.ts';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from '@/hooks/use-toast'; // Changed import
+import { toast } from '@/hooks/use-toast';
 import { Copy, Check } from 'lucide-react';
 
 interface ShareDialogProps {
@@ -19,30 +19,70 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
   const [guestEmail, setGuestEmail] = useState('');
   const [shareLink, setShareLink] = useState('');
   const [copied, setCopied] = useState(false);
-  // const { toast } = useToast(); // Removed useToast() call
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleGenerateLink = () => {
-    // Mock link generation
-    const link = `https://memoryweaver.example.com/share/${memory.id}/${Date.now()}`;
+    const link = `${window.location.origin}/share/${memory.id}`;
     setShareLink(link);
-    toast({ // Direct use of imported toast
+    toast({
       title: "Share link generated!",
       description: "You can now copy the link to share it.",
       variant: "success",
     });
   };
 
-  const handleCopyLink = () => {
-    if (shareLink) {
-      navigator.clipboard.writeText(shareLink);
+  const handleCopyLink = async () => {
+    if (!shareLink) return;
+
+    try {
+      // Modern async API. Fails on insecure origins (http).
+      await navigator.clipboard.writeText(shareLink);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast({ // Direct use
-        title: "Link copied to clipboard!",
-        variant: "success",
-      });
+      toast({ title: "Link copied to clipboard!", variant: "success" });
+    } catch (err) {
+      // Fallback for insecure contexts.
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = shareLink;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+
+        if (successful) {
+          setCopied(true);
+          toast({
+            title: "Link copied to clipboard!",
+            description: "Used fallback for compatibility.",
+            variant: "success",
+          });
+        } else {
+          throw new Error('Fallback copy command failed');
+        }
+      } catch (fallbackErr) {
+        console.error("Failed to copy link:", fallbackErr);
+        toast({
+          title: "Failed to Copy",
+          description: "Could not copy link to clipboard.",
+          variant: "destructive",
+        });
+      }
     }
   };
+
+  useEffect(() => {
+    if (copied) {
+      const timer = setTimeout(() => setCopied(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [copied]);
 
   return (
     <Dialog open={true} onOpenChange={(isOpen) => !isOpen && onClose()}>
@@ -77,8 +117,8 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
                 </Button>
               </div>
             ) : (
-              <Button onClick={handleGenerateLink} className="w-full">
-                Generate Secure Link
+              <Button onClick={handleGenerateLink} className="w-full" disabled={!isClient}>
+                {isClient ? 'Generate Secure Link' : 'Loading...'}
               </Button>
             )}
           </div>

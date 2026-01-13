@@ -8,6 +8,11 @@ import { sendPasswordResetEmail } from '@/lib/email';
  * Server-side action to generate a password reset link and send it via email.
  */
 export async function requestPasswordReset(email: string): Promise<ActionResponse> {
+  if (!adminAuth) {
+    console.error("[requestPasswordReset] Firebase Admin SDK is not initialized.");
+    return { success: false, message: "Server-side authentication is not configured." };
+  }
+
   try {
     if (!email) {
       return { success: false, message: 'Email is required.' };
