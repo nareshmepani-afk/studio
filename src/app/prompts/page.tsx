@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -18,12 +17,14 @@ export default function LifeJourneyPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) {
+    // Adding db check here as well to be safe
+    if (!user || !db) {
       setIsLoading(false);
       return;
     }
 
-    const memoriesRef = collection(db, 'users', user.uid, 'memories');
+    // Fix: Added ! to db
+    const memoriesRef = collection(db!, 'users', user.uid, 'memories');
     const memoriesPromise = getDocs(memoriesRef).then(snapshot => 
         snapshot.docs.map(docSnap => {
             const data = docSnap.data();
@@ -37,7 +38,8 @@ export default function LifeJourneyPage() {
         })
     );
 
-    const userDocRef = doc(db, 'users', user.uid);
+    // Fix: Added ! to db on line 41
+    const userDocRef = doc(db!, 'users', user.uid);
     const flagsUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
         if (docSnap.exists()) {
             const userData = docSnap.data();
