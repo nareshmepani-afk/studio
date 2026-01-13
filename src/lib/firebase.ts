@@ -1,18 +1,23 @@
 // lib/firebase.ts
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
+import { getAuth, setPersistence, browserLocalPersistence, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 import { firebaseConfig, validateConfig } from "./config-schema";
 
-const isConfigValid = validateConfig();
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
+let storage: FirebaseStorage | null = null;
 
-// Initialize Firebase only if config is valid and not already initialized
-const app = (isConfigValid && getApps().length === 0) 
-  ? initializeApp(firebaseConfig) 
-  : getApps().length > 0 
-    ? getApp() 
-    : null;
+if (validateConfig()) {
+  app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+} else {
+    console.error("Firebase config validation failed. Firebase services will not be available.");
+}
 
-export const auth = app ? getAuth(app) : null;
-export const db = app ? getFirestore(app) : null;
-export default app;
+
+export { app, auth, db, storage };

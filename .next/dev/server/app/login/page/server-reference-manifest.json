@@ -4,7 +4,7 @@
       "workers": {
         "app/login/page": {
           "moduleId": "[project]/.next-internal/server/app/login/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": false,
+          "async": true,
           "exportedName": "createSessionAction",
           "filename": "src/actions/createSessionAction.ts"
         }
@@ -19,7 +19,7 @@
       "workers": {
         "app/login/page": {
           "moduleId": "[project]/.next-internal/server/app/login/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/actions/createSessionAction.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
-          "async": false,
+          "async": true,
           "exportedName": "deleteSessionAction",
           "filename": "src/actions/createSessionAction.ts"
         }
