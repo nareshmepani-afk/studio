@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
@@ -187,7 +186,9 @@ export default function SettingsPage() {
     event.preventDefault();
     if (!user) return;
     setIsSubmitting(true);
-    const storage = getStorage(app);
+
+    // FIX: Added non-null assertion to app
+    const storage = getStorage(app!);
 
     let finalAvatarUrlToSave = user.avatarUrl;
     const oldAvatarUrl = user.avatarUrl;
