@@ -1,7 +1,8 @@
-[00:00:15.963] Server  LOG     ✓ Ready in 14.7s
-[00:00:19.040] Server  LOG     ○ Compiling / ...
-[00:00:28.856] Server  WARN    ⚠ Cross origin request detected from 6000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+[00:00:21.446] Server  LOG     ○ Compiling proxy ...
+[00:00:23.292] Server  LOG     ✓ Ready in 19.8s
+[00:00:26.324] Server  LOG     ○ Compiling / ...
+[00:00:36.906] Server  WARN    ⚠ Cross origin request detected from 6000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
 Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
-[00:19:55.304] Server  LOG       Reload env: .env.local
-[00:20:14.720] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+[00:02:06.822] Server  LOG       Reload env: .env.local
+[00:02:17.312] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
 Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
