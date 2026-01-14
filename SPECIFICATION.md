@@ -202,9 +202,30 @@ All test cases, protocols, and the history of their execution are maintained in 
 *   **Formal Testimony:** The feedback from the Principal Witness, referencing the Test Step ID and console output, is the formal testimony that validates the application\'s state.
 
 
-## 6. Change Log (A History of Poiesis)
+## 6. Sprint-Based Tracking Protocol
 
-*   **2024-XX-XX (Current Session):**
+To maintain a clear and auditable history of our work, every Sprint is assigned a unique **Sprint ID**. This ID serves as the central thread connecting the Item of Work, the code changes, and the final verification.
+
+### 6.1. Sprint ID Naming Convention
+
+The Sprint ID follows a simple, descriptive format:
+
+**`[feature-name]-[YYYY-MM-DD]`**
+
+*   **`[feature-name]`:** A short, hyphenated name for the feature or bug fix (e.g., `password-reset`, `timeline-reordering`).
+*   **`[YYYY-MM-DD]`:** The date the Sprint was initiated.
+
+### 6.2. Workflow
+
+1.  **Sprint Initiation:** At the beginning of a new Sprint, a unique Sprint ID is created.
+2.  **Branching:** A new Git branch is created using the Sprint ID as the branch name.
+3.  **Committing:** All commits related to the Sprint will be made to this branch. The commit messages should be descriptive of the changes made.
+4.  **Testing:** The `MANUAL_TESTING.md` file will be updated with a new Test Session, which will be explicitly linked to the Sprint ID.
+5.  **Sprint Completion:** Once the Item of Work is complete and has been verified through testing, the Sprint branch will be merged into the `main` branch.
+
+## 7. Change Log (A History of Poiesis)
+
+*   **sprint-initial-setup-2024-05-20:**
     *   **Corrective Refactoring of Firebase Admin SDK:** Successfully diagnosed and resolved a systemic build failure caused by an `Export adminAuth doesn\'t exist` error. This was a symptom of a flawed architectural pattern in `firebase-admin.ts`. A **Corrective Refactoring** was performed, strengthening the central service provider and updating all consumer files (`createSessionAction.ts`, `requestPasswordResetAction.ts`, `resetPasswordAction.ts`, `memoryActions.ts`). This reinforced the \"Central Service Provider\" protocol, which is now a core part of our architecture.
     *   **Successful Deployment to App Hosting:** The application has been successfully built and deployed to Firebase App Hosting.
     *   **Deconstruction and Reconstruction of the Build:** The project entered a prolonged \"Mosh Pit\" session characterized by a cascade of build failures. This was a direct result of a failure to adhere to the \"Dependency-First Development\" principle. The following issues were identified and resolved:
@@ -218,7 +239,7 @@ All test cases, protocols, and the history of their execution are maintained in 
     *   **Instituted Corrective Refactoring:** Formalized the principle of holistic bug fixing.
     *   **Resolved Multiple Critical Failures:** Fixed issues related to dependency management, Firestore security rules, deployment blockers, and UI regressions.
 
-### 6.1 The Authentication Mosh Pit: A Case Study in Race Conditions and Incomplete States
+### 7.1 The Authentication Mosh Pit: A Case Study in Race Conditions and Incomplete States
 
 Following the successful resolution of our build-related issues, we immediately fell into a second Mosh Pit, this time centered on the user authentication flow. This experience served as a powerful lesson in the dangers of incomplete components and the subtle complexities of state management in a reactive application.
 
@@ -236,7 +257,7 @@ Following the successful resolution of our build-related issues, we immediately 
 
 This authentication Mosh Pit, like the build Mosh Pit before it, has been a valuable, if painful, learning experience. It has forced us to refine our understanding of state management and to appreciate the importance of a holistic, end-to-end testing strategy. These lessons are now enshrined in our development process.
 
-### 6.2 The Hydration Mosh Pit: A Case Study in Server-Client Mismatch
+### 7.2 The Hydration Mosh Pit: A Case Study in Server-Client Mismatch
 
 Our most recent descent into the Mosh Pit was a protracted and frustrating battle with a Next.js Hydration Error. This experience has been profoundly instructive, revealing the subtle yet critical differences between the server and client rendering environments and forcing us to develop a robust pattern for managing them.
 
@@ -258,7 +279,7 @@ This Mosh Pit has taught us a vital lesson, which we now codify as **The Client-
 
 This pattern guarantees that the server renders a placeholder (or nothing), and the client\'s initial render also renders a placeholder. The hydration check passes. The component is then rendered exclusively on the client, completely avoiding the server-client mismatch. This is a powerful, if blunt, tool that should be used when the exact source of a hydration error within a complex component is unclear.
 
-### 6.3 The \"Forgot Password\" Mosh Pit: A Case Study in Incomplete Workflow Testing
+### 7.3 The \"Forgot Password\" Mosh Pit: A Case Study in Incomplete Workflow Testing
 
 Our latest Mosh Pit, while quickly resolved, has highlighted a critical blind spot in my \"internal testing\" process. It serves as a powerful reminder of the principle of **Completeness over Correctness**.
 
@@ -274,20 +295,20 @@ This Mosh Pit has forced a critical refinement of our process and my definition 
 
 This lesson is now a core tenet of our development philosophy.
 
-## 7. User Management (The Care of the Other)
+## 8. User Management (The Care of the Other)
 
-### 7.1 Deleting a User
+### 8.1 Deleting a User
 
 User deletion is a two-stage process requiring deliberate, manual action for formal testing.
 
 1.  **Delete Firestore Data:** `firebase firestore:delete users/{UID} --recursive`
 2.  **Delete Auth Record:** Manually delete the user from the Firebase Console for formal testing. A server-side action exists for programmatic needs.
 
-## 8. The AI Tech Lead Performance Protocol (The Mirror)
+## 9. The AI Tech Lead Performance Protocol (The Mirror)
 
 To ensure a continuous cycle of improvement, we will use a formal feedback protocol called **\"The Mirror.\"** This protocol provides a clear, quantitative measure of the AI Tech Lead\'s performance, creating a direct link between feedback and process refinement.
 
-### 8.1 Scoring
+### 9.1 Scoring
 
 At the conclusion of a significant task or a series of related actions, the Principal Witness will provide a score based on the following scale:
 
@@ -295,7 +316,7 @@ At the conclusion of a significant task or a series of related actions, the Prin
 *   **Bad (5 Points):** A recoverable error. A minor mistake occurred (e.g., a typo, a syntax error), but it was quickly identified and corrected without fundamentally disrupting the workflow.
 *   **Ugly (0 Points):** A \"Mosh Pit\" failure. A significant error was made due to a failure of \"Humble Inquiry,\" a misunderstanding of core principles, or a repeated mistake. This results in significant backtracking, multiple failed attempts, and a disruption of the development flow.
 
-### 8.2 Performance Log
+### 9.2 Performance Log
 
 This log will be maintained as a permanent part of our living specification. For every **\"Bad\"** or **\"Ugly\"** score, a root cause analysis will be documented.
 
@@ -329,3 +350,23 @@ This log will be maintained as a permanent part of our living specification. For
         3.  **How will I prevent it from happening again?**
             *   Before any build, deployment, or testing-related command, I will explicitly state the environment I am targeting and confirm it with you. For example: \"We are testing against the `dev` server at `[URL]`. Is this correct?\"\n            *   I will treat the `Base URL` in our `MANUAL_TESTING.md` not as a placeholder, but as a direct, actionable piece of context. Its presence is a direct command to use that specific environment.
             *   This failure is now a permanent part of my performance log. I will review it as part of my **Pre-Flight Check** until the lesson is so deeply ingrained that this kind of error is impossible.
+
+## 10. Deployment and Testing Protocol
+
+The AI Tech Lead is explicitly forbidden from running `npm run build`. The Principal Witness is responsible for all deployments.
+
+All testing will be conducted on the live, deployed application at the following URL:
+
+**`https://studio--memory-weaver-8rk9t.us-central1.hosted.app/`**
+
+This URL is the single source of truth for application testing. The AI Tech Lead will always assume this is the target environment and will not propose any local build or server commands.
+
+### 10.1. Pre-Deployment Git Workflow
+
+Before requesting the Principal Witness to publish the application, the AI Tech Lead MUST perform the following actions:
+
+1.  **`git add .`**: Stage all changes.
+2.  **`git commit -m "[Commit Message]"`**: Commit the changes with a descriptive message.
+3.  **`git push`**: Push the changes to the remote repository.
+
+Only after these steps have been successfully completed will the AI Tech Lead request the Principal Witness to publish.

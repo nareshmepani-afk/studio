@@ -27,262 +27,49 @@ To bridge the gap between idea and execution, the testing process now incorporat
 
 ---
 
-## Active Test Session: `password-reset-2024-05-23-final-witnessed`
+## Active Sprint Test Session
 
-**Objective:** To provide a definitive, witnessed validation of the end-to-end password reset functionality, confirming the fix for the Firebase Admin SDK initialization and the `RESEND_API_KEY` configuration.
+**Sprint ID:** `[sprint-id]`
 
-**Base URL:** (To be provided by the testing environment)
+**Objective:** To verify the changes implemented in the current sprint.
 
-### Test Case 0: Full Password Reset and Login
+**Base URL:** `https://studio--memory-weaver-8rk9t.us-central1.hosted.app/`
 
-*   **Objective:** To ensure a user can successfully request a password reset, receive the email, change their password, and log in with the new credentials.
-
-*   **Test Step ID:** `witness-reset-tc0-ts1`
-    *   **Instruction:** Navigate to the login page. Click the "Forgot Password?" link.
-    *   **Expected Result:** You are navigated to the `/forgot-password` page.
-
-*   **Test Step ID:** `witness-reset-tc0-ts2`
-    *   **Instruction:** Enter the email address of a registered test user (`test@example.com`) and click the "Send Reset Link" button.
-    *   **Expected Result:** A success message is displayed. The console logs a successful call to the `requestPasswordResetAction`, and, crucially, **no errors related to the email service or Firebase Admin SDK** are present.
-
-*   **Test Step ID:** `witness-reset-tc0-ts3`
-    *   **Instruction:** Check the inbox for the email address you entered. Did you receive a password reset email from `noreply@memoryweaver.studio`?
-
-*   **Test Step ID:** `witness-reset-tc0-ts4`
-    *   **Instruction:** Click the reset link in the email.
-    *   **Expected Result:** You are navigated to the password reset page, which allows you to set a new password.
-
-*   **Test Step ID:** `witness-reset-tc0-ts5`
-    *   **Instruction:** Enter and confirm a new password and submit the form.
-    *   **Expected Result:** The password is changed successfully. You are redirected to the login page with a success message.
-
-*   **Test Step ID:** `witness-reset-tc0-ts6`
-    *   **Instruction:** Log in with the new password.
-    *   **Expected Result:** Login is successful. You are redirected to the `/dashboard` page and a welcome message is displayed.
+_[Test cases for the current sprint will be dynamically added here.]_
 
 ---
 
-## Active Test Session: `password-reset-2024-05-23-final`
-
-**Objective:** To provide a definitive, witnessed validation of the end-to-end password reset functionality, confirming the fix for the `RESEND_API_KEY` configuration.
-
-**Base URL:** (To be provided by the testing environment)
-
-### Test Case 0: Full Password Reset and Login
-
-*   **Objective:** To ensure a user can successfully request a password reset, receive the email, change their password, and log in with the new credentials.
-
-*   **Test Step ID:** `reset-final-tc0-ts1`
-    *   **Instruction:** Navigate to the login page. Click the "Forgot Password?" link.
-    *   **Expected Result:** You are navigated to the `/forgot-password` page.
-
-*   **Test Step ID:** `reset-final-tc0-ts2`
-    *   **Instruction:** Enter the email address of a registered test user and click the "Send Reset Link" button.
-    *   **Expected Result:** A success message is displayed. The console logs a successful call to the `requestPasswordResetAction`, and, crucially, **no errors related to the email service** are present.
-
-*   **Test Step ID:** `reset-final-tc0-ts3`
-    *   **Instruction:** Check the inbox for the email address you entered. Did you receive a password reset email from `noreply@memoryweaver.studio`?
-
-*   **Test Step ID:** `reset-final-tc0-ts4`
-    *   **Instruction:** Click the reset link in the email.
-    *   **Expected Result:** You are navigated to the password reset page, which allows you to set a new password.
-
-*   **Test Step ID:** `reset-final-tc0-ts5`
-    *   **Instruction:** Enter and confirm a new password and submit the form.
-    *   **Expected Result:** The password is changed successfully. You are redirected to the login page with a success message.
-
-*   **Test Step ID:** `reset-final-tc0-ts6`
-    *   **Instruction:** Log in with the new password.
-    *   **Expected Result:** Login is successful. You are redirected to the `/prompts` page.
-
-
----
-
-## Active Test Session: `auth-password-reset-2024-05-23-alpha`
-
-**Objective:** To verify the end-to-end password reset functionality.
-
-**Base URL:** (To be provided by the testing environment)
-
-### Test Case 0: Password Reset Request
-
-*   **Objective:** To ensure that a user can request a password reset and that the system correctly sends a reset email.
-
-*   **Test Step ID:** `reset-tc0-ts1`
-    *   **Instruction:** Navigate to the login page. Click the "Forgot Password?" link.
-    *   **Expected Result:** You are navigated to the password reset request page.
-
-*   **Test Step ID:** `reset-tc0-ts2`
-    *   **Instruction:** Enter the email address of a registered user and click the "Send Reset Link" button.
-    *   **Expected Result:** The console logs a successful call to the `requestPasswordResetAction`. A success message is displayed to the user.
-
-*   **Test Step ID:** `reset-tc0-ts3`
-    *   **Instruction:** Check the inbox for the email address you entered. Did you receive a password reset email from `noreply@memoryweaver.studio`? Does the email contain a valid password reset link?
-
-*   **Test Step ID:** `reset-tc0-ts4`
-    *   **Instruction:** Click the reset link in the email.
-    *   **Expected Result:** You are navigated to a page where you can enter a new password.
-
-*   **Test Step ID:** `reset-tc0-ts5`
-    *   **Instruction:** Enter and confirm a new password.
-    *   **Expected Result:** The password is changed successfully. You are redirected to the login page with a success message.
-
-*   **Test Step ID:** `reset-tc0-ts6`
-    *   **Instruction:** Log in with the new password.
-    *   **Expected Result:** Login is successful.
-
----
-
-## Active Test Session: `git-integrity-2024-05-22-beta`
-
-**Objective:** To verify the integrity of the Git repository, ensuring that no sensitive files are present in the history and that the `.gitignore` file is functioning correctly.
-
-**Base URL:** (N/A - This test is performed in the terminal)
-
-### Test Case 0: Git History Verification
-
-*   **Test Step ID:** `git-tc0-ts1`
-    *   **Instruction:** Run the command `git filter-branch --force --index-filter "git rm --cached --ignore-unmatch serviceAccountKey.json .env .env.local .env.copy" --prune-empty --tag-name-filter cat -- --all`
-    *   **Expected Result:** The command should complete and state that the history has been rewritten. If it fails, the test fails.
-
-### Test Case 1: `.gitignore` Verification
-
-*   **Objective:** To ensure that the `.gitignore` file is correctly preventing sensitive files from being staged.
-
-*   **Test Step ID:** `git-tc1-ts1`
-    *   **Instruction:** Create a new file named `serviceAccountKey.json` in the root of the project.
-    *   **Expected Result:** The file is created.
-
-*   **Test Step ID:** `git-tc1-ts2`
-    *   **Instruction:** Run `git status`.
-    *   **Expected Result:** The `serviceAccountKey.json` file should NOT appear in the list of untracked files.
-
-*   **Test Step ID:** `git-tc1-ts3`
-    *   **Instruction:** Delete the `serviceAccountKey.json` file.
-
----
-
-## Active Test Session: `project-integrity-2024-05-22-alpha`
-
-**Objective:** To verify the fundamental integrity of the project setup and ensure a clean, reproducible build.
-
-**Base URL:** (To be provided by the testing environment)
-
-### Test Case 0: Project Setup Verification
-
-*   **Objective:** To ensure that a fresh clone of the repository can be installed and run without errors. This is the foundational test for all development.
-
-*   **Test Step ID:** `setup-tc0-ts1`
-    *   **Instruction:** From a clean state (no `node_modules` or `.next` directories), run `npm install`.
-    *   **Expected Result:** The command completes without any errors.
-
-*   **Test Step ID:** `setup-tc0-ts2`
-    *   **Instruction:** Run `npm run dev`.
-    *   **Expected Result:** The development server starts successfully and the application is accessible in the browser. No build errors are present in the terminal.
-
----
-
-## Active Test Session: `core-functionality-2024-05-21-alpha`
-
-**Objective:** To perform a comprehensive end-to-end test of the application's core features, establishing a baseline of stability.
-
-**Base URL:** (To be provided by the testing environment)
-
-### Test Case 1: User Authentication Lifecycle
-
-*   **Objective:** Verify the complete user authentication flow: registration, logout, and login.
-
-*   **Test Step ID:** `auth-tc1-ts1`
-    *   **Instruction:** With the developer console open, navigate to `${Base URL}register`.
-    *   **Expected Result:** The registration page loads. No errors are present in the console.
-
-*   **Test Step ID:** `auth-tc1-ts2`
-    *   **Instruction:** Fill in the registration form with a valid email and password and click "Register".
-    *   **Expected Result:** A new user is created. The console logs the successful authentication and redirection.
-
-*   **Test Step ID:** `auth-tc1-ts3`
-    *   **Instruction:** Have you been redirected to the `/prompts` page? Does the navbar show the user's email?
-
-*   **Test Step ID:** `auth-tc1-ts4`
-    *   **Instruction:** Click the user email in the navbar, and then click "Log out".
-    *   **Expected Result:** The user is logged out. The console logs the logout action.
-
-*   **Test Step ID:** `auth-tc1-ts5`
-    *   **Instruction:** Have you been redirected to the `/login` page?
-
-*   **Test Step ID:** `auth-tc1-ts6`
-    *   **Instruction:** Log in with the same credentials you just created.
-    *   **Expected Result:** The user is logged in. The console logs the successful authentication.
-
-*   **Test Step ID:** `auth-tc1-ts7`
-    *   **Instruction:** Have you been redirected back to the `/prompts` page?
-
-### Test Case 2: "Flag for Reuse" Real-time Synchronization
-
-*   **Objective:** Verify that the "Flag for Reuse" feature, now secured by the corrected Firestore rules, synchronizes in real-time across multiple clients.
-
-*   **Test Step ID:** `flag-tc1-ts1`
-    *   **Instruction:** In your current browser tab (Tab 1), navigate to `${Base URL}add-memory?promptId=p1`.
-    *   **Expected Result:** The Add Memory page loads for prompt `p1`. The console logs the initial, un-flagged state.
-
-*   **Test Step ID:** `flag-tc1-ts2`
-    *   **Instruction:** Open a new browser tab (Tab 2) and navigate to the exact same URL: `${Base URL}add-memory?promptId=p1`.
-    *   **Expected Result:** The same page loads in the new tab.
-
-*   **Test Step ID:** `flag-tc1-ts3`
-    *   **Instruction:** In Tab 1, click the "Flag" icon to flag the prompt.
-    *   **Expected Result:** The console in Tab 1 logs the flagging action and the new `isFlagged: true` state. The icon in Tab 1 appears filled.
-
-*   **Test Step ID:** `flag-tc1-ts4`
-    *   **Instruction:** Observe Tab 2. Did the flag icon fill in automatically, without a page refresh? Does the console in Tab 2 log the state change pushed from Firestore?
-
-*   **Test Step ID:** `flag-tc1-ts5`
-    *   **Instruction:** In Tab 2, click the "Flag" icon to unflag the prompt.
-    *   **Expected Result:** The console in Tab 2 logs the unflagging action and the new `isFlagged: false` state. The icon in Tab 2 appears unfilled.
-
-*   **Test Step ID:** `flag-tc1-ts6`
-    *   **Instruction:** Observe Tab 1. Did the flag icon return to its unfilled state automatically, without a page refresh? Does the console in Tab 1 log the state change?
-
-### Test Case 3: QR Code URL Generation
-
-*   **Objective:** Verify that the QR code dialog generates the correct URL, confirming the regression is resolved.
-
-*   **Test Step ID:** `qr-tc1-ts1`
-    *   **Instruction:** On the `/add-memory?promptId=p1` page, click the "QR Code" icon.
-    *   **Expected Result:** The console logs the `qr-tc1-ts1` action.
-
-*   **Test Step ID:** `qr-tc1-ts2`
-    *   **Instruction:** Does a dialog appear? Scan the QR code with a device or inspect the component. Does the URL encoded in the QR code correctly resolve to `${Base URL}prompts/p1`?
-
-*   **Test Step ID:** `qr-tc1-ts3`
-    *   **Instruction:** Close the dialog.
-
-### Test Case 4: Teleprompter Tooltip Verification
-
-*   **Objective:** To verify that hovering over the "Info" icon on the Add Memory page displays the correct teleprompter script for the given prompt.
-
-*   **Test Step ID:** `tele-tc1-ts1`
-    *   **Instruction:** On the `/add-memory?promptId=p1` page, hover your mouse over the "Info" icon.
-    *   **Expected Result:** A tooltip appears containing the teleprompter script for prompt `p1`.
-
-*   **Test Step ID:** `tele-tc1-ts2`
-    *   **Instruction:** Verify that the text in the tooltip matches the script for `p1` in `src/lib/teleprompterScripts.ts`.
-    *   **Expected Result:** The text is an exact match.
-
----
-
-## Archived Test Sessions
-
-### Test Session: `add-memory-2024-05-20-protocol-alpha`
-
-*   **Base URL:** `https://9000-firebase-studio-1749052623784.cluster-6vyo4gb53jczovun3dxslzjahs.cloudworkstations.dev/`
-*   **Status:** Archived. Superseded by `core-functionality-2024-05-21-alpha`.
-
-*   **Test Case 1: Flag/Unflag Prompt**
-    *   `am-tc1-ts0` - `am-tc1-ts4`
-*   **Test Case 2: QR Code Dialog**
-    *   `am-tc2-ts1` - `am-tc2-ts3`
-*   **Test Case 3: Teleprompter Tooltip**
-    *   `am-tc3-ts1` - `am-tc3-ts2`
-*   **Test Case 4: Form Input, Media Capture, and Submission**
-    *   `am-tc4-ts1` - `am-tc4-ts6`
+## Test Session Archive
+
+### Sprint ID: `password-reset-2024-05-23`
+
+*   **Objective:** To provide a definitive, witnessed validation of the end-to-end password reset functionality, confirming the fix for the Firebase Admin SDK initialization and the `RESEND_API_KEY` configuration.
+*   **Test Case 0: Full Password Reset and Login**
+    *   `witness-reset-tc0-ts1` - `witness-reset-tc0-ts6`
+
+### Sprint ID: `core-functionality-2024-05-21`
+
+*   **Objective:** To perform a comprehensive end-to-end test of the application's core features, establishing a baseline of stability.
+*   **Test Case 1: User Authentication Lifecycle**
+    *   `auth-tc1-ts1` - `auth-tc1-ts7`
+*   **Test Case 2: "Flag for Reuse" Real-time Synchronization**
+    *   `flag-tc1-ts1` - `flag-tc1-ts6`
+*   **Test Case 3: QR Code URL Generation**
+    *   `qr-tc1-ts1` - `qr-tc1-ts3`
+*   **Test Case 4: Teleprompter Tooltip Verification**
+    *   `tele-tc1-ts1` - `tele-tc1-ts2`
+
+### Sprint ID: `git-integrity-2024-05-22`
+
+*   **Objective:** To verify the integrity of the Git repository, ensuring that no sensitive files are present in the history and that the `.gitignore` file is functioning correctly.
+*   **Test Case 0: Git History Verification**
+    *   `git-tc0-ts1`
+*   **Test Case 1: `.gitignore` Verification**
+    *   `git-tc1-ts1` - `git-tc1-ts3`
+
+### Archived Test Sessions
+
+*   **Test Session:** `add-memory-2024-05-20-protocol-alpha`
+*   **Test Session:** `project-integrity-2024-05-22-alpha`
+*   **Test Session:** `auth-password-reset-2024-05-23-alpha`
+*   **Test Session:** `password-reset-2024-05-23-final`

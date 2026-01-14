@@ -20,7 +20,7 @@ import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin, Info, QrCod
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/useAuth';
-import { doc, getDoc, updateDoc, collection, arrayUnion, arrayRemove, onSnapshot, addDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, arrayUnion, arrayRemove, onSnapshot, addDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { QrCodeDialog } from '@/components/prompts/QrCodeDialog';
@@ -129,11 +129,11 @@ export default function MemoryFormPage() {
           url,
           type: mediaPayload.type,
           duration: mediaPayload.duration,
-          filename: mediaPayload.file.name // This fixes the missing property error
+          filename: mediaPayload.file.name
         };
       }
 
-      const memoryData = {
+      const memoryData: Omit<Memory, 'id' | 'createdAt'> = {
         title,
         description,
         category: selectedCategory?.id || 'personal_reflection',
@@ -142,14 +142,21 @@ export default function MemoryFormPage() {
         date: new Date(selectedYear, selectedMonth, selectedDay).toISOString(),
         mediaAttachments: finalMedia ? [finalMedia] : [],
         updatedAt: new Date().toISOString(),
+        userDefinedOrder: 0, // Default value
+        userId: user.uid,
       };
 
       if (isEditing) {
         await updateDoc(doc(db!, 'users', user.uid, 'memories', editMemoryId!), memoryData);
       } else {
-        await addDoc(collection(db!, 'users', user.uid, 'memories'), {
+        const memoriesRef = collection(db!, 'users', user.uid, 'memories');
+        const q = query(memoriesRef, orderBy('userDefinedOrder', 'desc'), limit(1));
+        const lastMemory = await getDocs(q);
+        const newOrder = lastMemory.empty ? 0 : (lastMemory.docs[0].data().userDefinedOrder || 0) + 1;
+        
+        await addDoc(memoriesRef, {
           ...memoryData,
-          userId: user.uid,
+          userDefinedOrder: newOrder,
           createdAt: new Date().toISOString(),
         });
       }
