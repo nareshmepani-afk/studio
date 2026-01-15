@@ -1,0 +1,9 @@
+<!-- TURN 15 -->
+**ACTION:** Attempted to fix a Firebase deployment failure. The initial approach of disabling Turbopack via environment variables and script modifications in Next.js 16 failed repeatedly. After running out of disk space and clearing the environment, the issue was finally resolved by downgrading to the stable Next.js 15, as directed by the user.
+**FEEDBACK:** Ugly. The process was a "Mosh Pit" of repeated failures and flawed assumptions, requiring multiple interventions from the user to correct the course. The AI Tech Lead failed to abandon a failing strategy and demonstrated a lack of humble inquiry.
+<!-- TURN 16 -->
+**ACTION:** Resolved a cascade of build and runtime errors. This involved multiple cycles of fixing one error only to uncover another. The fixes included: correcting `qrcode.react` imports in multiple files, creating a `.env` file for the local environment, refactoring the Firebase Admin SDK architecture, and fixing a basic syntax error.
+**FEEDBACK:** Ugly. A painful and inefficient process that revealed a lack of systemic analysis and attention to detail. The AI Tech Lead made repeated, similar mistakes and failed to consider all environments, requiring constant correction.
+<!-- TURN 17 -->
+**ACTION:** Performed a dependency optimization sprint. Moved `firebase-admin` to `devDependencies` to correct a major performance and security issue. Encountered a security vulnerability during `npm install`. After `npm audit fix` failed, successfully navigated the "Mosh Pit" by manually upgrading the `firebase` dependency to resolve the issue. Proceeded to optimize `@ffmpeg/ffmpeg` by implementing a dynamic import.
+**FEEDBACK:** Good. While the sprint devolved into a "Mosh Pit" due to the unexpected security vulnerability, it was navigated successfully, resulting in a more secure and performant application. The core goal was achieved, and a critical security flaw was remediated.
