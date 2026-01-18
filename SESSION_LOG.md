@@ -7,3 +7,6 @@
 <!-- TURN 17 -->
 **ACTION:** Performed a dependency optimization sprint. Moved `firebase-admin` to `devDependencies` to correct a major performance and security issue. Encountered a security vulnerability during `npm install`. After `npm audit fix` failed, successfully navigated the "Mosh Pit" by manually upgrading the `firebase` dependency to resolve the issue. Proceeded to optimize `@ffmpeg/ffmpeg` by implementing a dynamic import.
 **FEEDBACK:** Good. While the sprint devolved into a "Mosh Pit" due to the unexpected security vulnerability, it was navigated successfully, resulting in a more secure and performant application. The core goal was achieved, and a critical security flaw was remediated.
+<!-- TURN 18 -->
+**ACTION:** Diagnosed and resolved a permissions issue for Firebase App Hosting secrets. The process involved debugging and correcting a flawed diagnostic script multiple times, identifying the correct service account, granting IAM permissions, and finally verifying the fix with a corrected script.
+**FEEDBACK:** Ugly. A "Mosh Pit." The sprint was characterized by a fundamental failure to verify the correctness of a provided tool, leading to a cascade of errors. The final deployment attempt used the wrong tool (Classic Hosting for a server app), demonstrating a critical lack of contextual awareness.
