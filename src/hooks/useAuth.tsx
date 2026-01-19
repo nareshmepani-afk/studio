@@ -55,7 +55,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
         if (wasLoggedIn) {
           await deleteSessionAction();
-          toast.error("Your session has expired. Please log in again to continue.");
+          toast({
+            variant: "destructive",
+            title: "Session Expired",
+            description: "Your session has expired. Please log in again to continue.",
+          });
           router.push('/login?reason=expired');
         }
         return;
@@ -66,9 +70,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const profileUnsubscribe = onSnapshot(userProfileRef, (doc) => {
         const fullUser = {
           ...firebaseUser,
+          email: firebaseUser.email ?? "",
           ...(doc.exists() ? (doc.data() as User) : {}),
         };
-        setUser(fullUser);
+        setUser(fullUser as CombinedUser);
         setLoading(false);
       }, (error) => {
          console.error("Error fetching user profile:", error);
@@ -130,7 +135,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sharedAccessStatus: 'no_pass_initiated',
         storageUsedBytes: 0,
         storageQuota: { total: STANDARD_HOST_STORAGE_QUOTA_BYTES, used: 0 },
-        emotionTags: [],
       };
       
       await setDoc(doc(db, 'users', firebaseUser.uid), userProfile);

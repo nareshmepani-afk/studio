@@ -29,6 +29,7 @@ export async function createMemoryAction(data: { title: string, description: str
       userId: session.uid,
       title,
       description,
+      emotionTags: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

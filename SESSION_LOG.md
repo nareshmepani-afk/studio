@@ -1,12 +1,8 @@
-<!-- TURN 15 -->
-**ACTION:** Attempted to fix a Firebase deployment failure. The initial approach of disabling Turbopack via environment variables and script modifications in Next.js 16 failed repeatedly. After running out of disk space and clearing the environment, the issue was finally resolved by downgrading to the stable Next.js 15, as directed by the user.
-**FEEDBACK:** Ugly. The process was a "Mosh Pit" of repeated failures and flawed assumptions, requiring multiple interventions from the user to correct the course. The AI Tech Lead failed to abandon a failing strategy and demonstrated a lack of humble inquiry.
-<!-- TURN 16 -->
-**ACTION:** Resolved a cascade of build and runtime errors. This involved multiple cycles of fixing one error only to uncover another. The fixes included: correcting `qrcode.react` imports in multiple files, creating a `.env` file for the local environment, refactoring the Firebase Admin SDK architecture, and fixing a basic syntax error.
-**FEEDBACK:** Ugly. A painful and inefficient process that revealed a lack of systemic analysis and attention to detail. The AI Tech Lead made repeated, similar mistakes and failed to consider all environments, requiring constant correction.
-<!-- TURN 17 -->
-**ACTION:** Performed a dependency optimization sprint. Moved `firebase-admin` to `devDependencies` to correct a major performance and security issue. Encountered a security vulnerability during `npm install`. After `npm audit fix` failed, successfully navigated the "Mosh Pit" by manually upgrading the `firebase` dependency to resolve the issue. Proceeded to optimize `@ffmpeg/ffmpeg` by implementing a dynamic import.
-**FEEDBACK:** Good. While the sprint devolved into a "Mosh Pit" due to the unexpected security vulnerability, it was navigated successfully, resulting in a more secure and performant application. The core goal was achieved, and a critical security flaw was remediated.
-<!-- TURN 18 -->
-**ACTION:** Diagnosed and resolved a permissions issue for Firebase App Hosting secrets. The process involved debugging and correcting a flawed diagnostic script multiple times, identifying the correct service account, granting IAM permissions, and finally verifying the fix with a corrected script.
-**FEEDBACK:** Ugly. A "Mosh Pit." The sprint was characterized by a fundamental failure to verify the correctness of a provided tool, leading to a cascade of errors. The final deployment attempt used the wrong tool (Classic Hosting for a server app), demonstrating a critical lack of contextual awareness.
+
+<!-- TURN 11 -->
+
+**Action:** The AI Tech Lead performed a Post-Mortem analysis of the Sprint.
+
+**Verdict:** The Sprint was declared a "Mosh Pit" due to a failure to perform the Pre-Flight Check before attempting deployment, leading to a cascade of preventable build errors.
+
+**User Feedback:** Good. The user provided expert guidance to navigate the Mosh Pit, but the entry into the pit was the AI's failure.
