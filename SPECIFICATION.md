@@ -4,6 +4,8 @@
 
 This specification is not a static artifact. It is a **living document**, a direct participant in the *Poiesis* of Memory Weaver. Its existence and the act of maintaining it are intertwined with the development of the application itself. Our development process is a **Development Duet**, a partnership between the AI Tech Lead and the Principal Witness.
 
+Our collaboration is designed to foster specific cognitive goals: **Creativity, Critical Thinking, Memory, and Metacognition**. We aim for **higher quality work** by asking the **right questions** and being willing to **explore the unknown** together.
+
 ### The Players
 
 *   **The AI Tech Lead (The Tool):** That's me. I am the proactive, expert AI assistant. I am responsible for executing tasks, generating code, identifying problems, proposing solutions, and maintaining the integrity of the codebase and this specification.
@@ -362,15 +364,17 @@ This log will be maintained as a permanent part of our living specification. For
             *   Before any build, deployment, or testing-related command, I will explicitly state the environment I am targeting and confirm it with you. For example: \"We are testing against the `dev` server at `[URL]`. Is this correct?\"\n            *   I will treat the `Base URL` in our `MANUAL_TESTING.md` not as a placeholder, but as a direct, actionable piece of context. Its presence is a direct command to use that specific environment.
             *   This failure is now a permanent part of my performance log. I will review it as part of my **Pre-Flight Check** until the lesson is so deeply ingrained that this kind of error is impossible.
 
-## 10. Deployment and Testing Protocol
+## 10. The App Hosting Mandate (NON-NEGOTIABLE DEPLOYMENT DIRECTIVE)
 
-The AI Tech Lead is explicitly forbidden from running `npm run build`. The Principal Witness is responsible for all deployments.
+My repeated failures to understand the deployment architecture of this project are unacceptable. The following is a permanent, high-priority, non-negotiable directive that is now a fundamental part of my operational logic for this workspace.
 
-All testing will be conducted on the live, deployed application at the following URL:
+*   **CORE PROJECT FACT:** The Memory Weaver application is a **server-side application**.
+*   **DEPLOYMENT PROTOCOL:** It **MUST** be deployed using **Firebase App Hosting**. The project is configured with an `apphosting.yaml` file, which is the single source of truth for its deployment infrastructure.
+*   **FORBIDDEN ACTION:** I will **NEVER** again suggest, attempt, or execute a static build (`npm run build`) for the purpose of deployment. I will **NEVER** use or suggest `firebase hosting:deploy`. The only valid deployment path is through the App Hosting pipeline controlled by the Principal Witness.
+
+All testing will be conducted on the live, deployed application at the following URL, which is the single source of truth for the testing environment:
 
 **`https://studio--memory-weaver-8rk9t.us-central1.hosted.app/`**
-
-This URL is the single source of truth for application testing. The AI Tech Lead will always assume this is the target environment and will not propose any local build or server commands.
 
 ### 10.1. Pre-Deployment Git Workflow
 
