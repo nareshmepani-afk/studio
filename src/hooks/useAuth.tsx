@@ -94,7 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (isAuthenticated) {
       if (isPublicOnlyRoute) {
-        router.push('/dashboard');
+        router.push('/timeline');
       }
     } else {
       if (isPrivateRoute) {
@@ -109,12 +109,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const idToken = await userCredential.user.getIdToken();
       await createSessionAction(idToken);
       toast({ title: 'Login Successful', description: "Welcome back!", variant: 'success' });
-      router.push('/timeline');
     } catch (error: any) {
       toast({ title: 'Login Failed', description: error.message, variant: 'destructive' });
       throw error;
     }
-  }, [router]);
+  }, []);
 
   const register = useCallback(async (name: string, email: string, password: string) => {
     console.log('TESTIMONY_REG_01: Registration process started.');
@@ -152,10 +151,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       toast({ title: 'Registration Successful', description: "Welcome to Memory Weaver! Your complimentary 6-month Host Pass has been activated.", variant: 'success' });
       
-      console.log('TESTIMONY_REG_11: Attempting to redirect to /timeline.');
-      router.push('/timeline'); 
-      console.log('TESTIMONY_REG_12: Redirect call to /timeline completed.');
-    } catch (error: any) {
+      console.log('TESTIMONY_REG_11: All registration steps complete. Redirecting to /timeline...');
+      router.push('/timeline');
+    } catch (error: any)
+      {
       console.error('TESTIMONY_REG_ERR: Registration failed.', error);
       toast({ title: 'Registration Failed', description: error.message, variant: 'destructive' });
       throw error;
