@@ -1,3 +1,4 @@
+
 # Manual End-to-End Testing Protocol
 
 This document is the living record of all manual end-to-end testing performed on the Memory Weaver application. It is a formal process of "Witnessing" designed to be executed by a human tester to assess the qualitative, lived experience of using the application.
@@ -29,25 +30,30 @@ To bridge the gap between idea and execution, the testing process now incorporat
 
 ## Active Sprint Test Session
 
-**Sprint ID:** `ffmpeg-race-condition-validation-2024-05-24`
+**Sprint ID:** `registration-workflow-2024-05-24`
 
-**Objective:** To determine if a race condition exists when loading and using FFmpeg concurrently.
+**Objective:** To diagnose and resolve the user registration workflow failure.
 
 **Base URL:** `https://studio--memory-weaver-8rk9t.us-central1.hosted.app/`
 
-### Test Case 1: Concurrent FFmpeg Initialization Test
+### Test Case 1: User Registration End-to-End Test
 
-*   **Objective:** To intentionally create a race condition by triggering multiple FFmpeg instances at the same time.
-*   **Pre-requisites:** The user must be logged in and on the "Add Memory" page. The user should have several small audio files ready for upload.
-*   **`ffmpeg-race-tc1-ts1`**: Navigate to the "Add Memory" page.
-*   **`ffmpeg-race-tc1-ts2`**: Open the browser's developer console and keep it open to monitor for errors.
-*   **`ffmpeg-race-tc1-ts3`**: In quick succession, select and upload 3-4 small audio files. The goal is to have multiple `ffmpeg.load()` calls happening almost simultaneously.
-*   **`ffmpeg-race-tc1-ts4`**: Observe the console for any errors related to FFmpeg initialization, such as "ffmpeg is already loaded" or other concurrency-related issues.
-*   **`ffmpeg-race-tc1-ts5`**: Report the outcome. Did any errors appear in the console? Did all files transcode successfully?
+*   **Objective:** To trace the user registration process from form submission to successful login and redirection.
+*   **Pre-requisites:** The user must be on the `/register` page.
+*   **`reg-tc1-ts1`**: Open the browser's developer console and keep it open to monitor the `TESTIMONY` logs.
+*   **`reg-tc1-ts2`**: Fill out the registration form with a unique email and a strong password.
+*   **`reg-tc1-ts3`**: Click the "Get Started for Free" button.
+*   **`reg-tc1-ts4`**: Observe the console for the `TESTIMONY` logs. Report which `TESTIMONY_REG_XX` log is the last one to appear before the process hangs or fails.
 
 ---
 
 ## Test Session Archive
+
+### Sprint ID: `ffmpeg-race-condition-validation-2024-05-24`
+
+*   **Objective:** To determine if a race condition exists when loading and using FFmpeg concurrently.
+*   **Test Case 1: Concurrent FFmpeg Initialization Test**
+    *   `ffmpeg-race-tc1-ts1` - `ffmpeg-race-tc1-ts5`
 
 ### Sprint ID: `ux-refinement-2024-05-24`
 
