@@ -169,7 +169,7 @@ export default function RegisterPage() {
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign Up
+                Get Started for Free
               </Button>
             </form>
             <p className="mt-6 text-center text-sm text-muted-foreground">

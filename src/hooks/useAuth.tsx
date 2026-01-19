@@ -131,7 +131,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: firebaseUser.email!,
         name: name,
         createdAt: new Date().toISOString(),
-        hostPassStatus: 'no_pass_initiated',
+        hostPassStatus: 'free_host_pass_active',
+        freeHostPassActivatedDate: new Date().toISOString(),
         sharedAccessStatus: 'no_pass_initiated',
         storageUsedBytes: 0,
         storageQuota: { total: STANDARD_HOST_STORAGE_QUOTA_BYTES, used: 0 },
@@ -139,7 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       await setDoc(doc(db, 'users', firebaseUser.uid), userProfile);
       
-      toast({ title: 'Registration Successful', description: "Welcome to Memory Weaver!", variant: 'success' });
+      toast({ title: 'Registration Successful', description: "Welcome to Memory Weaver! Your complimentary 6-month Host Pass has been activated.", variant: 'success' });
       router.push('/timeline'); 
     } catch (error: any) {
       toast({ title: 'Registration Failed', description: error.message, variant: 'destructive' });
