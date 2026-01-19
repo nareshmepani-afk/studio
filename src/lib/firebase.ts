@@ -6,8 +6,6 @@ import { getFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 import { firebaseConfig, validateConfig } from "./config-schema";
 
-console.log("Firebase Config in firebase.ts:", firebaseConfig);
-
 let internalApp: FirebaseApp;
 let internalAuth: Auth;
 let internalDb: Firestore;
