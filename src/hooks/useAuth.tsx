@@ -114,31 +114,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const register = useCallback(async (name: string, email: string, password: string) => {
-    console.log('TESTIMONY_REG_01: Registration process started.');
     try {
-        console.log('TESTIMONY_REG_02: Attempting to create user with email and password.');
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const firebaseUser = userCredential.user;
-        console.log('TESTIMONY_REG_03: User created successfully in Firebase Auth. UID:', firebaseUser.uid);
-
-        console.log('TESTIMONY_REG_04: Attempting to get ID token.');
         const idToken = await firebaseUser.getIdToken();
-        console.log('TESTIMONY_REG_05: ID token retrieved. Attempting to create session.');
         await createSessionAction(idToken);
-        console.log('TESTIMONY_REG_06: Session created successfully.');
-
-        console.log('TESTIMONY_REG_07: Attempting to update user profile display name.');
         await updateProfile(firebaseUser, { displayName: name });
-        console.log('TESTIMONY_REG_08: User profile display name updated.');
         
         toast({ title: 'Registration Successful', description: "Welcome to Memory Weaver! Your complimentary 6-month Host Pass has been activated.", variant: 'success' });
         
-        console.log('TESTIMONY_REG_11: All registration steps complete. Redirecting to /prompts for onboarding...');
         router.push('/prompts');
         
-    } catch (error: any)
-      {
-      console.error('TESTIMONY_REG_ERR: Registration failed.', error);
+    } catch (error: any) {
+      console.error('Registration failed:', error);
       toast({ title: 'Registration Failed', description: error.message, variant: 'destructive' });
       throw error;
     }
