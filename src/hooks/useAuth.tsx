@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
+import React, { useState, useEffect, createContext, useContext, useCallback, useRef } from 'react';
 import { onIdTokenChanged, type User as FirebaseUser, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, onSnapshot, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -43,14 +43,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const router = useRouter();
   const pathname = usePathname();
+  const userRef = useRef(user);
+  userRef.current = user;
 
   useEffect(() => {
-    // onIdTokenChanged handles token refreshes and expirations, making it robust.
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
-      // If user is null, it means they are logged out or the token is invalid.
       if (!firebaseUser) {
-        // Check if there was a user before. This prevents firing on initial load.
-        const wasLoggedIn = !!user;
+        const wasLoggedIn = !!userRef.current;
         setUser(null);
         setLoading(false);
         if (wasLoggedIn) {
@@ -65,7 +64,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // If user exists, listen for their profile data from Firestore.
       const userProfileRef = doc(db, 'users', firebaseUser.uid);
       const profileUnsubscribe = onSnapshot(userProfileRef, (doc) => {
         const fullUser = {
@@ -84,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => unsubscribe();
-  }, [router, user]);
+  }, [router]);
 
   useEffect(() => {
     if (loading) return;
