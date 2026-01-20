@@ -17,11 +17,15 @@ export default function LifeJourneyPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('TESTIMONY: Prompts page loading started.');
     // Adding db check here as well to be safe
     if (!user || !db) {
+      console.log('TESTIMONY: User not authenticated, aborting data fetch.');
       setIsLoading(false);
       return;
     }
+
+    console.log('TESTIMONY: User authenticated, fetching data for UID:', user.uid);
 
     // Fix: Added ! to db
     const memoriesRef = collection(db!, 'users', user.uid, 'memories');
@@ -43,16 +47,21 @@ export default function LifeJourneyPage() {
     const flagsUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
         if (docSnap.exists()) {
             const userData = docSnap.data();
+            console.log('TESTIMONY: Fetched user profile with flagged prompts:', userData.flaggedPrompts);
             setInitialFlaggedPromptIds(new Set(userData.flaggedPrompts || []));
         }
     });
 
     memoriesPromise
       .then(memories => {
+        console.log('TESTIMONY: Successfully fetched memories:', memories);
         setInitialMemories(memories);
       })
-      .catch(console.error)
+      .catch(error => {
+        console.error('TESTIMONY: Error fetching memories:', error);
+      })
       .finally(() => {
+        console.log('TESTIMONY: Prompts page loading finished.');
         setIsLoading(false);
       });
 
