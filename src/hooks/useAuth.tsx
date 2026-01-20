@@ -133,8 +133,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         toast({ title: 'Registration Successful', description: "Welcome to Memory Weaver! Your complimentary 6-month Host Pass has been activated.", variant: 'success' });
         
-        console.log('TESTIMONY_REG_11: All registration steps complete. Redirecting to /timeline...');
-        router.push('/timeline');
+        console.log('TESTIMONY_REG_11: All registration steps complete. Redirecting to /prompts for onboarding...');
+        router.push('/prompts');
         
     } catch (error: any)
       {
