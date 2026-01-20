@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PRIVATE_ROUTES = ['/dashboard', '/timeline', '/add-memory', '/prompts', '/settings', '/requests'];
+const PRIVATE_ROUTES = ['/dashboard', '/timeline', '/add-memory', '/prompts', '/settings', '/requests', '/create'];
 
 export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get('session');
@@ -13,9 +13,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // If the user is authenticated and is trying to access the login or register page, redirect to the dashboard.
+  // If the user is authenticated and is trying to access the login or register page, redirect to the timeline.
   if (sessionCookie && (pathname.startsWith('/login') || pathname.startsWith('/register'))) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL('/timeline', request.url));
   }
 
   return NextResponse.next();
