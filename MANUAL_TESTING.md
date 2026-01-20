@@ -43,7 +43,15 @@ To bridge the gap between idea and execution, the testing process now incorporat
 *   **`reg-tc1-ts1`**: Open the browser's developer console and keep it open to monitor the `TESTIMONY` logs.
 *   **`reg-tc1-ts2`**: Fill out the registration form with a unique email and a strong password.
 *   **`reg-tc1-ts3`**: Click the "Get Started for Free" button.
-*   **`reg-tc1-ts4`**: Observe the console for the `TESTIMONY` logs. Report which `TESTIMONY_REG_XX` log is the last one to appear before the process hangs or fails.
+*   **`reg-tc1-ts4`**: Observe the console for the `TESTIMONY` logs. Verify that the user is redirected to the `/timeline` page and a success toast message is displayed.
+
+### Test Case 2: Server-Side User Profile Creation
+
+*   **Objective:** To verify that a user profile is created in Firestore when a new user is created in Firebase Authentication.
+*   **Pre-requisites:** Access to the Firebase console.
+*   **`reg-tc2-ts1`**: Navigate to the Firebase console and create a new user in the Authentication section.
+*   **`reg-tc2-ts2`**: Navigate to the Firestore `users` collection.
+*   **`reg-tc2-ts3`**: Verify that a new document exists in the `users` collection with the UID of the user created in the previous step.
 
 ---
 
