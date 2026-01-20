@@ -118,48 +118,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = useCallback(async (name: string, email: string, password: string) => {
     console.log('TESTIMONY_REG_01: Registration process started.');
     try {
-      console.log('TESTIMONY_REG_02: Attempting to create user with email and password.');
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-      console.log('TESTIMONY_REG_03: User created successfully in Firebase Auth. UID:', firebaseUser.uid);
-      
-      console.log('TESTIMONY_REG_04: Attempting to get ID token.');
-      const idToken = await firebaseUser.getIdToken();
-      console.log('TESTIMONY_REG_05: ID token retrieved. Attempting to create session.');
-      await createSessionAction(idToken);
-      console.log('TESTIMONY_REG_06: Session created successfully.');
+        console.log('TESTIMONY_REG_02: Attempting to create user with email and password.');
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const firebaseUser = userCredential.user;
+        console.log('TESTIMONY_REG_03: User created successfully in Firebase Auth. UID:', firebaseUser.uid);
 
-      console.log('TESTIMONY_REG_07: Attempting to update user profile display name.');
-      await updateProfile(firebaseUser, { displayName: name });
-      console.log('TESTIMONY_REG_08: User profile display name updated.');
-      
-      const userProfile: User = {
-        id: firebaseUser.uid,
-        email: firebaseUser.email!,
-        name: name,
-        createdAt: new Date().toISOString(),
-        hostPassStatus: 'free_host_pass_active',
-        freeHostPassActivatedDate: new Date().toISOString(),
-        sharedAccessStatus: 'no_pass_initiated',
-        storageUsedBytes: 0,
-        storageQuota: { total: STANDARD_HOST_STORAGE_QUOTA_BYTES, used: 0 },
-      };
-      
-      console.log('TESTIMONY_REG_09: Attempting to create user profile in Firestore.');
-      await setDoc(doc(db, 'users', firebaseUser.uid), userProfile);
-      console.log('TESTIMONY_REG_10: User profile created in Firestore.');
-      
-      toast({ title: 'Registration Successful', description: "Welcome to Memory Weaver! Your complimentary 6-month Host Pass has been activated.", variant: 'success' });
-      
-      console.log('TESTIMONY_REG_11: All registration steps complete. Redirecting to /timeline...');
-      
-    } catch (error: any)
-      {
-      console.error('TESTIMONY_REG_ERR: Registration failed.', error);
-      toast({ title: 'Registration Failed', description: error.message, variant: 'destructive' });
-      throw error;
+        console.log('TESTIMONY_REG_04: Attempting to get ID token.');
+        const idToken = await firebaseUser.getIdToken();
+        console.log('TESTIMONY_REG_05: ID token retrieved. Attempting to create session.');
+        await createSessionAction(idToken);
+        console.log('TESTIMONY_REG_06: Session created successfully.');
+
+        console.log('TESTIMONY_REG_07: Attempting to update user profile display name.');
+        await updateProfile(firebaseUser, { displayName: name });
+        console.log('TESTIMONY_REG_08: User profile display name updated.');
+
+        const userProfile: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email!,
+            name: name,
+            createdAt: new Date().toISOString(),
+            hostPassStatus: 'free_host_pass_active',
+            freeHostPassActivatedDate: new Date().toISOString(),
+            sharedAccessStatus: 'no_pass_initiated',
+            storageUsedBytes: 0,
+            storageQuota: { total: STANDARD_HOST_STORAGE_QUOTA_BYTES, used: 0 },
+        };
+
+        console.log('TESTIMONY_REG_09: Attempting to create user profile in Firestore.');
+
+        const poll = async (fn: () => Promise<any>, timeout: number, interval: number) => {
+            let elapsedTime = 0;
+            while (elapsedTime < timeout) {
+                try {
+                    await fn();
+                    return;
+                } catch (error) {
+                    console.log('Polling... retrying in', interval, 'ms');
+                    elapsedTime += interval;
+                    await new Promise(resolve => setTimeout(resolve, interval));
+                }
+            }
+            throw new Error('Polling timed out');
+        };
+
+        await poll(() => setDoc(doc(db, 'users', firebaseUser.uid), userProfile), 10000, 1000);
+
+        console.log('TESTIMONY_REG_10: User profile created in Firestore.');
+
+        toast({ title: 'Registration Successful', description: "Welcome to Memory Weaver! Your complimentary 6-month Host Pass has been activated.", variant: 'success' });
+
+        console.log('TESTIMONY_REG_11: All registration steps complete. Redirecting to /timeline...');
+
+    } catch (error: any) {
+        console.error('TESTIMONY_REG_ERR: Registration failed.', error);
+        toast({ title: 'Registration Failed', description: error.message, variant: 'destructive' });
+        throw error;
     }
-  }, []);
+}, []);
+
 
   const logout = useCallback(async () => {
     await signOut(auth);
