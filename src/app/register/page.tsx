@@ -8,21 +8,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { Film, Loader2 } from 'lucide-react';
+import { Film, Info, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Navbar } from '@/components/layout/Navbar';
 import { toast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const { register, loading: authLoading, isAuthenticated } = useAuth();
+  const { register, loading: authLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
-  const router = useRouter();
 
   useEffect(() => {
     setHasMounted(true);
@@ -109,8 +108,20 @@ export default function RegisterPage() {
               <Film className="h-10 w-10 text-primary" />
             </div>
             <CardTitle className="font-headline text-3xl">Create Account</CardTitle>
-            <CardDescription>
+            <CardDescription className="flex items-center justify-center">
               Join Memory Weaver and activate your complimentary 6-month Host Pass to start preserving your moments.
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-block ml-1 cursor-pointer">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>After 6 months, the Host Pass is about the price of a cup of coffee per month in your local currency.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </CardDescription>
           </CardHeader>
           <CardContent>
