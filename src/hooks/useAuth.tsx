@@ -152,14 +152,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast({ title: 'Registration Successful', description: "Welcome to Memory Weaver! Your complimentary 6-month Host Pass has been activated.", variant: 'success' });
       
       console.log('TESTIMONY_REG_11: All registration steps complete. Redirecting to /timeline...');
-      router.push('/timeline');
+      
     } catch (error: any)
       {
       console.error('TESTIMONY_REG_ERR: Registration failed.', error);
       toast({ title: 'Registration Failed', description: error.message, variant: 'destructive' });
       throw error;
     }
-  }, [router]);
+  }, []);
 
   const logout = useCallback(async () => {
     await signOut(auth);
