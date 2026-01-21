@@ -83,6 +83,14 @@ export default function MemoryFormPage() {
   const daysInMonth = getDaysInMonth(new Date(selectedYear, selectedMonth));
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
+  const [qrCodeDialog, setQrCodeDialog] = useState({ open: false, url: '', title: '' });
+  const teleprompterScript = teleprompterScripts[promptId as keyof typeof teleprompterScripts] || defaultTeleprompterFallbackScript;
+
+  const handleShowQrCode = () => {
+    const url = `${window.location.origin}/memory/${editMemoryId}`;
+    setQrCodeDialog({ open: true, url, title: title || "My Memory" });
+  };
+
   useEffect(() => {
     if (authLoading || !user || !promptId || !db) return;
     const userRef = doc(db!, 'users', user.uid);
@@ -132,6 +140,19 @@ export default function MemoryFormPage() {
     };
     fetchMemory();
   }, [editMemoryId, user, authLoading, toast]);
+
+  const handleToggleFlagPrompt = async () => {
+    if (!user || !promptId || !db) return;
+    const userRef = doc(db, 'users', user.uid);
+    try {
+        await updateDoc(userRef, {
+            flaggedPrompts: isFlagged ? arrayRemove(promptId) : arrayUnion(promptId)
+        });
+        toast({ title: isFlagged ? 'Prompt Unflagged' : 'Prompt Flagged', description: isFlagged ? 'Removed from your list of important prompts.' : 'Saved to your list of important prompts.' });
+    } catch (error) {
+        toast({ title: 'Error', description: 'Could not update your flagged prompts', variant: 'destructive' });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,89 +223,149 @@ export default function MemoryFormPage() {
   return (
     <AuthenticatedPageWrapper>
       <div className="container max-w-2xl py-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{isEditing ? 'Edit Memory' : 'Add New Memory'}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Title</Label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Give your memory a name..." />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Media</Label>
-                <MediaCaptureControl onMediaReady={setMediaPayload} />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Write about this moment..." />
-              </div>
-              
-                <div className="space-y-2">
-                    <Label className="flex items-center"><MapPin className="mr-2 h-4 w-4" /> Location</Label>
-                    <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Where did this take place?" />
-                </div>
-
-                <div className="space-y-2">
-                    <Label className="flex items-center"><CalendarIcon className="mr-2 h-4 w-4" /> Date</Label>
-                    <div className="grid grid-cols-3 gap-2">
+        <form onSubmit={handleSubmit}>
+          <Carousel setApi={setCarouselApi} className="w-full">
+            <CarouselContent>
+              <CarouselItem>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{isEditing ? 'Edit Memory' : 'Add New Memory'}</CardTitle>
+                    <CardDescription>Let's start with the basics. Give your memory a title and record the moment.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Title</Label>
+                      <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Give your memory a name..." />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Media</Label>
+                      <MediaCaptureControl onMediaReady={setMediaPayload} />
+                    </div>
+                     <div className="space-y-2">
+                      <Label>Description</Label>
+                      <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Write about this moment..." />
+                    </div>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+              <CarouselItem>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Add More Context</CardTitle>
+                    <CardDescription>Enrich your memory with details like location, date, and how you felt.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="flex items-center"><MapPin className="mr-2 h-4 w-4" /> Location</Label>
+                      <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Where did this take place?" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center"><CalendarIcon className="mr-2 h-4 w-4" /> Date</Label>
+                      <div className="grid grid-cols-3 gap-2">
                         <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                            <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
-                            <SelectContent>
-                                {years.map(year => <SelectItem key={year} value={year.toString()}>{year}</SelectItem>)}
-                            </SelectContent>
+                          <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
+                          <SelectContent>
+                            {years.map(year => <SelectItem key={year} value={year.toString()}>{year}</SelectItem>)}
+                          </SelectContent>
                         </Select>
                         <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
-                            <SelectTrigger><SelectValue placeholder="Month" /></SelectTrigger>
-                            <SelectContent>
-                                {months.map(month => <SelectItem key={month.value} value={month.value.toString()}>{month.label}</SelectItem>)}
-                            </SelectContent>
+                          <SelectTrigger><SelectValue placeholder="Month" /></SelectTrigger>
+                          <SelectContent>
+                            {months.map(month => <SelectItem key={month.value} value={month.value.toString()}>{month.label}</SelectItem>)}
+                          </SelectContent>
                         </Select>
                         <Select value={selectedDay.toString()} onValueChange={(value) => setSelectedDay(parseInt(value))}>
-                            <SelectTrigger><SelectValue placeholder="Day" /></SelectTrigger>
+                          <SelectTrigger><SelectValue placeholder="Day" /></SelectTrigger>
+                          <SelectContent>
+                            {days.map(day => <SelectItem key={day} value={day.toString()}>{day}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Category</Label>
+                        <Select onValueChange={(value) => setSelectedCategory(memoryCategoriesList.find(c => c.id === value))} value={selectedCategory?.id}>
+                            <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
                             <SelectContent>
-                                {days.map(day => <SelectItem key={day} value={day.toString()}>{day}</SelectItem>)}
+                                {memoryCategoriesList.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
-                </div>
-
-                <div className="space-y-2">
-                    <Label>Category</Label>
-                    <Select onValueChange={(value) => setSelectedCategory(memoryCategoriesList.find(c => c.id === value))} value={selectedCategory?.id}>
-                        <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
-                        <SelectContent>
-                            {memoryCategoriesList.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center"><Smile className="mr-2 h-4 w-4" /> Emotion Tags</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 rounded-lg border p-4">
-                  {emotionTagsList.map(tag => (
-                    <div key={tag.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`emotion-${tag.id}`}
-                        checked={selectedEmotionTags.includes(tag.id)}
-                        onCheckedChange={() => handleEmotionTagToggle(tag.id)}
-                      />
-                      <Label htmlFor={`emotion-${tag.id}`} className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        {tag.label}
-                      </Label>
+                    <div className="space-y-2">
+                      <Label className="flex items-center"><Smile className="mr-2 h-4 w-4" /> Emotion Tags</Label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 rounded-lg border p-4">
+                        {emotionTagsList.map(tag => (
+                          <div key={tag.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`emotion-${tag.id}`}
+                              checked={selectedEmotionTags.includes(tag.id)}
+                              onCheckedChange={() => handleEmotionTagToggle(tag.id)}
+                            />
+                            <Label htmlFor={`emotion-${tag.id}`} className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                              {tag.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-              <Button type="submit" disabled={isSubmitting} className="w-full">
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Memory'}
-              </Button>
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+              <CarouselItem>
+                <Card>
+                  <CardHeader>
+                      <CardTitle>Tools & Actions</CardTitle>
+                      <CardDescription>Use these tools to help you tell your story and manage this prompt.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                           <div className="space-y-2">
+                            <Label className="flex items-center"><Info className="mr-2 h-4 w-4" /> Teleprompter Script</Label>
+                            <Textarea readOnly value={teleprompterScript} className="h-32 bg-muted" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Use this script in a teleprompter app to guide your recording.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <div className="flex items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-1">
+                            <Label className="flex items-center"><Flag className="mr-2 h-4 w-4" /> Flag for Reuse</Label>
+                            <p className="text-sm text-muted-foreground">Mark this prompt as important to revisit later.</p>
+                        </div>
+                        <Checkbox checked={isFlagged} onCheckedChange={handleToggleFlagPrompt} disabled={isLoadingFlag} />
+                    </div>
+                    {isEditing && (
+                      <div className="flex items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-1">
+                            <Label className="flex items-center"><QrCode className="mr-2 h-4 w-4" /> Shareable QR Code</Label>
+                            <p className="text-sm text-muted-foreground">Generate a QR code to share this memory.</p>
+                        </div>
+                        <Button type="button" variant="outline" onClick={handleShowQrCode}>Show QR Code</Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+            </CarouselContent>
+            <div className="mt-4 flex justify-between">
+                <Button type="button" variant="outline" onClick={() => carouselApi?.scrollPrev()}><ArrowLeft className="mr-2 h-4 w-4" /> Back</Button>
+                <Button type="button" variant="outline" onClick={() => carouselApi?.scrollNext()}>Next <ArrowRight className="ml-2 h-4 w-4" /></Button>
+            </div>
+            <Button type="submit" disabled={isSubmitting} className="w-full mt-6">
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Memory'}
+            </Button>
+          </Carousel>
         </form>
+        <QrCodeDialog
+          open={qrCodeDialog.open}
+          url={qrCodeDialog.url}
+          title={qrCodeDialog.title}
+          onClose={() => setQrCodeDialog({ open: false, url: '', title: '' })}
+        />
       </div>
     </AuthenticatedPageWrapper>
   );
