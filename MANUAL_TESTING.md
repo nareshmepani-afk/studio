@@ -30,32 +30,44 @@ To bridge the gap between idea and execution, the testing process now incorporat
 
 ## Active Sprint Test Session
 
-**Sprint ID:** `registration-workflow-2024-05-24`
+**Sprint ID:** `timeline-debug-2024-05-24`
 
-**Objective:** To diagnose and resolve the user registration workflow failure.
+**Objective:** To verify that the timeline now correctly loads and displays memories in chronological order.
 
 **Base URL:** `https://studio--memory-weaver-8rk9t.us-central1.hosted.app/`
 
-### Test Case 1: User Registration End-to-End Test
+### Test Case 1: Verify Timeline Loads Memories
 
-*   **Objective:** To trace the user registration process from form submission to successful login and redirection.
-*   **Pre-requisites:** The user must be on the `/register` page.
-*   **`reg-tc1-ts1`**: Open the browser's developer console and keep it open to monitor the `TESTIMONY` logs.
-*   **`reg-tc1-ts2`**: Fill out the registration form with a unique email and a strong password.
-*   **`reg-tc1-ts3`**: Click the "Get Started for Free" button.
-*   **`reg-tc1-ts4`**: Observe the console for the `TESTIMONY` logs. Verify that the user is redirected to the `/timeline` page and a success toast message is displayed.
+*   **Objective:** To confirm that memories are displayed on the timeline page after being created.
+*   **Pre-requisites:** The user must be logged in.
+*   **`timeline-tc1-ts1`**: Navigate to the `/add-memory` page.
+*   **`timeline-tc1-ts2`**: Create a new memory with a title and some content.
+*   **`timeline-tc1-ts3`**: Click the "Save Memory" button.
+*   **`timeline-tc1-ts4`**: The user should be redirected to the `/timeline` page.
+*   **`timeline-tc1-ts5`**: Verify that the newly created memory is displayed on the timeline.
+*   **`timeline-tc1-ts6`**: Open the browser's developer console and verify that the `TESTIMONY` logs show the memories being fetched and displayed.
 
-### Test Case 2: Server-Side User Profile Creation
+### Test Case 2: Verify Memories are Ordered Chronologically
 
-*   **Objective:** To verify that a user profile is created in Firestore when a new user is created in Firebase Authentication.
-*   **Pre-requisites:** Access to the Firebase console.
-*   **`reg-tc2-ts1`**: Navigate to the Firebase console and create a new user in the Authentication section.
-*   **`reg-tc2-ts2`**: Navigate to the Firestore `users` collection.
-*   **`reg-tc2-ts3`**: Verify that a new document exists in the `users` collection with the UID of the user created in the previous step.
+*   **Objective:** To confirm that memories are displayed in reverse chronological order (newest first).
+*   **Pre-requisites:** The user must be logged in and have at least two memories.
+*   **`timeline-tc2-ts1`**: Create a first memory.
+*   **`timeline-tc2-ts2`**: Create a second memory.
+*   **`timeline-tc2-ts3`**: Navigate to the `/timeline` page.
+*   **`timeline-tc2-ts4`**: Verify that the second memory appears before the first memory.
 
 ---
 
 ## Test Session Archive
+
+### Sprint ID: `registration-workflow-2024-05-24`
+
+*   **Objective:** To diagnose and resolve the user registration workflow failure.
+
+*   **Test Case 1: User Registration End-to-End Test**
+    *   `reg-tc1-ts1` - `reg-tc1-ts4`
+*   **Test Case 2: Server-Side User Profile Creation**
+    *   `reg-tc2-ts1` - `reg-tc2-ts3`
 
 ### Sprint ID: `ffmpeg-race-condition-validation-2024-05-24`
 

@@ -21,7 +21,7 @@ import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin, Info, QrCod
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/useAuth';
-import { doc, getDoc, updateDoc, collection, arrayUnion, arrayRemove, onSnapshot, addDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, arrayUnion, arrayRemove, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { QrCodeDialog } from '@/components/prompts/QrCodeDialog';
@@ -36,14 +36,9 @@ const MediaCaptureControl = dynamic(
   }
 );
 
-const formatTime = (seconds: number) => {
-    const totalSeconds = Math.round(seconds);
-    const minutes = Math.floor(totalSeconds / 60);
-    const remainingSeconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-};
 
 export default function MemoryFormPage() {
+  console.log("MemoryFormPage: Rendering");
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -56,6 +51,7 @@ export default function MemoryFormPage() {
   const initialTitle = prompt?.text.en || searchParams.get('customPrompt') || '';
 
   const isEditing = !!editMemoryId;
+  console.log(`MemoryFormPage: isEditing=${isEditing}`, { editMemoryId });
 
   const [memoryToEdit, setMemoryToEdit] = useState<Memory | null>(null);
   const [isLoadingMemory, setIsLoadingMemory] = useState(isEditing);
@@ -105,17 +101,20 @@ export default function MemoryFormPage() {
   }, [promptId, user, authLoading]);
 
   useEffect(() => {
+    console.log("MemoryFormPage: useEffect fetchMemory triggered", { editMemoryId, user, authLoading });
     if (!editMemoryId || !user || authLoading || !db) {
       setIsLoadingMemory(false);
       return;
     }
     const fetchMemory = async () => {
+      console.log("MemoryFormPage: Fetching memory to edit");
       try {
         const memoryRef = doc(db!, 'users', user.uid, 'memories', editMemoryId);
         const docSnap = await getDoc(memoryRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
           const memory = { id: docSnap.id, ...data } as Memory;
+          console.log("MemoryFormPage: Fetched memory data", { memory });
           setMemoryToEdit(memory);
           setTitle(memory.title);
           setDescription(memory.description || '');
@@ -133,6 +132,7 @@ export default function MemoryFormPage() {
           }
         }
       } catch (error) {
+          console.error("MemoryFormPage: Failed to load memory", { error });
           toast({ title: 'Error', description: 'Failed to load memory.', variant: 'destructive'});
       } finally {
         setIsLoadingMemory(false);
@@ -156,13 +156,18 @@ export default function MemoryFormPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !db || !storage) return;
+    console.log("MemoryFormPage: handleSubmit triggered");
+    if (!user || !db || !storage) {
+      console.error("MemoryFormPage: handleSubmit failed - user, db or storage not available");
+      return;
+    }
     setIsSubmitting(true);
 
     try {
       let finalMedia = initialMedia;
 
       if (mediaPayload?.file) {
+        console.log("MemoryFormPage: Uploading new media");
         const fileRef = storageRef(storage!, `users/${user.uid}/memories/${Date.now()}`);
         await uploadBytes(fileRef, mediaPayload.file);
         const url = await getDownloadURL(fileRef);
@@ -173,9 +178,10 @@ export default function MemoryFormPage() {
           duration: mediaPayload.duration,
           filename: mediaPayload.file.name
         };
+        console.log("MemoryFormPage: New media uploaded", { finalMedia });
       }
 
-      const memoryData: Omit<Memory, 'id' | 'createdAt'> = {
+      const memoryData: Omit<Memory, 'id' | 'createdAt' | 'userDefinedOrder'> & { userDefinedOrder?: number, updatedAt: any, createdAt?: any } = {
         title,
         description,
         category: selectedCategory?.id || 'personal_reflection',
@@ -183,29 +189,28 @@ export default function MemoryFormPage() {
         emotionTags: selectedEmotionTags,
         date: new Date(selectedYear, selectedMonth, selectedDay).toISOString(),
         mediaAttachments: finalMedia ? [finalMedia] : [],
-        updatedAt: new Date().toISOString(),
-        userDefinedOrder: 0, // Default value
+        updatedAt: serverTimestamp(),
         userId: user.uid,
       };
+      console.log("MemoryFormPage: memoryData prepared", { memoryData });
 
       if (isEditing) {
+        console.log("MemoryFormPage: Updating existing memory");
         await updateDoc(doc(db!, 'users', user.uid, 'memories', editMemoryId!), memoryData);
+        console.log("MemoryFormPage: Memory updated successfully");
       } else {
-        const memoriesRef = collection(db!, 'users', user.uid, 'memories');
-        const q = query(memoriesRef, orderBy('userDefinedOrder', 'desc'), limit(1));
-        const lastMemory = await getDocs(q);
-        const newOrder = lastMemory.empty ? 0 : (lastMemory.docs[0].data().userDefinedOrder || 0) + 1;
-        
-        await addDoc(memoriesRef, {
-          ...memoryData,
-          userDefinedOrder: newOrder,
-          createdAt: new Date().toISOString(),
-        });
+        console.log("MemoryFormPage: Creating new memory");
+        memoryData.createdAt = serverTimestamp();
+        // As userDefinedOrder is deprecated, we remove it from the object before saving
+        // memoryData.userDefinedOrder = Date.now(); 
+        await addDoc(collection(db!, 'users', user.uid, 'memories'), memoryData);
+        console.log("MemoryFormPage: New memory created successfully");
       }
 
       toast({ title: "Success", description: "Memory saved!" });
       router.push('/timeline');
     } catch (err) {
+      console.error("MemoryFormPage: handleSubmit failed with error", { err });
       toast({ title: "Error", description: "Failed to save memory", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
