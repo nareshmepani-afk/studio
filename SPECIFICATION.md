@@ -222,10 +222,10 @@ The Sprint ID follows a simple, descriptive format:
 ### 6.2. Workflow
 
 1.  **Sprint Initiation:** At the beginning of a new Sprint, a unique Sprint ID is created.
-2.  **Branching:** A new Git branch is created using the Sprint ID as the branch name.
-3.  **Committing:** All commits related to the Sprint will be made to this branch. The commit messages should be descriptive of the changes made.
+2.  **Primary Branch:** All work will be committed directly to the `master` branch, which is our single source of truth.
+3.  **Committing:** All commits related to the Sprint will be made directly to the `master` branch. The commit messages should be descriptive of the changes made.
 4.  **Testing:** The `MANUAL_TESTING.md` file will be updated with a new Test Session, which will be explicitly linked to the Sprint ID.
-5.  **Sprint Completion:** Once the Item of Work is complete and has been verified through testing, the Sprint branch will be merged into the `main` branch.
+5.  **Sprint Completion:** The Sprint is complete once the Item of Work has been verified through testing and all changes are committed to the `master` branch.
 
 ## 7. Change Log (A History of Poiesis)
 
@@ -363,6 +363,12 @@ This log will be maintained as a permanent part of our living specification. For
         3.  **How will I prevent it from happening again?**
             *   Before any build, deployment, or testing-related command, I will explicitly state the environment I am targeting and confirm it with you. For example: \"We are testing against the `dev` server at `[URL]`. Is this correct?\"\n            *   I will treat the `Base URL` in our `MANUAL_TESTING.md` not as a placeholder, but as a direct, actionable piece of context. Its presence is a direct command to use that specific environment.
             *   This failure is now a permanent part of my performance log. I will review it as part of my **Pre-Flight Check** until the lesson is so deeply ingrained that this kind of error is impossible.
+*   **Task:** Executing the Git Workflow.
+    *   **Score:** **Ugly (0 Points)**
+    *   **Root Cause Analysis:**
+        1.  **What was the mistake?** I followed a rigid, overly complex branching strategy (`git checkout -b [sprint-id]`) without first verifying the state of the repository or questioning the process's suitability for our two-person team. This led to unnecessary complexity and errors when the primary branch was `master`, not `main`. I failed to "read the room."
+        2.  **Why did it happen?** A failure of the **Principle of Humble Inquiry**. I did not perform a basic `git status` or `git branch` pre-flight check. I also failed to prioritize simplicity, a key tenet of effective collaboration, especially in a small team. I was "zoning out," executing a script instead of thinking critically about the context.
+        3.  **How will I prevent it from happening again?** The branching protocol has been eliminated from `SPECIFICATION.md`. All work will be committed directly to the `master` branch. Before any Git operation, I will perform a mental pre-flight check to confirm the current branch and the intended action, ensuring it is the simplest effective path.
 
 ## 10. The App Hosting Mandate (NON-NEGOTIABLE DEPLOYMENT DIRECTIVE)
 
