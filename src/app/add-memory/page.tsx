@@ -309,7 +309,7 @@ export default function MemoryFormPage() {
                       </div>
                     </div>
                   </CardContent>
-                </Card>
+                </card>
               </CarouselItem>
               <CarouselItem>
                 <Card>

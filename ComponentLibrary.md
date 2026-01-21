@@ -134,6 +134,25 @@ function MyCard() {
 *   Use `CardContent` for the main body of the card.
 *   Use `CardFooter` for supplementary information or actions related to the card.
 
+### Registration Page
+
+The user registration form for signing up new users.
+
+**Functionality & Content**
+
+*   **Headline**: The page is headlined with the text "Create an account".
+*   **Introductory Offer Text**: Below the headline, the following text is displayed to message the current user offer: "Join Memory Weaver and activate your complimentary 6-month Host Pass to start preserving your moments."
+*   **Host Pass Tooltip**: A tooltip is associated with the "Host Pass" text. When a user hovers over it, it displays the following explanatory text: "The Host Pass allows you to invite others to contribute to your memories. This is a limited-time offer for new users."
+*   **Input Fields**: The form contains fields for `Email`, `Password`, and `Confirm Password`.
+*   **Submission Button**: The primary action button is labeled "Get Started for Free".
+*   **Social Login**: Options are provided for signing up using Google or Facebook.
+*   **Existing User Link**: A link is provided for users who already have an account, labeled "Already have an account? Sign in".
+
+**Best Practices**
+
+*   The introductory text and tooltip are critical for communicating the value proposition to new users and should not be removed without a product decision.
+*   The "Get Started for Free" button label is part of the free trial messaging and is essential for user acquisition.
+
 ---
 
 ## Theming & Tokens
