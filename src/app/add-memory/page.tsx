@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin, Info, QrCode, Flag, Smile } from 'lucide-react';
+import { Loader2, ArrowRight, ArrowLeft, Scissors, Sparkles, MapPin, Info, QrCode, Flag, Smile, CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/hooks/useAuth';
@@ -77,6 +77,11 @@ export default function MemoryFormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFlagged, setIsFlagged] = useState(false);
   const [isLoadingFlag, setIsLoadingFlag] = useState(true);
+  
+  const years = Array.from({ length: 100 }, (_, i) => getYear(new Date()) - i);
+  const months = Array.from({ length: 12 }, (_, i) => ({ value: i, label: format(new Date(0, i), 'MMMM') }));
+  const daysInMonth = getDaysInMonth(new Date(selectedYear, selectedMonth));
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
   useEffect(() => {
     if (authLoading || !user || !promptId || !db) return;
@@ -107,6 +112,17 @@ export default function MemoryFormPage() {
           setTitle(memory.title);
           setDescription(memory.description || '');
           setSelectedEmotionTags(memory.emotionTags || []);
+          setLocation(memory.location || '');
+          if (memory.date) {
+            const memoryDate = parseISO(memory.date);
+            setSelectedYear(getYear(memoryDate));
+            setSelectedMonth(getMonth(memoryDate));
+            setSelectedDay(getDate(memoryDate));
+          }
+          if (memory.category) {
+            const category = memoryCategoriesList.find(c => c.id === memory.category);
+            setSelectedCategory(category);
+          }
         }
       } catch (error) {
           toast({ title: 'Error', description: 'Failed to load memory.', variant: 'destructive'});
@@ -196,14 +212,56 @@ export default function MemoryFormPage() {
                 <Label>Title</Label>
                 <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Give your memory a name..." />
               </div>
+
               <div className="space-y-2">
                 <Label>Media</Label>
                 <MediaCaptureControl onMediaReady={setMediaPayload} />
               </div>
+
               <div className="space-y-2">
                 <Label>Description</Label>
                 <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Write about this moment..." />
               </div>
+              
+                <div className="space-y-2">
+                    <Label className="flex items-center"><MapPin className="mr-2 h-4 w-4" /> Location</Label>
+                    <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Where did this take place?" />
+                </div>
+
+                <div className="space-y-2">
+                    <Label className="flex items-center"><CalendarIcon className="mr-2 h-4 w-4" /> Date</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                        <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                            <SelectTrigger><SelectValue placeholder="Year" /></SelectTrigger>
+                            <SelectContent>
+                                {years.map(year => <SelectItem key={year} value={year.toString()}>{year}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
+                            <SelectTrigger><SelectValue placeholder="Month" /></SelectTrigger>
+                            <SelectContent>
+                                {months.map(month => <SelectItem key={month.value} value={month.value.toString()}>{month.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Select value={selectedDay.toString()} onValueChange={(value) => setSelectedDay(parseInt(value))}>
+                            <SelectTrigger><SelectValue placeholder="Day" /></SelectTrigger>
+                            <SelectContent>
+                                {days.map(day => <SelectItem key={day} value={day.toString()}>{day}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label>Category</Label>
+                    <Select onValueChange={(value) => setSelectedCategory(memoryCategoriesList.find(c => c.id === value))} value={selectedCategory?.id}>
+                        <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
+                        <SelectContent>
+                            {memoryCategoriesList.map(cat => <SelectItem key={cat.id} value={cat.id}>{cat.label}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+
               <div className="space-y-2">
                 <Label className="flex items-center"><Smile className="mr-2 h-4 w-4" /> Emotion Tags</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 rounded-lg border p-4">
