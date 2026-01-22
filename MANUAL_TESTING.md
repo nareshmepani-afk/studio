@@ -30,40 +30,43 @@ To bridge the gap between idea and execution, the testing process now incorporat
 
 ## Active Sprint Test Session
 
-**Sprint ID:** `timeline-debug-2024-05-24`
+**Sprint ID:** `prompt-memory-creation-2024-05-25`
 
-**Objective:** To verify that the timeline now correctly loads and displays memories in chronological order.
+**Objective:** To verify that a user can successfully create a memory starting from a specific prompt URL and that the created memory is correctly associated with the prompt.
 
 **Base URL:** `https://studio--memory-weaver-8rk9t.us-central1.hosted.app/`
 
-### Test Case 1: Verify Timeline Loads Memories
+### Test Case 1: Verify Memory Creation from Prompt URL
 
-*   **Objective:** To confirm that memories are displayed on the timeline page after being created.
+*   **Objective:** To confirm that a user can follow a prompt-specific URL, create a memory, and see it on their timeline.
 *   **Pre-requisites:** The user must be logged in.
-*   **`timeline-tc1-ts1`**: Navigate to the `/add-memory` page.
-*   **`timeline-tc1-ts2`**: Create a new memory with a title and some content.
-*   **`timeline-tc1-ts3`**: Click the "Save Memory" button.
-*   **`timeline-tc1-ts4`**: The user should be redirected to the `/timeline` page.
-*   **`timeline-tc1-ts5`**: Verify that the newly created memory is displayed on the timeline.
-*   **`timeline-tc1-ts6`**: Open the browser's developer console and verify that the `TESTIMONY` logs show the memories being fetched and displayed.
+*   **Test URL:** `/add-memory?promptId=p3`
 
-### Test Case 2: Verify Memories are Ordered Chronologically
-
-*   **Objective:** To confirm that memories are displayed in reverse chronological order (newest first).
-*   **Pre-requisites:** The user must be logged in and have at least two memories.
-*   **`timeline-tc2-ts1`**: Create a first memory.
-*   **`timeline-tc2-ts2`**: Create a second memory.
-*   **`timeline-tc2-ts3`**: Navigate to the `/timeline` page.
-*   **`timeline-tc2-ts4`**: Verify that the second memory appears before the first memory.
+*   **`prompt-mem-tc1-ts1`**: Navigate to the **Test URL**.
+*   **`prompt-mem-tc1-ts2`**: **Expected Result:** The "Add Memory" page should load, and the prompt card should display the text: "What was a moment that made you laugh uncontrollably? Describe the situation, who was there, and what was so funny. Try to capture the feeling of the laughter itself."
+*   **`prompt-mem-tc1-ts3`**: Enter a title for the memory (e.g., "The Uncontrollable Laughter").
+*   **`prompt-mem-tc1-ts4`**: Record or upload a short audio or video clip.
+*   **`prompt-mem-tc1-ts5`**: Click the "Save Memory" button.
+*   **`prompt-mem-tc1-ts6`**: **Expected Result:** The user should be redirected to the `/timeline` page.
+*   **`prompt-mem-tc1-ts7`**: **Expected Result:** The newly created memory card with the title "The Uncontrollable Laughter" should appear on the timeline.
+*   **`prompt-mem-tc1-ts8`**: **Witnessing Step:** Open the browser's developer console and filter for `TESTIMONY`. Verify that the log for the newly created memory object includes the property `"promptId": "p3"`.
 
 ---
 
 ## Test Session Archive
 
+### Sprint ID: `timeline-debug-2024-05-24`
+
+*   **Objective:** To verify that the timeline now correctly loads and displays memories in chronological order.
+*   **Base URL:** `https://studio--memory-weaver-8rk9t.us-central1.hosted.app/`
+*   **Test Case 1: Verify Timeline Loads Memories**
+    *   `timeline-tc1-ts1` - `timeline-tc1-ts6`
+*   **Test Case 2: Verify Memories are Ordered Chronologically**
+    *   `timeline-tc2-ts1` - `timeline-tc2-ts4`
+
 ### Sprint ID: `registration-workflow-2024-05-24`
 
 *   **Objective:** To diagnose and resolve the user registration workflow failure.
-
 *   **Test Case 1: User Registration End-to-End Test**
     *   `reg-tc1-ts1` - `reg-tc1-ts4`
 *   **Test Case 2: Server-Side User Profile Creation**
