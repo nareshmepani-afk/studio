@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Loader2, MapPin, Info, QrCode, Flag, Smile, CalendarIcon, Layers, Video, Mic } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -222,17 +222,17 @@ export default function MemoryFormPage() {
 
   return (
     <AuthenticatedPageWrapper>
-      <div className="container max-w-5xl py-8">
+      <div className="container mx-auto max-w-4xl py-8">
         <form onSubmit={handleSubmit}>
           <Card className="flex flex-col overflow-hidden shadow-lg transition-all hover:shadow-xl animate-fade-in h-full relative border-muted/60">
             
             {/* --- CONTENT SECTION --- */}
             <CardHeader className="pb-2">
               <div className='space-y-1'>
-                <Label htmlFor='title'>Title</Label>
+                <Label htmlFor='title' className="text-sm font-medium text-muted-foreground">Title</Label>
                 <Input id='title' value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Give your memory a name..." className='text-xl font-headline h-auto p-0 border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0' />
               </div>
-              <div className="flex flex-col gap-2 mt-2">
+              <div className="flex flex-col gap-2 mt-4">
                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <Label className="flex items-center text-xs text-muted-foreground"><CalendarIcon className="mr-1.5 h-3 w-3" /> Date</Label>
@@ -311,7 +311,7 @@ export default function MemoryFormPage() {
               <div className="space-y-2 pt-4 border-t">
                 <Label>Record or Upload Media</Label>
                 <div className="p-4 rounded-md border bg-muted/50">
-                    <MediaCaptureControl onMediaReady={setMediaPayload} />
+                    <MediaCaptureControl onMediaReady={setMediaPayload} deferCameraInit />
                 </div>
               </div>
             </CardContent>
@@ -319,12 +319,14 @@ export default function MemoryFormPage() {
             {/* --- FOOTER ACTIONS --- */}
             <CardFooter className="flex flex-col items-stretch gap-4 pt-4 border-t border-muted/40">
                 {promptId && (
-                  <div className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="space-y-0.5">
-                          <Label className="flex items-center text-sm"><Flag className="mr-2 h-4 w-4" /> Flag for Reuse</Label>
-                          <p className="text-xs text-muted-foreground">Mark this prompt as important to revisit.</p>
+                  <div className="flex items-center justify-start rounded-lg border p-3">
+                      <div className="flex items-center space-x-2">
+                          <Checkbox id="flag-checkbox" checked={isFlagged} onCheckedChange={handleToggleFlagPrompt} disabled={isLoadingFlag} />
+                          <div className="space-y-0.5">
+                              <Label htmlFor='flag-checkbox' className="flex items-center text-sm"><Flag className="mr-2 h-4 w-4" /> Flag for Reuse</Label>
+                              <p className="text-xs text-muted-foreground">Mark this prompt as important to revisit.</p>
+                          </div>
                       </div>
-                      <Checkbox checked={isFlagged} onCheckedChange={handleToggleFlagPrompt} disabled={isLoadingFlag} />
                   </div>
                 )}
                 {isEditing && (
