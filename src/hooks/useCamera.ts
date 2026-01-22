@@ -1,4 +1,4 @@
-'''
+
 import { useState, useEffect, useCallback } from 'react';
 import { useIsMobile } from './use-mobile';
 
@@ -119,4 +119,3 @@ export function useCamera() {
 
   return { stream, error, switchCamera, hasMultipleCameras, currentDevice: videoDevices[currentDeviceIndex] };
 }
-''
