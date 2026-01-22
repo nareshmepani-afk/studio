@@ -146,13 +146,30 @@ export default function MemoryFormPage() {
     e.preventDefault();
     if (!user || !db || !storage) return;
     setIsSubmitting(true);
+    console.log('TESTIMONY - add-memory-ts-handle-submit - START');
+
+    if (mediaPayload && mediaPayload.duration > 360) {
+        toast({
+            title: "Video too long",
+            description: "Please keep your memories under 6 minutes.",
+            variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+    }
 
     try {
       let mediaAttachment: MediaAttachment | null = null;
 
       if (mediaPayload?.file) {
         const fileRef = storageRef(storage, `users/${user.uid}/memories/${Date.now()}`);
-        await uploadBytes(fileRef, mediaPayload.file);
+        const metadata = {
+            contentType: mediaPayload.file.type,
+            customMetadata: {
+                duration: mediaPayload.duration.toString(),
+            },
+        };
+        await uploadBytes(fileRef, mediaPayload.file, metadata);
         const url = await getDownloadURL(fileRef);
         mediaAttachment = {
           id: crypto.randomUUID(),
@@ -184,10 +201,12 @@ export default function MemoryFormPage() {
       }
 
       toast({ title: "Success", description: "Memory saved!" });
+      console.log('TESTIMONY - add-memory-ts-handle-submit - END - Success');
       router.push('/timeline');
     } catch (err) {
       console.error("handleSubmit failed with error", { err });
       toast({ title: "Error", description: "Failed to save memory", variant: "destructive" });
+      console.log('TESTIMONY - add-memory-ts-handle-submit - END - Error');
     } finally {
       setIsSubmitting(false);
     }
