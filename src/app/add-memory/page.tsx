@@ -244,7 +244,7 @@ export default function MemoryFormPage() {
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                    <Textarea readOnly value={teleprompterScript} className="h-24 bg-background/50 resize-none text-sm" />
+                    <Textarea readOnly value={teleprompterScript} className="h-auto flex-1 bg-background/50 text-sm" />
                 </div>
               )}
             </div>
