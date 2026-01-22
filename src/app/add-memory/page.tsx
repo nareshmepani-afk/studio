@@ -181,7 +181,7 @@ export default function MemoryFormPage() {
         console.log("MemoryFormPage: New media uploaded", { finalMedia });
       }
 
-      const memoryData: Omit<Memory, 'id' | 'createdAt' | 'userDefinedOrder'> & { userDefinedOrder?: number, updatedAt: any, createdAt?: any } = {
+      const memoryData: any = {
         title,
         description,
         category: selectedCategory?.id || 'personal_reflection',
@@ -314,7 +314,7 @@ export default function MemoryFormPage() {
                       </div>
                     </div>
                   </CardContent>
-                </card>
+                </Card>
               </CarouselItem>
               <CarouselItem>
                 <Card>
@@ -357,7 +357,7 @@ export default function MemoryFormPage() {
               </CarouselItem>
             </CarouselContent>
             <div className="mt-4 flex justify-between">
-                <Button type="button" variant="outline" onClick={() => carouselApi?.scrollPrev()}><ArrowLeft className="mr-2 h-4 w-4" /> Back</Button>
+                <Button type="button" variant="outline" onClick={() => carouselApi?.scrollPrev()}><ArrowLeft className.mr-2.h-4.w-4 /> Back</Button>
                 <Button type="button" variant="outline" onClick={() => carouselApi?.scrollNext()}>Next <ArrowRight className="ml-2 h-4 w-4" /></Button>
             </div>
             <Button type="submit" disabled={isSubmitting} className="w-full mt-6">

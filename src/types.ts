@@ -61,8 +61,8 @@ export interface Memory {
     description: string;
     category: MemoryCategory | string;
     userId: string;
-    createdAt?: string;
-    updatedAt?: string;
+    createdAt?: any;
+    updatedAt?: any;
     mediaAttachments: MediaAttachment[];
     isLegacy?: boolean;
     location?: string;
