@@ -4,18 +4,20 @@
  */
 
 export const teleprompterScripts: Record<string, string> = {
-  p1: `Let's begin the story of you. Take a moment to think about where it all started. We'll explore your birthplace, the roots of your family tree, and the cultural soil that nurtured you. Think about the traditions, the values, the foods, and the languages that shaped your world. Consider the lessons your parents taught you and how all these threads wove together to create the person you are today. When you're ready, tell us about the child of two worlds.`,
+  p1: `Let\'s begin the story of you. Take a moment to think about where it all started. We\'ll explore your birthplace, the roots of your family tree, and the cultural soil that nurtured you. Think about the traditions, the values, the foods, and the languages that shaped your world. Consider the lessons your parents taught you and how all these threads wove together to create the person you are today. When you\'re ready, tell us about the child of two worlds.`,
   p1_1: `Let\'s start right at the beginning. Could you share some details about your birthplace – perhaps a specific memory of that place that stands out?`,
   p1_2: `And tell us about your family roots; were there any particular traditions, stories, or values passed down through generations that significantly influenced you?`,
   p1_3: `How did the cultural environment you grew up in—whether it was a blend of different cultures or a very specific one—shape your early perspectives and who you are today?`,
   p1_4: `Were there specific customs, foods, or languages that were central to your upbringing?`,
   p1_5: `And thinking about your parents or primary caregivers, what were some of their core values or beliefs that they instilled in you from a young age?`,
   p1_6: `How did those foundational elements contribute to your initial understanding of the world?`,
+  p2: `Let\'s travel back to the house you grew up in. Picture the rooms, the sounds, the smells. Think about the daily routines and your very first memories within those walls. What was life like in that environment? When you\'re ready, tell us about the house you grew up in.`,
   p2_1: `Now, let\'s turn our attention to the house itself. What was daily life like within those walls? Describe the atmosphere, the routines, the sounds, and even the smells that you remember most vividly.`,
   p2_2: `What were the different rooms like, and what significant moments happened in them?`,
   p2_3: `Thinking back to your very first memories, what specific scenes or feelings come to mind when you recall your childhood home?`,
   p2_4: `Were there particular chores, family meals, or weekend activities that stand out in your memory?`,
   p2_5: `And how did that physical environment, the very structure and feeling of your home, shape your sense of comfort, security, or even your earliest adventures and curiosities?`,
+  p3: `Remember your school days, the friends you made, and the teachers who inspired you. Think about your childhood dreams and the moments that filled you with a sense of wonder. What were you curious about? What did you aspire to be? When you\'re ready, share your memories of innocence and curiosity.`,
   p3_1: `Moving into your early years, let\'s talk about your school days. What subjects captivated you, or perhaps challenged you the most, and why?`,
   p3_2: `Were there any teachers who left a lasting impression on you, and if so, how did they influence your thinking or your path?`,
   p3_3: `Beyond academics, what were your early dreams and aspirations as a child? Did you imagine yourself doing something extraordinary, or were your dreams simpler and more immediate?`,

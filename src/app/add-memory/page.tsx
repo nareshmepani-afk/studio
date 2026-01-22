@@ -222,33 +222,10 @@ export default function MemoryFormPage() {
 
   return (
     <AuthenticatedPageWrapper>
-      <div className="container max-w-2xl py-8">
+      <div className="container max-w-5xl py-8">
         <form onSubmit={handleSubmit}>
           <Card className="flex flex-col overflow-hidden shadow-lg transition-all hover:shadow-xl animate-fade-in h-full relative border-muted/60">
             
-            {/* --- MEDIA HEADER SECTION --- */}
-            <div className="relative w-full overflow-hidden bg-muted group">
-              <div className="p-4">
-                <Label className='mb-2 block'>Record or Upload Media</Label>
-                <MediaCaptureControl onMediaReady={setMediaPayload} />
-              </div>
-              {promptId && (
-                <div className='p-4 border-t border-muted/60'>
-                   <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Label className="flex items-center mb-2"><Info className="mr-2 h-4 w-4" /> Teleprompter Script</Label>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Use this script in a teleprompter app to guide your recording.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <Textarea readOnly value={teleprompterScript} className="h-auto flex-1 bg-background/50 text-sm" />
-                </div>
-              )}
-            </div>
-
             {/* --- CONTENT SECTION --- */}
             <CardHeader className="pb-2">
               <div className='space-y-1'>
@@ -313,6 +290,29 @@ export default function MemoryFormPage() {
                       {tag.label}
                   </div>
                 ))}
+              </div>
+                
+              {/* --- MEDIA SECTIONS MOVED HERE --- */}
+              {promptId && (
+                <div className='space-y-2 pt-4 border-t'>
+                   <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Label className="flex items-center"><Info className="mr-2 h-4 w-4" /> Teleprompter Script</Label>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Use this script in a teleprompter app to guide your recording.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <Textarea readOnly value={teleprompterScript} className="h-auto flex-1 bg-background/50 text-sm" />
+                </div>
+              )}
+              <div className="space-y-2 pt-4 border-t">
+                <Label>Record or Upload Media</Label>
+                <div className="p-4 rounded-md border bg-muted/50">
+                    <MediaCaptureControl onMediaReady={setMediaPayload} />
+                </div>
               </div>
             </CardContent>
 
