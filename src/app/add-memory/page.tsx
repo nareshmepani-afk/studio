@@ -204,7 +204,7 @@ export default function MemoryFormPage() {
         await addDoc(collection(db, 'users', user.uid, 'memories'), memoryData);
       }
 
-      toast({ title: "Success", description: "Memory saved!" });
+      toast({ title: "Success", description: "Memory saved!", variant: "success" });
       console.log('TESTIMONY - add-memory-ts-handle-submit - END - Success');
       router.push('/timeline');
     } catch (err) {
