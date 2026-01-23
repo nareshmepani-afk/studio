@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 
-const MOBILE_USER_AGENT_REGEX = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-
-export function useIsMobile() {
-  const [isMobile, setIsMobile] = useState<boolean | undefined>(undefined);
+export function useMobile() {
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const mql = window.matchMedia("(max-width: 767px)");
-    const onChange = () => {
-      setIsMobile(window.innerWidth < 768);
+    const checkIsMobile = () => {
+      const userAgent = typeof window.navigator === 'undefined' ? '' : navigator.userAgent;
+      const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+      setIsMobile(mobileRegex.test(userAgent));
     };
-    mql.addEventListener("change", onChange);
-    setIsMobile(window.innerWidth < 768);
-    return () => mql.removeEventListener("change", onChange);
+
+    checkIsMobile();
+
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
-  return !!isMobile;
+  return isMobile;
 }
