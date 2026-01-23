@@ -49,9 +49,8 @@ export interface MediaAttachment {
     type: 'audio' | 'video';
     filename: string;
     duration?: number;
-    isTrimmed?: boolean;
-    startTime?: number;
-    endTime?: number;
+    trimStart?: number;
+    trimEnd?: number;
 }
 
 export interface Memory {
