@@ -20,7 +20,7 @@ const formatTime = (seconds: number) => {
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
-export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: any) {
+export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues, deferCameraInit = false }: any) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -31,11 +31,13 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
   
   const [status, setStatus] = useState('idle'); // idle, recording, preview
   const [media, setMedia] = useState<any>(null);
-  const [recordingType, setRecordingType] = useState<'video' | 'audio'>('video');
   const [recordingTime, setRecordingTime] = useState(0);
+  
+  const [cameraEnabled, setCameraEnabled] = useState(!deferCameraInit);
+  const [pendingRecording, setPendingRecording] = useState<{ type: 'video' | 'audio' } | null>(null);
 
-  // Hook for camera logic
-  const { stream, error: cameraError, switchCamera, hasMultipleCameras } = useCamera();
+  // Hook for camera logic - now enabled on demand
+  const { stream, error: cameraError, switchCamera, hasMultipleCameras } = useCamera({ enabled: cameraEnabled });
 
   const stopRecordingAndCleanup = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
@@ -46,18 +48,90 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
         recordingIntervalRef.current = null;
     }
   }, []);
+
+  const startRecording = useCallback(async (type: 'audio' | 'video') => {
+    const testStepId = 'media-capture-ts-start-record';
+    console.log(`TESTIMONY - ${testStepId} - START`);
+    try {
+      if (media?.url && media.source === 'new') {
+        URL.revokeObjectURL(media.url);
+      }
+      stopRecordingAndCleanup();
+
+      setStatus('recording');
+      setRecordingTime(0);
+
+      if (!stream) {
+        throw new Error("Camera stream is not available. Please grant permissions and try again.");
+      }
+
+      const mimeType = type === 'video' ? 'video/webm' : 'audio/webm';
+      if (!MediaRecorder.isTypeSupported(mimeType)) throw new Error(`${mimeType} is not supported`);
+
+      const recorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = recorder;
+      recordedChunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) recordedChunksRef.current.push(event.data);
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const mediaEl = document.createElement(type === 'video' ? 'video' : 'audio');
+        mediaEl.src = url;
+        mediaEl.onloadedmetadata = () => {
+            const newMediaPayload = {
+                file: new File([blob], `recording.${type === 'video' ? 'webm' : 'mp3'}`),
+                type: type,
+                duration: mediaEl.duration
+            };
+            setMedia({ url, type, source: 'new', duration: mediaEl.duration });
+            onMediaReady(newMediaPayload);
+            setStatus('preview');
+        };
+        recordedChunksRef.current = [];
+      };
+
+      recorder.start();
+      recordingIntervalRef.current = setInterval(() => setRecordingTime(prev => prev + 1), RECORDING_INTERVAL_MS);
+
+    } catch (err: any) {
+        console.error("Error starting recording:", err);
+        toast({ title: "Recording Error", description: err.message, variant: "destructive" });
+        setStatus(initialMedia ? 'preview' : 'idle');
+    } finally {
+        console.log(`TESTIMONY - ${testStepId} - END`);
+    }
+  }, [media, stopRecordingAndCleanup, stream, onMediaReady, toast, initialMedia]);
+
+  // Effect to automatically start recording once the stream is ready
+  useEffect(() => {
+    if (pendingRecording && stream) {
+      startRecording(pendingRecording.type);
+      setPendingRecording(null); // Clear the pending request
+    }
+  }, [pendingRecording, stream, startRecording]);
   
+  const handleInitiateRecording = (type: 'video' | 'audio') => {
+    setPendingRecording({ type });
+    setCameraEnabled(true); // This will trigger the useCamera hook
+  };
+
   useEffect(() => {
     if (cameraError) {
       toast({ title: "Camera Error", description: cameraError, variant: "destructive" });
+      setCameraEnabled(false); // Reset on error
+      setPendingRecording(null);
     }
   }, [cameraError, toast]);
 
   useEffect(() => {
-    if (status === 'recording' && stream && recordingType === 'video' && videoRef.current) {
+    if (status === 'recording' && stream && pendingRecording?.type === 'video' && videoRef.current) {
         videoRef.current.srcObject = stream;
     }
-  }, [stream, status, recordingType]);
+  }, [stream, status, pendingRecording]);
 
   useEffect(() => {
     if (initialMedia?.previewUrl && !media) {
@@ -86,85 +160,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
       }
   }, [recordingTime, status, stopRecordingAndCleanup, toast]);
 
-  const handlePlay = useCallback(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (!trimValues || (trimValues[0] === 0 && trimValues[1] === media?.duration)) return;
-    if (video.currentTime < trimValues[0] || video.currentTime >= trimValues[1]) {
-      video.currentTime = trimValues[0];
-    }
-  }, [trimValues, media]);
-
-  const handleTimeUpdate = useCallback(() => {
-    const video = videoRef.current;
-    if (!video || !trimValues || (trimValues[0] === 0 && trimValues[1] === media?.duration)) return;
-    if (video.currentTime >= trimValues[1]) {
-      video.pause();
-    }
-  }, [trimValues, media]);
-
-  const startRecording = async (type: 'audio' | 'video') => {
-    const testStepId = 'media-capture-ts-start-record';
-    console.log(`TESTIMONY - ${testStepId} - START`);
-    try {
-      if (media?.url && media.source === 'new') {
-        URL.revokeObjectURL(media.url);
-      }
-      stopRecordingAndCleanup();
-
-      setRecordingType(type);
-      setStatus('recording');
-      setRecordingTime(0);
-
-      if (!stream) throw new Error("Camera stream is not available.");
-
-      const mimeType = type === 'video' ? 'video/webm' : 'audio/webm';
-      if (!MediaRecorder.isTypeSupported(mimeType)) throw new Error(`${mimeType} is not supported`);
-
-      const recorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = recorder;
-      recordedChunksRef.current = [];
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) recordedChunksRef.current.push(event.data);
-      };
-
-      recorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const mediaEl = document.createElement(type === 'video' ? 'video' : 'audio');
-        mediaEl.src = url;
-        mediaEl.onloadedmetadata = () => {
-            const newMediaPayload = {
-                file: new File([blob], `recording.${type === 'video' ? 'webm' : 'mp3'}`),
-                type: type,
-                duration: mediaEl.duration
-            };
-            setMedia({ url, type, source: 'new', duration: mediaEl.duration });
-            onMediaReady(newMediaPayload);
-            setStatus('preview');
-            console.log(`State After: Recording finished. Media payload is ready for preview.`);
-        };
-        recordedChunksRef.current = [];
-      };
-
-      recorder.start();
-      recordingIntervalRef.current = setInterval(() => setRecordingTime(prev => prev + 1), RECORDING_INTERVAL_MS);
-      console.log(`State After: Media stream acquired. Recorder started.`);
-
-    } catch (err: any) {
-        console.error("Error starting recording:", err);
-        toast({ title: "Recording Error", description: err.message, variant: "destructive" });
-        setStatus(initialMedia ? 'preview' : 'idle');
-        console.log(`State After: Error occurred. Status reset to '${initialMedia ? 'preview' : 'idle'}'.`);
-    } finally {
-        console.log(`TESTIMONY - ${testStepId} - END`);
-    }
-  };
-
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const testStepId = 'media-capture-ts-upload-file';
-    console.log(`TESTIMONY - ${testStepId} - START`);
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -188,15 +184,11 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
         setMedia({ url, type: newMediaPayload.type, source: 'new', duration: mediaEl.duration });
         onMediaReady(newMediaPayload);
         setStatus('preview');
-        console.log(`State After: File uploaded and media payload is ready for preview.`);
     };
     event.target.value = '';
-    console.log(`TESTIMONY - ${testStepId} - END`);
   };
 
   const resetToInitial = useCallback(() => {
-    const testStepId = 'media-capture-ts-discard-media';
-    console.log(`TESTIMONY - ${testStepId} - START`);
     if (media?.url && media.source === 'new') URL.revokeObjectURL(media.url);
     
     if (initialMedia?.previewUrl) {
@@ -213,19 +205,17 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
       setMedia(null);
       onMediaReady(null);
       setStatus('idle');
-      console.log('State After: Media discarded. Component reset to idle state.');
     }
-    console.log(`TESTIMONY - ${testStepId} - END`);
   }, [media, initialMedia, onMediaReady]);
 
   const renderCaptureOptions = () => (
     <div className="flex flex-col items-center justify-center space-y-4 rounded-lg border-2 border-dashed border-muted bg-background p-8 text-center min-h-[200px]">
         <p className="text-sm text-muted-foreground">Record a new clip or upload a file (max 6 minutes).</p>
         <div className="flex items-center space-x-4">
-            <Button type="button" onClick={() => startRecording('video')} variant="outline" size="icon" className="h-16 w-16 rounded-full" disabled={!!cameraError}>
+            <Button type="button" onClick={() => handleInitiateRecording('video')} variant="outline" size="icon" className="h-16 w-16 rounded-full" disabled={!!cameraError}>
                 <Video className="h-8 w-8" />
             </Button>
-            <Button type="button" onClick={() => startRecording('audio')} variant="outline" size="icon" className="h-16 w-16 rounded-full">
+            <Button type="button" onClick={() => handleInitiateRecording('audio')} variant="outline" size="icon" className="h-16 w-16 rounded-full">
                 <Mic className="h-8 w-8" />
             </Button>
         </div>
@@ -242,15 +232,18 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
   if (status === 'recording') {
     const timerDisplay = `${formatTime(recordingTime)} / ${formatTime(MAX_RECORDING_SECONDS)}`;
     const isNearingLimit = MAX_RECORDING_SECONDS - recordingTime <= WARNING_THRESHOLD_SECONDS;
+    
+    const recordingType = pendingRecording?.type || 'video';
 
     const content = recordingType === 'video' ? (
         <video ref={videoRef} className={`w-full h-full object-cover ${isMobile ? '' : 'scale-x-[-1]'}`} autoPlay muted playsInline />
     ) : (
         <div className="flex flex-col items-center justify-center h-full text-primary">
-            <Loader2 className="mr-2 h-8 w-8 animate-spin"/>
-            <span className="mt-2">Recording Audio...</span>
+            <Mic className="h-12 w-12"/>
+            <span className="mt-2 text-lg font-semibold">Recording Audio...</span>
         </div>
     );
+
     return (
         <div className="space-y-4">
             <div className="relative w-full rounded bg-black aspect-video overflow-hidden">
@@ -284,8 +277,6 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues }: 
           <video
             ref={videoRef}
             src={media.url}
-            onPlay={handlePlay}
-            onTimeUpdate={handleTimeUpdate}
             controls
             className="w-full rounded bg-black aspect-video"
           />
