@@ -1,8 +1,8 @@
-
+'''
 import { useState, useEffect, useCallback } from 'react';
 import { useIsMobile } from './use-mobile';
 
-export function useCamera() {
+export function useCamera({ enabled = true }: { enabled?: boolean } = {}) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [currentDeviceIndex, setCurrentDeviceIndex] = useState<number>(0);
@@ -12,6 +12,7 @@ export function useCamera() {
   const stopCurrentStream = useCallback(() => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
+      setStream(null);
     }
   }, [stream]);
 
@@ -32,82 +33,78 @@ export function useCamera() {
   }, [stopCurrentStream]);
 
   useEffect(() => {
+    if (!enabled) {
+      stopCurrentStream();
+      return;
+    }
+
     const initializeCamera = async () => {
-      // 1. Warm up and get permissions
       try {
-        // Temporarily get a stream to ensure permissions and labels are available
         const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         tempStream.getTracks().forEach(track => track.stop());
-      } catch (err) {
-         if (err instanceof Error) {
-          setError(`Permission denied: ${err.message}`);
-        } else {
-          setError('Permission to access camera was denied.');
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const availableVideoDevices = devices.filter(device => device.kind === 'videoinput');
+        
+        if (availableVideoDevices.length === 0) {
+          setError("No video devices found.");
+          return;
         }
-        console.error("Permission error:", err);
-        return;
-      }
 
-      // 2. Enumerate devices
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const availableVideoDevices = devices.filter(device => device.kind === 'videoinput');
-      setVideoDevices(availableVideoDevices);
+        setVideoDevices(availableVideoDevices);
 
-      // 3. Set initial device
-      if (availableVideoDevices.length > 0) {
-        // For mobile, try to default to the front camera first
         if (isMobile) {
           const frontCameraIndex = availableVideoDevices.findIndex(device => 
             device.label.toLowerCase().includes('front')
           );
-          const initialIndex = frontCameraIndex !== -1 ? frontCameraIndex : 0;
-          setCurrentDeviceIndex(initialIndex);
+          setCurrentDeviceIndex(frontCameraIndex !== -1 ? frontCameraIndex : 0);
         } else {
           setCurrentDeviceIndex(0);
         }
-      } else {
-        setError("No video devices found.");
+      } catch (err) {
+        const errorMessage = err instanceof Error ? `Permission denied: ${err.message}` : 'Permission to access camera was denied.';
+        setError(errorMessage);
+        console.error("Permission error:", err);
       }
     };
 
     initializeCamera();
     
-    // Cleanup on unmount
     return () => {
       stopCurrentStream();
     };
-  }, [isMobile, stopCurrentStream]);
+  }, [enabled, isMobile]);
 
 
   useEffect(() => {
-    if (videoDevices.length === 0) return;
+    if (!enabled || videoDevices.length === 0) return;
     
+    const currentDevice = videoDevices[currentDeviceIndex];
+    if (!currentDevice) return;
+
     const supportsFacingMode = navigator.mediaDevices.getSupportedConstraints().facingMode;
     let constraints: MediaStreamConstraints;
 
     if (isMobile && supportsFacingMode) {
-        const currentDevice = videoDevices[currentDeviceIndex];
-        // Heuristic to determine facing mode from label if possible
         const isFront = currentDevice.label.toLowerCase().includes('front');
         constraints = {
-            video: {
-                facingMode: isFront ? 'user' : 'environment'
-            },
+            video: { facingMode: isFront ? 'user' : 'environment' },
             audio: true
         };
     } else {
-        // Desktop or mobile that doesn't support facingMode
         constraints = {
-            video: {
-                deviceId: { exact: videoDevices[currentDeviceIndex].deviceId }
-            },
+            video: { deviceId: { exact: currentDevice.deviceId } },
             audio: true
         };
     }
     
     getStream(constraints);
 
-  }, [currentDeviceIndex, videoDevices, isMobile, getStream]);
+    return () => {
+      stopCurrentStream();
+    };
+
+  }, [currentDeviceIndex, videoDevices, isMobile, getStream, enabled]);
 
   const switchCamera = useCallback(() => {
     if (videoDevices.length > 1) {
@@ -119,3 +116,4 @@ export function useCamera() {
 
   return { stream, error, switchCamera, hasMultipleCameras, currentDevice: videoDevices[currentDeviceIndex] };
 }
+''
