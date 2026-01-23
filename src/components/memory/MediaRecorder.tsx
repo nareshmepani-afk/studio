@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, Mic, Video, Loader2, StopCircle, RefreshCw } from 'lucide-react';
+import { Upload, Mic, Video, Loader2, StopCircle, RefreshCw, Camera } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCamera } from '@/hooks/useCamera';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -30,13 +30,13 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, deferCameraIni
   const { toast } = useToast();
   const isMobile = useIsMobile();
   
-  const [status, setStatus] = useState('idle'); // idle, recording, preview
+  const [status, setStatus] = useState('idle'); // idle, pre-recording, recording, preview
   const [media, setMedia] = useState<any>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [trimValues, setTrimValues] = useState([0, 0]);
 
   const [cameraEnabled, setCameraEnabled] = useState(!deferCameraInit);
-  const [pendingRecording, setPendingRecording] = useState<{ type: 'video' | 'audio' } | null>(null);
+  const [recordingType, setRecordingType] = useState<'video' | 'audio' | null>(null);
 
   // Hook for camera logic - now enabled on demand
   const { stream, error: cameraError, switchCamera, hasMultipleCameras } = useCamera({ enabled: cameraEnabled });
@@ -51,7 +51,9 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, deferCameraIni
     }
   }, []);
 
-  const startRecording = useCallback(async (type: 'audio' | 'video') => {
+  const startRecording = useCallback(async () => {
+    if (!recordingType) return;
+
     const testStepId = 'media-capture-ts-start-record';
     console.log(`TESTIMONY - ${testStepId} - START`);
     try {
@@ -67,7 +69,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, deferCameraIni
         throw new Error("Camera stream is not available. Please grant permissions and try again.");
       }
 
-      const mimeType = type === 'video' ? 'video/webm' : 'audio/webm';
+      const mimeType = recordingType === 'video' ? 'video/webm' : 'audio/webm';
       if (!MediaRecorder.isTypeSupported(mimeType)) throw new Error(`${mimeType} is not supported`);
 
       const recorder = new MediaRecorder(stream, { mimeType });
@@ -81,16 +83,16 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, deferCameraIni
       recorder.onstop = () => {
         const blob = new Blob(recordedChunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(blob);
-        const mediaEl = document.createElement(type === 'video' ? 'video' : 'audio');
+        const mediaEl = document.createElement(recordingType === 'video' ? 'video' : 'audio');
         mediaEl.src = url;
         mediaEl.onloadedmetadata = () => {
             const newMediaPayload = {
-                file: new File([blob], `recording.${type === 'video' ? 'webm' : 'mp3'}`),
-                type: type,
+                file: new File([blob], `recording.${recordingType === 'video' ? 'webm' : 'mp3'}`),
+                type: recordingType,
                 duration: mediaEl.duration,
                 trimValues: [0, mediaEl.duration]
             };
-            setMedia({ url, type, source: 'new', duration: mediaEl.duration });
+            setMedia({ url, type: recordingType, source: 'new', duration: mediaEl.duration });
             onMediaReady(newMediaPayload);
             setStatus('preview');
             setTrimValues([0, mediaEl.duration]);
@@ -108,34 +110,30 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, deferCameraIni
     } finally {
         console.log(`TESTIMONY - ${testStepId} - END`);
     }
-  }, [media, stopRecordingAndCleanup, stream, onMediaReady, toast, initialMedia]);
+  }, [media, stopRecordingAndCleanup, stream, onMediaReady, toast, initialMedia, recordingType]);
 
-  // Effect to automatically start recording once the stream is ready
-  useEffect(() => {
-    if (pendingRecording && stream) {
-      startRecording(pendingRecording.type);
-      setPendingRecording(null); // Clear the pending request
-    }
-  }, [pendingRecording, stream, startRecording]);
-  
   const handleInitiateRecording = (type: 'video' | 'audio') => {
-    setPendingRecording({ type });
-    setCameraEnabled(true); // This will trigger the useCamera hook
+    setRecordingType(type);
+    setCameraEnabled(true);
+    setStatus('pre-recording');
   };
 
   useEffect(() => {
     if (cameraError) {
       toast({ title: "Camera Error", description: cameraError, variant: "destructive" });
-      setCameraEnabled(false); // Reset on error
-      setPendingRecording(null);
+      setCameraEnabled(false);
+      setStatus('idle');
+      setRecordingType(null);
     }
   }, [cameraError, toast]);
 
   useEffect(() => {
-    if (status === 'recording' && stream && pendingRecording?.type === 'video' && videoRef.current) {
-        videoRef.current.srcObject = stream;
+    if (stream && (status === 'pre-recording' || status === 'recording') && recordingType === 'video' && videoRef.current) {
+        if (videoRef.current.srcObject !== stream) {
+            videoRef.current.srcObject = stream;
+        }
     }
-  }, [stream, status, pendingRecording]);
+  }, [stream, status, recordingType]);
 
   useEffect(() => {
     if (initialMedia?.previewUrl && !media) {
@@ -204,6 +202,12 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, deferCameraIni
     onMediaReady({ ...media, trimValues: newValues });
   };
 
+  const cancelPreRecording = () => {
+      setCameraEnabled(false);
+      setStatus('idle');
+      setRecordingType(null);
+  };
+
   const resetToInitial = useCallback(() => {
     if (media?.url && media.source === 'new') URL.revokeObjectURL(media.url);
     
@@ -224,6 +228,8 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, deferCameraIni
       onMediaReady(null);
       setStatus('idle');
     }
+    setCameraEnabled(false); 
+    setRecordingType(null);
   }, [media, initialMedia, onMediaReady]);
 
   const renderCaptureOptions = () => (
@@ -246,13 +252,53 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, deferCameraIni
         <input id="file-upload" type="file" className="sr-only" onChange={handleFileUpload} accept="video/*,audio/*" />
     </div>
   );
+  
+  const renderPreRecording = () => {
+    const content = recordingType === 'video' ? (
+        <video ref={videoRef} className={`w-full h-full object-cover ${isMobile ? '' : 'scale-x-[-1]'}`} autoPlay muted playsInline />
+    ) : (
+        <div className="flex flex-col items-center justify-center h-full text-primary">
+            <Mic className="h-12 w-12"/>
+            <span className="mt-2 text-lg font-semibold">Prepare to Record Audio</span>
+        </div>
+    );
+
+    return (
+        <div className="space-y-4">
+            <div className="relative w-full rounded bg-black aspect-video overflow-hidden">
+                {content}
+                 <div className="absolute top-2 left-2 flex items-center space-x-2 bg-black/50 text-white text-xs px-2 py-1 rounded z-10">
+                    <Camera className="h-4 w-4" />
+                    <span>Camera Preview</span>
+                </div>
+                {recordingType === 'video' && hasMultipleCameras && (
+                   <div className="absolute bottom-2 right-2 z-10">
+                       <Button type="button" onClick={switchCamera} variant="outline" size="icon" className="rounded-full bg-black/30 hover:bg-black/50 border-white/30 text-white">
+                           <RefreshCw className="h-5 w-5" />
+                       </Button>
+                   </div>
+                )}
+            </div>
+            <div className="flex space-x-4">
+                <Button type="button" onClick={startRecording} className="w-full">
+                    Start Recording
+                </Button>
+                <Button type="button" onClick={cancelPreRecording} variant="outline" className="w-full">
+                    Cancel
+                </Button>
+            </div>
+        </div>
+    );
+  }
+
+  if (status === 'pre-recording') {
+      return renderPreRecording();
+  }
 
   if (status === 'recording') {
     const timerDisplay = `${formatTime(recordingTime)} / ${formatTime(MAX_RECORDING_SECONDS)}`;
     const isNearingLimit = MAX_RECORDING_SECONDS - recordingTime <= WARNING_THRESHOLD_SECONDS;
     
-    const recordingType = pendingRecording?.type || 'video';
-
     const content = recordingType === 'video' ? (
         <video ref={videoRef} className={`w-full h-full object-cover ${isMobile ? '' : 'scale-x-[-1]'}`} autoPlay muted playsInline />
     ) : (
