@@ -160,9 +160,13 @@ function toast(props: Toast) { // Changed signature
     })
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
 
-  // Log destructive toasts to the console
+  // Log all toasts to the console
   if (props.variant === "destructive") {
-    console.error("Toast Error:", props);
+    console.error("Toast:", props);
+  } else if (props.variant === "success") {
+    console.info("Toast:", props);
+  } else {
+    console.log("Toast:", props);
   }
 
   dispatch({
