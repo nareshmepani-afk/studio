@@ -26,9 +26,9 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 /**
  * Visual indicator of the trimmed range compared to the full file duration.
  */
-function TrimProgressIndicator({ startTime, endTime, duration }: { startTime: number; endTime: number; duration: number }) {
-  const startPct = (startTime / duration) * 100;
-  const endPct = 100 - (endTime / duration) * 100;
+function TrimProgressIndicator({ trimStart, trimEnd, duration }: { trimStart: number; trimEnd: number; duration: number }) {
+  const startPct = (trimStart / duration) * 100;
+  const endPct = 100 - (trimEnd / duration) * 100;
 
   return (
     <div className="w-full h-1 bg-black/40 relative flex overflow-hidden">
@@ -67,14 +67,14 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
 
   /**
    * PLAYBACK SYNC LOGIC
-   * Ensures the player stays within the startTime and endTime bounds.
+   * Ensures the player stays within the trimStart and trimEnd bounds.
    */
   useEffect(() => {
     const mediaElement = videoRef.current || audioRef.current;
     if (!mediaElement || !primaryMedia) return;
 
-    const start = primaryMedia.startTime || 0;
-    const end = primaryMedia.endTime || primaryMedia.duration || 0;
+    const start = primaryMedia.trimStart || 0;
+    const end = primaryMedia.trimEnd || primaryMedia.duration || 0;
 
     const handleLoadedMetadata = () => {
       mediaElement.currentTime = start;
@@ -112,12 +112,12 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
       mediaElement.removeEventListener('timeupdate', handleTimeUpdate);
       mediaElement.removeEventListener('play', handlePlay);
     };
-  }, [primaryMedia?.url, primaryMedia?.startTime, primaryMedia?.endTime, primaryMedia?.duration]);
+  }, [primaryMedia?.url, primaryMedia?.trimStart, primaryMedia?.trimEnd, primaryMedia?.duration]);
 
   const canPerformActions = userMode === 'host';
   const locationString = [memory.location, memory.country].filter(Boolean).join(', ');
   const isTrimmed = primaryMedia && primaryMedia.duration && 
-    ((primaryMedia.startTime || 0) > 0 || (primaryMedia.endTime || primaryMedia.duration) < primaryMedia.duration);
+    ((primaryMedia.trimStart || 0) > 0 || (primaryMedia.trimEnd || primaryMedia.duration) < primaryMedia.duration);
 
   return (
     <>
@@ -143,8 +143,8 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
               {primaryMedia.duration && (
                 <div className="absolute bottom-0 left-0 right-0 z-10">
                   <TrimProgressIndicator 
-                    startTime={primaryMedia.startTime || 0} 
-                    endTime={primaryMedia.endTime || primaryMedia.duration} 
+                    trimStart={primaryMedia.trimStart || 0} 
+                    trimEnd={primaryMedia.trimEnd || primaryMedia.duration} 
                     duration={primaryMedia.duration} 
                   />
                 </div>
@@ -156,8 +156,8 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
               {primaryMedia.duration && (
                 <div className="mt-2 rounded-full overflow-hidden">
                    <TrimProgressIndicator 
-                    startTime={primaryMedia.startTime || 0} 
-                    endTime={primaryMedia.endTime || primaryMedia.duration} 
+                    trimStart={primaryMedia.trimStart || 0} 
+                    trimEnd={primaryMedia.trimEnd || primaryMedia.duration} 
                     duration={primaryMedia.duration} 
                   />
                 </div>
