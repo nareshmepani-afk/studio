@@ -1,4 +1,3 @@
-'''
 import { useState, useEffect, useCallback } from 'react';
 import { useIsMobile } from './use-mobile';
 
@@ -116,4 +115,3 @@ export function useCamera({ enabled = true }: { enabled?: boolean } = {}) {
 
   return { stream, error, switchCamera, hasMultipleCameras, currentDevice: videoDevices[currentDeviceIndex] };
 }
-''
