@@ -61,7 +61,7 @@ export default function MemoryFormPage() {
   const [selectedMonth, setSelectedMonth] = useState(getMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState(getDate(new Date()));
 
-  const [mediaPayload, setMediaPayload] = useState<{ file: File, type: 'video' | 'audio', duration: number } | null>(null);
+  const [mediaPayload, setMediaPayload] = useState<{ file: File, type: 'video' | 'audio', duration: number, trimValues?: [number, number] } | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFlagged, setIsFlagged] = useState(false);
@@ -167,6 +167,8 @@ export default function MemoryFormPage() {
             contentType: mediaPayload.file.type,
             customMetadata: {
                 duration: mediaPayload.duration.toString(),
+                trimStart: mediaPayload.trimValues ? mediaPayload.trimValues[0].toString() : '0',
+                trimEnd: mediaPayload.trimValues ? mediaPayload.trimValues[1].toString() : mediaPayload.duration.toString(),
             },
         };
         await uploadBytes(fileRef, mediaPayload.file, metadata);
@@ -176,7 +178,9 @@ export default function MemoryFormPage() {
           url,
           type: mediaPayload.type,
           duration: mediaPayload.duration,
-          filename: mediaPayload.file.name
+          filename: mediaPayload.file.name,
+          trimStart: mediaPayload.trimValues ? mediaPayload.trimValues[0] : 0,
+          trimEnd: mediaPayload.trimValues ? mediaPayload.trimValues[1] : mediaPayload.duration,
         };
       }
 

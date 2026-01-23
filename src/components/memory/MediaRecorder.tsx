@@ -6,6 +6,7 @@ import { Upload, Mic, Video, Loader2, StopCircle, RefreshCw } from 'lucide-react
 import { useToast } from '@/hooks/use-toast';
 import { useCamera } from '@/hooks/useCamera';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Slider } from '@/components/ui/slider';
 
 const MAX_FILE_SIZE_MB = 100;
 const MAX_RECORDING_SECONDS = 360; // 6 minutes
@@ -20,7 +21,7 @@ const formatTime = (seconds: number) => {
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
-export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues, deferCameraInit = false }: any) {
+export function MediaCaptureControl({ onMediaReady, initialMedia, deferCameraInit = false }: any) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -32,7 +33,8 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues, de
   const [status, setStatus] = useState('idle'); // idle, recording, preview
   const [media, setMedia] = useState<any>(null);
   const [recordingTime, setRecordingTime] = useState(0);
-  
+  const [trimValues, setTrimValues] = useState([0, 0]);
+
   const [cameraEnabled, setCameraEnabled] = useState(!deferCameraInit);
   const [pendingRecording, setPendingRecording] = useState<{ type: 'video' | 'audio' } | null>(null);
 
@@ -85,11 +87,13 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues, de
             const newMediaPayload = {
                 file: new File([blob], `recording.${type === 'video' ? 'webm' : 'mp3'}`),
                 type: type,
-                duration: mediaEl.duration
+                duration: mediaEl.duration,
+                trimValues: [0, mediaEl.duration]
             };
             setMedia({ url, type, source: 'new', duration: mediaEl.duration });
             onMediaReady(newMediaPayload);
             setStatus('preview');
+            setTrimValues([0, mediaEl.duration]);
         };
         recordedChunksRef.current = [];
       };
@@ -143,7 +147,9 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues, de
       };
       setMedia(newMedia);
       setStatus('preview');
-      onMediaReady({ file: new File([], "existing"), type: newMedia.type, duration: newMedia.duration });
+      const initialTrim = [initialMedia.trimStart || 0, initialMedia.trimEnd || newMedia.duration];
+      setTrimValues(initialTrim);
+      onMediaReady({ file: new File([], "existing"), type: newMedia.type, duration: newMedia.duration, trimValues: initialTrim });
     }
   }, [initialMedia, media, onMediaReady]);
 
@@ -179,13 +185,23 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues, de
         const newMediaPayload = {
             file,
             type: file.type.startsWith('video') ? 'video' : 'audio',
-            duration: mediaEl.duration
+            duration: mediaEl.duration,
+            trimValues: [0, mediaEl.duration]
         };
         setMedia({ url, type: newMediaPayload.type, source: 'new', duration: mediaEl.duration });
         onMediaReady(newMediaPayload);
         setStatus('preview');
+        setTrimValues([0, mediaEl.duration]);
     };
     event.target.value = '';
+  };
+
+  const handleTrimChange = (newValues: number[]) => {
+    setTrimValues(newValues);
+    if (videoRef.current) {
+      videoRef.current.currentTime = newValues[0];
+    }
+    onMediaReady({ ...media, trimValues: newValues });
   };
 
   const resetToInitial = useCallback(() => {
@@ -200,7 +216,9 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues, de
       };
       setMedia(newMedia);
       setStatus('preview');
-      onMediaReady({ file: new File([], "existing"), type: newMedia.type, duration: newMedia.duration });
+      const initialTrim = [initialMedia.trimStart || 0, initialMedia.trimEnd || newMedia.duration];
+      setTrimValues(initialTrim);
+      onMediaReady({ file: new File([], "existing"), type: newMedia.type, duration: newMedia.duration, trimValues: initialTrim });
     } else {
       setMedia(null);
       onMediaReady(null);
@@ -277,11 +295,41 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, trimValues, de
           <video
             ref={videoRef}
             src={media.url}
+            onLoadedMetadata={(e) => {
+              const videoElement = e.currentTarget;
+              if (videoElement) {
+                const initialTrim = [0, videoElement.duration];
+                setTrimValues(initialTrim);
+                onMediaReady({ ...media, trimValues: initialTrim });
+              }
+            }}
+            onTimeUpdate={(e) => {
+              const videoElement = e.currentTarget;
+              if (videoElement && videoElement.currentTime > trimValues[1]) {
+                videoElement.currentTime = trimValues[0];
+                videoElement.pause();
+              }
+            }}
             controls
             className="w-full rounded bg-black aspect-video"
           />
         </div>
         
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm font-mono">
+            <span>{formatTime(trimValues[0])}</span>
+            <span>{formatTime(trimValues[1])}</span>
+          </div>
+          <Slider
+            min={0}
+            max={media.duration || 0}
+            step={0.1}
+            value={trimValues}
+            onValueChange={handleTrimChange}
+            className="w-full"
+          />
+        </div>
+
         {media.source === 'new' && (
           <Button type="button" onClick={resetToInitial} variant="outline" className="w-full">
             {initialMedia ? 'Cancel and Revert to Original' : 'Start Over'}
