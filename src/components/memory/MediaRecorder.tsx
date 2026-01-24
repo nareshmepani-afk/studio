@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, Mic, Video, Loader2, StopCircle, RefreshCw, Camera } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCamera } from '@/hooks/useCamera';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useMobile as useIsMobile } from '@/hooks/use-mobile'; 
 import { Slider } from '@/components/ui/slider';
 
 const MAX_FILE_SIZE_MB = 100;

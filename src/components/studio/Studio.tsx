@@ -5,10 +5,10 @@ import { useStudio } from '@/hooks/studio/useStudio';
 import { useStudioMode } from '@/hooks/studio/useStudioMode';
 import { useTeleprompter } from '@/hooks/studio/useTeleprompter';
 import { useCameraManager } from '@/hooks/studio/useCameraManager';
-import DirectorMonitor from '@/components/studio/DirectorMonitor';
-import Teleprompter from '@/components/studio/Teleprompter';
-import MetadataInspector from '@/components/studio/MetadataInspector';
-import ModeSwitcher from '@/components/studio/ModeSwitcher';
+import { DirectorMonitor } from '@/components/studio/DirectorMonitor';
+import { Teleprompter } from '@/components/studio/Teleprompter';
+import { MetadataInspector } from '@/components/studio/MetadataInspector';
+import { ModeSwitcher } from '@/components/studio/ModeSwitcher';
 import { teleprompterScripts, defaultTeleprompterFallbackScript } from '@/lib/teleprompterScripts';
 import { Loader2 } from 'lucide-react';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
@@ -58,7 +58,6 @@ export function Studio() {
   const cameraManager = useCameraManager();
 
   const teleprompterScript = teleprompterScripts[studioState.promptId as keyof typeof teleprompterScripts] || defaultTeleprompterFallbackScript;
-  // A bit of a hack to get the questions from the script
   const teleprompterQuestions = teleprompterScript.split(/\n\s*\n/).map((text, i) => ({ id: `${studioState.promptId}-${i}`, text }));
   const teleprompter = useTeleprompter(teleprompterQuestions);
 
@@ -71,15 +70,20 @@ export function Studio() {
       <div className="container mx-auto max-w-6xl py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-2 space-y-8">
-            <DirectorMonitor stream={cameraManager.stream} />
+            <DirectorMonitor 
+              facingMode={cameraManager.facingMode}
+              onFlip={cameraManager.flipCamera}
+              isRecording={studioState.isRecording} 
+            />
           </div>
           <div className="space-y-8">
-            <ModeSwitcher mode={studioMode} toggleMode={toggleStudioMode} />
+            <ModeSwitcher mode={studioMode} onToggle={toggleStudioMode} />
             {studioMode === 'SOLO' && <TeleprompterControls teleprompter={teleprompter} studioMode={studioMode} />}
             <Teleprompter 
-              text={teleprompter.currentQuestion?.text ?? ''}
+              script={teleprompter.currentQuestion?.text ?? ''}
               scrollSpeed={teleprompter.scrollSpeed}
-              fontSize={teleprompter.fontSize} 
+              fontSize={teleprompter.fontSize}
+              isScrolling={teleprompter.isScrolling}
             />
             <MetadataInspector {...studioState} />
           </div>

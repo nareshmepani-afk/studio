@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, MapPin, Smile, CalendarIcon, Layers } from 'lucide-react';
 import { memoryCategoriesList, emotionTagsList } from '@/types';
 
-const MetadataInspector = ({
+export const MetadataInspector = ({
   title, setTitle,
   description, setDescription,
   selectedCategory, setSelectedCategory,
@@ -82,5 +84,3 @@ const MetadataInspector = ({
     </div>
   );
 };
-
-export default MetadataInspector;
