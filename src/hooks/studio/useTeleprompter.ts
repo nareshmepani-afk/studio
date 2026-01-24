@@ -74,6 +74,7 @@ export function useTeleprompter(questions: TeleprompterQuestion[] = []) {
     isScrolling,
     scrollSpeed,
     fontSize,
+    setFontSize,
     currentQuestion,
     currentQuestionIndex,
     startScrolling,

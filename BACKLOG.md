@@ -8,7 +8,8 @@
 - [x] **STU-01e**: Sync `useStudioMode.ts` return keys (`studioMode`, `toggleStudioMode`).
 - [x] **STU-01f**: **Fix Hook-UI Mismatch**: Synced `useCameraManager.ts` with `Studio.tsx`.
 - [x] **STU-01h**: Add `isRecording` to `useStudio` hook state.
-- [ ] **STU-01g**: **Fix Prop Drilling**: Pass `stream` from `cameraManager` to `DirectorMonitor` in `Studio.tsx`. [🔴 CURRENT BLOCKER]
+- [x] **STU-01i**: **Fix Hook-UI Mismatch**: Aligned `useTeleprompter` returns.
+- [ ] **STU-01j**: **Fix Prop Drilling**: Pass `stream` from `cameraManager` to `DirectorMonitor` in `Studio.tsx`. [🔴 CURRENT BLOCKER]
 - [ ] **STU-02**: Define Studio Design System in `tailwind.config.ts` (Colors & Typography).
 - [ ] **STU-03**: Finalize `useStudioMode.ts` logic (Solo vs. Interview session persistence).
 - [🟡] **STU-04**: Implement `DirectorMonitor.tsx` (Video Feed + Tally Light logic). [IN PROGRESS]
