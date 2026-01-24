@@ -11,29 +11,30 @@ interface TeleprompterProps {
 
 export const Teleprompter: React.FC<TeleprompterProps> = ({ script, isScrolling, scrollSpeed, fontSize }) => {
   const prompterRef = useRef<HTMLDivElement>(null);
+  const animationFrameIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     const prompter = prompterRef.current;
-    let animationFrameId: number;
 
     const scroll = () => {
       if (prompter) {
         prompter.scrollTop += scrollSpeed / 10;
-        animationFrameId = requestAnimationFrame(scroll);
+        animationFrameIdRef.current = requestAnimationFrame(scroll);
       }
     };
 
     if (isScrolling) {
-      animationFrameId = requestAnimationFrame(scroll);
+      animationFrameIdRef.current = requestAnimationFrame(scroll);
     } else {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
+        animationFrameIdRef.current = null;
       }
     }
 
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
       }
     };
   }, [isScrolling, scrollSpeed]);
