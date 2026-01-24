@@ -1,13 +1,13 @@
 import { useState, useCallback } from 'react';
 
-export type JourneyMode = 'solo' | 'interview';
+export type JourneyMode = 'SOLO' | 'INTERVIEW';
 
-export function useStudioMode(initialMode: JourneyMode = 'solo') {
-  const [currentMode, setCurrentMode] = useState<JourneyMode>(initialMode);
+export function useStudioMode(initialMode: JourneyMode = 'SOLO') {
+  const [studioMode, setStudioMode] = useState<JourneyMode>(initialMode);
 
-  const handleModeChange = useCallback((mode: JourneyMode) => {
-    setCurrentMode(mode);
+  const toggleStudioMode = useCallback(() => {
+    setStudioMode(prev => prev === 'SOLO' ? 'INTERVIEW' : 'SOLO');
   }, []);
 
-  return { currentMode, onModeChange: handleModeChange };
+  return { studioMode, toggleStudioMode };
 }
