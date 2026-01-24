@@ -4,6 +4,7 @@
 - [x] **STU-01a**: Fix `useIsMobile` import.
 - [x] **STU-01b**: Restore `switchCamera` logic in `useCamera.ts`.
 - [x] **STU-01c**: Fix TypeScript implicit any in `MetadataInspector.tsx`.
+- [x] **STU-01d**: Fix TypeScript implicit any in `Studio.tsx`.
 - [ ] **STU-02**: Define Studio Design System in `tailwind.config.ts`.
 - [ ] **STU-03**: Implement `useStudioMode.ts` (Solo vs. Interview logic).
 - [ ] **STU-04**: Create `DirectorMonitor.tsx` (Camera Feed + Tally Light).

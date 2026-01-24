@@ -16,7 +16,27 @@ import { Button } from '@/components/ui/button';
 import { Play, Pause, Plus, Minus, SkipForward } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 
-const TeleprompterControls = ({ teleprompter, studioMode }) => {
+// Define the interface for the controls
+interface TeleprompterControlsProps {
+  teleprompter: {
+    fontSize: number;
+    setFontSize: (size: number) => void;
+    scrollSpeed: number;
+    setScrollSpeed: (speed: number) => void;
+    toggleScrolling: () => void;
+    isScrolling: boolean;
+    nextQuestion: () => void;
+    decreaseFontSize: () => void;
+    increaseFontSize: () => void;
+  };
+  studioMode: 'SOLO' | 'INTERVIEW';
+}
+
+// Apply the interface to the component
+const TeleprompterControls: React.FC<TeleprompterControlsProps> = ({ 
+  teleprompter, 
+  studioMode 
+}) => {
   if (studioMode === 'INTERVIEW') return null;
 
   return (
