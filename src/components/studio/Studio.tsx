@@ -91,8 +91,8 @@ export function Studio() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-2 space-y-8">
             <DirectorMonitor 
-              facingMode={cameraManager.facingMode}
-              onFlip={cameraManager.flipCamera}
+              facingMode={'user'}
+              onFlip={cameraManager.switchCamera}
               isRecording={studioState.isRecording} 
             />
           </div>
