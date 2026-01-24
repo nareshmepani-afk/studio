@@ -7,9 +7,33 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Loader2, MapPin, Smile, CalendarIcon, Layers } from 'lucide-react';
-import { memoryCategoriesList, emotionTagsList } from '@/types';
+import { memoryCategoriesList, emotionTagsList, MemoryCategory } from '@/types';
 
-export const MetadataInspector = ({
+interface MetadataInspectorProps {
+  title: string;
+  setTitle: (value: string) => void;
+  description: string;
+  setDescription: (value: string) => void;
+  selectedCategory: MemoryCategory | undefined;
+  setSelectedCategory: (value: MemoryCategory | undefined) => void;
+  location: string;
+  setLocation: (value: string) => void;
+  selectedEmotionTags: string[];
+  handleEmotionTagToggle: (tagId: string) => void;
+  selectedYear: number;
+  setSelectedYear: (value: number) => void;
+  selectedMonth: number;
+  setSelectedMonth: (value: number) => void;
+  selectedDay: number;
+  setSelectedDay: (value: number) => void;
+  years: number[];
+  months: { value: number; label: string; }[];
+  days: number[];
+  isSubmitting: boolean;
+  handleSubmit: () => void;
+}
+
+export const MetadataInspector: React.FC<MetadataInspectorProps> = ({
   title, setTitle,
   description, setDescription,
   selectedCategory, setSelectedCategory,

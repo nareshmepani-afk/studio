@@ -2,8 +2,9 @@
 
 ## Sprint 1: Studio Foundation [🟡 IN PROGRESS]
 - [x] **STU-01a**: Fix `useIsMobile` import.
-- [ ] **STU-01b**: Restore `switchCamera` logic in `useCamera.ts`.
-- [ ] **STU-02**: Define Studio Design System (Tailwind colors).
+- [x] **STU-01b**: Restore `switchCamera` logic in `useCamera.ts`.
+- [x] **STU-01c**: Fix TypeScript implicit any in `MetadataInspector.tsx`.
+- [ ] **STU-02**: Define Studio Design System in `tailwind.config.ts`.
 - [ ] **STU-03**: Implement `useStudioMode.ts` (Solo vs. Interview logic).
 - [ ] **STU-04**: Create `DirectorMonitor.tsx` (Camera Feed + Tally Light).
 - [ ] **STU-05**: Create `Teleprompter.tsx` (Responsive Serif text engine).
