@@ -21,11 +21,11 @@ export function useCameraManager() {
     }
   }, [stream]);
 
-  const getStream = useCallback(async (constraints: MediaStreamConstraints) => {
+  const getStream = useCallback(async (videoConstraints: MediaTrackConstraints) => {
     stopCurrentStream();
     try {
       const newStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { ...constraints },
+        video: videoConstraints,
         audio: true,
        });
       setStream(newStream);
@@ -77,7 +77,7 @@ export function useCameraManager() {
     const currentDevice = videoDevices[currentDeviceIndex];
     if (!currentDevice) return;
 
-    const constraints = {
+    const constraints: MediaTrackConstraints = {
       deviceId: { exact: currentDevice.deviceId },
       ...RESOLUTION_CONSTRAINTS[resolution],
     };
