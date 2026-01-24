@@ -22,6 +22,7 @@ export function useStudio() {
 
   const [isLoadingMemory, setIsLoadingMemory] = useState(isEditing);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -172,5 +173,7 @@ export function useStudio() {
     handleSubmit,
     authLoading,
     promptId,
+    isRecording,
+    setIsRecording
   };
 }
