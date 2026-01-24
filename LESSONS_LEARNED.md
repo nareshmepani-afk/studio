@@ -40,3 +40,11 @@ This directive is now a fundamental part of my operational logic for this worksp
     1. **A Type is a Contract:** I will treat every TypeScript type definition as a binding contract. When I modify a type, I acknowledge my responsibility to update *every single file* that uses it.
     2. **Find All Usages:** Before declaring a type-related fix complete, I will use my available tools to perform a global search for all usages of that type and verify that each usage is compatible with the new definition.
     3. **No Whack-a-Mole:** I will not wait for the compiler to report the next error. I will proactively find and fix all instances of the broken contract in a single, atomic commit.
+
+**Lesson 6: Build Failures Can Mask Latent Bugs**
+
+*   **Lesson ID:** L004
+*   **Title:** Build Failures Can Mask Latent Bugs
+*   **Situation:** A primary build-blocking error (a faulty cache) was resolved, only to immediately reveal a secondary, unrelated typing error in a different part of the codebase that also blocked the build.
+*   **Flawed Protocol:** Treating the resolution of a single build error as the final step before a guaranteed successful build.
+*   **Actionable Protocol:** After fixing a build-blocking error, the subsequent build must be treated as an integration test, not a final validation. Always assume the first fix may unmask other latent issues. Furthermore, enforce rigorous local type-checking (`npm run type-check`) *before* committing any code to catch latent errors proactively.
