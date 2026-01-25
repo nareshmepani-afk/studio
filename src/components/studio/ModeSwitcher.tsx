@@ -1,52 +1,52 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { User, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { motion } from "framer-motion";
+import { User, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ModeSwitcherProps {
-  mode: 'SOLO' | 'INTERVIEW';
-  onToggle: () => void;
+  mode: 'solo' | 'interview';
+  setMode: (mode: 'solo' | 'interview') => void;
 }
 
-export function ModeSwitcher({ mode, onToggle }: ModeSwitcherProps) {
+export const ModeSwitcher = ({ mode, setMode }: ModeSwitcherProps) => {
   return (
-    <div className="flex p-1 bg-slate-900 rounded-xl border border-white/10 w-fit">
-      <Button
-        variant="ghost"
-        onClick={onToggle}
-        className={`relative px-6 py-2 rounded-lg transition-colors ${
-          mode === 'SOLO' ? 'text-white' : 'text-slate-400 hover:text-white'
-        }`}
+    <div className="flex bg-[#121212] p-1 rounded-full border border-white/10 w-fit">
+      <button
+        onClick={() => setMode('solo')}
+        className={cn(
+          "relative flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-colors",
+          mode === 'solo' ? "text-white" : "text-zinc-500 hover:text-white"
+        )}
       >
-        {mode === 'SOLO' && (
+        {mode === 'solo' && (
           <motion.div
-            layoutId="activeTab"
-            className="absolute inset-0 bg-blue-600 rounded-lg -z-10"
+            layoutId="active-pill"
+            className="absolute inset-0 bg-white/10 rounded-full"
             transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           />
         )}
-        <User className="w-4 h-4 mr-2" />
+        <User className="w-4 h-4" />
         Solo
-      </Button>
+      </button>
 
-      <Button
-        variant="ghost"
-        onClick={onToggle}
-        className={`relative px-6 py-2 rounded-lg transition-colors ${
-          mode === 'INTERVIEW' ? 'text-white' : 'text-slate-400 hover:text-white'
-        }`}
+      <button
+        onClick={() => setMode('interview')}
+        className={cn(
+          "relative flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-colors",
+          mode === 'interview' ? "text-white" : "text-zinc-500 hover:text-white"
+        )}
       >
-        {mode === 'INTERVIEW' && (
+        {mode === 'interview' && (
           <motion.div
-            layoutId="activeTab"
-            className="absolute inset-0 bg-blue-600 rounded-lg -z-10"
+            layoutId="active-pill"
+            className="absolute inset-0 bg-white/10 rounded-full"
             transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           />
         )}
-        <Users className="w-4 h-4 mr-2" />
+        <Users className="w-4 h-4" />
         Interview
-      </Button>
+      </button>
     </div>
   );
-}
+};

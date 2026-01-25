@@ -1,15 +1,11 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
+import { useStudio } from '@/hooks/studio/useStudio';
+import { cn } from '@/lib/utils';
 
-interface TeleprompterProps {
-  script: string;
-  isScrolling: boolean;
-  scrollSpeed: number;
-  fontSize: number;
-}
-
-export const Teleprompter: React.FC<TeleprompterProps> = ({ script, isScrolling, scrollSpeed, fontSize }) => {
+export const Teleprompter = () => {
+  const { script, isScrolling, scrollSpeed, fontSize, isMirrored } = useStudio();
   const prompterRef = useRef<HTMLDivElement>(null);
   const animationFrameIdRef = useRef<number | null>(null);
 
@@ -42,11 +38,17 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({ script, isScrolling,
   return (
     <div
       ref={prompterRef}
-      className="bg-black/70 backdrop-blur-md text-white p-6 rounded-lg overflow-hidden h-96 border border-white/20"
+      className="bg-studio-black/70 backdrop-blur-md text-white p-6 rounded-lg overflow-hidden h-full border border-white/20"
       style={{ fontSize: `${fontSize}px` }}
     >
       <div className="overflow-y-auto h-full scrollbar-hide">
-        <p className="font-serif whitespace-pre-wrap leading-relaxed" style={{ transition: 'font-size 0.3s' }}>
+        <p
+          className={cn(
+            'font-prompter whitespace-pre-wrap leading-relaxed',
+            { 'scale-x-[-1]': isMirrored }
+          )}
+          style={{ transition: 'font-size 0.3s, transform 0.3s' }}
+        >
           {script}
         </p>
       </div>

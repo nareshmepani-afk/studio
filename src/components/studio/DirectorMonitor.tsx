@@ -13,7 +13,7 @@ export const DirectorMonitor = () => {
   }, [stream]);
 
   return (
-    <div className="relative w-full h-full bg-black">
+    <div className="relative w-full h-full bg-studio-black">
       <video
         ref={videoRef}
         autoPlay
@@ -23,7 +23,7 @@ export const DirectorMonitor = () => {
       />
       {isRecording && (
         <div className="absolute top-4 left-4 flex items-center space-x-2">
-          <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
+          <div className="w-4 h-4 bg-studio-recording-red rounded-full animate-pulse"></div>
           <span className="text-white font-bold text-lg">ON AIR</span>
         </div>
       )}

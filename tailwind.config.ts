@@ -1,4 +1,4 @@
-
+'''
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -14,6 +14,7 @@ export default {
         body: ['PT Sans', 'sans-serif'],
         headline: ['Playfair Display', 'serif'],
         code: ['monospace'],
+        prompter: ['"PT Sans"', 'Roboto', '"Helvetica Neue"', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -67,6 +68,10 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
+        studio: {
+          black: '#0A0A0A',
+          'recording-red': '#E53E3E',
+        }
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -104,3 +109,4 @@ export default {
   },
   plugins: [require('tailwindcss-animate')],
 } satisfies Config;
+''
