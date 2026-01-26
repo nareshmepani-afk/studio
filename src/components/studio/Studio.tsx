@@ -22,6 +22,12 @@ export const Studio = () => {
   const { startRecording, stopRecording, uploading, uploadProgress, lastUploadUrl } = useMediaRecorder(stream);
   const router = useRouter();
 
+  // --- LOG STUDIO STATE --- //
+  useEffect(() => {
+    console.log("[STUDIO_STATE] Change detected:", studioState);
+  }, [studioState]);
+  // --- END --- //
+
   // Metadata State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');

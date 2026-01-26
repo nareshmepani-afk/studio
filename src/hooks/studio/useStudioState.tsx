@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { teleprompterScripts } from '@/lib/teleprompterScripts';
 
 // 1. State Interface
 interface StudioState {
@@ -51,6 +53,22 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
   });
 
   const studioStateRef = doc(db, "studio", "default");
+  const searchParams = useSearchParams();
+
+  // Load script from URL
+  useEffect(() => {
+    const promptId = searchParams.get('promptId');
+    if (promptId) {
+      const selectedScript = teleprompterScripts[promptId];
+      if (selectedScript) {
+        setState(s => ({ ...s, script: selectedScript }));
+      } else {
+        setState(s => ({ ...s, script: 'Prompt not found.' }));
+      }
+    } else {
+      setState(s => ({ ...s, script: 'Select a prompt to begin, or start typing.' }));
+    }
+  }, [searchParams]);
 
   // Listen for remote control changes
   useEffect(() => {
@@ -58,9 +76,11 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
       (doc) => {
         if (doc.exists()) {
             const data = doc.data();
+            // Exclude script to prevent overwriting the loaded prompt
+            const { script, ...remoteState } = data;
             setState(prevState => ({
                 ...prevState,
-                ...data,
+                ...remoteState,
                 isConnected: true,
             }));
         }
