@@ -50,7 +50,9 @@ export const Studio = () => {
 
   useEffect(() => {
     if (lastUploadUrl) {
-      router.push(lastUploadUrl);
+      // The real ID will come from the database in a future step.
+      const memoryId = "temp-id"; 
+      router.push(`/review/${memoryId}`);
     }
   }, [lastUploadUrl, router]);
 

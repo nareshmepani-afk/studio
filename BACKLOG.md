@@ -15,4 +15,5 @@
     - [x] Created `useMediaRecorder` hook with `uploadBytesResumable`.
     - [x] Integrated hook into `Studio.tsx` with "Start Session" button.
     - [x] Implemented `<Progress />` bar for Firebase Storage uploads.
-- [🟡] **STU-11**: **Post-Recording Journey**: Redirect to "Review Memory". [IN PROGRESS]
+- [✅] **STU-11**: **Review Page RESTORED**: Replaced `any` with `RecordedMemory` interface. [DONE]
+- [🟡] **STU-12**: **Deep Integration**: Passing the actual Video URL from Studio to Review. [UP NEXT]
