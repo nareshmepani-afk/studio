@@ -12,13 +12,41 @@ import { useMediaRecorder } from '@/hooks/use-media-recorder';
 import { useCamera } from '@/hooks/useCamera';
 import { Progress } from '@/components/ui/progress';
 import { useRouter } from 'next/navigation';
+import { MemoryCategory } from '@/types';
 
 export const Studio = () => {
-  const { mode, actions, isRecording } = useStudioState();
+  const studioState = useStudioState();
+  const { mode, actions, isRecording } = studioState;
   const [isRemoteControlOpen, setIsRemoteControlOpen] = useState(false);
   const { stream } = useCamera();
   const { startRecording, stopRecording, uploading, uploadProgress, lastUploadUrl } = useMediaRecorder(stream);
   const router = useRouter();
+
+  // Metadata State
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<MemoryCategory | undefined>();
+  const [location, setLocation] = useState('');
+  const [selectedEmotionTags, setSelectedEmotionTags] = useState<string[]>([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const years = Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i);
+  const months = Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: new Date(0, i).toLocaleString('default', { month: 'long' }) }));
+  const days = Array.from({ length: new Date(selectedYear, selectedMonth, 0).getDate() }, (_, i) => i + 1);
+
+  const handleEmotionTagToggle = (tagId: string) => {
+    setSelectedEmotionTags(prev => prev.includes(tagId) ? prev.filter(t => t !== tagId) : [...prev, tagId]);
+  };
+
+  const handleSubmit = () => {
+    setIsSubmitting(true);
+    // Implement submission logic here
+    console.log('Submitting:', { title, description, selectedCategory, location, selectedEmotionTags, selectedYear, selectedMonth, selectedDay });
+    setTimeout(() => setIsSubmitting(false), 2000);
+  };
 
   useEffect(() => {
     if (lastUploadUrl) {
@@ -37,19 +65,38 @@ export const Studio = () => {
 
   return (
     <div className="grid lg:grid-cols-10 h-screen bg-studio-black text-studio-text">
-      {/* Main Content (70%) */}
       <div className="lg:col-span-7 flex flex-col h-full">
         <div className="flex-grow relative">
           {mode === 'solo' ? <Teleprompter /> : <DirectorMonitor />}
         </div>
       </div>
-
-      {/* Sidebar (30%) */}
       <div className="lg:col-span-3 flex flex-col h-full bg-studio-card p-4 border-l border-studio-border">
         <div className="flex justify-center mb-6">
           <ModeSwitcher />
         </div>
-        <MetadataInspector />
+        <MetadataInspector 
+          title={title}
+          setTitle={setTitle}
+          description={description}
+          setDescription={setDescription}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          location={location}
+          setLocation={setLocation}
+          selectedEmotionTags={selectedEmotionTags}
+          handleEmotionTagToggle={handleEmotionTagToggle}
+          selectedYear={selectedYear}
+          setSelectedYear={setSelectedYear}
+          selectedMonth={selectedMonth}
+          setSelectedMonth={setSelectedMonth}
+          selectedDay={selectedDay}
+          setSelectedDay={setSelectedDay}
+          years={years}
+          months={months}
+          days={days}
+          isSubmitting={isSubmitting}
+          handleSubmit={handleSubmit}
+        />
         <div className="mt-auto space-y-4">
           {uploading && <Progress value={uploadProgress} />}
           <Button onClick={handleToggleRecording} className="w-full" disabled={uploading}>

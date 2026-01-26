@@ -3,13 +3,7 @@
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-interface ReviewPageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default function ReviewPage({ params }: ReviewPageProps) {
+export default function ReviewPage({ params }: { params: { id: string } }) {
   const videoSrc = `https://storage.googleapis.com/memory-weaver-8rk9t.appspot.com/memories/${params.id}.webm`;
 
   return (

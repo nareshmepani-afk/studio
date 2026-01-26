@@ -1,118 +1,43 @@
-
-# Manual End-to-End Testing Protocol
-
-This document is the living record of all manual end-to-end testing performed on the Memory Weaver application. It is a formal process of "Witnessing" designed to be executed by a human tester to assess the qualitative, lived experience of using the application.
-
-## The Two Modes of Testing: The Clean Room and the Mosh Pit
-
-Our testing, like our development, unfolds in two distinct modes:
-
-1.  **"The Clean Room" (The Ideal):** This is our formal, structured testing protocol. It is a process of **Witnessing** where we execute pre-defined **Test Cases** to verify the application's functionality. The AI assistant generates a detailed, step-by-step plan for each test, which is then approved by the developer. This is the mode we use to ensure the application is working as intended.
-
-2.  **"The Mosh Pit" (The Real):** This is the state of **Forensic Debugging**. It is a non-linear, exploratory, and often surprising search for the root cause of a problem. In the Mosh Pit, the clean, linear process of the "Clean Room" is abandoned in favor of a more flexible and exploratory approach. We are forced to engage in a process of trial and error, to follow dead ends, and to backtrack. This is not a failure of the process, but an honest acknowledgment of the nature of complex systems.
-
-**The goal is not to avoid the Mosh Pit, but to learn from it.** Each descent into the Mosh Pit is an opportunity to strengthen the Clean Room. When we emerge, we must update this specification and our testing protocols to reflect the lessons learned.
+# 🧪 Manual End-to-End Testing Protocol (Updated Jan 2026)
 
 ## The Protocol
-
-To bridge the gap between idea and execution, the testing process now incorporates **Plan Mode**. Before initiating a new Test Case, the AI assistant will first generate a detailed, step-by-step plan for the test. This plan will be presented to the developer for witnessing and approval. This ensures that the intent of the test is fully understood and agreed upon before the formal, witnessed execution begins.
-
-1.  **Plan Mode Initiation:** The AI will propose a new Test Case by generating a detailed plan.
-2.  **Witness and Approve:** The developer will review and approve the plan, ensuring it aligns with the testing objectives.
-3.  **Formal Test Initiation:** Once the plan is approved, the AI will define a new Test Session.
-4.  **Guided Steps:** For each discrete action, the AI will provide a unique Test Step ID and a direct, unambiguous instruction.
-5.  **The Act of Witnessing:** The manual tester (the user) will perform the action as instructed.
-6.  **Instrumented Application Logging:** The application itself has been instrumented to automatically log the full context of each Test Step to the browser's developer console. The tester must have the console open to witness this log.
-7.  **Meaningful Testimony:** The console log for each test step must provide a complete testimony of the state change. It must record the state *before* the action, the *action itself*, and the state *after* the action. This provides an unambiguous basis for judging pass or fail.
-8.  **Feedback as Testimony:** The tester will provide feedback, referencing the Test Step ID and confirming that the console output provides a complete and meaningful testimony of the action's outcome. This feedback serves as the formal testimony of the application's state of being.
+*Refer to the top of this document for the philosophy of "The Clean Room" vs "The Mosh Pit".*
 
 ---
 
 ## Active Sprint Test Session
 
-**Sprint ID:** `prompt-memory-creation-2024-05-25`
+**Sprint ID:** `studio-remote-persistence-2026-01-25`
 
-**Objective:** To verify that a user can successfully create a memory starting from a specific prompt URL and that the created memory is correctly associated with the prompt.
+**Objective:** To verify the real-time synchronization between the Studio Desktop and Mobile Remote, and to validate the end-to-end video recording/persistence lifecycle.
 
 **Base URL:** `https://studio--memory-weaver-8rk9t.us-central1.hosted.app/`
 
-### Test Case 1: Verify Memory Creation from Prompt URL
+### Test Case 1: Remote Control Handoff & Synchronization
+* **Objective:** Confirm the desktop and mobile remote are witnessing the same state via Firestore.
+* **Pre-requisites:** Desktop and Phone logged into the same account.
 
-*   **Objective:** To confirm that a user can follow a prompt-specific URL, create a memory, and see it on their timeline.
-*   **Pre-requisites:** The user must be logged in.
-*   **Test URL:** `/add-memory?promptId=p3`
+1. **`stu-rem-tc1-ts1`**: On Desktop, navigate to `/add-memory`. Click "Remote Control" to reveal the QR code.
+2. **`stu-rem-tc1-ts2`**: Scan the QR code with a mobile device. **Expected Result:** Mobile opens the `/remote` interface and displays a "Connected" status indicator.
+3. **`stu-rem-tc1-ts3`**: On the **Mobile Remote**, move the "Font Size" slider to max.
+4. **`stu-rem-tc1-ts4`**: **Witnessing Step:** Observe the **Desktop Teleprompter**. **Expected Result:** Font size increases instantly without a page refresh.
+5. **`stu-rem-tc1-ts5`**: On the **Mobile Remote**, toggle "Mirror Mode". **Expected Result:** Desktop text flips horizontally.
 
-*   **`prompt-mem-tc1-ts1`**: Navigate to the **Test URL**.
-*   **`prompt-mem-tc1-ts2`**: **Expected Result:** The "Add Memory" page should load, and the prompt card should display the text: "What was a moment that made you laugh uncontrollably? Describe the situation, who was there, and what was so funny. Try to capture the feeling of the laughter itself."
-*   **`prompt-mem-tc1-ts3`**: Enter a title for the memory (e.g., "The Uncontrollable Laughter").
-*   **`prompt-mem-tc1-ts4`**: Record or upload a short audio or video clip.
-*   **`prompt-mem-tc1-ts5`**: Click the "Save Memory" button.
-*   **`prompt-mem-tc1-ts6`**: **Expected Result:** The user should be redirected to the `/timeline` page.
-*   **`prompt-mem-tc1-ts7`**: **Expected Result:** The newly created memory card with the title "The Uncontrollable Laughter" should appear on the timeline.
-*   **`prompt-mem-tc1-ts8`**: **Witnessing Step:** Open the browser's developer console and filter for `TESTIMONY`. Verify that the log for the newly created memory object includes the property `"promptId": "p3"`.
+### Test Case 2: Recording, Tally Logic, and Persistence
+* **Objective:** Verify the MediaRecorder captures the stream and successfully uploads to Firebase Storage.
+
+1. **`stu-rec-tc2-ts1`**: On the **Mobile Remote**, press the "Start Session" button.
+2. **`stu-rec-tc2-ts2`**: **Witnessing Step:** Observe the **Desktop Monitor**. **Expected Result:** The "ON AIR" tally light begins to pulse red.
+3. **`stu-rec-tc2-ts3`**: Record 10 seconds of video. Press "Stop Session" on the **Mobile Remote**.
+4. **`stu-rec-tc2-ts4`**: **Expected Result:** Desktop UI displays a `<Progress />` bar indicating the upload to Firebase Storage.
+5. **`stu-rec-tc2-ts5`**: **Witnessing Step:** Open the browser console (F12) and filter for `TESTIMONY`. Verify the log: `"Upload Complete: https://firebasestorage.googleapis.com/..."`
 
 ---
 
 ## Test Session Archive
 
+### Sprint ID: `prompt-memory-creation-2024-05-25`
+* **Objective:** Verify memory creation from specific prompt URLs. (Archived)
+
 ### Sprint ID: `timeline-debug-2024-05-24`
-
-*   **Objective:** To verify that the timeline now correctly loads and displays memories in chronological order.
-*   **Base URL:** `https://studio--memory-weaver-8rk9t.us-central1.hosted.app/`
-*   **Test Case 1: Verify Timeline Loads Memories**
-    *   `timeline-tc1-ts1` - `timeline-tc1-ts6`
-*   **Test Case 2: Verify Memories are Ordered Chronologically**
-    *   `timeline-tc2-ts1` - `timeline-tc2-ts4`
-
-### Sprint ID: `registration-workflow-2024-05-24`
-
-*   **Objective:** To diagnose and resolve the user registration workflow failure.
-*   **Test Case 1: User Registration End-to-End Test**
-    *   `reg-tc1-ts1` - `reg-tc1-ts4`
-*   **Test Case 2: Server-Side User Profile Creation**
-    *   `reg-tc2-ts1` - `reg-tc2-ts3`
-
-### Sprint ID: `ffmpeg-race-condition-validation-2024-05-24`
-
-*   **Objective:** To determine if a race condition exists when loading and using FFmpeg concurrently.
-*   **Test Case 1: Concurrent FFmpeg Initialization Test**
-    *   `ffmpeg-race-tc1-ts1` - `ffmpeg-race-tc1-ts5`
-
-### Sprint ID: `ux-refinement-2024-05-24`
-
-*   **Objective:** To conduct a comprehensive walkthrough of the application to identify UI/UX refinements.
-*   **Test Case 1: Comprehensive Application Walkthrough**
-    *   `walkthrough-tc1-ts1` - `walkthrough-tc1-ts8`
-
-### Sprint ID: `password-reset-2024-05-23`
-
-*   **Objective:** To provide a definitive, witnessed validation of the end-to-end password reset functionality, confirming the fix for the Firebase Admin SDK initialization and the `RESEND_API_KEY` configuration.
-*   **Test Case 0: Full Password Reset and Login**
-    *   `witness-reset-tc0-ts1` - `witness-reset-tc0-ts6`
-
-### Sprint ID: `core-functionality-2024-05-21`
-
-*   **Objective:** To perform a comprehensive end-to-end test of the application's core features, establishing a baseline of stability.
-*   **Test Case 1: User Authentication Lifecycle**
-    *   `auth-tc1-ts1` - `auth-tc1-ts7`
-*   **Test Case 2: "Flag for Reuse" Real-time Synchronization**
-    *   `flag-tc1-ts1` - `flag-tc1-ts6`
-*   **Test Case 3: QR Code URL Generation**
-    *   `qr-tc1-ts1` - `qr-tc1-ts3`
-*   **Test Case 4: Teleprompter Tooltip Verification**
-    *   `tele-tc1-ts1` - `tele-tc1-ts2`
-
-### Sprint ID: `git-integrity-2024-05-22`
-
-*   **Objective:** To verify the integrity of the Git repository, ensuring that no sensitive files are present in the history and that the `.gitignore` file is functioning correctly.
-*   **Test Case 0: Git History Verification**
-    *   `git-tc0-ts1`
-*   **Test Case 1: `.gitignore` Verification**
-    *   `git-tc1-ts1` - `git-tc1-ts3`
-
-### Archived Test Sessions
-
-*   **Test Session:** `add-memory-2024-05-20-protocol-alpha`
-*   **Test Session:** `project-integrity-2024-05-22-alpha`
-*   **Test Session:** `auth-password-reset-2024-05-23-alpha`
-*   **Test Session:** `password-reset-2024-05-23-final`
+* **Objective:** Chronological ordering verification. (Archived)
