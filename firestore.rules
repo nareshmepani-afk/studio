@@ -1,7 +1,16 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only read and write to their own user document.
+
+    // Allow any authenticated user to connect to and control a studio session.
+    // This is secure because the sessionId is a unique, unguessable string
+    // shared only between a user's own devices for a short-lived session.
+    match /studio/{sessionId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Users can only read, write, and create their own user document.
     match /users/{userId} {
       allow read, write, create: if request.auth.uid == userId;
     }
