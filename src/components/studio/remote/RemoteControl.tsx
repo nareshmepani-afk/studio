@@ -5,6 +5,7 @@ import { Play, Pause, Plus, Minus, FlipHorizontal } from 'lucide-react';
 import { RemoteControlSection } from './RemoteControlSection';
 import { RemoteControlButton } from './RemoteControlButton';
 import { RemoteControlSlider } from './RemoteControlSlider';
+import SessionIdWitness from '../../debug/SessionIdWitness';
 
 export const RemoteControl = () => {
   const { 
@@ -12,7 +13,8 @@ export const RemoteControl = () => {
     isScrolling, 
     scrollSpeed, 
     fontSize, 
-    actions 
+    actions, 
+    sessionId
   } = useStudioState();
 
   // --- ACTION WRAPPERS WITH LOGGING ---
@@ -33,6 +35,7 @@ export const RemoteControl = () => {
 
   return (
     <div className="bg-studio-black rounded-lg p-4 space-y-4">
+      <SessionIdWitness sessionId={sessionId} />
       <div className="flex justify-center items-center space-x-2">
         <span className={`h-3 w-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
         <span className="text-sm text-white">{isConnected ? 'Connected' : 'Disconnected'}</span>

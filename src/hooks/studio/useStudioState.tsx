@@ -2,11 +2,11 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, DocumentReference } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { teleprompterScripts } from '@/lib/teleprompterScripts';
 
-// 1. State Interface
+// 1. State Interface (Add sessionId)
 interface StudioState {
   isScrolling: boolean;
   scrollSpeed: number;
@@ -16,6 +16,7 @@ interface StudioState {
   mode: 'solo' | 'director';
   isConnected: boolean;
   isRecording: boolean;
+  sessionId: string; // <-- WITNESS: Expose the session ID
 }
 
 // 2. Actions Interface
@@ -41,6 +42,10 @@ const StudioContext = createContext<StudioContextType | undefined>(undefined);
 
 // 5. Provider Component
 export const StudioProvider = ({ children }: { children: ReactNode }) => {
+  const searchParams = useSearchParams();
+  // STRATEGIC FIX: Use sessionId from URL, or fallback to 'default'
+  const sessionId = searchParams.get('sessionId') || 'default';
+
   const [state, setState] = useState<StudioState>({
     isScrolling: false,
     scrollSpeed: 1,
@@ -50,12 +55,13 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
     mode: 'solo',
     isConnected: false,
     isRecording: false,
+    sessionId: sessionId, // <-- WITNESS: Initialize state with the session ID
   });
 
-  const studioStateRef = doc(db, "studio", "default");
-  const searchParams = useSearchParams();
+  // STRATEGIC FIX: Create a dynamic reference to the Firestore document
+  const studioStateRef: DocumentReference = doc(db, "studio", sessionId);
 
-  // Load script from URL
+  // Load script from URL (No changes needed here)
   useEffect(() => {
     const promptId = searchParams.get('promptId');
     if (promptId) {
@@ -72,11 +78,10 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
 
   // Listen for remote control changes
   useEffect(() => {
-    const unsubscribe = onSnapshot(studioStateRef, 
+    const unsubscribe = onSnapshot(studioStateRef,
       (doc) => {
         if (doc.exists()) {
             const data = doc.data();
-            // Exclude script to prevent overwriting the loaded prompt
             const { script, ...remoteState } = data;
             setState(prevState => ({
                 ...prevState,
@@ -86,14 +91,14 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
         }
       },
       (error) => {
-        console.error("Firebase connection error:", error);
+        console.error(`Firebase connection error on session [${sessionId}]:`, error);
         setState(prevState => ({ ...prevState, isConnected: false }));
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [studioStateRef, sessionId]); // <-- STRATEGIC FIX: Re-subscribe if the reference changes
 
-  // Actions
+  // Actions (These will now correctly use the dynamic studioStateRef)
   const actions: StudioActions = {
     toggleScrolling: () => {
         const newIsScrolling = !state.isScrolling
@@ -136,7 +141,7 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// 6. Custom Hook
+// 6. Custom Hook (No changes needed here)
 export const useStudioState = () => {
   const context = useContext(StudioContext);
   if (context === undefined) {

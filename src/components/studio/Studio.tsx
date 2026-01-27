@@ -13,10 +13,11 @@ import { useCamera } from '@/hooks/useCamera';
 import { Progress } from '@/components/ui/progress';
 import { useRouter } from 'next/navigation';
 import { MemoryCategory } from '@/types';
+import SessionIdWitness from '../debug/SessionIdWitness';
 
 export const Studio = () => {
   const studioState = useStudioState();
-  const { mode, actions, isRecording } = studioState;
+  const { mode, actions, isRecording, sessionId } = studioState;
   const [isRemoteControlOpen, setIsRemoteControlOpen] = useState(false);
   const { stream } = useCamera();
   const { startRecording, stopRecording, uploading, uploadProgress, lastUploadUrl } = useMediaRecorder(stream);
@@ -73,6 +74,7 @@ export const Studio = () => {
 
   return (
     <div className="grid lg:grid-cols-10 h-screen bg-studio-black text-studio-text">
+      <SessionIdWitness sessionId={sessionId} />
       <div className="lg:col-span-7 flex flex-col h-full">
         <div className="flex-grow relative">
           {mode === 'solo' ? <Teleprompter /> : <DirectorMonitor />}
