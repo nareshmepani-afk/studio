@@ -40,7 +40,7 @@ type StudioContextType = StudioState & { actions: StudioActions };
 // 4. Create Context (No changes needed)
 const StudioContext = createContext<StudioContextType | undefined>(undefined);
 
-// 5. Provider Component (This is where the magic happens)
+// 5. Provider Component
 export const StudioProvider = ({ children }: { children: ReactNode }) => {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('sessionId') || 'default';
@@ -59,9 +59,8 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
 
   const studioStateRef: DocumentReference = doc(db, "studio", sessionId);
 
-  // STORM FIX PART 1: A "Sync Guard" ref.
-  // This ref helps us distinguish between a user's local action and a remote update from Firestore.
   const isSyncingFromFirestore = useRef(false);
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Load script from URL (No changes needed here)
   useEffect(() => {
@@ -78,21 +77,22 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [searchParams]);
 
-  // STORM FIX PART 2: The Listener
-  // This effect listens for remote changes from Firestore.
+  // FINAL FIX: The Listener, now intelligent about the script.
   useEffect(() => {
     const unsubscribe = onSnapshot(studioStateRef,
       (doc) => {
         if (doc.exists()) {
-            const remoteState = doc.data();
+            const data = doc.data();
+            // This is the crucial change: We destructure the 'script' property out of the
+            // incoming data from Firestore. This ensures that the remote state NEVER
+            // overwrites the locally-managed script.
+            const { script, ...remoteState } = data;
 
-            // Set the guard flag to true BEFORE updating the state.
-            // This tells our other effect, "Don't sync this change back to Firestore!"
             isSyncingFromFirestore.current = true;
 
             setState(prevState => ({
                 ...prevState,
-                ...remoteState,
+                ...remoteState, // Apply the remote state, which is now guaranteed to not have a 'script' property.
                 isConnected: true,
             }));
         }
@@ -105,27 +105,31 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, [studioStateRef, sessionId]);
 
-  // STORM FIX PART 3: The Emitter
-  // This effect syncs local changes TO Firestore.
+  // The Emitter (No changes needed, debounce is still active)
   useEffect(() => {
-    // This is our "Sync Guard" in action.
-    // If the flag is true, the state change came FROM Firestore.
-    // We reset the flag for the next local change and exit early to prevent an infinite loop.
     if (isSyncingFromFirestore.current === true) {
         isSyncingFromFirestore.current = false;
         return;
     }
     
-    // If the flag was false, the change was made by the local user.
-    // We sync the relevant parts of the state to Firestore.
-    const { isConnected, sessionId, script, ...syncState } = state;
-    setDoc(studioStateRef, syncState, { merge: true });
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
 
-  }, [state, studioStateRef]); // This effect runs whenever the local state changes.
+    debounceTimer.current = setTimeout(() => {
+      const { isConnected, sessionId, script, ...syncState } = state;
+      setDoc(studioStateRef, syncState, { merge: true });
+    }, 300);
+
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, [state, studioStateRef]);
 
 
-  // STORM FIX PART 4: The Actions
-  // Actions now ONLY modify the local state. The Emitter effect above will handle syncing.
+  // The Actions (No changes needed)
   const actions: StudioActions = {
     toggleScrolling: () => setState(s => ({ ...s, isScrolling: !s.isScrolling })),
     setScrollSpeed: (speed) => setState(s => ({ ...s, scrollSpeed: speed })),
@@ -135,7 +139,7 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
     increaseFontSize: () => setState(s => ({ ...s, fontSize: s.fontSize + 4 })),
     decreaseFontSize: () => setState(s => ({ ...s, fontSize: Math.max(12, s.fontSize - 4) })),
     toggleMirror: () => setState(s => ({ ...s, isMirrored: !s.isMirrored })),
-    setScript: (script) => setState(s => ({ ...s, script })), // Local only, no sync needed
+    setScript: (script) => setState(s => ({ ...s, script })), // Local only
     setMode: (mode) => setState(s => ({ ...s, mode })),
     toggleRecording: () => setState(s => ({ ...s, isRecording: !s.isRecording })),
   };
@@ -147,7 +151,7 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// 6. Custom Hook (No changes needed here)
+// 6. Custom Hook (No changes needed)
 export const useStudioState = () => {
   const context = useContext(StudioContext);
   if (context === undefined) {
