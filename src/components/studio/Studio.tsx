@@ -26,12 +26,6 @@ export const Studio = () => {
   const router = useRouter();
   const { toast } = useToast();
 
-  // --- LOG STUDIO STATE --- //
-  useEffect(() => {
-    console.log("[STUDIO_STATE] Change detected:", studioState);
-  }, [studioState]);
-  // --- END --- //
-
   // Metadata State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
