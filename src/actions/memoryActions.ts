@@ -6,7 +6,7 @@ import { Memory } from '@/types';
 import { revalidatePath } from 'next/cache';
 
 
-export async function createMemoryAction(data: { title: string, description: string }): Promise<{ success: boolean; message: string; memoryId?: string; }> {
+export async function createMemoryAction(data: Partial<Memory>): Promise<{ success: boolean; message: string; memoryId?: string; }> {
   const session = await getSession();
 
   if (!session || !session.uid) {
@@ -17,19 +17,23 @@ export async function createMemoryAction(data: { title: string, description: str
     return { success: false, message: "Database connection failed." };
   }
 
-  const { title, description } = data;
+  const { title, description, videoUrl, category, location, emotionTags, memoryDate } = data;
 
-  if (!title.trim() || !description.trim()) {
+  if (!title?.trim() || !description?.trim()) {
     return { success: false, message: "Title and story cannot be empty." };
   }
 
   try {
     const newMemoryRef = adminDb.collection('users').doc(session.uid).collection('memories').doc();
-    const newMemory: Omit<Memory, 'id' | 'date' | 'mediaAttachments' | 'category' > = {
+    const newMemory: Omit<Memory, 'id'> = {
       userId: session.uid,
       title,
       description,
-      emotionTags: [],
+      videoUrl: videoUrl || '',
+      category: category || 'personal',
+      location: location || '',
+      emotionTags: emotionTags || [],
+      memoryDate: memoryDate || new Date().toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

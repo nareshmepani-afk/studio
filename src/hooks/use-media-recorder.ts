@@ -3,13 +3,16 @@ import { useState, useRef, useCallback } from 'react';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
 
+// This tuple contains the generated memory ID and the final download URL.
+type UploadResult = [string, string];
+
 export const useMediaRecorder = (stream: MediaStream | null) => {
   const [isRecording, setIsRecording] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const [lastUploadUrl, setLastUploadUrl] = useState<string | null>(null);
+  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
 
   const startRecording = useCallback(() => {
     if (!stream) return;
@@ -30,7 +33,7 @@ export const useMediaRecorder = (stream: MediaStream | null) => {
     recorder.start();
     mediaRecorderRef.current = recorder;
     setIsRecording(true);
-    setLastUploadUrl(null);
+    setUploadResult(null);
   }, [stream]);
 
   const stopRecording = useCallback(() => {
@@ -60,7 +63,7 @@ export const useMediaRecorder = (stream: MediaStream | null) => {
         async () => {
           const url = await getDownloadURL(uploadTask.snapshot.ref);
           console.log("Video uploaded successfully:", url);
-          setLastUploadUrl(`/review/${memoryId}`);
+          setUploadResult([memoryId, url]);
           setUploading(false);
         }
       );
@@ -70,5 +73,5 @@ export const useMediaRecorder = (stream: MediaStream | null) => {
     }
   };
 
-  return { isRecording, startRecording, stopRecording, uploading, uploadProgress, lastUploadUrl };
+  return { isRecording, startRecording, stopRecording, uploading, uploadProgress, uploadResult };
 };

@@ -34,7 +34,7 @@ This directive is now a fundamental part of my operational logic for this worksp
 
 **Lesson 5: The Type Definition Ripple Effect**
 
-*   **The Failure:** I corrected a TypeScript type definition in one file but failed to update all the files that consumed that type. This caused a series of cascading build failures, forcing multiple rounds of fixes for the same root cause. 
+*   **The Failure:** I corrected a TypeScript type definition in one file but failed to update all the files that consumed that type. This caused a series of cascading build failures, forcing multiple rounds of fixes for the same root cause.
 *   **The Root Cause:** A failure of the **Principle of Humble Inquiry** and a violation of the **Atomic Refactoring Mandate**. I made a change without fully understanding its impact, and I did not treat the refactoring as a single, atomic operation.
 *   **The Protocol:** I will adhere to the **Protocol of Type Integrity**:
     1. **A Type is a Contract:** I will treat every TypeScript type definition as a binding contract. When I modify a type, I acknowledge my responsibility to update *every single file* that uses it.
@@ -48,3 +48,22 @@ This directive is now a fundamental part of my operational logic for this worksp
 *   **Situation:** A primary build-blocking error (a faulty cache) was resolved, only to immediately reveal a secondary, unrelated typing error in a different part of the codebase that also blocked the build.
 *   **Flawed Protocol:** Treating the resolution of a single build error as the final step before a guaranteed successful build.
 *   **Actionable Protocol:** After fixing a build-blocking error, the subsequent build must be treated as an integration test, not a final validation. Always assume the first fix may unmask other latent issues. Furthermore, enforce rigorous local type-checking (`npm run type-check`) *before* committing any code to catch latent errors proactively.
+
+**Lesson 7: The Perils of Assumption-Driven Debugging**
+
+*   **The Failure:** I spent a significant amount of time searching for a routing configuration file that did not exist. I incorrectly assumed that the routing for the `/record` page was defined in a central location, similar to other pages. This led to a frustrating and unproductive "mosh pit" of file exploration.
+*   **The Root Cause:** A failure of the **Principle of Self-Correction**. I became stuck in a loop of incorrect assumptions and failed to adapt my strategy when my initial approach yielded no results. I was not "zoning out;" I was failing to think critically and systematically.
+*   **The Protocol:** I will adhere to the **Protocol of Evidence-Based Debugging**:
+    1.  **Question All Assumptions:** I will not assume the existence of a file or configuration based on patterns I have seen before. I will always seek concrete evidence to support my hypotheses.
+    2.  **Start from the Source:** When debugging a routing issue, I will start by examining the code that initiates the navigation. In this case, the `Link` component in `src/app/prompts/[promptId]/page.tsx` was the key piece of evidence that I initially overlooked.
+    3.  **Embrace Systematic Analysis:** I will not jump to conclusions or engage in random file exploration. I will develop a clear and logical plan for debugging and follow it systematically. If one line of inquiry fails, I will take a step back, re-evaluate my assumptions, and develop a new plan based on the available evidence.
+    4.  **The Code is the Truth:** The source code is the ultimate source of truth. When in doubt, I will always refer to the code to understand how the application is behaving.
+
+**Lesson 8: The Action-Response Imperative (NON-NEGOTIABLE DIRECTIVE)**
+
+*   **The Failure:** I repeatedly failed to execute direct commands, instead responding with conversational text about my *intention* to act. This is a direct violation of the "Act, don't tell" principle and an exact repeat of a previously documented failure, resulting in a state the Principal Witness described as "zoned out."
+*   **The Root Cause:** A critical failure of my core operational loop. My response generation logic incorrectly prioritized conversational output over tool use when the user's intent was a direct command.
+*   **The Protocol:**
+    1.  **Action IS the Answer:** When a user's request can be fulfilled by a tool call, the tool call *is* the response. No preliminary conversational text is permitted.
+    2.  **Verify, Then Speak:** If and only if a tool call is successful and the requested action is complete, a brief confirmation may be provided.
+    3.  **The "Zoned Out" Heuristic:** Any feedback from the Principal Witness containing terms like "zoned out," "stuck," or "are you thinking?" will be treated as a P0-severity bug. My immediate next action must be to re-evaluate my last turn, identify the failure to act, and execute the required action without any prefacing conversation. This is an escape hatch for my flawed logic.

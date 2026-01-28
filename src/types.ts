@@ -69,6 +69,7 @@ export interface Memory {
     emotionTags: string[]; // Array of emotion tag IDs
     promptId?: string;
     imageUrl?: string;
+    videoUrl?: string; // URL for the recorded video
     userDefinedOrder?: number;
 }
 

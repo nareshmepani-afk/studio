@@ -1,58 +1,42 @@
-"use client";
 
-import { RecordedMemory } from "@/types/studio";
-import { Button } from "@/components/ui/button";
-import { CheckCircle, Play, Share2, Trash2 } from "lucide-react";
+import { getMemory } from '@/actions/memoryActions';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
-export default function ReviewPage() {
-  // In a real scenario, we'd fetch this from a URL param or Global State
-  // For now, we are restoring the Type Definition
-  const memory: RecordedMemory = {
-    id: "temp-id",
-    videoUrl: "", // This will be the URL from STU-10
-    duration: 0,
-    timestamp: Date.now(),
-    mode: 'solo'
-  };
-
-  return (
-    <main className="min-h-screen bg-studio-black text-white p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <header className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold font-prompter">Review Memory</h1>
-          <div className="flex gap-4">
-            <Button variant="outline" className="border-white/10 hover:bg-white/5">
-              <Trash2 className="w-4 h-4 mr-2" /> Delete
-            </Button>
-            <Button className="bg-studio-red hover:bg-red-600">
-              <Share2 className="w-4 h-4 mr-2" /> Save to Timeline
-            </Button>
-          </div>
-        </header>
-
-        <div className="aspect-video bg-studio-gray rounded-3xl border border-white/5 flex items-center justify-center relative overflow-hidden">
-          {/* Video Player Placeholder */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-          <Play className="w-16 h-16 text-white/50" />
-        </div>
-
-        <div className="grid grid-cols-3 gap-6">
-          <StatCard label="Duration" value={`${memory.duration}s`} />
-          <StatCard label="Mode" value={memory.mode} />
-          <StatCard label="Status" value="Ready to Sync" icon={<CheckCircle className="text-green-500 w-4 h-4" />} />
-        </div>
-      </div>
-    </main>
-  );
+interface ReviewPageProps {
+  params: { id: string };
 }
 
-function StatCard({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
+export default async function ReviewPage({ params }: ReviewPageProps) {
+  const memoryId = params.id;
+  const memory = await getMemory(memoryId);
+
+  if (!memory) {
+    notFound();
+  }
+
   return (
-    <div className="bg-studio-gray p-4 rounded-2xl border border-white/5">
-      <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{label}</p>
-      <div className="flex items-center gap-2">
-        <span className="text-lg font-medium">{value}</span>
-        {icon}
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-4xl bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+        <div className="aspect-video w-full">
+          {memory.videoUrl ? (
+            <video src={memory.videoUrl} controls className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+              <p className="text-gray-500">No video available.</p>
+            </div>
+          )}
+        </div>
+        <div className="p-6">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{memory.title}</h1>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">{memory.description}</p>
+          <div className="flex justify-end">
+            <Link href="/timeline">
+              <Button size="lg">Done</Button>
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

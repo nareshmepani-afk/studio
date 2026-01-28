@@ -14,14 +14,17 @@ import { Progress } from '@/components/ui/progress';
 import { useRouter } from 'next/navigation';
 import { MemoryCategory } from '@/types';
 import SessionIdWitness from '../debug/SessionIdWitness';
+import { createMemoryAction } from '@/actions';
+import { useToast } from '@/hooks/use-toast';
 
 export const Studio = () => {
   const studioState = useStudioState();
   const { mode, actions, isRecording, sessionId } = studioState;
   const [isRemoteControlOpen, setIsRemoteControlOpen] = useState(false);
   const { stream } = useCamera();
-  const { startRecording, stopRecording, uploading, uploadProgress, lastUploadUrl } = useMediaRecorder(stream);
+  const { startRecording, stopRecording, uploading, uploadProgress, uploadResult } = useMediaRecorder(stream);
   const router = useRouter();
+  const { toast } = useToast();
 
   // --- LOG STUDIO STATE --- //
   useEffect(() => {
@@ -56,12 +59,39 @@ export const Studio = () => {
   };
 
   useEffect(() => {
-    if (lastUploadUrl) {
-      // The real ID will come from the database in a future step.
-      const memoryId = "temp-id"; 
-      router.push(`/review/${memoryId}`);
-    }
-  }, [lastUploadUrl, router]);
+    const handleUploadCompletion = async () => {
+      if (uploadResult) {
+        const [memoryId, videoUrl] = uploadResult;
+        console.log(`Video uploaded: ${videoUrl}. Now creating memory...`);
+
+        const memoryData = {
+          title,
+          description,
+          videoUrl,
+          category: selectedCategory,
+          location,
+          emotionTags: selectedEmotionTags,
+          memoryDate: new Date(selectedYear, selectedMonth - 1, selectedDay).toISOString(),
+        };
+
+        try {
+          const result = await createMemoryAction(memoryData);
+
+          if (result.success && result.memoryId) {
+            toast({ title: "Memory Created!", description: "Your new memory has been saved.", variant: "success" });
+            router.push(`/review/${result.memoryId}`);
+          } else {
+            toast({ title: "Error Creating Memory", description: result.message, variant: "destructive" });
+          }
+        } catch (error) {
+          console.error("Failed to create memory:", error);
+          toast({ title: "An Unexpected Error Occurred", description: "Could not save the memory. Please try again.", variant: "destructive" });
+        }
+      }
+    };
+
+    handleUploadCompletion();
+  }, [uploadResult, router]);
 
   const handleToggleRecording = () => {
     if (isRecording) {

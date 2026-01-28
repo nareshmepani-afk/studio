@@ -12,10 +12,10 @@
 - [✅] **STU-08-FIX**: **"State Storm" Fixed.** Implemented Sync Guard to resolve the infinite update loop.
 - [✅] **STU-19**: **Performance Polish**: Added debounce to prevent Firestore flooding from sliders.
 
-## Sprint 3: Polish & Recording [🟡 IN PROGRESS]
+## Sprint 3: Polish & Recording [✅ COMPLETE]
 - [x] **STU-10**: Video Recording Persistence.
 - [x] **STU-11**: Review Page RESTORED.
-- [🟡] **STU-12**: **Deep Integration**: Passing Video URL to Review.
+- [x] **STU-12**: **Deep Integration**: Passing Video URL to Review.
 - [ ] **STU-15**: **Role Selection Splash**: Pick "Self/Solo" or "Interview" mode.
 
 ## Sprint 4: User Journey & Roleplay [⏳ PLANNED]
