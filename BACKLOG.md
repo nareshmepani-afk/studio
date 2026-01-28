@@ -12,11 +12,11 @@
 - [x] **STU-08-FIX**: **"State Storm" Fixed.** Implemented Sync Guard to resolve infinite loop.
 - [x] **STU-19**: **Performance Polish**: Added debounce to prevent Firestore flooding.
 
-## Sprint 3: Polish & Recording [🟡 IN PROGRESS]
+## Sprint 3: Polish & Recording [🔴 BLOCKED]
 - [x] **STU-10**: Video Recording Persistence.
 - [x] **STU-11**: Review Page RESTORED.
 - [x] **STU-12**: **Deep Integration**: Passing Video URL to Review.
-- [❌] **STU-21**: **BUILD BLOCKER**: Update `review/[id]` to use Next.js 15 Async Params.
+- [❌] **STU-21**: **BUILD BLOCKER**: Fix Next.js 15 Async Params in `review/[id]` and `studio/[id]`. (Resolves 404 on "Start Recording").
 
 ## Sprint 4: User Journey & Roleplay [⏳ PLANNED]
 - [ ] **STU-15**: **Role Selection Splash**: Pick "Self/Solo" or "Interview" mode.
