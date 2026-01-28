@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 export const memoryCategorySchema = z.object({
@@ -62,7 +61,7 @@ export interface Memory {
     userId: string;
     createdAt?: any;
     updatedAt?: any;
-    mediaAttachments: MediaAttachment[];
+    mediaAttachments?: MediaAttachment[];
     isLegacy?: boolean;
     location?: string;
     country?: string;

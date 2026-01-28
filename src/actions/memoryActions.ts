@@ -17,7 +17,7 @@ export async function createMemoryAction(data: Partial<Memory>): Promise<{ succe
     return { success: false, message: "Database connection failed." };
   }
 
-  const { title, description, videoUrl, category, location, emotionTags, memoryDate } = data;
+  const { title, description, videoUrl, category, location, emotionTags, date } = data;
 
   if (!title?.trim() || !description?.trim()) {
     return { success: false, message: "Title and story cannot be empty." };
@@ -33,7 +33,7 @@ export async function createMemoryAction(data: Partial<Memory>): Promise<{ succe
       category: category || 'personal',
       location: location || '',
       emotionTags: emotionTags || [],
-      memoryDate: memoryDate || new Date().toISOString(),
+      date: date || new Date().toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
