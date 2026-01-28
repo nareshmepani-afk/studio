@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { doc, onSnapshot, setDoc, DocumentReference } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { teleprompterScripts } from '@/lib/teleprompterScripts';
 
-// 1. State Interface (Add sessionId)
+// 1. State Interface (No changes needed)
 interface StudioState {
   isScrolling: boolean;
   scrollSpeed: number;
@@ -16,10 +16,10 @@ interface StudioState {
   mode: 'solo' | 'director';
   isConnected: boolean;
   isRecording: boolean;
-  sessionId: string; // <-- WITNESS: Expose the session ID
+  sessionId: string;
 }
 
-// 2. Actions Interface
+// 2. Actions Interface (No changes needed)
 interface StudioActions {
   toggleScrolling: () => void;
   setScrollSpeed: (speed: number) => void;
@@ -34,16 +34,15 @@ interface StudioActions {
   toggleRecording: () => void;
 }
 
-// 3. Context Shape
+// 3. Context Shape (No changes needed)
 type StudioContextType = StudioState & { actions: StudioActions };
 
-// 4. Create Context
+// 4. Create Context (No changes needed)
 const StudioContext = createContext<StudioContextType | undefined>(undefined);
 
-// 5. Provider Component
+// 5. Provider Component (This is where the magic happens)
 export const StudioProvider = ({ children }: { children: ReactNode }) => {
   const searchParams = useSearchParams();
-  // STRATEGIC FIX: Use sessionId from URL, or fallback to 'default'
   const sessionId = searchParams.get('sessionId') || 'default';
 
   const [state, setState] = useState<StudioState>({
@@ -55,11 +54,14 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
     mode: 'solo',
     isConnected: false,
     isRecording: false,
-    sessionId: sessionId, // <-- WITNESS: Initialize state with the session ID
+    sessionId: sessionId,
   });
 
-  // STRATEGIC FIX: Create a dynamic reference to the Firestore document
   const studioStateRef: DocumentReference = doc(db, "studio", sessionId);
+
+  // STORM FIX PART 1: A "Sync Guard" ref.
+  // This ref helps us distinguish between a user's local action and a remote update from Firestore.
+  const isSyncingFromFirestore = useRef(false);
 
   // Load script from URL (No changes needed here)
   useEffect(() => {
@@ -76,13 +78,18 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [searchParams]);
 
-  // Listen for remote control changes
+  // STORM FIX PART 2: The Listener
+  // This effect listens for remote changes from Firestore.
   useEffect(() => {
     const unsubscribe = onSnapshot(studioStateRef,
       (doc) => {
         if (doc.exists()) {
-            const data = doc.data();
-            const { script, ...remoteState } = data;
+            const remoteState = doc.data();
+
+            // Set the guard flag to true BEFORE updating the state.
+            // This tells our other effect, "Don't sync this change back to Firestore!"
+            isSyncingFromFirestore.current = true;
+
             setState(prevState => ({
                 ...prevState,
                 ...remoteState,
@@ -96,42 +103,41 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
       }
     );
     return () => unsubscribe();
-  }, [studioStateRef, sessionId]); // <-- STRATEGIC FIX: Re-subscribe if the reference changes
+  }, [studioStateRef, sessionId]);
 
-  // Actions (These will now correctly use the dynamic studioStateRef)
+  // STORM FIX PART 3: The Emitter
+  // This effect syncs local changes TO Firestore.
+  useEffect(() => {
+    // This is our "Sync Guard" in action.
+    // If the flag is true, the state change came FROM Firestore.
+    // We reset the flag for the next local change and exit early to prevent an infinite loop.
+    if (isSyncingFromFirestore.current === true) {
+        isSyncingFromFirestore.current = false;
+        return;
+    }
+    
+    // If the flag was false, the change was made by the local user.
+    // We sync the relevant parts of the state to Firestore.
+    const { isConnected, sessionId, script, ...syncState } = state;
+    setDoc(studioStateRef, syncState, { merge: true });
+
+  }, [state, studioStateRef]); // This effect runs whenever the local state changes.
+
+
+  // STORM FIX PART 4: The Actions
+  // Actions now ONLY modify the local state. The Emitter effect above will handle syncing.
   const actions: StudioActions = {
-    toggleScrolling: () => {
-        const newIsScrolling = !state.isScrolling
-        setState(s => ({ ...s, isScrolling: newIsScrolling }));
-        setDoc(studioStateRef, { isScrolling: newIsScrolling }, { merge: true });
-    },
-    setScrollSpeed: (speed) => {
-        setState(s => ({ ...s, scrollSpeed: speed }));
-        setDoc(studioStateRef, { scrollSpeed: speed }, { merge: true });
-    },
-    increaseSpeed: () => actions.setScrollSpeed(state.scrollSpeed + 0.5),
-    decreaseSpeed: () => actions.setScrollSpeed(Math.max(0.5, state.scrollSpeed - 0.5)),
-    setFontSize: (size) => {
-        setState(s => ({ ...s, fontSize: size }));
-        setDoc(studioStateRef, { fontSize: size }, { merge: true });
-    },
-    increaseFontSize: () => actions.setFontSize(state.fontSize + 4),
-    decreaseFontSize: () => actions.setFontSize(Math.max(12, state.fontSize - 4)),
-    toggleMirror: () => {
-        const newIsMirrored = !state.isMirrored;
-        setState(s => ({ ...s, isMirrored: newIsMirrored }));
-        setDoc(studioStateRef, { isMirrored: newIsMirrored }, { merge: true });
-    },
-    setScript: (script) => setState(s => ({ ...s, script })),
-    setMode: (mode) => {
-        setState(s => ({ ...s, mode }));
-        setDoc(studioStateRef, { mode }, { merge: true });
-    },
-    toggleRecording: () => {
-        const newIsRecording = !state.isRecording;
-        setState(s => ({ ...s, isRecording: newIsRecording }));
-        setDoc(studioStateRef, { isRecording: newIsRecording }, { merge: true });
-    },
+    toggleScrolling: () => setState(s => ({ ...s, isScrolling: !s.isScrolling })),
+    setScrollSpeed: (speed) => setState(s => ({ ...s, scrollSpeed: speed })),
+    increaseSpeed: () => setState(s => ({ ...s, scrollSpeed: s.scrollSpeed + 0.5 })),
+    decreaseSpeed: () => setState(s => ({ ...s, scrollSpeed: Math.max(0.5, s.scrollSpeed - 0.5) })),
+    setFontSize: (size) => setState(s => ({ ...s, fontSize: size })),
+    increaseFontSize: () => setState(s => ({ ...s, fontSize: s.fontSize + 4 })),
+    decreaseFontSize: () => setState(s => ({ ...s, fontSize: Math.max(12, s.fontSize - 4) })),
+    toggleMirror: () => setState(s => ({ ...s, isMirrored: !s.isMirrored })),
+    setScript: (script) => setState(s => ({ ...s, script })), // Local only, no sync needed
+    setMode: (mode) => setState(s => ({ ...s, mode })),
+    toggleRecording: () => setState(s => ({ ...s, isRecording: !s.isRecording })),
   };
 
   return (
