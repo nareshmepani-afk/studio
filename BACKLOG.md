@@ -12,15 +12,16 @@
 - [x] **STU-08-FIX**: **"State Storm" Fixed.** Implemented Sync Guard to resolve infinite loop.
 - [x] **STU-19**: **Performance Polish**: Added debounce to prevent Firestore flooding.
 
-## Sprint 3: Polish & Recording [🔴 BLOCKED]
+## Sprint 3: Polish & Recording [🟡 IN PROGRESS]
 - [x] **STU-10**: Video Recording Persistence.
 - [x] **STU-11**: Review Page RESTORED.
 - [x] **STU-12**: **Deep Integration**: Passing Video URL to Review.
-- [❌] **STU-21**: **BUILD BLOCKER**: Fix Next.js 15 Async Params in `review/[id]` and `studio/[id]`. (Resolves 404 on "Start Recording").
+- [x] **STU-21**: **CRITICAL BUILD FIX**: Update `review/[id]` and `studio/[id]` dynamic routes to use Next.js 15 Async Params. (Prevents 404 on "Start Recording").
+- [ ] **STU-22**: **Studio Exit Controls**: Add navigation controls (e.g., "Back" or "Cancel") to the `/add-memory` page.
 
 ## Sprint 4: User Journey & Roleplay [⏳ PLANNED]
 - [ ] **STU-15**: **Role Selection Splash**: Pick "Self/Solo" or "Interview" mode.
 - [ ] **STU-16**: **Contextual UI**: Adapt navigation/wording based on Role.
-- [ ] **STU-20**: **Session Persistence**: Remember last active route/state upon re-login.
+- [ ] **STU-20**: **Session Persistence**: Ensure "Start Recording" remembers the Prompt ID.
 - [ ] **STU-18**: **Guest Access Logic**: Allow Mobile Remote control without full Sign-In.
 - [ ] **STU-17**: **Interview Toolkit**: Split host/guest control permissions.
