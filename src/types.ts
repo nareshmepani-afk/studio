@@ -70,6 +70,7 @@ export interface Memory {
     imageUrl?: string;
     videoUrl?: string; // URL for the recorded video
     userDefinedOrder?: number;
+    status?: 'draft' | 'in_progress' | 'completed';
 }
 
 export interface Prompt {
