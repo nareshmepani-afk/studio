@@ -1,4 +1,4 @@
-''''use server';
+'use server';
 
 import { adminDb } from '@/lib/firebase-admin';
 import { getSession } from "@/lib/session";
@@ -132,4 +132,3 @@ export async function getMemory(memoryId: string): Promise<Memory | null> {
     }
     return { id: memoryDoc.id, ...memoryDoc.data() } as Memory;
 }
-''
