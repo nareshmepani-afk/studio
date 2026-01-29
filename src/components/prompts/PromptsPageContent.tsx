@@ -8,7 +8,7 @@ import type { Memory, PromptGroup } from '@/types';
 import { teleprompterScripts } from '@/lib/teleprompterScripts';
 import { toast } from '@/hooks/use-toast';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import { getOrCreateMemoryForPrompt } from '@/actions/memoryActions'; // Import the new server action
 
 // UI Components
@@ -93,13 +93,15 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
   const handleShowQrCode = useCallback(async (promptId: string, promptTitle: string) => {
     toast({ title: "Generating Remote Link", description: "Please wait..." });
 
-    if (!user) {
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
         toast({ title: "Error", description: "You must be logged in.", variant: "destructive" });
         return;
     }
 
     try {
-        const idToken = await user.getIdToken();
+        const idToken = await currentUser.getIdToken();
         const result = await getOrCreateMemoryForPrompt(promptId, idToken);
 
         if (result.success && result.memoryId) {
