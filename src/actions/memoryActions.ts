@@ -1,24 +1,32 @@
 'use server';
 
-import { adminDb } from '@/lib/firebase-admin';
-import { getSession, getAuthenticatedUser } from "@/lib/session";
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import { DecodedIdToken } from 'firebase-admin/auth';
 import { Memory } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { mockPrompts } from '@/lib/mockData'; // Import mock data to find prompt details
 
-export async function getOrCreateMemoryForPrompt(promptId: string, sessionCookie?: string): Promise<{ success: boolean; message: string; memoryId?: string; }> {
-  let session;
-  if (sessionCookie) {
+async function getVerifiedUser(idToken: string): Promise<DecodedIdToken | null> {
     try {
-      session = await getAuthenticatedUser(sessionCookie);
+        if (!adminAuth) {
+          throw new Error("Firebase Admin SDK is not initialized.");
+        }
+        const decodedToken = await adminAuth.verifyIdToken(idToken, true);
+        return decodedToken;
     } catch (error) {
-      return { success: false, message: "Invalid session cookie." };
+        console.error("Error verifying ID token:", error);
+        return null;
     }
-  } else {
-    session = await getSession();
+}
+
+export async function getOrCreateMemoryForPrompt(promptId: string, idToken?: string): Promise<{ success: boolean; message: string; memoryId?: string; }> {
+  if (!idToken) {
+    return { success: false, message: "Authorization token is missing." };
   }
 
-  if (!session?.uid) {
+  const decodedToken = await getVerifiedUser(idToken);
+
+  if (!decodedToken?.uid) {
     return { success: false, message: "Unauthorized" };
   }
 
@@ -26,7 +34,7 @@ export async function getOrCreateMemoryForPrompt(promptId: string, sessionCookie
     return { success: false, message: "Database connection failed." };
   }
 
-  const memoriesRef = adminDb.collection('users').doc(session.uid).collection('memories');
+  const memoriesRef = adminDb.collection('users').doc(decodedToken.uid).collection('memories');
   
   // 1. Check if a memory for this prompt already exists
   const existingMemoryQuery = await memoriesRef.where('promptId', '==', promptId).limit(1).get();
@@ -47,7 +55,7 @@ export async function getOrCreateMemoryForPrompt(promptId: string, sessionCookie
   try {
     const newMemoryRef = memoriesRef.doc();
     const newMemory: Omit<Memory, 'id'> = {
-      userId: session.uid,
+      userId: decodedToken.uid,
       promptId: promptId,
       title: prompt.title,
       description: 'Recording session initiated from QR code.', // Placeholder description
@@ -72,73 +80,4 @@ export async function getOrCreateMemoryForPrompt(promptId: string, sessionCookie
     console.error("Error creating memory for prompt:", error);
     return { success: false, message: "Failed to create a new memory session." };
   }
-}
-
-
-export async function createMemoryAction(data: Partial<Memory>): Promise<{ success: boolean; message: string; memoryId?: string; }> {
-  const session = await getSession();
-
-  if (!session || !session.uid) {
-    return { success: false, message: "Unauthorized. Please log in." };
-  }
-
-  if (!adminDb) {
-    return { success: false, message: "Database connection failed." };
-  }
-
-  const { title, description, videoUrl, category, location, emotionTags, date } = data;
-
-  if (!title?.trim() || !description?.trim()) {
-    return { success: false, message: "Title and story cannot be empty." };
-  }
-
-  try {
-    const newMemoryRef = adminDb.collection('users').doc(session.uid).collection('memories').doc();
-    const newMemory: Omit<Memory, 'id'> = {
-      userId: session.uid,
-      title,
-      description,
-      videoUrl: videoUrl || '',
-      category: category || 'personal',
-      location: location || '',
-      emotionTags: emotionTags || [],
-      date: date || new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await newMemoryRef.set(newMemory);
-    
-    // Revalidate paths to ensure fresh data is shown after creation
-    revalidatePath('/timeline');
-    revalidatePath('/prompts');
-
-    return { success: true, message: "Memory created successfully!", memoryId: newMemoryRef.id };
-
-  } catch (error) {
-    console.error("Error creating memory:", error);
-    // It's better to return a generic error message to the client
-    return { success: false, message: "An unexpected error occurred while saving your memory." };
-  }
-}
-
-export async function getMemories(userId: string): Promise<Memory[]> {
-  if (!adminDb) {
-    throw new Error("Firestore is not initialized.");
-  }
-  const memoriesSnapshot = await adminDb.collection('users').doc(userId).collection('memories').get();
-  const memories = memoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Memory[];
-  return memories;
-}
-
-export async function getMemory(memoryId: string): Promise<Memory | null> {
-    const session = await getSession();
-    if (!session?.uid || !adminDb) {
-        throw new Error("Unauthorized or DB not initialized.");
-    }
-    const memoryDoc = await adminDb.collection('users').doc(session.uid).collection('memories').doc(memoryId).get();
-    if (!memoryDoc.exists) {
-        return null;
-    }
-    return { id: memoryDoc.id, ...memoryDoc.data() } as Memory;
 }

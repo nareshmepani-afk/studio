@@ -10,7 +10,6 @@ import { toast } from '@/hooks/use-toast';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getOrCreateMemoryForPrompt } from '@/actions/memoryActions'; // Import the new server action
-import Cookies from 'js-cookie';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -93,16 +92,27 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
   
   const handleShowQrCode = useCallback(async (promptId: string, promptTitle: string) => {
     toast({ title: "Generating Remote Link", description: "Please wait..." });
-    const sessionCookie = Cookies.get('firebase-session');
-    const result = await getOrCreateMemoryForPrompt(promptId, sessionCookie);
 
-    if (result.success && result.memoryId) {
-      const url = `${window.location.origin}/studio/${result.memoryId}?role=remote`;
-      setQrCodeDialog({ open: true, url, title: `Remote for: ${promptTitle}` });
-    } else {
-      toast({ title: "Error", description: result.message, variant: "destructive" });
+    if (!user) {
+        toast({ title: "Error", description: "You must be logged in.", variant: "destructive" });
+        return;
     }
-  }, []);
+
+    try {
+        const idToken = await user.getIdToken();
+        const result = await getOrCreateMemoryForPrompt(promptId, idToken);
+
+        if (result.success && result.memoryId) {
+          const url = `${window.location.origin}/studio/${result.memoryId}?role=remote`;
+          setQrCodeDialog({ open: true, url, title: `Remote for: ${promptTitle}` });
+        } else {
+          toast({ title: "Error", description: result.message || 'An unknown error occurred.', variant: "destructive" });
+        }
+    } catch (error) {
+        console.error("Error generating remote link:", error);
+        toast({ title: "Error", description: "Failed to generate remote link.", variant: "destructive" });
+    }
+  }, [user]);
 
    if (authLoading || isLoading) {
      return (
