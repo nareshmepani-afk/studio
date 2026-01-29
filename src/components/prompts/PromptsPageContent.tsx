@@ -9,6 +9,7 @@ import { teleprompterScripts } from '@/lib/teleprompterScripts';
 import { toast } from '@/hooks/use-toast';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { getOrCreateMemoryForPrompt } from '@/actions/memoryActions'; // Import the new server action
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -39,7 +40,6 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
   
   const [qrCodeDialog, setQrCodeDialog] = useState<{ open: boolean; url: string; title: string; }>({ open: false, url: '', title: '' });
 
-  // Re-sync state if server-provided props change
   useEffect(() => {
     setMemories(initialMemories);
     setFlaggedPromptIds(initialFlaggedPromptIds);
@@ -59,9 +59,7 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
   }, [canAccessFullJourney, mockPromptGroups]);
 
   const handleStartChapter = useCallback((promptId: string, isCompleted: boolean) => {
-    const isFirstGroupPrompt = mockPromptGroups[0]?.prompts.some(p => p.id === promptId);
-    
-    if (!canAccessFullJourney && !isCompleted && !isFirstGroupPrompt) {
+    if (!canAccessFullJourney && !isCompleted && !mockPromptGroups[0]?.prompts.some(p => p.id === promptId)) {
         toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
         return;
     }
@@ -86,16 +84,22 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
       await updateDoc(userRef, {
         flaggedPrompts: isFlagged ? arrayRemove(promptIdToToggle) : arrayUnion(promptIdToToggle)
       });
-      // The onSnapshot listener in the parent component will handle the state update.
       toast({ title: isFlagged ? "Prompt Unflagged" : "Prompt Flagged", variant: "success" });
     } catch (error) {
       toast({ title: "Flagging Error", description: "Could not update flag status.", variant: "destructive" });
     }
   }, [user, flaggedPromptIds]);
   
-  const handleShowQrCode = useCallback((promptId: string, promptTitle: string) => {
-    const url = `${window.location.origin}/prompts/${promptId}`;
-    setQrCodeDialog({ open: true, url, title: promptTitle });
+  const handleShowQrCode = useCallback(async (promptId: string, promptTitle: string) => {
+    toast({ title: "Generating Remote Link", description: "Please wait..." });
+    const result = await getOrCreateMemoryForPrompt(promptId);
+
+    if (result.success && result.memoryId) {
+      const url = `${window.location.origin}/studio/${result.memoryId}?role=remote`;
+      setQrCodeDialog({ open: true, url, title: `Remote for: ${promptTitle}` });
+    } else {
+      toast({ title: "Error", description: result.message, variant: "destructive" });
+    }
   }, []);
 
    if (authLoading || isLoading) {
