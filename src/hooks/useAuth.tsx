@@ -64,6 +64,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
+      const idToken = await firebaseUser.getIdToken();
+      await createSessionAction(idToken);
+
       const userProfileRef = doc(db, 'users', firebaseUser.uid);
       const profileUnsubscribe = onSnapshot(userProfileRef, (doc) => {
         const fullUser = {
