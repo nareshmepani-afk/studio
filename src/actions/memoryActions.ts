@@ -1,13 +1,23 @@
 'use server';
 
 import { adminDb } from '@/lib/firebase-admin';
-import { getSession } from "@/lib/session";
+import { getSession, getAuthenticatedUser } from "@/lib/session";
 import { Memory } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { mockPrompts } from '@/lib/mockData'; // Import mock data to find prompt details
 
-export async function getOrCreateMemoryForPrompt(promptId: string): Promise<{ success: boolean; message: string; memoryId?: string; }> {
-  const session = await getSession();
+export async function getOrCreateMemoryForPrompt(promptId: string, sessionCookie?: string): Promise<{ success: boolean; message: string; memoryId?: string; }> {
+  let session;
+  if (sessionCookie) {
+    try {
+      session = await getAuthenticatedUser(sessionCookie);
+    } catch (error) {
+      return { success: false, message: "Invalid session cookie." };
+    }
+  } else {
+    session = await getSession();
+  }
+
   if (!session?.uid) {
     return { success: false, message: "Unauthorized" };
   }

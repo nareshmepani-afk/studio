@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import { adminAuth } from '@/lib/firebase-admin';
 
-// This function is now centralized here.
-async function getAuthenticatedUser(sessionCookie: string) {
+// This function is now centralized and exported.
+export async function getAuthenticatedUser(sessionCookie: string) {
   if (!adminAuth) {
     throw new Error("Firebase Admin SDK is not initialized.");
   }

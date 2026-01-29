@@ -10,6 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { getOrCreateMemoryForPrompt } from '@/actions/memoryActions'; // Import the new server action
+import Cookies from 'js-cookie';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -92,7 +93,8 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
   
   const handleShowQrCode = useCallback(async (promptId: string, promptTitle: string) => {
     toast({ title: "Generating Remote Link", description: "Please wait..." });
-    const result = await getOrCreateMemoryForPrompt(promptId);
+    const sessionCookie = Cookies.get('firebase-session');
+    const result = await getOrCreateMemoryForPrompt(promptId, sessionCookie);
 
     if (result.success && result.memoryId) {
       const url = `${window.location.origin}/studio/${result.memoryId}?role=remote`;
