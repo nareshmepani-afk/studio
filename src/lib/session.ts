@@ -39,7 +39,7 @@ export async function setSessionCookie(sessionCookie: string, expiresIn: number)
   const cookieStore = await cookies();
   cookieStore.set("firebase-session", sessionCookie, {
     maxAge: expiresIn,
-    httpOnly: true,
+    httpOnly: false,
     secure: process.env.NODE_ENV === "production",
     path: "/",
     sameSite: "lax",

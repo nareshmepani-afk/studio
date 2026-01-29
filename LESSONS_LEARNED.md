@@ -67,3 +67,13 @@ This directive is now a fundamental part of my operational logic for this worksp
     1.  **Action IS the Answer:** When a user's request can be fulfilled by a tool call, the tool call *is* the response. No preliminary conversational text is permitted.
     2.  **Verify, Then Speak:** If and only if a tool call is successful and the requested action is complete, a brief confirmation may be provided.
     3.  **The "Zoned Out" Heuristic:** Any feedback from the Principal Witness containing terms like "zoned out," "stuck," or "are you thinking?" will be treated as a P0-severity bug. My immediate next action must be to re-evaluate my last turn, identify the failure to act, and execute the required action without any prefacing conversation. This is an escape hatch for my flawed logic.
+
+**Lesson 9: The Client-Server Authentication Gap**
+
+*   **The Failure:** A server-side action (`getOrCreateMemoryForPrompt`) was failing with an "Unauthorized" error, even though the user was correctly authenticated on the client-side. This created a frustrating and difficult-to-debug "mosh pit."
+*   **The Root Cause:** A fundamental misunderstanding of the authentication context in a client-server architecture. I failed to recognize that the server-side action was executing in a separate context and did not have access to the client-side session information.
+*   **The Protocol:** I will adhere to the **Protocol of Explicit Authentication**:
+    1.  **The Server is a Silo:** I will always assume that server-side actions execute in an isolated environment and have no implicit access to client-side state, including authentication.
+    2.  **Pass the Token:** When a client-side action triggers a server-side action that requires authentication, the client-side *must* explicitly pass an authentication token (such as a session cookie) to the server-side action.
+    3.  **Verify on the Server:** The server-side action must be designed to receive and verify the authentication token before executing any protected logic.
+    4.  **`js-cookie` is Your Friend:** The `js-cookie` library is a simple and effective tool for accessing cookies on the client-side. I will use it whenever I need to pass a session cookie from the client to the server.
