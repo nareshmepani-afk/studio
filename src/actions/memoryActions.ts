@@ -1,33 +1,15 @@
 'use server';
 
-import { adminDb, adminAuth } from '@/lib/firebase-admin';
-import { DecodedIdToken } from 'firebase-admin/auth';
+import { adminDb } from '@/lib/firebase-admin';
 import { Memory } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { mockPrompts } from '@/lib/mockData'; // Import mock data to find prompt details
 import { getSession } from '@/lib/session';
 
-async function getVerifiedUser(idToken: string): Promise<DecodedIdToken | null> {
-    try {
-        if (!adminAuth) {
-          throw new Error("Firebase Admin SDK is not initialized.");
-        }
-        const decodedToken = await adminAuth.verifyIdToken(idToken, true);
-        return decodedToken;
-    } catch (error) {
-        console.error("Error verifying ID token:", error);
-        return null;
-    }
-}
+export async function getOrCreateMemoryForPrompt(promptId: string): Promise<{ success: boolean; message: string; memoryId?: string; }> {
+  const session = await getSession();
 
-export async function getOrCreateMemoryForPrompt(promptId: string, idToken?: string): Promise<{ success: boolean; message: string; memoryId?: string; }> {
-  if (!idToken) {
-    return { success: false, message: "Authorization token is missing." };
-  }
-
-  const decodedToken = await getVerifiedUser(idToken);
-
-  if (!decodedToken?.uid) {
+  if (!session?.uid) {
     return { success: false, message: "Unauthorized" };
   }
 
@@ -35,7 +17,7 @@ export async function getOrCreateMemoryForPrompt(promptId: string, idToken?: str
     return { success: false, message: "Database connection failed." };
   }
 
-  const memoriesRef = adminDb.collection('users').doc(decodedToken.uid).collection('memories');
+  const memoriesRef = adminDb.collection('users').doc(session.uid).collection('memories');
   
   // 1. Check if a memory for this prompt already exists
   const existingMemoryQuery = await memoriesRef.where('promptId', '==', promptId).limit(1).get();
@@ -56,7 +38,7 @@ export async function getOrCreateMemoryForPrompt(promptId: string, idToken?: str
   try {
     const newMemoryRef = memoriesRef.doc();
     const newMemory: Omit<Memory, 'id'> = {
-      userId: decodedToken.uid,
+      userId: session.uid,
       promptId: promptId,
       title: prompt.title,
       description: 'Recording session initiated from QR code.', // Placeholder description

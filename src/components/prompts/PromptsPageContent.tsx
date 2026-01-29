@@ -93,16 +93,13 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
   const handleShowQrCode = useCallback(async (promptId: string, promptTitle: string) => {
     toast({ title: "Generating Remote Link", description: "Please wait..." });
 
-    const currentUser = auth.currentUser;
-
-    if (!currentUser) {
+    if (!user) {
         toast({ title: "Error", description: "You must be logged in.", variant: "destructive" });
         return;
     }
 
     try {
-        const idToken = await currentUser.getIdToken();
-        const result = await getOrCreateMemoryForPrompt(promptId, idToken);
+        const result = await getOrCreateMemoryForPrompt(promptId);
 
         if (result.success && result.memoryId) {
           const url = `${window.location.origin}/studio/${result.memoryId}?role=remote`;
