@@ -15,14 +15,15 @@ import { QRCodeCanvas } from "qrcode.react";
 interface RemoteControlDialogProps {
     open: boolean;
     onClose: () => void;
+    sessionId: string;
 }
 
-export function RemoteControlDialog({ open, onClose }: RemoteControlDialogProps) {
+export function RemoteControlDialog({ open, onClose, sessionId }: RemoteControlDialogProps) {
     if (!open) {
         return null;
     }
 
-    const remoteUrl = `${window.location.origin}/remote`;
+    const remoteUrl = `${window.location.origin}/studio/${sessionId}?role=remote`;
 
     return (
         <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>

@@ -139,7 +139,7 @@ export const Studio = () => {
           <Button onClick={() => setIsRemoteControlOpen(true)} className="w-full">Remote Control</Button>
         </div>
       </div>
-      <RemoteControlDialog open={isRemoteControlOpen} onClose={() => setIsRemoteControlOpen(false)} />
+      <RemoteControlDialog open={isRemoteControlOpen} onClose={() => setIsRemoteControlOpen(false)} sessionId={sessionId} />
     </div>
   );
 };
