@@ -51,6 +51,7 @@ export type Memory = {
   location: string;
   city?: string;
   country?: string;
+  videoUrl?: string;
   emotionTags: string[];
   date: string;
   createdAt: string;
