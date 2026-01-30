@@ -1,23 +1,28 @@
 'use server';
 
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import { Memory } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { mockPrompts } from '@/lib/mockData'; // Import mock data to find prompt details
-import { getSession } from '@/lib/session';
 
-export async function getOrCreateMemoryForPrompt(promptId: string): Promise<{ success: boolean; message: string; memoryId?: string; }> {
-  const session = await getSession();
-
-  if (!session?.uid) {
-    return { success: false, message: "Unauthorized" };
+export async function getOrCreateMemoryForPrompt(promptId: string, idToken: string): Promise<{ success: boolean; message: string; memoryId?: string; }> {
+  let uid: string;
+  try {
+    if (!adminAuth) {
+      throw new Error("Firebase Admin SDK is not initialized.");
+    }
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    uid = decodedToken.uid;
+  } catch (error) {
+    console.error("Error verifying ID token:", error);
+    return { success: false, message: "Unauthorized. Invalid token." };
   }
 
   if (!adminDb) {
     return { success: false, message: "Database connection failed." };
   }
 
-  const memoriesRef = adminDb.collection('users').doc(session.uid).collection('memories');
+  const memoriesRef = adminDb.collection('users').doc(uid).collection('memories');
   
   // 1. Check if a memory for this prompt already exists
   const existingMemoryQuery = await memoriesRef.where('promptId', '==', promptId).limit(1).get();
@@ -38,7 +43,7 @@ export async function getOrCreateMemoryForPrompt(promptId: string): Promise<{ su
   try {
     const newMemoryRef = memoriesRef.doc();
     const newMemory: Omit<Memory, 'id'> = {
-      userId: session.uid,
+      userId: uid,
       promptId: promptId,
       title: prompt.title,
       description: 'Recording session initiated from QR code.', // Placeholder description
@@ -67,6 +72,8 @@ export async function getOrCreateMemoryForPrompt(promptId: string): Promise<{ su
 
 
 export async function createMemoryAction(data: Partial<Memory>): Promise<{ success: boolean; message: string; memoryId?: string; }> {
+  // This action still relies on the session cookie. This is acceptable for now
+  // as it is not part of the QR code flow.
   const session = await getSession();
 
   if (!session || !session.uid) {
@@ -123,6 +130,7 @@ export async function getMemories(userId: string): Promise<Memory[]> {
 }
 
 export async function getMemory(memoryId: string): Promise<Memory | null> {
+    // This action still relies on the session cookie.
     const session = await getSession();
     if (!session?.uid || !adminDb) {
         throw new Error("Unauthorized or DB not initialized.");
@@ -133,3 +141,6 @@ export async function getMemory(memoryId: string): Promise<Memory | null> {
     }
     return { id: memoryDoc.id, ...memoryDoc.data() } as Memory;
 }
+
+// We need to re-import getSession here because it was removed from the top of the file
+import { getSession } from '@/lib/session';

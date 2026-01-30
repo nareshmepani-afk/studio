@@ -99,7 +99,8 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
     }
 
     try {
-        const result = await getOrCreateMemoryForPrompt(promptId);
+        const token = await user.getIdToken();
+        const result = await getOrCreateMemoryForPrompt(promptId, token);
 
         if (result.success && result.memoryId) {
           const url = `${window.location.origin}/studio/${result.memoryId}?role=remote`;
@@ -160,8 +161,8 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
           <AlertDescription className="text-secondary-foreground/80 space-y-1.5">
             <p>Click on a prompt to start recording. Completed chapters are marked with a <CheckCircle className="inline-block h-4 w-4 text-green-500" />.</p>
           </AlertDescription>
-        </Alert>
-
+        </Aler
+t>
         <div className="space-y-10">
           {availablePromptGroups.map((group) => (
             <section key={group.id}>
