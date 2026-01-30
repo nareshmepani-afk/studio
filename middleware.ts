@@ -31,6 +31,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - remote (ALLOW THE QR CODE SCAN)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|remote).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|remote\/).*)',
   ],
 };
