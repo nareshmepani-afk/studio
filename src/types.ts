@@ -47,7 +47,6 @@ export type Memory = {
   promptId?: string;
   title: string;
   description: string;
-  videoUrl: string;
   category: string;
   location: string;
   city?: string;
@@ -58,6 +57,8 @@ export type Memory = {
   updatedAt: string;
   status?: string;
   mediaAttachments?: MediaAttachment[];
+  imageUrl?: string;
+  isLegacy?: boolean;
 };
 
 export type ActionResponse = {
