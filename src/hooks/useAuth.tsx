@@ -24,6 +24,7 @@ interface AuthContextType {
   hostPassStatus: 'no_pass_initiated' | 'free_host_pass_active' | 'paid_host_pass_active' | 'free_host_pass_expired' | 'paid_host_pass_expired';
   storageQuotaBytes: { total: number; used: number };
   isAuthenticated: boolean;
+  getIdToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -149,6 +150,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userProfileRef = doc(db, 'users', user.uid);
     await updateDoc(userProfileRef, { ...data, updatedAt: serverTimestamp() });
   }, [user?.uid]);
+  
+  const getIdToken = useCallback(async () => {
+    if (!user) return null;
+    return await user.getIdToken();
+  }, [user]);
 
   const value = {
     user,
@@ -161,6 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hostPassStatus,
     storageQuotaBytes,
     isAuthenticated,
+    getIdToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
