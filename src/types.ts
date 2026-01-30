@@ -34,6 +34,11 @@ export const emotionTagsList: EmotionTag[] = [
 export interface MediaAttachment {
   url: string;
   type: string; // 'image' | 'video' | 'audio'
+  duration?: number;
+  trimStart?: number;
+  trimEnd?: number;
+  thumbnailUrl?: string;
+  size?: number;
 }
 
 export type Memory = {
