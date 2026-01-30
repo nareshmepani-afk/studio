@@ -93,4 +93,4 @@ export type User = {
   storageUsedBytes?: number;
 };
 
-export type UserMode = 'viewer' | 'editor' | 'admin' | 'host';
+export type UserMode = 'viewer' | 'editor' | 'admin' | 'host' | 'guest';
