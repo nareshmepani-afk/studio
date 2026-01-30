@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Prompt } from '@/types';
 
 export default async function PromptPage({ params }: { params: Promise<{ promptId: string }> }) {
   const { promptId } = await params;
@@ -16,7 +17,7 @@ export default async function PromptPage({ params }: { params: Promise<{ promptI
   }
 
   // Find the parent prompt if the current one is a sub-prompt, to display the main title
-  const parentPrompt = mockPrompts.find(p => p.subPrompts?.some(sp => sp.id === promptId));
+  const parentPrompt = mockPrompts.find(p => p.subPrompts?.some((sp: Prompt) => sp.id === promptId));
   const displayPrompt = parentPrompt || prompt;
 
   const script = teleprompterScripts[prompt.id];
