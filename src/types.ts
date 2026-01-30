@@ -45,6 +45,10 @@ export type Memory = {
   createdAt: string;
   updatedAt: string;
   status?: string;
+  mediaAttachments?: {
+    url: string;
+    type: string;
+  }[];
 };
 
 export type ActionResponse = {
