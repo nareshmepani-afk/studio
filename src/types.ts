@@ -82,6 +82,11 @@ export type PromptGroup = {
   prompts: Prompt[];
 };
 
+export type StorageQuota = {
+  total: number;
+  used: number;
+};
+
 export type User = {
   uid: string;
   name?: string | null;
@@ -100,6 +105,7 @@ export type User = {
   freeHostPassActivatedDate?: string;
   paidHostPassExpiryDate?: string;
   storageUsedBytes?: number;
+  storageQuota?: StorageQuota;
 };
 
 export type UserMode = 'viewer' | 'editor' | 'admin' | 'host' | 'guest';
