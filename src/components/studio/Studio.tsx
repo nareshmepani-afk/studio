@@ -17,7 +17,12 @@ import SessionIdWitness from '../debug/SessionIdWitness';
 import { createMemoryAction } from '@/actions';
 import { useToast } from '@/hooks/use-toast';
 
-export const Studio = () => {
+interface StudioProps {
+  callId: string;
+  role: string;
+}
+
+export const Studio = ({ callId, role }: StudioProps) => {
   const studioState = useStudioState();
   const { mode, actions, isRecording, sessionId } = studioState;
   const [isRemoteControlOpen, setIsRemoteControlOpen] = useState(false);

@@ -36,7 +36,7 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
   const [memories, setMemories] = useState(initialMemories);
   const [flaggedPromptIds, setFlaggedPromptIds] = useState(initialFlaggedPromptIds);
 
-  const { user, loading: authLoading, userMode, hostPassStatus } = useAuth();
+  const { user, loading: authLoading, userMode, hostPassStatus, getIdToken } = useAuth();
   
   const [qrCodeDialog, setQrCodeDialog] = useState<{ open: boolean; url: string; title: string; }>({ open: false, url: '', title: '' });
 
@@ -93,13 +93,18 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
   const handleShowQrCode = useCallback(async (promptId: string, promptTitle: string) => {
     toast({ title: "Generating Remote Link", description: "Please wait..." });
 
-    if (!user) {
-        toast({ title: "Error", description: "You must be logged in.", variant: "destructive" });
+    if (!user || !getIdToken) {
+        toast({ title: "Error", description: "Authentication not ready.", variant: "destructive" });
         return;
     }
 
     try {
-        const token = await user.getIdToken();
+        const token = await getIdToken();
+        if (!token) {
+          toast({ title: "Error", description: "Could not get authentication token.", variant: "destructive" });
+          return;
+        }
+        
         const result = await getOrCreateMemoryForPrompt(promptId, token);
 
         if (result.success && result.memoryId) {
@@ -112,7 +117,7 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
         console.error("Error generating remote link:", error);
         toast({ title: "Error", description: "Failed to generate remote link.", variant: "destructive" });
     }
-  }, [user]);
+  }, [user, getIdToken]);
 
    if (authLoading || isLoading) {
      return (

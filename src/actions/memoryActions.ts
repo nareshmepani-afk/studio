@@ -5,16 +5,23 @@ import { Memory } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { mockPrompts } from '@/lib/mockData'; // Import mock data to find prompt details
 
-export async function getOrCreateMemoryForPrompt(promptId: string, idToken: string): Promise<{ success: boolean; message: string; memoryId?: string; }> {
-  let uid: string;
-  try {
+async function getUidFromIdToken(idToken: string): Promise<string | null> {
     if (!adminAuth) {
-      throw new Error("Firebase Admin SDK is not initialized.");
+        console.error("Firebase Admin SDK is not initialized.");
+        return null;
     }
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-    uid = decodedToken.uid;
-  } catch (error) {
-    console.error("Error verifying ID token:", error);
+    try {
+        const decodedToken = await adminAuth.verifyIdToken(idToken);
+        return decodedToken.uid;
+    } catch (error) {
+        console.error("Error verifying ID token:", error);
+        return null;
+    }
+}
+
+export async function getOrCreateMemoryForPrompt(promptId: string, idToken: string): Promise<{ success: boolean; message: string; memoryId?: string; }> {
+  const uid = await getUidFromIdToken(idToken);
+  if (!uid) {
     return { success: false, message: "Unauthorized. Invalid token." };
   }
 
