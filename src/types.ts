@@ -31,6 +31,11 @@ export const emotionTagsList: EmotionTag[] = [
   { id: 'loved', label: 'Loved' },
 ];
 
+export interface MediaAttachment {
+  url: string;
+  type: string; // 'image' | 'video' | 'audio'
+}
+
 export type Memory = {
   id: string;
   userId: string;
@@ -45,10 +50,7 @@ export type Memory = {
   createdAt: string;
   updatedAt: string;
   status?: string;
-  mediaAttachments?: {
-    url: string;
-    type: string;
-  }[];
+  mediaAttachments?: MediaAttachment[];
 };
 
 export type ActionResponse = {
