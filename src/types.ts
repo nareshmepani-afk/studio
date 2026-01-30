@@ -92,3 +92,5 @@ export type User = {
   paidHostPassExpiryDate?: string;
   storageUsedBytes?: number;
 };
+
+export type UserMode = 'viewer' | 'editor' | 'admin';
