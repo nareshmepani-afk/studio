@@ -47,7 +47,7 @@ export type Memory = {
   promptId?: string;
   title: string;
   description: string;
-  category: string;
+  category: string | MemoryCategory;
   location: string;
   city?: string;
   country?: string;
