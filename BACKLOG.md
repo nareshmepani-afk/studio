@@ -1,10 +1,17 @@
-# 🎙️ MemoryWeaver.Studio Development Backlog
+🎙️ MemoryWeaver.Studio Development Backlog
+Sprint 3: Polish & Recording [🔴 BLOCKED]
+• STU-35: Add `'host'` and `'guest'` to `UserMode`.
 
-## Sprint 3: Polish & Recording [🔴 BLOCKED]
-- [x] **STU-10/11/12**: Recording & Review Logic.
-- [x] **STU-21**: Next.js 15 Async Params fix.
-- [❌] **STU-27**: **QR GENERATION FAILURE**: `getSession()` returns null in Server Actions. Need to sync Firebase Auth Token with Next.js Cookies.
-- [🟡] **STU-26**: **AUTH BYPASS**: Middleware fix for `/remote/*`.
+• STU-38: Add `country`, `imageUrl`, `videoUrl` to `Memory`.
 
-## Sprint 4: User Journey & Roleplay [⏳ PLANNED]
-- [ ] **STU-18**: **Hybrid Auth/Guest Flow**: Implement anonymous login for mobile.
+• STU-41: Update `category` to union type.
+
+• STU-42: Add `getIdToken` to `AuthContextType`.
+
+• STU-43: TYPE ERROR: Add `storageQuota` to `User` type.
+
+• STU-44: Create explicit `CombinedUser` interface as long-term solution.
+
+• [❌] STU-27: QR GENERATION FAILURE: `getSession()` returns null.
+
+• [🟡] STU-26: AUTH BYPASS: Middleware fix for `/remote/*`.
