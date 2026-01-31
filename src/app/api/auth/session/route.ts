@@ -7,7 +7,7 @@ const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 5; // 5 days
 
 // 1. GET: Check if the user is logged in
 export async function GET() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
   if (!sessionCookie) {
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
   try {
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn: SESSION_MAX_AGE_SECONDS * 1000 });
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     cookieStore.set(SESSION_COOKIE_NAME, sessionCookie, SESSION_COOKIE_OPTIONS);
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 
 // 3. DELETE: Sign out and delete the session
 export async function DELETE() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   cookieStore.delete(SESSION_COOKIE_NAME);
   return NextResponse.json({ success: true }, { status: 200 });
 }
