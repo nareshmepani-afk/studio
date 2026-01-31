@@ -15,7 +15,7 @@ interface ShareDialogProps {
 }
 
 export function ShareDialog({ memory, onClose }: ShareDialogProps) {
-  const [guestEmail, setGuestEmail] = useState('');
+  const [storytellerEmail, setStorytellerEmail] = useState('');
   const [shareLink, setShareLink] = useState('');
   const [copied, setCopied] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -38,12 +38,10 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
     if (!shareLink) return;
 
     try {
-      // Modern async API. Fails on insecure origins (http).
       await navigator.clipboard.writeText(shareLink);
       setCopied(true);
       toast({ title: "Link copied to clipboard!", variant: "success" });
     } catch (err) {
-      // Fallback for insecure contexts.
       try {
         const textArea = document.createElement('textarea');
         textArea.value = shareLink;
@@ -89,20 +87,20 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
         <DialogHeader>
           <DialogTitle className="font-headline">Share '{memory.title}'</DialogTitle>
           <DialogDescription>
-            Invite guests to view this memory or generate a shareable link.
+            Invite Storytellers to view this memory or generate a shareable link.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="guest-email">Invite by Email (Optional)</Label>
+            <Label htmlFor="storyteller-email">Invite by Email (Optional)</Label>
             <Input
-              id="guest-email"
+              id="storyteller-email"
               type="email"
-              placeholder="guest@example.com"
-              value={guestEmail}
-              onChange={(e) => setGuestEmail(e.target.value)}
+              placeholder="storyteller@example.com"
+              value={storytellerEmail}
+              onChange={(e) => setStorytellerEmail(e.target.value)}
             />
-            <Button variant="outline" className="w-full" onClick={() => toast({ title: "Invite Sent (Mock)", description: `Invitation sent to ${guestEmail}.`, variant: "success"})} disabled={!guestEmail}>
+            <Button variant="outline" className="w-full" onClick={() => toast({ title: "Invite Sent (Mock)", description: `Invitation sent to ${storytellerEmail}.`, variant: "success"})} disabled={!storytellerEmail}>
               Send Invite (Mock)
             </Button>
           </div>

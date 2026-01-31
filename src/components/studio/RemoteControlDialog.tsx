@@ -22,7 +22,7 @@ interface RemoteControlDialogProps {
 }
 
 export function RemoteControlDialog({ open, onClose, sessionId }: RemoteControlDialogProps) {
-  const [guestUrl, setGuestUrl] = useState<string | null>(null);
+  const [storytellerUrl, setStorytellerUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   if (!open) {
@@ -31,28 +31,28 @@ export function RemoteControlDialog({ open, onClose, sessionId }: RemoteControlD
 
   const remoteUrl = `${window.location.origin}/remote/${sessionId}`;
 
-  const generateGuestLink = async () => {
+  const generateStorytellerLink = async () => {
     setIsLoading(true);
     try {
       const response = await fetch('/api/guest-access', { method: 'POST' });
       if (!response.ok) {
-        throw new Error('Failed to generate guest link.');
+        throw new Error('Failed to generate storyteller link.');
       }
       const { token } = await response.json();
       const url = `${remoteUrl}?token=${token}`;
-      setGuestUrl(url);
-      toast({ title: 'Guest link generated!', description: 'You can now copy the link.' });
+      setStorytellerUrl(url);
+      toast({ title: 'Storyteller link generated!', description: 'You can now copy the link.' });
     } catch (error) {
       console.error(error);
-      toast({ title: 'Error', description: 'Could not generate guest link.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Could not generate storyteller link.', variant: 'destructive' });
     }
     setIsLoading(false);
   };
 
   const copyToClipboard = () => {
-    if (guestUrl) {
-      navigator.clipboard.writeText(guestUrl);
-      toast({ title: 'Copied!', description: 'Guest link copied to clipboard.' });
+    if (storytellerUrl) {
+      navigator.clipboard.writeText(storytellerUrl);
+      toast({ title: 'Copied!', description: 'Storyteller link copied to clipboard.' });
     }
   };
 
@@ -62,20 +62,20 @@ export function RemoteControlDialog({ open, onClose, sessionId }: RemoteControlD
         <DialogHeader>
           <DialogTitle className="font-headline text-lg">Remote Control</DialogTitle>
           <DialogDescription>
-            Scan the QR code or generate a guest link to share.
+            Scan the QR code or generate a storyteller link to share.
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center justify-center p-4">
-          <QRCodeCanvas value={guestUrl || remoteUrl} size={256} level={"H"} includeMargin={true} />
+          <QRCodeCanvas value={storytellerUrl || remoteUrl} size={256} level={"H"} includeMargin={true} />
         </div>
-        {guestUrl ? (
+        {storytellerUrl ? (
           <div className="flex flex-col gap-2">
-            <Input value={guestUrl} readOnly />
+            <Input value={storytellerUrl} readOnly />
             <Button onClick={copyToClipboard}>Copy Link</Button>
           </div>
         ) : (
-          <Button onClick={generateGuestLink} disabled={isLoading}>
-            {isLoading ? 'Generating...' : 'Generate Guest Link'}
+          <Button onClick={generateStorytellerLink} disabled={isLoading}>
+            {isLoading ? 'Generating...' : 'Generate Storyteller Link'}
           </Button>
         )}
         <DialogFooter>
