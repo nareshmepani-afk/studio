@@ -1,5 +1,4 @@
-
-import {NextResponse} from 'next/server';
+import {NextResponse, NextRequest} from 'next/server';
 import {SignJWT, jwtVerify} from 'jose';
 import {adminDb} from '@/lib/firebase-admin';
 import {SESSION_COOKIE_NAME} from '@/lib/constants';
