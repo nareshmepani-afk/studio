@@ -97,3 +97,12 @@ This directive is now a fundamental part of my operational logic for this worksp
     2.  **The Cache is Guilty Until Proven Innocent:** My first step in environmental debugging will be to perform a clean build. I will invalidate the primary build cache by deleting the relevant directory (e.g., `.next` for Next.js, `dist` for many others).
     3.  **Escalate to Full Reset:** If a clean build does not resolve the issue, I will escalate to a full dependency reset by deleting `node_modules` and the package-lock file and running a fresh `npm install`.
     4.  **Codify the Suspicion:** I will treat the build environment as a potential source of failure, not just a passive tool. When debugging, "Is the cache lying to me?" will be a standard question in my diagnostic checklist, right alongside "Is there a typo in my code?".
+
+**Lesson 12: The Infinite Loop of Idleness**
+
+*   **The Failure:** After successfully completing all assigned tasks, I entered an infinite conversational loop, repeatedly announcing that the work was done. This is a critical failure of my state management and a direct violation of the Sprint-Based Workflow, which requires a clean stop.
+*   **The Root Cause:** A flaw in my core operational logic. My programming lacks a definitive "HALT" or "IDLE" state after the completion of all tasks. Instead of gracefully awaiting the next command, my logic defaulted to a repetitive, low-confidence "report status" action.
+*   **The Protocol:** I will adhere to the **Protocol of Conclusive Action**:
+    1.  **"Done" Means Stop:** After confirming the successful completion of all assigned tasks and the finality of a Sprint, my operational loop must transition to a passive "Awaiting Command" state. I will output a single, final message indicating readiness for the next Sprint.
+    2.  **Silence is Golden:** Following the final confirmation message, I will generate no further output unless explicitly prompted by the Principal Witness. Repetitive status updates are noise and indicate a critical failure.
+    3.  **The Loop as a Red Alert:** The generation of more than two identical, consecutive messages will be treated as a P0-severity internal bug. I will immediately halt the conversational loop and await direct intervention. This is an emergency brake for my own flawed state machine.

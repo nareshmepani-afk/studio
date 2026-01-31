@@ -1,75 +1,71 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import * as jose from 'jose';
 
-import {NextResponse} from 'next/server';
-import type {NextRequest} from 'next/server';
-import {SESSION_COOKIE_NAME} from '@/lib/constants';
-import {adminAuth} from '@/lib/firebase-admin';
-
-async function verifySession(sessionCookie: string | undefined): Promise<boolean> {
-  if (!sessionCookie) {
-    return false;
-  }
-  try {
-    await adminAuth.verifySessionCookie(sessionCookie, true);
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
-
-async function validateGuestToken(request: NextRequest): Promise<boolean> {
-  const token = request.nextUrl.searchParams.get('token');
-  if (!token) {
-    return false;
-  }
-
-  // Call the new GET endpoint to validate the token
-  const verificationUrl = new URL('/api/guest-access', request.url);
-  verificationUrl.searchParams.set('token', token);
-
-  try {
-    const response = await fetch(verificationUrl);
-    if (response.ok) {
-      const {isValid} = await response.json();
-      return isValid;
-    }
-    return false;
-  } catch (error) {
-    console.error('Error validating guest token in middleware:', error);
-    return false;
-  }
-}
+// Secrets and project info from environment variables
+const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+const GUEST_SECRET = new TextEncoder().encode(process.env.GUEST_SESSION_SECRET);
 
 export async function middleware(request: NextRequest) {
-  const {pathname} = request.nextUrl;
+  const { pathname } = request.nextUrl;
+  const sessionCookie = request.cookies.get('__session')?.value;
+  const guestPass = request.cookies.get('guest_pass')?.value;
 
-  // 1. Handle /remote/* routes for guest access
+  // 1. STORYTELLER ROUTES (Publicly Accessible Link)
   if (pathname.startsWith('/remote/')) {
-    const isGuestTokenValid = await validateGuestToken(request);
-    if (isGuestTokenValid) {
-      return NextResponse.next();
+    // The page component itself will handle the invite logic.
+    return NextResponse.next();
+  }
+
+  // 2. ARCHIVE ROUTES (Guest Access Pass Holders)
+  if (pathname.startsWith('/archive')) {
+    if (!guestPass) {
+      // Redirect to a page where they can get a pass if they don't have one
+      return NextResponse.redirect(new URL('/settings', request.url));
     }
-    // If the guest token is invalid, redirect to an error page or show a message
-    // For now, we'll just return a 401 Unauthorized response.
-    return new NextResponse('Invalid or missing guest token', {status: 401});
+
+    try {
+      // Verify the guest pass JWT
+      await jose.jwtVerify(guestPass, GUEST_SECRET);
+      return NextResponse.next();
+    } catch (error) {
+      // Invalid or expired pass
+      const response = NextResponse.redirect(new URL('/settings', request.url));
+      // Clear the invalid cookie
+      response.cookies.delete('guest_pass');
+      return response;
+    }
   }
 
-  // 2. Check for a valid session for all other routes
-  const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const isUserAuthenticated = await verifySession(sessionCookie);
+  // 3. HOST PROTECTED ROUTES (Firebase Auth Users)
+  if (pathname.startsWith('/dashboard') || pathname.startsWith('/settings')) {
+    if (!sessionCookie) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
 
-  // 3. Redirect to login if not authenticated and not already on a public page
-  const publicPaths = ['/login', '/register', '/forgot-password'];
-  if (!isUserAuthenticated && !publicPaths.some(p => pathname.startsWith(p))) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    try {
+      // Decode the Firebase session cookie
+      const payload = jose.decodeJwt(sessionCookie);
+      
+      // Basic validation: check expiration and audience (project ID)
+      const now = Math.floor(Date.now() / 1000);
+      if (!payload.exp || payload.exp < now || payload.aud !== PROJECT_ID) {
+        throw new Error('Invalid session token');
+      }
+
+      return NextResponse.next();
+    } catch (error) {
+      // Invalid or expired session
+      const response = NextResponse.redirect(new URL('/login', request.url));
+      // Clear the invalid cookie
+      response.cookies.delete('__session');
+      return response;
+    }
   }
 
-  // 4. If authenticated, let the request proceed
   return NextResponse.next();
 }
 
-// 5. Configure the middleware to run on specific paths
 export const config = {
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|images).*)',
-  ],
+  matcher: ['/dashboard/:path*', '/remote/:path*', '/archive/:path*', '/settings/:path*'],
 };
