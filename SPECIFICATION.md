@@ -288,14 +288,16 @@ The Sprint ID follows a simple, descriptive format:
 1.  **Sprint Initiation:** At the beginning of a new Sprint, a unique Sprint ID is created.
 2.  **Primary Branch:** All work will be committed directly to the `master` branch, which is our single source of truth.
 3.  **Committing:** All commits related to the Sprint will be made directly to the `master` branch. The commit messages should be descriptive of the changes made.
-4.  **Testing:** The `MANUAL_TESTING.md` file will be updated with a new Test Session, which will be explicitly linked to the Sprint ID.
-5.  **Sprint Completion:** The Sprint is complete once the Item of Work has been verified through testing and all changes are committed to the `master` branch.
+4.  **Pushing:** After committing, the changes **MUST** be pushed to the remote `master` branch to ensure the central repository is synchronized.
+5.  **Testing:** The `MANUAL_TESTING.md` file will be updated with a new Test Session, which will be explicitly linked to the Sprint ID.
+6.  **Sprint Completion:** The Sprint is complete once the Item of Work has been verified through testing and all changes have been **committed and pushed** to the `master` branch.
 
 ## 7. Change Log (A History of Poiesis)
 
+*   **sprint-role-definition-2024-05-25:**
+    *   **Updated Role Definitions:** Aligned all project documentation (`SPECIFICATION.md`, `BACKLOG.md`, `MANUAL_TESTING.md`) with the new, clearer role definitions (Host, Storyteller, Guest, Interviewer). Created `src/types/roles.ts` to provide a single source of truth for user role interfaces.
 *   **sprint-guest-access-2024-05-25:**
     *   **Completed STU-26 & STU-27:** Implemented secure guest access (now "Storyteller" access) using temporary JWTs. Created a new API endpoint (`/api/guest-access`) for token generation and validation, and updated the middleware to protect the `/remote/*` route. Updated the `RemoteControlDialog` to allow Hosts to generate and share these Storyteller links.
-    *   **Updated Role Definitions:** Aligned the codebase with the new, clearer role definitions (Host, Storyteller, Guest, Interviewer) by creating `src/types/roles.ts`.
 *   **sprint-deep-integration-2024-05-24:**
     *   **Completed STU-12:** Successfully passed the recorded video URL from the studio recording page to the review page, completing the core user journey for video memories.
     *   **Updated Data Structure:** Added `videoUrl: string` to the `Memory` interface in `src/types.ts`.
