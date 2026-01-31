@@ -46,10 +46,10 @@ export async function setSessionCookie(sessionCookie: string, expiresIn: number)
   const cookieStore = await cookies();
   cookieStore.set("firebase-session", sessionCookie, {
     maxAge: expiresIn,
-    httpOnly: false,
+    httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    sameSite: "lax",
+    sameSite: "strict",
   });
 }
 
