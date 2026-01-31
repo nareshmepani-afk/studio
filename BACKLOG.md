@@ -1,17 +1,14 @@
-🎙️ MemoryWeaver.Studio Development Backlog
-Sprint 3: Polish & Recording [🔴 BLOCKED]
-• STU-35: Add `'host'` and `'guest'` to `UserMode`.
+# 🎙️ MemoryWeaver.Studio Development Backlog
 
-• STU-38: Add `country`, `imageUrl`, `videoUrl` to `Memory`.
+## 👥 Role Definitions & Access Levels
+- **Host**: Owner, manages quota, generates invites.
+- **Storyteller**: Records via remote link, no account/pass required.
+- **Guest**: Views shared archives, requires Guest Access Pass.
+- **Interviewer**: Facilitates the recording session via prompts.
 
-• STU-41: Update `category` to union type.
-
-• STU-42: Add `getIdToken` to `AuthContextType`.
-
-• STU-43: TYPE ERROR: Add `storageQuota` to `User` type.
-
-• STU-44: Create explicit `CombinedUser` interface as long-term solution.
-
-• [❌] STU-27: QR GENERATION FAILURE: `getSession()` returns null.
-
-• [🟡] STU-26: AUTH BYPASS: Middleware fix for `/remote/*`.
+## Sprint 3: Polish & Recording
+- [x] **STU-43**: Add `storageQuota` to `User` type.
+- [x] **STU-45**: Await `cookies()` in `auth/session/route.ts`.
+- [x] **STU-46**: Add null check for `adminAuth`.
+- [x] **STU-27**: QR FAILURE: Support Host-to-Storyteller session handoff.
+- [x] **STU-26**: Secure remote recording endpoint.

@@ -125,8 +125,44 @@ To ensure security and prevent cross-contamination, **each environment MUST use 
 
 This strict separation is a cornerstone of our security and stability posture.
 
+### 2.5. Role Definitions & Access Levels
+
+To provide a clear architectural and user-experience summary, here is the breakdown of roles for MemoryWeaver.Studio. By distinguishing between the creator, the facilitator, the contributor, and the viewer, we ensure the security and session logic remain robust.
+
+-   **👑 The Host (Account Owner):** The "Curator" who owns the digital vault.
+    -   **Mission:** To preserve a legacy by gathering stories from loved ones.
+    -   **Key Actions:** Manages billing and Storage Quotas; generates Invite QR Codes; organizes the final archive.
+    -   **Auth Level:** Full persistent authentication required.
+
+-   **🎙️ The Storyteller (The Contributor):** The "Heart" of the platform.
+    -   **Mission:** To share memories and wisdom without technical friction.
+    -   **Key Actions:** Scans a Host's invite; uses the `/remote/*` route to record audio/video; uploads directly to the Host’s vault.
+    -   **Auth Level:** No Pass required. They use a temporary "Storyteller Session" to bypass standard login.
+
+-   **👥 The Guest (The Viewer):** The "Audience" for the shared memories.
+    -   **Mission:** To view and celebrate the memories collected by a Host.
+    -   **Key Actions:** Accesses shared folders or specific memories to watch/listen.
+    -   **Auth Level:** Requires Guest Access Pass. Access is typically time-bound.
+
+-   **📋 The Interviewer (The Facilitator):** The "Guide" who keeps the conversation flowing.
+    -   **Mission:** To prompt the Storyteller with questions to ensure a rich recording.
+    -   **Key Actions:** Uses the "Interview Mode" dashboard to see prompts while the Storyteller is recording.
+    -   **Auth Level:** Usually the Host themselves or a trusted user with delegated permissions.
+
+### Logic & Interaction Flow
+
+| Feature         | Host                  | Storyteller           | Guest               |
+| --------------- | --------------------- | --------------------- | ------------------- |
+| Storage Usage   | Consumes their quota  | No quota required     | No quota required   |
+| Auth Requirement| Full Account          | Invite Link/QR Only   | Guest Access Pass   |
+| Primary Route   | /dashboard            | /remote/[inviteId]    | /archive/[sharedId] |
+| Core Action     | Manage & Curate       | Record & Upload       | View & Listen       |
+
 ## 3. Data Structure (The Being)
 
+The core data structures of Memory Weaver are defined in TypeScript to ensure type safety and clarity throughout the application.
+
+### 3.1. Memories
 ```typescript
 // Located in: @/src/types.ts
 
@@ -153,6 +189,53 @@ export interface Memory {
 // ... other types from src/types.ts
 ```
 
+### 3.2. User Roles
+The application defines a clear set of user roles, each with specific permissions and data.
+```typescript
+// Located in: @/src/types/roles.ts
+export type UserRole = 'Host' | 'Storyteller' | 'Guest' | 'Interviewer';
+
+export interface BaseUser {
+  uid: string;
+  role: UserRole;
+  displayName?: string;
+  photoURL?: string;
+}
+
+export interface Host extends BaseUser {
+  role: 'Host';
+  email: string;
+  storageQuota: {
+    used: number; // in bytes
+    total: number; // in bytes
+  };
+  subscriptionStatus: 'active' | 'inactive' | 'trial';
+}
+
+export interface Storyteller extends BaseUser {
+  role: 'Storyteller';
+  // Storytellers are temporary and may not have a permanent account
+  sessionExpiresAt: Date;
+}
+
+export interface Guest extends BaseUser {
+  role: 'Guest';
+  // Guests have read-only access, controlled by passes
+  passExpiresAt: Date;
+}
+
+export interface Interviewer extends BaseUser {
+  role: 'Interviewer';
+  // Can be a Host or a trusted user with specific permissions
+  permissions: {
+    canStartSession: boolean;
+    canManagePrompts: boolean;
+  };
+}
+
+export type User = Host | Storyteller | Guest | Interviewer;
+```
+
 ## 4. Current Horizon (The State of Being)
 
 *   **Ready-to-Hand (What is Working):**
@@ -163,6 +246,7 @@ export interface Memory {
     *   **User Authentication:** User authentication is stable.
     *   **Password Reset:** The password reset flow is now fully functional, including email delivery.
     *   **Video Recording & Integration:** The core video recording and playback loop is functional. The recorded video URL is successfully passed to the review page.
+    *   **Guest Access:** Secure guest access via temporary tokens is implemented.
 
 *   **Present-at-Hand (What is Broken / Obtrusive):**
     *   None. The system is currently stable.
@@ -172,7 +256,6 @@ export interface Memory {
     2.  **Configure Custom Domain:** Set up and configure the `memoryweaver.studio` custom domain.
     3.  **Configure Scaling Settings:** Review and configure scaling settings in `apphosting.yaml`.
     4.  **UI/UX Refinement:** Refine the user experience based on feedback.
-    5.  **Role Selection Splash (STU-15):** Implement the initial role selection screen for "Self/Solo" or "Interview" mode.
 
 
 ## 5. Manual Testing Protocol (The Witnessing)
@@ -210,6 +293,9 @@ The Sprint ID follows a simple, descriptive format:
 
 ## 7. Change Log (A History of Poiesis)
 
+*   **sprint-guest-access-2024-05-25:**
+    *   **Completed STU-26 & STU-27:** Implemented secure guest access (now "Storyteller" access) using temporary JWTs. Created a new API endpoint (`/api/guest-access`) for token generation and validation, and updated the middleware to protect the `/remote/*` route. Updated the `RemoteControlDialog` to allow Hosts to generate and share these Storyteller links.
+    *   **Updated Role Definitions:** Aligned the codebase with the new, clearer role definitions (Host, Storyteller, Guest, Interviewer) by creating `src/types/roles.ts`.
 *   **sprint-deep-integration-2024-05-24:**
     *   **Completed STU-12:** Successfully passed the recorded video URL from the studio recording page to the review page, completing the core user journey for video memories.
     *   **Updated Data Structure:** Added `videoUrl: string` to the `Memory` interface in `src/types.ts`.

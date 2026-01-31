@@ -7,36 +7,55 @@
 
 ## Active Sprint Test Session
 
-**Sprint ID:** `studio-remote-persistence-2026-01-25`
+**Sprint ID:** `role-definition-update-2026-01-26`
 
-**Objective:** To verify real-time sync, video persistence, and the post-upload navigation flow.
+**Objective:** To verify that the new role definitions are correctly implemented and displayed throughout the application.
 
 **Base URL:** `https://studio--memory-weaver-8rk9t.us-central1.hosted.app/`
 
-### Test Case 1: Remote Control Handoff & Synchronization
-1. **`stu-rem-tc1-ts1`**: On Desktop, navigate to `/add-memory`. Click "Remote Control" to reveal the QR code.
-2. **`stu-rem-tc1-ts2`**: Scan QR with mobile. **Expected:** Mobile opens `/remote` and shows "Connected".
-3. **`stu-rem-tc1-ts3`**: Move "Font Size" slider to max on Mobile.
-4. **`stu-rem-tc1-ts4`**: **Witnessing Step:** Observe Desktop. **Expected:** Font size increases instantly.
-5. **`stu-rem-tc1-ts5`**: Toggle "Mirror Mode" on Mobile. **Expected:** Desktop text flips horizontally.
+### Test Case 1: Role Display Verification
+* **Objective:** To verify that the user's role is displayed on every page.
 
-### Test Case 2: Recording, Tally Logic, and Persistence
-1. **`stu-rec-tc2-ts1`**: On Mobile Remote, press "Start Session".
-2. **`stu-rec-tc2-ts2`**: **Witnessing Step:** Observe Desktop Monitor. **Expected:** "ON AIR" light pulses red.
-3. **`stu-rec-tc2-ts3`**: Record 10s of video. Press "Stop Session" on Mobile.
-4. **`stu-rec-tc2-ts4`**: **Expected:** Desktop UI displays `<Progress />` bar for Firebase Upload.
-5. **`stu-rec-tc2-ts5`**: **Witnessing Step:** Open browser console (F12) filter for `TESTIMONY`. Verify: `"Upload Complete: https://firebasestorage.googleapis.com/..."`
+1. **`stu-role-tc1-ts1`**: Log in with a user account for each of the four roles: Host, Storyteller, Guest, and Interviewer.
+2. **`stu-role-tc1-ts2`**: For each logged-in user, navigate through all the main pages of the application (e.g., `/dashboard`, `/add-memory`, `/settings`, `/remote/*`, `/archive/*`).
+3. **`stu-role-tc1-ts3`**: **Witnessing Step:** Observe the UI on each page.
+4. **`stu-role-tc1-ts4`**: **Expected Result:** The user's current role (e.g., "Role: Host") is clearly displayed in a consistent location on every page, such as the header or a user profile dropdown.
 
-### Test Case 3: Post-Upload Navigation (The Redirect)
-* **Objective:** Verify the app transitions from Studio to Review mode automatically.
+### Test Case 2: Host Role Verification
+* **Objective:** To verify that a user with the 'Host' role has the correct permissions and UI.
 
-1. **`stu-nav-tc3-ts1`**: Immediately following the completion of `stu-rec-tc2-ts4` (100% progress).
-2. **`stu-nav-tc3-ts2`**: **Witnessing Step:** Observe the Desktop Browser URL.
-3. **`stu-nav-tc3-ts3`**: **Expected Result:** URL changes from `/add-memory` to `/review/temp-id`.
-4. **`stu-nav-tc3-ts4`**: **Expected Result:** The "Review Memory" page renders with the placeholder stats.
+1. **`stu-role-tc2-ts1`**: Using a test account with the 'Host' role, log in to the application.
+2. **`stu-role-tc2-ts2`**: Navigate to the `/dashboard` and `/settings` pages.
+3. **`stu-role-tc2-ts3`**: **Witnessing Step:** Observe the UI on each page.
+4. **`stu-role-tc2-ts4`**: **Expected Result:** The user can see and interact with Host-specific elements, such as billing information, storage quota, and the ability to generate invite links for Storytellers.
+
+### Test Case 3: Storyteller Role Verification
+* **Objective:** To verify that a user with the 'Storyteller' role has the correct permissions and UI.
+
+1. **`stu-role-tc3-ts1`**: As a Host, generate a Storyteller invite link.
+2. **`stu-role-tc3-ts2`**: Open the generated link in a new browser or incognito window.
+3. **`stu-role-tc3-ts3`**: **Witnessing Step:** Observe the UI.
+4. **`stu-role-tc3-ts4`**: **Expected Result:** The user is taken to the `/remote/*` page and can record and upload a memory. They should not have access to any other parts of the application.
+
+### Test Case 4: Guest Role Verification
+* **Objective:** To verify that a user with the 'Guest' role has the correct permissions and UI.
+
+1. **`stu-role-tc4-ts1`**: As a Host, create a Guest Access Pass and share the link.
+2. **`stu-role-tc4-ts2`**: Open the shared link in a new browser or incognito window.
+3. **`stu-role-tc4-ts3`**: **Witnessing Step:** Observe the UI.
+4. **`stu-role-tc4-ts4`**: **Expected Result:** The user can view the shared archive but cannot access any other parts of the application, especially recording or account management features.
+
+### Test Case 5: Interviewer Role Verification
+* **Objective:** To verify that a user with the 'Interviewer' role has the correct permissions and UI.
+
+1. **`stu-role-tc5-ts1`**: Using a test account with the 'Interviewer' role, log in to the application.
+2. **`stu-role-tc5-ts2`**: Navigate to the interview dashboard.
+3. **`stu-role-tc5-ts3`**: **Witnessing Step:** Observe the UI.
+4. **`stu-role-tc5-ts4`**: **Expected Result:** The user can see and manage interview prompts but does not have access to Host-level settings like billing or storage.
 
 ---
 
 ## Test Session Archive
+* [Archived: studio-remote-persistence-2026-01-25]
 * [Archived: prompt-memory-creation-2024-05-25]
 * [Archived: timeline-debug-2024-05-24]
