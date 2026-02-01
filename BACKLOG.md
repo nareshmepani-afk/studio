@@ -9,5 +9,6 @@
 - [x] **HOTFIX-01**: Export `adminStorage` from `src/lib/firebase-admin.ts`.
 - [x] **HOTFIX-02**: Fix null check for `adminAuth` in session route.
 - [x] **HOTFIX-03**: Fix null check for `adminStorage` in `upload/request/route.ts`.
+- [x] **HOTFIX-04**: Build Error: Fix malformed JSON parsing for SERVICE_ACCOUNT_JSON.
 - [ ] **STU-54**: QA: End-to-end test of Storyteller-to-Host storage flow.
 - [ ] **STU-51**: UI: Add "Pass Active" countdown timer to Settings page.

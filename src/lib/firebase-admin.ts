@@ -5,11 +5,17 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 
 let app;
+let serviceAccount;
 
 if (getApps().length === 0) {
-  const serviceAccount = process.env.SERVICE_ACCOUNT_JSON
-    ? JSON.parse(process.env.SERVICE_ACCOUNT_JSON)
-    : null;
+  try {
+    serviceAccount = process.env.SERVICE_ACCOUNT_JSON
+      ? JSON.parse(process.env.SERVICE_ACCOUNT_JSON)
+      : null;
+  } catch (e) {
+    console.error("Failed to parse SERVICE_ACCOUNT_JSON. Ensure it is valid JSON.");
+    serviceAccount = null;
+  }
 
   if (serviceAccount) {
     app = initializeApp({
@@ -17,7 +23,7 @@ if (getApps().length === 0) {
       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
   } else {
-    console.error("SERVICE_ACCOUNT_JSON is missing! Firebase Admin SDK could not be initialized.");
+    console.error("SERVICE_ACCOUNT_JSON is missing or malformed! Firebase Admin SDK could not be initialized.");
   }
 } else {
   app = getApps()[0];
