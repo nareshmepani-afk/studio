@@ -5,25 +5,33 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 
 let app;
-let serviceAccount;
+
+// Add this helper to sanitize the environment variable
+const getServiceAccount = () => {
+  const raw = process.env.SERVICE_ACCOUNT_JSON;
+  if (!raw) throw new Error("SERVICE_ACCOUNT_JSON is missing");
+
+  try {
+    // This handles cases where the JSON might be wrapped in extra quotes 
+    // or has escaped newlines from the Firebase Console
+    return JSON.parse(raw.startsWith('"') ? JSON.parse(raw) : raw);
+  } catch (e) {
+    console.error("Critical: Service Account JSON is malformed");
+    throw e;
+  }
+};
 
 if (getApps().length === 0) {
   try {
-    serviceAccount = process.env.SERVICE_ACCOUNT_JSON
-      ? JSON.parse(process.env.SERVICE_ACCOUNT_JSON)
-      : null;
-  } catch (e) {
-    console.error("Failed to parse SERVICE_ACCOUNT_JSON. Ensure it is valid JSON.");
-    serviceAccount = null;
-  }
-
-  if (serviceAccount) {
+    const serviceAccount = getServiceAccount();
     app = initializeApp({
       credential: cert(serviceAccount),
       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
-  } else {
-    console.error("SERVICE_ACCOUNT_JSON is missing or malformed! Firebase Admin SDK could not be initialized.");
+  } catch (e) {
+    console.error("Firebase Admin SDK initialization failed:", e);
+    // Set app to null or handle appropriately so the rest of the app knows init failed
+    app = null;
   }
 } else {
   app = getApps()[0];
