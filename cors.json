@@ -1,0 +1,9 @@
+
+[
+  {
+    "origin": ["https://studio--memory-weaver-8rk9t.us-central1.hosted.app"],
+    "method": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+    "responseHeader": ["Content-Type"],
+    "maxAgeSeconds": 3600
+  }
+]

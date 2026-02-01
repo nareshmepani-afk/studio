@@ -1,27 +1,30 @@
-// lib/firebase-admin.ts
-import admin from 'firebase-admin';
+
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 
 let app;
 
-if (admin.apps.length === 0) {
+if (getApps().length === 0) {
   const serviceAccount = process.env.SERVICE_ACCOUNT_JSON
     ? JSON.parse(process.env.SERVICE_ACCOUNT_JSON)
     : null;
 
   if (serviceAccount) {
-    app = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+    app = initializeApp({
+      credential: cert(serviceAccount),
+      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
     });
   } else {
     console.error("SERVICE_ACCOUNT_JSON is missing! Firebase Admin SDK could not be initialized.");
   }
 } else {
-  app = admin.apps[0];
+  app = getApps()[0];
 }
 
 const adminAuth = app ? getAuth(app) : null;
 const adminDb = app ? getFirestore(app) : null;
+const adminStorage = app ? getStorage(app) : null;
 
-export { adminAuth, adminDb };
+export { adminAuth, adminDb, adminStorage };

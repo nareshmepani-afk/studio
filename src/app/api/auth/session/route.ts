@@ -15,6 +15,7 @@ export async function GET() {
   }
 
   try {
+    if (!adminAuth) throw new Error("Admin Auth not initialized");
     await adminAuth.verifySessionCookie(sessionCookie, true);
     return NextResponse.json({ isLogged: true }, { status: 200 });
   } catch (error) {
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (!adminAuth) throw new Error("Admin Auth not initialized");
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn: SESSION_MAX_AGE_SECONDS * 1000 });
     const cookieStore = await cookies();
     cookieStore.set(SESSION_COOKIE_NAME, sessionCookie, SESSION_COOKIE_OPTIONS);
