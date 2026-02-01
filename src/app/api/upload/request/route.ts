@@ -24,6 +24,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid or expired invite.' }, { status: 403 });
     }
 
+    if (!adminStorage) {
+      return NextResponse.json({ error: 'Storage not initialized' }, { status: 500 });
+    }
     const bucket = adminStorage.bucket();
     // Sanitize filename and create a unique path
     const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '');
