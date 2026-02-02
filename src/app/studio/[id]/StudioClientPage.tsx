@@ -10,24 +10,19 @@ import { OnScreenConsole } from '@/components/studio/OnScreenConsole';
 
 const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY as string;
 
-// Authorized emails for on-screen debugging
-const DEBUGGER_EMAILS = ['nareshmepani@hotmail.com'];
-
 export default function StudioClientPage({ id }: { id: string }) {
   console.log("TESTIMONY: StudioClientPage mounted for id:", id);
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
   const role = searchParams.get('role');
+  const isDebugMode = searchParams.get('debug') === 'true';
   const [videoClient, setVideoClient] = useState<StreamVideoClient | null>(null);
-  const [showConsole, setShowConsole] = useState(false);
 
   useEffect(() => {
-    // Show console if the user is a designated debugger
-    if (user && user.email && DEBUGGER_EMAILS.includes(user.email)) {
-      console.log(`TESTIMONY: Debugger user '${user.email}' identified. Activating on-screen console.`);
-      setShowConsole(true);
+    if (isDebugMode) {
+      console.log(`TESTIMONY: Debug mode activated via URL parameter.`);
     }
-  }, [user]);
+  }, [isDebugMode]);
 
   useEffect(() => {
     console.log("TESTIMONY: Auth state changed:", { loading, user: !!user });
@@ -115,7 +110,7 @@ export default function StudioClientPage({ id }: { id: string }) {
   // Always render the page structure, including the console if enabled
   return (
     <>
-      {showConsole && <OnScreenConsole />}
+      {isDebugMode && <OnScreenConsole />}
       {(loading || !videoClient) ? renderLoading() : (
         <StreamVideo client={videoClient}>
           <Studio callId={id} role={role || 'guest'} />
