@@ -1,11 +1,6 @@
 import StudioClientPage from './StudioClientPage';
 
-// Cache-busting comment
-export default function StudioPage({ 
-  params 
-}: { 
-  params: { id: string } 
-}) {
+export default function StudioPage({ params }: any) {
   const { id } = params;
 
   return <StudioClientPage id={id} />;
