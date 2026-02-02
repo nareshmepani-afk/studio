@@ -11,7 +11,13 @@ import { OnScreenConsole } from '@/components/studio/OnScreenConsole';
 
 const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY as string;
 
-export default function StudioPage({ params }: { params: { id: string } }) {
+interface StudioPageProps {
+  params: {
+    id: string;
+  };
+}
+
+export default function StudioPage({ params }: StudioPageProps) {
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
   const role = searchParams.get('role');
