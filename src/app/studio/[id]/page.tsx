@@ -1,12 +1,5 @@
-
 import StudioClientPage from './StudioClientPage';
 
-interface StudioPageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default function StudioPage({ params }: StudioPageProps) {
+export default function StudioPage({ params }: { params: { id: string } }) {
   return <StudioClientPage params={params} />;
 }
