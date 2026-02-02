@@ -1,11 +1,11 @@
 import StudioClientPage from './StudioClientPage';
 
-export default async function StudioPage({ 
+export default function StudioPage({ 
   params 
 }: { 
-  params: Promise<{ id: string }> 
+  params: { id: string } 
 }) {
-  const { id } = await params;
+  const { id } = params;
 
   return <StudioClientPage id={id} />;
 }
