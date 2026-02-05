@@ -83,7 +83,7 @@ export const MetadataInspector: React.FC<MetadataInspectorProps> = ({
         </div>
 
         <div className="flex flex-wrap gap-2">
-            <Select onValueChange={(value) => setSelectedCategory(memoryCategoriesList.find(c => c.id === value))} value={selectedCategory?.id}>
+            <Select onValueChange={(value) => setSelectedCategory(value as MemoryCategory)} value={selectedCategory}>
             <SelectTrigger className='text-xs h-7 w-auto gap-1.5 pl-2 pr-2 border-dashed bg-transparent'>
                 <Layers className="h-3 w-3" />
                 <SelectValue placeholder="Category" />
