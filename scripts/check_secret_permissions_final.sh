@@ -5,7 +5,7 @@
 #
 
 # The service account that needs access to the secrets.
-SERVICE_ACCOUNT="serviceAccount:firebase-app-hosting-compute@memory-weaver-8rk9t.iam.gserviceaccount.com"
+SERVICE_ACCOUNT="serviceAccount:firebase-adminsdk-fbsvc@memory-weaver-8rk9t.iam.gserviceaccount.com"
 ROLE="roles/secretmanager.secretAccessor"
 
 # Find the apphosting.yaml file
@@ -37,8 +37,7 @@ for SECRET_NAME in $SECRETS; do
         continue
     fi
 
-    # Use jq to find the binding for the specific role and check if the service account is a member.
-    HAS_ROLE=$(echo "$POLICY" | jq -r --arg SA "$SERVICE_ACCOUNT" --arg ROLE "$ROLE" '.bindings[] | select(.role == $ROLE) | .members[] | select(. == $SA)')
+    HAS_ROLE=$(echo "$POLICY" | jq -r --arg sa "$SERVICE_ACCOUNT" --arg r "$ROLE" '.bindings[] | select(.role == $r) | .members[] | select(. == $sa)')
 
     if [ -n "$HAS_ROLE" ]; then
         echo -e "\033[0;32mOK\033[0m"

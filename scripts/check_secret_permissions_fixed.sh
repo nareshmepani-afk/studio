@@ -5,7 +5,7 @@
 #
 
 # The service account that needs access to the secrets.
-SERVICE_ACCOUNT="serviceAccount:firebase-app-hosting-compute@memory-weaver-8rk9t.iam.gserviceaccount.com"
+SERVICE_ACCOUNT="serviceAccount:firebase-adminsdk-fbsvc@memory-weaver-8rk9t.iam.gserviceaccount.com"
 ROLE="roles/secretmanager.secretAccessor"
 
 # Find the apphosting.yaml file
