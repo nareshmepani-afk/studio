@@ -83,14 +83,20 @@ export const MetadataInspector: React.FC<MetadataInspectorProps> = ({
         </div>
 
         <div className="flex flex-wrap gap-2">
-            <Select onValueChange={(value) => setSelectedCategory(value as MemoryCategory)} value={selectedCategory}>
-            <SelectTrigger className='text-xs h-7 w-auto gap-1.5 pl-2 pr-2 border-dashed bg-transparent'>
-                <Layers className="h-3 w-3" />
-                <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-                {memoryCategoriesList.map(cat => <SelectItem key={cat.id} value={cat.id} className='text-xs'>{cat.label}</SelectItem>)}
-            </SelectContent>
+            <Select 
+              onValueChange={(value) => {
+                const category = memoryCategoriesList.find(cat => cat.id === value);
+                setSelectedCategory(category);
+              }}
+              value={selectedCategory?.id}
+            >
+              <SelectTrigger className='text-xs h-7 w-auto gap-1.5 pl-2 pr-2 border-dashed bg-transparent'>
+                  <Layers className="h-3 w-3" />
+                  <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                  {memoryCategoriesList.map(cat => <SelectItem key={cat.id} value={cat.id} className='text-xs'>{cat.label}</SelectItem>)}
+              </SelectContent>
             </Select>
             {emotionTagsList.map(tag => (
                 <div key={tag.id} 
