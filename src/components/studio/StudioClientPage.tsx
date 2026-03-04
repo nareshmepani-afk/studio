@@ -9,7 +9,7 @@ import { auth } from '@/lib/firebase';
 import { OnScreenConsole } from '@/components/studio/OnScreenConsole';
 import { StudioProvider } from '@/hooks/studio/useStudioState';
 
-export default function StudioClientPage({ params }: { params: { id: string } }) {
+export default function StudioClientPage({ params, initialState }: { params: { id: string }, initialState: any }) {
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
   const role = searchParams.get('role');
@@ -58,7 +58,7 @@ export default function StudioClientPage({ params }: { params: { id: string } })
     <>
       {isDebugMode && <OnScreenConsole />}
       {loading ? renderLoading() : (
-        <StudioProvider>
+        <StudioProvider initialState={initialState}>
           <Studio callId={params.id} role={role || 'guest'} />
         </StudioProvider>
       )}

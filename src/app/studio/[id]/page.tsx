@@ -1,12 +1,14 @@
 import StudioClientPage from '@/components/studio/StudioClientPage';
+import { getStudioState } from '@/lib/studio';
 
-// PageProps are now a Promise, as Next.js 15 requires for Server Components
 type StudioPageProps = {
-  params: Promise<{ id: string }>;
+  params: { id: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 };
 
-export default async function StudioPage({ params }: StudioPageProps) {
-  // Await the params to resolve the promise before passing to the client component
-  const resolvedParams = await params;
-  return <StudioClientPage params={resolvedParams} />;
+export default async function StudioPage({ params, searchParams }: StudioPageProps) {
+  const sessionId = searchParams?.sessionId as string || 'default';
+  const initialState = await getStudioState(sessionId);
+
+  return <StudioClientPage params={params} initialState={initialState} />;
 }

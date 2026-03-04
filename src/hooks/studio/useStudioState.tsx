@@ -6,7 +6,7 @@ import { doc, onSnapshot, setDoc, DocumentReference } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { teleprompterScripts } from '@/lib/teleprompterScripts';
 
-// 1. State Interface (No changes needed)
+// 1. State Interface
 interface StudioState {
   isScrolling: boolean;
   scrollSpeed: number;
@@ -19,7 +19,7 @@ interface StudioState {
   sessionId: string;
 }
 
-// 2. Actions Interface (No changes needed)
+// 2. Actions Interface
 interface StudioActions {
   toggleScrolling: () => void;
   setScrollSpeed: (speed: number) => void;
@@ -34,14 +34,14 @@ interface StudioActions {
   toggleRecording: () => void;
 }
 
-// 3. Context Shape (No changes needed)
+// 3. Context Shape
 type StudioContextType = StudioState & { actions: StudioActions };
 
-// 4. Create Context (No changes needed)
+// 4. Create Context
 const StudioContext = createContext<StudioContextType | undefined>(undefined);
 
 // 5. Provider Component
-export const StudioProvider = ({ children }: { children: ReactNode }) => {
+export const StudioProvider = ({ children, initialState }: { children: ReactNode, initialState?: Partial<StudioState> }) => {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('sessionId') || 'default';
 
@@ -52,9 +52,10 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
     isMirrored: false,
     script: 'Loading your script...',
     mode: 'solo',
-    isConnected: false,
+    isConnected: !!initialState, // We are connected if we have an initial state from the server
     isRecording: false,
     sessionId: sessionId,
+    ...(initialState || {}),
   });
 
   const studioStateRef: DocumentReference = doc(db, "studio", sessionId);
@@ -72,33 +73,32 @@ export const StudioProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setState(s => ({ ...s, script: 'Prompt not found.' }));
       }
-    } else {
+    } else if (!initialState?.script) { // Only set default if no script came from server
       setState(s => ({ ...s, script: 'Select a prompt to begin, or start typing.' }));
     }
-  }, [searchParams]);
+  }, [searchParams, initialState]);
 
-  // FINAL FIX: The Listener, now intelligent about the script.
+  // The Listener for real-time updates
   useEffect(() => {
     const unsubscribe = onSnapshot(studioStateRef,
       (doc) => {
         if (doc.exists()) {
             const data = doc.data();
-            // This is the crucial change: We destructure the 'script' property out of the
-            // incoming data from Firestore. This ensures that the remote state NEVER
-            // overwrites the locally-managed script.
             const { script, ...remoteState } = data;
 
             isSyncingFromFirestore.current = true;
 
             setState(prevState => ({
                 ...prevState,
-                ...remoteState, // Apply the remote state, which is now guaranteed to not have a 'script' property.
+                ...remoteState,
                 isConnected: true,
             }));
         }
       },
       (error) => {
         console.error(`Firebase connection error on session [${sessionId}]:`, error);
+        // If the listener fails, we are no longer connected for real-time updates.
+        // The user will see a stale-data indicator.
         setState(prevState => ({ ...prevState, isConnected: false }));
       }
     );
