@@ -1,15 +1,16 @@
 import StudioClientPage from '@/components/studio/StudioClientPage';
 import { getStudioState } from '@/lib/studio';
 
-// The custom StudioPageProps type is removed to avoid conflicts.
-// The props are typed inline instead.
+// Correctly typing the async page component based on the reference file
+// `src/app/prompts/[promptId]/page.tsx`. The `params` prop is a Promise.
 export default async function StudioPage({
-  params,
+  params: paramsPromise,
   searchParams,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
+  const params = await paramsPromise;
   const sessionId = searchParams?.sessionId as string || 'default';
   const initialState = await getStudioState(sessionId);
 
