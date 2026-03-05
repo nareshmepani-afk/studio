@@ -13,7 +13,6 @@ import type { Memory } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 export default function TimelinePage() {
-  console.log('TimelinePage: Rendering');
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -21,9 +20,7 @@ export default function TimelinePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log('TimelinePage: useEffect triggered', { user });
     if (user && db) {
-      console.log('TimelinePage: User is authenticated, fetching memories.');
       setIsLoading(true);
       const memoriesQuery = query(
         collection(db, 'users', user.uid, 'memories'), 
@@ -31,60 +28,44 @@ export default function TimelinePage() {
       );
         
       const unsubscribe = onSnapshot(memoriesQuery, (snapshot) => {
-        console.log('TimelinePage: onSnapshot fired', { snapshot });
         const memoriesData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Memory[];
-        console.log('TimelinePage: Fetched memories data', { memoriesData });
         setMemories(memoriesData);
         setIsLoading(false);
       }, (error) => {
-        console.error('TimelinePage: onSnapshot error', { error });
+        console.error('Error fetching memories:', error);
         toast({ title: 'Error', description: 'Could not fetch memories.', variant: 'destructive' });
         setIsLoading(false);
       });
 
-      return () => {
-        console.log('TimelinePage: Unsubscribing from onSnapshot.');
-        unsubscribe();
-      }
+      return () => unsubscribe();
     } else {
-      console.log('TimelinePage: User is not authenticated, not fetching memories.');
       setIsLoading(false);
     }
   }, [user, toast]);
   
   const handleEdit = (memory: Memory) => {
-    console.log('TimelinePage: handleEdit called', { memory });
     router.push(`/add-memory?editMemoryId=${memory.id}`);
   };
 
   const handleDelete = async (memoryId: string) => {
-    console.log('TimelinePage: handleDelete called', { memoryId });
-    if (!user) {
-      console.error('TimelinePage: handleDelete failed - user not authenticated.');
-      return;
-    }
+    if (!user) return;
 
     const memoryToDelete = memories.find(m => m.id === memoryId);
-    if (!memoryToDelete) {
-      console.error('TimelinePage: handleDelete failed - memory not found in state.');
-      return;
-    }
+    if (!memoryToDelete) return;
 
     try {
-      console.log('TimelinePage: Deleting memory from Firestore and Storage.', { memoryToDelete });
       await deleteDoc(doc(db, 'users', user.uid, 'memories', memoryId));
 
       if (memoryToDelete.mediaAttachments?.length) {
         for (const attachment of memoryToDelete.mediaAttachments) {
           const fileRef = ref(storage, attachment.url);
           await deleteObject(fileRef);
-          console.log('TimelinePage: Deleted media from Storage.', { fileUrl: attachment.url });
         }
       }
 
       toast({ title: 'Success', description: 'Memory deleted successfully.' });
     } catch (error) {
-      console.error('TimelinePage: handleDelete failed with error.', { error });
+      console.error('Error deleting memory:', error);
       toast({ title: 'Error', description: 'Failed to delete memory.', variant: 'destructive' });
     }
   };

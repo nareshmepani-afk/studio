@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, createContext, useContext, useCallback, useRef } from 'react';
+import React, { useState, useEffect, createContext, useContext, useCallback, useRef, useMemo } from 'react';
 import { onIdTokenChanged, type User as FirebaseUser, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { doc, onSnapshot, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -38,10 +38,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [userMode, setUserMode] = useState<'host' | 'guest'>('host');
   
-  const hostPassStatus = user?.hostPassStatus || 'no_pass_initiated';
-  const storageQuotaBytes = user?.storageQuota || { total: 0, used: 0 };
-  const isAuthenticated = !!user;
-
   const router = useRouter();
   const pathname = usePathname();
   const userRef = useRef(user);
@@ -94,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isPrivateRoute = PRIVATE_ROUTES.some(route => pathname.startsWith(route));
     const isPublicOnlyRoute = PUBLIC_ONLY_ROUTES.some(route => pathname.startsWith(route));
 
-    if (isAuthenticated) {
+    if (!!user) {
       if (isPublicOnlyRoute) {
         router.push('/timeline');
       }
@@ -103,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         router.push('/login');
       }
     }
-  }, [isAuthenticated, loading, pathname, router]);
+  }, [user, loading, pathname, router]);
 
   const login = useCallback(async (email: string, password: string) => {
     try {
@@ -156,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return await user.getIdToken();
   }, [user]);
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     loading,
     login,
@@ -164,11 +160,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     userMode,
     updateUserProfileInFirestore,
-    hostPassStatus,
-    storageQuotaBytes,
-    isAuthenticated,
+    hostPassStatus: user?.hostPassStatus || 'no_pass_initiated',
+    storageQuotaBytes: user?.storageQuota || { total: 0, used: 0 },
+    isAuthenticated: !!user,
     getIdToken,
-  };
+  }), [user, loading, login, register, logout, userMode, updateUserProfileInFirestore, getIdToken]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

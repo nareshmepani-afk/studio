@@ -10,28 +10,22 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 60;
 
 async function getUserData(uid: string) {
-  console.log('SETTINGS_PAGE: Fetching user data for UID:', uid);
   if (!adminDb) {
-    console.error('SETTINGS_PAGE: Database connection failed.');
     throw new Error('Database connection failed.');
   }
   try {
     const userDoc = await adminDb.collection('users').doc(uid).get();
-    const userData = userDoc.data();
-    console.log('SETTINGS_PAGE: User data fetched:', userData);
-    return userData;
+    return userDoc.data();
   } catch (error) {
-    console.error('SETTINGS_PAGE: Error fetching user data:', error);
+    console.error('Error fetching user data:', error);
     return null;
   }
 }
 
 export default async function SettingsPage() {
-  console.log('SETTINGS_PAGE: Rendering page');
   const session = await getSession();
   
   if (!session?.uid) {
-    console.warn('SETTINGS_PAGE: No session UID found. User is not logged in.');
     // This case should ideally be handled by middleware
     // redirect('/login');
     return (
@@ -42,18 +36,13 @@ export default async function SettingsPage() {
     );
   }
 
-  console.log('SETTINGS_PAGE: Session found for UID:', session.uid);
   const userData = await getUserData(session.uid);
   
-  const props = {
-    initialHostPassStatus: userData?.hostPassStatus || 'inactive', 
-    userEmail: session.email || '',
-    userName: session.displayName || ''
-  };
-
-  console.log('SETTINGS_PAGE: Passing props to SettingsPageContent:', props);
-
   return (
-    <SettingsPageContent {...props} />
+    <SettingsPageContent 
+      initialHostPassStatus={userData?.hostPassStatus || 'inactive'} 
+      userEmail={session.email || ''}
+      userName={session.displayName || ''}
+    />
   );
 }
