@@ -36,7 +36,7 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
   const [memories, setMemories] = useState(initialMemories);
   const [flaggedPromptIds, setFlaggedPromptIds] = useState(initialFlaggedPromptIds);
 
-  const { user, loading: authLoading, userMode, hostPassStatus } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   
   const [qrCodeDialog, setQrCodeDialog] = useState<{ open: boolean; url: string; title: string; }>({ open: false, url: '', title: '' });
 
@@ -50,8 +50,8 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
   }, [memories]);
 
   const canAccessFullJourney = useMemo(() => {
-    return hostPassStatus === 'free_host_pass_active' || hostPassStatus === 'paid_host_pass_active';
-  }, [hostPassStatus]);
+    return user?.hostPassStatus === 'free_host_pass_active' || user?.hostPassStatus === 'paid_host_pass_active';
+  }, [user]);
 
   const availablePromptGroups = useMemo(() => {
     if (canAccessFullJourney || mockPromptGroups.length === 0) return mockPromptGroups;
@@ -128,17 +128,6 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
           <h2 className="text-2xl font-headline mb-2">Loading Life Journey...</h2>
         </div>
      );
-  }
-  
-  if (userMode === 'guest') {
-    return (
-        <div className="container mx-auto py-8 px-4 text-center">
-          <HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-          <h1 className="font-headline text-3xl mb-2">Life Journey Not Available</h1>
-          <p className="text-muted-foreground mb-6">This feature is for hosts. Guests can view shared memories on the Timeline.</p>
-          <Link href="/timeline" passHref><Button variant="outline">Go to Timeline</Button></Link>
-        </div>
-    );
   }
   
   return (

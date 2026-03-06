@@ -92,7 +92,6 @@ export default function TimelinePage() {
                 memory={memory}
                 onEdit={() => handleEdit(memory)}
                 onDelete={() => handleDelete(memory.id)}
-                userMode={'host'}
               />
             ))}
           </div>
