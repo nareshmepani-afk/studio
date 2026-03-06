@@ -5,8 +5,7 @@ import { Toaster } from "react-hot-toast";
 import { Providers } from "@/components/layout/Providers";
 import SessionWatcher from "@/components/auth/SessionWatcher";
 import "./globals.css";
-import React from "react";
-
+import React, { useEffect } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,7 +19,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_BUILD_ID) {
+      console.log(`Build ID: ${process.env.NEXT_PUBLIC_BUILD_ID}`);
+    }
+  }, []);
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
