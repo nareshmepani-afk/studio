@@ -1,3 +1,4 @@
+# Redeploying to apply secret configuration
 
 kind: 'publishedConfig'
 apiVersion: 'v1'
