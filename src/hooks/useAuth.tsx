@@ -85,19 +85,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    if (loading) return;
+    // This effect handles redirecting logged-in users away from public-only routes.
+    // Private route protection is now handled exclusively by the middleware.
+    if (loading || !user) return;
 
-    const isPrivateRoute = PRIVATE_ROUTES.some(route => pathname.startsWith(route));
     const isPublicOnlyRoute = PUBLIC_ONLY_ROUTES.some(route => pathname.startsWith(route));
 
-    if (!!user) {
-      if (isPublicOnlyRoute) {
-        router.push('/timeline');
-      }
-    } else {
-      if (isPrivateRoute) {
-        router.push('/login');
-      }
+    if (isPublicOnlyRoute) {
+      router.push('/timeline');
     }
   }, [user, loading, pathname, router]);
 
