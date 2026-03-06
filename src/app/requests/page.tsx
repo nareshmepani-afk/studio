@@ -5,8 +5,6 @@ import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageW
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { BellRing, UserCheck, HelpCircle } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation'; 
 
 // Mock data for pending requests, similar to what was on the main page
@@ -17,25 +15,7 @@ const mockPendingRequests = [
 ];
 
 export default function RequestsPage() {
-  const { userMode } = useAuth();
   const router = useRouter(); 
-
-  if (userMode !== 'host') {
-    return (
-      <AuthenticatedPageWrapper>
-        <div className="container mx-auto py-8 px-4 text-center">
-          <HelpCircle className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
-          <h1 className="font-headline text-3xl mb-2">Access Denied</h1>
-          <p className="text-muted-foreground mb-6">
-            This page is only accessible in Host mode. Please switch to Host mode in the Navbar to view incoming memory requests.
-          </p>
-          <Link href="/timeline" passHref>
-            <Button variant="outline">Go to Timeline</Button>
-          </Link>
-        </div>
-      </AuthenticatedPageWrapper>
-    );
-  }
 
   const handleFulfillRequest = (requestText: string) => {
     router.push(`/add-memory?prompt=${encodeURIComponent(requestText)}`);
@@ -92,5 +72,3 @@ export default function RequestsPage() {
     </AuthenticatedPageWrapper>
   );
 }
-
-    

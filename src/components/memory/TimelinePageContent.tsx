@@ -31,7 +31,7 @@ export function TimelinePageContent({ initialMemories }: TimelinePageContentProp
   const router = useRouter();
   const db = getFirestore(app);
 
-  const { user, userMode, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     setMemories(initialMemories);
@@ -104,14 +104,12 @@ export function TimelinePageContent({ initialMemories }: TimelinePageContentProp
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-        <h1 className="font-headline text-4xl mb-4 md:mb-0">{userMode === 'host' ? 'Your Memories' : 'Shared With You'}</h1>
-        {userMode === 'host' && (
-          <Link href="/add-memory">
-            <Button>
-              <PlusCircle className="mr-2 h-5 w-5" /> Add New Memory
-            </Button>
-          </Link>
-        )}
+        <h1 className="font-headline text-4xl mb-4 md:mb-0">Your Memories</h1>
+        <Link href="/add-memory">
+          <Button>
+            <PlusCircle className="mr-2 h-5 w-5" /> Add New Memory
+          </Button>
+        </Link>
       </div>
 
       <TimelineFilter
@@ -135,10 +133,9 @@ export function TimelinePageContent({ initialMemories }: TimelinePageContentProp
             <MemoryCard
               key={memory.id}
               memory={memory}
-              onEdit={userMode === 'host' ? handleEditMemory : undefined}
-              onDelete={userMode === 'host' ? handleDeleteMemory : undefined}
-              onToggleLegacyStatus={userMode === 'host' ? handleToggleLegacyStatus : undefined}
-              userMode={userMode}
+              onEdit={handleEditMemory}
+              onDelete={handleDeleteMemory}
+              onToggleLegacyStatus={handleToggleLegacyStatus}
             />
           ))}
         </div>

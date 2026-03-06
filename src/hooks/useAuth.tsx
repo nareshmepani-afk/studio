@@ -1,14 +1,13 @@
 
 'use client';
 
-import React, { useState, useEffect, createContext, useContext, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, createContext, useContext, useCallback, useMemo } from 'react';
 import { onIdTokenChanged, type User as FirebaseUser, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, onSnapshot, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { useRouter, usePathname } from 'next/navigation';
+import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 import { toast } from './use-toast';
 import type { User } from '@/types';
-import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from '@/lib/constants';
 import { createSessionAction, deleteSessionAction } from '@/actions/createSessionAction';
 
 type CombinedUser = FirebaseUser & Partial<User>;
@@ -19,72 +18,51 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  userMode: 'host' | 'guest';
   updateUserProfileInFirestore: (data: Partial<User>) => Promise<void>;
-  hostPassStatus: 'no_pass_initiated' | 'free_host_pass_active' | 'paid_host_pass_active' | 'free_host_pass_expired' | 'paid_host_pass_expired';
-  storageQuotaBytes: { total: number; used: number };
   isAuthenticated: boolean;
   getIdToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const PUBLIC_ONLY_ROUTES = ['/login', '/register'];
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<CombinedUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userMode, setUserMode] = useState<'host' | 'guest'>('host');
-  
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
-      if (!firebaseUser) {
+      if (firebaseUser) {
+        const idToken = await firebaseUser.getIdToken();
+        await createSessionAction(idToken);
+
+        const userProfileRef = doc(db, 'users', firebaseUser.uid);
+        const profileUnsubscribe = onSnapshot(userProfileRef, (doc) => {
+          const fullUser = {
+            ...firebaseUser,
+            email: firebaseUser.email ?? "",
+            ...(doc.exists() ? (doc.data() as User) : {}),
+          };
+          setUser(fullUser as CombinedUser);
+          setLoading(false);
+        }, (error) => {
+           console.error("Error fetching user profile:", error);
+           setUser(firebaseUser as CombinedUser); 
+           setLoading(false);
+        });
+        return () => profileUnsubscribe();
+      } else {
         setUser(null);
         setLoading(false);
-        return;
       }
-
-      const idToken = await firebaseUser.getIdToken();
-      await createSessionAction(idToken);
-
-      const userProfileRef = doc(db, 'users', firebaseUser.uid);
-      const profileUnsubscribe = onSnapshot(userProfileRef, (doc) => {
-        const fullUser = {
-          ...firebaseUser,
-          email: firebaseUser.email ?? "",
-          ...(doc.exists() ? (doc.data() as User) : {}),
-        };
-        setUser(fullUser as CombinedUser);
-        setLoading(false);
-      }, (error) => {
-         console.error("Error fetching user profile:", error);
-         setUser(firebaseUser as CombinedUser); 
-         setLoading(false);
-      });
-      return () => profileUnsubscribe();
     });
 
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (loading || !user) return;
-
-    const isPublicOnlyRoute = PUBLIC_ONLY_ROUTES.some(route => pathname.startsWith(route));
-
-    if (isPublicOnlyRoute) {
-      router.push('/prompts');
-    }
-  }, [user, loading, pathname, router]);
-
   const login = useCallback(async (email: string, password: string) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const idToken = await userCredential.user.getIdToken();
-      await createSessionAction(idToken);
+      await signInWithEmailAndPassword(auth, email, password);
       router.push('/prompts');
       toast({ title: 'Login Successful', description: "Welcome back!", variant: 'success' });
     } catch (error: any) {
@@ -95,23 +73,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = useCallback(async (name: string, email: string, password: string) => {
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const firebaseUser = userCredential.user;
-        const idToken = await firebaseUser.getIdToken();
-        await createSessionAction(idToken);
-        await updateProfile(firebaseUser, { displayName: name });
-        
-        toast({ title: 'Registration Successful', description: "Welcome to Memory Weaver! Your complimentary 6-month Host Pass has been activated.", variant: 'success' });
-        
-        router.push('/prompts');
-        
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      await updateProfile(firebaseUser, { displayName: name });
+      router.push('/prompts');
+      toast({ title: 'Registration Successful', description: "Welcome to Memory Weaver!", variant: 'success' });
     } catch (error: any) {
       console.error('Registration failed:', error);
       toast({ title: 'Registration Failed', description: error.message, variant: 'destructive' });
       throw error;
     }
   }, [router]);
-
 
   const logout = useCallback(async () => {
     await signOut(auth);
@@ -138,13 +110,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     register,
     logout,
-    userMode,
     updateUserProfileInFirestore,
-    hostPassStatus: user?.hostPassStatus || 'no_pass_initiated',
-    storageQuotaBytes: user?.storageQuota || { total: 0, used: 0 },
     isAuthenticated: !!user,
     getIdToken,
-  }), [user, loading, login, register, logout, userMode, updateUserProfileInFirestore, getIdToken]);
+  }), [user, loading, login, register, logout, updateUserProfileInFirestore, getIdToken]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

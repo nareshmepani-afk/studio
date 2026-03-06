@@ -1,12 +1,12 @@
 "use client";
 
-import type { Memory, MediaAttachment, EmotionTag, UserMode } from '@/types';
+import type { Memory, MediaAttachment } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { enGB } from 'date-fns/locale';
-import { CalendarDays, Edit3, Trash2, Share2, Video, Mic, Heart, Eye, Users2, MapPin, Archive, CheckSquare, Layers, Scissors } from 'lucide-react';
+import { CalendarDays, Edit3, Trash2, Share2, Video, Mic, Heart, Eye, Layers, MapPin, Archive, CheckSquare } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -23,20 +23,14 @@ import {
 import { ShareDialog } from './ShareDialog';
 import { useState, useRef, useEffect, useMemo } from 'react';
 
-/**
- * Visual indicator of the trimmed range compared to the full file duration.
- */
 function TrimProgressIndicator({ trimStart, trimEnd, duration }: { trimStart: number; trimEnd: number; duration: number }) {
   const startPct = (trimStart / duration) * 100;
   const endPct = 100 - (trimEnd / duration) * 100;
 
   return (
     <div className="w-full h-1 bg-black/40 relative flex overflow-hidden">
-      {/* Pre-trim area */}
       <div style={{ width: `${startPct}%` }} className="h-full bg-slate-500/40" />
-      {/* Active content area */}
       <div className="flex-grow h-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.6)]" />
-      {/* Post-trim area */}
       <div style={{ width: `${endPct}%` }} className="h-full bg-slate-500/40" />
     </div>
   );
@@ -49,10 +43,9 @@ interface MemoryCardProps {
   onToggleLegacyStatus?: (memoryId: string) => void;
   isUnread?: boolean;
   onMarkAsViewed?: (memoryId: string) => void;
-  userMode?: UserMode;
 }
 
-export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isUnread, onMarkAsViewed, userMode }: MemoryCardProps) {
+export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isUnread, onMarkAsViewed }: MemoryCardProps) {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -60,15 +53,11 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
   const primaryMedia = useMemo(() => memory.mediaAttachments?.[0], [memory.mediaAttachments]);
 
   useEffect(() => {
-    if (userMode === 'guest' && isUnread && onMarkAsViewed) {
+    if (isUnread && onMarkAsViewed) {
       onMarkAsViewed(memory.id);
     }
-  }, [userMode, isUnread, onMarkAsViewed, memory.id]);
+  }, [isUnread, onMarkAsViewed, memory.id]);
 
-  /**
-   * PLAYBACK SYNC LOGIC
-   * Ensures the player stays within the trimStart and trimEnd bounds.
-   */
   useEffect(() => {
     const mediaElement = videoRef.current || audioRef.current;
     if (!mediaElement || !primaryMedia) return;
@@ -81,13 +70,11 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
     };
 
     const handleTimeUpdate = () => {
-      // Loop or Stop logic: reset to start if we exceed the end boundary
       if (mediaElement.currentTime >= end) {
         mediaElement.pause();
         mediaElement.currentTime = start;
       }
-      // Scrubbing safety: prevent going before the start
-      if (mediaElement.currentTime < start - 0.5) { // 0.5 buffer for seeking
+      if (mediaElement.currentTime < start - 0.5) {
         mediaElement.currentTime = start;
       }
     };
@@ -102,7 +89,6 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
     mediaElement.addEventListener('timeupdate', handleTimeUpdate);
     mediaElement.addEventListener('play', handlePlay);
 
-    // Initial position if already loaded
     if (mediaElement.readyState >= 1) {
       mediaElement.currentTime = start;
     }
@@ -114,7 +100,6 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
     };
   }, [primaryMedia?.url, primaryMedia?.trimStart, primaryMedia?.trimEnd, primaryMedia?.duration]);
 
-  const canPerformActions = userMode === 'host';
   const locationString = [memory.location, memory.country].filter(Boolean).join(', ');
   const isTrimmed = primaryMedia && primaryMedia.duration && 
     ((primaryMedia.trimStart || 0) > 0 || (primaryMedia.trimEnd || primaryMedia.duration) < primaryMedia.duration);
@@ -122,13 +107,12 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
   return (
     <>
       <Card className="flex flex-col overflow-hidden shadow-lg transition-all hover:shadow-xl animate-fade-in h-full relative border-muted/60">
-        {userMode === 'guest' && isUnread && (
+        {isUnread && (
           <Badge variant="default" className="absolute top-2 right-2 z-20 bg-primary text-primary-foreground animate-pulse shadow-md">
             <Eye className="h-3 w-3 mr-1" /> New
           </Badge>
         )}
 
-        {/* --- MEDIA HEADER SECTION --- */}
         <div className="relative w-full overflow-hidden bg-muted group">
           {primaryMedia?.type === 'video' ? (
             <div className="relative aspect-video bg-black flex flex-col">
@@ -139,7 +123,6 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
                 className="w-full h-full object-contain" 
                 preload="metadata" 
               />
-              {/* Overlay visual for the trimmed duration */}
               {primaryMedia.duration && (
                 <div className="absolute bottom-0 left-0 right-0 z-10">
                   <TrimProgressIndicator 
@@ -174,7 +157,6 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
           )}
         </div>
 
-        {/* --- CONTENT SECTION --- */}
         <CardHeader className="pb-2">
           <CardTitle className="font-headline text-xl line-clamp-1">{memory.title}</CardTitle>
           <div className="flex flex-col gap-1 mt-1">
@@ -219,10 +201,9 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
           </div>
         </CardContent>
 
-        {/* --- FOOTER ACTIONS --- */}
         <CardFooter className="flex justify-between items-center pt-2 border-t border-muted/40">
           <div>
-             {canPerformActions && onToggleLegacyStatus && (
+             {onToggleLegacyStatus && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -243,62 +224,54 @@ export function MemoryCard({ memory, onEdit, onDelete, onToggleLegacyStatus, isU
           </div>
 
           <div className="flex items-center gap-1">
-            {canPerformActions && (
-              <>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit?.(memory)}>
-                        <Edit3 className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Edit Memory</p></TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowShareDialog(true)}>
-                        <Share2 className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>Share</p></TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive transition-colors" />
+            <>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit?.(memory)}>
+                      <Edit3 className="h-4 w-4 text-muted-foreground hover:text-foreground" />
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete this memory?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will permanently remove "{memory.title}" from your timeline. This cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction 
-                        onClick={() => onDelete?.(memory.id)}
-                        className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                      >
-                        Delete Permanently
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </>
-            )}
-            
-            {userMode === 'guest' && (
-               <Button variant="ghost" size="sm" className="text-xs h-8" onClick={() => setShowShareDialog(true)}>
-                 <Share2 className="h-3 w-3 mr-2" /> Share
-               </Button>
-            )}
+                  </TooltipTrigger>
+                  <TooltipContent><p>Edit Memory</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowShareDialog(true)}>
+                      <Share2 className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Share</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive transition-colors" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this memory?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently remove "{memory.title}" from your timeline. This cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={() => onDelete?.(memory.id)}
+                      className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                    >
+                      Delete Permanently
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
           </div>
         </CardFooter>
       </Card>
