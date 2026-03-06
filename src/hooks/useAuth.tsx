@@ -29,8 +29,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const PRIVATE_ROUTES = ['/dashboard', '/timeline', '/add-memory', '/prompts', '/settings', '/requests', '/create'];
-const PUBLIC_ROUTES = ['/', '/forgot-password', '/reset-password'];
 const PUBLIC_ONLY_ROUTES = ['/login', '/register'];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -40,24 +38,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const router = useRouter();
   const pathname = usePathname();
-  const userRef = useRef(user);
-  userRef.current = user;
 
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
       if (!firebaseUser) {
-        const wasLoggedIn = !!userRef.current;
         setUser(null);
         setLoading(false);
-        if (wasLoggedIn) {
-          await deleteSessionAction();
-          toast({
-            variant: "destructive",
-            title: "Session Expired",
-            description: "Your session has expired. Please log in again to continue.",
-          });
-          router.push('/login?reason=expired');
-        }
         return;
       }
 
@@ -85,8 +71,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    // This effect handles redirecting logged-in users away from public-only routes.
-    // Private route protection is now handled exclusively by the middleware.
     if (loading || !user) return;
 
     const isPublicOnlyRoute = PUBLIC_ONLY_ROUTES.some(route => pathname.startsWith(route));
