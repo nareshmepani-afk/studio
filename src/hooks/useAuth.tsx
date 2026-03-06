@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isPublicOnlyRoute = PUBLIC_ONLY_ROUTES.some(route => pathname.startsWith(route));
 
     if (isPublicOnlyRoute) {
-      router.push('/timeline');
+      router.push('/prompts');
     }
   }, [user, loading, pathname, router]);
 
@@ -85,12 +85,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await userCredential.user.getIdToken();
       await createSessionAction(idToken);
+      router.push('/prompts');
       toast({ title: 'Login Successful', description: "Welcome back!", variant: 'success' });
     } catch (error: any) {
       toast({ title: 'Login Failed', description: error.message, variant: 'destructive' });
       throw error;
     }
-  }, []);
+  }, [router]);
 
   const register = useCallback(async (name: string, email: string, password: string) => {
     try {
