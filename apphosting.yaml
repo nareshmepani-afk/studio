@@ -1,7 +1,8 @@
-
-kind: 'publishedConfig'
-apiVersion: 'v1'
-
+run:
+  build:
+    - npm ci
+    - npm run build
+  start: npm start
 env:
   # Public variables made available to the Next.js build process and client-side code.
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
