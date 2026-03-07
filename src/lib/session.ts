@@ -18,6 +18,9 @@ export async function getAuthenticatedUser(sessionCookie: string) {
 export async function getSession() {
   console.log("getSession: Attempting to retrieve session...");
   const cookieStore = await cookies();
+  const allCookies = cookieStore.getAll();
+  console.log("getSession: All cookies:", allCookies);
+
   const sessionCookie = cookieStore.get("firebase-session")?.value;
 
   if (!sessionCookie) {
