@@ -29,14 +29,16 @@ async function getUserData(uid: string) {
 
 export default async function SettingsPage() {
   console.log("TESTIMONY: Settings page loading started.");
+  console.log("TESTIMONY: Calling getSession() from SettingsPage.");
   const session = await getSession();
-  console.log("TESTIMONY: Session object:", session);
+  console.log("TESTIMONY: Returned from getSession() in SettingsPage.");
+  console.log("TESTIMONY: Session object in SettingsPage:", session);
   
   if (!session?.uid) {
-    console.log("TESTIMONY: User not authenticated, redirecting to login.");
+    console.log("TESTIMONY: User not authenticated in SettingsPage, redirecting to login.");
     redirect('/login');
   } else {
-    console.log("TESTIMONY: User authenticated with UID:", session.uid);
+    console.log("TESTIMONY: User authenticated in SettingsPage with UID:", session.uid);
     const userData = await getUserData(session.uid);
     
     return (
