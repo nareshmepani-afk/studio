@@ -5,11 +5,13 @@ import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { getStorage, Storage } from 'firebase-admin/storage';
 
 const getServiceAccount = () => {
+  console.log("TESTIMONY: Attempting to read SERVICE_ACCOUNT_JSON from environment variables.");
   const raw = process.env.SERVICE_ACCOUNT_JSON;
   if (!raw) {
-      console.error("SERVICE_ACCOUNT_JSON is missing");
+      console.error("TESTIMONY: SERVICE_ACCOUNT_JSON environment variable is missing or empty.");
       return null;
   };
+  console.log("TESTIMONY: SERVICE_ACCOUNT_JSON environment variable is present.");
 
   try {
     // 1. Handle double-stringification (common in some secret managers)
