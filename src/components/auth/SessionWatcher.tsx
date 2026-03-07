@@ -1,36 +1,75 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { onIdTokenChanged } from 'firebase/auth';
-import { auth } from '@/lib/firebase'; // Import the non-nullable auth singleton
+import { auth } from '@/lib/firebase';
 import { toast } from 'react-hot-toast';
+
+async function createSession(idToken: string): Promise<boolean> {
+  try {
+    const response = await fetch('/api/auth/session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ idToken }),
+    });
+
+    if (response.ok) {
+      console.log('Session cookie created successfully.');
+      return true;
+    } else {
+      const errorData = await response.json();
+      toast.error(`Failed to create session: ${errorData.error || 'Unknown error'}`);
+      return false;
+    }
+  } catch (error) {
+    console.error('Error in createSession:', error);
+    toast.error('An unexpected error occurred while creating the session.');
+    return false;
+  }
+}
+
+async function clearSession(): Promise<void> {
+  try {
+    await fetch('/api/auth/session', { method: 'DELETE' });
+    console.log('Session cookie cleared.');
+  } catch (error) {
+    console.error('Error in clearSession:', error);
+  }
+}
 
 export default function SessionWatcher() {
   const router = useRouter();
+  const isHandlingTokenChange = useRef(false);
 
   useEffect(() => {
-    // onIdTokenChanged handles token refreshes and expirations, making it robust.
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
-      if (!user) {
-        // Check if the user was previously logged in to prevent firing on initial load
-        const wasLoggedIn = localStorage.getItem('wasLoggedIn') === 'true';
-        if (wasLoggedIn) {
-          localStorage.removeItem('wasLoggedIn');
-          toast.error("Session expired. Please log in again.");
-          // Redirect with a reason for better user experience
-          router.push('/login?reason=session_expired');
+      if (isHandlingTokenChange.current) {
+        return;
+      }
+      isHandlingTokenChange.current = true;
+
+      if (user) {
+        // User is signed in or token was refreshed.
+        const idToken = await user.getIdToken();
+        const sessionCreated = await createSession(idToken);
+        if (sessionCreated) {
+          // You could optionally refresh the page or router if needed
+           router.refresh(); 
         }
       } else {
-        // When a user is confirmed, mark them as having been logged in
-        localStorage.setItem('wasLoggedIn', 'true');
+        // User is signed out.
+        await clearSession();
+        // Optional: Add logic to redirect or show a message on sign-out
       }
+
+      isHandlingTokenChange.current = false;
     });
 
-    // Cleanup subscription on component unmount
     return () => unsubscribe();
   }, [router]);
 
-  // This component does not render anything to the DOM
   return null;
 }
