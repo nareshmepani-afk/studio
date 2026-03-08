@@ -3,6 +3,7 @@ import { SettingsPageContent } from '@/components/settings/SettingsPageContent';
 import { getSession } from '@/lib/session';
 import { adminDb } from '@/lib/firebase-admin';
 import { redirect } from 'next/navigation';
+import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 
 // Force the page to be dynamically rendered
 export const dynamic = 'force-dynamic';
@@ -37,16 +38,20 @@ export default async function SettingsPage() {
   if (!session?.uid) {
     console.log("TESTIMONY: User not authenticated in SettingsPage, redirecting to login.");
     redirect('/login');
-  } else {
-    console.log("TESTIMONY: User authenticated in SettingsPage with UID:", session.uid);
-    const userData = await getUserData(session.uid);
-    
-    return (
-      <SettingsPageContent 
-        initialHostPassStatus={userData?.hostPassStatus || 'inactive'} 
-        userEmail={session.email || ''}
-        userName={session.displayName || ''}
-      />
-    );
   }
+
+  const userData = await getUserData(session.uid);
+  
+  return (
+    <AuthenticatedPageWrapper>
+      <div className='container mx-auto py-8 px-4'>
+        <h1 className='text-4xl font-bold mb-8'>Settings</h1>
+        <SettingsPageContent 
+          initialHostPassStatus={userData?.hostPassStatus || 'inactive'} 
+          userEmail={session.email || ''}
+          userName={session.displayName || ''}
+        />
+      </div>
+    </AuthenticatedPageWrapper>
+  );
 }
