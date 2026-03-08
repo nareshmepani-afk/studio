@@ -1,71 +1,82 @@
+
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import * as jose from 'jose';
+import { SESSION_COOKIE_NAME } from './lib/constants';
 
-// Secrets and project info from environment variables
-const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-const GUEST_SECRET = new TextEncoder().encode(process.env.GUEST_SESSION_SECRET);
+// This secret is still needed for guest passes.
+const GUEST_SECRET = new TextEncoder().encode(process.env.GUEST_SESSION_SECRET || '');
+
+// All routes that require a user to be logged in.
+const PROTECTED_ROUTES = [
+  '/dashboard', 
+  '/timeline', 
+  '/add-memory', 
+  '/prompts', 
+  '/settings', 
+  '/requests', 
+  '/create', 
+  '/studio', 
+  '/review'
+];
+
+// Routes for unauthenticated users (e.g., login, register).
+const PUBLIC_ONLY_ROUTES = ['/login', '/register', '/forgot-password', '/auth/reset-password'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const sessionCookie = request.cookies.get('__session')?.value;
+  const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   const guestPass = request.cookies.get('guest_pass')?.value;
 
-  // 1. STORYTELLER ROUTES (Publicly Accessible Link)
+  // 1. Allow storyteller routes to pass through unconditionally.
   if (pathname.startsWith('/remote/')) {
-    // The page component itself will handle the invite logic.
     return NextResponse.next();
   }
 
-  // 2. ARCHIVE ROUTES (Guest Access Pass Holders)
+  // 2. Handle guest pass access for the archive.
   if (pathname.startsWith('/archive')) {
     if (!guestPass) {
-      // Redirect to a page where they can get a pass if they don't have one
-      return NextResponse.redirect(new URL('/settings', request.url));
+      // If no guest pass, redirect them. A page that explains guest passes might be better in the future.
+      return NextResponse.redirect(new URL('/login', request.url));
     }
-
     try {
-      // Verify the guest pass JWT
+      // Verify the guest pass JWT.
       await jose.jwtVerify(guestPass, GUEST_SECRET);
+      // If valid, allow access.
       return NextResponse.next();
     } catch (error) {
-      // Invalid or expired pass
-      const response = NextResponse.redirect(new URL('/settings', request.url));
-      // Clear the invalid cookie
+      // If invalid, redirect and clear the bad cookie.
+      const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete('guest_pass');
       return response;
     }
   }
 
-  // 3. HOST PROTECTED ROUTES (Firebase Auth Users)
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/settings')) {
-    if (!sessionCookie) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-
-    try {
-      // Decode the Firebase session cookie
-      const payload = jose.decodeJwt(sessionCookie);
-      
-      // Basic validation: check expiration and audience (project ID)
-      const now = Math.floor(Date.now() / 1000);
-      if (!payload.exp || payload.exp < now || payload.aud !== PROJECT_ID) {
-        throw new Error('Invalid session token');
-      }
-
-      return NextResponse.next();
-    } catch (error) {
-      // Invalid or expired session
-      const response = NextResponse.redirect(new URL('/login', request.url));
-      // Clear the invalid cookie
-      response.cookies.delete('__session');
-      return response;
-    }
+  // 3. If user is logged in, redirect them away from public-only pages.
+  if (sessionCookie && PUBLIC_ONLY_ROUTES.some(route => pathname.startsWith(route))) {
+    return NextResponse.redirect(new URL('/timeline', request.url));
   }
 
+  // 4. If user is NOT logged in and trying to access a protected route, redirect to login.
+  if (!sessionCookie && PROTECTED_ROUTES.some(route => pathname.startsWith(route))) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  // 5. If none of the above, proceed as normal.
   return NextResponse.next();
 }
 
+// Use the more robust "deny-by-default" matcher from the old root middleware.
 export const config = {
-  matcher: ['/dashboard/:path*', '/remote/:path*', '/archive/:path*', '/settings'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - remote (already handled, but good to keep here)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|remote).*)',
+  ],
 };
