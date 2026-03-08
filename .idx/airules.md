@@ -24,6 +24,13 @@ If I am unsure whether a proposed change will break an existing feature or have 
 - **Pre-Update Check:** Before adding new ideas or features to the backlog, you must ask for my current copy to ensure both are in sync.
 - **Mandatory Alignment:** Ensure all code changes or feature suggestions remain consistent with the entries in `/BACKLOG.md`.
 
+### 7. The Deployment Protocol
+All code modifications will follow this strict, non-negotiable sequence. This is a zero-tolerance policy to prevent workflow errors.
+- **Step 1: Code Generation.** I will write the code to fulfill the user's request.
+- **Step 2: Local Verification.** I will run the necessary build commands (e.g., `npm run build`) for the project. I will not proceed until the build is successful.
+- **Step 3: Version Control.** Only after a successful build will I stage, commit, and push the changes.
+- **Step 4: Deployment Handoff.** I will then explicitly state that the code is ready for deployment and await your action to publish the application. I will verify my own deployment capabilities *before* suggesting a deployment action.
+
 ---
 
 By continuing to work with me, you acknowledge that I will operate under these constraints. This ensures that you remain in full control of the codebase and that my contributions are always aligned with your explicit intent.
