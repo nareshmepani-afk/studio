@@ -44,14 +44,11 @@ export default async function SettingsPage() {
   
   return (
     <AuthenticatedPageWrapper>
-      <div className='container mx-auto py-8 px-4'>
-        <h1 className='text-4xl font-bold mb-8'>Settings</h1>
-        <SettingsPageContent 
-          initialHostPassStatus={userData?.hostPassStatus || 'inactive'} 
-          userEmail={session.email || ''}
-          userName={session.displayName || ''}
-        />
-      </div>
+      <SettingsPageContent 
+        initialHostPassStatus={userData?.hostPassStatus || 'inactive'} 
+        userEmail={session.email || ''}
+        userName={session.displayName || ''}
+      />
     </AuthenticatedPageWrapper>
   );
 }
