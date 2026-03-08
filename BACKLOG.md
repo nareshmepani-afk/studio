@@ -10,7 +10,7 @@ Sprint 3: Polish & Recording [🟢 AUTH RESOLVED]
 
 [ ] STU-51: UI: Add "Pass Active" countdown timer to Settings page.
 
-[ ] UI-10: Add upgrade/subscription options to the settings page.
+[x] UI-10: Add upgrade/subscription options to the settings page.
 
 2023-11-15: AUTH FAILURE (ARCHIVED)
 Issue: The application is unable to access secrets required for Firebase Admin SDK initialization and Resend API calls.

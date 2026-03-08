@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { activateFreeHostPass } from '@/actions/userActions'; // Assuming you have this action
+import { activateFreeHostPass } from '@/actions/userActions';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 
 interface SettingsPageContentProps {
@@ -88,6 +88,14 @@ export function SettingsPageContent({ initialHostPassStatus, userEmail, userName
                   <Button onClick={handleActivateFreePass} disabled={isPending} className="w-full sm:w-auto">
                     {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} 
                     Activate Free Host Pass
+                  </Button>
+                </div>
+             )}
+             {hostPassStatus === 'free_host_pass_active' && (
+                <div className="w-full">
+                  <p className="text-sm text-muted-foreground mb-4">Upgrade to a Premium Host Pass to unlock advanced features and unlimited stories.</p>
+                  <Button className="w-full sm:w-auto">
+                    Upgrade to Premium
                   </Button>
                 </div>
              )}
