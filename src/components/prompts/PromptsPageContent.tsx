@@ -9,7 +9,7 @@ import { teleprompterScripts } from '@/lib/teleprompterScripts';
 import { toast } from '@/hooks/use-toast';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import { getOrCreateMemoryForPrompt } from '@/actions/memoryActions'; // Import the new server action
+import { getOrCreateMemoryForPrompt } from '@/actions/memoryActions';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -27,9 +27,10 @@ interface PromptsPageContentProps {
   initialFlaggedPromptIds: Set<string>;
   mockPromptGroups: PromptGroup[];
   isLoading: boolean;
+  hostPassStatus: string;
 }
 
-export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, mockPromptGroups, isLoading }: PromptsPageContentProps) {
+export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, mockPromptGroups, isLoading, hostPassStatus }: PromptsPageContentProps) {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
   
@@ -49,32 +50,18 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
     return new Set((memories ?? []).map(m => m.promptId).filter(Boolean) as string[]);
   }, [memories]);
 
-  const canAccessFullJourney = useMemo(() => {
-    return user?.hostPassStatus === 'free_host_pass_active' || user?.hostPassStatus === 'paid_host_pass_active';
-  }, [user]);
-
-  const availablePromptGroups = useMemo(() => {
-    if (canAccessFullJourney || mockPromptGroups.length === 0) return mockPromptGroups;
-    return [mockPromptGroups[0]];
-  }, [canAccessFullJourney, mockPromptGroups]);
-
   const handleStartChapter = useCallback((promptId: string, isCompleted: boolean) => {
-    if (!canAccessFullJourney && !isCompleted && !mockPromptGroups[0]?.prompts.some(p => p.id === promptId)) {
-        toast({ title: "Activate Pass", description: "Please activate or purchase a Host Pass to start new chapters." });
-        return;
-    }
-  
-    if (isCompleted) {
-        const memory = memories.find((m: Memory) => m.promptId === promptId);
-        if (memory && memory.id) {
-            router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}`);
-        } else {
-            toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
-        }
-    } else {
-        router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
-    }
-  }, [memories, canAccessFullJourney, router, mockPromptGroups]);
+      if (isCompleted) {
+          const memory = memories.find((m: Memory) => m.promptId === promptId);
+          if (memory && memory.id) {
+              router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}`);
+          } else {
+              toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
+          }
+      } else {
+          router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
+      }
+  }, [memories, router]);
 
   const handleToggleFlagPrompt = useCallback(async (promptIdToToggle: string) => {
     if (!user) return;
@@ -160,34 +147,39 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
         </Alert>
 
         <div className="space-y-10">
-          {availablePromptGroups.map((group) => (
-            <section key={group.id}>
-              <h2 className="font-headline text-3xl mb-6 border-b pb-3 text-primary">{group.title[currentLanguage] || group.title.en}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {group.prompts.map((prompt) => {
-                  const isCompleted = completedPromptIds.has(prompt.id);
-                  const memoryForPrompt = isCompleted ? memories.find(m => m.promptId === prompt.id) : undefined;
-                  
-                  return (
-                    <PromptCard
-                      key={prompt.id}
-                      promptId={prompt.id}
-                      promptText={prompt.text[currentLanguage] || prompt.text.en}
-                      teleprompterScript={teleprompterScripts[prompt.id] || "No script available."}
-                      isCompleted={isCompleted}
-                      isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
-                      isLoading={authLoading}
-                      onStartChapter={handleStartChapter}
-                      onToggleFlagPrompt={handleToggleFlagPrompt}
-                      onShowQrCode={handleShowQrCode}
-                      canAccess={canAccessFullJourney || availablePromptGroups[0].prompts.some(p => p.id === prompt.id)}
-                      memoryDescription={memoryForPrompt?.description}
-                    />
-                  );
-                })}
-              </div>
-            </section>
-          ))}
+          {mockPromptGroups.map((group, index) => {
+              const isPremium = index > 0; // The first group is free
+              const canAccessGroup = !isPremium || hostPassStatus === 'paid_host_pass_active';
+
+              return (
+                <section key={group.id}>
+                  <h2 className="font-headline text-3xl mb-6 border-b pb-3 text-primary">{group.title[currentLanguage] || group.title.en}</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {group.prompts.map((prompt) => {
+                      const isCompleted = completedPromptIds.has(prompt.id);
+                      const memoryForPrompt = isCompleted ? memories.find(m => m.promptId === prompt.id) : undefined;
+                      
+                      return (
+                        <PromptCard
+                          key={prompt.id}
+                          promptId={prompt.id}
+                          promptText={prompt.text[currentLanguage] || prompt.text.en}
+                          teleprompterScript={teleprompterScripts[prompt.id] || "No script available."}
+                          isCompleted={isCompleted}
+                          isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
+                          isLoading={authLoading}
+                          onStartChapter={handleStartChapter}
+                          onToggleFlagPrompt={handleToggleFlagPrompt}
+                          onShowQrCode={handleShowQrCode}
+                          canAccess={canAccessGroup}
+                          memoryDescription={memoryForPrompt?.description}
+                        />
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
         </div>
          <QrCodeDialog
           open={qrCodeDialog.open}
