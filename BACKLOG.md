@@ -12,6 +12,8 @@ Sprint 3: Polish & Recording [🟢 AUTH RESOLVED]
 
 [x] UI-10: Add upgrade/subscription options to the settings page.
 
+[ ] PROMPTS-01: Ghost out premium prompts and link to settings page for upgrade.
+
 2023-11-15: AUTH FAILURE (ARCHIVED)
 Issue: The application is unable to access secrets required for Firebase Admin SDK initialization and Resend API calls.
 
