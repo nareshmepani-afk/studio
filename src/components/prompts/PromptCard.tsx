@@ -3,9 +3,10 @@
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookText, CheckCircle, Edit, Flag, Loader2, Info, QrCode } from 'lucide-react';
+import { BookText, CheckCircle, Edit, Flag, Loader2, Info, QrCode, Lock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter } from 'next/navigation';
 
 interface PromptCardProps {
   promptId: string;
@@ -34,21 +35,26 @@ export function PromptCard({
   canAccess,
   memoryDescription,
 }: PromptCardProps) {
+  const router = useRouter();
 
   const handleAction = (e: React.MouseEvent) => {
     if (isLoading) return;
     e.stopPropagation();
+    if (!canAccess) {
+        router.push('/settings');
+        return;
+    }
     onStartChapter(promptId, isCompleted);
   };
   
   const handleFlagToggle = (e: React.MouseEvent) => {
-    if (isLoading) return;
+    if (isLoading || !canAccess) return;
     e.stopPropagation();
     onToggleFlagPrompt(promptId);
   };
   
   const handleQrCodeClick = (e: React.MouseEvent) => {
-    if (isLoading) return;
+    if (isLoading || !canAccess) return;
     e.stopPropagation();
     onShowQrCode(promptId, promptText);
   };
@@ -76,8 +82,20 @@ export function PromptCard({
     );
   }
 
+  const cardClasses = `
+    shadow-lg transition-all hover:shadow-xl animate-fade-in flex flex-col h-full 
+    ${isCompleted ? 'bg-green-50 dark:bg-green-900/30 border-green-500' : 'bg-card'}
+    ${!canAccess ? 'opacity-50 hover:opacity-75 cursor-pointer' : ''}
+  `;
+
+  const cardTitleClasses = `
+    font-normal text-base 
+    ${isCompleted ? 'text-green-800 dark:text-green-300' : 'text-foreground'}
+    ${!canAccess ? 'text-muted-foreground' : ''}
+  `;
+
   return (
-    <Card className={`shadow-lg transition-all hover:shadow-xl animate-fade-in flex flex-col h-full ${isCompleted ? 'bg-green-50 dark:bg-green-900/30 border-green-500' : 'bg-card'}`}>
+    <Card className={cardClasses} onClick={!canAccess ? handleAction : undefined}>
       <CardHeader className="pb-3">
         {isCompleted && (
             <div className="flex items-center text-green-600 dark:text-green-400 text-xs mb-1">
@@ -85,7 +103,7 @@ export function PromptCard({
                 Chapter Recorded
             </div>
         )}
-        <CardTitle className={`font-normal text-base ${isCompleted ? 'text-green-800 dark:text-green-300' : 'text-foreground'}`}>
+        <CardTitle className={cardTitleClasses}>
           {promptText}
         </CardTitle>
       </CardHeader>
@@ -101,7 +119,7 @@ export function PromptCard({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={handleQrCodeClick} className="text-muted-foreground hover:text-primary" aria-label="Show QR Code for this prompt" disabled={isLoading}>
+                  <Button variant="ghost" size="icon" onClick={handleQrCodeClick} className="text-muted-foreground hover:text-primary" aria-label="Show QR Code for this prompt" disabled={isLoading || !canAccess}>
                     <QrCode className="h-5 w-5" />
                   </Button>
                 </TooltipTrigger>
@@ -112,7 +130,7 @@ export function PromptCard({
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="View teleprompter script" disabled={isLoading} onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="View teleprompter script" disabled={isLoading || !canAccess} onClick={(e) => e.stopPropagation()}>
                            <Info className="h-5 w-5" />
                         </Button>
                     </TooltipTrigger>
@@ -134,7 +152,7 @@ export function PromptCard({
                     onClick={handleFlagToggle}
                     className="mr-2 shrink-0"
                     aria-label={isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}
-                    disabled={isLoading}
+                    disabled={isLoading || !canAccess}
                   >
                     <Flag className={`h-5 w-5 transition-colors ${isFlaggedForReuse ? 'fill-primary text-primary' : 'text-muted-foreground hover:text-primary'}`} />
                   </Button>
@@ -149,10 +167,14 @@ export function PromptCard({
               size="sm"
               variant={isCompleted ? "outline" : "default"}
               className="w-full"
-              disabled={isLoading || !canAccess}
+              disabled={isLoading && canAccess} // Only disable if loading and can access
               data-testid={`prompt-start-button-${promptId}`}
             >
-              {isCompleted ? (
+              {!canAccess ? (
+                  <>
+                    <Lock className="mr-2 h-4 w-4" /> Upgrade
+                  </>
+              ) : isCompleted ? (
                 <>
                   <Edit className="mr-2 h-4 w-4" /> View/Edit
                 </>
