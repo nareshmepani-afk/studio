@@ -3,6 +3,7 @@
 /**
  * @fileOverview The entry point for the memory recording session.
  * It wraps the Studio component with the necessary state provider.
+ * This version is simplified to avoid module resolution errors.
  */
 
 import { Studio } from '@/components/studio/Studio';

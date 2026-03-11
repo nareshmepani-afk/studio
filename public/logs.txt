@@ -1,0 +1,6 @@
+Build Error Trace:
+./src/app/add-memory/page.tsx:21:26
+Type error: File '/workspace/src/hooks/use-toast.ts' is not a module.
+> 21 | import { useToast } from '@/hooks/use-toast';
+
+Resolution applied on 2024-05-26: Standardized use-toast.ts as a valid module and updated all call sites to use absolute paths.

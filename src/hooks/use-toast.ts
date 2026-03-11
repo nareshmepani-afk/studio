@@ -1,8 +1,7 @@
 "use client"
 
 /**
- * @fileOverview A shim for the use-toast hook to resolve build errors and provide a unified API.
- * It leverages the project's preferred toast library (sonner).
+ * @fileOverview A standard toast hook module.
  */
 
 import { toast as sonnerToast } from "sonner"
