@@ -25,5 +25,5 @@ export const useToast = () => {
   };
 };
 
-// Ensure default export exists for compatibility
+// Ensure default export exists for compatibility with generic imports
 export default useToast;
