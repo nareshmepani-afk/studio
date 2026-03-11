@@ -94,6 +94,31 @@ export function PromptCard({
     ${!canAccess ? 'text-muted-foreground' : ''}
   `;
 
+  const mainButton = (
+    <Button
+      onClick={handleAction}
+      size="sm"
+      variant={isCompleted && canAccess ? "outline" : "default"}
+      className="w-full"
+      disabled={isLoading && canAccess}
+      data-testid={`prompt-start-button-${promptId}`}
+    >
+      {!canAccess ? (
+          <>
+            <Lock className="mr-2 h-4 w-4" /> Upgrade
+          </>
+      ) : isCompleted ? (
+        <>
+          <Edit className="mr-2 h-4 w-4" /> View/Edit
+        </>
+      ) : (
+        <>
+          <BookText className="mr-2 h-4 w-4" /> Start
+        </>
+      )}
+    </Button>
+  );
+
   return (
     <Card className={cardClasses} onClick={!canAccess ? handleAction : undefined}>
       <CardHeader className="pb-3">
@@ -162,28 +187,20 @@ export function PromptCard({
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <Button
-              onClick={handleAction}
-              size="sm"
-              variant={isCompleted ? "outline" : "default"}
-              className="w-full"
-              disabled={isLoading && canAccess} // Only disable if loading and can access
-              data-testid={`prompt-start-button-${promptId}`}
-            >
-              {!canAccess ? (
-                  <>
-                    <Lock className="mr-2 h-4 w-4" /> Upgrade
-                  </>
-              ) : isCompleted ? (
-                <>
-                  <Edit className="mr-2 h-4 w-4" /> View/Edit
-                </>
-              ) : (
-                <>
-                  <BookText className="mr-2 h-4 w-4" /> Start
-                </>
-              )}
-            </Button>
+            
+            {!canAccess ? (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            {mainButton}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>This is a premium prompt. Click to upgrade your pass.</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            ) : mainButton}
+
         </div>
       </CardFooter>
     </Card>
