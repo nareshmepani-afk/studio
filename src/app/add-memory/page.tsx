@@ -1,5 +1,9 @@
-
 'use client';
+
+/**
+ * @fileOverview The entry point for the memory recording session.
+ * It wraps the Studio component with the necessary state provider.
+ */
 
 import { Studio } from '@/components/studio/Studio';
 import { StudioProvider } from '@/hooks/studio/useStudioState';
