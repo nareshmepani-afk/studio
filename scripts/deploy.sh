@@ -20,6 +20,6 @@ git push origin master
 
 # 4. Trigger Rollout
 echo "🔄 Triggering manual rollout..."
-firebase apphosting:rollouts:create nextn --project memory-weaver-8rk9t
+firebase apphosting:rollouts:create studio --project memory-weaver-8rk9t
 
 echo "✅ Sequence complete. Monitor the rollout in the Firebase Console."
