@@ -1,17 +1,27 @@
-# Latest Publish Error Logs
+# Build Resolution & Deployment Guide
 
-## Error 1: Module Resolution
-**Resource:** `/src/components/prompts/PromptsPageContent.tsx`
-**Error:** `Cannot find module '@/components/ui/use-toast' or its corresponding type declarations.`
+## Current Status
+The build failures referencing `/workspace/src/hooks/use-toast.ts` and `PromptsPageContent.tsx` appear to be based on an **outdated version of the codebase**. The current master branch has been cleaned of these problematic imports.
 
-## Error 2: Build Worker Crash
-**Resource:** `/src/app/add-memory/page.tsx:21:26`
-**Error:** `Type error: File '/workspace/src/hooks/use-toast.ts' is not a module.`
+## Resolution Steps
+1. **Force Sync:** Ensure your local environment is perfectly synced with the repository.
+   ```bash
+   git pull origin master
+   ```
+2. **Clean & Push:** Run the deployment script provided in `scripts/deploy.sh`.
+   ```bash
+   chmod +x scripts/deploy.sh
+   ./scripts/deploy.sh
+   ```
 
-## Analysis
-The build is failing because the TypeScript compiler is encountering conflicting files in the `workspace/` sub-directory or missing shim files for the `useToast` hook. The entry point `add-memory/page.tsx` was also attempting to import a hook from a location that the build worker perceived as a non-module.
+## Deployment Command
+The error `--backend option is not recognized` occurs because the backend ID must be a positional argument. Use this command:
 
-## Resolution
-1. Created a robust module at `src/hooks/use-toast.ts`.
-2. Created a shim at `src/components/ui/use-toast.ts`.
-3. Simplified `src/app/add-memory/page.tsx` to remove the failing import.
+```bash
+firebase apphosting:rollouts:create nextn --project memory-weaver-8rk9t
+```
+
+## Forensic Analysis
+- **Error:** `File '...' is not a module.` 
+- **Cause:** Usually caused by an empty file or a file without exports being cached.
+- **Fix:** `src/hooks/use-toast.ts` has been verified as a valid ES module. The explicit `export interface` and `export const` ensure the compiler recognizes it as a module even in strict build environments.

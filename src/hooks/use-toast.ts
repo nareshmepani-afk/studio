@@ -4,11 +4,21 @@ import { toast as sonnerToast } from 'sonner';
 
 /**
  * A robust shim for the useToast hook that bridges to our chosen 
- * notification library (sonner). This satisfies standard Shadcn UI imports.
+ * notification library (sonner). 
+ * 
+ * NOTE: This file MUST have an export to be considered a valid module.
  */
+
+export interface ToastProps {
+  title?: string;
+  description?: string;
+  variant?: 'default' | 'destructive';
+  [key: string]: any;
+}
+
 export const useToast = () => {
   return {
-    toast: ({ title, description, ...props }: { title?: string; description?: string; [key: string]: any }) => {
+    toast: ({ title, description, variant, ...props }: ToastProps) => {
       sonnerToast(title || 'Notification', {
         description: description,
         ...props,
