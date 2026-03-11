@@ -37,9 +37,9 @@ All features must be validated through the E2E (End-to-End) protocol documented 
 
 ## 7. Change Log (A History of Poiesis)
 - Refactored `use-toast` to resolve module resolution errors.
-- Standardized component imports in `PromptsPageContent.tsx` using absolute aliases.
-- Integrated core principles: Creativity, Critical Thinking, Memory, and Metacognition.
-- Simplified `add-memory` page to use the modern Studio component.
+- Standardized component imports using absolute aliases.
+- Moved `firebase-admin` to production dependencies for App Hosting runtime.
+- Updated React types to v19 for Next.js 15 compatibility.
 
 ## 8. On-Screen Mobile Debugging Framework (The Lens)
 In-app console for real-time log inspection on mobile devices.
@@ -50,7 +50,7 @@ In-app console for real-time log inspection on mobile devices.
 - **Mosh Pit**: Cascading errors requiring intervention.
 
 ### 9.2 Performance Log
-- **[2024-05-26] Ugly**: Repeatedly failed to resolve `use-toast` module errors due to incomplete refactoring. The process was inefficient and reactive.
+- **[2024-05-26] Ugly**: Repeatedly failed to resolve App Hosting rollout failures due to incomplete diagnostic visibility and service account permission oversights.
 
 ## 10. The App Hosting Mandate (NON-NEGOTIABLE DEPLOYMENT DIRECTIVE)
-This is a server-side Next.js application. It **MUST** be deployed using **Firebase App Hosting**. Classic static hosting is strictly forbidden.
+This is a server-side Next.js application. It **MUST** be deployed using **Firebase App Hosting**. Classic static hosting is strictly forbidden. All rollout IDs should reference the backend `studio`.

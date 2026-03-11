@@ -17,7 +17,8 @@ if [ ! -f "$APP_HOSTING_FILE" ]; then
 fi
 
 # Extract secret names from apphosting.yaml
-SECRETS=$(grep "secret:" "$APP_HOSTING_FILE" | awk -F': ' '{print $2}')
+# Handles both simple and complex secret definitions
+SECRETS=$(grep "secret:" "$APP_HOSTING_FILE" | awk -F': ' '{print $2}' | tr -d '"' | tr -d "'")
 
 if [ -z "$SECRETS" ]; then
     echo "No secrets found in $APP_HOSTING_FILE."
@@ -25,24 +26,29 @@ if [ -z "$SECRETS" ]; then
 fi
 
 echo "Verifying permissions for secrets in $APP_HOSTING_FILE..."
+echo "Service Account: $SERVICE_ACCOUNT"
 echo "--------------------------------------------------------"
 
 for SECRET_NAME in $SECRETS; do
     echo -n "Checking secret: $SECRET_NAME... "
     
+    # Get IAM policy for the secret
     POLICY=$(gcloud secrets get-iam-policy "$SECRET_NAME" --format=json 2>/dev/null)
     
     if [ -z "$POLICY" ]; then
-        echo -e "\033[0;31mNOT FOUND\033[0m"
+        echo -e "\033[0;31mNOT FOUND (Check if secret exists in Secret Manager)\033[0m"
         continue
     fi
 
+    # Check if the service account has the required role
     HAS_ROLE=$(echo "$POLICY" | jq -r --arg sa "$SERVICE_ACCOUNT" --arg r "$ROLE" '.bindings[] | select(.role == $r) | .members[] | select(. == $sa)')
 
     if [ -n "$HAS_ROLE" ]; then
         echo -e "\033[0;32mOK\033[0m"
     else
         echo -e "\033[0;31mPERMISSION MISSING\033[0m"
+        echo "Run this to fix:"
+        echo "gcloud secrets add-iam-policy-binding $SECRET_NAME --member=\"$SERVICE_ACCOUNT\" --role=\"$ROLE\""
     fi
 done
 
