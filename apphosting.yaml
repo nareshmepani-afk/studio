@@ -1,10 +1,6 @@
-kind: 'publishedConfig'
-apiVersion: 'v1'
-run:
-  build:
-    - npm ci
-    - npm run build
-  start: npm start
+# Firebase App Hosting configuration
+# This file defines the environment and build settings for the 'studio' backend.
+
 env:
   # Public variables made available to the Next.js build process and client-side code.
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
@@ -21,7 +17,10 @@ env:
     value: '1:67296998103:web:f48699405c37bcf4567692'
 
   # Secret variables are securely stored in Secret Manager and exposed to the server at runtime.
+  # Ensure these secrets are created in the Firebase Console under App Hosting > Secrets.
   - variable: SERVICE_ACCOUNT_JSON
     secret: SERVICE_ACCOUNT_JSON
   - variable: RESEND_API_KEY
     secret: RESEND_API_KEY
+  - variable: GUEST_SESSION_SECRET
+    secret: GUEST_SESSION_SECRET
