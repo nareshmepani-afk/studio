@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Input } from '@/components/ui/input';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface RemoteControlDialogProps {
   open: boolean;
@@ -41,10 +41,10 @@ export function RemoteControlDialog({ open, onClose, sessionId }: RemoteControlD
       const { token } = await response.json();
       const url = `${remoteUrl}?token=${token}`;
       setStorytellerUrl(url);
-      toast({ title: 'Storyteller link generated!', description: 'You can now copy the link.' });
+      toast.success('Storyteller link generated!', { description: 'You can now copy the link.' });
     } catch (error) {
       console.error(error);
-      toast({ title: 'Error', description: 'Could not generate storyteller link.', variant: 'destructive' });
+      toast.error('Error', { description: 'Could not generate storyteller link.' });
     }
     setIsLoading(false);
   };
@@ -52,7 +52,7 @@ export function RemoteControlDialog({ open, onClose, sessionId }: RemoteControlD
   const copyToClipboard = () => {
     if (storytellerUrl) {
       navigator.clipboard.writeText(storytellerUrl);
-      toast({ title: 'Copied!', description: 'Storyteller link copied to clipboard.' });
+      toast.success('Copied!', { description: 'Storyteller link copied to clipboard.' });
     }
   };
 

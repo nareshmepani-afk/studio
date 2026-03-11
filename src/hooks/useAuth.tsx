@@ -6,7 +6,7 @@ import { onIdTokenChanged, type User as FirebaseUser, createUserWithEmailAndPass
 import { auth, db } from '@/lib/firebase';
 import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { toast } from './use-toast';
+import { toast } from 'sonner';
 import type { User } from '@/types';
 import { createSessionAction, deleteSessionAction } from '@/actions/createSessionAction';
 
@@ -64,9 +64,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/prompts');
-      toast({ title: 'Login Successful', description: "Welcome back!", variant: 'success' });
+      toast.success('Login Successful', { description: "Welcome back!" });
     } catch (error: any) {
-      toast({ title: 'Login Failed', description: error.message, variant: 'destructive' });
+      toast.error('Login Failed', { description: error.message });
       throw error;
     }
   }, [router]);
@@ -77,10 +77,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const firebaseUser = userCredential.user;
       await updateProfile(firebaseUser, { displayName: name });
       router.push('/prompts');
-      toast({ title: 'Registration Successful', description: "Welcome to Memory Weaver!", variant: 'success' });
+      toast.success('Registration Successful', { description: "Welcome to Memory Weaver!" });
     } catch (error: any) {
       console.error('Registration failed:', error);
-      toast({ title: 'Registration Failed', description: error.message, variant: 'destructive' });
+      toast.error('Registration Failed', { description: error.message });
       throw error;
     }
   }, [router]);
@@ -90,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await deleteSessionAction();
     setUser(null);
     router.push('/');
-    toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
+    toast.info('Logged Out', { description: 'You have been successfully logged out.' });
   }, [router]);
 
   const updateUserProfileInFirestore = useCallback(async (data: Partial<User>) => {

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import type { Memory, PromptGroup } from '@/types';
 import { teleprompterScripts } from '@/lib/teleprompterScripts';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { getOrCreateMemoryForPrompt } from '@/actions/memoryActions';
@@ -55,7 +55,7 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
           if (memory && memory.id) {
               router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}`);
           } else {
-              toast({ title: "Error", description: "Could not find the recorded memory for this chapter.", variant: "destructive" });
+              toast.error("Error", { description: "Could not find the recorded memory for this chapter." });
           }
       } else {
           router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
@@ -70,26 +70,26 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
       await updateDoc(userRef, {
         flaggedPrompts: isFlagged ? arrayRemove(promptIdToToggle) : arrayUnion(promptIdToToggle)
       });
-      toast({ title: isFlagged ? "Prompt Unflagged" : "Prompt Flagged", variant: "success" });
+      toast.success(isFlagged ? "Prompt Unflagged" : "Prompt Flagged");
     } catch (error) {
-      toast({ title: "Flagging Error", description: "Could not update flag status.", variant: "destructive" });
+      toast.error("Flagging Error", { description: "Could not update flag status." });
     }
   }, [user, flaggedPromptIds]);
   
   const handleShowQrCode = useCallback(async (promptId: string, promptTitle: string) => {
-    toast({ title: "Generating Remote Link", description: "Please wait..." });
+    toast("Generating Remote Link", { description: "Please wait..." });
 
     const currentUser = auth.currentUser;
 
     if (!currentUser) {
-        toast({ title: "Error", description: "Authentication not ready.", variant: "destructive" });
+        toast.error("Error", { description: "Authentication not ready." });
         return;
     }
 
     try {
         const token = await currentUser.getIdToken(true);
         if (!token) {
-          toast({ title: "Error", description: "Could not get authentication token.", variant: "destructive" });
+          toast.error("Error", { description: "Could not get authentication token." });
           return;
         }
         
@@ -99,11 +99,11 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
           const url = `${window.location.origin}/studio/${result.memoryId}?role=remote`;
           setQrCodeDialog({ open: true, url, title: `Remote for: ${promptTitle}` });
         } else {
-          toast({ title: "Error", description: result.message || 'An unknown error occurred.', variant: "destructive" });
+          toast.error("Error", { description: result.message || 'An unknown error occurred.' });
         }
     } catch (error) {
         console.error("Error generating remote link:", error);
-        toast({ title: "Error", description: "Failed to generate remote link.", variant: "destructive" });
+        toast.error("Error", { description: "Failed to generate remote link." });
     }
   }, []);
 

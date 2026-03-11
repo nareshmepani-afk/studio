@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { activateFreeHostPass } from '@/actions/userActions';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 
@@ -19,7 +19,6 @@ interface SettingsPageContentProps {
 export function SettingsPageContent({ initialHostPassStatus, userEmail, userName }: SettingsPageContentProps) {
   const [hostPassStatus, setHostPassStatus] = useState(initialHostPassStatus);
   const [isPending, startTransition] = useTransition();
-  const { toast } = useToast();
 
   const handleActivateFreePass = () => {
     startTransition(async () => {
@@ -27,12 +26,12 @@ export function SettingsPageContent({ initialHostPassStatus, userEmail, userName
         const result = await activateFreeHostPass();
         if (result.success) {
           setHostPassStatus('free_host_pass_active');
-          toast({ title: "Pass Activated!", description: "Your Free Host Pass is now active.", variant: 'success' });
+          toast.success("Pass Activated!", { description: "Your Free Host Pass is now active." });
         } else {
-          toast({ title: "Activation Failed", description: result.message, variant: 'destructive' });
+          toast.error("Activation Failed", { description: result.message });
         }
       } catch (error) {
-        toast({ title: "An Unexpected Error Occurred", description: "Could not activate the pass. Please try again.", variant: 'destructive' });
+        toast.error("An Unexpected Error Occurred", { description: "Could not activate the pass. Please try again." });
       }
     });
   };

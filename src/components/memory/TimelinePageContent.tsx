@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import type { Memory, MemoryCategory } from '@/types.ts';
 import { getFirestore, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 // UI Components
 import { MemoryCard } from '@/components/memory/MemoryCard';
@@ -43,9 +43,9 @@ export function TimelinePageContent({ initialMemories }: TimelinePageContentProp
       const memoryDocRef = doc(db, "users", user.uid, "memories", memoryId);
       await deleteDoc(memoryDocRef);
       setMemories(prev => prev.filter(m => m.id !== memoryId));
-      toast({ title: "Memory Deleted", variant: "success" });
+      toast.success("Memory Deleted");
     } catch (error) {
-      toast({ title: "Delete Failed", variant: "destructive" });
+      toast.error("Delete Failed");
     }
   }, [user, db]);
 
@@ -58,9 +58,9 @@ export function TimelinePageContent({ initialMemories }: TimelinePageContentProp
       const memoryDocRef = doc(db, "users", user.uid, "memories", memoryId);
       await updateDoc(memoryDocRef, { isLegacy: newLegacyStatus });
       setMemories(prev => prev.map(m => m.id === memoryId ? { ...m, isLegacy: newLegacyStatus } : m));
-      toast({ title: newLegacyStatus ? "Added to Legacy Chest" : "Removed from Legacy Chest", variant: "success" });
+      toast.success(newLegacyStatus ? "Added to Legacy Chest" : "Removed from Legacy Chest");
     } catch (error) {
-      toast({ title: "Update Failed", variant: "destructive" });
+      toast.error("Update Failed");
     }
   }, [user, memories, db]);
 

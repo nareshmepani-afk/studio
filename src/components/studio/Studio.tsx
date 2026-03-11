@@ -15,7 +15,7 @@ import { useRouter } from 'next/navigation';
 import { MemoryCategory } from '@/types';
 import SessionIdWitness from '../debug/SessionIdWitness';
 import { createMemoryAction } from '@/actions';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface StudioProps {
   callId?: string;
@@ -29,7 +29,6 @@ export const Studio = ({ callId, role = 'host' }: StudioProps) => {
   const { stream } = useCamera();
   const { startRecording, stopRecording, uploading, uploadProgress, uploadResult } = useMediaRecorder(stream);
   const router = useRouter();
-  const { toast } = useToast();
 
   // Metadata State
   const [title, setTitle] = useState('');
@@ -68,7 +67,6 @@ export const Studio = ({ callId, role = 'host' }: StudioProps) => {
           description,
           videoUrl,
           category: selectedCategory,
-          location,
           emotionTags: selectedEmotionTags,
           memoryDate: new Date(selectedYear, selectedMonth - 1, selectedDay).toISOString(),
         };
@@ -77,14 +75,14 @@ export const Studio = ({ callId, role = 'host' }: StudioProps) => {
           const result = await createMemoryAction(memoryData);
 
           if (result.success && result.memoryId) {
-            toast({ title: "Memory Created!", description: "Your new memory has been saved.", variant: "success" });
+            toast.success("Memory Created!", { description: "Your new memory has been saved." });
             router.push(`/review/${result.memoryId}`);
           } else {
-            toast({ title: "Error Creating Memory", description: result.message, variant: "destructive" });
+            toast.error("Error Creating Memory", { description: result.message });
           }
         } catch (error) {
           console.error("Failed to create memory:", error);
-          toast({ title: "An Unexpected Error Occurred", description: "Could not save the memory. Please try again.", variant: "destructive" });
+          toast.error("An Unexpected Error Occurred", { description: "Could not save the memory. Please try again." });
         }
       }
     };

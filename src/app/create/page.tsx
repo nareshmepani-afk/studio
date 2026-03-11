@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState } from 'react';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { createMemoryAction } from '@/actions';
 
 export default function CreateMemoryPage() {
@@ -24,10 +24,8 @@ export default function CreateMemoryPage() {
     event.preventDefault();
     
     if (!title.trim() || !story.trim()) {
-      toast({
-        title: "Incomplete Memory",
+      toast.error("Incomplete Memory", {
         description: "Please provide a title and a story for your memory.",
-        variant: "destructive",
       });
       return;
     }
@@ -35,30 +33,23 @@ export default function CreateMemoryPage() {
     setIsSubmitting(true);
 
     try {
-      // Mapping local 'story' state to the 'description' parameter expected by createMemoryAction
       const result = await createMemoryAction({ title, description: story });
 
       if (result.success) {
-        toast({
-          title: "Memory Saved!",
+        toast.success("Memory Saved!", {
           description: "Your new memory has been successfully created.",
-          variant: "success",
         });
         router.push('/timeline');
       } else {
-        toast({
-          title: "Error Saving Memory",
+        toast.error("Error Saving Memory", {
           description: result.message,
-          variant: "destructive",
         });
         setIsSubmitting(false);
       }
     } catch (error) {
         console.error("Unexpected error in handleSubmit:", error);
-        toast({
-            title: "An Unexpected Error Occurred",
+        toast.error("An Unexpected Error Occurred", {
             description: "Something went wrong on our end. Please try again.",
-            variant: "destructive",
         });
         setIsSubmitting(false);
     }

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Copy, Check } from 'lucide-react';
 
 interface ShareDialogProps {
@@ -27,10 +27,8 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
   const handleGenerateLink = () => {
     const link = `${window.location.origin}/share/${memory.id}`;
     setShareLink(link);
-    toast({
-      title: "Share link generated!",
+    toast.success("Share link generated!", {
       description: "You can now copy the link to share it.",
-      variant: "success",
     });
   };
 
@@ -40,7 +38,7 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
     try {
       await navigator.clipboard.writeText(shareLink);
       setCopied(true);
-      toast({ title: "Link copied to clipboard!", variant: "success" });
+      toast.success("Link copied to clipboard!");
     } catch (err) {
       try {
         const textArea = document.createElement('textarea');
@@ -55,20 +53,16 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
 
         if (successful) {
           setCopied(true);
-          toast({
-            title: "Link copied to clipboard!",
+          toast.success("Link copied to clipboard!", {
             description: "Used fallback for compatibility.",
-            variant: "success",
           });
         } else {
           throw new Error('Fallback copy command failed');
         }
       } catch (fallbackErr) {
         console.error("Failed to copy link:", fallbackErr);
-        toast({
-          title: "Failed to Copy",
+        toast.error("Failed to Copy", {
           description: "Could not copy link to clipboard.",
-          variant: "destructive",
         });
       }
     }
@@ -100,7 +94,7 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
               value={storytellerEmail}
               onChange={(e) => setStorytellerEmail(e.target.value)}
             />
-            <Button variant="outline" className="w-full" onClick={() => toast({ title: "Invite Sent (Mock)", description: `Invitation sent to ${storytellerEmail}.`, variant: "success"})} disabled={!storytellerEmail}>
+            <Button variant="outline" className="w-full" onClick={() => toast.success("Invite Sent (Mock)", { description: `Invitation sent to ${storytellerEmail}.`})} disabled={!storytellerEmail}>
               Send Invite (Mock)
             </Button>
           </div>

@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Mic, Video, Loader2, StopCircle, RefreshCw, Camera } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useCamera } from '@/hooks/useCamera';
 import { useMobile as useIsMobile } from '@/hooks/use-mobile'; 
 import { Slider } from '@/components/ui/slider';
@@ -27,7 +27,6 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, deferCameraIni
   const recordedChunksRef = useRef<Blob[]>([]);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { toast } = useToast();
   const isMobile = useIsMobile();
   
   const [status, setStatus] = useState('idle'); // idle, pre-recording, recording, preview
@@ -105,12 +104,12 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, deferCameraIni
 
     } catch (err: any) {
         console.error("Error starting recording:", err);
-        toast({ title: "Recording Error", description: err.message, variant: "destructive" });
+        toast.error("Recording Error", { description: err.message });
         setStatus(initialMedia ? 'preview' : 'idle');
     } finally {
         console.log(`TESTIMONY - ${testStepId} - END`);
     }
-  }, [media, stopRecordingAndCleanup, stream, onMediaReady, toast, initialMedia, recordingType]);
+  }, [media, stopRecordingAndCleanup, stream, onMediaReady, initialMedia, recordingType]);
 
   const handleInitiateRecording = (type: 'video' | 'audio') => {
     setRecordingType(type);
@@ -120,12 +119,12 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, deferCameraIni
 
   useEffect(() => {
     if (cameraError) {
-      toast({ title: "Camera Error", description: cameraError, variant: "destructive" });
+      toast.error("Camera Error", { description: cameraError });
       setCameraEnabled(false);
       setStatus('idle');
       setRecordingType(null);
     }
-  }, [cameraError, toast]);
+  }, [cameraError]);
 
   useEffect(() => {
     if (stream && (status === 'pre-recording' || status === 'recording') && recordingType === 'video' && videoRef.current) {
@@ -159,10 +158,10 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, deferCameraIni
 
   useEffect(() => {
       if (status === 'recording' && recordingTime >= MAX_RECORDING_SECONDS) {
-          toast({ title: "Recording Limit Reached", description: `Recording stopped automatically after ${formatTime(MAX_RECORDING_SECONDS)}.` });
+          toast.info("Recording Limit Reached", { description: `Recording stopped automatically after ${formatTime(MAX_RECORDING_SECONDS)}.` });
           stopRecordingAndCleanup();
       }
-  }, [recordingTime, status, stopRecordingAndCleanup, toast]);
+  }, [recordingTime, status, stopRecordingAndCleanup]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -171,7 +170,7 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, deferCameraIni
     if (media?.url && media.source === 'new') URL.revokeObjectURL(media.url);
 
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-        toast({ title: "File too large", description: `Please select a file smaller than ${MAX_FILE_SIZE_MB}MB.`, variant: "destructive" });
+        toast.error("File too large", { description: `Please select a file smaller than ${MAX_FILE_SIZE_MB}MB.` });
         return;
     }
 

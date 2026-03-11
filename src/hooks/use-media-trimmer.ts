@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useCallback } from 'react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { getFFmpeg } from '@/lib/ffmpeg-loader';
 
 export function useMediaTrimmer() {
@@ -45,12 +45,12 @@ export function useMediaTrimmer() {
       await ffmpeg.deleteFile(outputFileName);
 
       const trimmedFile = new File([data.slice()], outputFileName, { type: sourceFile.type });
-      toast({ title: "Trimming Successful", variant: "success" });
+      toast.success("Trimming Successful");
       return trimmedFile;
 
     } catch (error) {
       console.error("Error during media trimming:", error);
-      toast({ title: "Trimming Failed", description: "An error occurred while trimming the media.", variant: "destructive" });
+      toast.error("Trimming Failed", { description: "An error occurred while trimming the media." });
       return null;
     } finally {
       setIsTrimming(false);

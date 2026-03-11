@@ -10,12 +10,11 @@ import { ref, deleteObject } from 'firebase/storage';
 import { MemoryCard } from '@/components/memory/MemoryCard';
 import { Loader2, Film } from 'lucide-react';
 import type { Memory } from '@/types';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 export default function TimelinePage() {
   const { user } = useAuth();
   const router = useRouter();
-  const { toast } = useToast();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -33,7 +32,7 @@ export default function TimelinePage() {
         setIsLoading(false);
       }, (error) => {
         console.error('Error fetching memories:', error);
-        toast({ title: 'Error', description: 'Could not fetch memories.', variant: 'destructive' });
+        toast.error('Error', { description: 'Could not fetch memories.' });
         setIsLoading(false);
       });
 
@@ -41,7 +40,7 @@ export default function TimelinePage() {
     } else {
       setIsLoading(false);
     }
-  }, [user, toast]);
+  }, [user]);
   
   const handleEdit = (memory: Memory) => {
     router.push(`/add-memory?editMemoryId=${memory.id}`);
@@ -63,10 +62,10 @@ export default function TimelinePage() {
         }
       }
 
-      toast({ title: 'Success', description: 'Memory deleted successfully.' });
+      toast.success('Success', { description: 'Memory deleted successfully.' });
     } catch (error) {
       console.error('Error deleting memory:', error);
-      toast({ title: 'Error', description: 'Failed to delete memory.', variant: 'destructive' });
+      toast.error('Error', { description: 'Failed to delete memory.' });
     }
   };
 

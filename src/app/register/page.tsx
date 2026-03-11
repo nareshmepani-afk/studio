@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { Film, Info, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Navbar } from '@/components/layout/Navbar';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function RegisterPage() {
@@ -30,15 +30,15 @@ export default function RegisterPage() {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (password !== confirmPassword) {
-      toast({ title: "Passwords Mismatch", description: "Passwords do not match." });
+      toast.error("Passwords Mismatch", { description: "Passwords do not match." });
       return;
     }
     if (password.length < 6) {
-        toast({ title: "Password Too Short", description: "Password must be at least 6 characters." });
+        toast.error("Password Too Short", { description: "Password must be at least 6 characters." });
         return;
     }
     if (!name.trim()) {
-        toast({ title: "Name Required", description: "Please enter your name." });
+        toast.error("Name Required", { description: "Please enter your name." });
         return;
     }
 
