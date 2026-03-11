@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
@@ -15,12 +14,12 @@ import { getOrCreateMemoryForPrompt } from '@/actions/memoryActions';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { PromptCard } from './PromptCard';
-import { QrCodeDialog } from './QrCodeDialog';
+import { PromptCard } from '@/components/prompts/PromptCard';
+import { QrCodeDialog } from '@/components/prompts/QrCodeDialog';
 import Link from 'next/link';
 
 // Icons
-import { Film, CheckCircle, Loader2, Languages, HelpCircle, Info } from 'lucide-react';
+import { Film, CheckCircle, Loader2, Languages, Info } from 'lucide-react';
 
 interface PromptsPageContentProps {
   initialMemories: Memory[];
@@ -148,7 +147,7 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
 
         <div className="space-y-10">
           {mockPromptGroups.map((group, index) => {
-              const isPremium = index > 0; // The first group is free
+              const isPremium = index > 0;
               const canAccessGroup = !isPremium || hostPassStatus === 'paid_host_pass_active';
 
               return (

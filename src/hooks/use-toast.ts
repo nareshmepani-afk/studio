@@ -1,6 +1,6 @@
 'use client';
 
-// Inspired by react-hot-toast library
+// Standard shadcn/ui toast hook
 import * as React from "react"
 
 import type {
@@ -9,7 +9,7 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000 * 60 * 60 * 24 // 24 hours
+const TOAST_REMOVE_DELAY = 1000000
 
 type ToasterToast = ToastProps & {
   id: string
@@ -58,12 +58,10 @@ interface State {
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
-const addToRemoveQueue = (toastId: string, duration?: number) => {
+const addToRemoveQueue = (toastId: string) => {
   if (toastTimeouts.has(toastId)) {
     return
   }
-
-  const timeoutDuration = duration && duration > 0 ? duration : TOAST_REMOVE_DELAY;
 
   const timeout = setTimeout(() => {
     toastTimeouts.delete(toastId)
@@ -71,7 +69,7 @@ const addToRemoveQueue = (toastId: string, duration?: number) => {
       type: "REMOVE_TOAST",
       toastId: toastId,
     })
-  }, timeoutDuration);
+  }, TOAST_REMOVE_DELAY)
 
   toastTimeouts.set(toastId, timeout)
 }
@@ -96,21 +94,10 @@ export const reducer = (state: State, action: Action): State => {
       const { toastId } = action
 
       if (toastId) {
-        if(toastTimeouts.has(toastId)) {
-            clearTimeout(toastTimeouts.get(toastId));
-            toastTimeouts.delete(toastId);
-        }
-        const toast = state.toasts.find(t => t.id === toastId);
-        if (toast) {
-           addToRemoveQueue(toastId, toast.duration);
-        }
+        addToRemoveQueue(toastId)
       } else {
         state.toasts.forEach((toast) => {
-           if(toastTimeouts.has(toast.id)) {
-              clearTimeout(toastTimeouts.get(toast.id));
-              toastTimeouts.delete(toast.id);
-           }
-           addToRemoveQueue(toast.id, toast.duration)
+          addToRemoveQueue(toast.id)
         })
       }
 
@@ -118,7 +105,10 @@ export const reducer = (state: State, action: Action): State => {
         ...state,
         toasts: state.toasts.map((t) =>
           t.id === toastId || toastId === undefined
-            ? { ...t, open: false }
+            ? {
+                ...t,
+                open: false,
+              }
             : t
         ),
       }
@@ -148,9 +138,7 @@ function dispatch(action: Action) {
   })
 }
 
-type Toast = Omit<ToasterToast, "id">
-
-function toast(props: Toast) { // Changed signature
+function toast({ ...props }: Omit<ToasterToast, "id">) {
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -159,15 +147,6 @@ function toast(props: Toast) { // Changed signature
       toast: { ...props, id },
     })
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
-
-  // Log all toasts to the console
-  if (props.variant === "destructive") {
-    console.error("Toast:", props);
-  } else if (props.variant === "success") {
-    console.info("Toast:", props);
-  } else {
-    console.log("Toast:", props);
-  }
 
   dispatch({
     type: "ADD_TOAST",
@@ -181,23 +160,12 @@ function toast(props: Toast) { // Changed signature
     },
   })
 
-  if (props.duration) {
-      const timeout = setTimeout(() => {
-          dismiss();
-      }, props.duration);
-      toastTimeouts.set(id, timeout);
-  }
-
   return {
     id: id,
     dismiss,
     update,
   }
 }
-
-toast.update = (id: string, props: ToasterToast) => {
-    dispatch({ type: "UPDATE_TOAST", toast: { ...props, id } });
-};
 
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
