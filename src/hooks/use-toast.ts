@@ -3,10 +3,8 @@
 import { toast as sonnerToast } from 'sonner';
 
 /**
- * A robust shim for the useToast hook that bridges to our chosen 
- * notification library (sonner). 
- * 
- * NOTE: This file MUST have an export to be considered a valid module.
+ * A robust module for the useToast hook.
+ * Strictly adheres to ES module standards to resolve "not a module" errors.
  */
 
 export interface ToastProps {
@@ -27,4 +25,5 @@ export const useToast = () => {
   };
 };
 
+// Ensure default export exists for compatibility
 export default useToast;

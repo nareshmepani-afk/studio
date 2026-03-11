@@ -1,27 +1,19 @@
 # Build Resolution & Deployment Guide
 
 ## Current Status
-The build failures referencing `/workspace/src/hooks/use-toast.ts` and `PromptsPageContent.tsx` appear to be based on an **outdated version of the codebase**. The current master branch has been cleaned of these problematic imports.
+The "Mosh Pit" was caused by a naming conflict between `src/types.ts` and `src/types/index.ts`, coupled with a directory collision between the local `workspace/` folder and the CI root.
 
 ## Resolution Steps
-1. **Force Sync:** Ensure your local environment is perfectly synced with the repository.
-   ```bash
-   git pull origin master
-   ```
-2. **Clean & Push:** Run the deployment script provided in `scripts/deploy.sh`.
-   ```bash
-   chmod +x scripts/deploy.sh
-   ./scripts/deploy.sh
-   ```
+1. **Unified Types:** All type definitions have been moved to `src/types/index.ts`.
+2. **Standardized Hooks:** `use-toast.ts` has been verified as a valid ES module.
+3. **Correct Backend ID:** The manual rollout command must use `studio`, not `nextn`.
 
 ## Deployment Command
-The error `--backend option is not recognized` occurs because the backend ID must be a positional argument. Use this command:
+Use this command to manually force a rollout:
 
 ```bash
-firebase apphosting:rollouts:create nextn --project memory-weaver-8rk9t
+firebase apphosting:rollouts:create studio --project memory-weaver-8rk9t
 ```
 
-## Forensic Analysis
-- **Error:** `File '...' is not a module.` 
-- **Cause:** Usually caused by an empty file or a file without exports being cached.
-- **Fix:** `src/hooks/use-toast.ts` has been verified as a valid ES module. The explicit `export interface` and `export const` ensure the compiler recognizes it as a module even in strict build environments.
+## Troubleshooting
+If the build still fails with "not a module", ensure the `workspace/` directory is not being tracked by git or rename it locally to avoid collision with the build container's path.

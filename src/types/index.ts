@@ -1,48 +1,112 @@
+/**
+ * @fileOverview Centralized type definitions for the Memory Weaver application.
+ * This is the single source of truth to prevent module resolution conflicts.
+ */
+
+export interface MediaAttachment {
+  url: string;
+  type: string; // 'image' | 'video' | 'audio'
+  duration?: number;
+  trimStart?: number;
+  trimEnd?: number;
+  thumbnailUrl?: string;
+  size?: number;
+}
 
 export interface Memory {
   id: string;
-  promptId?: string, 
+  userId: string;
+  promptId?: string;
   title: string;
   description: string;
-  videoUrl: string;
-  category?: MemoryCategory;
-  location?: string;
-  emotionTags?: string[];
-  memoryDate?: string;
-  createdAt: any;
-  mediaAttachments?: {
-    url: string;
-    type: string;
-  }[];
+  category: string | MemoryCategory;
+  location: string;
+  city?: string;
+  country?: string;
+  videoUrl?: string;
+  emotionTags: string[];
+  date: string;
+  createdAt: string;
+  updatedAt: string;
+  status?: string;
+  mediaAttachments?: MediaAttachment[];
+  imageUrl?: string;
+  isLegacy?: boolean;
+}
+
+export type MemoryCategory = {
+  id: string;
+  label: string;
+};
+
+export const memoryCategoriesList: MemoryCategory[] = [
+  { id: 'personal', label: 'Personal' },
+  { id: 'work', label: 'Work' },
+  { id: 'travel', label: 'Travel' },
+  { id: 'family', label: 'Family' },
+  { id: 'friends', label: 'Friends' },
+  { id: 'special_event', label: 'Special Event' },
+];
+
+export type EmotionTag = {
+  id: string;
+  label: string;
+};
+
+export const emotionTagsList: EmotionTag[] = [
+  { id: 'happy', label: 'Happy' },
+  { id: 'sad', label: 'Sad' },
+  { id: 'excited', label: 'Excited' },
+  { id: 'nostalgic', label: 'Nostalgic' },
+  { id: 'proud', label: 'Proud' },
+  { id: 'loved', label: 'Loved' },
+];
+
+export interface Prompt {
+  id: string;
+  title: string;
+  description: string;
+  text: { en: string; gu: string };
+  isFlaggedForReuse?: boolean;
+  subPrompts?: Prompt[];
+}
+
+export interface PromptGroup {
+  id: string;
+  title: { en: string; gu: string };
+  prompts: Prompt[];
+}
+
+export interface StorageQuota {
+  total: number;
+  used: number;
 }
 
 export interface User {
-    uid: string;
-    name: string;
-    email: string;
-    photoURL?: string;
-    bio?: string;
-    createdAt: any;
-    updatedAt: any;
-    hostPassStatus?: 'not_started' | 'free_host_pass_active' | 'paid_host_pass_active' | 'host_pass_expired';
-    flaggedPrompts: string[];
+  uid: string;
+  name?: string | null;
+  displayName?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+  photoURL?: string | null;
+  dateOfBirth?: string;
+  countryOfBirth?: string;
+  city?: string;
+  townArea?: string;
+  sharedAccessStatus?: 'no_pass_initiated' | 'free_pass_active' | 'paid_pass_active' | 'free_pass_expired' | 'paid_pass_expired';
+  freePassActivatedDate?: string;
+  paidPassExpiryDate?: string;
+  hostPassStatus?: 'no_pass_initiated' | 'free_host_pass_active' | 'paid_host_pass_active' | 'free_host_pass_expired' | 'paid_host_pass_expired';
+  freeHostPassActivatedDate?: string;
+  paidHostPassExpiryDate?: string;
+  storageUsedBytes?: number;
+  storageQuota?: StorageQuota;
+  flaggedPrompts?: string[];
 }
 
-export type MemoryCategory = 'personal' | 'family' | 'work' | 'travel';
-
-export interface Prompt {
-    id: string;
-    text: {
-      en: string;
-      gu: string;
-    };
-}
-  
-export interface PromptGroup {
-    id: string;
-    title: {
-      en: string;
-      gu: string;
-    };
-    prompts: Prompt[];
-}
+export type UserRole = 'Host' | 'Storyteller' | 'Guest' | 'Interviewer';
+export type ActionResponse = {
+  success: boolean;
+  message: string;
+  data?: any;
+};

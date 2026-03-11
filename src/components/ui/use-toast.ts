@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Re-exporting the useToast hook from the hooks directory 
- * to satisfy components that expect it in the UI folder.
+ * Re-exporting the useToast hook to satisfy Shadcn component expectations.
  */
-export { useToast } from '@/hooks/use-toast';
+import { useToast } from '../../hooks/use-toast';
+export { useToast };

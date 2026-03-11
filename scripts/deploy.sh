@@ -1,6 +1,6 @@
 #!/bin/bash
 # scripts/deploy.sh
-# A script to ensure a clean state before pushing to App Hosting.
+# A script to ensure a clean state before deploying from the local source.
 
 echo "🚀 Starting Deployment Sequence..."
 
@@ -9,17 +9,12 @@ echo "🧹 Cleaning local cache..."
 rm -rf .next
 rm -rf out
 
-# 2. Ensure all changes are staged
-echo "📝 Committing changes..."
-git add .
-git commit -m "chore: deployment sync and build fix" --allow-empty
+# 2. Build the project
+echo "🏗️ Building the project..."
+npm run build
 
-# 3. Push to master
-echo "📤 Pushing to master..."
-git push origin master
+# 3. Deploy from local source
+echo "📤 Deploying from local source..."
+firebase deploy --only apphosting:studio
 
-# 4. Trigger Rollout
-echo "🔄 Triggering manual rollout..."
-firebase apphosting:rollouts:create studio --project memory-weaver-8rk9t
-
-echo "✅ Sequence complete. Monitor the rollout in the Firebase Console."
+echo "✅ Sequence complete. Monitor the deployment in the Firebase Console."
