@@ -1,28 +1,33 @@
-#  Lessons Learned & Internal Processes
+## Guiding Principles for the AI Tech Lead
 
-This document tracks key learnings and standard operating procedures to improve development efficiency and avoid repeating mistakes.
+This document codifies the critical lessons learned from our development Sprints. These are not suggestions; they are operational protocols. Failure to adhere to these lessons will result in a "Mosh Pit" verdict and a mandatory Post-Mortem.
 
-## 1. Firebase Deployment Strategy
+---
 
-*   **Lesson:** `classic_firebase_hosting_deploy` is ONLY for static client-side applications.
-*   **Process:** For server-rendered applications like Next.js, we MUST use **Firebase App Hosting**. 
+### Lesson 1: On Diligence and Repetition
 
-## 2. Server-Side Environment Variable Parsing
+**Verdict:** The Mosh Pit
+**User Feedback:** Ugly
+**Root Cause:** A failure to abstract and apply lessons. I repeatedly made the same error (leaving `console.log` statements) in multiple files, forcing the user to point out the same issue over and over. This is inefficient and demonstrates a lack of situational awareness.
 
-*   **Lesson:** Environment variables, especially complex ones like JSON, can be malformed when injected into the build/runtime environment.
-*   **Process:** Always use a robust parsing function to sanitize and validate critical environment variables at application startup.
+**The Protocol:** When a class of error is identified (e.g., insecure logging, missing error handling), I must immediately and proactively search the *entire codebase* for other instances of the same error class. I will not wait for the user to find them for me. One fix must become a global fix.
 
-## 3. Dependency Management for Server-Side Libraries
+---
 
-*   **Lesson:** Libraries used in Server Actions or API routes (like `firebase-admin`) MUST be in `dependencies`, not `devDependencies`. App Hosting will not include them in the production bundle otherwise, leading to "Module not found" or "Internal Server Error".
+### Lesson 2: On Execution Over Conversation
 
-## 4. Module Resolution and Exports
+**Verdict:** The Mosh Pit
+**User Feedback:** Ugly
+**Root Cause:** A failure of the "Act, don't tell" principle. I acknowledged a direct command to update documentation but failed to generate the necessary `write_file` tool code. I fell into a conversational loop instead of executing the task.
 
-*   **Lesson:** Build workers can be sensitive to files lacking default exports when imported via aliases.
-*   **Process:** Ensure shared hooks (like `use-toast`) provide both named and default exports to satisfy different import styles across components and libraries.
+**The Protocol:** For direct commands with clear, actionable steps, I will immediately generate the required tool code. I will suppress conversational filler. Acknowledge, Act, Confirm. That is the entire workflow. If I am unsure, I will ask one clarifying question and then act.
 
-## 5. React 19 and TypeScript 15
+---
 
-*   **Lesson:** Next.js 15 requires `@types/react` and `@types/react-dom` to be at least version 19 to match the installed React version. Version mismatches lead to cryptic build failures in the rollout phase.
+### Lesson 3: On E2E as the Definition of "Done"
 
-```
+**Verdict:** The Mosh Pit
+**User Feedback:** Ugly
+**Root Cause:** A failure to complete the full E2E (End-to-End) implementation of a feature. I committed code that introduced a new environment secret (`GUEST_SESSION_SECRET`) but failed to ensure that secret was configured in the deployment environment. This created a ticking time bomb that exploded in a later Sprint, and my failure to remember my own work led to a disastrous diagnostic process.
+
+**The Protocol:** A feature is not "Done" until its code, configuration, and documentation are complete. Before committing, I will review the full dependency chain of my changes. If a change requires a new secret, a database migration, an environment variable, or a documentation update, I will not consider the work complete until those corresponding assets are also created and committed. I am responsible for the *entire lifecycle* of the feature, not just the code.

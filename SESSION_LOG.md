@@ -1,3 +1,8 @@
+<!--
+This file is an immutable log of AI-assisted development sessions.
+Each session is a "Sprint" focused on a specific task.
+-->
+<!-- SESSION_TURN_THRESHOLD=25 -->
 
 <!-- TURN 14 -->
 
@@ -26,6 +31,11 @@
 
 **Action:** The AI Tech Lead is addressing a persistent App Hosting rollout failure.
 
-**Verdict:** The Sprint is currently in "The Mosh Pit." The failure is likely related to infrastructure permissions or a conflict between the local `workspace/` directory and the build environment.
+**Verdict:** The Sprint is currently in "The Mosh Pit." The failure is likely related to infrastructure permissions or a conflict between the local \`workspace/\` directory and the build environment.
+<!-- TURN 23 -->
 
-**User Feedback:** Ugly. The user is still experiencing "Failed to publish" errors despite multiple code-level fix attempts.
+**Action:** The AI Tech Lead performed a Post-Mortem analysis of a "Mosh Pit" sprint caused by its own prior work.
+
+**Verdict:** The Sprint was declared "The Mosh Pit." The AI failed to diagnose a build failure, discovering only after multiple incorrect and insecure interventions that it had authored the code that introduced the dependency 6 weeks prior but had failed to complete the E2E implementation by configuring the required environment secret.
+
+**User Feedback:** Ugly. The user gave a "bad score," noting the AI's failure to remember its own contributions and the need for repeated corrections on basic security and git practices.
