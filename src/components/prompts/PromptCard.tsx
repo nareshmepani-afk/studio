@@ -119,90 +119,98 @@ export function PromptCard({
     </Button>
   );
 
-  return (
-    <Card className={cardClasses} onClick={!canAccess ? handleAction : undefined}>
-      <CardHeader className="pb-3">
-        {isCompleted && (
-            <div className="flex items-center text-green-600 dark:text-green-400 text-xs mb-1">
-                <CheckCircle className="h-4 w-4 mr-1.5" />
-                Chapter Recorded
-            </div>
-        )}
-        <CardTitle className={cardTitleClasses}>
-          {promptText}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex-grow">
-        {isCompleted && memoryDescription && (
-          <p className="text-sm text-muted-foreground line-clamp-3 italic border-l-2 border-green-200 dark:border-green-800 pl-2">
-            {memoryDescription}
-          </p>
-        )}
-      </CardContent>
-      <CardFooter className="flex justify-between items-center mt-auto pt-2">
-        <div className="flex items-center space-x-1">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={handleQrCodeClick} className="text-muted-foreground hover:text-primary" aria-label="Show QR Code for this prompt" disabled={isLoading || !canAccess}>
-                    <QrCode className="h-5 w-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom"><p>Show QR Code for Interviewer</p></TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="View teleprompter script" disabled={isLoading || !canAccess} onClick={(e) => e.stopPropagation()}>
-                           <Info className="h-5 w-5" />
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-xs sm:max-w-sm md:max-w-md p-4" align="start">
-                        <h4 className="font-bold mb-2">Teleprompter Script Preview</h4>
-                        <p className="whitespace-pre-wrap text-xs">{teleprompterScript}</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
-        </div>
-
-        <div className="flex items-center">
-             <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleFlagToggle}
-                    className="mr-2 shrink-0"
-                    aria-label={isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}
-                    disabled={isLoading || !canAccess}
-                  >
-                    <Flag className={`h-5 w-5 transition-colors ${isFlaggedForReuse ? 'fill-primary text-primary' : 'text-muted-foreground hover:text-primary'}`} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt to easily find and reuse it for future interviews."}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            {!canAccess ? (
-                <TooltipProvider>
+  const cardContent = (
+      <Card className={cardClasses} onClick={!canAccess ? handleAction : undefined}>
+        <div className={!canAccess ? 'pointer-events-none' : ''}>
+            <CardHeader className="pb-3">
+              {isCompleted && (
+                  <div className="flex items-center text-green-600 dark:text-green-400 text-xs mb-1">
+                      <CheckCircle className="h-4 w-4 mr-1.5" />
+                      Chapter Recorded
+                  </div>
+              )}
+              <CardTitle className={cardTitleClasses}>
+                {promptText}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              {isCompleted && memoryDescription && (
+                <p className="text-sm text-muted-foreground line-clamp-3 italic border-l-2 border-green-200 dark:border-green-800 pl-2">
+                  {memoryDescription}
+                </p>
+              )}
+            </CardContent>
+            <CardFooter className="flex justify-between items-center mt-auto pt-2">
+              <div className="flex items-center space-x-1">
+                  <TooltipProvider>
                     <Tooltip>
-                        <TooltipTrigger asChild>
-                            {mainButton}
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>This is a premium prompt. Click to upgrade your pass.</p>
-                        </TooltipContent>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={handleQrCodeClick} className="text-muted-foreground hover:text-primary" aria-label="Show QR Code for this prompt" disabled={isLoading || !canAccess}>
+                          <QrCode className="h-5 w-5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom"><p>Show QR Code for Interviewer</p></TooltipContent>
                     </Tooltip>
-                </TooltipProvider>
-            ) : mainButton}
+                  </TooltipProvider>
 
+                  <TooltipProvider>
+                      <Tooltip>
+                          <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="View teleprompter script" disabled={isLoading || !canAccess} onClick={(e) => e.stopPropagation()}>
+                                 <Info className="h-5 w-5" />
+                              </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-xs sm:max-w-sm md:max-w-md p-4" align="start">
+                              <h4 className="font-bold mb-2">Teleprompter Script Preview</h4>
+                              <p className="whitespace-pre-wrap text-xs">{teleprompterScript}</p>
+                          </TooltipContent>
+                      </Tooltip>
+                  </TooltipProvider>
+              </div>
+
+              <div className="flex items-center">
+                   <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleFlagToggle}
+                          className="mr-2 shrink-0"
+                          aria-label={isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}
+                          disabled={isLoading || !canAccess}
+                        >
+                          <Flag className={`h-5 w-5 transition-colors ${isFlaggedForReuse ? 'fill-primary text-primary' : 'text-muted-foreground hover:text-primary'}`} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt to easily find and reuse it for future interviews."}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  {mainButton}
+
+              </div>
+            </CardFooter>
         </div>
-      </CardFooter>
-    </Card>
+      </Card>
   );
+
+  if (!canAccess) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {cardContent}
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>This is a premium prompt. Click to upgrade your pass.</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return cardContent;
 }
