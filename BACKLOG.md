@@ -4,6 +4,8 @@ Sprint 3: Polish & Recording [🟢 AUTH RESOLVED]
 
 [x] HOTFIX-06: Update IAM roles and refresh SERVICE_ACCOUNT_JSON secret.
 
+[x] FIX-01: Correct post-login redirect from `/timeline` to `/prompts`.
+
 [ ] STU-55: Refactor Storyteller view to be 'Ad-Blocker Proof' using a Fetch-First data strategy.
 
 [ ] STU-54: QA: End-to-end test of Storyteller-to-Host storage flow.

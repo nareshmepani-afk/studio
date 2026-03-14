@@ -54,7 +54,7 @@ export async function middleware(request: NextRequest) {
 
   // 3. If user is logged in, redirect them away from public-only pages.
   if (sessionCookie && PUBLIC_ONLY_ROUTES.some(route => pathname.startsWith(route))) {
-    return NextResponse.redirect(new URL('/timeline', request.url));
+    return NextResponse.redirect(new URL('/prompts', request.url));
   }
 
   // 4. If user is NOT logged in and trying to access a protected route, redirect to login.
