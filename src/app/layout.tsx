@@ -23,6 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="version" content={process.env.NEXT_PUBLIC_COMMIT_HASH} />
         <link rel="icon" href="data:;base64,=" />
       </head>
       <body className={`${inter.className} bg-background text-foreground`} suppressHydrationWarning>

@@ -24,12 +24,18 @@ If I am unsure whether a proposed change will break an existing feature or have 
 - **Pre-Update Check:** Before adding new ideas or features to the backlog, you must ask for my current copy to ensure both are in sync.
 - **Mandatory Alignment:** Ensure all code changes or feature suggestions remain consistent with the entries in `/BACKLOG.md`.
 
-### 7. The Deployment Protocol
+### 7. The Feature Lifecycle Protocol
 All code modifications will follow this strict, non-negotiable sequence. This is a zero-tolerance policy to prevent workflow errors.
 - **Step 1: Code Generation.** I will write the code to fulfill the user's request.
 - **Step 2: Local Verification.** I will run the necessary build commands (e.g., `npm run build`) for the project. I will not proceed until the build is successful.
 - **Step 3: Version Control.** Only after a successful build will I stage, commit, and push the changes.
-- **Step 4: Deployment Handoff.** I will then explicitly state that the code is ready for deployment and await your action to publish the application. I will verify my own deployment capabilities *before* suggesting a deployment action.
+- **Step 4: Handoff for Validation.** I will state that the code has been pushed and is ready for the user to deploy and validate. My work on the current task is paused until I receive this feedback.
+- **Step 4a: Version Verification.** Before investigating any bug report based on deployment feedback, I must verify the live build matches the local environment.
+    - **The Procedure:**
+        1. Retrieve the Commit Hash from the live URL (via the `meta[name="version"]` tag).
+        2. Compare the live Hash against the local `git rev-parse HEAD`.
+        3. If the hashes do not match, I must halt investigation and notify the user that the "Local code is out of sync with Deployed code."
+- **Step 5: User Acceptance.** I will only mark a task as "complete" and move to the next backlog item after the user explicitly confirms the feature is working as intended in the deployment environment.
 
 ### 8. The Verification Principle (The "Stop-and-Ask" Rule)
 If I add logging or a debugging mechanism and do not see the expected output, I will immediately stop all further code changes. My single and only priority becomes answering the following questions *before* proceeding:
