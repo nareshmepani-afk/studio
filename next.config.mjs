@@ -1,16 +1,24 @@
 import { execSync } from 'child_process';
 
+// START DIAGNOSTIC CODE
+console.log('--- AVAILABLE ENVIRONMENT VARIABLES ---');
+console.log(process.env);
+console.log('--- END DIAGNOSTIC CODE ---');
+// END DIAGNOSTIC CODE
+
 function getCommitHash() {
-  // 1. Check for the production environment variable from Google Cloud Build
-  if (process.env.COMMIT_SHA) {
-    return process.env.COMMIT_SHA.trim();
+  const commitHash = 
+    process.env.COMMIT_SHA || // Google Cloud Build
+    process.env.VERCEL_GIT_COMMIT_SHA || // Vercel
+    process.env.GITHUB_SHA; // GitHub Actions
+
+  if (commitHash) {
+    return commitHash.trim();
   }
 
-  // 2. Fallback to local git command for development
   try {
     return execSync('git rev-parse HEAD').toString().trim();
   } catch (e) {
-    // 3. Final fallback for environments where git is not available
     return `local-build-${new Date().getTime()}`;
   }
 }
