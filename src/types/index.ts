@@ -102,6 +102,7 @@ export interface User {
   storageUsedBytes?: number;
   storageQuota?: StorageQuota;
   flaggedPrompts?: string[];
+  isPremium?: boolean;
 }
 
 export type UserRole = 'Host' | 'Storyteller' | 'Guest' | 'Interviewer';

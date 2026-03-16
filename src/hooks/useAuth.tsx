@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type { User } from '@/types';
 import { createSessionAction, deleteSessionAction } from '@/actions/createSessionAction';
+import { premiumPromptIds } from '@/lib/premiumPrompts';
 
 type CombinedUser = FirebaseUser & Partial<User>;
 
@@ -38,10 +39,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const userProfileRef = doc(db, 'users', firebaseUser.uid);
         const profileUnsubscribe = onSnapshot(userProfileRef, (doc) => {
+          const userData = doc.exists() ? (doc.data() as User) : { isPremium: false };
+          const flaggedPrompts = !userData.isPremium ? Array.from(premiumPromptIds) : [];
+          
           const fullUser = {
             ...firebaseUser,
             email: firebaseUser.email ?? "",
-            ...(doc.exists() ? (doc.data() as User) : {}),
+            ...userData,
+            flaggedPrompts,
           };
           setUser(fullUser as CombinedUser);
           setLoading(false);
