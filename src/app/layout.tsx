@@ -1,10 +1,10 @@
-
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { Providers } from "@/components/layout/Providers";
 import SessionWatcher from "@/components/auth/SessionWatcher";
 import BuildIdLogger from "@/components/layout/BuildIdLogger";
+import "@/app/utils/version"; // Import to register the console log
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="version" content={process.env.NEXT_PUBLIC_BUILD_ID} />
+        <meta name="app-version" content={process.env.NEXT_PUBLIC_APP_VERSION} />
         <link rel="icon" href="data:;base64,=" />
       </head>
       <body className={`${inter.className} bg-background text-foreground`} suppressHydrationWarning>
