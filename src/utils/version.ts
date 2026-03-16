@@ -1,0 +1,1 @@
+console.log(`- App Version: ${process.env.NEXT_PUBLIC_APP_VERSION}`);

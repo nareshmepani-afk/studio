@@ -4,7 +4,7 @@ import { Toaster } from "react-hot-toast";
 import { Providers } from "@/components/layout/Providers";
 import SessionWatcher from "@/components/auth/SessionWatcher";
 import BuildIdLogger from "@/components/layout/BuildIdLogger";
-import "@/app/utils/version"; // Import to register the console log
+import "@/utils/version"; // Import to register the console log
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
