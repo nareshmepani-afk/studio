@@ -3,42 +3,41 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { collection, getDocs, onSnapshot, doc } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Memory } from '@/types';
 import { mockPromptGroups } from '@/lib/mockData';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { PromptsPageContent } from '@/components/prompts/PromptsPageContent';
 
-async function getUserData(uid: string) {
-  console.log("TESTIMONY: Fetching user data for UID:", uid);
-  // This function would need to be adapted for client-side fetching or an API route
-  // For now, we will rely on the auth state's user object which should be updated
-  return null;
-}
-
 export default function LifeJourneyPage() {
   const { user } = useAuth();
   const [initialMemories, setInitialMemories] = useState<Memory[]>([]);
   const [initialFlaggedPromptIds, setInitialFlaggedPromptIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
-  const [hostPassStatus, setHostPassStatus] = useState('inactive'); // Add this line
+  const [hostPassStatus, setHostPassStatus] = useState('inactive');
 
   useEffect(() => {
     if (user?.hostPassStatus) {
       setHostPassStatus(user.hostPassStatus);
     }
-  }, [user]);
 
-  useEffect(() => {
     console.log('TESTIMONY: Prompts page loading started.');
     if (!user || !db) {
-      console.log('TESTIMONY: User not authenticated, aborting data fetch.');
+      console.log('TESTIMONY: User not available, aborting data fetch.');
       setIsLoading(false);
       return;
     }
 
     console.log('TESTIMONY: User authenticated, fetching data for UID:', user.uid);
+
+    // Correctly use the flaggedPrompts from the auth context
+    if (user.flaggedPrompts) {
+      console.log('TESTIMONY: Found flagged prompts in user context:', user.flaggedPrompts);
+      setInitialFlaggedPromptIds(new Set(user.flaggedPrompts));
+    } else {
+      console.log('TESTIMONY: No flagged prompts found in user context.');
+    }
 
     const memoriesRef = collection(db, 'users', user.uid, 'memories');
     const memoriesPromise = getDocs(memoriesRef).then(snapshot => 
@@ -54,15 +53,6 @@ export default function LifeJourneyPage() {
         })
     );
 
-    const userDocRef = doc(db, 'users', user.uid);
-    const flagsUnsubscribe = onSnapshot(userDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const userData = docSnap.data();
-            console.log('TESTIMONY: Fetched user profile with flagged prompts:', userData.flaggedPrompts);
-            setInitialFlaggedPromptIds(new Set(userData.flaggedPrompts || []));
-        }
-    });
-
     memoriesPromise
       .then(memories => {
         console.log('TESTIMONY: Successfully fetched memories:', memories);
@@ -76,7 +66,8 @@ export default function LifeJourneyPage() {
         setIsLoading(false);
       });
 
-    return () => flagsUnsubscribe();
+    // The onSnapshot listener for user flags has been removed as it was redundant.
+    // The user object from useAuth is the single source of truth.
 
   }, [user]);
 
@@ -87,7 +78,7 @@ export default function LifeJourneyPage() {
         initialFlaggedPromptIds={initialFlaggedPromptIds}
         mockPromptGroups={mockPromptGroups}
         isLoading={isLoading}
-        hostPassStatus={hostPassStatus} // Pass this down
+        hostPassStatus={hostPassStatus}
       />
     </AuthenticatedPageWrapper>
   );
