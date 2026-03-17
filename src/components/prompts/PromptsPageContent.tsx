@@ -176,7 +176,7 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
                           onStartChapter={effectiveOnStartChapter}
                           onToggleFlagPrompt={handleToggleFlagPrompt}
                           onShowQrCode={handleShowQrCode}
-                          canAccess={canAccessGroup}
+                          canAccess={true}
                           memoryDescription={memoryForPrompt?.description}
                         />
                       );
