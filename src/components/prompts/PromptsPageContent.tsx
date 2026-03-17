@@ -115,6 +115,11 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
         </div>
      );
   }
+
+  console.log("Rendering PromptsPageContent with:", {
+    flaggedPromptIds,
+    completedPromptIds,
+  });
   
   return (
     <div className="container mx-auto py-8 px-4">
