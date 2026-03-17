@@ -11,12 +11,10 @@ import { db, auth } from '@/lib/firebase';
 import { getOrCreateMemoryForPrompt } from '@/actions/memoryActions';
 
 // UI Components
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PromptCard } from '@/components/prompts/PromptCard';
 import { QrCodeDialog } from '@/components/prompts/QrCodeDialog';
-import Link from 'next/link';
 
 // Icons
 import { Film, CheckCircle, Loader2, Languages, Info } from 'lucide-react';
@@ -115,11 +113,6 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
         </div>
      );
   }
-
-  console.log("Rendering PromptsPageContent with:", {
-    flaggedPromptIds,
-    completedPromptIds,
-  });
   
   return (
     <div className="container mx-auto py-8 px-4">
@@ -152,8 +145,8 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
 
         <div className="space-y-10">
           {mockPromptGroups.map((group, index) => {
-              const isPremium = index > 0;
-              const canAccessGroup = !isPremium || hostPassStatus === 'paid_host_pass_active';
+              const isPremiumGroup = index > 0;
+              const canAccessGroup = !isPremiumGroup || hostPassStatus === 'paid_host_pass_active';
 
               return (
                 <section key={group.id}>
@@ -162,6 +155,14 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
                     {group.prompts.map((prompt) => {
                       const isCompleted = completedPromptIds.has(prompt.id);
                       const memoryForPrompt = isCompleted ? memories.find(m => m.promptId === prompt.id) : undefined;
+
+                      const effectiveOnStartChapter = (promptId: string, isCompleted: boolean) => {
+                        if (canAccessGroup) {
+                          handleStartChapter(promptId, isCompleted);
+                        } else {
+                          toast.info("Premium Prompt", { description: "Upgrade your account to unlock this and all other prompts." });
+                        }
+                      };
                       
                       return (
                         <PromptCard
@@ -172,7 +173,7 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
                           isCompleted={isCompleted}
                           isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
                           isLoading={authLoading}
-                          onStartChapter={handleStartChapter}
+                          onStartChapter={effectiveOnStartChapter}
                           onToggleFlagPrompt={handleToggleFlagPrompt}
                           onShowQrCode={handleShowQrCode}
                           canAccess={canAccessGroup}
