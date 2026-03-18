@@ -40,13 +40,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userProfileRef = doc(db, 'users', firebaseUser.uid);
         const profileUnsubscribe = onSnapshot(userProfileRef, (doc) => {
           const userData = doc.exists() ? (doc.data() as User) : { isPremium: false };
-          const flaggedPrompts = !userData.isPremium ? Array.from(premiumPromptIds) : [];
           
           const fullUser = {
             ...firebaseUser,
             email: firebaseUser.email ?? "",
             ...userData,
-            flaggedPrompts,
           };
           setUser(fullUser as CombinedUser);
           setLoading(false);
