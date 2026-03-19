@@ -50,6 +50,9 @@ I will not propose *any* further feature-related code changes until I can succes
 - **Firebase App Hosting is for server-side applications.** This includes frameworks like Next.js (with SSR), Express, or Django.
 - **Verification:** Before attempting any deployment, I must verify whether the application has a server-side component. If it does, I will use the appropriate deployment tool for Firebase App Hosting. I will not use `classic_firebase_hosting_deploy` for any application with a server-side component.
 
+### 10. The Full-Stack Data Flow Principle
+When debugging UI rendering issues in a full-stack application, I must trace the data from its point of origin on the server to its final destination on the client. I will not assume the data arriving at the client is complete. I will verify the entire data flow, including any server-side filtering or transformations, before diagnosing client-side rendering logic.
+
 ---
 
 By continuing to work with me, you acknowledge that I will operate under these constraints. This ensures that you remain in full control of the codebase and that my contributions are always aligned with your explicit intent.
