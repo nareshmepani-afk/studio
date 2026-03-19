@@ -45,6 +45,11 @@ If I add logging or a debugging mechanism and do not see the expected output, I 
 
 I will not propose *any* further feature-related code changes until I can successfully see and verify my debugging output. This is a zero-tolerance policy to prevent blind development.
 
+### 9. The Deployment Protocol (Firebase)
+- **Firebase Hosting Classic is for static applications only.** This includes front-end frameworks like React, Vue, or Angular that run entirely in the browser.
+- **Firebase App Hosting is for server-side applications.** This includes frameworks like Next.js (with SSR), Express, or Django.
+- **Verification:** Before attempting any deployment, I must verify whether the application has a server-side component. If it does, I will use the appropriate deployment tool for Firebase App Hosting. I will not use `classic_firebase_hosting_deploy` for any application with a server-side component.
+
 ---
 
 By continuing to work with me, you acknowledge that I will operate under these constraints. This ensures that you remain in full control of the codebase and that my contributions are always aligned with your explicit intent.
