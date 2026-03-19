@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { getOrCreateMemoryForPrompt } from '@/actions/memoryActions';
+import { premiumPromptIds } from '@/lib/premiumPrompts'; // Import the premium prompts list
 
 // UI Components
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -144,47 +145,46 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
         </Alert>
 
         <div className="space-y-10">
-          {mockPromptGroups.map((group, index) => {
-              const isPremiumGroup = index > 0;
-              const canAccessGroup = !isPremiumGroup || hostPassStatus === 'paid_host_pass_active';
+          {mockPromptGroups.map((group) => (
+            <section key={group.id}>
+              <h2 className="font-headline text-3xl mb-6 border-b pb-3 text-primary">{group.title[currentLanguage] || group.title.en}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {group.prompts.map((prompt) => {
+                  const isCompleted = completedPromptIds.has(prompt.id);
+                  const memoryForPrompt = isCompleted ? memories.find(m => m.promptId === prompt.id) : undefined;
+                  
+                  // Correct Logic: Determine access based on premium status and user plan
+                  const isPremium = premiumPromptIds.has(prompt.id);
+                  const canAccess = !isPremium || hostPassStatus === 'paid_host_pass_active';
 
-              return (
-                <section key={group.id}>
-                  <h2 className="font-headline text-3xl mb-6 border-b pb-3 text-primary">{group.title[currentLanguage] || group.title.en}</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {group.prompts.map((prompt) => {
-                      const isCompleted = completedPromptIds.has(prompt.id);
-                      const memoryForPrompt = isCompleted ? memories.find(m => m.promptId === prompt.id) : undefined;
-
-                      const effectiveOnStartChapter = (promptId: string, isCompleted: boolean) => {
-                        if (canAccessGroup) {
-                          handleStartChapter(promptId, isCompleted);
-                        } else {
-                          toast.info("Premium Prompt", { description: "Upgrade your account to unlock this and all other prompts." });
-                        }
-                      };
-                      
-                      return (
-                        <PromptCard
-                          key={prompt.id}
-                          promptId={prompt.id}
-                          promptText={prompt.text[currentLanguage] || prompt.text.en}
-                          teleprompterScript={teleprompterScripts[prompt.id] || "No script available."}
-                          isCompleted={isCompleted}
-                          isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
-                          isLoading={authLoading}
-                          onStartChapter={effectiveOnStartChapter}
-                          onToggleFlagPrompt={handleToggleFlagPrompt}
-                          onShowQrCode={handleShowQrCode}
-                          canAccess={true}
-                          memoryDescription={memoryForPrompt?.description}
-                        />
-                      );
-                    })}
-                  </div>
-                </section>
-              );
-            })}
+                  const effectiveOnStartChapter = (promptId: string, isCompleted: boolean) => {
+                    if (canAccess) {
+                      handleStartChapter(promptId, isCompleted);
+                    } else {
+                      toast.info("Premium Prompt", { description: "Upgrade your account to unlock this and all other prompts." });
+                    }
+                  };
+                  
+                  return (
+                    <PromptCard
+                      key={prompt.id}
+                      promptId={prompt.id}
+                      promptText={prompt.text[currentLanguage] || prompt.text.en}
+                      teleprompterScript={teleprompterScripts[prompt.id] || "No script available."}
+                      isCompleted={isCompleted}
+                      isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
+                      isLoading={authLoading}
+                      onStartChapter={effectiveOnStartChapter}
+                      onToggleFlagPrompt={handleToggleFlagPrompt}
+                      onShowQrCode={handleShowQrCode}
+                      canAccess={canAccess} // Pass the correct access status
+                      memoryDescription={memoryForPrompt?.description}
+                    />
+                  );
+                })}
+              </div>
+            </section>
+          ))}
         </div>
          <QrCodeDialog
           open={qrCodeDialog.open}
