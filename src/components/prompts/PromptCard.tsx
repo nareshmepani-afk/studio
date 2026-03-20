@@ -1,12 +1,12 @@
-
 "use client";
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookText, CheckCircle, Edit, Flag, Loader2, Info, QrCode, Lock } from 'lucide-react';
+import { BookText, CheckCircle, Edit, Flag, QrCode, Lock, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 interface PromptCardProps {
   promptId: string;
@@ -82,26 +82,25 @@ export function PromptCard({
     );
   }
 
-  const cardClasses = `
-    shadow-lg transition-all hover:shadow-xl animate-fade-in flex flex-col h-full 
-    ${isCompleted ? 'bg-green-50 dark:bg-green-900/30 border-green-500' : 'bg-card'}
-    ${!canAccess ? 'opacity-50 hover:opacity-75 cursor-pointer' : ''}
-  `;
+  const cardClasses = cn(
+    "shadow-lg transition-all flex flex-col h-full relative group",
+    isCompleted ? 'bg-green-50 dark:bg-green-900/10 border-green-500/50' : 'bg-card',
+    !canAccess && "opacity-60 grayscale-[0.5] blur-[0.2px] hover:opacity-80 hover:grayscale-0 cursor-pointer"
+  );
 
-  const cardTitleClasses = `
-    font-normal text-base 
-    ${isCompleted ? 'text-green-800 dark:text-green-300' : 'text-foreground'}
-    ${!canAccess ? 'text-muted-foreground' : ''}
-  `;
+  const cardTitleClasses = cn(
+    "font-normal text-base",
+    isCompleted ? 'text-green-800 dark:text-green-300' : 'text-foreground',
+    !canAccess && 'text-muted-foreground'
+  );
 
   const mainButton = (
     <Button
       onClick={handleAction}
       size="sm"
-      variant={isCompleted && canAccess ? "outline" : "default"}
+      variant={!canAccess ? "secondary" : isCompleted ? "outline" : "default"}
       className="w-full"
-      disabled={isLoading && canAccess}
-      data-testid={`prompt-start-button-${promptId}`}
+      disabled={isLoading}
     >
       {!canAccess ? (
           <>
@@ -121,12 +120,18 @@ export function PromptCard({
 
   const cardContent = (
       <Card className={cardClasses} onClick={!canAccess ? handleAction : undefined}>
-        <div className={!canAccess ? 'pointer-events-none' : ''}>
+        <div className={cn("flex flex-col h-full", !canAccess && 'pointer-events-none')}>
             <CardHeader className="pb-3">
               {isCompleted && (
                   <div className="flex items-center text-green-600 dark:text-green-400 text-xs mb-1">
                       <CheckCircle className="h-4 w-4 mr-1.5" />
                       Chapter Recorded
+                  </div>
+              )}
+              {!canAccess && (
+                  <div className="flex items-center text-amber-600 dark:text-amber-400 text-xs mb-1">
+                      <Lock className="h-3.5 w-3.5 mr-1.5" />
+                      Premium Chapter
                   </div>
               )}
               <CardTitle className={cardTitleClasses}>
@@ -160,8 +165,8 @@ export function PromptCard({
                                  <Info className="h-5 w-5" />
                               </Button>
                           </TooltipTrigger>
-                          <TooltipContent side="bottom" className="max-w-xs sm:max-w-sm md:max-w-md p-4" align="start">
-                              <h4 className="font-bold mb-2">Teleprompter Script Preview</h4>
+                          <TooltipContent side="bottom" className="max-w-xs p-4" align="start">
+                              <h4 className="font-bold mb-2">Teleprompter Preview</h4>
                               <p className="whitespace-pre-wrap text-xs">{teleprompterScript}</p>
                           </TooltipContent>
                       </Tooltip>
@@ -180,17 +185,16 @@ export function PromptCard({
                           aria-label={isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}
                           disabled={isLoading || !canAccess}
                         >
-                          <Flag className={`h-5 w-5 transition-colors ${isFlaggedForReuse ? 'fill-primary text-primary' : 'text-muted-foreground hover:text-primary'}`} />
+                          <Flag className={cn("h-5 w-5 transition-colors", isFlaggedForReuse ? 'fill-primary text-primary' : 'text-muted-foreground hover:text-primary')} />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>{isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt to easily find and reuse it for future interviews."}</p>
+                        <p>{isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt to easily find and reuse it."}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                   
                   {mainButton}
-
               </div>
             </CardFooter>
         </div>
@@ -200,12 +204,14 @@ export function PromptCard({
   if (!canAccess) {
     return (
       <TooltipProvider>
-        <Tooltip>
+        <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             {cardContent}
           </TooltipTrigger>
-          <TooltipContent>
-            <p>This is a premium prompt. Click to upgrade your pass.</p>
+          <TooltipContent className="bg-primary text-primary-foreground border-none shadow-xl p-4 max-w-[250px]">
+            <p className="font-medium text-sm leading-relaxed">
+              This chapter is part of the Premium Life Journey. Upgrade your Host Pass to weave this memory into your legacy.
+            </p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
