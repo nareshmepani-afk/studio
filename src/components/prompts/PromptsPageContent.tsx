@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
@@ -10,15 +11,18 @@ import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { getOrCreateMemoryForPrompt } from '@/actions/memoryActions';
 import { premiumPromptIds } from '@/lib/premiumPrompts'; // Import the premium prompts list
+import { cn } from '@/lib/utils';
 
 // UI Components
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PromptCard } from '@/components/prompts/PromptCard';
 import { QrCodeDialog } from '@/components/prompts/QrCodeDialog';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Icons
-import { Film, CheckCircle, Loader2, Languages, Info } from 'lucide-react';
+import { Film, CheckCircle, Loader2, Languages, Info, Plus, Lock } from 'lucide-react';
 
 interface PromptsPageContentProps {
   initialMemories: Memory[];
@@ -149,45 +153,119 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
         </Alert>
 
         <div className="space-y-10">
-          {mockPromptGroups.map((group) => (
-              <section key={group.id}>
-                <h2 className="font-headline text-3xl mb-6 border-b pb-3 text-primary">{group.title[currentLanguage] || group.title.en}</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {group.prompts.map((prompt) => {
-                    const isCompleted = completedPromptIds.has(prompt.id);
-                    const memoryForPrompt = isCompleted ? memories.find(m => m.promptId === prompt.id) : undefined;
-                    
-                    const isPremium = premiumPromptIds.has(prompt.id);
-                    const canAccess = !isPremium || hostPassStatus === 'paid_host_pass_active';
+          {mockPromptGroups.map((group) => {
+              const isGroupPremium = group.id !== 'part-i';
+              const canAccessGroup = !isGroupPremium || hostPassStatus === 'paid_host_pass_active';
 
-                    const effectiveOnStartChapter = (promptId: string, isCompleted: boolean) => {
-                      if (canAccess) {
-                        handleStartChapter(promptId, isCompleted);
-                      } else {
-                        toast.info("Premium Prompt", { description: "Upgrade your account to unlock this and all other prompts." });
-                      }
-                    };
-                    
-                    return (
-                      <PromptCard
-                        key={prompt.id}
-                        promptId={prompt.id}
-                        promptText={prompt.text[currentLanguage] || prompt.text.en}
-                        teleprompterScript={teleprompterScripts[prompt.id] || "No script available."}
-                        isCompleted={isCompleted}
-                        isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
-                        isLoading={authLoading}
-                        onStartChapter={effectiveOnStartChapter}
-                        onToggleFlagPrompt={handleToggleFlagPrompt}
-                        onShowQrCode={handleShowQrCode}
-                        canAccess={canAccess}
-                        memoryDescription={memoryForPrompt?.description}
-                      />
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
+              return (
+                <section key={group.id}>
+                  <h2 className="font-headline text-3xl mb-6 border-b pb-3 text-primary">{group.title[currentLanguage] || group.title.en}</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {group.prompts.map((prompt) => {
+                      const isCompleted = completedPromptIds.has(prompt.id);
+                      const memoryForPrompt = isCompleted ? memories.find(m => m.promptId === prompt.id) : undefined;
+                      
+                      const isPremium = premiumPromptIds.has(prompt.id);
+                      const canAccess = !isPremium || hostPassStatus === 'paid_host_pass_active';
+
+                      const effectiveOnStartChapter = (promptId: string, isCompleted: boolean) => {
+                        if (canAccess) {
+                          handleStartChapter(promptId, isCompleted);
+                        } else {
+                          toast.info("Premium Prompt", { description: "Upgrade your account to unlock this and all other prompts." });
+                        }
+                      };
+                      
+                      return (
+                        <PromptCard
+                          key={prompt.id}
+                          promptId={prompt.id}
+                          promptText={prompt.text[currentLanguage] || prompt.text.en}
+                          teleprompterScript={teleprompterScripts[prompt.id] || "No script available."}
+                          isCompleted={isCompleted}
+                          isFlaggedForReuse={flaggedPromptIds.has(prompt.id)}
+                          isLoading={authLoading}
+                          onStartChapter={effectiveOnStartChapter}
+                          onToggleFlagPrompt={handleToggleFlagPrompt}
+                          onShowQrCode={handleShowQrCode}
+                          canAccess={canAccess}
+                          memoryDescription={memoryForPrompt?.description}
+                        />
+                      );
+                    })}
+
+                    {/* Add Your Own Memory Card */}
+                    <TooltipProvider>
+                      <Tooltip delayDuration={canAccessGroup ? 300 : 0}>
+                        <TooltipTrigger asChild>
+                          <div 
+                            onClick={() => {
+                              if (canAccessGroup) {
+                                router.push(`/add-memory?custom=true&groupId=${group.id}`);
+                              } else {
+                                router.push('/settings');
+                              }
+                            }}
+                            className={cn(
+                              "relative flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed transition-all cursor-pointer min-h-[240px] text-center shadow-sm hover:shadow-md",
+                              canAccessGroup 
+                                ? "border-primary/30 hover:border-primary bg-primary/5 hover:bg-primary/10" 
+                                : "opacity-60 grayscale-[0.5] blur-[0.2px] border-muted-foreground/20 bg-muted/10 hover:opacity-80 hover:grayscale-0"
+                            )}
+                          >
+                            {!canAccessGroup && (
+                              <div className="absolute top-3 left-3 flex items-center text-amber-600 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider">
+                                <Lock className="h-3 w-3 mr-1" />
+                                Premium Access
+                              </div>
+                            )}
+                            <div className={cn(
+                              "mb-4 p-4 rounded-full transition-all shadow-inner",
+                              canAccessGroup ? "bg-primary text-primary-foreground scale-110" : "bg-muted text-muted-foreground"
+                            )}>
+                              <Plus className="h-8 w-8" />
+                            </div>
+                            <h3 className={cn(
+                              "font-headline text-xl mb-1",
+                              canAccessGroup ? "text-primary" : "text-muted-foreground"
+                            )}>
+                              Add Your Own Memory
+                            </h3>
+                            <p className="text-xs text-muted-foreground px-4">
+                              to "{group.title[currentLanguage] || group.title.en}"
+                            </p>
+                            
+                            {!canAccessGroup && (
+                              <div className="mt-6">
+                                <Button variant="secondary" size="sm" className="h-8 px-4 text-xs font-bold pointer-events-none">
+                                    <Lock className="mr-2 h-3.5 w-3.5" /> Upgrade to Add
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </TooltipTrigger>
+                        {!canAccessGroup && (
+                          <TooltipContent className="bg-primary text-primary-foreground border-none shadow-2xl p-4 max-w-[280px] rounded-xl">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Lock className="h-4 w-4" />
+                                <p className="font-bold text-sm">Premium Feature</p>
+                              </div>
+                              <p className="text-xs leading-relaxed opacity-90">
+                                Custom memories allow you to weave your unique stories into this chapter. Upgrade your Host Pass to unlock unlimited freeform recording.
+                              </p>
+                              <p className="text-[10px] font-bold uppercase tracking-wider mt-2 border-t border-white/20 pt-2">
+                                Click card to upgrade
+                              </p>
+                            </div>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </section>
+              );
+            })}
         </div>
          <QrCodeDialog
           open={qrCodeDialog.open}
