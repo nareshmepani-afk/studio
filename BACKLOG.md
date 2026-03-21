@@ -6,6 +6,8 @@ Sprint 3: Polish & Recording [🟢 AUTH RESOLVED]
 
 [x] FIX-01: Correct post-login redirect from `/timeline` to `/prompts`.
 
+[x] UI-11: Replicate "Add Your Own Memory" functionality to the `/create` page.
+
 [ ] STU-V1: 🟡 In Progress Implement Git Hash injection for Version Verification.
 
 [ ] STU-55: Refactor Storyteller view to be 'Ad-Blocker Proof' using a Fetch-First data strategy.
