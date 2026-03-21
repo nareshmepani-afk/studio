@@ -38,8 +38,8 @@ export function PromptCard({
   const router = useRouter();
 
   const handleAction = (e: React.MouseEvent) => {
-    if (isLoading) return;
     e.stopPropagation();
+    if (isLoading) return;
     if (!canAccess) {
         router.push('/settings');
         return;
@@ -83,13 +83,13 @@ export function PromptCard({
   }
 
   const cardClasses = cn(
-    "shadow-lg transition-all flex flex-col h-full relative group",
+    "shadow-lg transition-all flex flex-col h-full relative group cursor-pointer",
     isCompleted ? 'bg-green-50 dark:bg-green-900/10 border-green-500/50' : 'bg-card',
-    !canAccess && "opacity-60 grayscale-[0.5] blur-[0.2px] hover:opacity-80 hover:grayscale-0 cursor-pointer"
+    !canAccess && "opacity-60 grayscale-[0.5] blur-[0.2px] hover:opacity-80 hover:grayscale-0"
   );
 
   const cardTitleClasses = cn(
-    "font-normal text-base",
+    "font-normal text-base leading-snug",
     isCompleted ? 'text-green-800 dark:text-green-300' : 'text-foreground',
     !canAccess && 'text-muted-foreground'
   );
@@ -119,8 +119,8 @@ export function PromptCard({
   );
 
   const cardContent = (
-      <Card className={cardClasses} onClick={!canAccess ? handleAction : undefined}>
-        <div className={cn("flex flex-col h-full", !canAccess && 'pointer-events-none')}>
+      <Card className={cardClasses} onClick={handleAction}>
+        <div className="flex flex-col h-full">
             <CardHeader className="pb-3">
               {isCompleted && (
                   <div className="flex items-center text-green-600 dark:text-green-400 text-xs mb-1">
@@ -150,7 +150,14 @@ export function PromptCard({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={handleQrCodeClick} className="text-muted-foreground hover:text-primary" aria-label="Show QR Code for this prompt" disabled={isLoading || !canAccess}>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={handleQrCodeClick} 
+                          className="text-muted-foreground hover:text-primary" 
+                          aria-label="Show QR Code for this prompt" 
+                          disabled={isLoading || !canAccess}
+                        >
                           <QrCode className="h-5 w-5" />
                         </Button>
                       </TooltipTrigger>
@@ -166,8 +173,8 @@ export function PromptCard({
                               </Button>
                           </TooltipTrigger>
                           <TooltipContent side="bottom" className="max-w-xs p-4" align="start">
-                              <h4 className="font-bold mb-2">Teleprompter Preview</h4>
-                              <p className="whitespace-pre-wrap text-xs">{teleprompterScript}</p>
+                              <h4 className="font-bold mb-2 text-primary">Teleprompter Preview</h4>
+                              <p className="whitespace-pre-wrap text-xs leading-relaxed">{teleprompterScript}</p>
                           </TooltipContent>
                       </Tooltip>
                   </TooltipProvider>
@@ -208,10 +215,19 @@ export function PromptCard({
           <TooltipTrigger asChild>
             {cardContent}
           </TooltipTrigger>
-          <TooltipContent className="bg-primary text-primary-foreground border-none shadow-xl p-4 max-w-[250px]">
-            <p className="font-medium text-sm leading-relaxed">
-              This chapter is part of the Premium Life Journey. Upgrade your Host Pass to weave this memory into your legacy.
-            </p>
+          <TooltipContent className="bg-primary text-primary-foreground border-none shadow-2xl p-4 max-w-[280px] rounded-xl">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4" />
+                <p className="font-bold text-sm">Premium Content</p>
+              </div>
+              <p className="text-xs leading-relaxed opacity-90">
+                This chapter is part of the Premium Life Journey. Upgrade your Host Pass to weave this memory into your legacy.
+              </p>
+              <p className="text-[10px] font-bold uppercase tracking-wider mt-2 border-t border-white/20 pt-2">
+                Click card to upgrade
+              </p>
+            </div>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
