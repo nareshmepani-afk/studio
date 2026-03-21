@@ -1,6 +1,7 @@
 /**
  * Registry of prompt IDs that require a Paid Host Pass.
  * All Part II through Part VI and Family Storytelling prompts are considered premium.
+ * Part I (p1, p2, p3) is free.
  */
 export const premiumPromptIds = new Set([
   // Part II
@@ -14,10 +15,5 @@ export const premiumPromptIds = new Set([
   // Part VI
   'p20', 'p21', 'p22', 'p23', 'p24',
   // Family Storytelling
-  'fs1_1', 'fs1_2', 'fs1_3',
-  'fs2_1', 'fs2_2', 'fs2_3',
-  'fs3_1', 'fs3_2', 'fs3_3',
-  'fs4_1', 'fs4_2',
-  'fs5_1', 'fs5_2',
-  'fs6_1', 'fs6_2'
+  'fs1_1', 'fs2_1', 'fs3_1', 'fs4_1', 'fs5_1', 'fs6_1'
 ]);

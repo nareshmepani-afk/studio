@@ -85,7 +85,7 @@ export function PromptCard({
   const cardClasses = cn(
     "shadow-lg transition-all flex flex-col h-full relative group cursor-pointer",
     isCompleted ? 'bg-green-50 dark:bg-green-900/10 border-green-500/50' : 'bg-card',
-    !canAccess && "opacity-60 grayscale-[0.5] blur-[0.2px] hover:opacity-80 hover:grayscale-0"
+    !canAccess && "opacity-60 grayscale-[0.5] blur-[0.2px] hover:opacity-80 hover:grayscale-0 border-dashed"
   );
 
   const cardTitleClasses = cn(

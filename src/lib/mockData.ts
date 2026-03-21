@@ -77,6 +77,16 @@ export const mockPromptGroups: PromptGroup[] = [
         },
         isFlaggedForReuse: false,
       },
+      {
+        id: 'p7',
+        title: 'Learning the Hard Way',
+        description: 'Valuable lessons from mistakes and setbacks.',
+        text: {
+          en: 'Learning the Hard Way – Lessons from mistakes and setbacks',
+          gu: 'અઘરી રીતે શીખવું - ભૂલો અને આંચકામાંથી પાઠ',
+        },
+        isFlaggedForReuse: false,
+      },
     ],
   },
   {
@@ -86,6 +96,26 @@ export const mockPromptGroups: PromptGroup[] = [
       gu: 'ભાગ III: પ્રેમ અને પ્રતિબદ્ધતા',
     },
     prompts: [
+      {
+        id: 'p8',
+        title: 'Journeys Within and Without',
+        description: 'Significant travels and educational experiences.',
+        text: {
+          en: 'Journeys Within and Without – Travels and education',
+          gu: 'અંદર અને બહારની મુસાફરી – પ્રવાસ અને શિક્ષણ',
+        },
+        isFlaggedForReuse: false,
+      },
+      {
+        id: 'p9',
+        title: 'Facing Reality',
+        description: 'The transition to full adulthood and independence.',
+        text: {
+          en: 'Facing Reality – Transition to adulthood and independence',
+          gu: 'વાસ્તવિકતાનો સામનો કરવો – પુખ્તાવસ્થા અને સ્વતંત્રતા તરફ સંક્રમણ',
+        },
+        isFlaggedForReuse: false,
+      },
       {
         id: 'p10',
         title: 'Falling in Love',
@@ -135,15 +165,16 @@ export const mockPromptGroups: PromptGroup[] = [
         },
         isFlaggedForReuse: false,
       },
-    ],
-  },
-  {
-    id: 'part-v',
-    title: {
-      en: 'Part V: Wisdom and Reflection',
-      gu: 'ભાગ V: જ્ઞાન અને પ્રતિબિંબ',
-    },
-    prompts: [
+      {
+        id: 'p14',
+        title: 'Faith in the Invisible',
+        description: 'Your spiritual journey and core beliefs.',
+        text: {
+          en: 'Faith in the Invisible – Spiritual journey and core beliefs',
+          gu: 'અદ્રશ્યમાં વિશ્વાસ - આધ્યાત્મિક યાત્રા અને મુખ્ય માન્યતાઓ',
+        },
+        isFlaggedForReuse: false,
+      },
       {
         id: 'p15',
         title: 'Wounds into Wisdom',
@@ -154,6 +185,35 @@ export const mockPromptGroups: PromptGroup[] = [
         },
         isFlaggedForReuse: false,
       },
+    ],
+  },
+  {
+    id: 'part-v',
+    title: {
+      en: 'Part V: Wisdom and Reflection',
+      gu: 'ભાગ V: જ્ઞાન અને પ્રતિબિંબ',
+    },
+    prompts: [
+      {
+        id: 'p16',
+        title: 'Letters to Those Watching',
+        description: 'Advice for the next generation.',
+        text: {
+          en: 'Letters to Those Watching – Advice for next generation',
+          gu: 'જોનારાઓને પત્રો - આગામી પેઢી માટે સલાહ',
+        },
+        isFlaggedForReuse: false,
+      },
+      {
+        id: 'p17',
+        title: 'Conversations with Myself',
+        description: 'Internal dialogues and personal philosophies.',
+        text: {
+          en: 'Conversations with Myself – Personal philosophies',
+          gu: 'મારી સાથે વાતચીત - વ્યક્તિગત ફિલસૂફી',
+        },
+        isFlaggedForReuse: false,
+      },
       {
         id: 'p18',
         title: 'The Person in the Mirror',
@@ -161,6 +221,16 @@ export const mockPromptGroups: PromptGroup[] = [
         text: {
           en: 'The Person in the Mirror – Honest self-assessment today',
           gu: 'અરીસામાં વ્યક્તિ - આજે પ્રામાણિક આત્મ-મૂલ્યાંકન',
+        },
+        isFlaggedForReuse: false,
+      },
+      {
+        id: 'p19',
+        title: 'The Quiet Victories',
+        description: 'Small moments that shaped your soul.',
+        text: {
+          en: 'The Quiet Victories – Small moments shaping your soul',
+          gu: 'શાંત વિજય – તમારા આત્માને આકાર આપતી નાની ક્ષણો',
         },
         isFlaggedForReuse: false,
       },
@@ -184,6 +254,26 @@ export const mockPromptGroups: PromptGroup[] = [
         isFlaggedForReuse: false,
       },
       {
+        id: 'p21',
+        title: 'If I Could Do It Again',
+        description: 'Reflections on past choices and joy repeated.',
+        text: {
+          en: 'If I Could Do It Again – Choices and joy repeated',
+          gu: 'જો હું તે ફરી કરી શકું – પસંદગીઓ અને આનંદ પુનરાવર્તિત',
+        },
+        isFlaggedForReuse: false,
+      },
+      {
+        id: 'p22',
+        title: 'Final Experiment with Truth',
+        description: 'Living authentically with your core convictions.',
+        text: {
+          en: 'Final Experiment with Truth – Core convictions',
+          gu: 'સત્ય સાથે અંતિમ પ્રયોગ - મુખ્ય માન્યતાઓ',
+        },
+        isFlaggedForReuse: false,
+      },
+      {
         id: 'p23',
         title: 'The Story Continuing',
         description: 'Final thoughts on your legacy and the great unknown.',
@@ -193,13 +283,23 @@ export const mockPromptGroups: PromptGroup[] = [
         },
         isFlaggedForReuse: false,
       },
+      {
+        id: 'p24',
+        title: 'Time Travel',
+        description: 'The importance of reflection and looking back.',
+        text: {
+          en: 'Time Travel – The importance of reflection',
+          gu: 'સમય પ્રવાસ - પ્રતિબિંબનું મહત્વ',
+        },
+        isFlaggedForReuse: false,
+      },
     ],
   },
   {
     id: 'family-storytelling',
     title: {
       en: 'Family Storytelling',
-      gu: 'કૌટુંબિક વાર્તાલાપ',
+      gu: 'કૌૌટુંબિક વાર્તાલાપ',
     },
     prompts: [
       {
@@ -209,6 +309,46 @@ export const mockPromptGroups: PromptGroup[] = [
         text: {
           en: 'Memories of Elders – Cherished stories of grandparents',
           gu: 'વડીલોની યાદો - દાદા-દાદીની વહાલી વાર્તાઓ',
+        },
+        isFlaggedForReuse: false,
+      },
+      {
+        id: 'fs2_1',
+        title: 'Family Traditions',
+        description: 'Customs passed down through generations.',
+        text: {
+          en: 'Family Traditions – Customs passed down',
+          gu: 'કૌટુંબિક પરંપરાઓ - પેઢીઓથી ચાલી આવતી રૂઢિઓ',
+        },
+        isFlaggedForReuse: false,
+      },
+      {
+        id: 'fs3_1',
+        title: 'Historical Events',
+        description: 'Events that impacted your family path.',
+        text: {
+          en: 'Historical Events – Family impact',
+          gu: 'ઐતિહાસિક ઘટનાઓ – પારિવારિક પ્રભાવ',
+        },
+        isFlaggedForReuse: false,
+      },
+      {
+        id: 'fs4_1',
+        title: 'Parental Values',
+        description: 'The core principles your parents instilled.',
+        text: {
+          en: 'Parental Values – Core principles instilled',
+          gu: 'માતાપિતાના મૂલ્યો - કેળવેલા મુખ્ય સિદ્ધાંતો',
+        },
+        isFlaggedForReuse: false,
+      },
+      {
+        id: 'fs5_1',
+        title: 'Admired Ancestors',
+        description: 'Stories of ancestors you admire.',
+        text: {
+          en: 'Admired Ancestors – Ancestor stories',
+          gu: 'પ્રશંસનીય પૂર્વજો - પૂર્વજોની વાર્તાઓ',
         },
         isFlaggedForReuse: false,
       },
