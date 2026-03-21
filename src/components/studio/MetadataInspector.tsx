@@ -31,6 +31,7 @@ interface MetadataInspectorProps {
   days: number[];
   isSubmitting: boolean;
   handleSubmit: () => void;
+  isCustom?: boolean;
 }
 
 export const MetadataInspector: React.FC<MetadataInspectorProps> = ({
@@ -44,13 +45,14 @@ export const MetadataInspector: React.FC<MetadataInspectorProps> = ({
   selectedDay, setSelectedDay,
   years, months, days,
   isSubmitting,
-  handleSubmit
+  handleSubmit,
+  isCustom
 }) => {
   return (
     <div className="bg-muted/30 p-4 rounded-lg space-y-4">
         <div className='space-y-1'>
             <Label htmlFor='title' className="text-sm font-medium text-muted-foreground">Title</Label>
-            <Input id='title' value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Give your memory a name..." className='text-lg font-headline h-auto p-0 border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent' />
+            <Input id='title' value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Give your memory a name..." disabled={!isCustom} className='text-lg font-headline h-auto p-0 border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent' />
         </div>
 
         <div className='space-y-2'>

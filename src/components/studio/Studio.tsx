@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useMediaRecorder } from '@/hooks/use-media-recorder';
 import { useCamera } from '@/hooks/useCamera';
 import { Progress } from '@/components/ui/progress';
+import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { MemoryCategory } from '@/types';
 import SessionIdWitness from '../debug/SessionIdWitness';
@@ -29,6 +30,8 @@ export const Studio = ({ callId, role = 'host' }: StudioProps) => {
   const { stream } = useCamera();
   const { startRecording, stopRecording, uploading, uploadProgress, uploadResult } = useMediaRecorder(stream);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isCustomMemory = searchParams.has('groupId');
 
   // Metadata State
   const [title, setTitle] = useState('');
@@ -133,6 +136,7 @@ export const Studio = ({ callId, role = 'host' }: StudioProps) => {
           days={days}
           isSubmitting={isSubmitting}
           handleSubmit={handleSubmit}
+          isCustom={isCustomMemory}
         />
         <div className="mt-auto space-y-4">
           {uploading && <Progress value={uploadProgress} />}

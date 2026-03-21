@@ -61,6 +61,10 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
       }
   }, [memories, router]);
 
+  const handleAddChapter = useCallback((groupId: string) => {
+    router.push(`/add-memory?groupId=${encodeURIComponent(groupId)}`);
+  }, [router]);
+
   const handleToggleFlagPrompt = useCallback(async (promptIdToToggle: string) => {
     if (!user) return;
     const userRef = doc(db, 'users', user.uid);
@@ -145,9 +149,7 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
         </Alert>
 
         <div className="space-y-10">
-          {mockPromptGroups.map((group) => {
-            console.log('TESTIMONY: Processing group:', JSON.stringify(group, null, 2));
-            return (
+          {mockPromptGroups.map((group) => (
               <section key={group.id}>
                 <h2 className="font-headline text-3xl mb-6 border-b pb-3 text-primary">{group.title[currentLanguage] || group.title.en}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -155,10 +157,8 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
                     const isCompleted = completedPromptIds.has(prompt.id);
                     const memoryForPrompt = isCompleted ? memories.find(m => m.promptId === prompt.id) : undefined;
                     
-                    // Correct Logic: Determine access based on premium status and user plan
                     const isPremium = premiumPromptIds.has(prompt.id);
                     const canAccess = !isPremium || hostPassStatus === 'paid_host_pass_active';
-                    console.log(`TESTIMONY: Prompt: ${prompt.id}, isPremium: ${isPremium}, canAccess: ${canAccess}, hostPassStatus: ${hostPassStatus}`);
 
                     const effectiveOnStartChapter = (promptId: string, isCompleted: boolean) => {
                       if (canAccess) {
@@ -171,6 +171,7 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
                     return (
                       <PromptCard
                         key={prompt.id}
+                        isAddCard={false}
                         promptId={prompt.id}
                         promptText={prompt.text[currentLanguage] || prompt.text.en}
                         teleprompterScript={teleprompterScripts[prompt.id] || "No script available."}
@@ -180,15 +181,19 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
                         onStartChapter={effectiveOnStartChapter}
                         onToggleFlagPrompt={handleToggleFlagPrompt}
                         onShowQrCode={handleShowQrCode}
-                        canAccess={canAccess} // Pass the correct access status
+                        canAccess={canAccess}
                         memoryDescription={memoryForPrompt?.description}
                       />
                     );
                   })}
+                  <PromptCard 
+                    isAddCard={true} 
+                    onAddChapter={() => handleAddChapter(group.id)} 
+                    groupTitle={group.title[currentLanguage] || group.title.en} 
+                  />
                 </div>
               </section>
-            );
-          })}
+            ))}
         </div>
          <QrCodeDialog
           open={qrCodeDialog.open}

@@ -2,13 +2,15 @@
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookText, CheckCircle, Edit, Flag, QrCode, Lock, Info } from 'lucide-react';
+import { BookText, CheckCircle, Edit, Flag, QrCode, Lock, Info, Plus } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-interface PromptCardProps {
+// New Prop types
+type RegularPromptCardProps = {
+  isAddCard?: false;
   promptId: string;
   promptText: string;
   teleprompterScript: string;
@@ -20,46 +22,22 @@ interface PromptCardProps {
   onShowQrCode: (promptId: string, promptTitle: string) => void;
   canAccess: boolean;
   memoryDescription?: string;
-}
+};
 
-export function PromptCard({
-  promptId,
-  promptText,
-  teleprompterScript,
-  isCompleted,
-  isFlaggedForReuse,
-  isLoading = false,
-  onStartChapter,
-  onToggleFlagPrompt,
-  onShowQrCode,
-  canAccess,
-  memoryDescription,
-}: PromptCardProps) {
+type AddPromptCardProps = {
+  isAddCard: true;
+  isLoading?: boolean;
+  onAddChapter: () => void;
+  groupTitle: string;
+};
+
+type PromptCardProps = RegularPromptCardProps | AddPromptCardProps;
+
+
+export function PromptCard(props: PromptCardProps) {
   const router = useRouter();
 
-  const handleAction = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isLoading) return;
-    if (!canAccess) {
-        router.push('/settings');
-        return;
-    }
-    onStartChapter(promptId, isCompleted);
-  };
-  
-  const handleFlagToggle = (e: React.MouseEvent) => {
-    if (isLoading || !canAccess) return;
-    e.stopPropagation();
-    onToggleFlagPrompt(promptId);
-  };
-  
-  const handleQrCodeClick = (e: React.MouseEvent) => {
-    if (isLoading || !canAccess) return;
-    e.stopPropagation();
-    onShowQrCode(promptId, promptText);
-  };
-
-  if (isLoading) {
+  if (props.isLoading) {
     return (
         <Card className="shadow-lg flex flex-col h-full bg-card/50">
             <CardHeader className="pb-3">
@@ -82,6 +60,58 @@ export function PromptCard({
     );
   }
 
+  if (props.isAddCard) {
+    return (
+      <Card 
+        className="shadow-lg transition-all flex flex-col h-full relative group cursor-pointer border-2 border-dashed hover:border-primary hover:bg-primary/5"
+        onClick={props.onAddChapter}
+      >
+        <CardContent className="flex flex-col items-center justify-center flex-grow text-center p-6">
+          <div className="w-16 h-16 rounded-full bg-secondary/20 flex items-center justify-center mb-4">
+            <Plus className="h-8 w-8 text-primary" />
+          </div>
+          <p className="font-semibold text-lg text-primary">Add Your Own Memory</p>
+          <p className="text-sm text-muted-foreground mt-1">to "{props.groupTitle}"</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const {
+    promptId,
+    promptText,
+    teleprompterScript,
+    isCompleted,
+    isFlaggedForReuse,
+    onStartChapter,
+    onToggleFlagPrompt,
+    onShowQrCode,
+    canAccess,
+    memoryDescription,
+  } = props;
+
+  const handleAction = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (props.isLoading) return;
+    if (!canAccess) {
+        router.push('/settings');
+        return;
+    }
+    onStartChapter(promptId, isCompleted);
+  };
+  
+  const handleFlagToggle = (e: React.MouseEvent) => {
+    if (props.isLoading || !canAccess) return;
+    e.stopPropagation();
+    onToggleFlagPrompt(promptId);
+  };
+  
+  const handleQrCodeClick = (e: React.MouseEvent) => {
+    if (props.isLoading || !canAccess) return;
+    e.stopPropagation();
+    onShowQrCode(promptId, promptText);
+  };
+
   const cardClasses = cn(
     "shadow-lg transition-all flex flex-col h-full relative group cursor-pointer",
     isCompleted ? 'bg-green-50 dark:bg-green-900/10 border-green-500/50' : 'bg-card',
@@ -100,7 +130,7 @@ export function PromptCard({
       size="sm"
       variant={!canAccess ? "secondary" : isCompleted ? "outline" : "default"}
       className="w-full"
-      disabled={isLoading}
+      disabled={props.isLoading}
     >
       {!canAccess ? (
           <>
@@ -156,7 +186,7 @@ export function PromptCard({
                           onClick={handleQrCodeClick} 
                           className="text-muted-foreground hover:text-primary" 
                           aria-label="Show QR Code for this prompt" 
-                          disabled={isLoading || !canAccess}
+                          disabled={props.isLoading || !canAccess}
                         >
                           <QrCode className="h-5 w-5" />
                         </Button>
@@ -168,7 +198,7 @@ export function PromptCard({
                   <TooltipProvider>
                       <Tooltip>
                           <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="View teleprompter script" disabled={isLoading || !canAccess} onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="View teleprompter script" disabled={props.isLoading || !canAccess} onClick={(e) => e.stopPropagation()}>
                                  <Info className="h-5 w-5" />
                               </Button>
                           </TooltipTrigger>
@@ -190,7 +220,7 @@ export function PromptCard({
                           onClick={handleFlagToggle}
                           className="mr-2 shrink-0"
                           aria-label={isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}
-                          disabled={isLoading || !canAccess}
+                          disabled={props.isLoading || !canAccess}
                         >
                           <Flag className={cn("h-5 w-5 transition-colors", isFlaggedForReuse ? 'fill-primary text-primary' : 'text-muted-foreground hover:text-primary')} />
                         </Button>
