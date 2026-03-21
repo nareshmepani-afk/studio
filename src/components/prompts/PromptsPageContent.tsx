@@ -29,7 +29,6 @@ interface PromptsPageContentProps {
 }
 
 export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, mockPromptGroups, isLoading, hostPassStatus }: PromptsPageContentProps) {
-  console.log('TESTIMONY: PromptsPageContent received mockPromptGroups:', JSON.stringify(mockPromptGroups, null, 2));
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
   
