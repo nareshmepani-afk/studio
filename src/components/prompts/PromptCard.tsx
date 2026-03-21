@@ -2,15 +2,14 @@
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookText, CheckCircle, Edit, Flag, QrCode, Lock, Info, Plus } from 'lucide-react';
+import { BookText, CheckCircle, Edit, Flag, QrCode, Lock, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-// New Prop types
-type RegularPromptCardProps = {
-  isAddCard?: false;
+// Prop types
+type PromptCardProps = {
   promptId: string;
   promptText: string;
   teleprompterScript: string;
@@ -23,16 +22,6 @@ type RegularPromptCardProps = {
   canAccess: boolean;
   memoryDescription?: string;
 };
-
-type AddPromptCardProps = {
-  isAddCard: true;
-  isLoading?: boolean;
-  onAddChapter: () => void;
-  groupTitle: string;
-};
-
-type PromptCardProps = RegularPromptCardProps | AddPromptCardProps;
-
 
 export function PromptCard(props: PromptCardProps) {
   const router = useRouter();
@@ -57,23 +46,6 @@ export function PromptCard(props: PromptCardProps) {
                 </div>
             </CardFooter>
         </Card>
-    );
-  }
-
-  if (props.isAddCard) {
-    return (
-      <Card 
-        className="shadow-lg transition-all flex flex-col h-full relative group cursor-pointer border-2 border-dashed hover:border-primary hover:bg-primary/5"
-        onClick={props.onAddChapter}
-      >
-        <CardContent className="flex flex-col items-center justify-center flex-grow text-center p-6">
-          <div className="w-16 h-16 rounded-full bg-secondary/20 flex items-center justify-center mb-4">
-            <Plus className="h-8 w-8 text-primary" />
-          </div>
-          <p className="font-semibold text-lg text-primary">Add Your Own Memory</p>
-          <p className="text-sm text-muted-foreground mt-1">to "{props.groupTitle}"</p>
-        </CardContent>
-      </Card>
     );
   }
 

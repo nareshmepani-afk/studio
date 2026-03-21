@@ -49,6 +49,10 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
   }, [memories]);
 
   const handleStartChapter = useCallback((promptId: string, isCompleted: boolean) => {
+      if (promptId === 'p25_1') {
+        router.push(`/add-memory?custom=true`);
+        return;
+      }
       if (isCompleted) {
           const memory = memories.find((m: Memory) => m.promptId === promptId);
           if (memory && memory.id) {
@@ -60,10 +64,6 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
           router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
       }
   }, [memories, router]);
-
-  const handleAddChapter = useCallback((groupId: string) => {
-    router.push(`/add-memory?groupId=${encodeURIComponent(groupId)}`);
-  }, [router]);
 
   const handleToggleFlagPrompt = useCallback(async (promptIdToToggle: string) => {
     if (!user) return;
@@ -127,7 +127,7 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
             <h1 className="font-headline text-4xl">My Life Journey</h1>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-            <Select value={currentLanguage} onValueChange={(value: 'en' | 'gu') => setCurrentLanguage(value)}>
+            <Select value={currentLanguage} onValueChange={(value) => setCurrentLanguage(value as 'en' | 'gu')}>
               <SelectTrigger id="prompt-language" className="w-full">
                 <Languages className="mr-2 h-4 w-4" />
                 <SelectValue placeholder="Language" />
@@ -171,7 +171,6 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
                     return (
                       <PromptCard
                         key={prompt.id}
-                        isAddCard={false}
                         promptId={prompt.id}
                         promptText={prompt.text[currentLanguage] || prompt.text.en}
                         teleprompterScript={teleprompterScripts[prompt.id] || "No script available."}
@@ -186,11 +185,6 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
                       />
                     );
                   })}
-                  <PromptCard 
-                    isAddCard={true} 
-                    onAddChapter={() => handleAddChapter(group.id)} 
-                    groupTitle={group.title[currentLanguage] || group.title.en} 
-                  />
                 </div>
               </section>
             ))}
