@@ -3,6 +3,8 @@
  * This is the single source of truth to prevent module resolution conflicts.
  */
 
+export * from './roles';
+
 export interface MediaAttachment {
   url: string;
   type: string; // 'image' | 'video' | 'audio'
@@ -105,7 +107,6 @@ export interface User {
   isPremium?: boolean;
 }
 
-export type UserRole = 'Host' | 'Storyteller' | 'Guest' | 'Interviewer';
 export type ActionResponse = {
   success: boolean;
   message: string;
