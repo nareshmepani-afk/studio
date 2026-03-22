@@ -4,12 +4,11 @@
 import React, { useState, useEffect, createContext, useContext, useCallback, useMemo } from 'react';
 import { onIdTokenChanged, type User as FirebaseUser, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signOut } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore'; // Added setDoc
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import type { User } from '@/types';
+import type { User, Host } from '@/types'; // Added Host
 import { createSessionAction, deleteSessionAction } from '@/actions/createSessionAction';
-import { premiumPromptIds } from '@/lib/premiumPrompts';
 
 type CombinedUser = FirebaseUser & Partial<User>;
 
@@ -78,7 +77,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
+
+      // Update Firebase Auth profile
       await updateProfile(firebaseUser, { displayName: name });
+
+      // Create the Host profile in Firestore
+      const userProfileRef = doc(db, 'users', firebaseUser.uid);
+      const newUserProfile: Host = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email!,
+        displayName: name,
+        role: 'Host',
+        subscriptionStatus: 'trial',
+        storageQuota: {
+          used: 0,
+          total: 5 * 1024 * 1024 * 1024, // 5 GB
+        },
+        // @ts-ignore
+        createdAt: serverTimestamp(),
+        // @ts-ignore
+        updatedAt: serverTimestamp(),
+      };
+
+      await setDoc(userProfileRef, newUserProfile);
+      
       router.push('/prompts');
       toast.success('Registration Successful', { description: "Welcome to Memory Weaver!" });
     } catch (error: any) {

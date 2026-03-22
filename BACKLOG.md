@@ -20,6 +20,12 @@ Sprint 3: Polish & Recording [🟢 AUTH RESOLVED]
 
 [ ] PROMPTS-01: Ghost out premium prompts and link to settings page for upgrade.
 
+[ ] EPIC-01: The Recording Studio Experience
+    [ ] AUTH-10: Implement Role-Based Access Control (Host, Storyteller, Guest, Interviewer).
+    [ ] UI-20: Design and build the "Recording Studio" interface.
+    [ ] FEAT-15: Implement the "Storyteller" user flow (record via unique link).
+    [ ] FEAT-16: Implement the "Interviewer" user flow (remote guided prompts).
+
 2023-11-15: AUTH FAILURE (ARCHIVED)
 Issue: The application is unable to access secrets required for Firebase Admin SDK initialization and Resend API calls.
 
