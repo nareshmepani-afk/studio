@@ -1,0 +1,8 @@
+# Ignore heavy directories to save tokens
+.next/
+node_modules/
+dist/
+build/
+*.log
+.git/
+package-lock.json
