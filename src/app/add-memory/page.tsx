@@ -13,7 +13,7 @@ const AddMemoryPage = () => {
   return (
     <StudioProvider>
       <div className="w-full h-screen bg-black">
-        <Studio />
+        <Studio role="Storyteller" />
       </div>
     </StudioProvider>
   );
