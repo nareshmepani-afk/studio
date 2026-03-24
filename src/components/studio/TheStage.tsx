@@ -4,8 +4,8 @@
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { db } from '@/lib/firebase/firestore';
-import { Prompt } from '@/types/prompt';
+import { db } from '@/lib/firebase';
+import { Prompt } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const TheStage = () => {
@@ -70,7 +70,7 @@ const TheStage = () => {
       <div className="relative min-h-[300px] transition-all duration-500">
         {activePrompt ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-             <h2 className="text-4xl font-serif mb-4">{activePrompt.text}</h2>
+             <h2 className="text-4xl font-serif mb-4">{activePrompt.text.en}</h2>
              {/* Render your specific prompt fields here */}
           </div>
         ) : (
