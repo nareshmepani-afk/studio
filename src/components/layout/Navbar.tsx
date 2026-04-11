@@ -54,10 +54,21 @@ export function Navbar() {
   }
 
   const isAuthenticated = !!user;
+  const isStudio = pathname === '/studio' || pathname?.startsWith('/add-memory');
+  const isInterviewer = pathname?.startsWith('/interviewer');
+
+  // MOBILE REMOTE STEALH: Do not render the navbar AT ALL on the interviewer screen
+  // to ensure maximum focus and screen real-estate for the teleprompter.
+  if (isInterviewer) return null;
 
   return (
     <TooltipProvider delayDuration={300}>
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className={`sticky top-0 z-[100] w-full transition-all duration-500 ease-in-out border-b
+        ${isStudio 
+          ? 'translate-y-[-90%] opacity-0 hover:translate-y-0 hover:opacity-100 bg-background/80 backdrop-blur-xl border-white/10 shadow-2xl' 
+          : 'bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm'
+        }
+      `}>
         <div className="container flex h-16 items-center">
           <Tooltip>
             <TooltipTrigger asChild>

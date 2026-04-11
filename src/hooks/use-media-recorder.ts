@@ -1,77 +1,143 @@
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
-import { useState, useRef, useCallback } from 'react';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/lib/firebase';
-
-// This tuple contains the generated memory ID and the final download URL.
+// This tuple contains the generated memory ID and final download URL.
 type UploadResult = [string, string];
 
 export const useMediaRecorder = (stream: MediaStream | null) => {
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
+
+  const WARNING_LIMIT = 5 * 60; // 5 minutes
+  const HARD_STOP_LIMIT = 7 * 60; // 7 minutes
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  }, []);
 
   const startRecording = useCallback(() => {
     if (!stream) return;
 
     chunksRef.current = [];
     const mimeType = ['video/webm;codecs=vp9', 'video/webm'].find(MediaRecorder.isTypeSupported) || 'video/webm';
-    const recorder = new MediaRecorder(stream, { mimeType });
+    
+    // PREMIUM: Set a high bitrate (8Mbps) to ensure UHD/HD footage is crisp.
+    // Standard browser defaults are often too low (2.5Mbps).
+    const recorder = new MediaRecorder(stream, { 
+      mimeType,
+      videoBitsPerSecond: 8000000, 
+      audioBitsPerSecond: 128000
+    });
     
     recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data);
+      if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
     };
 
-    recorder.onstop = async () => {
+    recorder.onstop = () => {
       const blob = new Blob(chunksRef.current, { type: mimeType });
-      await uploadVideo(blob);
+      console.log(`[MediaRecorder] Stopped. Compiled Blob Size: ${blob.size} bytes. Modules: ${chunksRef.current.length}`);
+      setIsRecording(false);
+      
+      if (blob.size === 0) {
+        console.error("Recording blob is empty. Trashed.");
+        return;
+      }
+
+      setRecordedBlob(blob);
     };
 
-    recorder.start();
+    recorder.start(1000);
     mediaRecorderRef.current = recorder;
     setIsRecording(true);
+    setRecordingTime(0);
     setUploadResult(null);
+    setRecordedBlob(null);
   }, [stream]);
 
-  const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
+  // Handle Recording Timer & 5+2 Rules
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isRecording) {
+      interval = setInterval(() => {
+        setRecordingTime((prev) => {
+          const nextTime = prev + 1;
+          if (nextTime >= HARD_STOP_LIMIT) {
+            stopRecording();
+          }
+          return nextTime;
+        });
+      }, 1000);
     }
-  }, []);
+    return () => clearInterval(interval);
+  }, [isRecording, stopRecording]);
 
-  const uploadVideo = async (blob: Blob) => {
+  const isWarningLimit = recordingTime >= WARNING_LIMIT;
+
+  const { user } = useAuth(); // Import hook at the top level of this file!
+  
+  const uploadVideo = async (blob: Blob, memoryId: string, overrideUid?: string): Promise<string> => {
     setUploading(true);
-    setUploadProgress(0);
-    const memoryId = `${Date.now()}`;
-    try {
-      const storageRef = ref(storage, `memories/${memoryId}.webm`);
-      const uploadTask = uploadBytesResumable(storageRef, blob);
-
-      uploadTask.on('state_changed',
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgress(progress);
-        },
-        (error) => {
-          console.error("Upload failed:", error);
-          setUploading(false);
-        },
-        async () => {
-          const url = await getDownloadURL(uploadTask.snapshot.ref);
-          console.log("Video uploaded successfully:", url);
-          setUploadResult([memoryId, url]);
-          setUploading(false);
-        }
-      );
-    } catch (err) {
-      console.error("Upload failed:", err);
+    setUploadProgress(10); // Start progress for feedback
+    
+    const activeUid = overrideUid || user?.uid;
+    if (!activeUid) {
       setUploading(false);
+      throw new Error("No active UID for upload.");
+    }
+
+    try {
+      console.log(`[Upload Proxy] Commencing artifact transport for ${memoryId}...`);
+      
+      const response = await fetch(`/api/interviewer/upload?hostId=${activeUid}&memoryId=${memoryId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': blob.type },
+        body: blob
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Upload Proxy Failed: ${response.status}`);
+      }
+
+      const { url } = await response.json();
+      setUploadProgress(100);
+      setUploadResult([memoryId, url]);
+      setUploading(false);
+      return url;
+    } catch (error) {
+      setUploading(false);
+      console.error("[Upload Proxy] FAILURE:", error);
+      throw error;
     }
   };
 
-  return { isRecording, startRecording, stopRecording, uploading, uploadProgress, uploadResult };
+  const clearRecording = () => {
+    setRecordedBlob(null);
+    setUploadResult(null);
+  };
+
+  return { 
+    isRecording, 
+    startRecording, 
+    stopRecording, 
+    recordingTime,
+    isWarningLimit,
+    recordedBlob,
+    clearRecording,
+    uploadVideo,
+    uploadMediaBlob: uploadVideo, // Generic alias for thumbnail snapshots
+    uploading, 
+    uploadProgress, 
+    uploadResult 
+  };
 };

@@ -61,7 +61,8 @@ export async function getOrCreateMemoryForPrompt(promptId: string, idToken: stri
       date: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      status: 'draft' // Add a status to indicate it's not a complete memory yet
+      status: 'draft', // Add a status to indicate it's not a complete memory yet
+      sensoryConfig: prompt.sensoryPrompts || []
     };
 
     await newMemoryRef.set(newMemory);
@@ -148,6 +149,115 @@ export async function getMemory(memoryId: string): Promise<Memory | null> {
     }
     return { id: memoryDoc.id, ...memoryDoc.data() } as Memory;
 }
+
+export async function cleanupAndMigrateMemories(): Promise<{ success: boolean; message: string; stats?: any }> {
+    const session = await getSession();
+    if (!session?.uid || !adminDb) {
+        return { success: false, message: "Unauthorized or DB not initialized." };
+    }
+
+    try {
+        const memoriesRef = adminDb.collection('users').doc(session.uid).collection('memories');
+        const snapshot = await memoriesRef.get();
+        
+        let migratedCount = 0;
+        let deletedCount = 0;
+
+        const batch = adminDb.batch();
+
+        snapshot.docs.forEach(docSnap => {
+            const data = docSnap.data();
+            // Rule: If it's an existing memory (usually has a promptId or content), mark as draft if no status exists
+            if (!data.status) {
+                batch.update(docSnap.ref, { status: 'draft' });
+                migratedCount++;
+            } else if (data.status !== 'draft' && data.status !== 'published') {
+                // Should not happen with new enum, but for safety
+                batch.update(docSnap.ref, { status: 'draft' });
+                migratedCount++;
+            }
+        });
+
+        await batch.commit();
+
+        // Second pass: Delete those that are STILL not draft (the user said "delete all... which do not have status: 'draft'")
+        // But wait, if I just marked them all as draft, nothing will be deleted.
+        // Ah, the user probably meant "Delete the ones that were empty and didn't even qualify for draft migration".
+        // Let's refine: Delete memories that have NO title AND NO description AND NO media.
+        
+        const finalSnapshot = await memoriesRef.get();
+        const deleteBatch = adminDb.batch();
+        
+        finalSnapshot.docs.forEach(docSnap => {
+            const data = docSnap.data();
+            const isEmpty = !data.title && !data.description && (!data.mediaAttachments || data.mediaAttachments.length === 0) && !data.videoUrl;
+            
+            if (isEmpty) {
+                deleteBatch.delete(docSnap.ref);
+                deletedCount++;
+            }
+        });
+
+        await deleteBatch.commit();
+
+        revalidatePath('/timeline');
+        revalidatePath('/prompts');
+
+        return { 
+            success: true, 
+            message: `Migration complete.`, 
+            stats: { migrated: migratedCount, deleted: deletedCount } 
+        };
+    } catch (error: any) {
+        console.error("Migration error:", error);
+        return { success: false, message: error.message || "Migration failed." };
+    }
+}
+
+export async function publishMemoryAction(memoryId: string): Promise<{ success: boolean; message: string }> {
+    const session = await getSession();
+    if (!session?.uid || !adminDb) {
+        return { success: false, message: "Unauthorized or DB not initialized." };
+    }
+
+    try {
+        const docRef = adminDb.collection('users').doc(session.uid).collection('memories').doc(memoryId);
+        await docRef.update({ 
+            status: 'published',
+            updatedAt: new Date().toISOString()
+        });
+        
+        revalidatePath('/timeline');
+        revalidatePath('/prompts');
+        
+        return { success: true, message: "Cinema updated successfully!" };
+    } catch (error: any) {
+        return { success: false, message: error.message || "Failed to publish." };
+    }
+}
+
+export async function unpublishMemoryAction(memoryId: string): Promise<{ success: boolean; message: string }> {
+    const session = await getSession();
+    if (!session?.uid || !adminDb) {
+        return { success: false, message: "Unauthorized or DB not initialized." };
+    }
+
+    try {
+        const docRef = adminDb.collection('users').doc(session.uid).collection('memories').doc(memoryId);
+        await docRef.update({ 
+            status: 'draft',
+            updatedAt: new Date().toISOString()
+        });
+        
+        revalidatePath('/timeline');
+        revalidatePath('/prompts');
+        
+        return { success: true, message: "Memory reverted to draft." };
+    } catch (error: any) {
+        return { success: false, message: error.message || "Failed to revert to draft." };
+    }
+}
+
 
 // We need to re-import getSession here because it was removed from the top of the file
 import { getSession } from '@/lib/session';

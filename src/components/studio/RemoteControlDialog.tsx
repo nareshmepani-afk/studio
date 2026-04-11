@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 interface RemoteControlDialogProps {
   open: boolean;
@@ -25,11 +26,18 @@ export function RemoteControlDialog({ open, onClose, sessionId }: RemoteControlD
   const [storytellerUrl, setStorytellerUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  if (!open) {
-    return null;
-  }
 
-  const remoteUrl = `${window.location.origin}/remote/${sessionId}`;
+
+  const { user } = useAuth();
+  const [remoteUrl, setRemoteUrl] = useState('');
+
+  useEffect(() => {
+    // Prevent SSR hydration mismatch and dynamically build the absolute LAN IP for mobile
+    if (typeof window !== 'undefined' && user?.uid) {
+      let baseOrigin = window.location.origin;
+      setRemoteUrl(`${window.location.protocol}//${window.location.hostname === 'localhost' ? '192.168.1.205' : window.location.hostname}:3000/interviewer/${sessionId}?hostId=${user.uid}`);
+    }
+  }, [sessionId, user?.uid]);
 
   const generateStorytellerLink = async () => {
     setIsLoading(true);

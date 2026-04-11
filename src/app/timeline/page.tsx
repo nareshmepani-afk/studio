@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { useAuth } from '@/hooks/useAuth';
 import { db, storage } from '@/lib/firebase';
-import { collection, query, orderBy, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, deleteDoc, where } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
+import { unpublishMemoryAction } from '@/actions/memoryActions';
 import { MemoryCard } from '@/components/memory/MemoryCard';
+import { MemoryCinematicViewer } from '@/components/memory/MemoryCinematicViewer';
 import { Loader2, Film } from 'lucide-react';
 import type { Memory } from '@/types';
 import { toast } from 'sonner';
@@ -17,13 +19,15 @@ export default function TimelinePage() {
   const router = useRouter();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
 
   useEffect(() => {
     if (user && db) {
       setIsLoading(true);
       const memoriesQuery = query(
         collection(db, 'users', user.uid, 'memories'), 
-        orderBy('createdAt', 'desc') // Order by creation time
+        where('status', '==', 'published'),
+        orderBy('createdAt', 'desc')
       );
         
       const unsubscribe = onSnapshot(memoriesQuery, (snapshot) => {
@@ -46,26 +50,19 @@ export default function TimelinePage() {
     router.push(`/add-memory?editMemoryId=${memory.id}`);
   };
 
-  const handleDelete = async (memoryId: string) => {
+  const handleUnpublish = async (memoryId: string) => {
     if (!user) return;
 
-    const memoryToDelete = memories.find(m => m.id === memoryId);
-    if (!memoryToDelete) return;
-
     try {
-      await deleteDoc(doc(db, 'users', user.uid, 'memories', memoryId));
-
-      if (memoryToDelete.mediaAttachments?.length) {
-        for (const attachment of memoryToDelete.mediaAttachments) {
-          const fileRef = ref(storage, attachment.url);
-          await deleteObject(fileRef);
-        }
+      const res = await unpublishMemoryAction(memoryId);
+      if (res.success) {
+        toast.success('Success', { description: 'Memory moved back to Studio Drafts.' });
+      } else {
+        toast.error('Error', { description: res.message });
       }
-
-      toast.success('Success', { description: 'Memory deleted successfully.' });
     } catch (error) {
-      console.error('Error deleting memory:', error);
-      toast.error('Error', { description: 'Failed to delete memory.' });
+      console.error('Error unpublishing memory:', error);
+      toast.error('Error', { description: 'Failed to move memory to draft.' });
     }
   };
 
@@ -79,23 +76,58 @@ export default function TimelinePage() {
           </div>
         ) : memories.length === 0 ? (
           <div className='text-center py-12'>
-            <Film className='mx-auto h-16 w-16 text-primary mb-6' />
-            <h2 className='font-headline text-3xl mb-3'>No memories found.</h2>
-            <p className='text-muted-foreground mb-8'>Start by adding a new memory.</p>
+            <Film className='mx-auto h-16 w-16 text-primary mb-6 animate-pulse' />
+            <h2 className='font-headline text-3xl mb-3'>Your Cinema is Empty</h2>
+            <p className='text-muted-foreground mb-8'>Go to the Studio to draft and publish your first cinematic memory.</p>
+            <button 
+              onClick={() => router.push('/prompts')}
+              className="bg-primary text-primary-foreground px-6 py-2 rounded-full font-bold hover:brightness-110 transition-all"
+            >
+              Enter Studio
+            </button>
           </div>
         ) : (
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-            {memories.map((memory) => (
-              <MemoryCard 
-                key={memory.id}
-                memory={memory}
-                onEdit={() => handleEdit(memory)}
-                onDelete={() => handleDelete(memory.id)}
-              />
+          <div className="space-y-16">
+            {Object.entries(
+              memories.reduce((acc, memory) => {
+                const chapter = memory.chapterTitle || 'Epilogue';
+                if (!acc[chapter]) acc[chapter] = [];
+                acc[chapter].push(memory);
+                return acc;
+              }, {} as Record<string, Memory[]>)
+            ).map(([chapter, chapterMemories], idx) => (
+              <div key={`${chapter}-${idx}`} className="space-y-8">
+                {/* Chapter Header */}
+                <div className="relative flex flex-col items-center justify-center py-6">
+                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent h-px top-1/2 -translate-y-1/2 w-full opacity-30" />
+                   <div className="bg-[#0f172a] px-8 relative z-10 text-center">
+                     <span className="text-[10px] uppercase tracking-[0.5em] text-primary/60 font-bold mb-2 block">Part {idx + 1}</span>
+                     <h2 className="text-3xl md:text-5xl font-serif italic tracking-tight text-white drop-shadow-xl">{chapter}</h2>
+                   </div>
+                </div>
+
+                {/* Chapter Memories Grid */}
+                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+                  {chapterMemories.map((memory) => (
+                    <MemoryCard 
+                      key={memory.id}
+                      memory={memory}
+                      onEdit={() => handleEdit(memory)}
+                      onUnpublish={() => handleUnpublish(memory.id)}
+                      onView={() => setSelectedMemory(memory)}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}
       </div>
+
+      <MemoryCinematicViewer 
+        memory={selectedMemory} 
+        onClose={() => setSelectedMemory(null)} 
+      />
     </AuthenticatedPageWrapper>
   );
 }

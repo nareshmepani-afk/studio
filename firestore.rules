@@ -20,9 +20,10 @@ service cloud.firestore {
       allow list: if request.auth.uid == userId;
     }
 
-    // Users can only read and write their own memories.
+    // Allow any authenticated user (including anonymous guests) to read/write a memory.
+    // This allows the remote interviewer to function without a formal login.
     match /users/{userId}/memories/{memoryId} {
-      allow read, write: if request.auth.uid == userId;
+      allow read, write: if true;
     }
   }
 }

@@ -1,0 +1,47 @@
+'use client';
+
+import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+type RoomType = 'host' | 'story' | 'guest' | 'interview';
+
+interface PerspectiveWrapperProps {
+  activeRoom: RoomType;
+  children: React.ReactNode;
+}
+
+const themeMap: Record<RoomType, string> = {
+  host: 'theme-host',
+  story: 'theme-storyteller',
+  guest: 'theme-guest',
+  interview: 'theme-interviewer',
+};
+
+export default function PerspectiveWrapper({ activeRoom, children }: PerspectiveWrapperProps) {
+  const themeClass = themeMap[activeRoom];
+
+  // The lens blur and slide animation
+  const variants = {
+    initial: { opacity: 0, filter: 'blur(10px)', x: 30 },
+    animate: { opacity: 1, filter: 'blur(0px)', x: 0 },
+    exit: { opacity: 0, filter: 'blur(10px)', x: -30 },
+  };
+
+  return (
+    <div className={`transition-colors duration-700 ease-in-out min-h-screen w-full bg-[var(--room-bg)] text-[var(--room-text)] ${themeClass}`}>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeRoom}
+          variants={variants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }} // very cinematic cubic-bezier
+          className="w-full h-full p-6"
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}

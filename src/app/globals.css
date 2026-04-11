@@ -85,6 +85,33 @@
   }
 }
 
+@layer utilities {
+  /* Cinematic Persona System Themes */
+  .theme-host {
+    --room-bg: theme('colors.slate.950');
+    --room-text: theme('colors.amber.100');
+    --room-accent: theme('colors.amber.500');
+  }
+
+  .theme-storyteller {
+    --room-bg: theme('colors.emerald.950');
+    --room-text: theme('colors.orange.50');
+    --room-accent: theme('colors.emerald.400');
+  }
+
+  .theme-guest {
+    --room-bg: theme('colors.orange.950');
+    --room-text: theme('colors.rose.100');
+    --room-accent: theme('colors.rose.400');
+  }
+
+  .theme-interviewer {
+    --room-bg: theme('colors.slate.900');
+    --room-text: theme('colors.indigo.100');
+    --room-accent: theme('colors.indigo.400');
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -92,4 +119,13 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* TipTap Editor Placeholder */
+.tiptap p.is-editor-empty:first-child::before {
+  color: rgba(255, 255, 255, 0.4);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
 }

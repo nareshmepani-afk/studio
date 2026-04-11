@@ -66,7 +66,7 @@ if (getApps().length === 0) {
   app = getApps()[0];
 }
 
-// Export services as nullable to allow consumers to handle missing backend gracefully without crashing (500)
+export const adminApp: App | undefined = app;
 export const adminAuth: Auth | null = app ? getAuth(app) : null;
 export const adminDb: Firestore | null = app ? getFirestore(app) : null;
 export const adminStorage: Storage | null = app ? getStorage(app) : null;

@@ -29,9 +29,9 @@ const LoginForm = () => {
     try {
       await login(email, password);
       // The AuthProvider will handle the redirect on successful login
-    } catch (error) {
+    } catch (error: any) {
       // The useAuth hook handles error toasts, so we just log here
-      console.error("Login failed from form submission");
+      console.error("Login failed from form submission:", error?.message || error);
     } finally {
       setIsSubmitting(false);
     }

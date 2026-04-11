@@ -71,7 +71,12 @@ export function MediaCaptureControl({ onMediaReady, initialMedia, deferCameraIni
       const mimeType = recordingType === 'video' ? 'video/webm' : 'audio/webm';
       if (!MediaRecorder.isTypeSupported(mimeType)) throw new Error(`${mimeType} is not supported`);
 
-      const recorder = new MediaRecorder(stream, { mimeType });
+      const recorderOptions = { 
+        mimeType,
+        videoBitsPerSecond: recordingType === 'video' ? 8000000 : undefined,
+        audioBitsPerSecond: 128000
+      };
+      const recorder = new MediaRecorder(stream, recorderOptions);
       mediaRecorderRef.current = recorder;
       recordedChunksRef.current = [];
 

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BookText, CheckCircle, Edit, Flag, QrCode, Lock, Info } from 'lucide-react';
+import { BookText, CheckCircle, Edit, Flag, QrCode, Lock, Info, Rocket, PencilLine } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
@@ -18,9 +18,9 @@ type PromptCardProps = {
   isLoading?: boolean;
   onStartChapter: (promptId: string, isCompleted: boolean) => void;
   onToggleFlagPrompt: (promptId: string) => void;
-  onShowQrCode: (promptId: string, promptTitle: string) => void;
   canAccess: boolean;
   memoryDescription?: string;
+  status?: 'draft' | 'published';
 };
 
 export function PromptCard(props: PromptCardProps) {
@@ -37,7 +37,6 @@ export function PromptCard(props: PromptCardProps) {
             <CardContent className="flex-grow" />
             <CardFooter className="flex justify-between items-center mt-auto">
                 <div className="flex items-center space-x-1">
-                    <Skeleton className="h-8 w-8 rounded-md" />
                     <Skeleton className="h-8 w-8 rounded-md" />
                 </div>
                 <div className="flex items-center">
@@ -57,9 +56,9 @@ export function PromptCard(props: PromptCardProps) {
     isFlaggedForReuse,
     onStartChapter,
     onToggleFlagPrompt,
-    onShowQrCode,
     canAccess,
     memoryDescription,
+    status
   } = props;
 
   const handleAction = (e: React.MouseEvent) => {
@@ -78,12 +77,6 @@ export function PromptCard(props: PromptCardProps) {
     onToggleFlagPrompt(promptId);
   };
   
-  const handleQrCodeClick = (e: React.MouseEvent) => {
-    if (props.isLoading || !canAccess) return;
-    e.stopPropagation();
-    onShowQrCode(promptId, promptText);
-  };
-
   const cardClasses = cn(
     "shadow-lg transition-all flex flex-col h-full relative group cursor-pointer",
     isCompleted ? 'bg-green-50 dark:bg-green-900/10 border-green-500/50' : 'bg-card',
@@ -125,9 +118,20 @@ export function PromptCard(props: PromptCardProps) {
         <div className="flex flex-col h-full">
             <CardHeader className="pb-3">
               {isCompleted && (
-                  <div className="flex items-center text-green-600 dark:text-green-400 text-xs mb-1">
-                      <CheckCircle className="h-4 w-4 mr-1.5" />
-                      Chapter Recorded
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center text-green-600 dark:text-green-400 text-[10px] font-bold uppercase tracking-wider">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Recorded
+                    </div>
+                    {status === 'published' ? (
+                      <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-500/20 text-green-500 border border-green-500/30 text-[9px] font-black uppercase">
+                        <Rocket className="w-2.5 h-2.5" /> Cinema
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-500 border border-amber-500/30 text-[9px] font-black uppercase">
+                        <PencilLine className="w-2.5 h-2.5" /> Studio Draft
+                      </span>
+                    )}
                   </div>
               )}
               {!canAccess && (
@@ -148,25 +152,7 @@ export function PromptCard(props: PromptCardProps) {
               )}
             </CardContent>
             <CardFooter className="flex justify-between items-center mt-auto pt-2">
-              <div className="flex items-center space-x-1">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={handleQrCodeClick} 
-                          className="text-muted-foreground hover:text-primary" 
-                          aria-label="Show QR Code for this prompt" 
-                          disabled={props.isLoading || !canAccess}
-                        >
-                          <QrCode className="h-5 w-5" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom"><p>Show QR Code for Interviewer</p></TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-
+              <div className="flex items-center space-x-2">
                   <TooltipProvider>
                       <Tooltip>
                           <TooltipTrigger asChild>
@@ -180,29 +166,29 @@ export function PromptCard(props: PromptCardProps) {
                           </TooltipContent>
                       </Tooltip>
                   </TooltipProvider>
-              </div>
 
-              <div className="flex items-center">
-                   <TooltipProvider>
+                  <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={handleFlagToggle}
-                          className="mr-2 shrink-0"
+                          className="shrink-0"
                           aria-label={isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt for re-use"}
                           disabled={props.isLoading || !canAccess}
                         >
                           <Flag className={cn("h-5 w-5 transition-colors", isFlaggedForReuse ? 'fill-primary text-primary' : 'text-muted-foreground hover:text-primary')} />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>
+                      <TooltipContent align="start" side="top">
                         <p>{isFlaggedForReuse ? "Unflag this prompt" : "Flag this prompt to easily find and reuse it."}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  
+              </div>
+
+              <div className="flex items-center">
                   {mainButton}
               </div>
             </CardFooter>

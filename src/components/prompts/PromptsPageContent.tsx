@@ -9,15 +9,15 @@ import { teleprompterScripts } from '@/lib/teleprompterScripts';
 import { toast } from 'sonner';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import { getOrCreateMemoryForPrompt } from '@/actions/memoryActions';
+import { getOrCreateMemoryForPrompt, cleanupAndMigrateMemories } from '@/actions/memoryActions';
 import { premiumPromptIds } from '@/lib/premiumPrompts'; // Import the premium prompts list
 import { cn } from '@/lib/utils';
+import { RefreshCcw, Sparkles } from 'lucide-react';
 
 // UI Components
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PromptCard } from '@/components/prompts/PromptCard';
-import { QrCodeDialog } from '@/components/prompts/QrCodeDialog';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -38,11 +38,10 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
   
   const [memories, setMemories] = useState(initialMemories);
   const [flaggedPromptIds, setFlaggedPromptIds] = useState(initialFlaggedPromptIds);
+  const [isCleaning, setIsCleaning] = useState(false);
 
   const { user, loading: authLoading } = useAuth();
   
-  const [qrCodeDialog, setQrCodeDialog] = useState<{ open: boolean; url: string; title: string; }>({ open: false, url: '', title: '' });
-
   useEffect(() => {
     setMemories(initialMemories);
     setFlaggedPromptIds(initialFlaggedPromptIds);
@@ -52,20 +51,20 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
     return new Set((memories ?? []).map(m => m.promptId).filter(Boolean) as string[]);
   }, [memories]);
 
-  const handleStartChapter = useCallback((promptId: string, isCompleted: boolean) => {
+  const handleStartChapter = useCallback((promptId: string, isCompleted: boolean, groupId: string) => {
       if (promptId === 'p25_1') {
-        router.push(`/add-memory?custom=true`);
+        router.push(`/add-memory?custom=true&groupId=${groupId}`);
         return;
       }
       if (isCompleted) {
           const memory = memories.find((m: Memory) => m.promptId === promptId);
           if (memory && memory.id) {
-              router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}`);
+              router.push(`/add-memory?editMemoryId=${encodeURIComponent(memory.id)}&groupId=${groupId}`);
           } else {
               toast.error("Error", { description: "Could not find the recorded memory for this chapter." });
           }
       } else {
-          router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}`);
+          router.push(`/add-memory?promptId=${encodeURIComponent(promptId)}&groupId=${groupId}`);
       }
   }, [memories, router]);
 
@@ -82,38 +81,28 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
       toast.error("Flagging Error", { description: "Could not update flag status." });
     }
   }, [user, flaggedPromptIds]);
-  
-  const handleShowQrCode = useCallback(async (promptId: string, promptTitle: string) => {
-    toast("Generating Remote Link", { description: "Please wait..." });
 
-    const currentUser = auth.currentUser;
-
-    if (!currentUser) {
-        toast.error("Error", { description: "Authentication not ready." });
-        return;
-    }
-
+  const handleCleanupMigration = async () => {
+    setIsCleaning(true);
     try {
-        const token = await currentUser.getIdToken(true);
-        if (!token) {
-          toast.error("Error", { description: "Could not get authentication token." });
-          return;
-        }
-        
-        const result = await getOrCreateMemoryForPrompt(promptId, token);
-
-        if (result.success && result.memoryId) {
-          const url = `${window.location.origin}/studio/${result.memoryId}?role=remote`;
-          setQrCodeDialog({ open: true, url, title: `Remote for: ${promptTitle}` });
-        } else {
-          toast.error("Error", { description: result.message || 'An unknown error occurred.' });
-        }
-    } catch (error) {
-        console.error("Error generating remote link:", error);
-        toast.error("Error", { description: "Failed to generate remote link." });
+      const res = await cleanupAndMigrateMemories();
+      if (res.success) {
+        toast.success("Studio Cleaned", { 
+          description: `Migrated ${res.stats?.migrated} and removed ${res.stats?.deleted} empty shells.`,
+          icon: <Sparkles className="w-4 h-4 text-amber-500" />
+        });
+        // Refresh page to show updated draft states
+        window.location.reload();
+      } else {
+        toast.error("Cleanup Failed", { description: res.message });
+      }
+    } catch (e) {
+      toast.error("Error", { description: "Migration failed unexpectedly." });
+    } finally {
+      setIsCleaning(false);
     }
-  }, []);
-
+  };
+  
    if (authLoading || isLoading) {
      return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] text-center p-4">
@@ -141,6 +130,29 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
                 <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
               </SelectContent>
             </Select>
+
+            <TooltipProvider>
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCleanupMigration}
+                    disabled={isCleaning}
+                    className="w-full md:w-auto border-dashed border-amber-500/30 text-amber-600 hover:bg-amber-500/5 hover:text-amber-500 whitespace-nowrap"
+                  >
+                    {isCleaning ? <RefreshCcw className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                    {isCleaning ? 'Cleaning...' : 'Clean Studio'}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[300px] p-3 text-xs leading-relaxed">
+                  <div className="flex gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                    <p>Optimize your workspace by removing empty draft shells and migrating legacy memories to the new Studio format.</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
 
@@ -170,7 +182,7 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
 
                       const effectiveOnStartChapter = (promptId: string, isCompleted: boolean) => {
                         if (canAccess) {
-                          handleStartChapter(promptId, isCompleted);
+                          handleStartChapter(promptId, isCompleted, group.id);
                         } else {
                           toast.info("Premium Prompt", { description: "Upgrade your account to unlock this and all other prompts." });
                         }
@@ -187,9 +199,9 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
                           isLoading={authLoading}
                           onStartChapter={effectiveOnStartChapter}
                           onToggleFlagPrompt={handleToggleFlagPrompt}
-                          onShowQrCode={handleShowQrCode}
                           canAccess={canAccess}
                           memoryDescription={memoryForPrompt?.description}
+                          status={memoryForPrompt?.status}
                         />
                       );
                     })}
@@ -267,12 +279,6 @@ export function PromptsPageContent({ initialMemories, initialFlaggedPromptIds, m
               );
             })}
         </div>
-         <QrCodeDialog
-          open={qrCodeDialog.open}
-          url={qrCodeDialog.url}
-          title={qrCodeDialog.title}
-          onClose={() => setQrCodeDialog({ open: false, url: '', title: '' })}
-        />
       </div>
   );
 }

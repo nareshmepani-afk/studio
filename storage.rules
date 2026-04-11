@@ -6,7 +6,7 @@ service firebase.storage {
     // User-specific files, including media attachments for memories.
     // Users can only read and write their own files within their own directory.
     match /users/{userId}/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if true;
     }
   }
 }

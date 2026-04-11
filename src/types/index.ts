@@ -30,10 +30,21 @@ export interface Memory {
   date: string;
   createdAt: string;
   updatedAt: string;
-  status?: string;
+  status?: 'draft' | 'published';
   mediaAttachments?: MediaAttachment[];
   imageUrl?: string;
   isLegacy?: boolean;
+  sensoryConfig?: SensoryPromptTemplate[];
+  chapterTitle?: string;
+  usePoster?: boolean;
+  posterStyle?: 'cinematic' | 'modern' | 'minimalist';
+  posterImageUrl?: string;
+  credits?: {
+    director?: string;
+    producer?: string;
+    starring?: string;
+    billingLine?: string; // Condensed small-caps credits line
+  };
 }
 
 export type MemoryCategory = {
@@ -64,6 +75,12 @@ export const emotionTagsList: EmotionTag[] = [
   { id: 'loved', label: 'Loved' },
 ];
 
+export interface SensoryPromptTemplate {
+  id: string;
+  label: string;
+  placeholder: string;
+}
+
 export interface Prompt {
   id: string;
   title: string;
@@ -71,6 +88,7 @@ export interface Prompt {
   text: { en: string; gu: string };
   isFlaggedForReuse?: boolean;
   subPrompts?: Prompt[];
+  sensoryPrompts?: SensoryPromptTemplate[];
 }
 
 export interface PromptGroup {
@@ -82,6 +100,13 @@ export interface PromptGroup {
 export interface StorageQuota {
   total: number;
   used: number;
+}
+
+export interface Contact {
+  id: string;
+  email: string;
+  name?: string;
+  lastUsedAt: any; // Firestore Timestamp
 }
 
 export interface User {
