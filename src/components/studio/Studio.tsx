@@ -9,7 +9,7 @@ import TheStage from './TheStage';
 import TheGallery from './TheGallery';
 
 // Define a more specific type for the role prop
-export type StudioRole = 'host' | 'Interviewer' | 'Storyteller' | 'guest';
+export type StudioRole = 'director' | 'Interviewer' | 'Storyteller' | 'guest';
 
 interface StudioProps {
   callId?: string;
@@ -26,7 +26,7 @@ export const Studio = ({ callId, role }: StudioProps) => {
 
   const renderRoleSpecificUI = () => {
     switch (role) {
-      case 'host':
+      case 'director':
         return <CommandCenter />;
       case 'Interviewer':
         return <TheDeck />;

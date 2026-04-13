@@ -7,26 +7,24 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { activateFreeHostPass } from '@/actions/userActions';
-import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { activateFreeDirectorPass } from '@/actions/userActions';
+import { Loader2, CheckCircle, XCircle, User, Mail, ShieldCheck, Ticket, Zap } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-interface SettingsPageContentProps {
-  initialHostPassStatus: string;
-  userEmail: string;
-  userName: string;
-}
-
-export function SettingsPageContent({ initialHostPassStatus, userEmail, userName }: SettingsPageContentProps) {
-  const [hostPassStatus, setHostPassStatus] = useState(initialHostPassStatus);
+export function SettingsPageContent({ initialDirectorPassStatus, userEmail, userName }: { initialDirectorPassStatus: string, userEmail: string, userName: string }) {
+  const [directorPassStatus, setDirectorPassStatus] = useState(initialDirectorPassStatus);
   const [isPending, startTransition] = useTransition();
 
   const handleActivateFreePass = () => {
     startTransition(async () => {
       try {
-        const result = await activateFreeHostPass();
+        const result = await activateFreeDirectorPass();
         if (result.success) {
-          setHostPassStatus('free_host_pass_active');
-          toast.success("Pass Activated!", { description: "Your Free Host Pass is now active." });
+          setDirectorPassStatus('free_host_pass_active');
+          toast.success("Pass Activated!", { 
+            description: "Your Free Director Pass is now active.",
+            icon: <CheckCircle className="h-4 w-4 text-emerald-400" />
+          });
         } else {
           toast.error("Activation Failed", { description: result.message });
         }
@@ -37,70 +35,144 @@ export function SettingsPageContent({ initialHostPassStatus, userEmail, userName
   };
 
   const PassStatusIndicator = () => {
-    switch (hostPassStatus) {
+    switch (directorPassStatus) {
       case 'free_host_pass_active':
-        return <span className="flex items-center text-green-500"><CheckCircle className="mr-2 h-4 w-4" /> Free Pass Active</span>;
+        return (
+          <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/50 rounded-full text-emerald-400 text-xs font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+            <Zap className="h-3 w-3 fill-current" />
+            Director Pass Active
+          </div>
+        );
       case 'paid_host_pass_active':
-        return <span className="flex items-center text-blue-500"><CheckCircle className="mr-2 h-4 w-4" /> Premium Pass Active</span>;
+        return (
+          <div className="flex items-center gap-2 px-3 py-1 bg-sky-500/10 border border-sky-500/50 rounded-full text-sky-400 text-xs font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(14,165,233,0.2)]">
+            <ShieldCheck className="h-3 w-3 fill-current" />
+            Premium Studio Active
+          </div>
+        );
       default:
-        return <span className="flex items-center text-red-500"><XCircle className="mr-2 h-4 w-4" /> Inactive</span>;
+        return (
+          <div className="flex items-center gap-2 px-3 py-1 bg-rose-500/10 border border-rose-500/50 rounded-full text-rose-400 text-xs font-bold uppercase tracking-wider">
+            <XCircle className="h-3 w-3" />
+            Inactive
+          </div>
+        );
     }
   };
 
   return (
-    <div className="container mx-auto py-12 px-4 max-w-2xl">
-      <h1 className="font-headline text-4xl mb-8">Settings</h1>
+    <div className="container mx-auto py-12 px-4 max-w-3xl">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <header className="mb-12">
+            <h1 className="font-headline text-4xl font-bold tracking-tight text-white mb-2 italic">Backstage Configuration</h1>
+            <p className="text-white/40 text-sm tracking-widest uppercase">Manage your production hub & credentials</p>
+        </header>
 
-      <div className="space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Information</CardTitle>
-            <CardDescription>Your personal and contact details.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" value={userName} disabled />
+        <div className="space-y-8">
+          {/* Account Section */}
+          <section className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-[60px] pointer-events-none group-hover:bg-primary/10 transition-all duration-700" />
+            
+            <div className="px-8 py-6 border-b border-white/5 bg-white/[0.02]">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-xl border border-primary/20">
+                  <User className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white tracking-wide font-headline">Account Details</h2>
+                  <p className="text-xs text-white/30 uppercase tracking-widest">Public profile and contact info</p>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" value={userEmail} disabled />
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Host Pass</CardTitle>
-            <CardDescription>Manage your access to the full Life Journey feature set.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-md">
-                <p className="font-medium">Your Current Status:</p>
+            <div className="p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2 group/field">
+                  <Label htmlFor="name" className="text-[10px] uppercase tracking-[0.2em] text-white/40 group-focus-within/field:text-primary transition-colors ml-1 font-bold">Producer Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                    <Input id="name" value={userName} disabled className="bg-white/5 border-white/5 h-12 pl-12 rounded-xl text-white/60 cursor-not-allowed border-dashed" />
+                  </div>
+                </div>
+                <div className="space-y-2 group/field">
+                  <Label htmlFor="email" className="text-[10px] uppercase tracking-[0.2em] text-white/40 group-focus-within/field:text-primary transition-colors ml-1 font-bold">Studio Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                    <Input id="email" value={userEmail} disabled className="bg-white/5 border-white/5 h-12 pl-12 rounded-xl text-white/60 cursor-not-allowed border-dashed" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Licensing Section */}
+          <section className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-[60px] pointer-events-none group-hover:bg-amber-500/10 transition-all duration-700" />
+
+            <div className="px-8 py-6 border-b border-white/5 bg-white/[0.02]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                    <Ticket className="h-5 w-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white tracking-wide font-headline">Director Licensing</h2>
+                    <p className="text-xs text-white/30 uppercase tracking-widest">Manage production access passes</p>
+                  </div>
+                </div>
                 <PassStatusIndicator />
+              </div>
             </div>
-          </CardContent>
-          <CardFooter className="border-t px-6 py-4">
-             {hostPassStatus === 'inactive' && (
-                <div className="w-full">
-                  <p className="text-sm text-muted-foreground mb-4">Unlock all story prompts by activating your complimentary Host Pass.</p>
-                  <Button onClick={handleActivateFreePass} disabled={isPending} className="w-full sm:w-auto">
-                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} 
-                    Activate Free Host Pass
-                  </Button>
-                </div>
-             )}
-             {hostPassStatus === 'free_host_pass_active' && (
-                <div className="w-full">
-                  <p className="text-sm text-muted-foreground mb-4">Upgrade to a Premium Host Pass to unlock advanced features and unlimited stories.</p>
-                  <Button className="w-full sm:w-auto">
-                    Upgrade to Premium
-                  </Button>
-                </div>
-             )}
-          </CardFooter>
-        </Card>
-      </div>
+
+            <div className="p-8">
+               <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-6 relative overflow-hidden">
+                  {directorPassStatus === 'inactive' ? (
+                     <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="max-w-md">
+                           <h3 className="text-white font-bold mb-1">Activate Complimentary Pass</h3>
+                           <p className="text-sm text-white/40 leading-relaxed">Unlock all story prompts and premium cinema exports for 6 months. No credit card required to start.</p>
+                        </div>
+                        <Button 
+                          onClick={handleActivateFreePass} 
+                          disabled={isPending} 
+                          className="bg-amber-500 text-black font-extrabold px-8 h-12 rounded-xl hover:brightness-110 shadow-[0_0_20px_rgba(245,158,11,0.2)] shrink-0"
+                        >
+                          {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4 fill-current" />} 
+                          Claim 6-Month Pass
+                        </Button>
+                     </div>
+                  ) : directorPassStatus === 'free_host_pass_active' ? (
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="max-w-md">
+                           <h3 className="text-white font-bold mb-1 font-headline">Complimentary Access Active</h3>
+                           <p className="text-sm text-white/40 leading-relaxed">Your account is fully operational. Consider a Lifetime Producer Pass to support the project and lock in premium features forever.</p>
+                        </div>
+                        <Button className="bg-white/10 border border-white/10 text-white font-bold px-8 h-12 rounded-xl hover:bg-white/20 shrink-0">
+                          Upgrade Studio Room
+                        </Button>
+                     </div>
+                  ) : (
+                    <div className="flex items-center gap-4 text-sky-400">
+                      <CheckCircle className="h-6 w-6" />
+                      <div>
+                        <h3 className="font-bold">Premium Membership Verified</h3>
+                        <p className="text-sm text-white/40">You have full, unrestricted access to the complete production engine.</p>
+                      </div>
+                    </div>
+                  )}
+               </div>
+            </div>
+          </section>
+
+          <footer className="text-center pt-4">
+            <p className="text-[10px] text-white/10 uppercase tracking-[0.4em] font-medium">Memory Weaver Production Hub v1.0</p>
+          </footer>
+        </div>
+      </motion.div>
     </div>
   );
 }

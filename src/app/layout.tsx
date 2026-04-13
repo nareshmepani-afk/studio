@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { Providers } from "@/components/layout/Providers";
 import { Navbar } from "@/components/layout/Navbar";
-import SessionWatcher from "@/components/auth/SessionWatcher";
 import BuildIdLogger from "@/components/layout/BuildIdLogger";
 import { Toaster as SonnerToaster } from "@/components/ui/toaster";
 import "@/utils/version"; // Import to register the console log
@@ -29,7 +28,6 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-background text-foreground`} suppressHydrationWarning>
         <Providers>
-          <SessionWatcher />
           <BuildIdLogger />
           <Navbar />
           {children}

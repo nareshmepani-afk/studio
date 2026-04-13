@@ -13,10 +13,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, PlusCircle, Settings, Film, History, Home, UserCircle2 } from 'lucide-react';
+import { LogOut, Video, Settings, Film, History, Home, UserCircle2, Clapperboard } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from './ThemeToggle';
+import { LanguageToggle } from './LanguageToggle';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function Navbar() {
@@ -63,22 +64,17 @@ export function Navbar() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <header className={`sticky top-0 z-[100] w-full transition-all duration-500 ease-in-out border-b
-        ${isStudio 
-          ? 'translate-y-[-90%] opacity-0 hover:translate-y-0 hover:opacity-100 bg-background/80 backdrop-blur-xl border-white/10 shadow-2xl' 
-          : 'bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm'
-        }
-      `}>
+      <header className="sticky top-0 z-[100] w-full transition-all duration-300 ease-in-out border-b bg-background/40 backdrop-blur-md border-white/5 shadow-2xl group/nav">
         <div className="container flex h-16 items-center">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Link href={isAuthenticated ? "/prompts" : "/"} className="mr-6 flex items-center space-x-2" aria-label="Memory Weaver Homepage">
+              <Link href={isAuthenticated ? "/studio" : "/"} className="mr-6 flex items-center space-x-2" aria-label="Memory Weaver Homepage">
                 <Film className="h-6 w-6 text-primary ml-2" /> 
                 <span className="font-headline text-xl font-bold">Memory Weaver</span>
               </Link>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>Go to {isAuthenticated ? 'My Life Journey' : 'Homepage'}</p>
+            <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
+              Go to {isAuthenticated ? 'My Life Journey' : 'Homepage'}
             </TooltipContent>
           </Tooltip>
           
@@ -86,32 +82,39 @@ export function Navbar() {
             <nav className="flex flex-1 items-center space-x-4 lg:space-x-6">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link href="/prompts" className={`${navLinkClass} ${pathname === '/prompts' || pathname.startsWith('/add-memory') ? activeNavLinkClass : ''}`}> 
-                    <Film className="mr-1.5 h-4 w-4" /> My Life Journey 
+                  <Link href="/studio" className={`${navLinkClass} ${(pathname === '/studio' || pathname?.startsWith('/add-memory')) ? activeNavLinkClass : ''}`}> 
+                    <Clapperboard className="mr-1.5 h-4 w-4" strokeWidth={2.5} /> Memory Studio 
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent><p>Record and view your life story chapters</p></TooltipContent>
+                <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
+                  Manage your life story production
+                </TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Link href="/timeline" className={`${navLinkClass} ${pathname === '/timeline' ? activeNavLinkClass : ''}`}>
-                    <History className="mr-1.5 h-4 w-4" /> Timeline 
+                  <Link href="/cinema" className={`${navLinkClass} ${pathname === '/cinema' ? activeNavLinkClass : ''}`}>
+                    <Film className="mr-1.5 h-4 w-4 text-primary" strokeWidth={2.5} /> Memory Cinema
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent><p>View all your recorded memories</p></TooltipContent>
+                <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
+                  View your cinematic gallery
+                </TooltipContent>
               </Tooltip>
                <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link href="/create" className={`${navLinkClass} ${pathname === '/create' ? activeNavLinkClass : ''}`}>
-                    <PlusCircle className="mr-1.5 h-4 w-4" /> Create Memory
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent><p>Create a new freeform memory</p></TooltipContent>
+                 <TooltipTrigger asChild>
+                   <Link href="/director" className={`${navLinkClass} ${pathname === '/director' ? activeNavLinkClass : ''}`}>
+                     <Video className="mr-1.5 h-4 w-4" strokeWidth={2.5} /> Memory Collaboration
+                   </Link>
+                 </TooltipTrigger>
+                 <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
+                   Connect cameras and record together
+                 </TooltipContent>
               </Tooltip>
             </nav>
           )}
 
           <div className="flex items-center ml-auto space-x-2 sm:space-x-4">
+            <LanguageToggle />
             <ThemeToggle />
             {isAuthenticated ? (
               <>
@@ -129,7 +132,9 @@ export function Navbar() {
                         </Button>
                       </DropdownMenuTrigger>
                     </TooltipTrigger>
-                    <TooltipContent><p>User Account Options</p></TooltipContent>
+                    <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
+                      User Account Options
+                    </TooltipContent>
                   </Tooltip>
                   <DropdownMenuContent className="w-56" align="end" forceMount>
                     <DropdownMenuLabel className="font-normal">
@@ -161,13 +166,17 @@ export function Navbar() {
                   <TooltipTrigger asChild>
                     <Button variant="ghost" onClick={() => router.push('/login')}>Login</Button>
                   </TooltipTrigger>
-                  <TooltipContent><p>Log in to your account</p></TooltipContent>
+                  <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
+                    Log in to your account
+                  </TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button onClick={() => router.push('/register')}>Sign Up</Button>
                   </TooltipTrigger>
-                  <TooltipContent><p>Create a new account</p></TooltipContent>
+                  <TooltipContent side="bottom" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
+                    Create a new account
+                  </TooltipContent>
                 </Tooltip>
               </>
             )}

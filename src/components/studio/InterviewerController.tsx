@@ -165,7 +165,7 @@ export default function InterviewerController({ memoryData, hostId }: { memoryDa
               <>
                  <CheckCircle2 className="w-16 h-16 text-emerald-400 mb-6 drop-shadow-lg" />
                  <h2 className="text-2xl font-bold font-headline text-white mb-2">Memory Wrapped!</h2>
-                 <p className="text-sm text-emerald-300">The video has been safely beamed to the Storyteller's local device for final review.</p>
+                 <p className="text-sm text-emerald-300">The video has been safely beamed to the Director's local device for final review.</p>
               </>
            ) : (
               <>

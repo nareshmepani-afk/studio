@@ -99,7 +99,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
     if (wordCount < 40) return { label: 'Concentrated', color: 'text-amber-400/40', bg: 'bg-amber-400', width: Math.max(5, (wordCount / 40) * 33), hint: 'A strong opening! Add a bit more for a full theatrical hook.' };
     if (wordCount <= 140) return { label: 'Sweet Spot', color: 'text-emerald-400', bg: 'bg-emerald-400', width: 33 + ((wordCount - 40) / 100) * 34, hint: 'Perfect cinematic length for maximum audience engagement!' };
     if (wordCount <= 180) return { label: 'Expanding', color: 'text-sky-400', bg: 'bg-sky-400', width: 67 + ((wordCount - 140) / 40) * 23, hint: 'Informative, but consider if every word contributes to the hook.' };
-    return { label: 'Too Long', color: 'text-rose-500', bg: 'bg-rose-500', width: 100, hint: 'Excessive length may lose readers. Use the Story Guide for details.' };
+    return { label: 'Too Long', color: 'text-rose-500', bg: 'bg-rose-500', width: 100, hint: 'Excessive length may lose readers. Use the Story Script for details.' };
   };
   
   const gauge = getGaugeStatus();
@@ -313,7 +313,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
     const missingFields = [];
     if (!title?.trim()) missingFields.push("Title");
     if (!description?.trim()) missingFields.push("Description");
-    if (day === 'none' || month === 'none' || year === 'none') missingFields.push("Date");
+    if (year === 'none') missingFields.push("Date (Year required)");
     if (!data?.videoUrl) missingFields.push("Video Recording");
 
     if (missingFields.length > 0) {
@@ -334,7 +334,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
             icon: <Rocket className="w-4 h-4 text-green-500" />
           });
           update({ ...data, status: 'published' });
-          router.push('/timeline');
+          router.push('/cinema');
        } else {
           toast.error("Publish Failed", { description: res.message });
        }
@@ -368,7 +368,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
 
   return (
     <LayoutGroup>
-    <div className="flex flex-col xl:flex-row gap-8 w-full h-full pb-40 relative">
+    <div className="flex flex-col xl:flex-row gap-8 w-full pb-40 relative">
       
       <AnimatePresence>
         {focusedColumn && (
@@ -391,7 +391,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
                    <div className="flex items-center gap-4">
                      <div className="w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.8)]" />
                      <div>
-                       <h2 className="text-2xl font-black text-white tracking-tight uppercase italic pb-1">Theatrical Hook</h2>
+                       <h2 className="text-3xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent italic pb-1">Theatrical Hook</h2>
                        <p className="text-[10px] font-black text-amber-400/60 uppercase tracking-[0.4em]">Cinematic Focal Point • Zen Mode</p>
                      </div>
                    </div>
@@ -445,8 +445,8 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
                    <div className="flex items-center gap-4">
                      <div className="w-3 h-3 rounded-full bg-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.8)]" />
                      <div>
-                       <h2 className="text-2xl font-black text-white tracking-tight uppercase italic pb-1">Story Guide</h2>
-                       <p className="text-[10px] font-black text-sky-400/60 uppercase tracking-[0.4em]">Narrative Foundation • Deep Focus</p>
+                       <h2 className="text-3xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent italic pb-1">Story Script</h2>
+                       <p className="text-[10px] font-black text-sky-400/60 uppercase tracking-[0.4em]">Narrative Foundation • Edit & Refine</p>
                      </div>
                    </div>
                    <div className="flex items-center gap-6">
@@ -472,7 +472,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
                    <div className="flex items-center gap-4">
                      <div className="w-3 h-3 rounded-full bg-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.8)]" />
                      <div>
-                       <h2 className="text-2xl font-black text-white tracking-tight uppercase italic pb-1">Dramatic Showcase</h2>
+                       <h2 className="text-3xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent italic pb-1">Dramatic Showcase</h2>
                        <p className="text-[10px] font-black text-rose-400/60 uppercase tracking-[0.4em]">Theatrical Aesthetic • Visualization</p>
                      </div>
                    </div>
@@ -528,13 +528,13 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
       <motion.div 
         layout
         layoutId="story-guide-panel"
-        className={`w-full xl:w-1/3 flex flex-col relative drop-shadow-xl h-full transition-opacity duration-1000 ${focusedColumn ? 'opacity-10 scale-95 blur-md grayscale' : 'opacity-100 z-10'}`}
+        className={`w-full xl:w-1/3 flex flex-col relative drop-shadow-xl transition-opacity duration-1000 ${focusedColumn ? 'opacity-10 scale-95 blur-md grayscale' : 'opacity-100 z-10'}`}
       >
         <div className="bg-black/20 p-6 rounded-t-2xl border border-b-0 border-sky-500/20 flex justify-between items-center backdrop-blur-sm">
-           <div className="flex items-center gap-3">
-             <div className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.6)]" />
-             <h2 className="text-lg font-bold text-white tracking-tight">Story Guide</h2>
-           </div>
+             <div className="flex flex-col">
+               <h2 className="text-xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent">Story Script</h2>
+               <p className="text-[9px] font-black text-sky-400/40 uppercase tracking-[0.2em] -mt-0.5">Edit and expand your script</p>
+             </div>
            <div className="flex items-center gap-4">
              {prevProse && (
                <button 
@@ -553,13 +553,13 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
              </div>
            </div>
         </div>
-        <div className="flex-grow w-full bg-black/10 p-8 rounded-b-2xl border border-t-0 border-sky-500/20 shadow-inner overflow-y-auto min-h-[600px] prose-invert prose-sky opacity-80">
+        <div className="flex-grow w-full bg-black/10 p-8 rounded-b-2xl border border-t-0 border-sky-500/20 shadow-inner min-h-[600px] prose-invert prose-sky opacity-80">
           <EditorContent editor={editor} className="h-full w-full" />
         </div>
       </motion.div>
 
       {/* Column 2: Identity & Brief (The Snapshot) - AMBER THEME */}
-      <motion.div layout layoutId="theatrical-hook-panel" className={`w-full xl:w-1/3 flex flex-col relative drop-shadow-2xl h-full transition-all duration-700 ease-in-out z-10 ${focusedColumn ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      <motion.div layout layoutId="theatrical-hook-panel" className={`w-full xl:w-1/3 flex flex-col relative drop-shadow-2xl transition-all duration-700 ease-in-out z-10 ${focusedColumn ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         <div className={col2HeaderClasses}>
            <div className="flex items-center gap-4">
              <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.7)]" />
@@ -574,7 +574,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
            )}
         </div>
 
-        <div className={col2BodyClasses}>
+        <div className={col2BodyClasses.replace('overflow-y-auto', '')}>
           {!isHookFocused && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 pb-2 border-b border-white/5">
@@ -589,7 +589,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
 
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-white/40 uppercase mb-1.5 tracking-wider">Memory Release Date *</label>
+                <label className="block text-xs font-bold text-white/40 uppercase mb-1.5 tracking-wider">Date of Memory</label>
                   <div className="flex gap-2">
                     <Select value={day} onValueChange={setDay}>
                       <SelectTrigger className="w-1/3 bg-black/40 border-white/10 text-white rounded-lg p-3 h-auto"><SelectValue placeholder="Day" /></SelectTrigger>
@@ -707,7 +707,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
       <motion.div 
         layout
         layoutId="dramatic-showcase-panel"
-        className={`w-full xl:w-1/3 flex flex-col relative drop-shadow-xl h-full transition-opacity duration-1000 ${focusedColumn ? 'opacity-20 pointer-events-none scale-95 blur-sm' : 'opacity-100 z-10'}`}
+        className={`w-full xl:w-1/3 flex flex-col relative drop-shadow-xl transition-opacity duration-1000 ${focusedColumn ? 'opacity-20 pointer-events-none scale-95 blur-sm' : 'opacity-100 z-10'}`}
       >
         {/* Theatrical Showcase */}
         <div className="bg-black/20 p-6 rounded-2xl border border-white/10 backdrop-blur-sm shadow-xl">
@@ -716,8 +716,8 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <h3 className="text-xs font-bold text-[var(--room-accent)] uppercase tracking-widest flex items-center gap-2 cursor-help">
-                      <Film className="w-4 h-4" />
+                   <h3 className="text-sm font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent flex items-center gap-2 cursor-help">
+                      <Film className="w-4 h-4 text-rose-400" />
                       Dramatic Showcase
                     </h3>
                   </TooltipTrigger>
@@ -762,7 +762,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
                 <label className="block text-[10px] font-bold text-white/40 uppercase tracking-[0.2em] mb-3">Visual Aesthetic</label>
                 <div className="grid grid-cols-3 gap-2">
                   {['cinematic', 'modern', 'minimalist'].map((style) => (
-                    <button key={style} onClick={() => setPosterStyle(style as any)} className={`py-2.5 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${posterStyle === style ? 'bg-[var(--room-accent)] text-slate-950 border-[var(--room-accent)]' : 'bg-black/30 border-white/5 text-white/40 hover:bg-white/5'}`}>
+                    <button key={style} onClick={() => setPosterStyle(style as any)} className={`py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${posterStyle === style ? 'bg-[var(--room-accent)] text-slate-950 border-[var(--room-accent)]' : 'bg-black/30 border-white/5 text-white/40 hover:bg-white/5'}`}>
                       {style}
                     </button>
                   ))}
@@ -845,7 +845,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
           <button 
             onClick={handlePublish} 
             disabled={isPublishing} 
-            className="px-10 py-4 bg-[var(--room-accent)] text-slate-950 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(var(--room-accent-rgb),0.3)] hover:scale-105 active:scale-95 hover:brightness-110 transition-all flex items-center gap-3 group/btn"
+            className="px-10 py-4 bg-[var(--room-accent)] text-slate-950 rounded-full font-black text-xs uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(var(--room-accent-rgb),0.3)] hover:scale-105 active:scale-95 hover:brightness-110 transition-all flex items-center gap-3 group/btn"
           >
             {isPublishing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Rocket className="w-5 h-5 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />}
             Publish to Cinema

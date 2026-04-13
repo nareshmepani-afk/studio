@@ -58,7 +58,11 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     ...(initialState || {}),
   });
 
-  const studioStateRef: DocumentReference = doc(db, "studio", sessionId);
+  // 2. Persistent Reference: Memoize the document reference to prevent redundant effect cycles
+  const studioStateRef = useMemo(() => {
+    if (!sessionId || sessionId === 'default') return null;
+    return doc(db, "studio", sessionId);
+  }, [sessionId]);
 
   const isSyncingFromFirestore = useRef(false);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -78,14 +82,23 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     }
   }, [searchParams, initialState]);
 
+  const lastRemoteJSON = useRef<string>('');
+
   // The Listener for real-time updates
   useEffect(() => {
+    if (!studioStateRef) return;
+
     const unsubscribe = onSnapshot(studioStateRef,
       (doc) => {
         if (doc.exists()) {
             const data = doc.data();
             const { script, ...remoteState } = data;
+            const remoteStateJSON = JSON.stringify(remoteState);
 
+            // GUARD: Only update if the remote state actually changed
+            if (remoteStateJSON === lastRemoteJSON.current) return;
+
+            lastRemoteJSON.current = remoteStateJSON;
             isSyncingFromFirestore.current = true;
 
             setState(prevState => ({
@@ -97,15 +110,13 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
       },
       (error) => {
         console.error(`Firebase connection error on session [${sessionId}]:`, error);
-        // If the listener fails, we are no longer connected for real-time updates.
-        // The user will see a stale-data indicator.
         setState(prevState => ({ ...prevState, isConnected: false }));
       }
     );
     return () => unsubscribe();
   }, [studioStateRef, sessionId]);
 
-  // The Emitter (No changes needed, debounce is still active)
+  // The Emitter (Force silence if no meaningful local change occurred)
   useEffect(() => {
     if (isSyncingFromFirestore.current === true) {
         isSyncingFromFirestore.current = false;
@@ -118,6 +129,11 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
 
     debounceTimer.current = setTimeout(() => {
       const { isConnected, sessionId, script, ...syncState } = state;
+      const syncStateJSON = JSON.stringify(syncState);
+
+      // GUARD: Only setDoc if the local state has diverged from the last known remote state
+      if (syncStateJSON === lastRemoteJSON.current) return;
+
       setDoc(studioStateRef, syncState, { merge: true });
     }, 300);
 

@@ -9,19 +9,19 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import PerspectiveWrapper from './PerspectiveWrapper';
-import HostRoom from './HostRoom';
-import StorytellerRoom from './StorytellerRoom';
+import SoloStage from './SoloStage';
+import CollaborativeStage from './CollaborativeStage';
 
 // Define a placeholder for the memory data type
 type MemoryData = any;
 
-interface MemoryEditorProps {
+interface ProductionDeckProps {
     memoryData: MemoryData;
     onUpdate: (updatedData: MemoryData) => void;
 }
 
-const MemoryEditor = ({ memoryData, onUpdate }: MemoryEditorProps) => {
-    const [activeRoom, setActiveRoom] = useState<'host' | 'story'>('host');
+const ProductionDeck = ({ memoryData, onUpdate }: ProductionDeckProps) => {
+    const [activeRoom, setActiveRoom] = useState<'solo' | 'collaborative'>('solo');
     const router = useRouter();
     const searchParams = useSearchParams();
     const groupId = searchParams.get('groupId');
@@ -49,17 +49,17 @@ const MemoryEditor = ({ memoryData, onUpdate }: MemoryEditorProps) => {
 
     const renderRoom = () => {
         switch (activeRoom) {
-            case 'host':
-                return <HostRoom data={memoryData} update={handleUpdate} />;
-            case 'story':
-                return <StorytellerRoom data={memoryData} update={handleUpdate} />;
+            case 'solo':
+                return <SoloStage data={memoryData} update={handleUpdate} />;
+            case 'collaborative':
+                return <CollaborativeStage data={memoryData} update={handleUpdate} />;
             default:
-                return <div>Select a room to begin editing.</div>;
+                return <div>Select a production mode to begin.</div>;
         }
     };
 
     return (
-        <div className="w-full h-screen flex flex-col">
+        <div className="w-full min-h-[calc(100vh-64px)] flex flex-col">
             {/* The PerspectiveWrapper handles the overall background color transition and the blurry interior swap */}
             <PerspectiveWrapper activeRoom={activeRoom}>
                 <div className="flex flex-col h-full">
@@ -69,9 +69,10 @@ const MemoryEditor = ({ memoryData, onUpdate }: MemoryEditorProps) => {
                         {/* Back Navigation */}
                         <button 
                           onClick={() => router.push('/prompts')}
-                          className="flex items-center gap-3 text-sm font-bold tracking-wide text-[var(--room-accent)] hover:brightness-125 transition-all p-2 pr-4 rounded-lg hover:bg-white/5"
+                          className="flex items-center gap-3 tracking-wide text-[var(--room-accent)] hover:brightness-125 transition-all p-2 pr-4 rounded-xl hover:bg-white/5 group"
                         >
-                          <span className="text-xl leading-none">&larr;</span> {groupTitle}
+                          <span className="text-xl leading-none group-hover:-translate-x-1 transition-transform">&larr;</span> 
+                          <span className="text-sm font-headline uppercase tracking-widest">{groupTitle}</span>
                         </button>
 
                         {/* Room Switcher */}
@@ -80,21 +81,21 @@ const MemoryEditor = ({ memoryData, onUpdate }: MemoryEditorProps) => {
                                 
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <button onClick={() => setActiveRoom('host')} className={`px-5 py-2 rounded-full font-medium transition-all ${activeRoom === 'host' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'}`}>Host</button>
+                                        <button onClick={() => setActiveRoom('solo')} className={`px-5 py-2 rounded-full font-medium transition-all ${activeRoom === 'solo' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'}`}>Solo Stage</button>
                                     </TooltipTrigger>
                                     <TooltipContent sideOffset={8} className="bg-slate-950 border border-[var(--room-accent)] text-[var(--room-accent)] font-medium">
-                                        <p>Record directly via local device</p>
+                                        <p>Record directly from this device (Director Mode)</p>
                                     </TooltipContent>
                                 </Tooltip>
 
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button onClick={() => setActiveRoom('story')} className={`px-5 py-2 rounded-full font-medium transition-all ${activeRoom === 'story' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'}`}>Storyteller</button>
-                                </TooltipTrigger>
-                                <TooltipContent sideOffset={8} className="bg-slate-950 border border-[var(--room-accent)] text-[var(--room-accent)] font-medium">
-                                    <p>QR code for Interviewer Camera</p>
-                                </TooltipContent>
-                            </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button onClick={() => setActiveRoom('collaborative')} className={`px-5 py-2 rounded-full font-medium transition-all ${activeRoom === 'collaborative' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'}`}>Collaboration</button>
+                                    </TooltipTrigger>
+                                    <TooltipContent sideOffset={8} className="bg-slate-950 border border-[var(--room-accent)] text-[var(--room-accent)] font-medium">
+                                        <p>Connect a mobile prompter/camera for co-creation</p>
+                                    </TooltipContent>
+                                </Tooltip>
 
                         </TooltipProvider>
                     </nav>
@@ -108,4 +109,4 @@ const MemoryEditor = ({ memoryData, onUpdate }: MemoryEditorProps) => {
     );
 };
 
-export default MemoryEditor;
+export default ProductionDeck;

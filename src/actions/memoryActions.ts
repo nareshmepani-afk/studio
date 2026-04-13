@@ -67,7 +67,7 @@ export async function getOrCreateMemoryForPrompt(promptId: string, idToken: stri
 
     await newMemoryRef.set(newMemory);
     
-    revalidatePath('/prompts'); // Revalidate to show the new session state
+    revalidatePath('/studio'); // Revalidate to show the new session state
 
     console.log(`Created new memory ${newMemoryRef.id} for prompt ${promptId}`);
     return { success: true, message: "New memory session created.", memoryId: newMemoryRef.id };
@@ -116,8 +116,8 @@ export async function createMemoryAction(data: Partial<Memory>): Promise<{ succe
     await newMemoryRef.set(newMemory);
     
     // Revalidate paths to ensure fresh data is shown after creation
-    revalidatePath('/timeline');
-    revalidatePath('/prompts');
+    revalidatePath('/cinema');
+    revalidatePath('/studio');
 
     return { success: true, message: "Memory created successfully!", memoryId: newMemoryRef.id };
 
@@ -200,8 +200,8 @@ export async function cleanupAndMigrateMemories(): Promise<{ success: boolean; m
 
         await deleteBatch.commit();
 
-        revalidatePath('/timeline');
-        revalidatePath('/prompts');
+        revalidatePath('/cinema');
+        revalidatePath('/studio');
 
         return { 
             success: true, 
@@ -227,8 +227,8 @@ export async function publishMemoryAction(memoryId: string): Promise<{ success: 
             updatedAt: new Date().toISOString()
         });
         
-        revalidatePath('/timeline');
-        revalidatePath('/prompts');
+        revalidatePath('/cinema');
+        revalidatePath('/studio');
         
         return { success: true, message: "Cinema updated successfully!" };
     } catch (error: any) {
@@ -249,8 +249,8 @@ export async function unpublishMemoryAction(memoryId: string): Promise<{ success
             updatedAt: new Date().toISOString()
         });
         
-        revalidatePath('/timeline');
-        revalidatePath('/prompts');
+        revalidatePath('/cinema');
+        revalidatePath('/studio');
         
         return { success: true, message: "Memory reverted to draft." };
     } catch (error: any) {

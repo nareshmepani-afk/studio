@@ -7,7 +7,7 @@ import { auth, db } from '@/lib/firebase';
 import { doc, onSnapshot, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore'; // Added setDoc
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import type { User, Host } from '@/types'; // Added Host
+import type { User, Director } from '@/types'; 
 import { createSessionAction, deleteSessionAction } from '@/actions/createSessionAction';
 
 type CombinedUser = FirebaseUser & Partial<User>;
@@ -31,13 +31,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
+    let profileUnsubscribe: (() => void) | null = null;
+
+    const authUnsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
+      // Clean up previous profile listener if any
+      if (profileUnsubscribe) {
+        profileUnsubscribe();
+        profileUnsubscribe = null;
+      }
+
       if (firebaseUser) {
-        const idToken = await firebaseUser.getIdToken();
-        await createSessionAction(idToken);
+        // Silent Background Sync (Non-blocking)
+        firebaseUser.getIdToken().then(idToken => {
+          createSessionAction(idToken).catch(err => 
+            console.error("[useAuth] Background session sync failed:", err)
+          );
+        });
 
         const userProfileRef = doc(db, 'users', firebaseUser.uid);
-        const profileUnsubscribe = onSnapshot(userProfileRef, (doc) => {
+        profileUnsubscribe = onSnapshot(userProfileRef, (doc) => {
           const userData = doc.exists() ? (doc.data() as User) : { isPremium: false };
           
           const fullUser = {
@@ -48,24 +60,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(fullUser as CombinedUser);
           setLoading(false);
         }, (error) => {
-           console.error("Error fetching user profile:", error);
+           console.error("[useAuth] Error fetching user profile:", error);
            setUser(firebaseUser as CombinedUser); 
            setLoading(false);
         });
-        return () => profileUnsubscribe();
       } else {
+        // Break the redirect loop: If no client session, ensure server session is also gone
+        deleteSessionAction().catch(err => console.error("[useAuth] Failed to clear session cookie:", err));
         setUser(null);
         setLoading(false);
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      authUnsubscribe();
+      if (profileUnsubscribe) profileUnsubscribe();
+    };
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push('/prompts');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // Surgical Refresh
+      const idToken = await userCredential.user.getIdToken();
+      await createSessionAction(idToken);
+      router.refresh();
+      router.push('/studio');
       toast.success('Login Successful', { description: "Welcome back!" });
     } catch (error: any) {
       toast.error('Login Failed', { description: error.message });
@@ -83,11 +103,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Create the Host profile in Firestore
       const userProfileRef = doc(db, 'users', firebaseUser.uid);
-      const newUserProfile: Host = {
+      const newUserProfile: Director = {
         uid: firebaseUser.uid,
         email: firebaseUser.email!,
         displayName: name,
-        role: 'Host',
+        role: 'Director',
         subscriptionStatus: 'trial',
         storageQuota: {
           used: 0,
@@ -101,7 +121,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       await setDoc(userProfileRef, newUserProfile);
       
-      router.push('/prompts');
+      // Surgical Refresh
+      const idToken = await firebaseUser.getIdToken();
+      await createSessionAction(idToken);
+      router.refresh();
+      
+      router.push('/studio');
       toast.success('Registration Successful', { description: "Welcome to Memory Weaver!" });
     } catch (error: any) {
       console.error('Registration failed:', error);
@@ -114,6 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await signOut(auth);
     await deleteSessionAction();
     setUser(null);
+    router.refresh();
     router.push('/');
     toast.info('Logged Out', { description: 'You have been successfully logged out.' });
   }, [router]);

@@ -237,9 +237,33 @@ export function MemoryCard({ memory, onEdit, onDelete, onUnpublish, onToggleLega
         <CardHeader className="pb-2">
           <CardTitle className="font-headline text-xl line-clamp-1">{memory.title}</CardTitle>
           <div className="flex flex-col gap-1 mt-1">
-            <div className="flex items-center text-xs text-muted-foreground">
-              <CalendarDays className="mr-1.5 h-3 w-3" />
+            <div className="flex items-center text-xs text-muted-foreground font-medium">
+              <CalendarDays className="mr-1.5 h-3 w-3 text-primary/70" />
               {(() => {
+                const { dateComponents } = memory;
+                
+                // If we have explicit components, use them for partial display
+                if (dateComponents && (dateComponents.year || dateComponents.month || dateComponents.day)) {
+                  const day = dateComponents.day && dateComponents.day !== 'none' ? dateComponents.day : '';
+                  const month = dateComponents.month && dateComponents.month !== 'none' ? dateComponents.month : '';
+                  const year = dateComponents.year && dateComponents.year !== 'none' ? dateComponents.year : '';
+                  
+                  if (day && month && year) {
+                    // Try full formatting for precision
+                    try {
+                      // Note: date-fns format expects a Date object
+                      const d = new Date(`${month} ${day}, ${year}`);
+                      if (!isNaN(d.getTime())) return format(d, 'PPP', { locale: enGB });
+                    } catch (e) {}
+                    return `${day} ${month} ${year}`;
+                  }
+                  
+                  if (month && year) return `${month} ${year}`;
+                  if (year) return year;
+                  if (month) return month;
+                }
+
+                // Fallback to existing logic for legacy string dates
                 const date = parseSafeDate(memory.date);
                 const createdAt = parseSafeDate(memory.createdAt);
                 const displayDate = date || createdAt;
@@ -359,7 +383,7 @@ export function MemoryCard({ memory, onEdit, onDelete, onUnpublish, onToggleLega
                       <AlertDialogDescription>
                         {onUnpublish 
                           ? `This will remove "${memory.title}" from the Cinema and return it to your Studio drafts.`
-                          : `This will permanently remove "${memory.title}" from your timeline. This cannot be undone.`}
+                          : `This will permanently remove "${memory.title}" from your Cinema. This cannot be undone.`}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

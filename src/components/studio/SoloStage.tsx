@@ -33,7 +33,7 @@ const formatTime = (seconds: number) => {
   return `${m}:${s}`;
 };
 
-export default function HostRoom({ data, update }: RoomProps) {
+export default function SoloStage({ data, update }: RoomProps) {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
   const [trimRange, setTrimRange] = useState<[number, number]>([0, 100]);
@@ -187,7 +187,7 @@ export default function HostRoom({ data, update }: RoomProps) {
     }
   };
 
-  // SIGNAL SHIELD: Ensure that every save from the host dashboard PRESERVES the latest hardware status
+  // SIGNAL SHIELD: Ensure that every save from the director dashboard PRESERVES the latest hardware status
   const shieldedUpdate = useCallback((updatedData: MemoryData) => {
     update({
         ...updatedData,
@@ -549,7 +549,7 @@ export default function HostRoom({ data, update }: RoomProps) {
         </div>
       )}
 
-      {/* The Central Engine: The Story Guide Outline */}
+      {/* The Central Engine: The Story Script Outline */}
       <MemoryForm data={data} update={shieldedUpdate} />
 
     </div>

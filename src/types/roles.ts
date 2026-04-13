@@ -1,5 +1,5 @@
 
-export type UserRole = 'Host' | 'Storyteller' | 'Guest' | 'Interviewer';
+export type UserRole = 'Director' | 'Storyteller' | 'Guest' | 'Interviewer';
 
 export interface BaseUser {
   uid: string;
@@ -8,8 +8,8 @@ export interface BaseUser {
   photoURL?: string;
 }
 
-export interface Host extends BaseUser {
-  role: 'Host';
+export interface Director extends BaseUser {
+  role: 'Director';
   email: string;
   storageQuota: {
     used: number; // in bytes
@@ -39,4 +39,4 @@ export interface Interviewer extends BaseUser {
   };
 }
 
-export type User = Host | Storyteller | Guest | Interviewer;
+export type User = Director | Storyteller | Guest | Interviewer;

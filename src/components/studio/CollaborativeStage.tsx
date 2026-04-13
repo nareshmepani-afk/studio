@@ -27,7 +27,7 @@ interface RoomProps {
     update: (updatedData: MemoryData) => void;
 }
 
-export default function StorytellerRoom({ data, update }: RoomProps) {
+export default function CollaborativeStage({ data, update }: RoomProps) {
   const [qrOpen, setQrOpen] = useState(false);
   const [isCapturingThumbnail, setIsCapturingThumbnail] = useState(false);
   const [isUploadingPoster, setIsUploadingPoster] = useState(false);
@@ -77,25 +77,26 @@ export default function StorytellerRoom({ data, update }: RoomProps) {
   }, []);
 
   useEffect(() => {
-    if (!user || !data?.id) return;
+    if (!user?.uid) return;
+
     const unsub = onSnapshot(doc(db, 'users', user.uid, 'memories', data.id), (docS) => {
        if (docS.exists()) {
            const d = docS.data();
+           
+           // console.log(`[CollaborativeStage] Pulse Received: Status=${d.status}, Connected=${d.interviewerConnected}`);
+           
            setInterviewerConnected(!!d.interviewerConnected);
            setLiveStatus(d.status || 'idle');
            setCameraActive(!!d.cameraActive);
-           
-           // SYNC FIX: Explicitly sync the video URL (even if it's null)
            setVideoUrl(d.videoUrl || null);
            
-           // Every fresh pulse token resets our local watchdog
            if (d.pulseToken) {
               resetWatchdog();
            }
        }
     });
-    return () => unsub(); // Teardown listener on dismount
-  }, [user, data?.id, resetWatchdog]);
+    return () => unsub();
+  }, [user?.uid, data?.id, resetWatchdog]); // Updated deps
 
   // SNAPSHOT: Capture current frame as theatrical poster
   const handleCaptureThumbnail = async () => {
@@ -364,7 +365,7 @@ export default function StorytellerRoom({ data, update }: RoomProps) {
                 </div>
             </div>
 
-            {/* The Central Engine: The Story Guide Outline */}
+            {/* The Central Engine: The Memory Collaboration Script */}
             <MemoryForm data={data} update={shieldedUpdate} />
          </>
       )}

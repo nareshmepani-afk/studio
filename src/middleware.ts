@@ -10,9 +10,7 @@ const GUEST_SECRET = new TextEncoder().encode(process.env.GUEST_SESSION_SECRET |
 // All routes that require a user to be logged in.
 const PROTECTED_ROUTES = [
   '/dashboard', 
-  '/timeline', 
   '/add-memory', 
-  '/prompts', 
   '/settings', 
   '/requests', 
   '/create', 
@@ -27,6 +25,12 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   const guestPass = request.cookies.get('guest_pass')?.value;
+
+  // Legacy Redirect: /prompts -> /studio
+  if (pathname.startsWith('/prompts')) {
+    const newPath = pathname.replace('/prompts', '/studio');
+    return NextResponse.redirect(new URL(newPath, request.url));
+  }
 
   // 1. Allow storyteller routes to pass through unconditionally.
   if (pathname.startsWith('/remote/')) {
@@ -52,9 +56,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // 3. If user is logged in, redirect them away from public-only pages.
   if (sessionCookie && PUBLIC_ONLY_ROUTES.some(route => pathname.startsWith(route))) {
-    return NextResponse.redirect(new URL('/prompts', request.url));
+    return NextResponse.redirect(new URL('/studio', request.url));
   }
 
   // 4. If user is NOT logged in and trying to access a protected route, redirect to login.

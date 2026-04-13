@@ -18,7 +18,7 @@ const Lobby: React.FC<LobbyProps> = ({ sessionId, userId }) => {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-studio-black text-studio-text">
-      <h1 className="text-4xl font-bold mb-8">Welcome to the Studio Lobby</h1>
+      <h1 className="text-4xl font-bold mb-8">Welcome to the Memory Studio</h1>
       <p className="text-lg mb-8">Please select your role to continue.</p>
       <div className="flex space-x-4">
         <Button onClick={() => handleRoleSelection('Interviewer')}>

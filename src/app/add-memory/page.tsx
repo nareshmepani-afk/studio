@@ -2,14 +2,14 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import MemoryEditor from '@/components/studio/MemoryEditor';
+import ProductionDeck from '@/components/studio/ProductionDeck';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { useAuth } from '@/hooks/useAuth';
 import { mockPrompts } from '@/lib/mockData';
 import { teleprompterScripts } from '@/lib/teleprompterScripts';
 
-function MemoryEditorConnector() {
+function ProductionDeckConnector() {
   const searchParams = useSearchParams();
   const editMemoryId = searchParams.get('editMemoryId');
   const { user, loading: authLoading } = useAuth();
@@ -130,15 +130,19 @@ function MemoryEditorConnector() {
   if (!user) return <div className="p-8 text-rose-400 font-mono">Authentication required to view this memory.</div>;
   if (!memoryData) return <div className="p-8 text-amber-400 font-mono">Memory could not be loaded.</div>;
 
-  return <MemoryEditor memoryData={memoryData} onUpdate={handleUpdate} />;
+  return <ProductionDeck memoryData={memoryData} onUpdate={handleUpdate} />;
 }
+
+import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 
 export default function AddMemoryPage() {
   return (
-    <div className="w-full h-screen bg-black">
-      <Suspense fallback={<div className="p-8 text-white font-mono opacity-60">Wiring Engine...</div>}>
-        <MemoryEditorConnector />
-      </Suspense>
-    </div>
+    <AuthenticatedPageWrapper>
+      <div className="w-full min-h-[calc(100vh-64px)] flex flex-col">
+        <Suspense fallback={<div className="p-8 text-white font-mono opacity-60">Wiring Engine...</div>}>
+          <ProductionDeckConnector />
+        </Suspense>
+      </div>
+    </AuthenticatedPageWrapper>
   );
 }

@@ -45,6 +45,13 @@ export interface Memory {
     starring?: string;
     billingLine?: string; // Condensed small-caps credits line
   };
+  dateComponents?: {
+    day?: string;
+    month?: string;
+    year?: string;
+  };
+  prose?: string;
+  content?: string;
 }
 
 export type MemoryCategory = {
@@ -123,9 +130,9 @@ export interface User {
   sharedAccessStatus?: 'no_pass_initiated' | 'free_pass_active' | 'paid_pass_active' | 'free_pass_expired' | 'paid_pass_expired';
   freePassActivatedDate?: string;
   paidPassExpiryDate?: string;
-  hostPassStatus?: 'no_pass_initiated' | 'free_host_pass_active' | 'paid_host_pass_active' | 'free_host_pass_expired' | 'paid_host_pass_expired';
-  freeHostPassActivatedDate?: string;
-  paidHostPassExpiryDate?: string;
+  directorPassStatus?: 'no_pass_initiated' | 'free_host_pass_active' | 'paid_host_pass_active' | 'free_host_pass_expired' | 'paid_host_pass_expired';
+  freeDirectorPassActivatedDate?: string;
+  paidDirectorPassExpiryDate?: string;
   storageUsedBytes?: number;
   storageQuota?: StorageQuota;
   flaggedPrompts?: string[];
@@ -137,3 +144,14 @@ export type ActionResponse = {
   message: string;
   data?: any;
 };
+
+export interface StoryRequest {
+  id: string;
+  promptId: string;
+  promptTitle?: string; // Unified name for the requested story
+  guestName: string;
+  guestEmail: string;
+  directorId: string;
+  status: 'pending' | 'fulfilled' | 'ignored';
+  timestamp: any; // Firestore timestamp
+}

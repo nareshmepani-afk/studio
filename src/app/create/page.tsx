@@ -1,24 +1,22 @@
 'use client';
 
-import { Studio } from '@/components/studio/Studio';
-import { StudioProvider } from '@/hooks/studio/useStudioState';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 /**
- * @fileoverview
- * This is the primary entry point for the studio session creation.
- * It sets up the main layout and context for the entire application.
- * The Studio component is rendered within a StudioProvider to ensure
- * that all child components have access to the shared state.
+ * Redirect from legacy /create to the new branded /director route.
  */
-const CreatePage = () => {
-  return (
-    <StudioProvider>
-      <div className="w-full h-screen bg-black">
-        {/* The `role` prop is essential for determining the user's permissions and capabilities */}
-        <Studio role="host" />
-      </div>
-    </StudioProvider>
-  );
-};
+export default function CreateRedirect() {
+  const router = useRouter();
 
-export default CreatePage;
+  useEffect(() => {
+    router.replace('/director');
+  }, [router]);
+
+  return (
+    <div className="h-screen w-full bg-black flex items-center justify-center text-white/50 text-sm">
+      Entering Memory Collaboration...
+    </div>
+  );
+}
+

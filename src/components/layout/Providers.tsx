@@ -2,6 +2,7 @@
 
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import { LanguageProvider } from "@/hooks/useLanguage";
 import React from "react";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SplashScreen from "@/components/layout/SplashScreen"; // Import the SplashScreen
@@ -28,9 +29,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
         enableSystem
         disableTransitionOnChange
       >
-        <AuthProvider>
-          <AppContent>{children}</AppContent>
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <AppContent>{children}</AppContent>
+          </AuthProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
