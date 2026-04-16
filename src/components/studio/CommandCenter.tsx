@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,14 +17,106 @@ import {
   Play,
   Square,
   ChevronRight,
-  Monitor
+  Monitor,
+  Type,
+  FastForward,
+  Pause,
+  Loader2,
+  Maximize
 } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CommandCenter = () => {
-  const { actions, isRecording, sessionId, script, mode } = useStudioState();
+  const { actions, isRecording, sessionId, script, mode, isScrolling, scrollSpeed, fontSize } = useStudioState();
   const [activeTab, setActiveTab] = useState<'setup' | 'live' | 'invites'>('setup');
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [remoteStageStream, setRemoteStageStream] = useState<MediaStream | null>(null);
+  const [localScript, setLocalScript] = useState(script);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const peerRef = React.useRef<any>(null);
+  const connRef = React.useRef<any>(null);
+  const localVideoRef = React.useRef<HTMLVideoElement>(null);
+
+  // --- GUEST DIRECTOR LOGIC ---
+  React.useEffect(() => {
+    if (mode === 'guest_director') {
+      // 1. Initialize local camera for the Director's PIP face
+      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then(stream => {
+          setLocalStream(stream);
+          if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+          
+          // 2. Connect to Host via PeerJS
+          import('peerjs').then(({ Peer }) => {
+            const peer = new Peer(`${sessionId}-director-${Math.random().toString(36).substr(2, 5)}`, {
+              debug: 1,
+              config: {
+                iceServers: [
+                   { urls: 'stun:stun.l.google.com:19302' },
+                   { urls: 'stun:global.stun.twilio.com:3478' }
+                ]
+              }
+            });
+
+            peer.on('open', (id: string) => {
+              console.log('[GuestDirector] Peer opened. Calling Host...');
+              setIsConnecting(true);
+              const call = peer.call(`${sessionId}-host`, stream);
+              
+              call.on('close', () => {
+                setIsConnecting(false);
+                toast.error("Connection Lost", { description: "Production link to stage was severed." });
+              });
+
+              call.on('stream', (stageStream: any) => {
+                console.log('[GuestDirector] Received Stage Feed (Monitoring Active)');
+                setRemoteStageStream(stageStream);
+              });
+
+              // 3. Initiate Data Connection for Remote Control
+              const conn = peer.connect(`${sessionId}-host`);
+              conn.on('open', () => {
+                console.log('[GuestDirector] Data connection opened. Control active.');
+                connRef.current = conn;
+
+                // Sync the initial script content to the host immediately
+                if (localScript) {
+                  console.log('[GuestDirector] Pushing initial script to Stage');
+                  conn.send({ type: 'SET_SCRIPT', payload: localScript });
+                }
+              });
+            });
+
+            peerRef.current = peer;
+          });
+        })
+        .catch(err => {
+          console.error("[GuestDirector] Camera initialization failed:", err);
+          toast.error("Camera Error", { description: "Director PIP feed will be disabled." });
+        });
+
+      return () => {
+        localStream?.getTracks().forEach(t => t.stop());
+        peerRef.current?.destroy();
+      };
+    }
+  }, [mode, sessionId]);
+
+  const sendSyncEvent = (type: string, payload: any) => {
+    // 1. Update local state for immediate feedback
+    if (type === 'TOGGLE_SCROLL') actions.toggleScrolling();
+    if (type === 'SET_SPEED') actions.setScrollSpeed(payload);
+    if (type === 'SET_FONT') actions.setFontSize(payload);
+
+    // 2. Relay to Host if connected
+    if (connRef.current && connRef.current.open) {
+      console.log(`[GuestDirector] Relaying ${type} to Stage:`, payload);
+      connRef.current.send({ type, payload });
+    }
+  };
 
   const copyInviteLink = (role: string) => {
     const baseUrl = window.location.origin;
@@ -144,7 +236,7 @@ const CommandCenter = () => {
                   >
                      <div className="space-y-4">
                         <h2 className="text-4xl font-headline italic tracking-tighter">Scene Configuration</h2>
-                        <p className="text-white/40 text-sm max-w-xl leading-relaxed">Adjust your teleprompter settings and scene details before you begin recording.</p>
+                        <p className="text-white/40 text-sm max-w-xl leading-relaxed">Adjust your script settings and scene details before you begin recording.</p>
                      </div>
 
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -153,11 +245,23 @@ const CommandCenter = () => {
                            description="Monitor your on-stage performance."
                            icon={<Monitor className="h-5 w-5 text-primary" />}
                         >
-                           <div className="aspect-video rounded-2xl bg-neutral-900 border border-white/10 flex items-center justify-center group overflow-hidden">
+                           <div className="aspect-video rounded-2xl bg-neutral-900 border border-white/10 flex items-center justify-center group relative overflow-hidden">
+                              <video 
+                                 ref={localVideoRef}
+                                 autoPlay 
+                                 playsInline 
+                                 muted
+                                 className="absolute inset-0 w-full h-full object-cover"
+                              />
                               <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                              <div className="flex flex-col items-center gap-2">
-                                 <Video className="h-8 w-8 text-white/10" />
-                                 <span className="text-[10px] uppercase font-black text-white/20 tracking-widest">Connect Camera</span>
+                              {!localStream && (
+                                <div className="flex flex-col items-center gap-2 z-10">
+                                   <Video className="h-8 w-8 text-white/10" />
+                                   <span className="text-[10px] uppercase font-black text-white/20 tracking-widest">Connect Camera</span>
+                                </div>
+                              )}
+                              <div className="absolute bottom-3 left-3 px-2 py-1 bg-black/60 backdrop-blur-md rounded-lg text-[8px] font-black uppercase tracking-widest border border-white/10">
+                                 Director's Monitor
                               </div>
                            </div>
                         </ControlCard>
@@ -178,6 +282,75 @@ const CommandCenter = () => {
                               <span className="text-[10px] font-black uppercase text-white/40 tracking-widest text-center">Levels Nominal</span>
                            </div>
                         </ControlCard>
+
+                        <ControlCard 
+                           title="Teleprompter Control" 
+                           description="Remotely guide the script flow."
+                           icon={<Type className="h-5 w-5 text-primary" />}
+                        >
+                           <div className="space-y-6 h-full flex flex-col justify-center px-2">
+                              {/* Play/Pause */}
+                              <div className="flex items-center justify-between">
+                                 <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Auto-Scroll</span>
+                                 <div className="flex items-center gap-3">
+                                   <Button 
+                                     variant="ghost" 
+                                     size="icon" 
+                                     onClick={() => sendSyncEvent('TOGGLE_SCROLL', !isScrolling)}
+                                     className={`h-10 w-10 rounded-full border border-white/10 ${isScrolling ? 'bg-primary/20 text-primary border-primary/30' : 'bg-white/5 text-white/40'}`}
+                                   >
+                                     {isScrolling ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current" />}
+                                   </Button>
+                                   <Switch 
+                                     checked={isScrolling} 
+                                     onCheckedChange={(checked) => sendSyncEvent('TOGGLE_SCROLL', checked)} 
+                                   />
+                                 </div>
+                              </div>
+
+                              {/* Scroll Speed */}
+                              <div className="space-y-3">
+                                 <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Scroll Speed</span>
+                                    <Badge variant="outline" className="text-[10px] font-mono border-white/10 text-white/60">
+                                       {scrollSpeed.toFixed(1)}x
+                                    </Badge>
+                                 </div>
+                                 <div className="flex items-center gap-4">
+                                    <FastForward className="h-3 w-3 text-white/20" />
+                                    <Slider 
+                                       value={[scrollSpeed]} 
+                                       min={0.5} 
+                                       max={5} 
+                                       step={0.1} 
+                                       onValueChange={([val]) => sendSyncEvent('SET_SPEED', val)}
+                                       className="flex-1"
+                                    />
+                                 </div>
+                              </div>
+
+                              {/* Font Size */}
+                              <div className="space-y-3">
+                                 <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Prompt Zoom</span>
+                                 <div className="flex gap-2">
+                                    {[32, 48, 64, 80].map((size) => (
+                                       <Button
+                                          key={size}
+                                          variant="ghost"
+                                          onClick={() => sendSyncEvent('SET_FONT', size)}
+                                          className={`flex-1 h-8 rounded-lg text-[10px] font-black border transition-all ${
+                                             fontSize === size 
+                                             ? 'bg-primary/20 border-primary/30 text-primary' 
+                                             : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'
+                                          }`}
+                                       >
+                                          {size === 32 ? 'S' : size === 48 ? 'M' : size === 64 ? 'L' : 'XL'}
+                                       </Button>
+                                    ))}
+                                 </div>
+                              </div>
+                           </div>
+                        </ControlCard>
                      </div>
 
                      <div className="p-8 rounded-[32px] bg-white/[0.03] border border-white/5 space-y-6">
@@ -188,8 +361,65 @@ const CommandCenter = () => {
                            </div>
                            <Badge variant="outline" className="bg-primary/10 border-primary/20 text-primary text-[10px] uppercase font-black">AI Orchestrated</Badge>
                         </div>
-                        <div className="p-6 rounded-2xl bg-black border border-white/5 min-h-[100px] text-white/60 text-sm leading-relaxed italic">
-                           {script || "No scene selected. Choose a prompt from the Studio to project onto the Stage."}
+                         <textarea 
+                            value={localScript}
+                            onChange={(e) => {
+                               setLocalScript(e.target.value);
+                               sendSyncEvent('SET_SCRIPT', e.target.value);
+                            }}
+                            className="w-full h-40 p-6 rounded-2xl bg-black border border-white/5 text-white/60 text-sm leading-relaxed italic resize-none focus:outline-none focus:border-primary/50 transition-colors"
+                            placeholder="Type your script here to project it onto the Stage..."
+                         />
+                     </div>
+                  </motion.div>
+               )}
+
+               {activeTab === 'live' && (
+                  <motion.div 
+                     key="live"
+                     initial={{ opacity: 0, scale: 0.95 }}
+                     animate={{ opacity: 1, scale: 1 }}
+                     exit={{ opacity: 0, scale: 1.05 }}
+                     className="h-full flex flex-col gap-8"
+                  >
+                     <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                           <h2 className="text-4xl font-headline italic tracking-tighter">Live Monitor</h2>
+                           <p className="text-white/40 text-sm">Direct visual feedback from the Storyteller Stage.</p>
+                        </div>
+                        <Badge className="bg-primary/20 text-primary border-primary/30 animate-pulse">Live Link Active</Badge>
+                     </div>
+
+                     <div className="flex-1 rounded-[40px] bg-neutral-900 border border-white/10 relative overflow-hidden shadow-2xl group">
+                         {remoteStageStream ? (
+                           <video 
+                              autoPlay 
+                              playsInline 
+                              ref={(el) => { if (el) el.srcObject = remoteStageStream; }}
+                              className="absolute inset-0 w-full h-full object-contain"
+                           />
+                        ) : (
+                           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                              <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                              <span className="text-xs font-black uppercase tracking-widest text-white/20">Waiting for Stage Feed...</span>
+                           </div>
+                        )}
+                        
+                        {/* Status Overlays */}
+                        <div className="absolute top-8 left-8 flex items-center gap-3">
+                           <div className="px-3 py-1.5 bg-red-600 rounded-lg flex items-center gap-2">
+                              <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                              <span className="text-[10px] font-black uppercase tracking-widest text-white">REC</span>
+                           </div>
+                           <div className="px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-lg border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/60">
+                              Cam 1: Stage A
+                           </div>
+                        </div>
+
+                        <div className="absolute bottom-8 right-8 p-4 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10 opacity-0 group-hover:opacity-100 transition-all">
+                           <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl hover:bg-white/10">
+                              <Maximize className="h-5 w-5" />
+                           </Button>
                         </div>
                      </div>
                   </motion.div>
@@ -216,7 +446,7 @@ const CommandCenter = () => {
                         />
                         <InviteRow 
                            role="Storyteller" 
-                           desc="Sees only the teleprompter and the live script." 
+                           desc="Sees only the story script and the live feed." 
                            onCopy={() => copyInviteLink('storyteller')} 
                         />
                         <InviteRow 

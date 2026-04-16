@@ -52,7 +52,7 @@ export default function PerspectiveWrapper({ activeRoom, children }: Perspective
             animate="animate"
             exit="exit"
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }} // very cinematic cubic-bezier
-            className="w-full h-full p-6"
+            className="w-full h-full"
           >
             {children}
           </motion.div>

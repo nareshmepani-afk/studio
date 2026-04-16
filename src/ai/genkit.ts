@@ -37,7 +37,10 @@ export async function getAI() {
     try {
       const auth = new GoogleAuth({
         credentials,
-        scopes: ['https://www.googleapis.com/auth/generative-language'],
+        scopes: [
+          'https://www.googleapis.com/auth/generative-language',
+          'https://www.googleapis.com/auth/cloud-platform'
+        ],
       });
       const client = await auth.getClient();
       const tokenResponse = await client.getAccessToken();

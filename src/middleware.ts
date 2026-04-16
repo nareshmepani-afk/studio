@@ -32,8 +32,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(newPath, request.url));
   }
 
-  // 1. Allow storyteller routes to pass through unconditionally.
-  if (pathname.startsWith('/remote/')) {
+  // 1. Allow storyteller and guest director routes to pass through with sessionId
+  if (pathname.startsWith('/remote/') || 
+      (pathname.startsWith('/director') && request.nextUrl.searchParams.has('sessionId')) ||
+      (pathname.startsWith('/studio') && request.nextUrl.searchParams.has('sessionId') && request.nextUrl.searchParams.get('mode') === 'guest')) {
     return NextResponse.next();
   }
 

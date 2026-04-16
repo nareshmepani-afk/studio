@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // 1. Define which routes are protected and which are "auth" routes
-const protectedRoutes = ['/dashboard', '/prompts', '/profile'];
+const protectedRoutes = ['/dashboard', '/studio', '/profile'];
 const authRoutes = ['/login', '/signup'];
 
 export function proxy(request: NextRequest) {
@@ -31,7 +31,7 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
-    '/prompts/:path*',
+    '/studio/:path*',
     '/login',
     '/signup'
   ],

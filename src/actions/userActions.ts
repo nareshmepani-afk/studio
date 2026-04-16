@@ -34,7 +34,7 @@ export async function activateFreeDirectorPass(): Promise<{ success: boolean; me
     });
 
     // Important: Revalidate the paths that depend on the pass status
-    revalidatePath('/prompts');
+    revalidatePath('/studio');
     revalidatePath('/settings');
 
     return { success: true, message: "Free Director Pass activated successfully!" };

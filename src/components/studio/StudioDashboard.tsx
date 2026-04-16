@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { UnifiedChapter } from '@/hooks/studio/useStudioData';
-import { teleprompterScripts } from '@/lib/teleprompterScripts';
+import { storyScripts } from '@/lib/storyScripts';
 import { toast } from 'sonner';
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -50,7 +50,9 @@ export function StudioDashboard({
   stats,
   initialFlaggedPromptIds,
   isLoading,
-  directorPassStatus 
+  directorPassStatus,
+  isGuest = false,
+  sessionId = ''
 }: { 
   chapters: UnifiedChapter[];
   requests?: any[];
@@ -58,6 +60,8 @@ export function StudioDashboard({
   initialFlaggedPromptIds: Set<string>;
   isLoading: boolean;
   directorPassStatus: string;
+  isGuest?: boolean;
+  sessionId?: string;
 }) {
   const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
@@ -69,12 +73,28 @@ export function StudioDashboard({
   // Production Deck State
   const [isDeckOpen, setIsDeckOpen] = useState(false);
   const [selectedProductionData, setSelectedProductionData] = useState<any>(null);
+  
+  // GUEST AUTO-OPEN logic
+  useEffect(() => {
+    if (isGuest && !isDeckOpen) {
+      console.log("[StudioDashboard] Guest mode detected. Auto-activating Storyteller Stage with Session ID:", sessionId);
+      setSelectedProductionData({
+        id: sessionId, // Use the unique session ID as the memory ID for PeerJS coordination
+        title: "Guest Collaboration Session",
+        description: "Direct-to-Director link session.",
+        promptId: "guest_session",
+        status: 'draft',
+        prose: '<p>Welcome to your Guest Collaboration session. Your director has shared this link to guide your recording.</p>',
+        sensoryConfig: [],
+      });
+      setIsDeckOpen(true);
+    }
+  }, [isGuest, isDeckOpen, sessionId]);
   const [layoutMode, setLayoutMode] = useState<'takeover' | 'drawer'>('takeover');
 
-  // Persistence for layout preference
+  // Ensure Full-Screen is the default on entry
   useEffect(() => {
-    const saved = localStorage.getItem('director_layout_mode') as 'takeover' | 'drawer';
-    if (saved) setLayoutMode(saved);
+    setLayoutMode('takeover');
   }, []);
 
   const toggleLayoutMode = () => {
@@ -93,7 +113,7 @@ export function StudioDashboard({
           if (cp?.memory) {
               // Rehydrate memory data for the deck
               const pid = cp.memory.promptId;
-              const script = pid ? teleprompterScripts[pid] : '';
+              const script = pid ? storyScripts[pid] : '';
               const formattedProse = script ? `<p>${script.split('\\n').join('</p><p>')}</p>` : '';
               
               let loadedProse = cp.memory.prose || cp.memory.content || '';
@@ -110,7 +130,7 @@ export function StudioDashboard({
           // New Production
           const chapterPrompts = chapters.flatMap(c => c.prompts);
           const template = chapterPrompts.find(p => p.id === promptId);
-          const script = promptId ? teleprompterScripts[promptId] : '';
+          const script = promptId ? storyScripts[promptId] : '';
           const formattedProse = script ? `<p>${script.split('\\n').join('</p><p>')}</p>` : '';
 
           memoryToEdit = {
@@ -129,7 +149,7 @@ export function StudioDashboard({
       }
   }, [chapters]);
 
-  const handleUpdateProduction = async (updatedData: any) => {
+  const handleUpdateProduction = useCallback(async (updatedData: any) => {
     if (!user) return;
     
     // Optimistic Update
@@ -151,7 +171,7 @@ export function StudioDashboard({
     } catch (e) {
       console.error("Auto-save error:", e);
     }
-  };
+  }, [user, db]);
 
   const handleToggleFlagPrompt = useCallback(async (promptIdToToggle: string) => {
     if (!user) return;
@@ -232,43 +252,27 @@ export function StudioDashboard({
               </SelectContent>
             </Select>
 
-            <TooltipProvider>
-              <Tooltip delayDuration={300}>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleLayoutMode}
-                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white transition-all"
-                  >
-                    {layoutMode === 'takeover' ? <Maximize className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="p-3 text-xs bg-neutral-900 border-white/10 text-white shadow-2xl">
-                    <p>Switch to {layoutMode === 'takeover' ? 'Side Drawer' : 'Full-Screen'} Layout</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip delayDuration={300}>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    onClick={handleCleanupMigration}
-                    disabled={isCleaning}
-                    className="w-full md:w-auto border-dashed border-amber-500/30 text-amber-500/80 hover:bg-amber-500/10 hover:text-amber-500 transition-all font-bold tracking-tight"
-                  >
-                    {isCleaning ? <RefreshCcw className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                    {isCleaning ? 'Optimizing...' : 'Optimize Studio'}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-[300px] p-3 text-xs leading-relaxed bg-neutral-900 border-white/10 text-white shadow-2xl">
-                  <div className="flex gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                    <p>Optimize your workspace by removing empty draft shells and migrating legacy memories.</p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip delayDuration={300}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      onClick={handleCleanupMigration}
+                      disabled={isCleaning}
+                      className="w-full md:w-auto border-dashed border-amber-500/30 text-amber-500/80 hover:bg-amber-500/10 hover:text-amber-500 transition-all font-bold tracking-tight"
+                    >
+                      {isCleaning ? <RefreshCcw className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                      {isCleaning ? 'Optimizing...' : 'Optimize Studio'}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-[300px] p-3 text-xs leading-relaxed bg-neutral-900 border-white/10 text-white shadow-2xl">
+                    <div className="flex gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                      <p>Optimize your workspace by removing empty draft shells and migrating legacy memories.</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
           </div>
         </header>
 
@@ -376,7 +380,7 @@ export function StudioDashboard({
                           <PromptCard
                             promptId={cp.id}
                             promptText={cp.title}
-                            teleprompterScript={teleprompterScripts[cp.id] || "No script available."}
+                            storyScript={storyScripts[cp.id] || "No script available."}
                             isCompleted={isCompleted}
                             isFlaggedForReuse={flaggedPromptIds.has(cp.id)}
                             isLoading={false}
@@ -468,7 +472,7 @@ export function StudioDashboard({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsDeckOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[30]"
             />
             
             {/* The Deck */}
@@ -478,10 +482,10 @@ export function StudioDashboard({
               exit={layoutMode === 'takeover' ? { opacity: 0, scale: 0.95 } : { x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className={cn(
-                "fixed z-[101] bg-slate-950 border-white/10 shadow-2xl overflow-hidden flex flex-col",
+                "fixed z-[40] bg-slate-950 border-white/10 shadow-2xl overflow-hidden flex flex-col transition-all duration-500",
                 layoutMode === 'takeover' 
-                  ? "inset-4 md:inset-10 rounded-[40px] border" 
-                  : "top-0 right-0 bottom-0 w-full md:w-[600px] lg:w-[800px] border-l"
+                  ? "inset-0 top-16 border-t shadow-[0_0_50px_rgba(0,0,0,0.5)]" 
+                  : "top-16 right-0 bottom-0 w-full md:w-[75%] border-l"
               )}
             >
               {/* Close Button UI */}
@@ -500,6 +504,8 @@ export function StudioDashboard({
                 <ProductionDeck 
                   memoryData={selectedProductionData} 
                   onUpdate={handleUpdateProduction} 
+                  layoutMode={layoutMode}
+                  onToggleLayout={toggleLayoutMode}
                 />
               </div>
             </motion.div>

@@ -30,7 +30,7 @@ export function QrCodeDialog({ open, url, title, onClose }: QrCodeDialogProps) {
             <DialogHeader>
                 <DialogTitle className="font-headline text-lg">Scan to View Prompt</DialogTitle>
                 <DialogDescription>
-                An interviewer can scan this QR code with their phone to open a webpage with the teleprompter script for the prompt: <strong>{title}</strong>
+                An interviewer can scan this QR code with their phone to open a webpage with the story script for the prompt: <strong>{title}</strong>
                 </DialogDescription>
             </DialogHeader>
             <div className="flex items-center justify-center p-4">

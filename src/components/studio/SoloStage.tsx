@@ -13,7 +13,9 @@ import {
   AlertDialogTitle, 
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
-import { Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, Play, Pause, Camera, Loader2 } from 'lucide-react';
+import { Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, UserCircle } from 'lucide-react';
+import { generateInterviewQuestion } from '@/actions/aiWeaver';
+import { synthesizeStudioSpeech } from '@/actions/studio-vocal';
 import { useCamera } from '@/hooks/useCamera';
 import { useMediaRecorder } from '@/hooks/use-media-recorder';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -38,6 +40,15 @@ export default function SoloStage({ data, update }: RoomProps) {
   const [videoDuration, setVideoDuration] = useState(0);
   const [trimRange, setTrimRange] = useState<[number, number]>([0, 100]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isSlowMo, setIsSlowMo] = useState(false);
+
+  // MOD-12: AI Interviewer State
+  const [isInterviewMode, setIsInterviewMode] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState<string | null>(null);
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const [interviewHistory, setInterviewHistory] = useState<string[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState('Achird');
+
 
   // 1. Initialize local Camera stream (Only when explicitly enabled)
   const { stream, error } = useCamera({ enabled: isCameraActive });
@@ -146,6 +157,58 @@ export default function SoloStage({ data, update }: RoomProps) {
       setIsCapturingThumbnail(false);
     }
   };
+
+  // MOD-12: Vocal Engine
+  const playAudio = useCallback((base64: string) => {
+    const audio = new Audio(`data:audio/mp3;base64,${base64}`);
+    audio.play();
+  }, []);
+
+  const triggerNextQuestion = async () => {
+    if (isSynthesizing) return;
+    setIsSynthesizing(true);
+    
+    // Ensure Interviewer role uses Achird (Interviewer)
+    const interviewerVoice = 'Achird';
+    
+    try {
+      const question = await generateInterviewQuestion(data?.prose || '', interviewHistory);
+      if (question) {
+        setCurrentQuestion(question);
+        setInterviewHistory(prev => [...prev, `AI: ${question}`]);
+        
+        const audio = await synthesizeStudioSpeech(question, interviewerVoice);
+        if (audio) {
+          playAudio(audio);
+        }
+      }
+    } catch (err) {
+      console.error("Interviewer Error:", err);
+      toast.error("Vocal Bridge Interrupted");
+    } finally {
+      setIsSynthesizing(false);
+    }
+  };
+
+  const handleNarratePoetic = async () => {
+    const poeticText = data?.aiTakes?.poetic;
+    if (!poeticText || isSynthesizing) return;
+    
+    setIsSynthesizing(true);
+    try {
+      // Storyteller role uses Achernar (Deep/Narrative)
+      const audio = await synthesizeStudioSpeech(poeticText, 'Achernar');
+      if (audio) {
+        playAudio(audio);
+        toast.success("Achernar is reading your Poetic Take");
+      }
+    } catch (err) {
+      console.error("Narration Error:", err);
+    } finally {
+      setIsSynthesizing(false);
+    }
+  };
+
 
   // UPLOAD: Select file from computer as poster
   const handleUploadPoster = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -333,27 +396,134 @@ export default function SoloStage({ data, update }: RoomProps) {
 
              </div>
 
+             {/* MOD-12: AI Interviewer HUD */}
+             <div className="flex-1 flex flex-col items-center justify-center p-4">
+                <AnimatePresence>
+                  {isInterviewMode && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                      className="max-w-xl w-full bg-slate-950/60 backdrop-blur-2xl border border-sky-500/30 rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.6)] flex flex-col items-center text-center pointer-events-auto ring-1 ring-sky-500/20"
+                    >
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="p-3 bg-sky-500/10 rounded-2xl border border-sky-500/30">
+                          <Mic2 className="w-6 h-6 text-sky-400" />
+                        </div>
+                        <div className="flex flex-col items-start">
+                          <span className="text-[10px] font-black text-sky-400 uppercase tracking-[0.3em]">AI Interviewer</span>
+                          <span className="text-xs text-white/40 font-bold uppercase tracking-widest">{selectedVoice} (Studio)</span>
+                        </div>
+                      </div>
+
+                      {currentQuestion ? (
+                        <motion.p 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="text-2xl font-headline text-white leading-relaxed mb-8"
+                        >
+                          "{currentQuestion}"
+                        </motion.p>
+                      ) : (
+                        <p className="text-white/40 italic mb-8">Ready to hear your story. Click below to begin the interview or narrate your script.</p>
+                      )}
+
+                      <div className="flex flex-col gap-4 w-full">
+                         <div className="flex items-center gap-4 justify-center">
+                            <button 
+                              onClick={triggerNextQuestion}
+                              disabled={isSynthesizing}
+                              className="px-8 py-3 bg-sky-500 text-slate-950 font-black rounded-full hover:scale-105 transition-all shadow-lg flex items-center gap-2 group/btn disabled:opacity-50"
+                            >
+                              {isSynthesizing ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Mic2 className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" />
+                              )}
+                              Ask Next Question (Achird)
+                            </button>
+                            
+                            {data?.aiTakes?.poetic && (
+                               <button 
+                                 onClick={handleNarratePoetic}
+                                 disabled={isSynthesizing}
+                                 className="px-8 py-3 bg-amber-500 text-slate-950 font-black rounded-full hover:scale-105 transition-all shadow-lg flex items-center gap-2 group/btn disabled:opacity-50"
+                               >
+                                 <Volume2 className="w-4 h-4" />
+                                 Narrate Poetic Take (Achernar)
+                               </button>
+                            )}
+                         </div>
+
+                         {currentQuestion && (
+                            <button 
+                              onClick={() => {
+                                 synthesizeStudioSpeech(currentQuestion, 'Achird').then(playAudio);
+                              }}
+                              className="text-[10px] font-black text-sky-400/60 uppercase tracking-widest hover:text-sky-400 transition-all"
+                            >
+                              Replay Last Question
+                            </button>
+                         )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+             </div>
+
              {/* Footer: Controls */}
-             <div className="flex justify-center w-full pb-4 pointer-events-auto">
-               {!isRecording ? (
-                 <button 
-                   onClick={startRecording}
-                   disabled={!stream || uploading}
-                   className="group relative flex items-center justify-center w-20 h-20 rounded-full bg-white/10 border-4 border-white/40 hover:border-rose-500 hover:bg-rose-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                 >
-                   <div className="w-6 h-6 rounded-full bg-rose-500 group-hover:scale-125 transition-transform" />
-                 </button>
-               ) : (
-                 <button 
-                   onClick={() => {
-                     stopRecording();
-                     setIsCameraActive(false); // Strictly power-cycle hardware off!
-                   }}
-                   className="group relative flex items-center justify-center w-20 h-20 rounded-full bg-rose-500/20 border-4 border-rose-500 hover:bg-rose-500 transition-all shadow-[0_0_40px_rgba(244,63,94,0.4)]"
-                 >
-                   <Square className="w-6 h-6 text-white shrink-0 group-hover:scale-90 transition-transform fill-current" />
-                 </button>
-               )}
+             <div className="flex justify-between items-center w-full px-12 pb-6 pointer-events-auto">
+                <div className="flex items-center gap-4">
+                   <button 
+                     onClick={() => setIsInterviewMode(!isInterviewMode)}
+                     className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all border ${
+                       isInterviewMode 
+                         ? 'bg-sky-500/20 border-sky-500 text-sky-400 shadow-[0_0_20px_rgba(14,165,233,0.3)]' 
+                         : 'bg-black/40 border-white/10 text-white/40 hover:text-white hover:bg-black/60'
+                     }`}
+                   >
+                     <UserCircle className="w-4 h-4" />
+                     {isInterviewMode ? 'Interviewer Active' : 'Start AI Interview'}
+                   </button>
+
+                   {isInterviewMode && (
+                     <div className="flex items-center gap-1 bg-black/40 border border-white/10 p-1.5 rounded-xl">
+                       {['Achird', 'Achernar', 'Zephyr'].map(v => (
+                         <button 
+                           key={v}
+                           onClick={() => setSelectedVoice(v)}
+                           className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase transition-all ${selectedVoice === v ? 'bg-white/10 text-white' : 'text-white/20 hover:text-white/40'}`}
+                         >
+                           {v}
+                         </button>
+                       ))}
+                     </div>
+                   )}
+                </div>
+
+                {!isRecording ? (
+                  <button 
+                    onClick={startRecording}
+                    disabled={!stream || uploading}
+                    className="group relative flex items-center justify-center w-20 h-20 rounded-full bg-white/10 border-4 border-white/40 hover:border-rose-500 hover:bg-rose-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-rose-500 group-hover:scale-125 transition-transform" />
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => {
+                      stopRecording();
+                      setIsCameraActive(false); // Strictly power-cycle hardware off!
+                    }}
+                    className="group relative flex items-center justify-center w-20 h-20 rounded-full bg-rose-500/20 border-4 border-rose-500 hover:bg-rose-500 transition-all shadow-[0_0_40px_rgba(244,63,94,0.4)]"
+                  >
+                    <Square className="w-6 h-6 text-white shrink-0 group-hover:scale-90 transition-transform fill-current" />
+                  </button>
+                )}
+
+                <div className="w-[200px] flex justify-end">
+                   {/* Balancing element */}
+                </div>
              </div>
 
            </div>
@@ -447,6 +617,27 @@ export default function SoloStage({ data, update }: RoomProps) {
                         className="px-6 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all disabled:opacity-50"
                       >
                         Retake Video
+                      </button>
+
+                      {/* PREMIUM: Slow Motion Toggle */}
+                      <button 
+                        onClick={() => {
+                          const newSlowMo = !isSlowMo;
+                          setIsSlowMo(newSlowMo);
+                          if (previewVideoRef.current) {
+                            previewVideoRef.current.playbackRate = newSlowMo ? 0.25 : 1.0;
+                          }
+                        }}
+                        disabled={uploading}
+                        className={`flex items-center gap-2 px-6 py-3 border font-bold rounded-xl transition-all disabled:opacity-50 ${
+                          isSlowMo 
+                            ? 'bg-amber-500/20 border-amber-500 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)]' 
+                            : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
+                        }`}
+                        title="Slow Motion (0.25x)"
+                      >
+                        <span className="text-lg">🐢</span>
+                        <span className="text-sm">Slow-Mo</span>
                       </button>
 
                       {/* PREMIUM: Snapshot Picker */}

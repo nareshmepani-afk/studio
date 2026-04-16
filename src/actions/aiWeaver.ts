@@ -2,6 +2,7 @@
 
 import { getAI } from '@/ai/genkit';
 import { z } from 'genkit';
+import pRetry from 'p-retry';
 
 /**
  * Server action to expand sensory bullets into rich prose.
@@ -64,16 +65,18 @@ export async function expandWithAI(
     `;
 
     console.log("[AI Weaver] Sending prompt to Genkit...");
-    const { output } = await ai.generate({
-      prompt,
-      output: {
-        schema: z.object({
-          poetic: z.string(),
-          direct: z.string(),
-          nostalgic: z.string(),
-        }),
-      },
-    });
+    const { output } = await pRetry(async () => {
+      return await ai.generate({
+        prompt,
+        output: {
+          schema: z.object({
+            poetic: z.string(),
+            direct: z.string(),
+            nostalgic: z.string(),
+          }),
+        },
+      });
+    }, { retries: 2, onFailedAttempt: error => console.warn(`[AI Weaver] Attempt ${error.attemptNumber} failed. ${error.retriesLeft} retries left.`) });
 
     if (output) {
       console.log("[AI Weaver] Successfully generated cinematic takes");
@@ -116,7 +119,9 @@ export async function polishDescription(description: string): Promise<string> {
     `;
 
     console.log("[AI Weaver] Sending Polish prompt to Genkit...");
-    const { text } = await ai.generate(prompt);
+    const { text } = await pRetry(async () => {
+      return await ai.generate(prompt);
+    }, { retries: 2 });
     
     if (text) {
       console.log("[AI Weaver] Polish successful");
@@ -169,19 +174,21 @@ export async function generatePosterAesthetics(
       }
     `;
 
-    const { output } = await ai.generate({
-      prompt,
-      output: {
-        schema: z.object({
-          chapterTitle: z.string(),
-          posterStyle: z.enum(['cinematic', 'modern', 'minimalist']),
-          director: z.string(),
-          producer: z.string(),
-          starring: z.string(),
-          billingLine: z.string(),
-        }),
-      },
-    });
+    const { output } = await pRetry(async () => {
+      return await ai.generate({
+        prompt,
+        output: {
+          schema: z.object({
+            chapterTitle: z.string(),
+            posterStyle: z.enum(['cinematic', 'modern', 'minimalist']),
+            director: z.string(),
+            producer: z.string(),
+            starring: z.string(),
+            billingLine: z.string(),
+          }),
+        },
+      });
+    }, { retries: 2 });
 
     if (output) {
       return output;
@@ -198,5 +205,46 @@ export async function generatePosterAesthetics(
       starring: "The Ancestors",
       billingLine: "A story etched in time."
     };
+  }
+}
+/**
+ * Server action to generate a "Podcast-style" interview question based on the script.
+ */
+export async function generateInterviewQuestion(
+  script: string,
+  history: string[] = []
+): Promise<string> {
+  const ai = await getAI();
+  try {
+    const prompt = `
+      You are the "AI Interviewer" for Chronicle Cinema, a podcast-style host that helps users record deep, personal memories.
+      
+      [CURRENT SCRIPT]
+      ${script || "No script yet. We are just starting."}
+      
+      [CONVERSATION HISTORY]
+      ${history.length > 0 ? history.join('\n') : "Beginning of conversation."}
+      
+      YOUR GOAL:
+      Generate ONE inquisitive, warm, and professional follow-up question that helps the user elaborate on the emotional or sensory details of their story.
+      
+      RULES:
+      1. Be concise (max 40 words).
+      2. Use a "Podcast Host" tone (Warm, curiosity-driven).
+      3. Focus on "The Invisible Details" (the feeling, the smell, the quiet moments).
+      4. Do NOT say "Great story" or "I'm interested." Just ask the question or give a brief lead-in.
+      5. Reference specific details from the script if available.
+      
+      Return ONLY the question text.
+    `;
+
+    const { text } = await pRetry(async () => {
+      return await ai.generate(prompt);
+    }, { retries: 2 });
+
+    return text?.trim() || "Tell me more about that moment; what do you remember most clearly?";
+  } catch (error: any) {
+    console.error("Failed to generate interview question:", error);
+    return "Could you elaborate on the most vivid part of this memory for me?";
   }
 }

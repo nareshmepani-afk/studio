@@ -87,7 +87,7 @@ export default function StudioChapterContent({
             <div className="prose prose-invert prose-lg max-w-none">
               <h2 className="flex items-center text-primary/90 font-headline text-lg font-bold mb-4 tracking-tight">
                 <BookOpen className="mr-3 h-5 w-5 text-primary/60" />
-                Teleprompter Script
+                Story Script
               </h2>
               
               <div className="relative group/script">
@@ -114,7 +114,7 @@ export default function StudioChapterContent({
               transition={{ duration: 0.5, delay: 0.8 }}
               className="mt-16 flex justify-end"
             >
-              <Link href={`/record?promptId=${prompt.id}`}>
+              <Link href={`/add-memory?promptId=${prompt.id}`}>
                 <Button size="lg" className="rounded-full px-14 h-16 text-xl font-black uppercase tracking-widest shadow-[0_0_30px_rgba(var(--primary),0.4)] hover:shadow-[0_0_45px_rgba(var(--primary),0.6)] transition-all transform hover:scale-105 active:scale-95 bg-primary text-primary-foreground group overflow-hidden relative">
                   <span className="relative z-10 flex items-center gap-3">
                     {isCompleted ? (

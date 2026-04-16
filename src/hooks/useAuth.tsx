@@ -7,10 +7,10 @@ import { auth, db } from '@/lib/firebase';
 import { doc, onSnapshot, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore'; // Added setDoc
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import type { User, Director } from '@/types'; 
+import type { User, Director, UserAccount } from '@/types'; 
 import { createSessionAction, deleteSessionAction } from '@/actions/createSessionAction';
 
-type CombinedUser = FirebaseUser & Partial<User>;
+type CombinedUser = FirebaseUser & Partial<UserAccount & Director>;
 
 interface AuthContextType {
   user: CombinedUser | null;
@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const userProfileRef = doc(db, 'users', firebaseUser.uid);
         profileUnsubscribe = onSnapshot(userProfileRef, (doc) => {
-          const userData = doc.exists() ? (doc.data() as User) : { isPremium: false };
+          const userData = doc.exists() ? (doc.data() as UserAccount) : { isPremium: false };
           
           const fullUser = {
             ...firebaseUser,

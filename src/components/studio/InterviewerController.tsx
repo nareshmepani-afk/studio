@@ -123,7 +123,7 @@ export default function InterviewerController({ memoryData, hostId }: { memoryDa
   if (error) return <div className="text-rose-500 p-8 flex items-center justify-center font-mono text-center">Camera Boot Failure: {error}</div>;
 
   return (
-    <div className="w-full h-full relative bg-zinc-950 flex flex-col justify-end pb-12 overflow-hidden">
+    <div className="w-full h-screen relative bg-zinc-950 flex flex-col overflow-hidden">
       
       {/* Viewfinder Engine */}
       <video 
@@ -180,15 +180,16 @@ export default function InterviewerController({ memoryData, hostId }: { memoryDa
         </div>
       )}
 
-      {/* DRAGGABLE TELEPROMPTER OVERLAY */}
+      {/* TOP SECTION: Story Script Area (Scrollable & Unobstructed) */}
       {!uploading && !uploadComplete && (
-        <motion.div 
-           drag 
-           dragConstraints={{ top: 20, left: 10, right: 10, bottom: 500 }}
-           dragElastic={0.1}
-           initial={{ y: 0 }}
-           className="absolute top-16 left-4 right-4 z-40"
-        >
+        <div className="flex-1 relative z-40 p-4 pt-12">
+          <motion.div 
+             drag 
+             dragConstraints={{ top: 0, left: 0, right: 0, bottom: 400 }}
+             dragElastic={0.1}
+             initial={{ y: 0 }}
+             className="w-full"
+          >
            <div className={`bg-black/80 backdrop-blur-2xl rounded-[2.5rem] border border-white/20 shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)] transition-all duration-500 overflow-hidden ${isMinimized ? 'p-4' : 'p-8'}`}>
               
               {/* Drag Handle & Controls */}
@@ -199,7 +200,7 @@ export default function InterviewerController({ memoryData, hostId }: { memoryDa
                  
                  <div className="flex justify-between items-center w-full">
                     <h3 className={`font-black uppercase tracking-widest text-[10px] font-mono transition-colors ${isRecording ? 'text-red-500 animate-pulse' : 'text-emerald-400'}`}>
-                       {isRecording ? '🔴 Live' : isMinimized ? 'Guide' : 'Teleprompter'}
+                       {isRecording ? '🔴 Live' : isMinimized ? 'Script' : 'Story Script'}
                     </h3>
                     
                     <div className="flex items-center gap-2">
@@ -258,36 +259,40 @@ export default function InterviewerController({ memoryData, hostId }: { memoryDa
                  )}
               </AnimatePresence>
            </div>
-        </motion.div>
+         </motion.div>
+       </div>
       )}
 
-      {/* Initialize / Action UI Area */}
-      <div className="relative z-50 flex flex-col items-center px-6 gap-8 w-full mb-12">
+      {/* BOTTOM SECTION: Control Dock (Clean & Non-Intrusive) */}
+      <div className="relative z-50 bg-black/40 backdrop-blur-2xl border-t border-white/5 p-6 pb-12 flex flex-col items-center gap-6 w-full">
          
          {!stream && !recordedBlob && !uploading && (
              <button 
                 onClick={() => setCameraRequested(true)}
-                className="group flex flex-col items-center gap-4 transition-all duration-300 transform active:scale-95"
+                className="group flex items-center gap-4 bg-emerald-500/10 hover:bg-emerald-500/20 px-8 py-4 rounded-3xl border border-emerald-500/30 transition-all duration-300 transform active:scale-95"
              >
-                <div className="w-28 h-28 bg-emerald-500 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(16,185,129,0.3)] group-hover:shadow-[0_0_80px_rgba(16,185,129,0.6)] group-hover:scale-110 transition-all duration-500">
-                   <Camera className="w-12 h-12 text-zinc-950" />
+                <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                   <Camera className="w-6 h-6 text-zinc-950" />
                 </div>
-                <span className="text-white font-black tracking-widest uppercase text-xs opacity-70 group-hover:opacity-100">Initialize Camera Feed</span>
+                <div className="flex flex-col items-start translate-y-0.5">
+                   <span className="text-white font-black tracking-widest uppercase text-[10px]">Initialize Camera</span>
+                   <span className="text-[9px] text-emerald-400/60 uppercase font-black">Tap to start feed</span>
+                </div>
              </button>
          )}
          
-         <div className="flex items-center justify-center w-full gap-8 text-center min-h-[120px]">
+         <div className="flex items-center justify-center w-full gap-8 text-center min-h-[80px]">
             {stream && (
                <>
                   {/* Auxiliary Controls (Flip Camera) */}
                   {hasMultipleCameras && !isRecording && !recordedBlob && (
                      <button 
                         onClick={switchCamera} 
-                        className="w-16 h-16 bg-white/10 backdrop-blur-lg rounded-full flex flex-col items-center justify-center text-white hover:bg-emerald-500 transition-all border border-white/20 active:scale-95 shadow-xl"
+                        className="w-14 h-14 bg-white/5 backdrop-blur-lg rounded-full flex flex-col items-center justify-center text-white hover:bg-emerald-500 transition-all border border-white/10 active:scale-95 shadow-xl"
                         title="Flip Camera"
                      >
-                       <RefreshCw className="w-6 h-6" />
-                       <span className="text-[10px] font-black mt-1 uppercase">Flip</span>
+                       <RefreshCw className="w-5 h-5" />
+                       <span className="text-[8px] font-black mt-1 uppercase">Flip</span>
                      </button>
                   )}
 
@@ -295,16 +300,16 @@ export default function InterviewerController({ memoryData, hostId }: { memoryDa
                   {!recordedBlob ? (
                       <button 
                         onClick={isRecording ? handleStopRecording : handleStartRecording}
-                        className={`relative flex items-center justify-center transition-all ${isRecording ? 'w-24 h-24' : 'w-28 h-28'}`}
+                        className={`relative flex items-center justify-center transition-all ${isRecording ? 'w-20 h-20' : 'w-24 h-24'}`}
                       >
                          <div className={`absolute inset-0 rounded-full border-4 border-white opacity-80 shadow-2xl ${isRecording ? 'opacity-20 scale-90' : 'opacity-80 scale-100'} transition-all duration-300`} />
-                         <div className={`rounded-2xl shadow-2xl transition-all duration-300 ${isRecording ? 'w-10 h-10 bg-red-500 rounded-sm' : 'w-20 h-20 bg-red-500 rounded-full'}`} />
+                         <div className={`rounded-2xl shadow-2xl transition-all duration-300 ${isRecording ? 'w-10 h-10 bg-red-500 rounded-sm' : 'w-18 h-18 bg-red-500 rounded-full'}`} />
                       </button>
                   ) : (
                       <button 
                          onClick={handleUpload}
                          disabled={uploading}
-                         className="px-8 py-6 bg-emerald-500 text-zinc-950 font-black font-mono tracking-tighter uppercase rounded-3xl shadow-[0_15px_35px_rgba(16,185,129,0.4)] hover:scale-105 active:scale-95 transition-all text-sm w-full max-w-[320px] border-b-8 border-emerald-700"
+                         className="px-8 py-5 bg-emerald-500 text-zinc-950 font-black font-mono tracking-tighter uppercase rounded-2xl shadow-[0_15px_35px_rgba(16,185,129,0.3)] hover:scale-105 active:scale-95 transition-all text-xs w-full max-w-[280px] border-b-4 border-emerald-700"
                       >
                          Compile & Upload Memory
                       </button>

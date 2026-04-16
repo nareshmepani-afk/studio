@@ -33,17 +33,26 @@ export function useStudioData(userId: string | undefined) {
   }, [mode]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [requests, setRequests] = useState<StoryRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(userId !== 'guest' && userId !== undefined);
   
   // Guard refs to track last known data strings
   const lastMemoriesJSON = useRef<string>('');
   const lastRequestsJSON = useRef<string>('');
 
+  const hasSkippedRef = useRef(false);
+
   useEffect(() => {
-    if (!userId) {
-      setIsLoading(false);
+    if (!userId || userId === 'guest') {
+      if (!hasSkippedRef.current) {
+        console.log("[useStudioData] Skipping Firestore subscriptions for guest user.");
+        hasSkippedRef.current = true;
+        setIsLoading(false);
+      }
       return;
     }
+    
+    // Reset skip ref if userId becomes valid
+    hasSkippedRef.current = false;
 
     if (user) {
       console.log("[useStudioData] Checking Auth Sync:", {

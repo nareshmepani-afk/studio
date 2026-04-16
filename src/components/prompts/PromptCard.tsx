@@ -37,7 +37,7 @@ import StudioChapterContent from '../studio/StudioChapterContent';
 type PromptCardProps = {
   promptId: string;
   promptText: string;
-  teleprompterScript: string;
+  storyScript: string;
   isCompleted: boolean;
   isFlaggedForReuse: boolean;
   isLoading?: boolean;
@@ -301,7 +301,7 @@ export function PromptCard(props: PromptCardProps) {
                                         <StudioChapterContent 
                                           prompt={props.prompt} 
                                           parentPrompt={props.parentPrompt} 
-                                          script={props.teleprompterScript}
+                                          script={props.storyScript}
                                           isModal={true}
                                           isCompleted={isCompleted}
                                         />

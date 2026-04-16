@@ -41,7 +41,7 @@ export const RemoteControl = () => {
         <span className="text-sm text-white">{isConnected ? 'Connected' : 'Disconnected'}</span>
       </div>
 
-      <RemoteControlSection title="Teleprompter">
+      <RemoteControlSection title="Story Script">
         <div className="flex items-center justify-center space-x-2">
           <RemoteControlButton onClick={toggleScrolling} aria-label={isScrolling ? "Pause scrolling" : "Start scrolling"}>
             {isScrolling ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}

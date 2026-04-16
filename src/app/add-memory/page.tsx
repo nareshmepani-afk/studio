@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { useAuth } from '@/hooks/useAuth';
 import { mockPrompts } from '@/lib/mockData';
-import { teleprompterScripts } from '@/lib/teleprompterScripts';
+import { storyScripts } from '@/lib/storyScripts';
 
 function ProductionDeckConnector() {
   const searchParams = useSearchParams();
@@ -38,11 +38,11 @@ function ProductionDeckConnector() {
             // Rehydrate legacy db skeletons with explicit library fallback
             const pid = retrieved.promptId;
             const template = pid ? mockPrompts.find(p => p.id === pid) : null;
-            const script = pid ? teleprompterScripts[pid] : '';
+            const script = pid ? storyScripts[pid] : '';
             const formattedProse = script ? `<p>${script.split('\\n').join('</p><p>')}</p>` : '';
 
             let loadedProse = retrieved.prose || retrieved.content || '';
-            // If the database has an empty TipTap state, override it with the live teleprompter library
+            // If the database has an empty TipTap state, override it with the live story script library
             if (!loadedProse || loadedProse === '<p></p>' || loadedProse === '<p><br></p>' || loadedProse.trim() === '') {
                 loadedProse = formattedProse;
             }
@@ -74,7 +74,7 @@ function ProductionDeckConnector() {
       
       if (promptId) {
         const template = mockPrompts.find(p => p.id === promptId);
-        const script = teleprompterScripts[promptId] || '';
+        const script = storyScripts[promptId] || '';
         const formattedProse = script ? `<p>${script.split('\\n').join('</p><p>')}</p>` : '';
         
         setMemoryData({

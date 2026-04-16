@@ -4,18 +4,18 @@ import React, { useRef, useEffect } from 'react';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { cn } from '@/lib/utils';
 
-export const Teleprompter = () => {
+export const StoryScriptDisplay = () => {
   const { script, isScrolling, scrollSpeed, fontSize, isMirrored } = useStudioState();
-  const prompterRef = useRef<HTMLDivElement>(null);
+  const displayRef = useRef<HTMLDivElement>(null);
   const animationFrameIdRef = useRef<number | null>(null);
   const speedRef = useRef(0);
 
   useEffect(() => {
-    const prompter = prompterRef.current;
+    const display = displayRef.current;
     const decelerationFactor = 0.97; // Controls how quickly it slows down
 
     const scrollLoop = () => {
-      if (!prompter) return;
+      if (!display) return;
 
       if (isScrolling) {
         // Smoothly accelerate to the target speed
@@ -26,7 +26,7 @@ export const Teleprompter = () => {
         speedRef.current *= decelerationFactor;
       }
 
-      prompter.scrollTop += speedRef.current;
+      display.scrollTop += speedRef.current;
 
       // Stop the loop if the speed is negligible and not trying to scroll
       if (Math.abs(speedRef.current) < 0.01 && !isScrolling) {
@@ -57,7 +57,7 @@ export const Teleprompter = () => {
       className="bg-studio-black/70 backdrop-blur-md text-studio-text p-6 rounded-lg overflow-hidden h-full border border-studio-border"
     >
       <div 
-        ref={prompterRef}
+        ref={displayRef}
         className="overflow-y-auto h-full scrollbar-hide"
       >
         <p

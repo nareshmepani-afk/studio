@@ -1,11 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 
-export interface TeleprompterQuestion {
+export interface StoryScriptQuestion {
   id: string;
   text: string;
 }
 
-export function useTeleprompter(questions: TeleprompterQuestion[] = []) {
+export function useStoryScript(questions: StoryScriptQuestion[] = []) {
   const [isScrolling, setIsScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(1); // Speed in pixels per second
   const [fontSize, setFontSize] = useState(48);

@@ -80,10 +80,10 @@ const LoginForm = () => {
             disabled={isSubmitting}
           >
             {isSubmitting ? (
-              <span className="flex items-center gap-2">Processing...</span>
+              <span className="flex items-center gap-2">Preparing Studio...</span>
             ) : (
               <span className="flex items-center gap-2">
-                Enter Backstage
+                Studio Entry
                 <LogIn className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </span>
             )}

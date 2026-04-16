@@ -1,13 +1,12 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import LoginForm from '@/components/auth/LoginForm';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clapperboard, AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
-export default function LoginPage() {
+function LoginContent() {
   const searchParams = useSearchParams();
   const reason = searchParams.get('reason');
 
@@ -79,5 +78,17 @@ export default function LoginPage() {
         </p>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-t-2 border-primary animate-spin" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

@@ -1,9 +1,9 @@
 
 /**
- * @fileOverview Stores teleprompter scripts mapped to prompt IDs.
+ * @fileOverview Stores story scripts mapped to prompt IDs.
  */
 
-export const teleprompterScripts: Record<string, string> = {
+export const storyScripts: Record<string, string> = {
   p1: `Let\'s begin the story of you. Take a moment to think about where it all started. We\'ll explore your birthplace, the roots of your family tree, and the cultural soil that nurtured you. Think about the traditions, the values, the foods, and the languages that shaped your world. Consider the lessons your parents taught you and how all these threads wove together to create the person you are today. When you\'re ready, tell us about the child of two worlds.`,
   p1_1: `Let\'s start right at the beginning. Could you share some details about your birthplace – perhaps a specific memory of that place that stands out?`,
   p1_2: `And tell us about your family roots; were there any particular traditions, stories, or values passed down through generations that significantly influenced you?`,
@@ -138,4 +138,4 @@ export const teleprompterScripts: Record<string, string> = {
   p25_1: "Tell your own story. What memory do you want to record today?",
 };
 
-export const defaultTeleprompterFallbackScript = "Remember to pause and take your time answering, letting your thoughts flow naturally. Good luck with your video or Audio project!";
+export const defaultStoryScriptFallback = "Remember to pause and take your time answering, letting your thoughts flow naturally. Good luck with your video or Audio project!";

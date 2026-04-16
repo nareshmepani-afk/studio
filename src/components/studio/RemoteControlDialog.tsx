@@ -73,19 +73,51 @@ export function RemoteControlDialog({ open, onClose, sessionId }: RemoteControlD
             Scan the QR code or generate a storyteller link to share.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex items-center justify-center p-4">
-          <QRCodeCanvas value={storytellerUrl || remoteUrl} size={256} level={"H"} includeMargin={true} />
-        </div>
-        {storytellerUrl ? (
-          <div className="flex flex-col gap-2">
-            <Input value={storytellerUrl} readOnly />
-            <Button onClick={copyToClipboard}>Copy Link</Button>
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col items-center justify-center p-4 bg-white/5 rounded-2xl border border-white/10">
+            <span className="text-[10px] uppercase font-black tracking-widest text-white/40 mb-4 text-center w-full">Scan for Storyteller / Camera</span>
+            <QRCodeCanvas value={storytellerUrl || remoteUrl} size={180} level={"H"} includeMargin={true} className="rounded-xl" />
           </div>
-        ) : (
-          <Button onClick={generateStorytellerLink} disabled={isLoading}>
-            {isLoading ? 'Generating...' : 'Generate Storyteller Link'}
-          </Button>
-        )}
+
+          <div className="space-y-4">
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] uppercase font-black tracking-widest text-white/40">Collaborator Links</span>
+              
+              {/* Storyteller / Camera Hub */}
+              <div className="flex gap-2">
+                <Input value={storytellerUrl || "Generate to see link..."} readOnly className="h-10 text-xs bg-black/40 border-white/10 text-white/60" />
+                <Button 
+                  onClick={storytellerUrl ? copyToClipboard : generateStorytellerLink} 
+                  disabled={isLoading}
+                  size="sm"
+                  className={storytellerUrl ? "bg-emerald-500 hover:bg-emerald-600" : "bg-primary"}
+                >
+                  {isLoading ? '...' : storytellerUrl ? 'Copy' : 'Camera Hub'}
+                </Button>
+              </div>
+
+              {/* Guest Director Join Link */}
+              <div className="flex gap-2">
+                 <Input 
+                   value={`${typeof window !== 'undefined' ? window.location.origin : ''}/director?sessionId=${sessionId}&mode=guest_director`} 
+                   readOnly 
+                   className="h-10 text-xs bg-black/40 border-white/10 text-white/60" 
+                 />
+                 <Button 
+                   onClick={() => {
+                     const url = `${window.location.origin}/director?sessionId=${sessionId}&mode=guest_director`;
+                     navigator.clipboard.writeText(url);
+                     toast.success("Guest Director Link Copied!");
+                   }}
+                   size="sm"
+                   className="bg-purple-600 hover:bg-purple-700"
+                 >
+                   Guest Dir
+                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Close

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext, ReactNode, useRef } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { doc, onSnapshot, setDoc, DocumentReference } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { teleprompterScripts } from '@/lib/teleprompterScripts';
+import { storyScripts } from '@/lib/storyScripts';
 
 // 1. State Interface
 interface StudioState {
@@ -13,7 +13,7 @@ interface StudioState {
   fontSize: number;
   isMirrored: boolean;
   script: string;
-  mode: 'solo' | 'director';
+  mode: 'solo' | 'director' | 'guest_director' | 'guest';
   isConnected: boolean;
   isRecording: boolean;
   sessionId: string;
@@ -30,7 +30,7 @@ interface StudioActions {
   decreaseFontSize: () => void;
   toggleMirror: () => void;
   setScript: (script: string) => void;
-  setMode: (mode: 'solo' | 'director') => void;
+  setMode: (mode: 'solo' | 'director' | 'guest_director' | 'guest') => void;
   toggleRecording: () => void;
 }
 
@@ -45,14 +45,16 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('sessionId') || 'default';
 
+  const urlMode = searchParams.get('mode') as 'solo' | 'director' | 'guest_director' | 'guest';
+  
   const [state, setState] = useState<StudioState>({
     isScrolling: false,
     scrollSpeed: 1,
     fontSize: 48,
     isMirrored: false,
     script: 'Loading your script...',
-    mode: 'solo',
-    isConnected: !!initialState, // We are connected if we have an initial state from the server
+    mode: (urlMode === 'solo' || urlMode === 'director' || urlMode === 'guest_director' || urlMode === 'guest') ? urlMode : 'solo',
+    isConnected: !!initialState, 
     isRecording: false,
     sessionId: sessionId,
     ...(initialState || {}),
@@ -71,7 +73,7 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
   useEffect(() => {
     const promptId = searchParams.get('promptId');
     if (promptId) {
-      const selectedScript = teleprompterScripts[promptId];
+      const selectedScript = storyScripts[promptId];
       if (selectedScript) {
         setState(s => ({ ...s, script: selectedScript }));
       } else {
@@ -86,7 +88,11 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
 
   // The Listener for real-time updates
   useEffect(() => {
-    if (!studioStateRef) return;
+    // GUARD: If we are in any Guest mode, we DO NOT sync with Firestore 
+    // because guests do not have write permissions to the 'studio' collection.
+    // They will communicate via PeerJS P2P instead.
+    const isGuest = state.mode === 'guest' || state.mode === 'guest_director';
+    if (!studioStateRef || isGuest) return;
 
     const unsubscribe = onSnapshot(studioStateRef,
       (doc) => {
@@ -122,6 +128,10 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
         isSyncingFromFirestore.current = false;
         return;
     }
+
+    // GUARD: Disable background sync for Guests to avoid Permission Denied crashes.
+    const isGuest = state.mode === 'guest' || state.mode === 'guest_director';
+    if (isGuest) return;
     
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
@@ -134,6 +144,7 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
       // GUARD: Only setDoc if the local state has diverged from the last known remote state
       if (syncStateJSON === lastRemoteJSON.current) return;
 
+      if (!studioStateRef) return;
       setDoc(studioStateRef, syncState, { merge: true });
     }, 300);
 

@@ -116,7 +116,7 @@ export interface Contact {
   lastUsedAt: any; // Firestore Timestamp
 }
 
-export interface User {
+export interface UserAccount {
   uid: string;
   name?: string | null;
   displayName?: string | null;

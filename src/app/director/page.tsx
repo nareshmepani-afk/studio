@@ -12,7 +12,7 @@ const DirectorPage = () => {
   return (
     <StudioProvider>
       <div className="w-full h-screen bg-black">
-        {/* The Director role controls the teleprompter and production flow */}
+        {/* The Director role controls the Story Script and production flow */}
         <Studio role="director" />
       </div>
     </StudioProvider>

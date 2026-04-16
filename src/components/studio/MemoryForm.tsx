@@ -79,6 +79,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
   const [isExpanding, setIsExpanding] = useState(false);
   const [isGeneratingPoster, setIsGeneratingPoster] = useState(false);
   const [focusedColumn, setFocusedColumn] = useState<'guide' | 'hook' | 'showcase' | null>(null);
+  const [lastFocusedField, setLastFocusedField] = useState<'script' | 'hook'>('script');
 
   // Derived Classes for Column 2 (Snapshot)
   const isHookFocused = focusedColumn === 'hook';
@@ -121,10 +122,15 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
         recog.onresult = (event: any) => {
           let interimTranscript = '';
           for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const transcript = event.results[i][0].transcript;
             if (event.results[i].isFinal) {
-              setDescription((prev: string) => prev + event.results[i][0].transcript);
+              if (lastFocusedField === 'script' && editor) {
+                editor.commands.insertContent(transcript + ' ');
+              } else {
+                setDescription((prev: string) => prev + (prev.endsWith(' ') || prev === '' ? '' : ' ') + transcript);
+              }
             } else {
-              interimTranscript += event.results[i][0].transcript;
+              interimTranscript += transcript;
             }
           }
         };
@@ -133,7 +139,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
         setRecognition(recog);
       }
     }
-  }, []);
+  }, [lastFocusedField]); // MOD-12: Added dependency on lastFocusedField for contextual dictation
 
   const toggleDictation = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -228,7 +234,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
       },
     },
     onFocus: () => {
-      // Story Guide is populated by teleprompter, so focus here doesn't trigger Zen Mode
+      setLastFocusedField('script');
     },
   });
 
@@ -243,8 +249,24 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
   useEffect(() => {
     if (!editor) return;
     const handler = setTimeout(() => {
-      const dateString = `${day}-${month === 'none' ? '' : month}-${year}`;
-      if (title || description || editor.getHTML() !== data?.prose) {
+      // Logic: Only update if something has ACTUALLY changed compared to the incoming data prop
+      const hasChanged = 
+        title !== (data?.title || '') ||
+        description !== (data?.description || '') ||
+        location !== (data?.location || '') ||
+        country !== (data?.country || 'none') ||
+        day !== (data?.dateComponents?.day || 'none') ||
+        month !== (data?.dateComponents?.month || 'none') ||
+        year !== (data?.dateComponents?.year || 'none') ||
+        editor.getHTML() !== (data?.prose || '') ||
+        chapterTitle !== (data?.chapterTitle || '') ||
+        posterStyle !== (data?.posterStyle || 'cinematic') ||
+        director !== (data?.credits?.director || '') ||
+        producer !== (data?.credits?.producer || '') ||
+        starring !== (data?.credits?.starring || '') ||
+        JSON.stringify(aiTakes) !== JSON.stringify(data?.aiTakes || null);
+
+      if (hasChanged) {
         update({
           ...data,
           title,
@@ -270,10 +292,11 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
              starring,
              billingLine
           },
+          aiTakes,
           status: data?.status || 'draft'
         });
       }
-    }, 500);
+    }, 1000); // Increased debounce to 1s for better performance
 
     return () => clearTimeout(handler);
   }, [title, description, location, country, tags, day, month, year, sensoryValues, editor?.getHTML(), update, data?.status, chapterTitle, usePoster, posterStyle, director, producer, starring, billingLine, posterImageUrl]);
@@ -536,14 +559,37 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
                <p className="text-[9px] font-black text-sky-400/40 uppercase tracking-[0.2em] -mt-0.5">Edit and expand your script</p>
              </div>
            <div className="flex items-center gap-4">
-             {prevProse && (
-               <button 
-                 onClick={() => { editor?.commands.setContent(prevProse || ''); setPrevProse(null); }}
-                 className="text-[10px] font-bold text-sky-400/60 hover:text-sky-400 uppercase tracking-widest transition-all"
-               >
-                 Undo AI
-               </button>
-             )}
+              <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5 ring-1 ring-white/5">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button 
+                        onClick={toggleDictation} 
+                        className={`p-2 rounded-lg transition-all ${isDictating && lastFocusedField === 'script' ? 'bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]' : 'text-white/30 hover:text-sky-400 hover:bg-white/5'}`}
+                      >
+                         <Mic className="w-3.5 h-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-950 border-white/10 text-white text-[10px] font-bold uppercase tracking-widest">Dictate to Script</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button 
+                        onClick={handleAIExpand} 
+                        disabled={isExpanding}
+                        className="p-2 text-white/30 hover:text-sky-400 hover:bg-white/5 rounded-lg transition-all disabled:opacity-20"
+                      >
+                         {isExpanding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-950 border-white/10 text-white text-[10px] font-bold uppercase tracking-widest">AI Weaver (Expand)</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+
              <button onClick={() => setFocusedColumn('guide')} className="p-2 rounded-lg hover:bg-white/5 text-white/20 hover:text-sky-400 transition-all border border-transparent hover:border-sky-500/20">
                <Maximize2 className="w-4 h-4" />
              </button>
@@ -651,24 +697,43 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
               <div className="flex justify-between items-center">
                 <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Theatrical Hook</label>
                 <div className="flex items-center gap-2">
-                  {prevDescription && !isHookFocused && (
-                    <button onClick={() => { setDescription(prevDescription); setPrevDescription(null); }} className="text-[10px] font-bold text-[var(--room-accent)] hover:brightness-125 uppercase tracking-widest underline decoration-dotted underline-offset-4 animate-pulse">Revert Original</button>
-                  )}
-                  {recognition && (
-                    <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                      <button onClick={toggleDictation} className={`p-1.5 rounded-md transition-all duration-300 ${isDictating ? 'text-emerald-400 bg-emerald-400/10 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'text-white/40 hover:text-white'}`}>
-                        <motion.div animate={isDictating ? { scale: [1, 1.2, 1] } : { scale: 1 }} transition={{ repeat: Infinity, duration: 1.5 }}><Mic className="w-3.5 h-3.5" /></motion.div>
-                      </button>
-                    </TooltipTrigger><TooltipContent className="bg-slate-900 border-white/10 text-white text-[10px] font-bold uppercase tracking-widest">{isDictating ? 'Stop Dictation' : 'Voice Dictation'}</TooltipContent></Tooltip></TooltipProvider>
-                  )}
-                  <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                    <button onClick={handlePolishDescription} disabled={isPolishingDesc || !description} className="text-[10px] text-[var(--room-accent)] hover:underline uppercase tracking-wider font-extrabold disabled:opacity-30">{isPolishingDesc ? 'Polishing...' : 'Draft Polish'}</button>
-                  </TooltipTrigger><TooltipContent className="bg-slate-900 border-white/10 text-white text-[10px] font-bold uppercase tracking-widest">AI Refinement</TooltipContent></Tooltip></TooltipProvider>
+                  <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5 ring-1 ring-white/5">
+                    {recognition && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button 
+                              onClick={toggleDictation} 
+                              className={`p-2 rounded-lg transition-all ${isDictating && lastFocusedField === 'hook' ? 'bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]' : 'text-white/30 hover:text-amber-400 hover:bg-white/5'}`}
+                            >
+                               <Mic className="w-3.5 h-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-slate-950 border-white/10 text-white text-[10px] font-bold uppercase tracking-widest">Dictate to Hook</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button 
+                            onClick={handlePolishDescription} 
+                            disabled={isPolishingDesc || !description}
+                            className="p-2 text-white/30 hover:text-amber-400 hover:bg-white/5 rounded-lg transition-all disabled:opacity-20"
+                          >
+                             {isPolishingDesc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-slate-950 border-white/10 text-white text-[10px] font-bold uppercase tracking-widest">AI Polish (Hook)</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </div>
               </div>
               <textarea 
                 value={description} 
-                onFocus={() => setFocusedColumn('hook')} 
+                onFocus={() => { setLastFocusedField('hook'); }} 
                 onChange={(e) => setDescription(e.target.value)} 
                 rows={8} 
                 placeholder="A brief theatrical summary of this memory..." 
@@ -751,10 +816,6 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
           {usePoster && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               <div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-[0.2em] mb-3">Poster Visual</label>
                 <PosterPicker videoUrl={data?.videoUrl} currentPoster={posterImageUrl} onUpdate={(url) => setPosterImageUrl(url || '')} />
               </div>
 
