@@ -27,6 +27,11 @@ service cloud.firestore {
     match /users/{userId}/memories/{memoryId} {
       allow read: if true;
       allow write: if request.auth.uid == userId;
+
+      // Allow users to read their own narrative analysis subdocuments
+      match /analysis/{docId} {
+        allow read: if request.auth.uid == userId;
+      }
     }
 
     // Story Requests (Recursive match covers collection list and doc read/write)

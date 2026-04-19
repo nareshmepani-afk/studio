@@ -141,22 +141,29 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                 </div>
               </div>
 
-              {/* Polished Narrative */}
+              {/* Director's Notepad */}
               <div className="space-y-6">
-                <h3 className="text-xs font-black text-primary uppercase tracking-[0.2em] opacity-80">The Narrative</h3>
-                <div className="prose prose-invert prose-slate max-w-none">
-                   <p className="text-xl md:text-2xl font-serif leading-relaxed text-slate-200/90 italic first-letter:text-5xl first-letter:font-bold first-letter:text-primary first-letter:mr-3 first-letter:float-left">
-                     {memory.description}
-                   </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <h3 className="text-xs font-black text-primary uppercase tracking-[0.2em]">Director's Notes</h3>
+                </div>
+                
+                <div className="relative bg-white/[0.02] border border-white/10 p-6 md:p-8 rounded-2xl shadow-inner group transition-all hover:bg-white/[0.03]">
+                   <div className="absolute top-4 left-4 text-6xl text-white/5 font-serif font-black leading-none pointer-events-none group-hover:text-primary/10 transition-colors">"</div>
+                   <div className="prose prose-invert prose-slate max-w-none relative z-10 px-2 md:px-4">
+                      <p className="text-xl md:text-2xl font-serif leading-relaxed text-slate-200/90 italic">
+                        {memory.description}
+                      </p>
+                   </div>
                 </div>
               </div>
 
-              {/* Emotional/Sensory Context */}
+              {/* Production Metadata */}
               <div className="space-y-6 pt-10 border-t border-white/5">
                 <div className="grid grid-cols-1 gap-6">
                   {memory.emotionTags && memory.emotionTags.length > 0 && (
                      <div>
-                       <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Emotional Tone</h4>
+                       <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-[0.15em] mb-3">Thematic Tones</h4>
                        <div className="flex flex-wrap gap-2 text-white">
                          {memory.emotionTags.map(tag => (
                            <Badge key={tag} variant="outline" className="bg-white/5 border-white/10 hover:border-primary/50 transition-colors py-1.5 px-3 rounded-full text-xs font-medium">
@@ -170,7 +177,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
 
                   {memory.category && (
                     <div>
-                       <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Life Chapter</h4>
+                       <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-[0.15em] mb-2">Sequence</h4>
                        <span className="text-white font-serif text-lg opacity-80 italic">
                          {typeof memory.category === 'string' ? memory.category : memory.category.label}
                        </span>

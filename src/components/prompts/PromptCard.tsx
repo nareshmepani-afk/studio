@@ -54,16 +54,10 @@ export function PromptCard(props: PromptCardProps) {
   const router = useRouter();
   const [isBriefOpen, setIsBriefOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const hoverTimeoutRef = useRef<NodeJS.Timeout| null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const handleMouseEnter = () => {
-    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    setIsBriefOpen(true);
-  };
 
 
   if (props.isLoading) {
@@ -114,7 +108,6 @@ export function PromptCard(props: PromptCardProps) {
 
   const toggleBrief = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     setIsBriefOpen(!isBriefOpen);
   };
   
@@ -232,10 +225,7 @@ export function PromptCard(props: PromptCardProps) {
                    <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div 
-                            onMouseEnter={handleMouseEnter} 
-                            className="relative z-10"
-                          >
+                          <div className="relative z-10">
                             <Button 
                               variant="ghost" 
                               size="icon" 
@@ -252,13 +242,13 @@ export function PromptCard(props: PromptCardProps) {
                           </div>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
-                            Review Scene Brief
+                            Review Scene Brief <span className="text-white/40 tracking-normal text-[9px] ml-1 normal-case">(Click to expand)</span>
                         </TooltipContent>
                       </Tooltip>
 
                       <Dialog open={mounted && isBriefOpen} onOpenChange={setIsBriefOpen}>
                         <DialogContent 
-                          className="fixed inset-0 translate-x-0 translate-y-0 max-w-none w-full h-full border-0 bg-transparent p-0 shadow-none z-[1000] focus:outline-none [&>button:last-child]:hidden block"
+                          className="!fixed !inset-0 !left-0 !top-0 !translate-x-0 !translate-y-0 !w-screen !h-[100dvh] !max-w-none !border-0 !bg-transparent !p-0 !m-0 !rounded-none !shadow-none z-[1000] focus:outline-none [&>button.absolute]:hidden block"
                         >
                           {/* Explicit Backdrop to ensure "click outside" works with custom positioning */}
                           <div 
@@ -269,10 +259,6 @@ export function PromptCard(props: PromptCardProps) {
                           <div className="relative z-10 h-full w-full flex items-center justify-center p-[5vh] pointer-events-none">
                             <div 
                               className="flex flex-col h-full w-full lg:w-[80vw] max-w-[1600px] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden rounded-[2.5rem] pointer-events-auto"
-                              onMouseEnter={() => {
-                                if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-                                setIsBriefOpen(true);
-                              }}
                             >
                                 {/* Zen Header Style from MemoryForm */}
                                 <div className="bg-black/95 px-8 py-5 border border-white/10 border-b-0 rounded-t-[2.5rem] flex justify-between items-center backdrop-blur-2xl shrink-0">

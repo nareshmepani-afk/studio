@@ -22,12 +22,17 @@ if (serviceAccountRaw) {
  * Mapping of friendly names to Google Cloud TTS Canonical Voice Codes.
  */
 const VOICE_MAP: Record<string, string> = {
+  // English (Studio)
   'Achird': 'en-US-Studio-O',
   'Achernar': 'en-US-Studio-Q',
-  'Charon': 'en-US-Studio-R', // Note: Check exact code if error
+  'Charon': 'en-US-Studio-R',
   'Zephyr': 'en-US-Studio-S',
   'Gacrux': 'en-US-Studio-T',
   'Narrator': 'en-US-Studio-O',
+  
+  // Gujarati (WaveNet)
+  'Kiran': 'gu-IN-Wavenet-B', // Male
+  'Amani': 'gu-IN-Wavenet-A', // Female
 };
 
 /**
@@ -61,7 +66,7 @@ export async function synthesizeStudioSpeech(text: string, voiceName: string = '
       body: JSON.stringify({
         input: { text },
         voice: {
-          languageCode: canonicalVoice.startsWith('en-') ? 'en-US' : 'en-US', // Defaulting for Studio
+          languageCode: canonicalVoice.startsWith('gu-IN') ? 'gu-IN' : 'en-US',
           name: canonicalVoice,
         },
         audioConfig: {

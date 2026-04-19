@@ -13,14 +13,19 @@ import {
   AlertDialogTitle, 
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
-import { Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, UserCircle } from 'lucide-react';
-import { generateInterviewQuestion } from '@/actions/aiWeaver';
+import { Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle } from 'lucide-react';
+import { generateInterviewQuestion, analyzeFraming } from '@/actions/aiWeaver';
 import { synthesizeStudioSpeech } from '@/actions/studio-vocal';
 import { useCamera } from '@/hooks/useCamera';
 import { useMediaRecorder } from '@/hooks/use-media-recorder';
+import { useAudioLevel } from '@/hooks/use-audio-level';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
+import DirectorsNotepad from './DirectorsNotepad';
+import { generateDirectorsNotepad } from '@/actions/aiWeaver';
+import { BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft, Film as FilmIcon } from 'lucide-react';
+import CinemaStageSwitch from './CinemaStageSwitch';
 
 type MemoryData = any;
 
@@ -44,10 +49,23 @@ export default function SoloStage({ data, update }: RoomProps) {
 
   // MOD-12: AI Interviewer State
   const [isInterviewMode, setIsInterviewMode] = useState(false);
+  const [interviewLanguage, setInterviewLanguage] = useState<'en' | 'gu'>('en');
+  const [isFluidMode, setIsFluidMode] = useState(true);
+  const [selectedVoice, setSelectedVoice] = useState('Achird');
   const [currentQuestion, setCurrentQuestion] = useState<string | null>(null);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const [isAnalyzingFraming, setIsAnalyzingFraming] = useState(false);
   const [interviewHistory, setInterviewHistory] = useState<string[]>([]);
-  const [selectedVoice, setSelectedVoice] = useState('Achird');
+  
+  // MOD-13: Sound Check State
+  const [showSoundCheck, setShowSoundCheck] = useState(false);
+  const [hasDoneMicFeedback, setHasDoneMicFeedback] = useState(false);
+
+  // Cinematic Pipeline State (Shared via Firestore)
+  const productionStage = data?.productionStage || 0;
+  const setProductionStage = (stage: number) => {
+    update({ ...data, productionStage: stage });
+  };
 
 
   // 1. Initialize local Camera stream (Only when explicitly enabled)
@@ -69,6 +87,8 @@ export default function SoloStage({ data, update }: RoomProps) {
     uploadResult 
   } = useMediaRecorder(stream);
 
+  const micLevel = useAudioLevel(stream);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,7 +98,27 @@ export default function SoloStage({ data, update }: RoomProps) {
     if (videoRef.current && stream && !recordedBlob) {
       videoRef.current.srcObject = stream;
     }
-  }, [stream, recordedBlob]);
+    
+    // Auto-trigger sound check on initialization in Stage 1 (Recording)
+    if (stream && !recordedBlob && !isRecording && !showSoundCheck && !data?.videoUrl && productionStage === 1 && !hasDoneMicFeedback) {
+      setShowSoundCheck(true);
+      setHasDoneMicFeedback(true);
+    }
+  }, [stream, recordedBlob, isRecording, showSoundCheck, data?.videoUrl, productionStage, hasDoneMicFeedback]);
+
+  // Auto-advance to Stage 2 (Notepad) when recording completes
+  useEffect(() => {
+    if (recordedBlob && productionStage === 1) {
+      setProductionStage(2);
+    }
+  }, [recordedBlob, productionStage]);
+
+  // NEW: Auto-activate camera when entering Production Stage (Stage 1)
+  useEffect(() => {
+    if (productionStage === 1 && !isCameraActive && !recordedBlob) {
+      setIsCameraActive(true);
+    }
+  }, [productionStage, isCameraActive, recordedBlob]);
 
   // Phase 3 Preview Local URL
   const previewUrl = useMemo(() => {
@@ -115,9 +155,14 @@ export default function SoloStage({ data, update }: RoomProps) {
             videoUrl: url,
             status: 'completed'
           });
+
+          toast.success("Memory Secured", {
+            description: "Footage uploaded. Director's analysis starting..."
+          });
         }
       } catch (err) {
         console.error("Upload transmission failed.", err);
+        toast.error("Upload Failed", { description: "The vault is currently closed. Please try again." });
       }
     } else {
       console.warn("Save requested but missing a valid Blob or Memory ID.");
@@ -160,19 +205,28 @@ export default function SoloStage({ data, update }: RoomProps) {
 
   // MOD-12: Vocal Engine
   const playAudio = useCallback((base64: string) => {
-    const audio = new Audio(`data:audio/mp3;base64,${base64}`);
-    audio.play();
+    // PREMIUM: Natural Pause (Realism Injection)
+    setTimeout(() => {
+      const audio = new Audio(`data:audio/mp3;base64,${base64}`);
+      audio.play();
+    }, 600); 
   }, []);
 
   const triggerNextQuestion = async () => {
     if (isSynthesizing) return;
     setIsSynthesizing(true);
     
-    // Ensure Interviewer role uses Achird (Interviewer)
-    const interviewerVoice = 'Achird';
+    // Ensure Interviewer role uses language-appropriate voices
+    const interviewerVoice = interviewLanguage === 'gu' ? selectedVoice : 'Achird';
     
     try {
-      const question = await generateInterviewQuestion(data?.prose || '', interviewHistory);
+      const question = await generateInterviewQuestion(
+        data?.prose || '', 
+        interviewHistory,
+        interviewLanguage,
+        isFluidMode ? 'fluid' : 'strict'
+      );
+      
       if (question) {
         setCurrentQuestion(question);
         setInterviewHistory(prev => [...prev, `AI: ${question}`]);
@@ -189,6 +243,54 @@ export default function SoloStage({ data, update }: RoomProps) {
       setIsSynthesizing(false);
     }
   };
+
+  const handleCheckFraming = async () => {
+    if (!videoRef.current || isAnalyzingFraming || isSynthesizing) return;
+    
+    setIsAnalyzingFraming(true);
+    try {
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageBase64 = canvas.toDataURL('image/jpeg', 0.8);
+        
+        const feedback = await analyzeFraming(imageBase64, interviewLanguage);
+        if (feedback) {
+          toast.info("Director Analysis", { description: feedback });
+          const interviewerVoice = interviewLanguage === 'gu' ? selectedVoice : 'Achird';
+          const audio = await synthesizeStudioSpeech(feedback, interviewerVoice);
+          if (audio) playAudio(audio);
+        }
+      }
+    } catch (err) {
+      console.error("Framing Analysis Error:", err);
+    } finally {
+      setIsAnalyzingFraming(false);
+    }
+  };
+
+  // Intelligent Mic Feedback
+  useEffect(() => {
+    if (showSoundCheck && micLevel < 10 && !hasDoneMicFeedback && !isSynthesizing) {
+       const timer = setTimeout(async () => {
+         if (micLevel < 10) {
+            const lowMicPrompt = interviewLanguage === 'gu' 
+              ? "માફ કરશો, હું તમને સાંભળી શકતો નથી. શું તમે તમારા માઇકને તપાસો છો અથવા થોડા નજીક જશો?"
+              : "I'm having a little trouble hearing you. Could you check your mic or move slightly closer?";
+            
+            const interviewerVoice = interviewLanguage === 'gu' ? selectedVoice : 'Achird';
+            const audio = await synthesizeStudioSpeech(lowMicPrompt, interviewerVoice);
+            if (audio) playAudio(audio);
+            setHasDoneMicFeedback(true);
+         }
+       }, 3000);
+       return () => clearTimeout(timer);
+    }
+  }, [showSoundCheck, micLevel, hasDoneMicFeedback, isSynthesizing, interviewLanguage, selectedVoice, playAudio]);
 
   const handleNarratePoetic = async () => {
     const poeticText = data?.aiTakes?.poetic;
@@ -245,504 +347,299 @@ export default function SoloStage({ data, update }: RoomProps) {
     if (currentTime < trimRange[0]) vid.currentTime = trimRange[0];
     if (currentTime > trimRange[1]) {
       vid.pause();
-      vid.currentTime = trimRange[0]; // Loops visually for them!
-      setIsPlaying(false);
+      vid.currentTime = trimRange[0];
     }
   };
 
-  // SIGNAL SHIELD: Ensure that every save from the director dashboard PRESERVES the latest hardware status
   const shieldedUpdate = useCallback((updatedData: MemoryData) => {
     update({
         ...updatedData,
         cameraActive: isCameraActive,
     });
-  }, [update, isCameraActive]);
+  }, [update, isCameraActive, data?.cameraActive]);
 
-  return (
-    <div className="flex flex-col gap-8 w-full h-full pb-10">
-      
-      {/* Top Banner: The Local Camera Canvas or Finished Video */}
-      {data?.videoUrl ? (
-          <div className="w-full relative bg-slate-900 border border-emerald-500/50 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.2)] flex flex-col items-center justify-center p-8">
-            <CheckCircle2 className="w-16 h-16 text-emerald-500 mb-6 drop-shadow-md" />
-            <h2 className="text-3xl font-bold font-headline text-white mb-8 tracking-wide">Memory Completed</h2>
-            
-            <video src={data.videoUrl} controls playsInline className="w-full max-w-3xl rounded-xl shadow-2xl mb-8 border border-white/10" />
-            
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <button className="px-8 py-3 bg-rose-500/10 text-rose-400 font-bold border border-rose-500/50 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-lg flex items-center gap-3 group">
-                  <Video className="w-5 h-5 group-hover:animate-pulse" />
-                  Delete & Retake Video
-                </button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="bg-slate-950 border-white/10 text-white">
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="text-xl font-bold font-headline">Delete This Recording?</AlertDialogTitle>
-                  <AlertDialogDescription className="text-white/60 leading-relaxed">
-                    Are you sure you want to completely delete this video and record it again? This cannot be reversed and the current file will be lost.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter className="mt-4">
-                  <AlertDialogCancel className="bg-transparent border-white/20 text-white hover:bg-white/10">Keep Recording</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={() => {
-                        shieldedUpdate({ ...data, videoUrl: null, status: 'idle' });
-                        setIsCameraActive(true);
-                        clearRecording();
-                    }}
-                    className="bg-rose-600 hover:bg-rose-500 text-white font-bold"
-                  >
-                    Yes, Delete Forever
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+  // --- SUB-RENDERERS FOR 4-ACT JOURNEY ---
+
+  const renderScripting = () => (
+    <div className="max-w-7xl mx-auto w-full space-y-12 pb-20">
+      <div className="bg-slate-900/40 backdrop-blur-3xl border border-white/5 p-8 rounded-[2rem] shadow-2xl relative overflow-hidden group">
+         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <FilmIcon className="w-32 h-32" />
+         </div>
+         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
+            <div className="md:col-span-2">
+               <label className="block text-[10px] font-black text-rose-500 uppercase tracking-[0.3em] mb-3">Memory Title</label>
+               <input 
+                  type="text" 
+                  value={data?.title || ''} 
+                  onChange={(e) => update({ ...data, title: e.target.value })}
+                  placeholder="The Summer of '94..."
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xl font-bold text-white placeholder:text-white/10 focus:border-rose-500/50 outline-none transition-all"
+               />
+            </div>
+            <div>
+               <label className="block text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-3">Date of Memory</label>
+               <input 
+                  type="text" 
+                  value={data?.dateOfMemory || ''} 
+                  onChange={(e) => update({ ...data, dateOfMemory: e.target.value })}
+                  placeholder="June 12, 1994"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-white focus:border-rose-500/50 outline-none transition-all"
+               />
+            </div>
+            <div>
+               <label className="block text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-3">Country / Setting</label>
+               <input 
+                  type="text" 
+                  value={data?.country || ''} 
+                  onChange={(e) => update({ ...data, country: e.target.value })}
+                  placeholder="Bombay, India"
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-white focus:border-rose-500/50 outline-none transition-all"
+               />
+            </div>
+         </div>
+      </div>
+
+      <MemoryForm 
+        data={data} 
+        update={shieldedUpdate} 
+        productionStage={0} 
+        setProductionStage={setProductionStage}
+        forceAct="guide"
+      />
+    </div>
+  );
+
+  const renderRecording = () => (
+    <div className="w-full h-full flex flex-col items-center justify-center relative pb-20">
+       <div className={`w-full max-w-6xl aspect-video relative bg-black border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden transition-all duration-1000 ${isRecording ? 'ring-8 ring-rose-500 shadow-[0_0_80px_rgba(244,63,94,0.4)]' : ''}`}>
+          <video 
+            ref={videoRef}
+            autoPlay 
+            playsInline 
+            muted
+            className="absolute inset-0 w-full h-full object-cover z-0"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 z-10 pointer-events-none" />
+          
+          {/* Static Talking Points Overlay */}
+          <div className="absolute top-8 right-8 z-30 w-80 bg-slate-950/80 backdrop-blur-2xl border border-white/10 p-6 rounded-3xl shadow-2xl group/points hover:scale-105 transition-transform duration-500">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+              <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Talking Points</span>
+            </div>
+            <div className="text-sm font-medium text-white/90 leading-relaxed italic max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {data?.prose ? (
+                <div dangerouslySetInnerHTML={{ __html: data.prose }} className="prose-invert text-xs opacity-80" />
+              ) : (
+                "No script found. Speak from the heart."
+              )}
+            </div>
           </div>
-      ) : (
-        <div className="w-full relative bg-black border border-white/10 rounded-2xl shadow-xl overflow-hidden min-h-[400px]">
-           
-           {/* Live Camera Feed */}
-           <video 
-             ref={videoRef}
-             autoPlay 
-             playsInline 
-             muted
-             className="absolute inset-0 w-full h-full object-cover z-0"
-           />
 
-           {/* Gradient Overlay for Legible UI */}
-           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 z-10 pointer-events-none" />
-
-           {/* Cinematic UI Overlay */}
-           <div className="absolute inset-0 z-20 flex flex-col justify-between p-6 w-full max-w-7xl mx-auto pointer-events-none">
-             
-             {/* Header: Status & Warning */}
+          <div className="absolute inset-0 z-20 flex flex-col justify-between p-6 w-full mx-auto pointer-events-none">
              <div className="flex justify-between items-start w-full pointer-events-auto">
-               
-               {/* Recording Status Bubble / Initial Limit State */}
                <AnimatePresence>
                  {isRecording ? (
                    <motion.div 
                      key="recording"
                      initial={{ opacity: 0, y: -20 }}
                      animate={{ opacity: 1, y: 0 }}
-                     exit={{ opacity: 0, scale: 0.9 }}
-                     className={`flex items-center gap-3 px-4 py-2 rounded-full font-mono font-bold tracking-widest backdrop-blur-md border shadow-lg ${
-                       isWarningLimit 
-                         ? 'bg-amber-500/20 border-amber-500 text-amber-200 shadow-amber-500/20' 
-                         : 'bg-rose-500/20 border-rose-500 text-rose-200'
-                     }`}
+                     className={`flex items-center gap-3 px-4 py-2 rounded-full font-mono font-bold tracking-widest backdrop-blur-md border ${isWarningLimit ? 'bg-amber-500/20 border-amber-500 text-amber-200' : 'bg-rose-500/20 border-rose-500 text-rose-200'}`}
                    >
-                     <motion.div 
-                       animate={{ opacity: [1, 0, 1] }} 
-                       transition={{ repeat: Infinity, duration: isWarningLimit ? 0.5 : 1.5 }}
-                       className={`w-3 h-3 rounded-full ${isWarningLimit ? 'bg-amber-400' : 'bg-rose-500'}`} 
-                     />
+                     <motion.div animate={{ opacity: [1, 0, 1] }} transition={{ repeat: Infinity, duration: 1.5 }} className={`w-3 h-3 rounded-full ${isWarningLimit ? 'bg-amber-400' : 'bg-rose-500'}`} />
                      {formatTime(recordingTime)}
-                     <span className="text-xs opacity-60">/ 07:00</span>
                    </motion.div>
                  ) : (
-                   <motion.div 
-                     key="idle"
-                     initial={{ opacity: 0 }}
-                     animate={{ opacity: 1 }}
-                     className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-white/20 text-white/50 backdrop-blur-md font-medium text-xs tracking-wider"
-                   >
-                     <Disc className="w-3.5 h-3.5" />
-                     MAX SAVED RECORDING: 5 MINUTES
-                   </motion.div>
+                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-white/20 text-white/50 backdrop-blur-md text-xs">
+                     <Disc className="w-3.5 h-3.5" /> STUDIO READY
+                   </div>
                  )}
                </AnimatePresence>
-
-               {/* 5-Minute Pulse Warning */}
-               <AnimatePresence>
-                 {isRecording && isWarningLimit && (
-                   <motion.div 
-                     initial={{ opacity: 0, scale: 0.8 }}
-                     animate={{ opacity: 1, scale: 1 }}
-                     exit={{ opacity: 0 }}
-                     className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-black font-extrabold rounded-lg shadow-[0_0_30px_rgba(251,191,36,0.5)] animate-pulse border border-amber-300"
-                   >
-                     <AlertTriangle className="w-5 h-5" />
-                     WARNING: 2 MINUTES REMAINING
-                   </motion.div>
-                 )}
-               </AnimatePresence>
-               
-               {/* Upload / Save State Overlay (Placeholder logic for Phase 4) */}
-               <AnimatePresence>
-                 {uploading && (
-                   <motion.div 
-                     initial={{ opacity: 0, y: -20 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     className="flex items-center gap-3 px-4 py-2 rounded-lg bg-blue-500/20 border border-blue-500 text-blue-200 backdrop-blur-md"
-                   >
-                     <UploadCloud className="w-5 h-5 animate-bounce" />
-                     <span className="font-bold tracking-wide">Safely Uploading... {Math.round(uploadProgress)}%</span>
-                   </motion.div>
-                 )}
-                 {uploadResult && (
-                   <motion.div 
-                     initial={{ opacity: 0, y: -20 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     className="flex items-center gap-3 px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500 text-emerald-200 backdrop-blur-md"
-                   >
-                     <CheckCircle2 className="w-5 h-5" />
-                     <span className="font-bold tracking-wide">Memory Saved</span>
-                   </motion.div>
-                 )}
-               </AnimatePresence>
-
              </div>
 
-             {/* MOD-12: AI Interviewer HUD */}
              <div className="flex-1 flex flex-col items-center justify-center p-4">
                 <AnimatePresence>
                   {isInterviewMode && (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                      className="max-w-xl w-full bg-slate-950/60 backdrop-blur-2xl border border-sky-500/30 rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.6)] flex flex-col items-center text-center pointer-events-auto ring-1 ring-sky-500/20"
-                    >
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="p-3 bg-sky-500/10 rounded-2xl border border-sky-500/30">
-                          <Mic2 className="w-6 h-6 text-sky-400" />
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl w-full bg-slate-950/70 backdrop-blur-3xl border border-sky-500/30 rounded-[2.5rem] p-8 shadow-2xl text-center pointer-events-auto">
+                        <p className="text-xl font-headline text-white leading-relaxed mb-6 italic">"{currentQuestion || 'Ready to start the interview...'}"</p>
+                        <div className="flex items-center gap-4 justify-center">
+                           <button onClick={triggerNextQuestion} disabled={isSynthesizing} className="px-6 py-3 bg-sky-500 text-slate-950 font-black rounded-xl hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-50">
+                              <MessageSquare className="w-4 h-4" /> Next Question
+                           </button>
+                           <button onClick={handleCheckFraming} disabled={isAnalyzingFraming} className="px-6 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all flex items-center gap-2 disabled:opacity-50">
+                              <Layout className="w-4 h-4 text-emerald-400" /> Check Shot
+                           </button>
                         </div>
-                        <div className="flex flex-col items-start">
-                          <span className="text-[10px] font-black text-sky-400 uppercase tracking-[0.3em]">AI Interviewer</span>
-                          <span className="text-xs text-white/40 font-bold uppercase tracking-widest">{selectedVoice} (Studio)</span>
-                        </div>
-                      </div>
-
-                      {currentQuestion ? (
-                        <motion.p 
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="text-2xl font-headline text-white leading-relaxed mb-8"
-                        >
-                          "{currentQuestion}"
-                        </motion.p>
-                      ) : (
-                        <p className="text-white/40 italic mb-8">Ready to hear your story. Click below to begin the interview or narrate your script.</p>
-                      )}
-
-                      <div className="flex flex-col gap-4 w-full">
-                         <div className="flex items-center gap-4 justify-center">
-                            <button 
-                              onClick={triggerNextQuestion}
-                              disabled={isSynthesizing}
-                              className="px-8 py-3 bg-sky-500 text-slate-950 font-black rounded-full hover:scale-105 transition-all shadow-lg flex items-center gap-2 group/btn disabled:opacity-50"
-                            >
-                              {isSynthesizing ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Mic2 className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" />
-                              )}
-                              Ask Next Question (Achird)
-                            </button>
-                            
-                            {data?.aiTakes?.poetic && (
-                               <button 
-                                 onClick={handleNarratePoetic}
-                                 disabled={isSynthesizing}
-                                 className="px-8 py-3 bg-amber-500 text-slate-950 font-black rounded-full hover:scale-105 transition-all shadow-lg flex items-center gap-2 group/btn disabled:opacity-50"
-                               >
-                                 <Volume2 className="w-4 h-4" />
-                                 Narrate Poetic Take (Achernar)
-                               </button>
-                            )}
-                         </div>
-
-                         {currentQuestion && (
-                            <button 
-                              onClick={() => {
-                                 synthesizeStudioSpeech(currentQuestion, 'Achird').then(playAudio);
-                              }}
-                              className="text-[10px] font-black text-sky-400/60 uppercase tracking-widest hover:text-sky-400 transition-all"
-                            >
-                              Replay Last Question
-                            </button>
-                         )}
-                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
              </div>
 
-             {/* Footer: Controls */}
              <div className="flex justify-between items-center w-full px-12 pb-6 pointer-events-auto">
-                <div className="flex items-center gap-4">
-                   <button 
-                     onClick={() => setIsInterviewMode(!isInterviewMode)}
-                     className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all border ${
-                       isInterviewMode 
-                         ? 'bg-sky-500/20 border-sky-500 text-sky-400 shadow-[0_0_20px_rgba(14,165,233,0.3)]' 
-                         : 'bg-black/40 border-white/10 text-white/40 hover:text-white hover:bg-black/60'
-                     }`}
-                   >
-                     <UserCircle className="w-4 h-4" />
-                     {isInterviewMode ? 'Interviewer Active' : 'Start AI Interview'}
-                   </button>
-
-                   {isInterviewMode && (
-                     <div className="flex items-center gap-1 bg-black/40 border border-white/10 p-1.5 rounded-xl">
-                       {['Achird', 'Achernar', 'Zephyr'].map(v => (
-                         <button 
-                           key={v}
-                           onClick={() => setSelectedVoice(v)}
-                           className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase transition-all ${selectedVoice === v ? 'bg-white/10 text-white' : 'text-white/20 hover:text-white/40'}`}
-                         >
-                           {v}
-                         </button>
-                       ))}
-                     </div>
-                   )}
-                </div>
+                <button onClick={() => setIsInterviewMode(!isInterviewMode)} className={`px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest border transition-all ${isInterviewMode ? 'bg-sky-500/20 border-sky-500 text-sky-400' : 'bg-black/40 border-white/10 text-white/40'}`}>
+                   {isInterviewMode ? 'Interviewer Active' : 'Start Interview'}
+                </button>
 
                 {!isRecording ? (
-                  <button 
-                    onClick={startRecording}
-                    disabled={!stream || uploading}
-                    className="group relative flex items-center justify-center w-20 h-20 rounded-full bg-white/10 border-4 border-white/40 hover:border-rose-500 hover:bg-rose-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <div className="w-6 h-6 rounded-full bg-rose-500 group-hover:scale-125 transition-transform" />
+                  <button onClick={startRecording} disabled={!stream || uploading} className="w-20 h-20 rounded-full bg-white/10 border-4 border-white/40 hover:border-rose-500 hover:bg-rose-500/20 transition-all flex items-center justify-center group">
+                    <div className="w-6 h-6 rounded-full bg-rose-500 group-hover:scale-125 transition-all" />
                   </button>
                 ) : (
-                  <button 
-                    onClick={() => {
-                      stopRecording();
-                      setIsCameraActive(false); // Strictly power-cycle hardware off!
-                    }}
-                    className="group relative flex items-center justify-center w-20 h-20 rounded-full bg-rose-500/20 border-4 border-rose-500 hover:bg-rose-500 transition-all shadow-[0_0_40px_rgba(244,63,94,0.4)]"
-                  >
-                    <Square className="w-6 h-6 text-white shrink-0 group-hover:scale-90 transition-transform fill-current" />
+                  <button onClick={() => { stopRecording(); setIsCameraActive(false); }} className="w-20 h-20 rounded-full bg-rose-500/20 border-4 border-rose-500 hover:bg-rose-500 transition-all flex items-center justify-center">
+                    <Square className="w-6 h-6 text-white fill-current" />
                   </button>
                 )}
 
-                <div className="w-[200px] flex justify-end">
-                   {/* Balancing element */}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+                    <Volume2 className="w-4 h-4 text-white/40" />
+                    <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                       <motion.div className="h-full bg-emerald-500" animate={{ width: `${micLevel}%` }} />
+                    </div>
+                  </div>
                 </div>
              </div>
+          </div>
 
-           </div>
+          {!isCameraActive && (
+            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
+               <Video className="w-16 h-16 text-white/20 mb-6" />
+               <h3 className="text-xl font-bold text-white mb-2">Camera Offline</h3>
+               <button onClick={() => setIsCameraActive(true)} className="px-8 py-3 bg-white text-black font-bold rounded-full">Initialize optics</button>
+            </div>
+          )}
+       </div>
 
-           {/* PHASE 3: Preview & Save Overlay */}
-           {recordedBlob && previewUrl && (
-              <div className="absolute inset-0 z-40 bg-black flex flex-col items-center justify-center">
-                 
-                 <video 
-                   ref={previewVideoRef}
-                   src={previewUrl} 
-                   playsInline
-                   onEnded={() => setIsPlaying(false)}
-                   onLoadedMetadata={(e) => {
-                     const vid = e.currentTarget;
-                     // MediaRecorder blobfix: Duration is often Infinity
-                     if (vid.duration === Infinity || isNaN(vid.duration)) {
-                       vid.currentTime = 1e101; 
-                       vid.ontimeupdate = () => {
-                          vid.ontimeupdate = null;
-                          const trueDuration = vid.duration;
-                          setVideoDuration(trueDuration);
-                          setTrimRange([0, trueDuration]);
-                          vid.currentTime = 0;
-                       };
-                     } else {
-                       setVideoDuration(vid.duration);
-                       setTrimRange([0, vid.duration]);
-                     }
-                   }}
-                   onTimeUpdate={handlePreviewTimeUpdate}
-                   className="absolute inset-0 w-full h-full object-cover z-0 opacity-90 cursor-pointer" 
-                   onClick={togglePreviewPlay}
-                 />
-                 
-                 {/* Controls Gradient Overlay */}
-                 <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black via-transparent to-black/80 z-10" />
-                 
-                 <div className="absolute top-0 inset-x-0 p-6 z-20 flex justify-between items-center pointer-events-none">
-                   <div className="flex items-center gap-2 px-4 py-2 bg-black/50 border border-white/10 rounded-full text-white/80 font-medium tracking-wide backdrop-blur-md">
-                      <Disc className="w-4 h-4 text-emerald-400" />
-                      Reviewing Memory
+       {/* Sound Check Overlay */}
+       <AnimatePresence>
+          {showSoundCheck && stream && (
+             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-3xl">
+                <div className="max-w-md w-full bg-slate-900 border border-white/10 rounded-[3rem] p-10 text-center shadow-2xl">
+                   <div className={`p-6 rounded-full border-4 mx-auto w-24 mb-8 ${micLevel > 15 ? 'bg-emerald-500/20 border-emerald-500' : 'bg-rose-500/10 border-rose-500/30'}`}>
+                      <Mic2 className={`w-10 h-10 ${micLevel > 15 ? 'text-emerald-400' : 'text-rose-400'}`} />
                    </div>
-                 </div>
-
-                 {/* Center Giant Play Button Overlay */}
-                 <AnimatePresence>
-                   {!isPlaying && (
-                     <motion.button 
-                       initial={{ opacity: 0, scale: 0.8 }}
-                       animate={{ opacity: 1, scale: 1 }}
-                       exit={{ opacity: 0, scale: 0.8 }}
-                       onClick={togglePreviewPlay}
-                       className="z-30 p-6 bg-white/10 backdrop-blur-md rounded-full shadow-2xl border border-white/20 hover:bg-white/20 hover:scale-110 transition-all group"
-                     >
-                       <Play className="w-12 h-12 text-white fill-current opacity-80 group-hover:opacity-100 ml-1" />
-                     </motion.button>
-                   )}
-                 </AnimatePresence>
-                 
-                 {/* Pre-Production Trimmer Strip */}
-                 <div className="absolute bottom-0 inset-x-0 p-6 z-20 flex flex-col gap-6 w-full max-w-4xl mx-auto">
-                   
-                   {/* Soft-Clip Slider */}
-                   {!uploadResult && (
-                     <div className="bg-black/40 backdrop-blur-xl border border-white/10 p-4 rounded-xl shadow-lg flex flex-col gap-3">
-                       <div className="flex justify-between items-center text-xs font-bold text-white/50 tracking-widest uppercase">
-                         <span className="flex items-center gap-2"><Scissors className="w-4 h-4" /> Start Time: {formatTime(Math.round(trimRange[0]))}</span>
-                         <span>End Time: {formatTime(Math.round(trimRange[1]))}</span>
-                       </div>
-                       <Slider 
-                         value={trimRange}
-                         min={0}
-                         max={videoDuration || 100}
-                         step={0.1}
-                         onValueChange={(val: [number, number]) => setTrimRange(val)}
-                         className="cursor-pointer"
-                       />
-                       <p className="text-[10px] text-white/30 text-center uppercase tracking-widest">Adjust handles to soft-clip head movements</p>
-                     </div>
-                   )}
-
-                   {/* Action Bar */}
-                   <div className="flex justify-between items-center bg-black/60 border border-white/5 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl">
-                      <button 
-                        onClick={() => {
-                          clearRecording();
-                          setIsCameraActive(true); // Re-initialize instantly!
-                        }}
-                        disabled={uploading}
-                        className="px-6 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all disabled:opacity-50"
-                      >
-                        Retake Video
-                      </button>
-
-                      {/* PREMIUM: Slow Motion Toggle */}
-                      <button 
-                        onClick={() => {
-                          const newSlowMo = !isSlowMo;
-                          setIsSlowMo(newSlowMo);
-                          if (previewVideoRef.current) {
-                            previewVideoRef.current.playbackRate = newSlowMo ? 0.25 : 1.0;
-                          }
-                        }}
-                        disabled={uploading}
-                        className={`flex items-center gap-2 px-6 py-3 border font-bold rounded-xl transition-all disabled:opacity-50 ${
-                          isSlowMo 
-                            ? 'bg-amber-500/20 border-amber-500 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)]' 
-                            : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
-                        }`}
-                        title="Slow Motion (0.25x)"
-                      >
-                        <span className="text-lg">🐢</span>
-                        <span className="text-sm">Slow-Mo</span>
-                      </button>
-
-                      {/* PREMIUM: Snapshot Picker */}
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={handleCaptureThumbnail}
-                          disabled={isCapturingThumbnail || uploading}
-                          className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all disabled:opacity-50"
-                          title="Capture Frame"
-                        >
-                          {isCapturingThumbnail ? (
-                             <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
-                          ) : (
-                             <Camera className="w-4 h-4 text-emerald-400" />
-                          )}
-                          {data?.posterImageUrl ? "Update Poster" : "Set as Poster"}
-                        </button>
-
-                        <button 
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={uploading}
-                          className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all disabled:opacity-50"
-                          title="Upload Portrait"
-                        >
-                          <UploadCloud className="w-4 h-4 text-sky-400" />
-                          Upload
-                        </button>
-                        <input 
-                           type="file" 
-                           ref={fileInputRef}
-                           onChange={handleUploadPoster}
-                           accept="image/*"
-                           className="hidden"
-                        />
-                      </div>
-
-                      {!uploadResult ? (
-                        <button 
-                          onClick={handleSaveMemory}
-                          disabled={uploading}
-                          className="px-8 py-3 bg-[var(--room-accent)] text-slate-900 font-extrabold rounded-xl hover:brightness-110 shadow-[0_0_30px_rgba(251,191,36,0.2)] transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-wait"
-                        >
-                          {uploading ? (
-                            <>
-                              <UploadCloud className="w-5 h-5 animate-bounce" />
-                              Safely Uploading... {Math.round(uploadProgress)}%
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle2 className="w-5 h-5" />
-                              Save Trims & Output
-                            </>
-                          )}
-                        </button>
-                      ) : (
-                        <div className="px-8 py-3 bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 font-extrabold rounded-xl transition-all flex items-center gap-3">
-                          <CheckCircle2 className="w-5 h-5" />
-                          Memory Safely Persisted
-                        </div>
-                      )}
+                   <h2 className="text-2xl font-black text-white mb-4 uppercase">Sound Check</h2>
+                   <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden mb-8">
+                      <motion.div className={`h-full ${micLevel > 15 ? 'bg-emerald-500' : 'bg-rose-500'}`} animate={{ width: `${micLevel}%` }} />
                    </div>
-
-                 </div>
-              </div>
-           )}
-
-           {!isCameraActive && !recordedBlob ? (
-              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
-                 <Video className="w-16 h-16 text-white/20 mb-6" />
-                 <h3 className="text-xl font-bold text-white font-headline mb-2">Camera is Offline</h3>
-                 <p className="text-white/60 mb-8 max-w-sm text-center">Enable your camera to preview your shot before recording your memory.</p>
-                 <button 
-                   onClick={() => setIsCameraActive(true)}
-                   className="px-8 py-3 bg-[var(--room-accent)] text-slate-900 font-bold rounded-full hover:brightness-110 shadow-lg hover:shadow-[var(--room-accent)]/20 transition-all flex items-center gap-2"
-                 >
-                   <Video className="w-5 h-5" />
-                   Initialize Camera
-                 </button>
-              </div>
-           ) : !stream && !error ? (
-              <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-                 <div className="text-white/60 font-medium animate-pulse tracking-widest text-sm flex items-center gap-3">
-                   <Video className="w-5 h-5" />
-                   INITIALIZING OPTICS...
-                 </div>
-              </div>
-           ) : error && (
-              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md p-6">
-                 <AlertTriangle className="w-12 h-12 text-rose-500 mb-4" />
-                 <h3 className="text-xl font-bold text-white mb-2">Camera Disconnected</h3>
-                 <p className="text-rose-200/80 text-center max-w-md">{error}</p>
-                 <button 
-                   onClick={() => setIsCameraActive(false)}
-                   className="mt-6 px-6 py-2 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition-all"
-                 >
-                   Cancel
-                 </button>
-              </div>
-           )}
-        </div>
-      )}
-
-      {/* The Central Engine: The Story Script Outline */}
-      <MemoryForm data={data} update={shieldedUpdate} />
-
+                   <button onClick={() => setShowSoundCheck(false)} className="w-full py-4 bg-emerald-500 text-black font-black rounded-xl uppercase tracking-widest">Enter Studio</button>
+                </div>
+             </motion.div>
+          )}
+       </AnimatePresence>
     </div>
+  );
+
+  const renderNotepad = () => (
+    <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 pb-20">
+       <div className="space-y-6">
+          <div className="aspect-video bg-black rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl relative group">
+             {previewUrl ? (
+                <video 
+                  ref={previewVideoRef}
+                  src={previewUrl}
+                  onTimeUpdate={handlePreviewTimeUpdate}
+                  className="w-full h-full object-cover"
+                />
+             ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-white/20 font-mono tracking-tighter">WAITING FOR FOOTAGE...</div>
+             )}
+          </div>
+          
+          <div className="bg-slate-900/40 border border-white/5 p-8 rounded-[2rem] space-y-6">
+             <div className="flex justify-between items-center">
+                <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Rough Cut Trimming</span>
+                <span className="font-mono text-xs text-rose-400">{formatTime(trimRange[0])} — {formatTime(trimRange[1] === 100 ? videoDuration : trimRange[1])}</span>
+             </div>
+             <Slider 
+                value={trimRange} 
+                onValueChange={(val) => setTrimRange(val as [number, number])}
+                min={0}
+                max={videoDuration || 100}
+                step={0.1}
+                className="py-4"
+             />
+             <div className="flex gap-4">
+                <button onClick={togglePreviewPlay} className="flex-1 py-4 bg-white/5 border border-white/10 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all">
+                   {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                   {isPlaying ? 'Pause Preview' : 'Play Rough Cut'}
+                </button>
+                <button onClick={handleCaptureThumbnail} disabled={isCapturingThumbnail} className="flex-1 py-4 bg-white/5 border border-white/10 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all">
+                   <Camera className="w-4 h-4 text-emerald-400" /> Poster Snap
+                </button>
+             </div>
+          </div>
+       </div>
+
+       <div className="bg-slate-950/40 border border-white/5 rounded-[2rem] overflow-hidden">
+          <DirectorsNotepad 
+            userId={data?.userId}
+            memoryId={data?.id}
+            data={data} 
+            update={update} 
+            onSave={handleSaveMemory}
+            isSaving={uploading}
+          />
+       </div>
+    </div>
+  );
+
+  const renderShowcase = () => (
+    <div className="max-w-4xl mx-auto w-full py-20 text-center space-y-12">
+       <div className="relative inline-block">
+          <div className="absolute inset-0 bg-rose-500/20 blur-[100px] rounded-full" />
+          <div className="relative w-32 h-32 bg-slate-900 border border-white/10 rounded-full flex items-center justify-center mx-auto mb-8">
+             <FilmIcon className="w-12 h-12 text-rose-500" />
+          </div>
+       </div>
+       
+       <div className="space-y-4">
+          <h2 className="text-5xl font-black text-white uppercase tracking-tighter">The Reveal</h2>
+          <p className="text-white/40 text-lg max-w-xl mx-auto">Your production is locked. Await the final theatrical showcase generation.</p>
+       </div>
+
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-12">
+          <div className="bg-slate-900/40 border border-white/5 p-8 rounded-[2rem] text-left space-y-4">
+             <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+             </div>
+             <h4 className="font-bold text-white">Footage Secured</h4>
+             <p className="text-sm text-white/40">Your memory is safely stored in our cinematic vault.</p>
+          </div>
+          <div className="bg-slate-900/40 border border-white/5 p-8 rounded-[2rem] text-left space-y-4">
+             <div className="w-10 h-10 bg-sky-500/20 rounded-xl flex items-center justify-center">
+                <BrainCircuit className="w-6 h-6 text-sky-400" />
+             </div>
+             <h4 className="font-bold text-white">Director's Analysis</h4>
+             <p className="text-sm text-white/40">AI agents are weaving your talking points into a narrative.</p>
+          </div>
+       </div>
+
+       <button 
+          onClick={() => window.location.href = '/timeline'} 
+          className="px-12 py-5 bg-white text-black font-black rounded-2xl uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_50px_rgba(255,255,255,0.2)]"
+       >
+          Back to Slate
+       </button>
+    </div>
+  );
+
+  return (
+    <CinemaStageSwitch
+      currentStage={productionStage}
+      onStageChange={setProductionStage}
+      acts={[
+        { id: 0, title: 'Scripting', label: 'ACT 1' },
+        { id: 1, title: 'Recording', label: 'ACT 2' },
+        { id: 2, title: 'Notepad', label: 'ACT 3' },
+        { id: 3, title: 'Showcase', label: 'ACT 4' },
+      ]}
+    >
+      {renderScripting()}
+      {renderRecording()}
+      {renderNotepad()}
+      {renderShowcase()}
+    </CinemaStageSwitch>
   );
 }

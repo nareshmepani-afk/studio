@@ -54,6 +54,38 @@ export interface Memory {
   content?: string;
 }
 
+export interface TranscriptSegment {
+  startTime: number; // In seconds
+  endTime: number;
+  text: string;
+  speaker?: string;
+}
+
+export interface Chapter {
+  startTime: number;
+  title: string;
+  description: string;
+  type: 'hook' | 'incident' | 'struggle' | 'climax' | 'resolution';
+}
+
+export interface DirectorsNotepad {
+  transcript: TranscriptSegment[];
+  emotionalBeats: {
+    time: number;
+    label: string;
+    color: string;
+    description: string;
+  }[];
+  entities: {
+    name: string;
+    type: string;
+    mention: string;
+  }[];
+  directorNotes: string;
+  suggestedChapters: Chapter[];
+  analyzedAt: string;
+}
+
 export type MemoryCategory = {
   id: string;
   label: string;

@@ -16,10 +16,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { QrCode, Smartphone, Video, UploadCloud, CheckCircle2, RefreshCw, Camera, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { useAuth } from '@/hooks/useAuth';
 import { useStudioState } from '@/hooks/studio/useStudioState';
+import DirectorsNotepad from './DirectorsNotepad';
+import { generateDirectorsNotepad } from '@/actions/aiWeaver';
+import { Sparkles, BrainCircuit } from 'lucide-react';
 
 type MemoryData = any;
 
@@ -49,6 +53,9 @@ export default function CollaborativeStage({ data, update, mode = 'standard' }: 
   const [peerId, setPeerId] = useState<string | null>(null);
   const [remoteDirectorStream, setRemoteDirectorStream] = useState<MediaStream | null>(null);
   const [isDirectorConnecting, setIsDirectorConnecting] = useState(false);
+  
+  // Shared Production Stage
+  const [productionStage, setProductionStage] = useState(data?.productionStage || 0);
   const watchdogTimer = useRef<NodeJS.Timeout | null>(null);
   const peerRef = useRef<any>(null);
   const remoteDirectorVideoRef = useRef<HTMLVideoElement>(null);
@@ -99,6 +106,7 @@ export default function CollaborativeStage({ data, update, mode = 'standard' }: 
            setLiveStatus(d.status || 'idle');
            setCameraActive(!!d.cameraActive);
            setVideoUrl(d.videoUrl || null);
+           setProductionStage(d.productionStage || 0);
            
            if (d.pulseToken) {
               resetWatchdog();
@@ -306,7 +314,8 @@ export default function CollaborativeStage({ data, update, mode = 'standard' }: 
         ...updatedData,
         interviewerConnected,
         cameraActive,
-        status: liveStatus
+        status: liveStatus,
+        productionStage
     });
   }, [update, interviewerConnected, cameraActive, liveStatus]);
 
@@ -375,91 +384,96 @@ export default function CollaborativeStage({ data, update, mode = 'standard' }: 
 
       {/* 2. Standard Final Render Preview Mode (After completion) */}
       {videoUrl ? (
-         <div className="w-full bg-slate-900 border border-emerald-500/50 rounded-2xl p-6 shadow-xl flex flex-col items-center relative">
-            <CheckCircle2 className="w-12 h-12 text-emerald-500 mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-6">Memory Completed</h2>
-            
-            <video 
-              ref={videoRef}
-              src={videoUrl} 
-              controls 
-              playsInline 
-              crossOrigin="anonymous"
-              className="w-full max-w-2xl rounded-xl shadow-2xl mb-8" 
-            />
-            
-            <div className="flex flex-wrap items-center justify-center gap-4">
-               <AlertDialog>
-                 <AlertDialogTrigger asChild>
-                    <button className="px-6 py-3 bg-rose-500/10 text-rose-400 font-bold border border-rose-500/50 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-lg flex items-center gap-2 group">
-                      <Video className="w-5 h-5 group-hover:animate-pulse" />
-                      Delete & Retake Video
-                    </button>
-                 </AlertDialogTrigger>
-                 <AlertDialogContent className="bg-slate-950 border-white/10 text-white">
-                   <AlertDialogHeader>
-                     <AlertDialogTitle className="text-xl font-bold font-headline">Delete Recorded Memory?</AlertDialogTitle>
-                     <AlertDialogDescription className="text-white/60">
-                       Are you sure you want to delete this recorded memory? This action cannot be reversed and your video will be permanently erased.
-                     </AlertDialogDescription>
-                   </AlertDialogHeader>
-                   <AlertDialogFooter className="mt-4">
-                     <AlertDialogCancel className="bg-transparent border-white/20 text-white hover:bg-white/10">Keep Recording</AlertDialogCancel>
-                     <AlertDialogAction 
-                       onClick={() => shieldedUpdate({ ...data, videoUrl: null, status: 'idle' })}
-                       className="bg-rose-600 hover:bg-rose-500 text-white font-bold"
-                     >
-                       Yes, Delete Forever
-                     </AlertDialogAction>
-                   </AlertDialogFooter>
-                 </AlertDialogContent>
-               </AlertDialog>
+          <div className="w-full h-full flex flex-col xl:flex-row gap-0 bg-slate-950 border border-emerald-500/30 rounded-3xl shadow-2xl overflow-hidden relative">
+            {/* Main Video Stage */}
+            <div className="flex-1 p-8 flex flex-col items-center justify-center relative min-h-[500px]">
+              <div className="flex flex-col items-center w-full max-w-4xl">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                    <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black uppercase tracking-tight text-white">Memory Secured</h2>
+                    <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest">Footage locked & timestamped</p>
+                  </div>
+                </div>
+                
+                <video 
+                  ref={videoRef}
+                  src={videoUrl || undefined} 
+                  controls 
+                  playsInline 
+                  crossOrigin="anonymous"
+                  className="w-full aspect-video rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/10 mb-8" 
+                />
+                
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <button className="px-6 py-2.5 bg-rose-500/10 text-rose-400 text-[10px] font-black uppercase tracking-widest border border-rose-500/40 rounded-xl hover:bg-rose-500 hover:text-white transition-all flex items-center gap-2">
+                          <Video className="w-4 h-4" />
+                          Delete & Retake
+                        </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-slate-950 border-white/10 text-white">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl font-bold">Discard this take?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-white/60">
+                          This will permanently delete the recorded footage and your Director's Notepad for this session.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="bg-transparent border-white/20 text-white hover:bg-white/10">Keep Save</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => update({ ...data, videoUrl: null, directorsNotepad: null, status: 'idle' })}
+                          className="bg-rose-600 hover:bg-rose-500 text-white font-bold"
+                        >
+                          Discard Forever
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
 
-               {/* Parity Actions: Poster Management */}
-               <button 
-                 onClick={handleCaptureThumbnail}
-                 disabled={isCapturingThumbnail || isUploadingPoster}
-                 className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all disabled:opacity-50"
-                 title="Capture Frame"
-               >
-                 {isCapturingThumbnail ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
-                 ) : (
-                    <Camera className="w-4 h-4 text-emerald-400" />
-                 )}
-                 {data?.posterImageUrl ? "Update Poster" : "Set as Poster"}
-               </button>
+                  <button 
+                    onClick={handleCaptureThumbnail}
+                    disabled={isCapturingThumbnail}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all disabled:opacity-50"
+                  >
+                    {isCapturingThumbnail ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <Camera className="w-4 h-4 text-emerald-400" />}
+                    {data?.posterImageUrl ? "Update Poster" : "Set Poster"}
+                  </button>
 
-               <button 
-                 onClick={() => fileInputRef.current?.click()}
-                 disabled={isUploadingPoster || isCapturingThumbnail}
-                 className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all disabled:opacity-50"
-                 title="Upload Portrait"
-               >
-                 {isUploadingPoster ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-sky-400" />
-                 ) : (
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all"
+                  >
                     <UploadCloud className="w-4 h-4 text-sky-400" />
-                 )}
-                 Upload
-               </button>
-               <input 
-                  type="file" 
-                  ref={fileInputRef}
-                  onChange={handleUploadPoster}
-                  accept="image/*"
-                  className="hidden"
-               />
+                    Upload
+                  </button>
+                  <input type="file" ref={fileInputRef} onChange={handleUploadPoster} accept="image/*" className="hidden" />
 
-               <button 
-                  onClick={() => setQrOpen(true)}
-                  className="px-6 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all shadow-lg flex items-center gap-2"
-               >
-                  <QrCode className="w-4 h-4" />
-                  Connect New Device
-               </button>
+                  <button 
+                    onClick={() => setQrOpen(true)}
+                    className="px-6 py-2.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    New Device
+                  </button>
+                </div>
+              </div>
             </div>
-         </div>
+
+            {/* Director's Notepad Sidebar */}
+            {(videoUrl || data?.status === 'completed') && (
+              <DirectorsNotepad 
+                userId={user?.uid}
+                memoryId={data.id} 
+                onSeek={(time) => {
+                  if (videoRef.current) videoRef.current.currentTime = time;
+                }}
+              />
+            )}
+           </div>
       ) : (
          <>
             {/* 2. Unified Remote Command Center */}

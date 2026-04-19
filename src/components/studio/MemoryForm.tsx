@@ -7,7 +7,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
-import { Loader2, Wand2, Mic, MicOff, Film, Rocket, CheckCircle2, AlertCircle, Edit3, Save, Minimize2, Maximize2, X } from 'lucide-react';
+import { Loader2, Wand2, Mic, MicOff, Film, Rocket, CheckCircle2, AlertCircle, Edit3, Save, Minimize2, Maximize2, X, Sparkles } from 'lucide-react';
 import { analyzeSentiment, PulseState } from '@/utils/sentimentScore';
 import { expandWithAI, polishDescription, generatePosterAesthetics } from '@/actions/aiWeaver';
 import { publishMemoryAction, unpublishMemoryAction } from '@/actions/memoryActions';
@@ -22,6 +22,9 @@ type MemoryData = any;
 interface MemoryFormProps {
     data: MemoryData;
     update: (updatedData: MemoryData) => void;
+    productionStage?: number;
+    setProductionStage?: (stage: number) => void;
+    forceAct?: 'guide' | 'hook' | 'showcase';
 }
 
 const pulseVariants = {
@@ -39,7 +42,13 @@ const pulseColors: Record<PulseState, string> = {
 const EMOTION_TAGS = ['Nostalgic', 'Joyful', 'Adventure', 'Legacy', 'Quiet', 'Triumph', 'Wonder'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-export default function MemoryForm({ data, update }: MemoryFormProps) {
+export default function MemoryForm({ 
+  data, 
+  update, 
+  productionStage = 0, 
+  setProductionStage,
+  forceAct 
+}: MemoryFormProps) {
   const router = useRouter();
   
   // Basic Fields
@@ -78,8 +87,32 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
   const [isPolishingDesc, setIsPolishingDesc] = useState(false);
   const [isExpanding, setIsExpanding] = useState(false);
   const [isGeneratingPoster, setIsGeneratingPoster] = useState(false);
-  const [focusedColumn, setFocusedColumn] = useState<'guide' | 'hook' | 'showcase' | null>(null);
+  const [focusedColumn, setFocusedColumn] = useState<'guide' | 'hook' | 'showcase' | null>(forceAct || null);
+  const [isGuideFullyClosed, setIsGuideFullyClosed] = useState(true);
   const [lastFocusedField, setLastFocusedField] = useState<'script' | 'hook'>('script');
+  const [editorSnapshot, setEditorSnapshot] = useState<string>('');
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Robust handoff for TipTap Editor
+  const handleToggleColumn = (col: 'guide' | 'hook' | 'showcase' | null) => {
+    if (!editor) {
+      setFocusedColumn(col);
+      return;
+    }
+
+    if (col === 'guide' || focusedColumn === 'guide') {
+      setEditorSnapshot(editor.getHTML());
+    }
+    
+    setIsTransitioning(true);
+    setFocusedColumn(col);
+    if (col === 'guide') {
+      setIsGuideFullyClosed(false);
+    }
+    
+    // Safety timeout to reset transitioning state after animation
+    setTimeout(() => setIsTransitioning(false), 800);
+  };
 
   // Derived Classes for Column 2 (Snapshot)
   const isHookFocused = focusedColumn === 'hook';
@@ -315,11 +348,17 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
 
        const response = await expandWithAI(description, sensoryConfigToUse, sensoryValues, tags, textToWeave, !!isSelection);
        
-       if (typeof response === 'string') {
-         setAiTakes({ direct: response });
-       } else {
-         setAiTakes(response as any);
+       const generatedText = typeof response === 'string' ? response : (response.direct || response.poetic || response.nostalgic || '');
+       
+       if (generatedText) {
+         if (isSelection) {
+           editor.commands.insertContent(generatedText);
+         } else {
+           editor.commands.setContent(generatedText);
+         }
+         toast.success("Script Expanded", { description: "The AI has woven your memory into a cinematic script." });
        }
+       setAiTakes(typeof response === 'string' ? { direct: response } : (response as any));
     } catch (e) {
       console.error("AI Weaver Failed", e);
     } finally {
@@ -393,153 +432,397 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
     <LayoutGroup>
     <div className="flex flex-col xl:flex-row gap-8 w-full pb-40 relative">
       
-      <AnimatePresence>
+      <AnimatePresence onExitComplete={() => setIsGuideFullyClosed(true)}>
         {focusedColumn && (
           <>
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setFocusedColumn(null)}
+              onClick={() => handleToggleColumn(null)}
               className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[150]"
             />
             
-            {/* Zen Overlay Content Registry */}
-            {focusedColumn === 'hook' && (
-              <motion.div 
-                layoutId="theatrical-hook-panel"
-                className="fixed inset-y-[5vh] inset-x-4 lg:inset-x-[10vw] z-[200] flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.8)] h-[90vh]"
-              >
-                <div className="bg-black/40 p-8 rounded-t-3xl border border-amber-500/30 flex justify-between items-center backdrop-blur-2xl">
-                   <div className="flex items-center gap-4">
-                     <div className="w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.8)]" />
-                     <div>
-                       <h2 className="text-3xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent italic pb-1">Theatrical Hook</h2>
-                       <p className="text-[10px] font-black text-amber-400/60 uppercase tracking-[0.4em]">Cinematic Focal Point • Zen Mode</p>
-                     </div>
-                   </div>
-                   <div className="flex items-center gap-6">
-                      <button onClick={() => setFocusedColumn(null)} className="p-3 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all group border border-white/10">
-                        <Minimize2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                      </button>
-                   </div>
-                </div>
-
-                <div className="flex-grow w-full bg-black/60 p-10 rounded-b-3xl border border-t-0 border-amber-500/30 shadow-2xl space-y-8 overflow-y-auto flex flex-col">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Direct Consciousness Entry</label>
-                    <div className="flex items-center gap-4">
-                      {recognition && (
-                        <button onClick={toggleDictation} className={`p-2.5 rounded-xl transition-all duration-300 ${isDictating ? 'text-emerald-400 bg-emerald-400/10 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'text-white/20 hover:text-white border border-white/5 hover:bg-white/5'}`}>
-                          <Mic className={isDictating ? 'w-5 h-5 animate-pulse' : 'w-5 h-5'} />
-                        </button>
-                      )}
-                      <button onClick={handlePolishDescription} disabled={isPolishingDesc || !description} className="px-6 py-2.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-black uppercase tracking-[0.2em] rounded-xl hover:bg-amber-500 hover:text-black transition-all disabled:opacity-20">{isPolishingDesc ? 'Refining...' : 'Draft Polish'}</button>
-                    </div>
-                  </div>
-                  <textarea 
-                    value={description} 
-                    autoFocus
-                    onChange={(e) => setDescription(e.target.value)} 
-                    placeholder="Close your eyes. Enter the memory. What is the first thing your audience sees?" 
-                    className="w-full bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-2xl md:text-3xl text-white font-serif transition-all leading-[1.6] resize-none flex-grow placeholder:text-white/5 tracking-tight" 
-                  />
-                  <div className="pt-8 border-t border-white/5">
-                     <div className="flex justify-between items-end mb-4">
-                        <div className="flex items-center gap-4">
-                           <span className={`text-xs font-black uppercase tracking-[0.4em] ${gauge.color}`}>{gauge.label}</span>
-                           <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
-                           <span className="text-xs font-mono font-bold text-white/40">{wordCount} WORDS</span>
-                        </div>
-                        <p className="text-xs text-white/40 font-serif italic max-w-md text-right">{gauge.hint}</p>
-                     </div>
-                     <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden shadow-inner"><motion.div initial={{ width: 0 }} animate={{ width: `${gauge.width}%` }} className={`h-full transition-colors duration-1000 ${gauge.bg} shadow-[0_0_15px_rgba(255,255,255,0.1)]`} /></div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
             {focusedColumn === 'guide' && (
               <motion.div 
                 layoutId="story-guide-panel"
                 className="fixed inset-y-[5vh] inset-x-4 lg:inset-x-[10vw] z-[200] flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.8)] h-[90vh]"
               >
-                <div className="bg-black/40 p-8 rounded-t-3xl border border-sky-500/30 flex justify-between items-center backdrop-blur-2xl">
+                <div className="bg-black/40 p-4 lg:p-6 rounded-t-3xl border border-sky-500/30 flex justify-between items-center backdrop-blur-2xl">
                    <div className="flex items-center gap-4">
                      <div className="w-3 h-3 rounded-full bg-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.8)]" />
                      <div>
-                       <h2 className="text-3xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent italic pb-1">Story Script</h2>
+                       <h2 className="text-3xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent italic pb-1">Section 1: Story Script</h2>
                        <p className="text-[10px] font-black text-sky-400/60 uppercase tracking-[0.4em]">Narrative Foundation • Edit & Refine</p>
                      </div>
                    </div>
                    <div className="flex items-center gap-6">
-                      <button onClick={() => setFocusedColumn(null)} className="p-3 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all group border border-white/10">
+                      <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5 ring-1 ring-white/5">
+                        {recognition && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button 
+                                  onClick={toggleDictation} 
+                                  className={`p-2 rounded-lg transition-all ${isDictating && lastFocusedField === 'script' ? 'bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]' : 'text-white/30 hover:text-sky-400 hover:bg-white/5'}`}
+                                >
+                                   <Mic className={isDictating && lastFocusedField === 'script' ? 'w-5 h-5 animate-pulse' : 'w-5 h-5'} />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-slate-950 border-white/10 text-white text-xs font-bold uppercase tracking-widest">Dictate to Script</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button 
+                                onClick={handleAIExpand} 
+                                disabled={isExpanding}
+                                className="p-2 text-white/30 hover:text-sky-400 hover:bg-white/5 rounded-lg transition-all disabled:opacity-20"
+                              >
+                                 {isExpanding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-slate-950/95 backdrop-blur-xl border border-white/10 p-4 shadow-2xl rounded-2xl max-w-[260px] select-none">
+                              <div className="space-y-1.5">
+                                <p className="font-bold text-sky-400 text-xs uppercase tracking-widest">Cinematic Master Script</p>
+                                <p className="text-[10px] text-white/70 leading-relaxed font-medium">Deep narrative foundation used to drive video generation. This content is for production only and <span className="text-rose-400/80 font-bold">will not be shown</span> in the finalized Cinema view.</p>
+                                <div className="pt-2 mt-1 border-t border-white/5 uppercase text-[8px] font-black text-white/30 tracking-[0.1em]">Use Case: Production Engine</div>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+
+                      <div className="flex items-center gap-2 px-3 py-1 bg-black/40 rounded-full border border-sky-500/20">
+                        <span className="text-[10px] text-white/40 font-bold tracking-widest uppercase">Pulse</span>
+                        <motion.div variants={pulseVariants} animate={pulse} className={`w-2.5 h-2.5 rounded-full ${pulseColors[pulse]}`} />
+                      </div>
+
+                      <button onClick={() => handleToggleColumn(null)} className="p-3 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all group border border-white/10">
                         <Minimize2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
                       </button>
                    </div>
                 </div>
-                <div className="flex-grow w-full bg-black/60 p-10 rounded-b-3xl border border-t-0 border-sky-500/30 shadow-2xl overflow-y-auto">
-                    <div className="max-w-4xl mx-auto prose prose-invert prose-2xl prose-sky">
-                       <EditorContent editor={editor} className="h-full w-full" />
+                <div className="flex-grow w-full bg-black/60 p-4 lg:p-6 rounded-b-3xl border border-t-0 border-sky-500/30 shadow-2xl overflow-y-auto flex flex-col">
+                    {/* NEW: Act 1 Anchoring Metadata */}
+                    <div className="mb-8 grid grid-cols-1 md:grid-cols-12 gap-6 p-8 bg-sky-500/5 border border-sky-500/20 rounded-3xl backdrop-blur-md">
+                        <div className="md:col-span-12 space-y-2">
+                           <label className="text-[10px] font-black text-sky-400/40 uppercase tracking-[0.3em] pl-1">Cinematic Title</label>
+                           <input 
+                             type="text" 
+                             value={title} 
+                             onChange={(e) => setTitle(e.target.value)} 
+                             className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-white font-headline text-2xl focus:border-sky-500/40 outline-none transition-all placeholder:text-white/5" 
+                             placeholder="Untitled Masterpiece..." 
+                           />
+                        </div>
+
+                        <div className="md:col-span-6 space-y-2">
+                           <label className="text-[10px] font-black text-sky-400/40 uppercase tracking-[0.3em] pl-1">Memory Timeline</label>
+                           <div className="flex gap-2">
+                             <Select value={day} onValueChange={setDay}>
+                               <SelectTrigger className="flex-1 bg-black/40 border-white/5 text-white rounded-xl p-4 h-auto shadow-inner"><SelectValue placeholder="DD" /></SelectTrigger>
+                               <SelectContent className="bg-slate-950 border-white/10 text-white">
+                                 <SelectItem value="none">DD</SelectItem>
+                                 {Array.from({length: 31}, (_, i) => (i+1).toString()).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                               </SelectContent>
+                             </Select>
+                             <Select value={month} onValueChange={setMonth}>
+                               <SelectTrigger className="flex-1 bg-black/40 border-white/5 text-white rounded-xl p-4 h-auto shadow-inner"><SelectValue placeholder="MM" /></SelectTrigger>
+                               <SelectContent className="bg-slate-950 border-white/10 text-white">
+                                 <SelectItem value="none">MM</SelectItem>
+                                 {MONTHS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                               </SelectContent>
+                             </Select>
+                             <Select value={year} onValueChange={setYear}>
+                               <SelectTrigger className="flex-1 bg-black/40 border-white/5 text-white rounded-xl p-4 h-auto shadow-inner"><SelectValue placeholder="YYYY" /></SelectTrigger>
+                               <SelectContent className="bg-slate-950 border-white/10 text-white">
+                                 <SelectItem value="none">YYYY</SelectItem>
+                                 {Array.from({length: 100}, (_, i) => (new Date().getFullYear() - i).toString()).map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                               </SelectContent>
+                             </Select>
+                           </div>
+                        </div>
+
+                        <div className="md:col-span-3 space-y-2">
+                           <label className="text-[10px] font-black text-sky-400/40 uppercase tracking-[0.3em] pl-1">Locale</label>
+                           <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white font-medium focus:border-sky-500/40 outline-none transition-all" placeholder="City..." />
+                        </div>
+
+                        <div className="md:col-span-3 space-y-2">
+                           <label className="text-[10px] font-black text-sky-400/40 uppercase tracking-[0.3em] pl-1">Country</label>
+                           <Select value={country} onValueChange={setCountry}>
+                             <SelectTrigger className="bg-black/40 border-white/5 text-white rounded-xl px-4 py-4 h-auto shadow-inner w-full flex justify-between items-center">
+                               <SelectValue placeholder="Select..." />
+                             </SelectTrigger>
+                             <SelectContent className="bg-slate-950 border-white/10 text-white">
+                               <SelectItem value="none">Select...</SelectItem>
+                               {COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                             </SelectContent>
+                           </Select>
+                        </div>
+                    </div>
+
+                    <div className="flex-grow max-w-4xl mx-auto prose prose-invert prose-2xl prose-sky w-full">
+                       {isTransitioning ? (
+                         <div dangerouslySetInnerHTML={{ __html: `<div class="tiptap ProseMirror" style="outline: none;">${editorSnapshot}</div>` }} />
+                       ) : (
+                         <EditorContent editor={editor} className="h-full w-full" />
+                       )}
+                    </div>
+                    
+                    {productionStage === 0 && setProductionStage && (
+                      <div className="mt-8 pt-6 border-t border-sky-500/20 flex justify-center pb-4">
+                        <button 
+                          onClick={() => {
+                            setProductionStage(1);
+                            handleToggleColumn(null);
+                          }} 
+                          className="px-12 py-4 bg-sky-500 text-slate-950 font-black rounded-xl shadow-[0_0_25px_rgba(14,165,233,0.4)] hover:bg-sky-400 transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-3"
+                        >
+                          <Film className="w-5 h-5" />
+                          Finalize Script & Enter Stage
+                        </button>
+                      </div>
+                    )}
+                </div>
+              </motion.div>
+            )}
+
+            {focusedColumn === 'hook' && (
+              <motion.div 
+                layoutId="theatrical-hook-panel"
+                className="fixed inset-y-[5vh] inset-x-4 lg:inset-x-8 xl:inset-x-[6vw] z-[200] flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.8)] h-[90vh]"
+              >
+                <div className="bg-black/40 p-4 lg:p-6 rounded-t-3xl border border-amber-500/30 flex justify-between items-center backdrop-blur-2xl">
+                   <div className="flex items-center gap-4">
+                     <div className="w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.8)]" />
+                     <div>
+                       <h2 className="text-3xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent italic pb-1">Section 2: Narrative Hook</h2>
+                       <p className="text-[10px] font-black text-amber-400/60 uppercase tracking-[0.4em]">Integrated Metadata • AI Foundation</p>
+                     </div>
+                   </div>
+                   <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5 ring-1 ring-white/5">
+                        {recognition && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button 
+                                  onClick={toggleDictation} 
+                                  className={`p-2 rounded-lg transition-all ${isDictating && lastFocusedField === 'hook' ? 'bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]' : 'text-white/30 hover:text-amber-400 hover:bg-white/5'}`}
+                                >
+                                   <Mic className={isDictating && lastFocusedField === 'hook' ? 'w-5 h-5 animate-pulse' : 'w-5 h-5'} />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-slate-950 border-white/10 text-white text-xs font-bold uppercase tracking-widest">Dictate to Hook</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button 
+                                onClick={handlePolishDescription} 
+                                disabled={isPolishingDesc || !description}
+                                className="p-2 text-white/30 hover:text-amber-400 hover:bg-white/5 rounded-lg transition-all disabled:opacity-20"
+                              >
+                                 {isPolishingDesc ? <Loader2 className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-slate-950/95 backdrop-blur-xl border border-white/10 p-4 shadow-2xl rounded-2xl max-w-[260px] select-none">
+                              <div className="space-y-1.5">
+                                <p className="font-bold text-amber-400 text-xs uppercase tracking-widest">Cinema Logline</p>
+                                <p className="text-[10px] text-white/70 leading-relaxed font-medium">The public-facing introduction to your story. This text <span className="text-emerald-400/80 font-bold">will be displayed</span> in the Cinema view as your memory's hook.</p>
+                                <div className="pt-2 mt-1 border-t border-white/5 uppercase text-[8px] font-black text-white/30 tracking-[0.1em]">Use Case: Public Engagement</div>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+
+                      <div className="flex items-center gap-2 px-3 py-1 bg-black/40 rounded-full border border-sky-500/20">
+                        <span className="text-[10px] text-white/40 font-bold tracking-widest uppercase">Pulse</span>
+                        <motion.div variants={pulseVariants} animate={pulse} className={`w-2.5 h-2.5 rounded-full ${pulseColors[pulse]}`} />
+                      </div>
+
+                      <button onClick={() => handleToggleColumn(null)} className="p-3 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all group border border-white/10">
+                        <Minimize2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                      </button>
+                   </div>
+                </div>
+                <div className="flex-grow w-full bg-black/60 p-4 lg:p-6 rounded-b-3xl border border-t-0 border-amber-500/30 shadow-2xl overflow-y-auto">
+                    <div className="w-full max-w-7xl mx-auto flex flex-col gap-8">
+                        {/* Narrative Transition Area */}
+                        <div className="space-y-8 bg-white/5 p-8 rounded-2xl border border-white/10">
+                           <div className="flex items-center gap-3 pb-4 border-b border-white/10">
+                              <div className="w-1.5 h-8 bg-amber-400 rounded-full" />
+                              <h3 className="text-sm font-bold text-white/80 uppercase tracking-[0.3em]">Cinematic Refinement</h3>
+                           </div>
+
+                           <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
+                              {/* Left: Script/Hook Text */}
+                              <div className="md:col-span-8 space-y-4">
+                                 <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest pl-1">Story Hook Transcript</label>
+                                 <textarea 
+                                    value={description} 
+                                    onChange={(e) => setDescription(e.target.value)} 
+                                    onFocus={() => setLastFocusedField('hook')}
+                                    className="w-full bg-black/40 border border-white/10 rounded-2xl p-8 text-white font-medium focus:border-amber-500/40 outline-none transition-all min-h-[400px] text-xl leading-relaxed placeholder:text-white/5" 
+                                    placeholder="Anchor your narrative here..." 
+                                 />
+                                 
+                                 <div className="flex justify-between items-center px-4 pt-2">
+                                    <div className="flex items-center gap-3">
+                                       <span className={`text-[10px] font-black uppercase tracking-[0.4em] ${gauge.color}`}>{gauge.label}</span>
+                                       <span className="text-[10px] font-mono font-bold text-white/20">{wordCount} WORDS</span>
+                                    </div>
+                                    <p className="text-[10px] text-white/20 italic">{gauge.hint}</p>
+                                 </div>
+                              </div>
+
+                              {/* Right: Emotions & Metadata Focus */}
+                              <div className="md:col-span-4 space-y-10">
+                                 <div className="space-y-4">
+                                    <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest pl-1">Emotion Signature</label>
+                                    <div className="flex flex-wrap gap-2.5">
+                                       {EMOTION_TAGS.map(tag => (
+                                          <button 
+                                             key={tag} 
+                                             onClick={() => toggleTag(tag)} 
+                                             className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${tags.includes(tag) ? 'bg-amber-500/20 border-amber-500 text-amber-500 shadow-[0_0_20px_rgba(251,191,36,0.2)]' : 'bg-white/5 border-white/10 text-white/30 hover:text-white/60'}`}
+                                          >
+                                             {tag}
+                                          </button>
+                                       ))}
+                                    </div>
+                                 </div>
+
+                                 <div className="p-6 bg-amber-500/5 border border-amber-500/10 rounded-2xl space-y-3">
+                                    <div className="flex items-center gap-2 text-amber-500/80">
+                                       <Sparkles className="w-4 h-4" />
+                                       <span className="text-[10px] font-black uppercase tracking-[0.2em]">Director's Advice</span>
+                                    </div>
+                                    <p className="text-xs text-white/60 leading-relaxed font-medium">Use this panel to ensure the core of your story is anchored before moving to the final showcase. The AI reveal has provided the narrative; now you solidify its soul.</p>
+                                 </div>
+
+                                 {productionStage === 1 && setProductionStage && (
+                                    <button 
+                                      onClick={() => {
+                                        setProductionStage(1);
+                                        handleToggleColumn(null);
+                                      }} 
+                                      className="w-full py-4 bg-amber-500 text-slate-950 font-black rounded-xl shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:bg-amber-400 transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-3"
+                                    >
+                                      <Film className="w-4 h-4" />
+                                      Enter Stage
+                                    </button>
+                                 )}
+                              </div>
+                           </div>
+                        </div>
                     </div>
                 </div>
               </motion.div>
             )}
+
 
             {focusedColumn === 'showcase' && (
               <motion.div 
                 layoutId="dramatic-showcase-panel"
                 className="fixed inset-y-[5vh] inset-x-4 lg:inset-x-[10vw] z-[200] flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.8)] h-[90vh]"
               >
-                <div className="bg-black/40 p-8 rounded-t-3xl border border-rose-500/30 flex justify-between items-center backdrop-blur-2xl">
+                <div className="bg-black/40 p-3 lg:p-4 rounded-t-3xl border border-rose-500/30 flex justify-between items-center backdrop-blur-2xl">
                    <div className="flex items-center gap-4">
                      <div className="w-3 h-3 rounded-full bg-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.8)]" />
                      <div>
-                       <h2 className="text-3xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent italic pb-1">Dramatic Showcase</h2>
-                       <p className="text-[10px] font-black text-rose-400/60 uppercase tracking-[0.4em]">Theatrical Aesthetic • Visualization</p>
+                       <h2 className="text-2xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent italic pb-1">Act 3: Dramatic Showcase</h2>
+                       <p className="text-[9px] font-black text-rose-400/60 uppercase tracking-[0.4em]">Theatrical Aesthetic • Visualization</p>
                      </div>
                    </div>
                    <div className="flex items-center gap-6">
-                      <button onClick={() => setFocusedColumn(null)} className="p-3 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all group border border-white/10">
+                      <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5 ring-1 ring-white/5">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button 
+                                onClick={handlePosterAI} 
+                                disabled={isGeneratingPoster}
+                                className="p-2.5 text-white/30 hover:text-rose-400 hover:bg-white/5 rounded-lg transition-all disabled:opacity-20"
+                              >
+                                 {isGeneratingPoster ? <Loader2 className="w-5 h-5 animate-spin" /> : <Film className="w-5 h-5" />}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-slate-950 border-white/10 text-white text-xs font-bold uppercase tracking-widest">Generate Cinematic Assets</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+
+                      <div className="flex items-center gap-2 px-3 py-1 bg-black/40 rounded-full border border-sky-500/20">
+                        <span className="text-[10px] text-white/40 font-bold tracking-widest uppercase">Pulse</span>
+                        <motion.div variants={pulseVariants} animate={pulse} className={`w-2.5 h-2.5 rounded-full ${pulseColors[pulse]}`} />
+                      </div>
+
+                      <button onClick={() => handleToggleColumn(null)} className="p-3 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all group border border-white/10">
                         <Minimize2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
                       </button>
                    </div>
                 </div>
-                <div className="flex-grow w-full bg-black/60 p-10 rounded-b-3xl border border-t-0 border-rose-500/30 shadow-2xl overflow-y-auto flex flex-col lg:flex-row gap-12">
-                    <div className="flex-1 space-y-8">
-                       <div>
-                          <label className="block text-xs font-bold text-white/40 uppercase mb-4 tracking-widest text-center">Cinematic Poster</label>
-                          <div className="flex justify-center">
-                            <div className="w-[300px] shadow-[0_30px_60px_rgba(0,0,0,0.6)]">
-                              <CinemaPoster memory={{ ...data, title, chapterTitle, usePoster, posterStyle, posterImageUrl, credits: { director, producer, starring, billingLine } }} />
+                <div className="flex-grow w-full bg-black/60 p-4 lg:p-6 rounded-b-3xl border border-t-0 border-rose-500/30 shadow-2xl overflow-y-auto flex flex-col">
+                   <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 flex-grow">
+                      <div className="flex-1 space-y-8">
+                         <div>
+                            <label className="block text-xs font-bold text-white/40 uppercase mb-4 tracking-widest text-center">Cinematic Poster</label>
+                            <div className="flex justify-center">
+                              <div className="w-[300px] shadow-[0_30px_60px_rgba(0,0,0,0.6)] transition-transform hover:scale-[1.02] duration-500">
+                                <CinemaPoster memory={{ ...data, title, chapterTitle, usePoster, posterStyle, posterImageUrl, credits: { director, producer, starring, billingLine } }} />
+                              </div>
                             </div>
-                          </div>
-                       </div>
-                    </div>
-                    <div className="flex-1 space-y-8 bg-white/5 p-8 rounded-2xl border border-white/10">
-                       <div className="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/5 mb-4">
-                          <label className="text-xs font-bold text-white/60 uppercase tracking-widest">Master Credits</label>
-                          <button onClick={handlePosterAI} disabled={isGeneratingPoster} className="text-[10px] font-black text-rose-400 uppercase tracking-wider hover:underline">{isGeneratingPoster ? 'Generating...' : 'Regenerate Credits'}</button>
-                       </div>
-                       <div className="grid grid-cols-1 gap-6">
-                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-white/20 uppercase tracking-widest pl-1">Director</label>
-                            <input type="text" value={director} onChange={(e) => setDirector(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white font-medium focus:border-rose-500/40 outline-none transition-all" />
                          </div>
-                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-white/20 uppercase tracking-widest pl-1">Producer</label>
-                            <input type="text" value={producer} onChange={(e) => setProducer(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white font-medium focus:border-rose-500/40 outline-none transition-all" />
+                      </div>
+                      <div className="flex-1 space-y-6 bg-white/5 p-6 lg:p-8 rounded-2xl border border-white/10">
+                         <div className="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/5 mb-2">
+                            <label className="text-xs font-bold text-white/60 uppercase tracking-widest">Master Credits</label>
+                            <button onClick={handlePosterAI} disabled={isGeneratingPoster} className="text-[10px] font-black text-rose-400 uppercase tracking-wider hover:underline">{isGeneratingPoster ? 'Generating...' : 'Regenerate Credits'}</button>
                          </div>
-                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-white/20 uppercase tracking-widest pl-1">Starring</label>
-                            <input type="text" value={starring} onChange={(e) => setStarring(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white font-medium focus:border-rose-500/40 outline-none transition-all" />
+                         <div className="grid grid-cols-1 gap-4">
+                           <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-white/20 uppercase tracking-widest pl-1">Director</label>
+                              <input type="text" value={director} onChange={(e) => setDirector(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-medium focus:border-rose-500/40 outline-none transition-all" />
+                           </div>
+                           <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-white/20 uppercase tracking-widest pl-1">Producer</label>
+                              <input type="text" value={producer} onChange={(e) => setProducer(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-medium focus:border-rose-500/40 outline-none transition-all" />
+                           </div>
+                           <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-white/20 uppercase tracking-widest pl-1">Starring</label>
+                              <input type="text" value={starring} onChange={(e) => setStarring(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-medium focus:border-rose-500/40 outline-none transition-all" />
+                           </div>
+                           <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-white/20 uppercase tracking-widest pl-1">Billing Block</label>
+                              <textarea value={billingLine} onChange={(e) => setBillingLine(e.target.value)} rows={3} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs italic text-white/60 focus:border-rose-500/40 outline-none transition-all resize-none" />
+                           </div>
                          </div>
-                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-white/20 uppercase tracking-widest pl-1">Billing Block</label>
-                            <textarea value={billingLine} onChange={(e) => setBillingLine(e.target.value)} rows={3} className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-xs italic text-white/60 focus:border-rose-500/40 outline-none transition-all resize-none" />
-                         </div>
-                       </div>
-                    </div>
+                      </div>
+                   </div>
+
+                   {productionStage >= 2 && setProductionStage && (
+                      <div className="mt-8 pt-6 border-t border-rose-500/20 flex justify-center pb-4">
+                        <button 
+                          onClick={() => {
+                            handleToggleColumn(null);
+                          }} 
+                          className="px-12 py-4 bg-rose-500 text-white font-black rounded-xl shadow-[0_0_25px_rgba(244,63,94,0.4)] hover:bg-rose-400 transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-3"
+                        >
+                          <CheckCircle2 className="w-5 h-5" />
+                          Finalize Memory
+                        </button>
+                      </div>
+                    )}
                 </div>
               </motion.div>
             )}
@@ -555,7 +838,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
       >
         <div className="bg-black/20 p-6 rounded-t-2xl border border-b-0 border-sky-500/20 flex justify-between items-center backdrop-blur-sm">
              <div className="flex flex-col">
-               <h2 className="text-xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent">Story Script</h2>
+               <h2 className="text-xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent">Act 1: Story Script</h2>
                <p className="text-[9px] font-black text-sky-400/40 uppercase tracking-[0.2em] -mt-0.5">Edit and expand your script</p>
              </div>
            <div className="flex items-center gap-4">
@@ -585,36 +868,63 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
                          {isExpanding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-slate-950 border-white/10 text-white text-[10px] font-bold uppercase tracking-widest">AI Weaver (Expand)</TooltipContent>
+                    <TooltipContent className="bg-slate-950/95 backdrop-blur-xl border border-white/10 p-4 shadow-2xl rounded-2xl max-w-[240px] select-none">
+                      <div className="space-y-1.5">
+                        <p className="font-bold text-sky-400 text-[10px] uppercase tracking-widest">Cinematic Master Script</p>
+                        <p className="text-[10px] text-white/70 leading-relaxed font-medium">Deep narrative foundation for video generation. <span className="text-rose-400/80 font-bold">Private</span> and not shown in Cinema.</p>
+                        <div className="pt-2 mt-1 border-t border-white/5 uppercase text-[8px] font-black text-white/30 tracking-[0.1em]">Use Case: Production Engine</div>
+                      </div>
+                    </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
 
-             <button onClick={() => setFocusedColumn('guide')} className="p-2 rounded-lg hover:bg-white/5 text-white/20 hover:text-sky-400 transition-all border border-transparent hover:border-sky-500/20">
-               <Maximize2 className="w-4 h-4" />
-             </button>
-             <div className="flex items-center gap-2 px-3 py-1 bg-black/40 rounded-full border border-sky-500/20">
-               <span className="text-[10px] text-white/40 font-bold tracking-widest uppercase">Pulse</span>
-               <motion.div variants={pulseVariants} animate={pulse} className={`w-2.5 h-2.5 rounded-full ${pulseColors[pulse]}`} />
+               <button onClick={() => handleToggleColumn('guide')} className={`p-2 rounded-lg transition-all border ${productionStage === 0 && !focusedColumn ? 'text-sky-400 border-sky-500/50 hover:bg-sky-500/10 animate-pulse shadow-[0_0_15px_rgba(14,165,233,0.4)]' : 'text-white/20 hover:text-sky-400 hover:bg-white/5 border-transparent hover:border-sky-500/20'}`}>
+                 <Maximize2 className="w-4 h-4" />
+               </button>
+               <div className="flex items-center gap-2 px-3 py-1 bg-black/40 rounded-full border border-sky-500/20">
+                 <span className="text-[10px] text-white/40 font-bold tracking-widest uppercase">Pulse</span>
+                 <motion.div variants={pulseVariants} animate={pulse} className={`w-2.5 h-2.5 rounded-full ${pulseColors[pulse]}`} />
+               </div>
              </div>
-           </div>
-        </div>
-        <div className="flex-grow w-full bg-black/10 p-8 rounded-b-2xl border border-t-0 border-sky-500/20 shadow-inner min-h-[600px] prose-invert prose-sky opacity-80">
-          <EditorContent editor={editor} className="h-full w-full" />
-        </div>
+          </div>
+          <div className="flex-grow w-full bg-black/10 p-8 rounded-b-2xl border border-t-0 border-sky-500/20 shadow-inner min-h-[600px] prose-invert prose-sky opacity-80 flex flex-col relative overflow-hidden">
+             {/* Robust TipTap Handoff: Never render Live Editor during transitions or when expanded */}
+             {(!isGuideFullyClosed || focusedColumn === 'guide' || isTransitioning) ? (
+               <div 
+                 className="absolute inset-0 p-8 overflow-y-auto"
+                 dangerouslySetInnerHTML={{ __html: `<div class="tiptap ProseMirror" style="outline: none;">${editorSnapshot || editor?.getHTML() || ''}</div>` }} 
+               />
+             ) : (
+               <div className="h-full w-full flex-grow">
+                 <EditorContent editor={editor} className="h-full w-full" />
+               </div>
+             )}
+             
+             {productionStage === 0 && setProductionStage && (
+               <div className="mt-8 pt-6 border-t border-sky-500/20 flex justify-end z-10 bg-black/5">
+                 <button 
+                   onClick={() => setProductionStage(1)} 
+                   className="px-6 py-3 bg-sky-500 text-slate-950 font-bold rounded-xl shadow-[0_0_20px_rgba(14,165,233,0.4)] hover:bg-sky-400 transition-all uppercase tracking-widest text-xs flex items-center gap-2"
+                 >
+                   Advance to Pre-Production <Wand2 className="w-4 h-4" />
+                 </button>
+               </div>
+             )}
+         </div>
       </motion.div>
 
       {/* Column 2: Identity & Brief (The Snapshot) - AMBER THEME */}
-      <motion.div layout layoutId="theatrical-hook-panel" className={`w-full xl:w-1/3 flex flex-col relative drop-shadow-2xl transition-all duration-700 ease-in-out z-10 ${focusedColumn ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      <motion.div layout layoutId="theatrical-hook-panel" className={`w-full xl:w-1/3 flex flex-col relative drop-shadow-2xl transition-all duration-700 ease-in-out z-10 ${focusedColumn ? 'opacity-0 pointer-events-none' : 'opacity-100'} ${productionStage < 1 ? 'opacity-30 grayscale pointer-events-none blur-[2px]' : ''}`}>
         <div className={col2HeaderClasses}>
            <div className="flex items-center gap-4">
              <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.7)]" />
              <div>
-               <h2 className="text-xl font-bold text-white tracking-tight uppercase italic">Theatrical Hook</h2>
+               <h2 className="text-xl font-bold text-white tracking-tight uppercase italic">Act 2: Director's Notepad</h2>
              </div>
            </div>
            {!isHookFocused && (
-             <button onClick={() => setFocusedColumn('hook')} className="p-2 rounded-lg hover:bg-white/5 text-white/20 hover:text-amber-400 transition-all border border-transparent hover:border-amber-500/20">
+             <button onClick={() => handleToggleColumn('hook')} className={`p-2 rounded-lg transition-all border ${productionStage === 1 && !focusedColumn ? 'text-amber-400 border-amber-500/50 hover:bg-amber-500/10 animate-pulse shadow-[0_0_15px_rgba(251,191,36,0.4)]' : 'text-white/20 hover:text-amber-400 hover:bg-white/5 border-transparent hover:border-amber-500/20'}`}>
                <Maximize2 className="w-4 h-4" />
              </button>
            )}
@@ -725,7 +1035,13 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
                              {isPolishingDesc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
                           </button>
                         </TooltipTrigger>
-                        <TooltipContent className="bg-slate-950 border-white/10 text-white text-[10px] font-bold uppercase tracking-widest">AI Polish (Hook)</TooltipContent>
+                        <TooltipContent className="bg-slate-950/95 backdrop-blur-xl border border-white/10 p-4 shadow-2xl rounded-2xl max-w-[240px] select-none">
+                          <div className="space-y-1.5">
+                            <p className="font-bold text-amber-400 text-[10px] uppercase tracking-widest">Cinema Logline</p>
+                            <p className="text-[10px] text-white/70 leading-relaxed font-medium">Public facing intro. <span className="text-emerald-400/80 font-bold">Displayed</span> in Cinema view.</p>
+                            <div className="pt-2 mt-1 border-t border-white/5 uppercase text-[8px] font-black text-white/30 tracking-[0.1em]">Use Case: Public Engagement</div>
+                          </div>
+                        </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </div>
@@ -765,6 +1081,18 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
               </div>
             </div>
           )}
+
+          {productionStage === 0 && setProductionStage && (
+            <div className="pt-6 border-t border-amber-500/20 mt-6">
+              <button 
+                onClick={() => setProductionStage(1)} 
+                className="w-full py-4 bg-amber-500 text-slate-950 font-black rounded-xl shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:bg-amber-400 transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-3"
+              >
+                <Film className="w-5 h-5" />
+                ADVANCE TO PRE-PRODUCTION
+              </button>
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -772,7 +1100,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
       <motion.div 
         layout
         layoutId="dramatic-showcase-panel"
-        className={`w-full xl:w-1/3 flex flex-col relative drop-shadow-xl transition-opacity duration-1000 ${focusedColumn ? 'opacity-20 pointer-events-none scale-95 blur-sm' : 'opacity-100 z-10'}`}
+        className={`w-full xl:w-1/3 flex flex-col relative drop-shadow-xl transition-opacity duration-1000 ${focusedColumn ? 'opacity-20 pointer-events-none scale-95 blur-sm' : 'opacity-100 z-10'} ${productionStage < 3 ? 'opacity-30 grayscale pointer-events-none blur-[2px]' : ''}`}
       >
         {/* Theatrical Showcase */}
         <div className="bg-black/20 p-6 rounded-2xl border border-white/10 backdrop-blur-sm shadow-xl">
@@ -783,7 +1111,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
                   <TooltipTrigger asChild>
                    <h3 className="text-sm font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent flex items-center gap-2 cursor-help">
                       <Film className="w-4 h-4 text-rose-400" />
-                      Dramatic Showcase
+                      Act 4: Showcase Settings
                     </h3>
                   </TooltipTrigger>
                   <TooltipContent className="bg-slate-900 border-white/10 text-white text-[10px] font-bold uppercase tracking-widest">
@@ -791,7 +1119,7 @@ export default function MemoryForm({ data, update }: MemoryFormProps) {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <button onClick={() => setFocusedColumn('showcase')} className="p-1.5 rounded-lg hover:bg-white/5 text-white/20 hover:text-rose-400 transition-all border border-transparent hover:border-rose-500/20">
+              <button onClick={() => handleToggleColumn('showcase')} className={`p-1.5 rounded-lg transition-all border ${productionStage === 3 && !focusedColumn ? 'text-rose-400 border-rose-500/50 hover:bg-rose-500/10 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.4)]' : 'text-white/20 hover:text-rose-400 hover:bg-white/5 border-transparent hover:border-rose-500/20'}`}>
                 <Maximize2 className="w-3.5 h-3.5" />
               </button>
             </div>
