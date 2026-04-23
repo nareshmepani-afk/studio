@@ -17,9 +17,10 @@ export function AuthenticatedPageWrapper({ children, theme = 'default' }: Authen
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const isGuestMode = searchParams.get('mode') === 'guest';
-  const hasSessionId = !!searchParams.get('sessionId');
+  
+  // Use window.location to avoid useSearchParams suspense boundaries crashing the router
+  const isGuestMode = typeof window !== 'undefined' ? window.location.search.includes('mode=guest') : false;
+  const hasSessionId = typeof window !== 'undefined' ? window.location.search.includes('sessionId=') : false;
 
   useEffect(() => {
     // GUEST BYPASS: If we are in guest mode with a session ID, don't redirect to login.
@@ -27,9 +28,9 @@ export function AuthenticatedPageWrapper({ children, theme = 'default' }: Authen
 
     if (!authLoading && !user && !isGuestBypass) {
       console.log(`[AuthenticatedPageWrapper] No user found at ${pathname}, redirecting to /login`);
-      router.push(`/login?reason=unauthenticated&from=${encodeURIComponent(pathname || '/')}`);
+      window.location.href = `/login?reason=unauthenticated&from=${encodeURIComponent(pathname || '/')}`;
     }
-  }, [user, authLoading, router, pathname, isGuestMode, hasSessionId]);
+  }, [user, authLoading, pathname, isGuestMode, hasSessionId]);
 
   // While we are checking (loading is true), show the splash screen
   if (authLoading) {
@@ -51,7 +52,7 @@ export function AuthenticatedPageWrapper({ children, theme = 'default' }: Authen
   // Success!
   return (
     <CinematicBackground theme={theme}>
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-[calc(100vh-64px)]">
         <main className="flex-1 animate-fade-in">
           {children}
         </main>

@@ -42,8 +42,8 @@ export default function PerspectiveWrapper({ activeRoom, children }: Perspective
   };
 
   return (
-    <CinematicBackground theme={cinematicTheme} className={themeClass}>
-      <div className="transition-colors duration-700 ease-in-out min-h-screen w-full text-[var(--room-text)]">
+    <CinematicBackground theme={cinematicTheme} className={themeClass} minFullHeight={false}>
+      <div className="transition-colors duration-700 ease-in-out min-h-full w-full text-[var(--room-text)]">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeRoom}

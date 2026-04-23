@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -85,6 +87,15 @@
   }
 }
 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
 @layer utilities {
   /* Cinematic Persona System Themes */
   .theme-host {
@@ -110,16 +121,83 @@
     --room-text: theme('colors.indigo.100');
     --room-accent: theme('colors.indigo.400');
   }
+
+  /* Cinematic Glows & Animations */
+  .glow-scribe {
+    box-shadow: 0 0 30px -5px rgba(56, 189, 248, 0.4),
+                0 0 60px -10px rgba(56, 189, 248, 0.2);
+    filter: brightness(1.1);
+  }
+
+  .glow-orator {
+    box-shadow: 0 0 40px rgba(245, 158, 11, 0.4);
+    filter: brightness(1.2);
+  }
+
+  /* Root Stability */
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* Cinema Styled Scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    transition: background 0.3s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Lock Body Utility */
+  .body-lock {
+    overflow: hidden !important;
+    height: 100% !important;
+    position: fixed;
+    width: 100%;
+  }
+
+  @keyframes protocol-pulse {
+    0%, 100% { opacity: 0.8; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.02); }
+  }
+
+  .pulse-protocol {
+    animation: protocol-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Scriptorium Mask: 15% Sweet Spot for Peripheral Context */
+  .scriptorium-fade {
+    mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      black 15%,
+      black 85%,
+      transparent
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent,
+      black 15%,
+      black 85%,
+      transparent
+    );
+  }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
 
 /* TipTap Editor Placeholder */
 .tiptap p.is-editor-empty:first-child::before {

@@ -63,7 +63,7 @@ export function Navbar() {
   // A "Guest" is anyone who hasn't activated or paid for a host/director pass.
   const hasDirectorPass = user?.role === 'Director' || 
                           user?.subscriptionStatus === 'trial' ||
-                          user?.subscriptionStatus === 'premium' ||
+                          user?.subscriptionStatus === 'active' ||
                           user?.directorPassStatus === 'free_host_pass_active' || 
                           user?.directorPassStatus === 'paid_host_pass_active';
   const isGuest = isAuthenticated && !hasDirectorPass;

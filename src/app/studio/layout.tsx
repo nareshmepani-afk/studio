@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { Suspense } from "react";
 import { Inter } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { StudioProviders } from "./StudioProviders";
@@ -9,8 +9,10 @@ const inter = Inter({ subsets: ["latin"] });
 
 export default function StudioLayout({
   children,
+  modal
 }: Readonly<{
   children: React.ReactNode;
+  modal: React.ReactNode;
 }>) {
   return (
     <StudioProviders>
@@ -27,6 +29,7 @@ export default function StudioLayout({
         
         <div className="relative z-10 flex flex-col min-h-screen">
           {children}
+          {modal}
         </div>
       </div>
     </StudioProviders>

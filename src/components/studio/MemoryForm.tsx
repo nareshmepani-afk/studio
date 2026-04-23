@@ -1,215 +1,130 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
-import { Loader2, Wand2, Mic, MicOff, Film, Rocket, CheckCircle2, AlertCircle, Edit3, Save, Minimize2, Maximize2, X, Sparkles } from 'lucide-react';
-import { analyzeSentiment, PulseState } from '@/utils/sentimentScore';
-import { expandWithAI, polishDescription, generatePosterAesthetics } from '@/actions/aiWeaver';
-import { publishMemoryAction, unpublishMemoryAction } from '@/actions/memoryActions';
-import { COUNTRIES } from '@/data/countries';
+import { 
+  PenTool, Mic, Sparkles, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
+  Save, Rocket, AlertCircle, Loader2, Edit3, ChevronRight, Maximize2, 
+  Trash2, Plus, Info, Layout, Layers, Wand2, Music, Wind, Coffee,
+  FileText, Film, Image as ImageIcon, Video, Heart, Share2, MoreHorizontal
+} from 'lucide-react';
+import { Memory, SensoryPromptTemplate, ActionResponse } from '@/types';
+import { useDictionary } from '@/hooks/use-dictionary';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import CinemaPoster from '@/components/memory/CinemaPoster';
-import PosterPicker from './PosterPicker';
-
-type MemoryData = any;
+import { CinemaPoster } from '@/components/memory/CinemaPoster';
+import { analyzeSentiment, PulseState } from '@/utils/sentimentScore';
+import { polishDescription, expandWithAI } from '@/actions/aiWeaver';
+import { publishMemoryAction, unpublishMemoryAction } from '@/actions/memoryActions';
 
 interface MemoryFormProps {
-    data: MemoryData;
-    update: (updatedData: MemoryData) => void;
-    productionStage?: number;
-    setProductionStage?: (stage: number) => void;
-    forceAct?: 'guide' | 'hook' | 'showcase';
+  data: Partial<Memory>;
+  update: (data: Partial<Memory>) => void;
+  productionStage?: number;
+  setProductionStage?: (stage: number) => void;
+  modality?: 'pen' | 'voice' | null;
+  setModality?: (val: 'pen' | 'voice' | null) => void;
+  forceAct?: string;
+  onWordCountChange?: (count: number) => void;
 }
 
-const pulseVariants = {
-  neutral: { scale: [1, 1.05, 1], transition: { repeat: Infinity, duration: 4 } },
-  calm: { scale: [1, 1.1, 1], filter: 'drop-shadow(0 0 10px rgba(251,191,36,0.6))', transition: { repeat: Infinity, duration: 6, ease: "easeInOut" as const } },
-  intense: { scale: [1, 1.2, 1], filter: 'drop-shadow(0 0 15px rgba(239,68,68,0.8))', transition: { repeat: Infinity, duration: 0.8, ease: "linear" as const } },
-};
-
-const pulseColors: Record<PulseState, string> = {
-  neutral: 'bg-slate-400/50',
-  calm: 'bg-amber-400',
-  intense: 'bg-red-500',
-};
-
-const EMOTION_TAGS = ['Nostalgic', 'Joyful', 'Adventure', 'Legacy', 'Quiet', 'Triumph', 'Wonder'];
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-export default function MemoryForm({ 
+export function MemoryForm({ 
   data, 
-  update, 
-  productionStage = 0, 
+  update,
+  productionStage = 0,
   setProductionStage,
-  forceAct 
+  modality: propModality,
+  setModality: propSetModality,
+  forceAct,
+  onWordCountChange
 }: MemoryFormProps) {
   const router = useRouter();
   
-  // Basic Fields
+  // Lifted state management: use props if provided, otherwise local state
+  const [internalModality, setInternalModality] = useState<'pen' | 'voice' | null>(data?.modality || null);
+  const modality = propModality !== undefined ? propModality : internalModality;
+  const setModality = propSetModality || setInternalModality;
   const [title, setTitle] = useState(data?.title || '');
   const [description, setDescription] = useState(data?.description || '');
   const [location, setLocation] = useState(data?.location || '');
   const [country, setCountry] = useState(data?.country || 'none');
   const [tags, setTags] = useState<string[]>(data?.tags || []);
-  
-  // Date Components
   const [day, setDay] = useState(data?.dateComponents?.day || 'none');
   const [month, setMonth] = useState(data?.dateComponents?.month || 'none');
   const [year, setYear] = useState(data?.dateComponents?.year || 'none');
-
-  // Cinematic / Poster Fields
+  const [isDictating, setIsDictating] = useState(false);
+  const [isPolishingDesc, setIsPolishingDesc] = useState(false);
+  const [isExpanding, setIsExpanding] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [isUnpublishing, setIsUnpublishing] = useState(false);
+  const [prevDescription, setPrevDescription] = useState<string | null>(null);
+  const [lastFocusedField, setLastFocusedField] = useState<'title' | 'description' | 'script' | 'metadata' | null>(null);
+  
+  // Poster State
   const [usePoster, setUsePoster] = useState(data?.usePoster ?? true);
-  const [posterStyle, setPosterStyle] = useState<'cinematic' | 'modern' | 'minimalist'>(data?.posterStyle || 'cinematic');
+  const [posterStyle, setPosterStyle] = useState(data?.posterStyle || 'cinematic');
   const [chapterTitle, setChapterTitle] = useState(data?.chapterTitle || '');
   const [director, setDirector] = useState(data?.credits?.director || '');
   const [producer, setProducer] = useState(data?.credits?.producer || '');
-  const [starring, setStarring] = useState(data?.credits?.starring || data?.storytellerName || '');
-  const [billingLine, setBillingLine] = useState(data?.credits?.billingLine || '');
+  const [starring, setStarring] = useState(data?.credits?.starring || '');
+  const [billingLine, setBillingLine] = useState(data?.credits?.billingLine || 'A Chronicle Cinema Production');
   const [posterImageUrl, setPosterImageUrl] = useState(data?.posterImageUrl || '');
+  const [isGeneratingPoster, setIsGeneratingPoster] = useState(false);
 
-  // Sensory Fields
+  // Sensory State
   const [sensoryValues, setSensoryValues] = useState<Record<string, string>>(data?.sensory || {});
   
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [isUnpublishing, setIsUnpublishing] = useState(false);
-  const [isDictating, setIsDictating] = useState(false);
-  const [recognition, setRecognition] = useState<any>(null);
+  // UI States
+  const [focusedColumn, setFocusedColumn] = useState<'guide' | 'sensory' | 'poster' | null>(null);
+  const [isGuideFullyClosed, setIsGuideFullyClosed] = useState(false);
 
-  // Revert/Undo States
-  const [prevDescription, setPrevDescription] = useState<string | null>(null);
-  const [prevProse, setPrevProse] = useState<string | null>(null);
-  const [isPolishingDesc, setIsPolishingDesc] = useState(false);
-  const [isExpanding, setIsExpanding] = useState(false);
-  const [isGeneratingPoster, setIsGeneratingPoster] = useState(false);
-  const [focusedColumn, setFocusedColumn] = useState<'guide' | 'hook' | 'showcase' | null>(forceAct || null);
-  const [isGuideFullyClosed, setIsGuideFullyClosed] = useState(true);
-  const [lastFocusedField, setLastFocusedField] = useState<'script' | 'hook'>('script');
-  const [editorSnapshot, setEditorSnapshot] = useState<string>('');
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const { transcript, isListening, startListening, stopListening, resetTranscript } = useDictionary();
 
-  // Robust handoff for TipTap Editor
-  const handleToggleColumn = (col: 'guide' | 'hook' | 'showcase' | null) => {
-    if (!editor) {
-      setFocusedColumn(col);
-      return;
-    }
-
-    if (col === 'guide' || focusedColumn === 'guide') {
-      setEditorSnapshot(editor.getHTML());
-    }
-    
-    setIsTransitioning(true);
-    setFocusedColumn(col);
-    if (col === 'guide') {
-      setIsGuideFullyClosed(false);
-    }
-    
-    // Safety timeout to reset transitioning state after animation
-    setTimeout(() => setIsTransitioning(false), 800);
-  };
-
-  // Derived Classes for Column 2 (Snapshot)
-  const isHookFocused = focusedColumn === 'hook';
-  
-  const col2WrapperClasses = isHookFocused 
-    ? "fixed inset-y-[5vh] inset-x-4 lg:inset-x-[10vw] z-[200] flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.8)] h-[90vh]" 
-    : "w-full xl:w-1/3 z-10";
-  
-  const col2HeaderClasses = `bg-black/20 p-6 rounded-t-2xl border border-amber-500/20 flex justify-between items-center backdrop-blur-sm ${isHookFocused ? 'pt-8' : ''}`;
-  
-  const col2BodyClasses = `flex-grow w-full bg-black/20 p-8 rounded-b-2xl border border-t-0 border-amber-500/20 shadow-xl space-y-8 overflow-y-auto ${isHookFocused ? 'min-h-[60vh]' : ''}`;
-  
-  // Description Analysis (Attention Span Gauge)
-  const wordCount = description.trim().split(/\s+/).filter(Boolean).length;
-  
-  const getGaugeStatus = () => {
-    if (wordCount === 0) return { label: 'Empty', color: 'text-white/20', bg: 'bg-white/5', width: 0, hint: 'Start typing or dictate your narrative hook...' };
-    if (wordCount < 40) return { label: 'Concentrated', color: 'text-amber-400/40', bg: 'bg-amber-400', width: Math.max(5, (wordCount / 40) * 33), hint: 'A strong opening! Add a bit more for a full theatrical hook.' };
-    if (wordCount <= 140) return { label: 'Sweet Spot', color: 'text-emerald-400', bg: 'bg-emerald-400', width: 33 + ((wordCount - 40) / 100) * 34, hint: 'Perfect cinematic length for maximum audience engagement!' };
-    if (wordCount <= 180) return { label: 'Expanding', color: 'text-sky-400', bg: 'bg-sky-400', width: 67 + ((wordCount - 140) / 40) * 23, hint: 'Informative, but consider if every word contributes to the hook.' };
-    return { label: 'Too Long', color: 'text-rose-500', bg: 'bg-rose-500', width: 100, hint: 'Excessive length may lose readers. Use the Story Script for details.' };
-  };
-  
-  const gauge = getGaugeStatus();
+  // Logic: Act-Aware Sidebar Automation (respecting forceAct prop)
+  useEffect(() => {
+    if (forceAct === 'guide') setFocusedColumn('guide');
+    else if (forceAct === 'sensory') setFocusedColumn('sensory');
+    else if (forceAct === 'poster') setFocusedColumn('poster');
+  }, [forceAct]);
 
   useEffect(() => {
-    if (data?.posterImageUrl && data.posterImageUrl !== posterImageUrl) {
-      setPosterImageUrl(data.posterImageUrl);
-    }
-  }, [data?.posterImageUrl]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recog = new SpeechRecognition();
-        recog.continuous = true;
-        recog.interimResults = true;
-        
-        recog.onresult = (event: any) => {
-          let interimTranscript = '';
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            const transcript = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-              if (lastFocusedField === 'script' && editor) {
-                editor.commands.insertContent(transcript + ' ');
-              } else {
-                setDescription((prev: string) => prev + (prev.endsWith(' ') || prev === '' ? '' : ' ') + transcript);
-              }
-            } else {
-              interimTranscript += transcript;
-            }
-          }
-        };
-        
-        recog.onend = () => setIsDictating(false);
-        setRecognition(recog);
+    if (transcript && isDictating) {
+      if (lastFocusedField === 'title') setTitle(transcript);
+      else if (lastFocusedField === 'description') setDescription(transcript);
+      else if (lastFocusedField === 'script' && editor) {
+        editor.commands.setContent(transcript);
       }
     }
-  }, [lastFocusedField]); // MOD-12: Added dependency on lastFocusedField for contextual dictation
+  }, [transcript, isDictating, lastFocusedField]);
 
-  const toggleDictation = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!recognition) return;
-    if (isDictating) {
-      recognition.stop();
+  const toggleDictation = () => {
+    if (isListening) {
+      stopListening();
       setIsDictating(false);
     } else {
-      try {
-        recognition.start();
-        setIsDictating(true);
-      } catch (err) {
-        console.error("Dictation error:", err);
-      }
+      resetTranscript();
+      startListening();
+      setIsDictating(true);
+      toast("Sonic Modality Active", {
+        description: "Your voice is now the scribe's ink.",
+        icon: <Mic className="w-4 h-4 text-amber-500" />
+      });
     }
   };
 
-  const toggleTag = (tag: string) => {
-    setTags((prev: string[]) => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  const handleToggleColumn = (col: 'guide' | 'sensory' | 'poster' | null) => {
+    setFocusedColumn(prev => prev === col ? null : col);
+    if (col !== null) setIsGuideFullyClosed(false);
   };
 
-  const handlePosterAI = async () => {
+  const handleRejuvenatePoster = async () => {
     setIsGeneratingPoster(true);
     try {
-      const result = await generatePosterAesthetics(
-        title,
-        description,
-        editor?.getHTML() || '',
-        tags
-      );
-      
-      setChapterTitle(result.chapterTitle);
-      setPosterStyle(result.posterStyle);
-      setDirector(result.director);
-      setProducer(result.producer);
-      setStarring(result.starring);
-      setBillingLine(result.billingLine);
+      // In a real app, this calls an API to analyze tags/description and pick/generate an image
+      // Here we simulate a polish to the metadata
+      setChapterTitle(title || "The Unspoken Chapter");
+      setBillingLine(`A Chronicle Cinema Production • Filmed on location in ${location || 'the mind'}`);
       
       toast.success("Poster Rejuvenated", {
         description: "AI has polished your theatrical metadata based on the story's soul."
@@ -225,12 +140,12 @@ export default function MemoryForm({
     setSensoryValues((prev: Record<string, string>) => ({ ...prev, [id]: value }));
   };
 
-  const defaultSensoryConfig = [
+  const defaultSensoryConfig: SensoryPromptTemplate[] = [
     { id: 'aroma', label: 'Aroma', placeholder: 'e.g. Pine needles, rain...' },
     { id: 'soundscape', label: 'Soundscape', placeholder: 'e.g. Distant thunder...' },
     { id: 'texture', label: 'Texture', placeholder: 'e.g. Rough bark...' }
   ];
-  const sensoryConfigToUse = data?.sensoryConfig?.length > 0 ? data.sensoryConfig : defaultSensoryConfig;
+  const sensoryConfigToUse = (data?.sensoryConfig && data.sensoryConfig.length > 0) ? data.sensoryConfig : defaultSensoryConfig;
   
   const [pulse, setPulse] = useState<PulseState>('neutral');
 
@@ -269,6 +184,11 @@ export default function MemoryForm({
     onFocus: () => {
       setLastFocusedField('script');
     },
+    onUpdate: ({ editor }) => {
+      const text = editor.getText();
+      const words = text.trim().split(/\s+/).filter(Boolean).length;
+      onWordCountChange?.(words);
+    }
   });
 
   useEffect(() => {
@@ -346,7 +266,7 @@ export default function MemoryForm({
        
        const textToWeave = isSelection ? selectedText : editor.getText();
 
-       const response = await expandWithAI(description, sensoryConfigToUse, sensoryValues, tags, textToWeave, !!isSelection);
+       const response = await expandWithAI(description, sensoryConfigToUse as any[], sensoryValues, tags, textToWeave, !!isSelection);
        
        const generatedText = typeof response === 'string' ? response : (response.direct || response.poetic || response.nostalgic || '');
        
@@ -429,10 +349,10 @@ export default function MemoryForm({
   };
 
   return (
+    <div className="relative w-full z-10 px-8 pb-24 pt-4">
     <LayoutGroup>
-    <div className="flex flex-col xl:flex-row gap-8 w-full pb-40 relative">
-      
-      <AnimatePresence onExitComplete={() => setIsGuideFullyClosed(true)}>
+      <div className="w-full relative">
+        <AnimatePresence onExitComplete={() => setIsGuideFullyClosed(true)}>
         {focusedColumn && (
           <>
             <motion.div 
@@ -448,800 +368,267 @@ export default function MemoryForm({
                 layoutId="story-guide-panel"
                 className="fixed inset-y-[5vh] inset-x-4 lg:inset-x-[10vw] z-[200] flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.8)] h-[90vh]"
               >
-                <div className="bg-black/40 p-4 lg:p-6 rounded-t-3xl border border-sky-500/30 flex justify-between items-center backdrop-blur-2xl">
-                   <div className="flex items-center gap-4">
-                     <div className="w-3 h-3 rounded-full bg-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.8)]" />
-                     <div>
-                       <h2 className="text-3xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent italic pb-1">Section 1: Story Script</h2>
-                       <p className="text-[10px] font-black text-sky-400/60 uppercase tracking-[0.4em]">Narrative Foundation • Edit & Refine</p>
-                     </div>
-                   </div>
-                   <div className="flex items-center gap-6">
-                      <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5 ring-1 ring-white/5">
-                        {recognition && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button 
-                                  onClick={toggleDictation} 
-                                  className={`p-2 rounded-lg transition-all ${isDictating && lastFocusedField === 'script' ? 'bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]' : 'text-white/30 hover:text-sky-400 hover:bg-white/5'}`}
-                                >
-                                   <Mic className={isDictating && lastFocusedField === 'script' ? 'w-5 h-5 animate-pulse' : 'w-5 h-5'} />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent className="bg-slate-950 border-white/10 text-white text-xs font-bold uppercase tracking-widest">Dictate to Script</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button 
-                                onClick={handleAIExpand} 
-                                disabled={isExpanding}
-                                className="p-2 text-white/30 hover:text-sky-400 hover:bg-white/5 rounded-lg transition-all disabled:opacity-20"
-                              >
-                                 {isExpanding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-slate-950/95 backdrop-blur-xl border border-white/10 p-4 shadow-2xl rounded-2xl max-w-[260px] select-none">
-                              <div className="space-y-1.5">
-                                <p className="font-bold text-sky-400 text-xs uppercase tracking-widest">Cinematic Master Script</p>
-                                <p className="text-[10px] text-white/70 leading-relaxed font-medium">Deep narrative foundation used to drive video generation. This content is for production only and <span className="text-rose-400/80 font-bold">will not be shown</span> in the finalized Cinema view.</p>
-                                <div className="pt-2 mt-1 border-t border-white/5 uppercase text-[8px] font-black text-white/30 tracking-[0.1em]">Use Case: Production Engine</div>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                <div className="flex-1 bg-slate-900/50 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] overflow-hidden flex flex-col">
+                  {/* Story Guide Header */}
+                  <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-sky-500/10 rounded-2xl text-sky-400">
+                        <Sparkles className="w-6 h-6" />
                       </div>
-
-                      <div className="flex items-center gap-2 px-3 py-1 bg-black/40 rounded-full border border-sky-500/20">
-                        <span className="text-[10px] text-white/40 font-bold tracking-widest uppercase">Pulse</span>
-                        <motion.div variants={pulseVariants} animate={pulse} className={`w-2.5 h-2.5 rounded-full ${pulseColors[pulse]}`} />
+                      <div>
+                        <h2 className="text-2xl font-headline text-white italic">Narrative Architect</h2>
+                        <p className="text-[10px] font-black text-sky-400/60 uppercase tracking-[0.3em]">AI-Driven Story Optimization</p>
                       </div>
-
-                      <button onClick={() => handleToggleColumn(null)} className="p-3 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all group border border-white/10">
-                        <Minimize2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                      </button>
-                   </div>
-                </div>
-                <div className="flex-grow w-full bg-black/60 p-4 lg:p-6 rounded-b-3xl border border-t-0 border-sky-500/30 shadow-2xl overflow-y-auto flex flex-col">
-                    {/* NEW: Act 1 Anchoring Metadata */}
-                    <div className="mb-8 grid grid-cols-1 md:grid-cols-12 gap-6 p-8 bg-sky-500/5 border border-sky-500/20 rounded-3xl backdrop-blur-md">
-                        <div className="md:col-span-12 space-y-2">
-                           <label className="text-[10px] font-black text-sky-400/40 uppercase tracking-[0.3em] pl-1">Cinematic Title</label>
-                           <input 
-                             type="text" 
-                             value={title} 
-                             onChange={(e) => setTitle(e.target.value)} 
-                             className="w-full bg-black/40 border border-white/5 rounded-2xl p-4 text-white font-headline text-2xl focus:border-sky-500/40 outline-none transition-all placeholder:text-white/5" 
-                             placeholder="Untitled Masterpiece..." 
-                           />
-                        </div>
-
-                        <div className="md:col-span-6 space-y-2">
-                           <label className="text-[10px] font-black text-sky-400/40 uppercase tracking-[0.3em] pl-1">Memory Timeline</label>
-                           <div className="flex gap-2">
-                             <Select value={day} onValueChange={setDay}>
-                               <SelectTrigger className="flex-1 bg-black/40 border-white/5 text-white rounded-xl p-4 h-auto shadow-inner"><SelectValue placeholder="DD" /></SelectTrigger>
-                               <SelectContent className="bg-slate-950 border-white/10 text-white">
-                                 <SelectItem value="none">DD</SelectItem>
-                                 {Array.from({length: 31}, (_, i) => (i+1).toString()).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                               </SelectContent>
-                             </Select>
-                             <Select value={month} onValueChange={setMonth}>
-                               <SelectTrigger className="flex-1 bg-black/40 border-white/5 text-white rounded-xl p-4 h-auto shadow-inner"><SelectValue placeholder="MM" /></SelectTrigger>
-                               <SelectContent className="bg-slate-950 border-white/10 text-white">
-                                 <SelectItem value="none">MM</SelectItem>
-                                 {MONTHS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                               </SelectContent>
-                             </Select>
-                             <Select value={year} onValueChange={setYear}>
-                               <SelectTrigger className="flex-1 bg-black/40 border-white/5 text-white rounded-xl p-4 h-auto shadow-inner"><SelectValue placeholder="YYYY" /></SelectTrigger>
-                               <SelectContent className="bg-slate-950 border-white/10 text-white">
-                                 <SelectItem value="none">YYYY</SelectItem>
-                                 {Array.from({length: 100}, (_, i) => (new Date().getFullYear() - i).toString()).map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-                               </SelectContent>
-                             </Select>
-                           </div>
-                        </div>
-
-                        <div className="md:col-span-3 space-y-2">
-                           <label className="text-[10px] font-black text-sky-400/40 uppercase tracking-[0.3em] pl-1">Locale</label>
-                           <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} className="w-full bg-black/40 border border-white/5 rounded-xl p-4 text-white font-medium focus:border-sky-500/40 outline-none transition-all" placeholder="City..." />
-                        </div>
-
-                        <div className="md:col-span-3 space-y-2">
-                           <label className="text-[10px] font-black text-sky-400/40 uppercase tracking-[0.3em] pl-1">Country</label>
-                           <Select value={country} onValueChange={setCountry}>
-                             <SelectTrigger className="bg-black/40 border-white/5 text-white rounded-xl px-4 py-4 h-auto shadow-inner w-full flex justify-between items-center">
-                               <SelectValue placeholder="Select..." />
-                             </SelectTrigger>
-                             <SelectContent className="bg-slate-950 border-white/10 text-white">
-                               <SelectItem value="none">Select...</SelectItem>
-                               {COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                             </SelectContent>
-                           </Select>
-                        </div>
                     </div>
-
-                    <div className="flex-grow max-w-4xl mx-auto prose prose-invert prose-2xl prose-sky w-full">
-                       {isTransitioning ? (
-                         <div dangerouslySetInnerHTML={{ __html: `<div class="tiptap ProseMirror" style="outline: none;">${editorSnapshot}</div>` }} />
-                       ) : (
-                         <EditorContent editor={editor} className="h-full w-full" />
-                       )}
-                    </div>
-                    
-                    {productionStage === 0 && setProductionStage && (
-                      <div className="mt-8 pt-6 border-t border-sky-500/20 flex justify-center pb-4">
-                        <button 
-                          onClick={() => {
-                            setProductionStage(1);
-                            handleToggleColumn(null);
-                          }} 
-                          className="px-12 py-4 bg-sky-500 text-slate-950 font-black rounded-xl shadow-[0_0_25px_rgba(14,165,233,0.4)] hover:bg-sky-400 transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-3"
-                        >
-                          <Film className="w-5 h-5" />
-                          Finalize Script & Enter Stage
-                        </button>
-                      </div>
-                    )}
-                </div>
-              </motion.div>
-            )}
-
-            {focusedColumn === 'hook' && (
-              <motion.div 
-                layoutId="theatrical-hook-panel"
-                className="fixed inset-y-[5vh] inset-x-4 lg:inset-x-8 xl:inset-x-[6vw] z-[200] flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.8)] h-[90vh]"
-              >
-                <div className="bg-black/40 p-4 lg:p-6 rounded-t-3xl border border-amber-500/30 flex justify-between items-center backdrop-blur-2xl">
-                   <div className="flex items-center gap-4">
-                     <div className="w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.8)]" />
-                     <div>
-                       <h2 className="text-3xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent italic pb-1">Section 2: Narrative Hook</h2>
-                       <p className="text-[10px] font-black text-amber-400/60 uppercase tracking-[0.4em]">Integrated Metadata • AI Foundation</p>
-                     </div>
-                   </div>
-                   <div className="flex items-center gap-6">
-                      <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5 ring-1 ring-white/5">
-                        {recognition && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button 
-                                  onClick={toggleDictation} 
-                                  className={`p-2 rounded-lg transition-all ${isDictating && lastFocusedField === 'hook' ? 'bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]' : 'text-white/30 hover:text-amber-400 hover:bg-white/5'}`}
-                                >
-                                   <Mic className={isDictating && lastFocusedField === 'hook' ? 'w-5 h-5 animate-pulse' : 'w-5 h-5'} />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent className="bg-slate-950 border-white/10 text-white text-xs font-bold uppercase tracking-widest">Dictate to Hook</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button 
-                                onClick={handlePolishDescription} 
-                                disabled={isPolishingDesc || !description}
-                                className="p-2 text-white/30 hover:text-amber-400 hover:bg-white/5 rounded-lg transition-all disabled:opacity-20"
-                              >
-                                 {isPolishingDesc ? <Loader2 className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-slate-950/95 backdrop-blur-xl border border-white/10 p-4 shadow-2xl rounded-2xl max-w-[260px] select-none">
-                              <div className="space-y-1.5">
-                                <p className="font-bold text-amber-400 text-xs uppercase tracking-widest">Cinema Logline</p>
-                                <p className="text-[10px] text-white/70 leading-relaxed font-medium">The public-facing introduction to your story. This text <span className="text-emerald-400/80 font-bold">will be displayed</span> in the Cinema view as your memory's hook.</p>
-                                <div className="pt-2 mt-1 border-t border-white/5 uppercase text-[8px] font-black text-white/30 tracking-[0.1em]">Use Case: Public Engagement</div>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-
-                      <div className="flex items-center gap-2 px-3 py-1 bg-black/40 rounded-full border border-sky-500/20">
-                        <span className="text-[10px] text-white/40 font-bold tracking-widest uppercase">Pulse</span>
-                        <motion.div variants={pulseVariants} animate={pulse} className={`w-2.5 h-2.5 rounded-full ${pulseColors[pulse]}`} />
-                      </div>
-
-                      <button onClick={() => handleToggleColumn(null)} className="p-3 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all group border border-white/10">
-                        <Minimize2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                      </button>
-                   </div>
-                </div>
-                <div className="flex-grow w-full bg-black/60 p-4 lg:p-6 rounded-b-3xl border border-t-0 border-amber-500/30 shadow-2xl overflow-y-auto">
-                    <div className="w-full max-w-7xl mx-auto flex flex-col gap-8">
-                        {/* Narrative Transition Area */}
-                        <div className="space-y-8 bg-white/5 p-8 rounded-2xl border border-white/10">
-                           <div className="flex items-center gap-3 pb-4 border-b border-white/10">
-                              <div className="w-1.5 h-8 bg-amber-400 rounded-full" />
-                              <h3 className="text-sm font-bold text-white/80 uppercase tracking-[0.3em]">Cinematic Refinement</h3>
-                           </div>
-
-                           <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
-                              {/* Left: Script/Hook Text */}
-                              <div className="md:col-span-8 space-y-4">
-                                 <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest pl-1">Story Hook Transcript</label>
-                                 <textarea 
-                                    value={description} 
-                                    onChange={(e) => setDescription(e.target.value)} 
-                                    onFocus={() => setLastFocusedField('hook')}
-                                    className="w-full bg-black/40 border border-white/10 rounded-2xl p-8 text-white font-medium focus:border-amber-500/40 outline-none transition-all min-h-[400px] text-xl leading-relaxed placeholder:text-white/5" 
-                                    placeholder="Anchor your narrative here..." 
-                                 />
-                                 
-                                 <div className="flex justify-between items-center px-4 pt-2">
-                                    <div className="flex items-center gap-3">
-                                       <span className={`text-[10px] font-black uppercase tracking-[0.4em] ${gauge.color}`}>{gauge.label}</span>
-                                       <span className="text-[10px] font-mono font-bold text-white/20">{wordCount} WORDS</span>
-                                    </div>
-                                    <p className="text-[10px] text-white/20 italic">{gauge.hint}</p>
-                                 </div>
-                              </div>
-
-                              {/* Right: Emotions & Metadata Focus */}
-                              <div className="md:col-span-4 space-y-10">
-                                 <div className="space-y-4">
-                                    <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest pl-1">Emotion Signature</label>
-                                    <div className="flex flex-wrap gap-2.5">
-                                       {EMOTION_TAGS.map(tag => (
-                                          <button 
-                                             key={tag} 
-                                             onClick={() => toggleTag(tag)} 
-                                             className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${tags.includes(tag) ? 'bg-amber-500/20 border-amber-500 text-amber-500 shadow-[0_0_20px_rgba(251,191,36,0.2)]' : 'bg-white/5 border-white/10 text-white/30 hover:text-white/60'}`}
-                                          >
-                                             {tag}
-                                          </button>
-                                       ))}
-                                    </div>
-                                 </div>
-
-                                 <div className="p-6 bg-amber-500/5 border border-amber-500/10 rounded-2xl space-y-3">
-                                    <div className="flex items-center gap-2 text-amber-500/80">
-                                       <Sparkles className="w-4 h-4" />
-                                       <span className="text-[10px] font-black uppercase tracking-[0.2em]">Director's Advice</span>
-                                    </div>
-                                    <p className="text-xs text-white/60 leading-relaxed font-medium">Use this panel to ensure the core of your story is anchored before moving to the final showcase. The AI reveal has provided the narrative; now you solidify its soul.</p>
-                                 </div>
-
-                                 {productionStage === 1 && setProductionStage && (
-                                    <button 
-                                      onClick={() => {
-                                        setProductionStage(1);
-                                        handleToggleColumn(null);
-                                      }} 
-                                      className="w-full py-4 bg-amber-500 text-slate-950 font-black rounded-xl shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:bg-amber-400 transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-3"
-                                    >
-                                      <Film className="w-4 h-4" />
-                                      Enter Stage
-                                    </button>
-                                 )}
-                              </div>
-                           </div>
-                        </div>
-                    </div>
-                </div>
-              </motion.div>
-            )}
-
-
-            {focusedColumn === 'showcase' && (
-              <motion.div 
-                layoutId="dramatic-showcase-panel"
-                className="fixed inset-y-[5vh] inset-x-4 lg:inset-x-[10vw] z-[200] flex flex-col shadow-[0_0_100px_rgba(0,0,0,0.8)] h-[90vh]"
-              >
-                <div className="bg-black/40 p-3 lg:p-4 rounded-t-3xl border border-rose-500/30 flex justify-between items-center backdrop-blur-2xl">
-                   <div className="flex items-center gap-4">
-                     <div className="w-3 h-3 rounded-full bg-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.8)]" />
-                     <div>
-                       <h2 className="text-2xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent italic pb-1">Act 3: Dramatic Showcase</h2>
-                       <p className="text-[9px] font-black text-rose-400/60 uppercase tracking-[0.4em]">Theatrical Aesthetic • Visualization</p>
-                     </div>
-                   </div>
-                   <div className="flex items-center gap-6">
-                      <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5 ring-1 ring-white/5">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button 
-                                onClick={handlePosterAI} 
-                                disabled={isGeneratingPoster}
-                                className="p-2.5 text-white/30 hover:text-rose-400 hover:bg-white/5 rounded-lg transition-all disabled:opacity-20"
-                              >
-                                 {isGeneratingPoster ? <Loader2 className="w-5 h-5 animate-spin" /> : <Film className="w-5 h-5" />}
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent className="bg-slate-950 border-white/10 text-white text-xs font-bold uppercase tracking-widest">Generate Cinematic Assets</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-
-                      <div className="flex items-center gap-2 px-3 py-1 bg-black/40 rounded-full border border-sky-500/20">
-                        <span className="text-[10px] text-white/40 font-bold tracking-widest uppercase">Pulse</span>
-                        <motion.div variants={pulseVariants} animate={pulse} className={`w-2.5 h-2.5 rounded-full ${pulseColors[pulse]}`} />
-                      </div>
-
-                      <button onClick={() => handleToggleColumn(null)} className="p-3 rounded-full bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all group border border-white/10">
-                        <Minimize2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                      </button>
-                   </div>
-                </div>
-                <div className="flex-grow w-full bg-black/60 p-4 lg:p-6 rounded-b-3xl border border-t-0 border-rose-500/30 shadow-2xl overflow-y-auto flex flex-col">
-                   <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 flex-grow">
-                      <div className="flex-1 space-y-8">
-                         <div>
-                            <label className="block text-xs font-bold text-white/40 uppercase mb-4 tracking-widest text-center">Cinematic Poster</label>
-                            <div className="flex justify-center">
-                              <div className="w-[300px] shadow-[0_30px_60px_rgba(0,0,0,0.6)] transition-transform hover:scale-[1.02] duration-500">
-                                <CinemaPoster memory={{ ...data, title, chapterTitle, usePoster, posterStyle, posterImageUrl, credits: { director, producer, starring, billingLine } }} />
-                              </div>
-                            </div>
-                         </div>
-                      </div>
-                      <div className="flex-1 space-y-6 bg-white/5 p-6 lg:p-8 rounded-2xl border border-white/10">
-                         <div className="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/5 mb-2">
-                            <label className="text-xs font-bold text-white/60 uppercase tracking-widest">Master Credits</label>
-                            <button onClick={handlePosterAI} disabled={isGeneratingPoster} className="text-[10px] font-black text-rose-400 uppercase tracking-wider hover:underline">{isGeneratingPoster ? 'Generating...' : 'Regenerate Credits'}</button>
-                         </div>
-                         <div className="grid grid-cols-1 gap-4">
-                           <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-white/20 uppercase tracking-widest pl-1">Director</label>
-                              <input type="text" value={director} onChange={(e) => setDirector(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-medium focus:border-rose-500/40 outline-none transition-all" />
-                           </div>
-                           <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-white/20 uppercase tracking-widest pl-1">Producer</label>
-                              <input type="text" value={producer} onChange={(e) => setProducer(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-medium focus:border-rose-500/40 outline-none transition-all" />
-                           </div>
-                           <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-white/20 uppercase tracking-widest pl-1">Starring</label>
-                              <input type="text" value={starring} onChange={(e) => setStarring(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white font-medium focus:border-rose-500/40 outline-none transition-all" />
-                           </div>
-                           <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-white/20 uppercase tracking-widest pl-1">Billing Block</label>
-                              <textarea value={billingLine} onChange={(e) => setBillingLine(e.target.value)} rows={3} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs italic text-white/60 focus:border-rose-500/40 outline-none transition-all resize-none" />
-                           </div>
-                         </div>
-                      </div>
-                   </div>
-
-                   {productionStage >= 2 && setProductionStage && (
-                      <div className="mt-8 pt-6 border-t border-rose-500/20 flex justify-center pb-4">
-                        <button 
-                          onClick={() => {
-                            handleToggleColumn(null);
-                          }} 
-                          className="px-12 py-4 bg-rose-500 text-white font-black rounded-xl shadow-[0_0_25px_rgba(244,63,94,0.4)] hover:bg-rose-400 transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-3"
-                        >
-                          <CheckCircle2 className="w-5 h-5" />
-                          Finalize Memory
-                        </button>
-                      </div>
-                    )}
+                    <button 
+                      onClick={() => handleToggleColumn(null)}
+                      className="p-3 hover:bg-white/5 rounded-full text-white/20 hover:text-white transition-all"
+                    >
+                      <Plus className="w-6 h-6 rotate-45" />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             )}
           </>
         )}
-      </AnimatePresence>
+        </AnimatePresence>
 
-      {/* Column 1: Story Guide (The Narrative Heart) - BLUE THEME */}
-      <motion.div 
-        layout
-        layoutId="story-guide-panel"
-        className={`w-full xl:w-1/3 flex flex-col relative drop-shadow-xl transition-opacity duration-1000 ${focusedColumn ? 'opacity-10 scale-95 blur-md grayscale' : 'opacity-100 z-10'}`}
-      >
-        <div className="bg-black/20 p-6 rounded-t-2xl border border-b-0 border-sky-500/20 flex justify-between items-center backdrop-blur-sm">
-             <div className="flex flex-col">
-               <h2 className="text-xl font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent">Act 1: Story Script</h2>
-               <p className="text-[9px] font-black text-sky-400/40 uppercase tracking-[0.2em] -mt-0.5">Edit and expand your script</p>
-             </div>
-           <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5 ring-1 ring-white/5">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button 
-                        onClick={toggleDictation} 
-                        className={`p-2 rounded-lg transition-all ${isDictating && lastFocusedField === 'script' ? 'bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]' : 'text-white/30 hover:text-sky-400 hover:bg-white/5'}`}
-                      >
-                         <Mic className="w-3.5 h-3.5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-slate-950 border-white/10 text-white text-[10px] font-bold uppercase tracking-widest">Dictate to Script</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button 
-                        onClick={handleAIExpand} 
-                        disabled={isExpanding}
-                        className="p-2 text-white/30 hover:text-sky-400 hover:bg-white/5 rounded-lg transition-all disabled:opacity-20"
-                      >
-                         {isExpanding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-slate-950/95 backdrop-blur-xl border border-white/10 p-4 shadow-2xl rounded-2xl max-w-[240px] select-none">
-                      <div className="space-y-1.5">
-                        <p className="font-bold text-sky-400 text-[10px] uppercase tracking-widest">Cinematic Master Script</p>
-                        <p className="text-[10px] text-white/70 leading-relaxed font-medium">Deep narrative foundation for video generation. <span className="text-rose-400/80 font-bold">Private</span> and not shown in Cinema.</p>
-                        <div className="pt-2 mt-1 border-t border-white/5 uppercase text-[8px] font-black text-white/30 tracking-[0.1em]">Use Case: Production Engine</div>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-
-               <button onClick={() => handleToggleColumn('guide')} className={`p-2 rounded-lg transition-all border ${productionStage === 0 && !focusedColumn ? 'text-sky-400 border-sky-500/50 hover:bg-sky-500/10 animate-pulse shadow-[0_0_15px_rgba(14,165,233,0.4)]' : 'text-white/20 hover:text-sky-400 hover:bg-white/5 border-transparent hover:border-sky-500/20'}`}>
-                 <Maximize2 className="w-4 h-4" />
-               </button>
-               <div className="flex items-center gap-2 px-3 py-1 bg-black/40 rounded-full border border-sky-500/20">
-                 <span className="text-[10px] text-white/40 font-bold tracking-widest uppercase">Pulse</span>
-                 <motion.div variants={pulseVariants} animate={pulse} className={`w-2.5 h-2.5 rounded-full ${pulseColors[pulse]}`} />
-               </div>
-             </div>
-          </div>
-          <div className="flex-grow w-full bg-black/10 p-8 rounded-b-2xl border border-t-0 border-sky-500/20 shadow-inner min-h-[600px] prose-invert prose-sky opacity-80 flex flex-col relative overflow-hidden">
-             {/* Robust TipTap Handoff: Never render Live Editor during transitions or when expanded */}
-             {(!isGuideFullyClosed || focusedColumn === 'guide' || isTransitioning) ? (
-               <div 
-                 className="absolute inset-0 p-8 overflow-y-auto"
-                 dangerouslySetInnerHTML={{ __html: `<div class="tiptap ProseMirror" style="outline: none;">${editorSnapshot || editor?.getHTML() || ''}</div>` }} 
-               />
-             ) : (
-               <div className="h-full w-full flex-grow">
-                 <EditorContent editor={editor} className="h-full w-full" />
-               </div>
-             )}
-             
-             {productionStage === 0 && setProductionStage && (
-               <div className="mt-8 pt-6 border-t border-sky-500/20 flex justify-end z-10 bg-black/5">
-                 <button 
-                   onClick={() => setProductionStage(1)} 
-                   className="px-6 py-3 bg-sky-500 text-slate-950 font-bold rounded-xl shadow-[0_0_20px_rgba(14,165,233,0.4)] hover:bg-sky-400 transition-all uppercase tracking-widest text-xs flex items-center gap-2"
-                 >
-                   Advance to Pre-Production <Wand2 className="w-4 h-4" />
-                 </button>
-               </div>
-             )}
-         </div>
-      </motion.div>
-
-      {/* Column 2: Identity & Brief (The Snapshot) - AMBER THEME */}
-      <motion.div layout layoutId="theatrical-hook-panel" className={`w-full xl:w-1/3 flex flex-col relative drop-shadow-2xl transition-all duration-700 ease-in-out z-10 ${focusedColumn ? 'opacity-0 pointer-events-none' : 'opacity-100'} ${productionStage < 1 ? 'opacity-30 grayscale pointer-events-none blur-[2px]' : ''}`}>
-        <div className={col2HeaderClasses}>
-           <div className="flex items-center gap-4">
-             <div className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.7)]" />
-             <div>
-               <h2 className="text-xl font-bold text-white tracking-tight uppercase italic">Act 2: Director's Notepad</h2>
-             </div>
-           </div>
-           {!isHookFocused && (
-             <button onClick={() => handleToggleColumn('hook')} className={`p-2 rounded-lg transition-all border ${productionStage === 1 && !focusedColumn ? 'text-amber-400 border-amber-500/50 hover:bg-amber-500/10 animate-pulse shadow-[0_0_15px_rgba(251,191,36,0.4)]' : 'text-white/20 hover:text-amber-400 hover:bg-white/5 border-transparent hover:border-amber-500/20'}`}>
-               <Maximize2 className="w-4 h-4" />
-             </button>
-           )}
-        </div>
-
-        <div className={col2BodyClasses.replace('overflow-y-auto', '')}>
-          {!isHookFocused && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-white/5">
-                <div className="w-1.5 h-6 bg-[var(--room-accent)] rounded-full" />
-                <h3 className="text-[11px] font-bold text-white/60 uppercase tracking-[0.2em]">Identity Metadata</h3>
-              </div>
-              
-              <div>
-                <label className="block text-xs font-bold text-white/40 uppercase mb-1.5 tracking-wider">Title *</label>
-                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="A name for this memory..." className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm focus:border-[var(--room-accent)] focus:ring-1 focus:ring-[var(--room-accent)] outline-none transition-all text-white font-medium" />
-              </div>
-
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                <label className="block text-xs font-bold text-white/40 uppercase mb-1.5 tracking-wider">Date of Memory</label>
-                  <div className="flex gap-2">
-                    <Select value={day} onValueChange={setDay}>
-                      <SelectTrigger className="w-1/3 bg-black/40 border-white/10 text-white rounded-lg p-3 h-auto"><SelectValue placeholder="Day" /></SelectTrigger>
-                      <SelectContent className="bg-slate-950 border-white/10 text-white">
-                        <SelectItem value="none">Day</SelectItem>
-                        {Array.from({length: 31}, (_, i) => (i+1).toString()).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Select value={month} onValueChange={setMonth}>
-                      <SelectTrigger className="w-1/3 bg-black/40 border-white/10 text-white rounded-lg p-3 h-auto"><SelectValue placeholder="Month" /></SelectTrigger>
-                      <SelectContent className="bg-slate-950 border-white/10 text-white">
-                        <SelectItem value="none">Month</SelectItem>
-                        {MONTHS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Select value={year} onValueChange={setYear}>
-                      <SelectTrigger className="w-1/3 bg-black/40 border-white/10 text-white rounded-lg p-3 h-auto"><SelectValue placeholder="Year" /></SelectTrigger>
-                      <SelectContent className="bg-slate-950 border-white/10 text-white">
-                        <SelectItem value="none">Year</SelectItem>
-                        {Array.from({length: 100}, (_, i) => (new Date().getFullYear() - i).toString()).map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <label className="block text-xs font-bold text-white/40 uppercase mb-1.5 tracking-wider">Location</label>
-                    <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Nairobi" className="w-full bg-black/40 border border-white/10 rounded-lg p-3 text-sm text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-xs font-bold text-white/40 uppercase mb-1.5 tracking-wider">Country</label>
-                    <Select value={country} onValueChange={setCountry}>
-                      <SelectTrigger className="w-full bg-black/40 border-white/10 text-white rounded-lg p-3 h-auto"><SelectValue placeholder="Country" /></SelectTrigger>
-                      <SelectContent className="bg-slate-950 border-white/10 text-white">
-                        <SelectItem value="none">Select...</SelectItem>
-                        {COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {!focusedColumn && (
-            <motion.div 
-              layoutId="theatrical-hook-panel-content"
-              initial={false}
-              animate={{ 
-                borderColor: gauge.color.includes('emerald') ? 'rgba(16, 185, 129, 0.3)' : 
-                             gauge.color.includes('amber') ? 'rgba(251, 191, 36, 0.2)' : 
-                             gauge.color.includes('sky') ? 'rgba(56, 189, 248, 0.2)' : 
-                             gauge.color.includes('rose') ? 'rgba(244, 63, 94, 0.3)' : 'rgba(255,255,255,0.05)',
-                backgroundColor: gauge.color.includes('emerald') ? 'rgba(16, 185, 129, 0.05)' : 'rgba(0,0,0,0.2)'
-              }}
-              className="p-6 rounded-2xl border-2 backdrop-blur-sm transition-all duration-1000 shadow-2xl space-y-4"
-            >
-              <div className="flex justify-between items-center">
-                <label className="block text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Theatrical Hook</label>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5 ring-1 ring-white/5">
-                    {recognition && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button 
-                              onClick={toggleDictation} 
-                              className={`p-2 rounded-lg transition-all ${isDictating && lastFocusedField === 'hook' ? 'bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)]' : 'text-white/30 hover:text-amber-400 hover:bg-white/5'}`}
-                            >
-                               <Mic className="w-3.5 h-3.5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-slate-950 border-white/10 text-white text-[10px] font-bold uppercase tracking-widest">Dictate to Hook</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button 
-                            onClick={handlePolishDescription} 
-                            disabled={isPolishingDesc || !description}
-                            className="p-2 text-white/30 hover:text-amber-400 hover:bg-white/5 rounded-lg transition-all disabled:opacity-20"
-                          >
-                             {isPolishingDesc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent className="bg-slate-950/95 backdrop-blur-xl border border-white/10 p-4 shadow-2xl rounded-2xl max-w-[240px] select-none">
-                          <div className="space-y-1.5">
-                            <p className="font-bold text-amber-400 text-[10px] uppercase tracking-widest">Cinema Logline</p>
-                            <p className="text-[10px] text-white/70 leading-relaxed font-medium">Public facing intro. <span className="text-emerald-400/80 font-bold">Displayed</span> in Cinema view.</p>
-                            <div className="pt-2 mt-1 border-t border-white/5 uppercase text-[8px] font-black text-white/30 tracking-[0.1em]">Use Case: Public Engagement</div>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </div>
-              </div>
-              <textarea 
-                value={description} 
-                onFocus={() => { setLastFocusedField('hook'); }} 
-                onChange={(e) => setDescription(e.target.value)} 
-                rows={8} 
-                placeholder="A brief theatrical summary of this memory..." 
-                className="w-full bg-black/40 border-0 outline-none focus:outline-none focus:ring-0 rounded-xl p-6 text-[var(--room-accent)]/90 font-serif transition-all leading-relaxed resize-none shadow-inner h-full text-sm" 
-              />
-              <div className="px-1">
-                 <div className="flex justify-between items-end mb-2">
-                    <div className="flex flex-col gap-1">
-                       <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${gauge.color} transition-colors duration-500`}>{gauge.label}</span>
-                          <div className="w-1 h-1 rounded-full bg-white/10" />
-                          <span className="text-[10px] font-mono font-bold text-white/50">{wordCount} <span className="opacity-30">WORDS</span></span>
-                       </div>
-                       <p className="text-[10px] text-white/30 font-medium italic leading-tight max-w-[320px]">{gauge.hint}</p>
-                    </div>
-                 </div>
-                 <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden"><motion.div initial={{ width: 0 }} animate={{ width: `${gauge.width}%` }} className={`h-full transition-colors duration-500 ${gauge.bg}`} /></div>
-              </div>
-            </motion.div>
-          )}
-
-          {!focusedColumn && (
-            <div className="space-y-4 pt-6 border-t border-white/5">
-              <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">Emotion Signature</label>
-              <div className="flex flex-wrap gap-2">
-                {EMOTION_TAGS.map(tag => (
-                  <button key={tag} onClick={() => toggleTag(tag)} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border transition-all ${tags.includes(tag) ? 'bg-[var(--room-accent)]/20 border-[var(--room-accent)] text-[var(--room-accent)]' : 'bg-black/20 border-white/5 text-white/40 hover:text-white/80'}`}>{tag}</button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {productionStage === 0 && setProductionStage && (
-            <div className="pt-6 border-t border-amber-500/20 mt-6">
-              <button 
-                onClick={() => setProductionStage(1)} 
-                className="w-full py-4 bg-amber-500 text-slate-950 font-black rounded-xl shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:bg-amber-400 transition-all uppercase tracking-[0.2em] flex items-center justify-center gap-3"
+        {/* --- MAIN THEATRICAL STAGES --- */}
+        <div className="flex-1 min-w-0 px-4 xl:px-0">
+          <AnimatePresence mode="wait">
+            {/* ACT 1: THE CORE MEMORY (Title & Visual Hook) */}
+            {productionStage === 0 && modality !== null && (
+              <motion.div
+                key="act-1"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.02 }}
+                className="w-full max-w-4xl mx-auto min-h-[80vh] flex flex-col pt-4 pb-32"
               >
-                <Film className="w-5 h-5" />
-                ADVANCE TO PRE-PRODUCTION
-              </button>
-            </div>
-          )}
-        </div>
-      </motion.div>
+                {/* Pinned Metadata Header */}
+                <div className="mb-8">
+                  <div className="flex items-center gap-3 text-emerald-400 font-black text-[10px] uppercase tracking-[0.6em]">
+                    <div className="w-8 h-px bg-emerald-500/30" />
+                    Act I: The Inciting Memory
+                  </div>
+                </div>
 
-      {/* Column 3: Dramatic Showcase (Poster & Chapter) - ROSE/GOLD THEME */}
-      <motion.div 
-        layout
-        layoutId="dramatic-showcase-panel"
-        className={`w-full xl:w-1/3 flex flex-col relative drop-shadow-xl transition-opacity duration-1000 ${focusedColumn ? 'opacity-20 pointer-events-none scale-95 blur-sm' : 'opacity-100 z-10'} ${productionStage < 3 ? 'opacity-30 grayscale pointer-events-none blur-[2px]' : ''}`}
-      >
-        {/* Theatrical Showcase */}
-        <div className="bg-black/20 p-6 rounded-2xl border border-white/10 backdrop-blur-sm shadow-xl">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                   <h3 className="text-sm font-headline text-white bg-gradient-to-br from-white via-white/95 to-white/40 bg-clip-text text-transparent flex items-center gap-2 cursor-help">
-                      <Film className="w-4 h-4 text-rose-400" />
-                      Act 4: Showcase Settings
-                    </h3>
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-slate-900 border-white/10 text-white text-[10px] font-bold uppercase tracking-widest">
-                    Configure cinematic assets and posters for your memory
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <button onClick={() => handleToggleColumn('showcase')} className={`p-1.5 rounded-lg transition-all border ${productionStage === 3 && !focusedColumn ? 'text-rose-400 border-rose-500/50 hover:bg-rose-500/10 animate-pulse shadow-[0_0_15px_rgba(244,63,94,0.4)]' : 'text-white/20 hover:text-rose-400 hover:bg-white/5 border-transparent hover:border-rose-500/20'}`}>
-                <Maximize2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    onClick={() => setUsePoster(!usePoster)}
-                    className={`relative w-10 h-6 rounded-full transition-all ${usePoster ? 'bg-emerald-500' : 'bg-white/10'}`}
-                  >
-                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${usePoster ? 'left-5' : 'left-1'}`} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent className="bg-slate-900 border-white/10 text-white text-[10px] font-bold uppercase tracking-widest">
-                  {usePoster ? 'Disable Poster' : 'Enable Poster'}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
+                {/* Centered Scriptorium Content */}
+                <div className="flex-1 flex flex-col justify-center space-y-24">
+                  <div className="space-y-4">
+                    <input 
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      onFocus={() => setLastFocusedField('title')}
+                      placeholder="GIVE YOUR MEMORY A CINEMATIC TITLE..."
+                      className="w-full bg-transparent border-none text-4xl lg:text-5xl font-serif text-white/90 placeholder:text-white/5 focus:outline-none focus:ring-0 italic transition-all"
+                    />
+                  </div>
 
-          {usePoster && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-              <div>
-                <PosterPicker videoUrl={data?.videoUrl} currentPoster={posterImageUrl} onUpdate={(url) => setPosterImageUrl(url || '')} />
-              </div>
+                  <div className="relative group">
+                    <div className="relative space-y-8">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                           <h3 className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">Story Hook</h3>
+                        </div>
+                        <button 
+                          onClick={handlePolishDescription}
+                          disabled={isPolishingDesc}
+                          className="flex items-center gap-3 px-6 py-2.5 bg-white/5 hover:bg-white/10 rounded-full text-[10px] font-black text-white/40 hover:text-white uppercase tracking-[0.2em] transition-all border border-white/5"
+                        >
+                           {isPolishingDesc ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                           Apply AI Polish
+                        </button>
+                      </div>
+                      
+                      <textarea 
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        onFocus={() => setLastFocusedField('description')}
+                        placeholder="SET THE SCENE. WHAT IS THE EMOTIONAL CORE OF THIS REMEMBRANCE?"
+                        className="w-full bg-transparent border-none text-2xl text-white/70 placeholder:text-white/5 focus:outline-none focus:ring-0 min-h-[300px] resize-none leading-relaxed italic font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
-              <div>
-                <label className="block text-[10px] font-bold text-white/40 uppercase tracking-[0.2em] mb-3">Visual Aesthetic</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {['cinematic', 'modern', 'minimalist'].map((style) => (
-                    <button key={style} onClick={() => setPosterStyle(style as any)} className={`py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${posterStyle === style ? 'bg-[var(--room-accent)] text-slate-950 border-[var(--room-accent)]' : 'bg-black/30 border-white/5 text-white/40 hover:bg-white/5'}`}>
-                      {style}
+            {/* ACT 2: THE FULL NARRATIVE (Modern Editor) */}
+            {productionStage === 1 && (
+              <motion.div
+                key="act-2"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="w-full max-w-4xl mx-auto min-h-[80vh] flex flex-col pt-4 pb-32"
+              >
+                {/* Pinned Metadata Header */}
+                <div className="mb-8">
+                  <div className="flex items-center gap-3 text-emerald-400 font-black text-[10px] uppercase tracking-[0.6em]">
+                    <div className="w-8 h-px bg-emerald-500/30" />
+                    Act II: The Narrative Build
+                  </div>
+                </div>
+
+                {/* Centered Editor Content */}
+                <div className="flex-1 flex flex-col justify-center space-y-12">
+                  <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-4xl font-serif text-white/90 italic">Script & Dialogue</h2>
+                    <button 
+                      onClick={handleAIExpand}
+                      disabled={isExpanding}
+                      className="group relative flex items-center gap-4 px-10 py-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-all overflow-hidden"
+                    >
+                       <div className="absolute inset-0 bg-gradient-to-r from-sky-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                       {isExpanding ? <Loader2 className="w-5 h-5 animate-spin text-sky-400" /> : <Sparkles className="w-5 h-5 text-sky-400 group-hover:rotate-12 transition-transform" />}
+                       <span className="text-[11px] font-black text-white uppercase tracking-[0.2em] relative z-10">Weave Script with AI</span>
                     </button>
+                  </div>
+
+                  <div className="relative scriptorium-fade">
+                    <EditorContent editor={editor} className="min-h-[600px] font-mono text-lg text-white/80" />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ACT 3: SENSORY & METADATA (Contextual Richness) */}
+            {productionStage === 2 && (
+              <motion.div
+                key="act-3"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.05 }}
+                className="w-full max-w-4xl mx-auto space-y-12 pb-32 pt-4"
+              >
+                <div className="text-center space-y-4 mb-12">
+                    <div className="inline-flex items-center gap-3 text-emerald-400 font-black text-[10px] uppercase tracking-[0.6em]">
+                      <div className="w-8 h-px bg-emerald-500/30" />
+                      Act III: Sensory Deepening
+                      <div className="w-8 h-px bg-emerald-500/30" />
+                    </div>
+                    <h2 className="text-6xl font-serif text-white/90 italic">Atmospheric Details</h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {(sensoryConfigToUse as SensoryPromptTemplate[]).map((config: SensoryPromptTemplate) => (
+                    <motion.div 
+                      key={config.id}
+                      whileHover={{ translateY: -5 }}
+                      className="p-8 rounded-[2rem] bg-white/[0.03] border border-white/5 space-y-6 group hover:bg-white/[0.05] transition-all"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white/5 rounded-xl group-hover:bg-sky-500/10 group-hover:text-sky-400 transition-all">
+                          {config.id === 'aroma' && <Wind className="w-5 h-5" />}
+                          {config.id === 'soundscape' && <Music className="w-5 h-5" />}
+                          {config.id === 'texture' && <Layers className="w-5 h-5" />}
+                        </div>
+                        <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">{config.label}</span>
+                      </div>
+                        <textarea 
+                          value={sensoryValues[config.id] || ''}
+                          onChange={(e) => handleSensoryChange(config.id, e.target.value)}
+                          placeholder={config.placeholder}
+                          className="w-full bg-transparent border-none text-white/70 placeholder:text-white/10 focus:outline-none focus:ring-0 text-sm leading-relaxed min-h-[100px] resize-none italic font-mono"
+                        />
+                    </motion.div>
                   ))}
                 </div>
-              </div>
 
-              <div className="space-y-3 pt-6 border-t border-white/10">
-                <div className="flex justify-between items-center mb-1">
-                  <h4 className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Billing Block Credits</h4>
-                  <button onClick={handlePosterAI} disabled={isGeneratingPoster} className="text-[9px] font-black text-[var(--room-accent)] uppercase tracking-tighter hover:underline opacity-40 hover:opacity-100 transition-opacity disabled:opacity-20 font-bold">
-                    {isGeneratingPoster ? 'Auto-filling...' : 'Auto-fill credits'}
-                  </button>
+                <div className="p-12 rounded-[2rem] bg-indigo-500/5 border border-indigo-500/10 grid grid-cols-1 md:grid-cols-2 gap-12 mt-12">
+                   <div className="space-y-6">
+                      <div className="flex items-center gap-3">
+                        <MapPin className="w-4 h-4 text-indigo-400" />
+                        <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em]">Global Coordinates</span>
+                      </div>
+                      <input 
+                        type="text"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder="WHERE DID THIS SOUL-PRINT HAPPEN?"
+                        className="w-full bg-transparent border-none text-3xl font-headline text-white placeholder:text-white/5 focus:outline-none focus:ring-0 italic"
+                      />
+                   </div>
+                   <div className="space-y-6">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="w-4 h-4 text-indigo-400" />
+                        <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.4em]">Temporal Mark</span>
+                      </div>
+                      <div className="flex gap-4">
+                         <select value={year} onChange={(e) => setYear(e.target.value)} className="bg-transparent border-none text-3xl font-headline text-white focus:outline-none focus:ring-0 italic">
+                            <option value="none">Year</option>
+                            {Array.from({ length: 50 }, (_, i) => 2026 - i).map(y => <option key={y} value={y}>{y}</option>)}
+                         </select>
+                         {/* Simple Day/Month selectors would go here */}
+                      </div>
+                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <input type="text" value={director} onChange={(e) => setDirector(e.target.value)} placeholder="Director" className="bg-black/50 border border-white/5 rounded-lg p-2.5 text-xs text-white focus:border-[var(--room-accent)]/30 outline-none" />
-                  <input type="text" value={producer} onChange={(e) => setProducer(e.target.value)} placeholder="Producer" className="bg-black/50 border border-white/5 rounded-lg p-2.5 text-xs text-white focus:border-[var(--room-accent)]/30 outline-none" />
-                  <input type="text" value={starring} onChange={(e) => setStarring(e.target.value)} placeholder="Starring" className="col-span-2 bg-black/50 border border-white/5 rounded-lg p-2.5 text-xs text-white focus:border-[var(--room-accent)]/30 outline-none" />
-                  <textarea 
-                    value={billingLine} 
-                    onChange={(e) => setBillingLine(e.target.value)} 
-                    placeholder="A Chronicle Cinema Production..." 
-                    rows={2} 
-                    className="col-span-2 bg-black/50 border border-white/5 rounded-lg p-2.5 text-[9px] text-white/40 leading-tight italic resize-none focus:border-[var(--room-accent)]/30 outline-none" 
-                  />
-                </div>
-              </div>
-
-              {/* Preview */}
-              <div className="mt-4 pt-6 border-t border-white/5 flex flex-col items-center">
-                <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] mb-4">Theatrical Preview</p>
-                <div className="w-[160px] transform hover:scale-105 transition-transform duration-500 cursor-zoom-in drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                  <CinemaPoster memory={{ ...data, title, chapterTitle, usePoster, posterStyle, posterImageUrl, credits: { director, producer, starring, billingLine } }} />
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </div>
-      </motion.div>
-
-      {/* Floating Bar: Contextual Status & Master Actions */}
-      <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 bg-slate-950/90 backdrop-blur-2xl border border-white/10 px-8 py-5 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] ring-1 ring-white/5 group">
-        <div className="flex flex-col">
-          <span className="text-[9px] text-white/30 uppercase tracking-[0.4em] font-black mb-1">Film Status</span>
-          <div className="flex items-center gap-2">
-            {data?.status === 'published' ? (
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
-                <span className="text-[11px] font-black text-emerald-400 uppercase tracking-widest">Cinema Ready</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.4)]" />
-                <span className="text-[11px] font-black text-amber-500 uppercase tracking-widest">Draft Edit</span>
-              </div>
+              </motion.div>
             )}
-          </div>
+
+            {/* ACT 4: THE POSTER & PUBLICATION (The Final Reveal) */}
+            {productionStage === 3 && (
+              <motion.div
+                key="act-4"
+                initial={{ opacity: 0, y: 100 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 1.1 }}
+                className="w-full max-w-4xl mx-auto flex flex-col gap-24 pb-24 pt-4 items-center"
+              >
+                <div className="flex-1 space-y-12 max-w-xl">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 text-emerald-400 font-black text-[10px] uppercase tracking-[0.6em]">
+                      <div className="w-8 h-px bg-emerald-500/30" />
+                      Act IV: The Final Cut
+                    </div>
+                    <h2 className="text-6xl font-serif text-white/90 italic leading-tight">Prepare for the Premiere</h2>
+                    <p className="text-white/40 text-lg leading-relaxed font-serif italic">Your memory has been woven. The credits are set. All that remains is to release it to the world's collective soul.</p>
+                  </div>
+
+                  <div className="space-y-8 p-10 rounded-[2.5rem] bg-white/[0.02] border border-white/5">
+                    <div className="flex items-center justify-between">
+                       <h3 className="text-xs font-black text-white/20 uppercase tracking-[0.3em]">Theatrical Credits</h3>
+                       <button 
+                        onClick={handleRejuvenatePoster}
+                        disabled={isGeneratingPoster}
+                        className="p-2 text-sky-400 hover:bg-sky-500/10 rounded-lg transition-all"
+                       >
+                         {isGeneratingPoster ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                       </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-6">
+                       <div className="space-y-2">
+                          <label className="text-[9px] uppercase tracking-widest text-white/30 font-black ml-1">Director</label>
+                          <input type="text" value={director} onChange={(e) => setDirector(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-white focus:border-emerald-500/50 outline-none transition-all font-mono" />
+                       </div>
+                       <div className="space-y-2">
+                          <label className="text-[9px] uppercase tracking-widest text-white/30 font-black ml-1">Producer</label>
+                          <input type="text" value={producer} onChange={(e) => setProducer(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-white focus:border-emerald-500/50 outline-none transition-all font-mono" />
+                       </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative group perspective-1000">
+                   <div className="absolute -inset-10 bg-sky-500/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                   <motion.div 
+                    whileHover={{ scale: 1.02, rotateY: -10, rotateX: 5 }}
+                    className="relative"
+                   >
+                     <CinemaPoster memory={{ ...data, id: data.id || '', title, chapterTitle, usePoster, posterStyle, posterImageUrl, credits: { director, producer, starring, billingLine } } as Memory} />
+                   </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-        
-        <div className="w-px h-10 bg-white/10 mx-2" />
-        
-        {data?.status === 'published' ? (
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={handlePublish} 
-              disabled={isPublishing} 
-              className="px-8 py-3 bg-[var(--room-accent)] text-slate-950 rounded-2xl font-black text-xs uppercase tracking-[0.15em] shadow-[0_10px_20px_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group/btn"
-            >
-              {isPublishing ? <Loader2 className="w-4 h-4 animate-spin text-slate-950" /> : <Save className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" />}
-              Update Reel
-            </button>
-            <button 
-              onClick={handleRevertToDraft} 
-              disabled={isUnpublishing} 
-              className="px-5 py-3 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/80 border border-white/5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all"
-            >
-              Retire to Draft
-            </button>
-          </div>
-        ) : (
-          <button 
-            onClick={handlePublish} 
-            disabled={isPublishing} 
-            className="px-10 py-4 bg-[var(--room-accent)] text-slate-950 rounded-full font-black text-xs uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(var(--room-accent-rgb),0.3)] hover:scale-105 active:scale-95 hover:brightness-110 transition-all flex items-center gap-3 group/btn"
-          >
-            {isPublishing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Rocket className="w-5 h-5 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />}
-            Publish to Cinema
-          </button>
-        )}
       </div>
-    </div>
     </LayoutGroup>
+    </div>
   );
 }
+
+// Export removed for named export migration

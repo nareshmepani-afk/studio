@@ -29,6 +29,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Prompt } from '@/types';
 import StudioChapterContent from '../studio/StudioChapterContent';
@@ -95,23 +96,26 @@ export function PromptCard(props: PromptCardProps) {
   } = props;
 
   const handleAction = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (props.isLoading) return;
+    if (props.isLoading) {
+      e.preventDefault();
+      return;
+    }
     if (!canAccess) {
+        e.preventDefault();
         router.push('/settings');
         return;
     }
-    // Clicking action button starts production, 
-    // but we'll also let clicking the INFO icon toggle the brief
-    onStartChapter(promptId, isCompleted);
+    // We let the Link handle the navigation now to fix the Next.js intercepting route bug
   };
 
   const toggleBrief = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     setIsBriefOpen(!isBriefOpen);
   };
   
   const handleFlagToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
     if (props.isLoading || !canAccess) return;
     e.stopPropagation();
     onToggleFlagPrompt(promptId);
@@ -134,11 +138,10 @@ export function PromptCard(props: PromptCardProps) {
 
   const mainButton = (
     <Button
-      onClick={handleAction}
       size="sm"
       variant={!canAccess ? "secondary" : isCompleted ? "outline" : "default"}
       className={cn(
-        "rounded-full px-4 h-9 font-bold tracking-tight transform active:scale-95 transition-all",
+        "rounded-full px-4 h-9 font-bold tracking-tight transform active:scale-95 transition-all relative z-10 pointer-events-none",
         isCompleted && "border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary shadow-xl transition-all duration-300"
       )}
       disabled={props.isLoading}
@@ -160,9 +163,16 @@ export function PromptCard(props: PromptCardProps) {
   );
 
   const cardContent = (
-      <div className={cardClasses} onClick={handleAction}>
+      <div className={cardClasses}>
+        {/* The Link Overlay for Intercepting Routes */}
+        <Link 
+          href={`/studio/production/${promptId}`}
+          onClick={handleAction}
+          className="absolute inset-0 z-0"
+          prefetch={true}
+        />
         {/* Film Frame Aesthetic Overlay */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-[repeating-linear-gradient(90deg,transparent,transparent_20px,rgba(255,255,255,0.05)_20px,rgba(255,255,255,0.05)_40px)]" />
+        <div className="absolute top-0 left-0 w-full h-1 bg-[repeating-linear-gradient(90deg,transparent,transparent_20px,rgba(255,255,255,0.05)_20px,rgba(255,255,255,0.05)_40px)] pointer-events-none z-0" />
         <div className="absolute bottom-0 left-0 w-full h-1 bg-[repeating-linear-gradient(90deg,transparent,transparent_20px,rgba(255,255,255,0.05)_20px,rgba(255,255,255,0.05)_40px)]" />
 
         <div className="flex flex-col h-full p-6">

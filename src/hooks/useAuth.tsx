@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (firebaseUser) {
-        // Silent Background Sync (Non-blocking)
+        // ... (existing firebase logic)
         firebaseUser.getIdToken().then(idToken => {
           createSessionAction(idToken).catch(err => 
             console.error("[useAuth] Background session sync failed:", err)
@@ -51,22 +51,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userProfileRef = doc(db, 'users', firebaseUser.uid);
         profileUnsubscribe = onSnapshot(userProfileRef, (doc) => {
           const userData = doc.exists() ? (doc.data() as UserAccount) : { isPremium: false };
-          
-          const fullUser = {
-            ...firebaseUser,
-            email: firebaseUser.email ?? "",
-            ...userData,
-          };
+          const fullUser = { ...firebaseUser, email: firebaseUser.email ?? "", ...userData };
           setUser(fullUser as CombinedUser);
           setLoading(false);
         }, (error) => {
-           console.error("[useAuth] Error fetching user profile:", error);
            setUser(firebaseUser as CombinedUser); 
            setLoading(false);
         });
       } else {
-        // Break the redirect loop: If no client session, ensure server session is also gone
-        deleteSessionAction().catch(err => console.error("[useAuth] Failed to clear session cookie:", err));
         setUser(null);
         setLoading(false);
       }

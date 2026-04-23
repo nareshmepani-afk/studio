@@ -14,7 +14,7 @@ interface CinemaPosterProps {
  * CinemaPoster Component
  * Renders a professional 2:3 vertical film poster for a memory.
  */
-const CinemaPoster = ({ memory, className = "" }: CinemaPosterProps) => {
+export function CinemaPoster({ memory, className = "" }: CinemaPosterProps) {
   const credits = memory.credits;
   
   // Determine the best source for the poster image
@@ -126,6 +126,6 @@ const CinemaPoster = ({ memory, className = "" }: CinemaPosterProps) => {
       <div className="absolute inset-0 border border-white/5 rounded-xl pointer-events-none group-hover:border-white/10 transition-colors" />
     </div>
   );
-};
+}
 
 export default CinemaPoster;

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import MemoryForm from './MemoryForm';
+import { MemoryForm } from './MemoryForm';
 import { 
   AlertDialog, 
   AlertDialogAction, 
@@ -26,12 +26,14 @@ import DirectorsNotepad from './DirectorsNotepad';
 import { generateDirectorsNotepad } from '@/actions/aiWeaver';
 import { BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft, Film as FilmIcon } from 'lucide-react';
 import CinemaStageSwitch from './CinemaStageSwitch';
-
-type MemoryData = any;
+import { Memory } from '@/types';
 
 interface RoomProps {
-    data: MemoryData;
-    update: (updatedData: MemoryData) => void;
+    data: Memory;
+    update: (updatedData: Memory) => void;
+    modality?: 'pen' | 'voice' | null;
+    setModality?: (val: 'pen' | 'voice' | null) => void;
+    onWordCountChange?: (count: number) => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -40,7 +42,7 @@ const formatTime = (seconds: number) => {
   return `${m}:${s}`;
 };
 
-export default function SoloStage({ data, update }: RoomProps) {
+export default function SoloStage({ data, update, modality, setModality, onWordCountChange }: RoomProps) {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
   const [trimRange, setTrimRange] = useState<[number, number]>([0, 100]);
@@ -60,6 +62,9 @@ export default function SoloStage({ data, update }: RoomProps) {
   // MOD-13: Sound Check State
   const [showSoundCheck, setShowSoundCheck] = useState(false);
   const [hasDoneMicFeedback, setHasDoneMicFeedback] = useState(false);
+  
+  // MOD-14: Cinematic Polish State
+  const [prompterSize, setPrompterSize] = useState<'sm' | 'md' | 'lg'>('md');
 
   // Cinematic Pipeline State (Shared via Firestore)
   const productionStage = data?.productionStage || 0;
@@ -358,86 +363,120 @@ export default function SoloStage({ data, update }: RoomProps) {
     });
   }, [update, isCameraActive, data?.cameraActive]);
 
-  // --- SUB-RENDERERS FOR 4-ACT JOURNEY ---
-
-  const renderScripting = () => (
-    <div className="max-w-7xl mx-auto w-full space-y-12 pb-20">
-      <div className="bg-slate-900/40 backdrop-blur-3xl border border-white/5 p-8 rounded-[2rem] shadow-2xl relative overflow-hidden group">
-         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-            <FilmIcon className="w-32 h-32" />
-         </div>
-         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
-            <div className="md:col-span-2">
-               <label className="block text-[10px] font-black text-rose-500 uppercase tracking-[0.3em] mb-3">Memory Title</label>
-               <input 
-                  type="text" 
-                  value={data?.title || ''} 
-                  onChange={(e) => update({ ...data, title: e.target.value })}
-                  placeholder="The Summer of '94..."
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-xl font-bold text-white placeholder:text-white/10 focus:border-rose-500/50 outline-none transition-all"
-               />
-            </div>
-            <div>
-               <label className="block text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-3">Date of Memory</label>
-               <input 
-                  type="text" 
-                  value={data?.dateOfMemory || ''} 
-                  onChange={(e) => update({ ...data, dateOfMemory: e.target.value })}
-                  placeholder="June 12, 1994"
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-white focus:border-rose-500/50 outline-none transition-all"
-               />
-            </div>
-            <div>
-               <label className="block text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-3">Country / Setting</label>
-               <input 
-                  type="text" 
-                  value={data?.country || ''} 
-                  onChange={(e) => update({ ...data, country: e.target.value })}
-                  placeholder="Bombay, India"
-                  className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-white focus:border-rose-500/50 outline-none transition-all"
-               />
-            </div>
-         </div>
-      </div>
-
+  // --- SUB-RENDERERS FOR 5-ACT JOURNEY ---
+  
+  const renderHook = () => (
+    <div className="max-w-5xl mx-auto w-full pb-20 transition-all duration-700">
       <MemoryForm 
         data={data} 
         update={shieldedUpdate} 
         productionStage={0} 
         setProductionStage={setProductionStage}
         forceAct="guide"
+        modality={modality}
+        setModality={setModality}
+        onWordCountChange={onWordCountChange}
+      />
+    </div>
+  );
+
+  const renderWeave = () => (
+    <div className="max-w-4xl mx-auto w-full pb-20 transition-all duration-1000">
+      <MemoryForm 
+        data={data} 
+        update={shieldedUpdate} 
+        productionStage={1} 
+        setProductionStage={setProductionStage}
+        forceAct="weave" // New Stage: Full Scripting
+        modality={modality}
+        setModality={setModality}
+        onWordCountChange={onWordCountChange}
       />
     </div>
   );
 
   const renderRecording = () => (
-    <div className="w-full h-full flex flex-col items-center justify-center relative pb-20">
-       <div className={`w-full max-w-6xl aspect-video relative bg-black border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden transition-all duration-1000 ${isRecording ? 'ring-8 ring-rose-500 shadow-[0_0_80px_rgba(244,63,94,0.4)]' : ''}`}>
+    <div className="w-full h-full flex flex-col items-center justify-center relative pb-24">
+       <div className={`w-full max-w-[90vw] xl:max-w-7xl aspect-video relative bg-black border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden transition-all duration-1000 ${isRecording ? 'ring-2 ring-rose-500/50 shadow-[0_0_120px_rgba(244,63,94,0.3)] scale-[1.01]' : 'shadow-2xl'}`}>
           <video 
             ref={videoRef}
             autoPlay 
             playsInline 
             muted
-            className="absolute inset-0 w-full h-full object-cover z-0"
+            className="absolute inset-0 w-full h-full object-cover z-0 grayscale-[0.2] contrast-[1.1]"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 z-10 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/40 z-10 pointer-events-none" />
           
-          {/* Static Talking Points Overlay */}
-          <div className="absolute top-8 right-8 z-30 w-80 bg-slate-950/80 backdrop-blur-2xl border border-white/10 p-6 rounded-3xl shadow-2xl group/points hover:scale-105 transition-transform duration-500">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-3.5 h-3.5 text-rose-400" />
-              <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Talking Points</span>
+          {/* Cinematic Teleprompter Overlay */}
+          <motion.div 
+            animate={{ 
+              width: prompterSize === 'sm' ? 320 : prompterSize === 'md' ? 480 : 720,
+              height: prompterSize === 'sm' ? 300 : prompterSize === 'md' ? 500 : 700
+            }}
+            className="absolute top-10 right-10 z-30 bg-black/40 backdrop-blur-3xl border border-white/10 p-8 rounded-[2rem] shadow-2xl group/points transition-all duration-700 hover:bg-black/60 overflow-hidden flex flex-col"
+          >
+            <div className="flex items-center justify-between mb-6 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className={`w-2.5 h-2.5 rounded-full ${isRecording ? 'bg-rose-500 animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.6)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]'}`} />
+                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Stage Prompt // v2.0</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setPrompterSize(prev => prev === 'sm' ? 'md' : prev === 'md' ? 'lg' : 'sm')}
+                  className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/30 hover:text-white hover:bg-white/10 transition-all"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" />
+                </button>
+                <div className="grow w-px h-4 bg-white/10 mx-1" />
+                <div className="px-2 py-0.5 bg-white/5 rounded-md border border-white/5 text-[8px] font-bold text-white/20 uppercase">Encrypted</div>
+              </div>
             </div>
-            <div className="text-sm font-medium text-white/90 leading-relaxed italic max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className={`flex-grow pr-4 custom-scrollbar scroll-smooth overflow-y-auto ${prompterSize === 'sm' ? 'text-sm' : prompterSize === 'md' ? 'text-lg' : 'text-2xl'} font-medium text-white/95 leading-relaxed italic`}>
               {data?.prose ? (
-                <div dangerouslySetInnerHTML={{ __html: data.prose }} className="prose-invert text-xs opacity-80" />
+                <div dangerouslySetInnerHTML={{ __html: data.prose }} className="prose-invert opacity-90 first-letter:text-4xl first-letter:font-black first-letter:mr-2 first-letter:float-left select-none" />
               ) : (
-                "No script found. Speak from the heart."
+                <div className="text-white/20 text-sm font-black uppercase tracking-widest text-center py-20 flex flex-col items-center gap-4">
+                  <RefreshCw className="w-8 h-8 animate-spin opacity-20" />
+                  Awaiting Narrative Weave...
+                </div>
               )}
             </div>
+            <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-center shrink-0">
+               <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">Master Production Reel</span>
+               <div className="flex gap-1">
+                 {[1,2,3].map(i => <div key={i} className="w-1 h-1 rounded-full bg-white/10" />)}
+               </div>
+            </div>
+          </motion.div>
+
+          {/* Cinematic Camera Overlays (Safe Areas/REC) */}
+          <div className="absolute inset-0 z-20 pointer-events-none border-[40px] border-transparent">
+             {/* Corner Accents */}
+             <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white/20 rounded-tl-xl" />
+             <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white/20 rounded-tr-xl" />
+             <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white/20 rounded-bl-xl" />
+             <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white/20 rounded-br-xl" />
+             
+             {/* Safe Area Guides */}
+             <div className="absolute inset-8 border border-dashed border-white/5 rounded-2xl" />
+             
+             {/* REC Indicator */}
+             <AnimatePresence>
+               {isRecording && (
+                 <motion.div 
+                   initial={{ opacity: 0 }}
+                   animate={{ opacity: 1 }}
+                   exit={{ opacity: 0 }}
+                   className="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-3 px-6 py-2 bg-rose-500 text-white rounded-full text-[10px] font-black uppercase tracking-[0.3em] shadow-[0_0_30px_rgba(244,63,94,0.4)]"
+                 >
+                   <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                   On Air • Recording
+                 </motion.div>
+               )}
+             </AnimatePresence>
           </div>
 
-          <div className="absolute inset-0 z-20 flex flex-col justify-between p-6 w-full mx-auto pointer-events-none">
+          <div className="absolute inset-0 z-20 flex flex-col justify-between p-10 w-full mx-auto pointer-events-none">
              <div className="flex justify-between items-start w-full pointer-events-auto">
                <AnimatePresence>
                  {isRecording ? (
@@ -511,10 +550,9 @@ export default function SoloStage({ data, update }: RoomProps) {
           )}
        </div>
 
-       {/* Sound Check Overlay */}
        <AnimatePresence>
           {showSoundCheck && stream && (
-             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-3xl">
+             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[600] flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-3xl">
                 <div className="max-w-md w-full bg-slate-900 border border-white/10 rounded-[3rem] p-10 text-center shadow-2xl">
                    <div className={`p-6 rounded-full border-4 mx-auto w-24 mb-8 ${micLevel > 15 ? 'bg-emerald-500/20 border-emerald-500' : 'bg-rose-500/10 border-rose-500/30'}`}>
                       <Mic2 className={`w-10 h-10 ${micLevel > 15 ? 'text-emerald-400' : 'text-rose-400'}`} />
@@ -532,96 +570,147 @@ export default function SoloStage({ data, update }: RoomProps) {
   );
 
   const renderNotepad = () => (
-    <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 pb-20">
-       <div className="space-y-6">
-          <div className="aspect-video bg-black rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl relative group">
+    <div className="w-full max-w-[95vw] xl:max-w-screen-2xl mx-auto flex flex-col lg:flex-row gap-8 pb-24 h-[calc(100vh-140px)]">
+       <div className="w-full lg:w-1/2 flex flex-col gap-8 h-full">
+          <div className="aspect-video bg-black rounded-[3rem] overflow-hidden border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.6)] relative group">
              {previewUrl ? (
                 <video 
                   ref={previewVideoRef}
                   src={previewUrl}
                   onTimeUpdate={handlePreviewTimeUpdate}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover grayscale-[0.2] contrast-[1.1]"
                 />
              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-white/20 font-mono tracking-tighter">WAITING FOR FOOTAGE...</div>
+                <div className="absolute inset-0 flex items-center justify-center text-white/10 font-black uppercase tracking-[0.5em] text-xs">Awaiting Development Reel...</div>
              )}
+              {/* Playback Overlay */}
+              <div className="absolute bottom-8 left-8 right-8 z-20 flex items-center gap-6 p-4 bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-500">
+                <button onClick={togglePreviewPlay} className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-all">
+                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-1" />}
+                </button>
+                <div className="flex-1">
+                   <div className="flex justify-between items-center mb-2 px-1">
+                      <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Master Reel Progress</span>
+                      <span className="font-mono text-[10px] text-emerald-400">{formatTime(trimRange[0])} / {formatTime(videoDuration)}</span>
+                   </div>
+                    <div className="relative pt-2">
+                       <Slider 
+                          value={trimRange} 
+                          onValueChange={(val) => setTrimRange(val as [number, number])}
+                          min={0}
+                          max={videoDuration || 100}
+                          step={0.1}
+                       />
+                       {/* Beat Markers Overlay */}
+                       <div className="absolute top-0 left-0 right-0 h-4 pointer-events-none">
+                          {videoDuration > 0 && data?.emotionalBeats?.map((beat: any, idx: number) => {
+                             const percent = (beat.time / videoDuration) * 100;
+                             if (percent > 100) return null;
+                             return (
+                               <motion.div 
+                                 key={idx}
+                                 initial={{ scale: 0 }}
+                                 animate={{ scale: 1 }}
+                                 className="absolute w-1 h-3 bg-emerald-500/60 rounded-full"
+                                 style={{ left: `${percent}%`, top: '8px' }}
+                                 title={beat.label}
+                               />
+                             );
+                          })}
+                       </div>
+                    </div>
+                </div>
+              </div>
           </div>
           
-          <div className="bg-slate-900/40 border border-white/5 p-8 rounded-[2rem] space-y-6">
-             <div className="flex justify-between items-center">
-                <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Rough Cut Trimming</span>
-                <span className="font-mono text-xs text-rose-400">{formatTime(trimRange[0])} — {formatTime(trimRange[1] === 100 ? videoDuration : trimRange[1])}</span>
+          <div className="flex-1 bg-white/[0.02] border border-white/5 p-12 rounded-[3rem] flex flex-col justify-center items-center text-center space-y-6">
+             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <Camera className="w-6 h-6 text-emerald-400" />
              </div>
-             <Slider 
-                value={trimRange} 
-                onValueChange={(val) => setTrimRange(val as [number, number])}
-                min={0}
-                max={videoDuration || 100}
-                step={0.1}
-                className="py-4"
-             />
-             <div className="flex gap-4">
-                <button onClick={togglePreviewPlay} className="flex-1 py-4 bg-white/5 border border-white/10 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all">
-                   {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                   {isPlaying ? 'Pause Preview' : 'Play Rough Cut'}
-                </button>
-                <button onClick={handleCaptureThumbnail} disabled={isCapturingThumbnail} className="flex-1 py-4 bg-white/5 border border-white/10 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all">
-                   <Camera className="w-4 h-4 text-emerald-400" /> Poster Snap
-                </button>
+             <div>
+                <h3 className="text-xl font-headline text-white italic mb-2">Cinematic Visualization</h3>
+                <p className="text-xs text-white/30 max-w-xs uppercase tracking-widest font-bold leading-relaxed">Capture a frame from your reel to anchor the theatrical showcase poster.</p>
              </div>
+             <button 
+                onClick={handleCaptureThumbnail} 
+                disabled={isCapturingThumbnail} 
+                className="px-10 py-5 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:scale-105 transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] disabled:opacity-50"
+             >
+                {isCapturingThumbnail ? 'Capturing Snapshot...' : 'Snap Production Frame'}
+             </button>
           </div>
        </div>
 
-       <div className="bg-slate-950/40 border border-white/5 rounded-[2rem] overflow-hidden">
-          <DirectorsNotepad 
-            userId={data?.userId}
-            memoryId={data?.id}
-            data={data} 
-            update={update} 
-            onSave={handleSaveMemory}
-            isSaving={uploading}
-          />
+       <div className="w-full lg:w-1/2 bg-black/40 border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl h-full">
+          <div className="h-full overflow-y-auto custom-scrollbar">
+            <DirectorsNotepad 
+              userId={data?.userId}
+              memoryId={data?.id}
+              data={data} 
+              update={update} 
+              onSave={handleSaveMemory}
+              isSaving={uploading}
+            />
+          </div>
        </div>
     </div>
   );
 
   const renderShowcase = () => (
-    <div className="max-w-4xl mx-auto w-full py-20 text-center space-y-12">
-       <div className="relative inline-block">
-          <div className="absolute inset-0 bg-rose-500/20 blur-[100px] rounded-full" />
-          <div className="relative w-32 h-32 bg-slate-900 border border-white/10 rounded-full flex items-center justify-center mx-auto mb-8">
-             <FilmIcon className="w-12 h-12 text-rose-500" />
+    <div className="max-w-4xl mx-auto w-full pt-4 pb-20 text-center space-y-12">
+       <motion.div 
+         initial={{ scale: 0.8, opacity: 0 }}
+         animate={{ scale: 1, opacity: 1 }}
+         transition={{ duration: 1, ease: "easeOut" }}
+         className="relative inline-block"
+       >
+          <div className="absolute inset-0 bg-rose-500/20 blur-[100px] rounded-full animate-pulse" />
+          <div className="relative w-40 h-40 bg-slate-950 border border-white/10 rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_0_50px_rgba(244,63,94,0.2)]">
+             <FilmIcon className="w-16 h-16 text-rose-500" />
           </div>
-       </div>
+       </motion.div>
        
-       <div className="space-y-4">
-          <h2 className="text-5xl font-black text-white uppercase tracking-tighter">The Reveal</h2>
-          <p className="text-white/40 text-lg max-w-xl mx-auto">Your production is locked. Await the final theatrical showcase generation.</p>
-       </div>
+       <motion.div 
+         initial={{ y: 20, opacity: 0 }}
+         animate={{ y: 0, opacity: 1 }}
+         transition={{ delay: 0.5, duration: 0.8 }}
+         className="space-y-4"
+       >
+          <h2 className="text-6xl font-black text-white uppercase tracking-tighter italic">Production Wrap</h2>
+          <p className="text-white/40 text-xl font-medium max-w-xl mx-auto">Your cinematic journey is secured. The Memory Weaver is now processing the final showcase.</p>
+       </motion.div>
 
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-12">
-          <div className="bg-slate-900/40 border border-white/5 p-8 rounded-[2rem] text-left space-y-4">
-             <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+       <motion.div 
+         initial={{ opacity: 0 }}
+         animate={{ opacity: 1 }}
+         transition={{ delay: 1.2, duration: 1 }}
+         className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-12"
+       >
+          <div className="bg-slate-900/40 backdrop-blur-3xl border border-white/5 p-10 rounded-[3rem] text-left space-y-4 group hover:bg-slate-800/40 transition-all">
+             <div className="w-12 h-12 bg-emerald-500/20 rounded-2xl flex items-center justify-center ring-1 ring-emerald-500/30">
                 <CheckCircle2 className="w-6 h-6 text-emerald-400" />
              </div>
-             <h4 className="font-bold text-white">Footage Secured</h4>
-             <p className="text-sm text-white/40">Your memory is safely stored in our cinematic vault.</p>
+             <h4 className="font-black text-white text-lg uppercase tracking-tight">Footage Secured</h4>
+             <p className="text-sm text-white/40 leading-relaxed font-medium">Your narrative and recordings are encrypted and stored in the primary cinematic vault.</p>
           </div>
-          <div className="bg-slate-900/40 border border-white/5 p-8 rounded-[2rem] text-left space-y-4">
-             <div className="w-10 h-10 bg-sky-500/20 rounded-xl flex items-center justify-center">
+          <div className="bg-slate-900/40 backdrop-blur-3xl border border-white/5 p-10 rounded-[3rem] text-left space-y-4 group hover:bg-slate-800/40 transition-all">
+             <div className="w-12 h-12 bg-sky-500/20 rounded-2xl flex items-center justify-center ring-1 ring-sky-500/30">
                 <BrainCircuit className="w-6 h-6 text-sky-400" />
              </div>
-             <h4 className="font-bold text-white">Director's Analysis</h4>
-             <p className="text-sm text-white/40">AI agents are weaving your talking points into a narrative.</p>
+             <h4 className="font-black text-white text-lg uppercase tracking-tight">Director's Cut</h4>
+             <p className="text-sm text-white/40 leading-relaxed font-medium">AI agents are currently analyzing your talking points to refine labels and theatrical beats.</p>
           </div>
-       </div>
+       </motion.div>
 
-       <button 
+       <motion.button 
+          initial={{ y: 40, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 1.5 }}
           onClick={() => window.location.href = '/timeline'} 
-          className="px-12 py-5 bg-white text-black font-black rounded-2xl uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_50px_rgba(255,255,255,0.2)]"
+          className="px-16 py-6 bg-white text-slate-950 font-black rounded-3xl uppercase tracking-[0.2em] text-xs hover:scale-105 active:scale-95 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.2)]"
        >
-          Back to Slate
-       </button>
+          Return to Studio Slate
+       </motion.button>
     </div>
   );
 
@@ -630,13 +719,15 @@ export default function SoloStage({ data, update }: RoomProps) {
       currentStage={productionStage}
       onStageChange={setProductionStage}
       acts={[
-        { id: 0, title: 'Scripting', label: 'ACT 1' },
-        { id: 1, title: 'Recording', label: 'ACT 2' },
-        { id: 2, title: 'Notepad', label: 'ACT 3' },
-        { id: 3, title: 'Showcase', label: 'ACT 4' },
+        { id: 0, title: 'Hook', label: 'ACT I' },
+        { id: 1, title: 'Weave', label: 'ACT II' },
+        { id: 2, title: 'Capture', label: 'ACT III' },
+        { id: 3, title: 'Cut', label: 'ACT IV' },
+        { id: 4, title: 'Premiere', label: 'ACT V' },
       ]}
     >
-      {renderScripting()}
+      {renderHook()}
+      {renderWeave()}
       {renderRecording()}
       {renderNotepad()}
       {renderShowcase()}

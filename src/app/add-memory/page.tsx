@@ -17,6 +17,11 @@ function ProductionDeckConnector() {
   const [memoryData, setMemoryData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeMemoryId, setActiveMemoryId] = useState<string | null>(editMemoryId);
+  const [layoutMode, setLayoutMode] = useState<'takeover' | 'drawer'>('takeover');
+
+  const onToggleLayout = () => {
+    setLayoutMode(prev => prev === 'takeover' ? 'drawer' : 'takeover');
+  };
 
   useEffect(() => {
     // Wait for auth to resolve
@@ -130,7 +135,14 @@ function ProductionDeckConnector() {
   if (!user) return <div className="p-8 text-rose-400 font-mono">Authentication required to view this memory.</div>;
   if (!memoryData) return <div className="p-8 text-amber-400 font-mono">Memory could not be loaded.</div>;
 
-  return <ProductionDeck memoryData={memoryData} onUpdate={handleUpdate} />;
+  return (
+    <ProductionDeck 
+      memoryData={memoryData} 
+      onUpdate={handleUpdate} 
+      layoutMode={layoutMode}
+      onToggleLayout={onToggleLayout}
+    />
+  );
 }
 
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';

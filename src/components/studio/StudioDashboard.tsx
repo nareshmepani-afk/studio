@@ -70,26 +70,14 @@ export function StudioDashboard({
   const [flaggedPromptIds, setFlaggedPromptIds] = useState(initialFlaggedPromptIds);
   const [isCleaning, setIsCleaning] = useState(false);
 
-  // Production Deck State
-  const [isDeckOpen, setIsDeckOpen] = useState(false);
-  const [selectedProductionData, setSelectedProductionData] = useState<any>(null);
-  
+    // GUEST AUTO-OPEN logic
   // GUEST AUTO-OPEN logic
   useEffect(() => {
-    if (isGuest && !isDeckOpen) {
-      console.log("[StudioDashboard] Guest mode detected. Auto-activating Storyteller Stage with Session ID:", sessionId);
-      setSelectedProductionData({
-        id: sessionId, // Use the unique session ID as the memory ID for PeerJS coordination
-        title: "Guest Collaboration Session",
-        description: "Direct-to-Director link session.",
-        promptId: "guest_session",
-        status: 'draft',
-        prose: '<p>Welcome to your Guest Collaboration session. Your director has shared this link to guide your recording.</p>',
-        sensoryConfig: [],
-      });
-      setIsDeckOpen(true);
+    if (isGuest && sessionId) {
+      console.log("[StudioDashboard] Guest mode detected. Routing to Production Deck with Session ID:", sessionId);
+      router.push(`/studio/production/${sessionId}`);
     }
-  }, [isGuest, isDeckOpen, sessionId]);
+  }, [isGuest, sessionId, router]);
   const [layoutMode, setLayoutMode] = useState<'takeover' | 'drawer'>('takeover');
 
   // Ensure Full-Screen is the default on entry
@@ -104,74 +92,18 @@ export function StudioDashboard({
     toast.success(`Layout changed to ${next.charAt(0).toUpperCase() + next.slice(1)} Mode`);
   };
 
+  // Viewport Lock moved to Deck container.
+
   const handleStartChapter = useCallback((promptId: string, isCompleted: boolean, groupId: string) => {
-      let memoryToEdit = null;
-
-      if (isCompleted) {
-          const chapterPrompts = chapters.flatMap(c => c.prompts);
-          const cp = chapterPrompts.find(p => p.id === promptId);
-          if (cp?.memory) {
-              // Rehydrate memory data for the deck
-              const pid = cp.memory.promptId;
-              const script = pid ? storyScripts[pid] : '';
-              const formattedProse = script ? `<p>${script.split('\\n').join('</p><p>')}</p>` : '';
-              
-              let loadedProse = cp.memory.prose || cp.memory.content || '';
-              if (!loadedProse || loadedProse === '<p></p>' || loadedProse === '<p><br></p>' || loadedProse.trim() === '') {
-                  loadedProse = formattedProse;
-              }
-
-              memoryToEdit = {
-                  ...cp.memory,
-                  prose: loadedProse
-              };
-          }
-      } else {
-          // New Production
-          const chapterPrompts = chapters.flatMap(c => c.prompts);
-          const template = chapterPrompts.find(p => p.id === promptId);
-          const script = promptId ? storyScripts[promptId] : '';
-          const formattedProse = script ? `<p>${script.split('\\n').join('</p><p>')}</p>` : '';
-
-          memoryToEdit = {
-            title: template?.title || '',
-            description: template?.description || '',
-            promptId: promptId,
-            status: 'draft',
-            prose: formattedProse,
-            sensoryConfig: [], // Default empty
-          };
-      }
-
-      if (memoryToEdit) {
-          setSelectedProductionData(memoryToEdit);
-          setIsDeckOpen(true);
-      }
-  }, [chapters]);
-
-  const handleUpdateProduction = useCallback(async (updatedData: any) => {
-    if (!user) return;
-    
-    // Optimistic Update
-    setSelectedProductionData(updatedData);
-
-    try {
-      const { id, ...dataToSave } = updatedData;
-      if (id) {
-         await updateDoc(doc(db, 'users', user.uid, 'memories', id), dataToSave);
-      } else {
-         // Create local in DB
-         const memoriesRef = collection(db, 'users', user.uid, 'memories');
-         const newDoc = await addDoc(memoriesRef, {
-            ...dataToSave,
-            createdAt: new Date().toISOString()
-         });
-         setSelectedProductionData((prev: any) => ({ ...prev, id: newDoc.id }));
-      }
-    } catch (e) {
-      console.error("Auto-save error:", e);
+    let targetId = promptId;
+    if (isCompleted) {
+        const chapterPrompts = chapters.flatMap(c => c.prompts);
+        const cp = chapterPrompts.find(p => p.id === promptId);
+        // We still route by promptId to let the container rehydrate it.
+        targetId = promptId;
     }
-  }, [user, db]);
+    router.push(`/studio/production/${targetId}`);
+  }, [chapters, router]);
 
   const handleToggleFlagPrompt = useCallback(async (promptIdToToggle: string) => {
     if (!user) return;
@@ -462,56 +394,6 @@ export function StudioDashboard({
         </div>
       </div>
 
-      {/* Production Deck Overlay / Drawer */}
-      <AnimatePresence>
-        {isDeckOpen && selectedProductionData && (
-          <>
-            {/* Backdrop */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsDeckOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[30]"
-            />
-            
-            {/* The Deck */}
-            <motion.div
-              initial={layoutMode === 'takeover' ? { opacity: 0, scale: 0.95 } : { x: '100%' }}
-              animate={layoutMode === 'takeover' ? { opacity: 1, scale: 1 } : { x: 0 }}
-              exit={layoutMode === 'takeover' ? { opacity: 0, scale: 0.95 } : { x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={cn(
-                "fixed z-[40] bg-slate-950 border-white/10 shadow-2xl overflow-hidden flex flex-col transition-all duration-500",
-                layoutMode === 'takeover' 
-                  ? "inset-0 top-16 border-t shadow-[0_0_50px_rgba(0,0,0,0.5)]" 
-                  : "top-16 right-0 bottom-0 w-full md:w-[75%] border-l"
-              )}
-            >
-              {/* Close Button UI */}
-              <div className="absolute top-6 right-6 z-[110]">
-                 <Button 
-                   variant="ghost" 
-                   size="icon" 
-                   onClick={() => setIsDeckOpen(false)}
-                   className="rounded-full bg-black/20 hover:bg-white/10 text-white/50 hover:text-white transition-all w-12 h-12"
-                 >
-                   <Plus className="w-6 h-6 rotate-45" />
-                 </Button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <ProductionDeck 
-                  memoryData={selectedProductionData} 
-                  onUpdate={handleUpdateProduction} 
-                  layoutMode={layoutMode}
-                  onToggleLayout={toggleLayoutMode}
-                />
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

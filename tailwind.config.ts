@@ -65,6 +65,8 @@ const config: Config = {
       },
       fontFamily: {
         prompter: ["Inter", "system-ui", "sans-serif"],
+        serif: ["'Playfair Display'", "serif"],
+        mono: ["'Courier Prime'", "monospace"],
       },
       keyframes: {
         "accordion-down": {

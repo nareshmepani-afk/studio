@@ -52,6 +52,11 @@ export interface Memory {
   };
   prose?: string;
   content?: string;
+  modality?: 'pen' | 'voice' | null;
+  tags?: string[];
+  sensory?: Record<string, string>;
+  aiTakes?: { poetic?: string; direct?: string; nostalgic?: string } | null;
+  productionStage?: number;
 }
 
 export interface TranscriptSegment {

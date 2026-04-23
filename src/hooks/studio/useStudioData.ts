@@ -26,7 +26,7 @@ export interface CorrelatedPrompt {
 }
 
 export function useStudioData(userId: string | undefined) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { mode } = useLanguage();
   useEffect(() => {
     console.log("[useStudioData] Current Language Mode:", mode);
@@ -42,6 +42,9 @@ export function useStudioData(userId: string | undefined) {
   const hasSkippedRef = useRef(false);
 
   useEffect(() => {
+    // If auth is still loading, wait before making any 'guest' decisions
+    if (loading) return;
+
     if (!userId || userId === 'guest') {
       if (!hasSkippedRef.current) {
         console.log("[useStudioData] Skipping Firestore subscriptions for guest user.");

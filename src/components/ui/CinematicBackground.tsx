@@ -7,16 +7,19 @@ interface CinematicBackgroundProps {
   children: React.ReactNode;
   theme?: 'amber' | 'blue' | 'default';
   className?: string;
+  minFullHeight?: boolean;
 }
 
 export const CinematicBackground = ({ 
   children, 
   theme = 'default',
-  className 
+  className,
+  minFullHeight = true
 }: CinematicBackgroundProps) => {
   return (
     <div className={cn(
-      "min-h-screen w-full relative overflow-x-hidden bg-[#030303] text-white selection:bg-primary/30",
+      minFullHeight ? "min-h-screen" : "min-h-full",
+      "w-full relative overflow-x-hidden bg-[#030303] text-white selection:bg-primary/30",
       className
     )}>
       {/* Cinematic Ambient Glows */}

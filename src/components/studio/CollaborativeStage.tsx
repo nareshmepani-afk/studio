@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import MemoryForm from './MemoryForm';
+import { MemoryForm } from './MemoryForm';
 import { RemoteControlDialog } from './RemoteControlDialog';
 import { 
   AlertDialog, 
@@ -31,9 +31,11 @@ interface RoomProps {
     data: MemoryData;
     update: (updatedData: MemoryData) => void;
     mode?: 'standard' | 'guest';
+    modality?: 'pen' | 'voice' | null;
+    setModality?: (val: 'pen' | 'voice' | null) => void;
 }
 
-export default function CollaborativeStage({ data, update, mode = 'standard' }: RoomProps) {
+export default function CollaborativeStage({ data, update, mode = 'standard', modality, setModality }: RoomProps) {
   const [qrOpen, setQrOpen] = useState(false);
   const [isCapturingThumbnail, setIsCapturingThumbnail] = useState(false);
   const [isUploadingPoster, setIsUploadingPoster] = useState(false);
@@ -554,7 +556,12 @@ export default function CollaborativeStage({ data, update, mode = 'standard' }: 
             </div>
 
             {/* The Central Engine: The Memory Collaboration Script */}
-            <MemoryForm data={data} update={shieldedUpdate} />
+            <MemoryForm 
+              data={data} 
+              update={shieldedUpdate} 
+              modality={modality}
+              setModality={setModality}
+            />
          </>
       )}
 

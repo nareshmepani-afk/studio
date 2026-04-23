@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext, ReactNode, useRef, useMemo } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, useRef, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { doc, onSnapshot, setDoc, DocumentReference } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -40,40 +40,63 @@ type StudioContextType = StudioState & { actions: StudioActions };
 // 4. Create Context
 const StudioContext = createContext<StudioContextType | undefined>(undefined);
 
-// 5. Provider Component
-export const StudioProvider = ({ children, initialState }: { children: ReactNode, initialState?: Partial<StudioState> }) => {
+// 5. URL Sync Component to isolate Suspense
+function URLStateSync({ 
+  onSync 
+}: { 
+  onSync: (sessionId: string, mode: 'solo' | 'director' | 'guest_director' | 'guest', promptId: string | null) => void 
+}) {
   const searchParams = useSearchParams();
-  const sessionId = searchParams.get('sessionId') || 'default';
-
-  const urlMode = searchParams.get('mode') as 'solo' | 'director' | 'guest_director' | 'guest';
   
+  useEffect(() => {
+    const sessionId = searchParams.get('sessionId') || 'default';
+    const urlMode = searchParams.get('mode') as 'solo' | 'director' | 'guest_director' | 'guest';
+    const promptId = searchParams.get('promptId');
+    const finalMode = (urlMode === 'solo' || urlMode === 'director' || urlMode === 'guest_director' || urlMode === 'guest') ? urlMode : 'solo';
+    onSync(sessionId, finalMode, promptId);
+  }, [searchParams, onSync]);
+
+  return null;
+}
+
+// 6. Provider Component
+export const StudioProvider = ({ children, initialState }: { children: ReactNode, initialState?: Partial<StudioState> }) => {
   const [state, setState] = useState<StudioState>({
     isScrolling: false,
     scrollSpeed: 1,
     fontSize: 48,
     isMirrored: false,
     script: 'Loading your script...',
-    mode: (urlMode === 'solo' || urlMode === 'director' || urlMode === 'guest_director' || urlMode === 'guest') ? urlMode : 'solo',
+    mode: 'solo',
     isConnected: !!initialState, 
     isRecording: false,
-    sessionId: sessionId,
+    sessionId: 'default',
     ...(initialState || {}),
   });
 
+  const [urlPromptId, setUrlPromptId] = useState<string | null>(null);
+
+  const handleURLSync = useCallback((sessionId: string, mode: 'solo' | 'director' | 'guest_director' | 'guest', promptId: string | null) => {
+    setState(prev => {
+      if (prev.sessionId === sessionId && prev.mode === mode) return prev;
+      return { ...prev, sessionId, mode };
+    });
+    setUrlPromptId(promptId);
+  }, []);
+
   // 2. Persistent Reference: Memoize the document reference to prevent redundant effect cycles
   const studioStateRef = useMemo(() => {
-    if (!sessionId || sessionId === 'default') return null;
-    return doc(db, "studio", sessionId);
-  }, [sessionId]);
+    if (!state.sessionId || state.sessionId === 'default') return null;
+    return doc(db, "studio", state.sessionId);
+  }, [state.sessionId]);
 
   const isSyncingFromFirestore = useRef(false);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Load script from URL (No changes needed here)
+  // Load script from URL
   useEffect(() => {
-    const promptId = searchParams.get('promptId');
-    if (promptId) {
-      const selectedScript = storyScripts[promptId];
+    if (urlPromptId) {
+      const selectedScript = storyScripts[urlPromptId];
       if (selectedScript) {
         setState(s => ({ ...s, script: selectedScript }));
       } else {
@@ -82,7 +105,7 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     } else if (!initialState?.script) { // Only set default if no script came from server
       setState(s => ({ ...s, script: 'Select a prompt to begin, or start typing.' }));
     }
-  }, [searchParams, initialState]);
+  }, [urlPromptId, initialState]);
 
   const lastRemoteJSON = useRef<string>('');
 
@@ -115,12 +138,12 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
         }
       },
       (error) => {
-        console.error(`Firebase connection error on session [${sessionId}]:`, error);
+        console.error(`Firebase connection error on session [${state.sessionId}]:`, error);
         setState(prevState => ({ ...prevState, isConnected: false }));
       }
     );
     return () => unsubscribe();
-  }, [studioStateRef, sessionId]);
+  }, [studioStateRef, state.sessionId]);
 
   // The Emitter (Force silence if no meaningful local change occurred)
   useEffect(() => {
@@ -173,6 +196,9 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
 
   return (
     <StudioContext.Provider value={{ ...state, actions }}>
+      <Suspense fallback={null}>
+        <URLStateSync onSync={handleURLSync} />
+      </Suspense>
       {children}
     </StudioContext.Provider>
   );
