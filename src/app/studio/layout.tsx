@@ -1,8 +1,11 @@
+"use client";
 
 import React, { Suspense } from "react";
 import { Inter } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { StudioProviders } from "./StudioProviders";
+import { AnimatePresence } from "framer-motion";
+import { usePathname } from "next/navigation";
 import "../globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -14,6 +17,7 @@ export default function StudioLayout({
   children: React.ReactNode;
   modal: React.ReactNode;
 }>) {
+  const pathname = usePathname();
   return (
     <StudioProviders>
       <div className="relative min-h-screen bg-neutral-950 text-white selection:bg-primary/30">
@@ -29,7 +33,13 @@ export default function StudioLayout({
         
         <div className="relative z-10 flex flex-col min-h-screen">
           {children}
-          {modal}
+          <AnimatePresence mode="wait">
+            {modal && (
+              <div key={pathname}>
+                {modal}
+              </div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </StudioProviders>

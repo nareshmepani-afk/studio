@@ -110,20 +110,28 @@ export const InstrumentSelection: React.FC<InstrumentSelectionProps> = ({
                                             onHoverChange?.(null);
                                         }}
                                         onClick={() => onSelect(inst.id)}
+                                        style={{ 
+                                            cursor: inst.id === 'pen' 
+                                                ? `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%2338bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path><path d="M2 2l7.586 7.586"></path><circle cx="11" cy="11" r="2"></circle></svg>') 2 2, auto`
+                                                : `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%23fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>') 12 12, auto`
+                                        }}
                                         className={cn(
                                             "group relative flex flex-col items-center gap-8 p-14 rounded-[3.5rem] bg-white/[0.03] border border-white/5 transition-all duration-500 w-80 shadow-[0_40px_80px_rgba(0,0,0,0.4)] backdrop-blur-xl",
                                             hovered && hovered !== inst.id ? "opacity-30 grayscale-[0.5] scale-95" : "opacity-100",
                                             hovered === inst.id ? cn("border-opacity-50", inst.id === 'pen' ? "border-sky-500/50 glow-scribe bg-sky-500/10" : "border-amber-500/50 glow-orator bg-amber-500/10") : ""
                                         )}
                                     >
-                                        <div className={cn(
-                                            "p-8 rounded-3xl transition-all duration-500 shadow-[0_0_40px_rgba(0,0,0,0.2)]",
-                                            inst.bgClass,
-                                            inst.colorClass,
-                                            hovered === inst.id ? (inst.id === 'pen' ? "bg-sky-500 text-white" : "bg-amber-500 text-slate-900") : ""
-                                        )}>
+                                        <motion.div 
+                                            layoutId={`modality-icon-${inst.id}`}
+                                            className={cn(
+                                                "p-8 rounded-3xl transition-all duration-500 shadow-[0_0_40px_rgba(0,0,0,0.2)]",
+                                                inst.bgClass,
+                                                inst.colorClass,
+                                                hovered === inst.id ? (inst.id === 'pen' ? "bg-sky-500 text-white" : "bg-amber-500 text-slate-900") : ""
+                                            )}
+                                        >
                                             <inst.icon className="w-14 h-14" />
-                                        </div>
+                                        </motion.div>
                                         <div className="text-center">
                                             <span className="block text-4xl font-headline text-white italic mb-2 tracking-tight">{inst.label}</span>
                                             <span className={cn(

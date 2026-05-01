@@ -13,7 +13,13 @@ import {
   AlertDialogTitle, 
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
-import { Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle } from 'lucide-react';
+import { 
+  Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, 
+  Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, 
+  UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, 
+  Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
+  Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft 
+} from 'lucide-react';
 import { generateInterviewQuestion, analyzeFraming } from '@/actions/aiWeaver';
 import { synthesizeStudioSpeech } from '@/actions/studio-vocal';
 import { useCamera } from '@/hooks/useCamera';
@@ -24,16 +30,27 @@ import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import DirectorsNotepad from './DirectorsNotepad';
 import { generateDirectorsNotepad } from '@/actions/aiWeaver';
-import { BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft, Film as FilmIcon } from 'lucide-react';
+import { ProductionControlBar } from './ProductionControlBar';
 import CinemaStageSwitch from './CinemaStageSwitch';
 import { Memory } from '@/types';
+import CinemaPoster from '../memory/CinemaPoster';
+import { useStudioState } from '@/hooks/studio/useStudioState';
 
 interface RoomProps {
     data: Memory;
-    update: (updatedData: Memory) => void;
+    update: (updatedData: Partial<Memory>) => void;
     modality?: 'pen' | 'voice' | null;
     setModality?: (val: 'pen' | 'voice' | null) => void;
     onWordCountChange?: (count: number) => void;
+    currentStage?: number;
+    mentorActive?: boolean;
+    onToggleMentor?: () => void;
+    onClarityChange?: (clarity: number) => void;
+    onNext?: () => void;
+    onPrev?: () => void;
+    isComplete?: boolean;
+    charge?: number;
+    wordCount?: number;
 }
 
 const formatTime = (seconds: number) => {
@@ -42,7 +59,11 @@ const formatTime = (seconds: number) => {
   return `${m}:${s}`;
 };
 
-export default function SoloStage({ data, update, modality, setModality, onWordCountChange }: RoomProps) {
+export default function SoloStage({ 
+  data, update, modality, setModality, onWordCountChange, 
+  currentStage, mentorActive, onToggleMentor, onClarityChange,
+  onNext, onPrev, isComplete, charge, wordCount 
+}: RoomProps) {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
   const [trimRange, setTrimRange] = useState<[number, number]>([0, 100]);
@@ -67,10 +88,11 @@ export default function SoloStage({ data, update, modality, setModality, onWordC
   const [prompterSize, setPrompterSize] = useState<'sm' | 'md' | 'lg'>('md');
 
   // Cinematic Pipeline State (Shared via Firestore)
-  const productionStage = data?.productionStage || 0;
+  const productionStage = currentStage !== undefined ? currentStage : (data?.productionStage || 0);
   const setProductionStage = (stage: number) => {
     update({ ...data, productionStage: stage });
   };
+
 
 
   // 1. Initialize local Camera stream (Only when explicitly enabled)
@@ -356,7 +378,7 @@ export default function SoloStage({ data, update, modality, setModality, onWordC
     }
   };
 
-  const shieldedUpdate = useCallback((updatedData: MemoryData) => {
+  const shieldedUpdate = useCallback((updatedData: Partial<Memory>) => {
     update({
         ...updatedData,
         cameraActive: isCameraActive,
@@ -366,22 +388,37 @@ export default function SoloStage({ data, update, modality, setModality, onWordC
   // --- SUB-RENDERERS FOR 5-ACT JOURNEY ---
   
   const renderHook = () => (
-    <div className="max-w-5xl mx-auto w-full pb-20 transition-all duration-700">
+    <div className="max-w-5xl mx-auto w-full pb-2 transition-all duration-700">
       <MemoryForm 
         data={data} 
         update={shieldedUpdate} 
         productionStage={0} 
         setProductionStage={setProductionStage}
-        forceAct="guide"
         modality={modality}
         setModality={setModality}
         onWordCountChange={onWordCountChange}
+        mentorActive={mentorActive}
+        onToggleMentor={onToggleMentor}
+        onClarityChange={onClarityChange}
       />
+      {modality !== null && currentStage === 0 && (
+        <div className="flex justify-center -mt-2">
+           <ProductionControlBar
+             currentStage={0}
+             isComplete={isComplete ?? false}
+             onNext={onNext ?? (() => {})}
+             onPrev={onPrev ?? (() => {})}
+             charge={charge}
+             wordCount={wordCount}
+             isDocked={true}
+           />
+        </div>
+      )}
     </div>
   );
 
   const renderWeave = () => (
-    <div className="max-w-4xl mx-auto w-full pb-20 transition-all duration-1000">
+    <div className="max-w-4xl mx-auto w-full pb-2 transition-all duration-1000">
       <MemoryForm 
         data={data} 
         update={shieldedUpdate} 
@@ -391,7 +428,23 @@ export default function SoloStage({ data, update, modality, setModality, onWordC
         modality={modality}
         setModality={setModality}
         onWordCountChange={onWordCountChange}
+        mentorActive={mentorActive}
+        onToggleMentor={onToggleMentor}
+        onClarityChange={onClarityChange}
       />
+      {modality !== null && currentStage === 1 && (
+        <div className="flex justify-center -mt-2">
+           <ProductionControlBar
+             currentStage={1}
+             isComplete={isComplete ?? false}
+             onNext={onNext ?? (() => {})}
+             onPrev={onPrev ?? (() => {})}
+             charge={charge}
+             wordCount={wordCount}
+             isDocked={true}
+           />
+        </div>
+      )}
     </div>
   );
 
@@ -657,60 +710,138 @@ export default function SoloStage({ data, update, modality, setModality, onWordC
   );
 
   const renderShowcase = () => (
-    <div className="max-w-4xl mx-auto w-full pt-4 pb-20 text-center space-y-12">
+    <div className="max-w-6xl mx-auto w-full pt-10 pb-32 space-y-16">
        <motion.div 
-         initial={{ scale: 0.8, opacity: 0 }}
-         animate={{ scale: 1, opacity: 1 }}
-         transition={{ duration: 1, ease: "easeOut" }}
-         className="relative inline-block"
+         initial={{ opacity: 0, y: 30 }}
+         animate={{ opacity: 1, y: 0 }}
+         transition={{ duration: 1 }}
+         className="text-center space-y-6"
        >
-          <div className="absolute inset-0 bg-rose-500/20 blur-[100px] rounded-full animate-pulse" />
-          <div className="relative w-40 h-40 bg-slate-950 border border-white/10 rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_0_50px_rgba(244,63,94,0.2)]">
-             <FilmIcon className="w-16 h-16 text-rose-500" />
+          <div className="flex items-center justify-center gap-4 text-emerald-400 font-black text-[10px] uppercase tracking-[0.8em] mb-4">
+            <div className="w-12 h-px bg-emerald-500/30" />
+            Premiere: Act V
+            <div className="w-12 h-px bg-emerald-500/30" />
           </div>
+          <h2 className="text-7xl font-serif text-white/90 italic leading-tight tracking-tighter">Your Memory, Immortalized.</h2>
+          <p className="text-white/40 text-xl font-serif italic max-w-2xl mx-auto leading-relaxed">
+            The weave is complete. Your story has been transformed from a fleeting thought into a cinematic treasure.
+          </p>
        </motion.div>
        
-       <motion.div 
-         initial={{ y: 20, opacity: 0 }}
-         animate={{ y: 0, opacity: 1 }}
-         transition={{ delay: 0.5, duration: 0.8 }}
-         className="space-y-4"
-       >
-          <h2 className="text-6xl font-black text-white uppercase tracking-tighter italic">Production Wrap</h2>
-          <p className="text-white/40 text-xl font-medium max-w-xl mx-auto">Your cinematic journey is secured. The Memory Weaver is now processing the final showcase.</p>
-       </motion.div>
-
-       <motion.div 
-         initial={{ opacity: 0 }}
-         animate={{ opacity: 1 }}
-         transition={{ delay: 1.2, duration: 1 }}
-         className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-12"
-       >
-          <div className="bg-slate-900/40 backdrop-blur-3xl border border-white/5 p-10 rounded-[3rem] text-left space-y-4 group hover:bg-slate-800/40 transition-all">
-             <div className="w-12 h-12 bg-emerald-500/20 rounded-2xl flex items-center justify-center ring-1 ring-emerald-500/30">
-                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+       <div className="flex flex-col lg:flex-row gap-20 items-center justify-center">
+          {/* THE POSTER (LEFT) */}
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0, rotateY: 20 }}
+            animate={{ scale: 1, opacity: 1, rotateY: 0 }}
+            transition={{ delay: 0.4, duration: 1.2, ease: "easeOut" }}
+            className="relative group perspective-2000"
+          >
+             <div className="absolute -inset-20 bg-sky-500/10 blur-[120px] rounded-full opacity-50 group-hover:opacity-80 transition-opacity duration-1000" />
+             <div className="relative z-10">
+                <CinemaPoster memory={data} />
              </div>
-             <h4 className="font-black text-white text-lg uppercase tracking-tight">Footage Secured</h4>
-             <p className="text-sm text-white/40 leading-relaxed font-medium">Your narrative and recordings are encrypted and stored in the primary cinematic vault.</p>
-          </div>
-          <div className="bg-slate-900/40 backdrop-blur-3xl border border-white/5 p-10 rounded-[3rem] text-left space-y-4 group hover:bg-slate-800/40 transition-all">
-             <div className="w-12 h-12 bg-sky-500/20 rounded-2xl flex items-center justify-center ring-1 ring-sky-500/30">
-                <BrainCircuit className="w-6 h-6 text-sky-400" />
+             
+             {/* Filmic Reflections */}
+             <div className="absolute inset-0 pointer-events-none rounded-[2rem] overflow-hidden opacity-30">
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-2000" />
              </div>
-             <h4 className="font-black text-white text-lg uppercase tracking-tight">Director's Cut</h4>
-             <p className="text-sm text-white/40 leading-relaxed font-medium">AI agents are currently analyzing your talking points to refine labels and theatrical beats.</p>
-          </div>
-       </motion.div>
+          </motion.div>
 
-       <motion.button 
-          initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 1.5 }}
-          onClick={() => window.location.href = '/timeline'} 
-          className="px-16 py-6 bg-white text-slate-950 font-black rounded-3xl uppercase tracking-[0.2em] text-xs hover:scale-105 active:scale-95 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.2)]"
-       >
-          Return to Studio Slate
-       </motion.button>
+          {/* PRODUCTION STATS & ACTIONS (RIGHT) */}
+          <motion.div 
+            initial={{ x: 50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.8, duration: 1 }}
+            className="flex-1 space-y-10 max-w-md text-left"
+          >
+             <div className="space-y-8">
+                <div className="flex items-start gap-6 group">
+                   <div className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center group-hover:bg-emerald-500/10 group-hover:border-emerald-500/30 transition-all">
+                      <CheckCircle2 className="w-7 h-7 text-emerald-400" />
+                   </div>
+                   <div>
+                      <h4 className="font-black text-white text-sm uppercase tracking-widest mb-1">Negative Mastered</h4>
+                      <p className="text-sm text-white/40 leading-relaxed font-medium">All visual and auditory catalysts have been processed into the final narrative weave.</p>
+                   </div>
+                </div>
+
+                <div className="flex items-start gap-6 group">
+                   <div className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center group-hover:bg-sky-500/10 group-hover:border-sky-500/30 transition-all">
+                      <BrainCircuit className="w-7 h-7 text-sky-400" />
+                   </div>
+                   <div>
+                      <h4 className="font-black text-white text-sm uppercase tracking-widest mb-1">AI Metadata Synced // VERIFIED</h4>
+                      <p className="text-sm text-white/40 leading-relaxed font-medium">Emotional beats and entity mapping have been secured for the global cinematic archive.</p>
+                   </div>
+                </div>
+
+                <div className="flex items-start gap-6 group">
+                   <div className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center group-hover:bg-amber-500/10 group-hover:border-amber-500/30 transition-all">
+                      <Sparkles className="w-7 h-7 text-amber-400" />
+                   </div>
+                   <div>
+                      <h4 className="font-black text-white text-sm uppercase tracking-widest mb-1">Fusion Protocol // ACTIVE</h4>
+                      <p className="text-sm text-white/40 leading-relaxed font-medium">Original intent and performance have been synthesized into a prestigious video story.</p>
+                   </div>
+                </div>
+
+                <div className="flex items-start gap-6 group">
+                   <div className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center group-hover:bg-rose-500/10 group-hover:border-rose-500/30 transition-all">
+                      <Rocket className="w-7 h-7 text-rose-400" />
+                   </div>
+                   <div>
+                      <h4 className="font-black text-white text-sm uppercase tracking-widest mb-1">Archive Entry</h4>
+                      <p className="text-sm text-white/40 leading-relaxed font-medium">Your memory is now a permanent chapter in your life's cinematic timeline.</p>
+                   </div>
+                </div>
+             </div>
+
+             {data.videoStory && (
+               <motion.div 
+                 initial={{ opacity: 0, y: 20 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 transition={{ delay: 1.2 }}
+                 className="mt-8 p-8 bg-gradient-to-br from-emerald-500/5 via-white/5 to-transparent border border-white/10 rounded-[2.5rem] backdrop-blur-xl relative overflow-hidden group"
+               >
+                 <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                   <FilmIcon className="w-16 h-16 text-white" />
+                 </div>
+                 <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400 mb-6 flex items-center gap-3">
+                   <Sparkles className="w-4 h-4" />
+                   The Narrative Fusion
+                 </h4>
+                 <p className="text-xl text-white/90 leading-relaxed font-medium italic serif">
+                   "{data.videoStory}"
+                 </p>
+                 <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
+                    <span className="text-[8px] font-mono uppercase tracking-widest text-white/20">Auteur Synthesis // AI-Fused Narrative</span>
+                    <div className="flex gap-2">
+                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40" />
+                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/20" />
+                    </div>
+                 </div>
+               </motion.div>
+             )}
+
+             <div className="pt-8 space-y-4">
+                <button 
+                  onClick={() => window.location.href = `/memory/${data.id}`} 
+                  className="w-full py-6 bg-white text-slate-950 font-black rounded-3xl uppercase tracking-[0.2em] text-xs hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_20px_50px_rgba(255,255,255,0.15)] flex items-center justify-center gap-3"
+                >
+                  <Play className="w-4 h-4 fill-current" />
+                  View Premiere
+                </button>
+                
+                <button 
+                  onClick={() => window.location.href = '/timeline'} 
+                  className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black rounded-3xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3"
+                >
+                  Return to Studio Slate
+                </button>
+             </div>
+          </motion.div>
+       </div>
     </div>
   );
 

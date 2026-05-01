@@ -90,6 +90,18 @@ export function CinemaPoster({ memory, className = "" }: CinemaPosterProps) {
         >
           {memory.title}
         </motion.h2>
+        
+        {/* Memory Coordinates & Mark Tagline */}
+        {(memory.location || memory.dateComponents?.year) && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="text-[10px] sm:text-xs font-sans tracking-[0.4em] text-white/60 mt-3 drop-shadow-md uppercase"
+          >
+            {memory.location} {memory.location && memory.dateComponents?.year ? '•' : ''} {memory.dateComponents?.year}
+          </motion.p>
+        )}
       </div>
 
       {/* 5. Billing Block (Theatrical Credits) */}

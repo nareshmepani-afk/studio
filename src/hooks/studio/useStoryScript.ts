@@ -1,90 +1,127 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { arrayMove } from '@dnd-kit/sortable';
+import { ScriptBlock, Catalyst, CatalystType } from '@/types';
 
-export interface StoryScriptQuestion {
-  id: string;
-  text: string;
-}
+export const useStoryScript = (initialBlocks: ScriptBlock[]) => {
+  const [blocks, setBlocks] = useState<ScriptBlock[]>(initialBlocks.length > 0 
+    ? initialBlocks 
+    : [{ id: uuidv4(), type: 'hook', text: '', catalysts: [] }]
+  );
+  
+  const [focusedBlockId, setFocusedBlockId] = useState<string | null>(() => {
+    if (initialBlocks.length > 0) return initialBlocks[0].id;
+    return null; // Will be set by blocks initialization if needed
+  });
 
-export function useStoryScript(questions: StoryScriptQuestion[] = []) {
-  const [isScrolling, setIsScrolling] = useState(false);
-  const [scrollSpeed, setScrollSpeed] = useState(1); // Speed in pixels per second
-  const [fontSize, setFontSize] = useState(48);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const currentQuestion = questions[currentQuestionIndex];
-
-  const startScrolling = useCallback(() => {
-    setIsScrolling(true);
-  }, []);
-
-  const stopScrolling = useCallback(() => {
-    setIsScrolling(false);
-    if (scrollIntervalRef.current) {
-      clearInterval(scrollIntervalRef.current);
-      scrollIntervalRef.current = null;
-    }
-  }, []);
-
-  const toggleScrolling = useCallback(() => {
-    if (isScrolling) {
-      stopScrolling();
-    } else {
-      startScrolling();
-    }
-  }, [isScrolling, startScrolling, stopScrolling]);
-
-  const increaseSpeed = useCallback(() => {
-    setScrollSpeed(speed => Math.min(speed + 0.5, 10));
-  }, []);
-
-  const decreaseSpeed = useCallback(() => {
-    setScrollSpeed(speed => Math.max(speed - 0.5, 0.5));
-  }, []);
-
-  const increaseFontSize = useCallback(() => {
-    setFontSize(size => Math.min(size + 4, 120));
-  }, []);
-
-  const decreaseFontSize = useCallback(() => {
-    setFontSize(size => Math.max(size - 4, 12));
-  }, []);
-
-  const nextQuestion = useCallback(() => {
-    stopScrolling();
-    setCurrentQuestionIndex(prevIndex => {
-      const nextIndex = prevIndex + 1;
-      if (nextIndex >= questions.length) {
-        return 0; // Loop back to the first question
-      }
-      return nextIndex;
-    });
-  }, [questions.length, stopScrolling]);
-
+  // Ensure first block is focused if none is set
   useEffect(() => {
-    // Cleanup on unmount
-    return () => {
-      if (scrollIntervalRef.current) {
-        clearInterval(scrollIntervalRef.current);
+    if (!focusedBlockId && blocks.length > 0) {
+      setFocusedBlockId(blocks[0].id);
+    }
+  }, [blocks, focusedBlockId]);
+
+  // 1. Update Prose within a block
+  const updateBlockText = useCallback((id: string, text: string) => {
+    setBlocks(prev => prev.map(block => 
+      block.id === id ? { ...block, text } : block
+    ));
+  }, []);
+
+  // 2. The "Smart Deploy" Logic (with Collision Detection)
+  const addCatalyst = useCallback((blockId: string, type: CatalystType, value?: string) => {
+    let collisionDetected = false;
+
+    setBlocks(prev => prev.map(block => {
+      if (block.id === blockId) {
+        if (block.catalysts.length >= 3) {
+          collisionDetected = true;
+          return block; // Don't add the 4th catalyst
+        }
+        const newCatalyst: Catalyst = {
+          id: uuidv4(),
+          type,
+          value: value || '',
+          timestamp: Date.now(),
+        };
+        return { ...block, catalysts: [...block.catalysts, newCatalyst] };
       }
-    };
+      return block;
+    }));
+
+    return { collisionDetected };
+  }, []);
+
+  // 3. The "Block Split" (Triggered by Enter key)
+  const splitBlock = useCallback((id: string, cursorPosition: number) => {
+    setBlocks(prev => {
+      const index = prev.findIndex(b => b.id === id);
+      if (index === -1) return prev;
+
+      const currentBlock = prev[index];
+      const textBefore = currentBlock.text.slice(0, cursorPosition);
+      const textAfter = currentBlock.text.slice(cursorPosition);
+
+      const newBlock: ScriptBlock = {
+        id: uuidv4(),
+        type: 'beat',
+        text: textAfter,
+        catalysts: [],
+      };
+
+      const updatedBlocks = [...prev];
+      updatedBlocks[index] = { ...currentBlock, text: textBefore };
+      updatedBlocks.splice(index + 1, 0, newBlock);
+
+      setFocusedBlockId(newBlock.id); // Move focus to the new "Frame"
+      return updatedBlocks;
+    });
+  }, []);
+
+  // 4. The "Block Merge" (Triggered by Backspace at start of block)
+  const mergeWithPrevious = useCallback((id: string) => {
+    setBlocks(prev => {
+      const index = prev.findIndex(b => b.id === id);
+      if (index <= 0) return prev; // Cannot merge the first block
+
+      const prevBlock = prev[index - 1];
+      const currentBlock = prev[index];
+
+      const updatedBlocks = [...prev];
+      updatedBlocks[index - 1] = {
+        ...prevBlock,
+        text: prevBlock.text + currentBlock.text,
+        catalysts: [...prevBlock.catalysts, ...currentBlock.catalysts].slice(0, 3), // Keep max 3
+      };
+      updatedBlocks.splice(index, 1);
+
+      setFocusedBlockId(prevBlock.id);
+      return updatedBlocks;
+    });
+  }, []);
+
+  // 5. The "Block Reorder" (Drag-and-Drop)
+  const reorderBlocks = useCallback((activeId: string, overId: string) => {
+    setBlocks((prev) => {
+      const oldIndex = prev.findIndex((block) => block.id === activeId);
+      const newIndex = prev.findIndex((block) => block.id === overId);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        return arrayMove(prev, oldIndex, newIndex);
+      }
+      return prev;
+    });
   }, []);
 
   return {
-    isScrolling,
-    scrollSpeed,
-    fontSize,
-    setFontSize,
-    currentQuestion,
-    currentQuestionIndex,
-    startScrolling,
-    stopScrolling,
-    toggleScrolling,
-    increaseSpeed,
-    decreaseSpeed,
-    increaseFontSize,
-    decreaseFontSize,
-    nextQuestion,
-    setScrollSpeed,
+    blocks,
+    focusedBlockId,
+    setFocusedBlockId,
+    updateBlockText,
+    addCatalyst,
+    splitBlock,
+    mergeWithPrevious,
+    reorderBlocks,
+    setBlocks
   };
-}
+};

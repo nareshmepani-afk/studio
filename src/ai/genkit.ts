@@ -49,6 +49,7 @@ export async function getAI() {
       if (token) {
         customHeaders['Authorization'] = `Bearer ${token}`;
       }
+      console.log(`[Genkit] Auth Mode: ${Object.keys(customHeaders).length > 0 ? 'Service Account' : 'API Key'}`);
     } catch (err) {
       console.error("[Genkit] Failed to generate Service Account token:", err);
     }
@@ -57,13 +58,10 @@ export async function getAI() {
   return genkit({
     plugins: [
       googleAI({ 
-        // If we have a token, we don't need a public API key (apiKey: false)
-        // If token generation fails, we fallback to the API Key as a last resort
         apiKey: Object.keys(customHeaders).length > 0 ? false : process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
         customHeaders
       })
     ],
-    // Primary model confirmed available for this project via Roll Call
     model: 'googleai/gemini-2.0-flash',
   });
 }

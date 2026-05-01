@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type FormEvent, useEffect } from 'react';
+import { useState, type FormEvent, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
+import { usePrimaryFocus } from '@/hooks/studio/usePrimaryFocus';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function RegisterPage() {
@@ -24,6 +25,9 @@ export default function RegisterPage() {
   const { register, loading: authLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
+  
+  // THE INVISIBLE GUIDE: Focus the primary input for Registration
+  const nameRef = usePrimaryFocus();
 
   useEffect(() => {
     setHasMounted(true);
@@ -119,6 +123,7 @@ export default function RegisterPage() {
                     <UserPlus className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within/field:text-primary transition-colors" />
                     <Input
                       id="name"
+                      ref={nameRef as any}
                       type="text"
                       placeholder="Producer Name"
                       value={name}

@@ -3,7 +3,8 @@
 import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import { Memory } from '@/types';
 import { revalidatePath } from 'next/cache';
-import { mockPrompts } from '@/lib/mockData'; // Import mock data to find prompt details
+import { mockPrompts } from '@/lib/mockData';
+import { verifyRecaptchaToken } from '@/lib/fraud-defense';
 
 async function getUidFromIdToken(idToken: string): Promise<string | null> {
     if (!adminAuth) {
@@ -214,10 +215,26 @@ export async function cleanupAndMigrateMemories(): Promise<{ success: boolean; m
     }
 }
 
-export async function publishMemoryAction(memoryId: string): Promise<{ success: boolean; message: string }> {
+export async function publishMemoryAction(memoryId: string, recaptchaToken?: string): Promise<{ success: boolean; message: string }> {
+    console.log(`[publishMemoryAction] Verifying publish for ${memoryId}. Token present: ${!!recaptchaToken}`);
     const session = await getSession();
+    
     if (!session?.uid || !adminDb) {
         return { success: false, message: "Unauthorized or DB not initialized." };
+    }
+
+    // 1. Active Fraud Check
+    if (recaptchaToken) {
+        const fraudResult = await verifyRecaptchaToken(recaptchaToken, 'publish', session.uid);
+        console.log(`[publishMemoryAction] Risk Score: ${fraudResult.score} | Assessment: ${fraudResult.assessmentName}`);
+        
+        if (!fraudResult.isSafe) {
+            console.error(`[publishMemoryAction] BLOCKING: High-risk request detected for user ${session.uid}. Score: ${fraudResult.score}`);
+            return { 
+                success: false, 
+                message: "Security check failed. Please refresh and try again, or contact support if the issue persists." 
+            };
+        }
     }
 
     try {

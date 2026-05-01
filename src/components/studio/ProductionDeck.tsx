@@ -22,9 +22,16 @@ import { ResizableDivider } from './ResizableDivider';
 import { ProductionControlBar } from './ProductionControlBar';
 import { SensoryCatalystHUD } from './SensoryCatalystHUD';
 import { ThresholdGuard } from './overlays/ThresholdGuard';
+import { ProductionPreFlight } from './overlays/ProductionPreFlight';
 import { useStudioState } from '@/hooks/useStudioState';
+import { useProductionCharge } from '@/hooks/studio/useProductionCharge';
+import { detectAnchors } from '@/hooks/studio/useDirectorInk';
 
 const DEFAULT_SIDEBAR_WIDTH = 280;
+import { useMentorLifeline } from '@/hooks/studio/useMentorLifeline';
+import { MentorshipOverlay } from './MentorshipOverlay';
+import { useRecaptcha } from '@/hooks/useRecaptcha';
+import { firebaseConfig } from '@/lib/config-schema';
 const SNAP_THRESHOLD = 20; // Magnetic snap range
 
 // Define a placeholder for the memory data type
@@ -52,26 +59,46 @@ const ProductionDeck = ({
     const [isRailRetracted, setIsRailRetracted] = useState(false);
 
     // NEW: URL-based Source of Truth for the active act and modality
-    const { currentStage, setStage, modality, setModality } = useStudioState(memoryData?.prose || '');
+    const { currentStage, setStage, modality, setModality, isDirectorOpen } = useStudioState(memoryData?.prose || '');
 
     const [sidebarWidth, setSidebarWidth] = useState(320); // Default width
     const [isDragging, setIsDragging] = useState(false);
     const [isSnapActive, setIsSnapActive] = useState(false);
     const SNAP_THRESHOLD = 20;
 
-    // Interaction State
     const [hoveredInstrument, setHoveredInstrument] = useState<string | null>(null);
     const [wordCount, setWordCount] = useState(0);
+    const [hotClarity, setHotClarity] = useState(0);
+    const [showPreFlight, setShowPreFlight] = useState(false);
+
+    // MOD-15: Mentorship Lifeline
+    const { mentorModeActive, isOverlayOpen, toggleMentor, closeOverlay, getWhisper } = useMentorLifeline();
+    
+    // reCAPTCHA Hook
+    const { executeAction } = useRecaptcha(firebaseConfig.recaptchaSiteKey);
+
+    // Clarity Logic for Act I
+    const { totalCharge, dominantType } = useProductionCharge({
+        text: memoryData?.description || '',
+        anchors: detectAnchors(memoryData?.description || '')
+    });
 
     // Act Completion Logic
     const isActComplete = useMemo(() => {
-        const stage = memoryData?.productionStage || 0;
+        const stage = currentStage;
 
         switch (stage) {
             case 0: // Act I: Hook
-                return !!(memoryData?.title?.trim() && memoryData?.description?.trim());
+                return !!(
+                    memoryData?.title?.trim() && 
+                    (memoryData?.description?.trim()?.length > 10) && 
+                    memoryData?.location?.trim() && 
+                    memoryData?.dateComponents?.year && 
+                    memoryData?.dateComponents?.year !== 'none' &&
+                    memoryData?.dateComponents?.year !== ''
+                );
             case 1: // Act II: Weave
-                return wordCount >= 120;
+                return wordCount >= 150;
             case 2: // Act III: Capture
                 return !!memoryData?.videoUrl;
             case 3: // Act IV: Cut
@@ -125,11 +152,43 @@ const ProductionDeck = ({
     useEffect(() => {
         if (currentStage === 0 && modality !== null) {
             setIsRailRetracted(true);
-            // setSidebarWidth(80); // REMOVED: This was causing a conflict with the toggle/drag logic
         } else if (currentStage === 1) {
             setIsRailRetracted(false);
         }
     }, [currentStage, modality]);
+
+    // AUTO-ACTIVATION: Studio Mentor Idle Protocol
+    useEffect(() => {
+        // Only trigger in Act I if not already active
+        if (currentStage !== 0 || mentorModeActive) return;
+
+        let idleTimer: NodeJS.Timeout;
+
+        const resetTimer = () => {
+            if (idleTimer) clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                if (!mentorModeActive && currentStage === 0) {
+                    toggleMentor();
+                    console.log("Mentor Auto-Activated due to inactivity in Act I.");
+                }
+            }, 30000); // 30 seconds
+        };
+
+        // Listen for activity in the window
+        window.addEventListener('mousemove', resetTimer);
+        window.addEventListener('keydown', resetTimer);
+        window.addEventListener('mousedown', resetTimer);
+
+        // Initial timer start
+        resetTimer();
+
+        return () => {
+            if (idleTimer) clearTimeout(idleTimer);
+            window.removeEventListener('mousemove', resetTimer);
+            window.removeEventListener('keydown', resetTimer);
+            window.removeEventListener('mousedown', resetTimer);
+        };
+    }, [currentStage, mentorModeActive, toggleMentor]);
 
     // Find the current group context for navigation breadcrumbs
     const currentGroup = useMemo(() => {
@@ -223,6 +282,15 @@ const ProductionDeck = ({
                         modality={modality}
                         setModality={setModality}
                         onWordCountChange={setWordCount}
+                        currentStage={currentStage}
+                        mentorActive={mentorModeActive}
+                        onToggleMentor={toggleMentor}
+                        onClarityChange={setHotClarity}
+                        onNext={handleNextAct}
+                        onPrev={handlePrevAct}
+                        isComplete={isActComplete}
+                        charge={currentStage === 0 ? hotClarity : totalCharge}
+                        wordCount={wordCount}
                     />
                 );
             case 'collaborative':
@@ -235,9 +303,23 @@ const ProductionDeck = ({
     };
 
     const handleNextAct = () => {
-        if (isActComplete && currentStage < 4) {
+        const isAct1 = currentStage === 0;
+        const clarity = isAct1 ? hotClarity : totalCharge;
+        const isLowClarity = isAct1 && clarity < 40;
+
+        // NEW: Intercept Act 1 transition for the Pre-Flight Diagnostic
+        if (isAct1 && !isLowClarity && !showPreFlight) {
+            setShowPreFlight(true);
+            return;
+        }
+
+        // Note: ProductionControlBar handles the UI/Toast for the low clarity state,
+        // which prevents us from firing onNext if the gate is closed.
+        // We ensure that we only proceed if complete OR if we have clarity (or override).
+        if ((isActComplete || isLowClarity || showPreFlight) && currentStage < 4) {
             const next = currentStage + 1;
             setStage(next);
+            setShowPreFlight(false); // Reset pre-flight
             // Sync highest reached stage to backend for persistence
             if ((memoryData?.productionStage || 0) < next) {
                 handleUpdate({ ...memoryData, productionStage: next });
@@ -256,7 +338,10 @@ const ProductionDeck = ({
         if (!memoryData?.id) return;
         setIsPublishing(true);
         try {
-            const res = await publishMemoryAction(memoryData.id);
+            // Generate reCAPTCHA token
+            const token = await executeAction('publish');
+            
+            const res = await publishMemoryAction(memoryData.id, token || undefined);
             if (res.success) {
                 toast.success("Success!", {
                     description: "Your memory is now live in the Cinema.",
@@ -274,12 +359,13 @@ const ProductionDeck = ({
         }
     };
 
-    const sidebarActualWidth = isRailRetracted ? 80 : sidebarWidth;
+    // Logic: Actual Width for the Grid
+    const sidebarActualWidth = isRailRetracted ? 96 : Math.max(sidebarWidth, 96);
 
     return (
         <div className={`w-full h-full flex flex-col relative bg-[#020617] ${modality === null ? 'overflow-hidden' : ''}`}>
             {/* The PerspectiveWrapper handles the overall background color transition and the blurry interior swap */}
-            <PerspectiveWrapper activeRoom={activeRoom}>
+            <PerspectiveWrapper activeRoom={activeRoom} dominantType={dominantType}>
                 <div className="flex flex-col min-h-full relative overflow-hidden">
                     {/* Navigation stays static during blur transition mapped by PerspectiveWrapper */}
                     {modality !== null && (
@@ -293,7 +379,7 @@ const ProductionDeck = ({
                                 }}
                                 className="flex items-center gap-3 tracking-wide text-[var(--room-accent)] hover:brightness-125 transition-all p-2 pr-4 rounded-xl hover:bg-white/5 group"
                             >
-                                <span className="text-xl leading-none group-hover:-translate-x-1 transition-transform">&larr;</span>
+                                <span className="text-white/80 group-hover:text-white transition-colors uppercase">&larr;</span>
                                 <span className="text-sm font-headline uppercase tracking-widest">{groupTitle}</span>
                             </button>
 
@@ -349,7 +435,10 @@ const ProductionDeck = ({
                         </div>
                     )}
                     <div
-                        className="flex-1 grid relative overflow-hidden h-full"
+                        className={cn(
+                            "flex-1 grid relative overflow-hidden h-full",
+                            !isDragging && "transition-[grid-template-columns] duration-500 ease-in-out"
+                        )}
                         style={{
                             gridTemplateColumns: `${sidebarActualWidth}px 6px 1fr`,
                             cursor: isDragging ? 'col-resize' : 'default'
@@ -360,9 +449,17 @@ const ProductionDeck = ({
                             currentStage={currentStage}
                             onStageChange={setStage}
                             isRetracted={isRailRetracted}
-                            onToggleRetract={() => setIsRailRetracted(!isRailRetracted)}
+                            onToggleRetract={() => {
+                                const newState = !isRailRetracted;
+                                console.log(`[ProductionDeck] Toggling retraction. New state will be: ${newState}`);
+                                setIsRailRetracted(newState);
+                                // If unretracting and width is too small, jump to a healthy default
+                                if (!newState && sidebarWidth < 160) {
+                                    setSidebarWidth(320);
+                                }
+                            }}
                             modality={modality}
-                            customWidth={sidebarWidth}
+                            customWidth={sidebarActualWidth}
                             wordCount={wordCount}
                         />
 
@@ -377,11 +474,11 @@ const ProductionDeck = ({
                         )}
 
                         {/* THE STAGE: CONTENT AREA WITH BLACK OUT GUARD */}
-                        <div className={cn(
-                            "relative flex-1 min-h-[calc(100vh-80px)] transition-all duration-1000 ease-in-out bg-gradient-to-b from-slate-900 via-[#030303] to-black",
-                            modality === null && (hoveredInstrument ? "blur-md brightness-50" : "blur-xl brightness-50 pointer-events-none")
-                        )}>
-                            {renderRoom()}
+                         <div className={cn(
+                             "relative flex-1 min-h-[calc(100vh-80px)] overflow-y-auto flex flex-col transition-all duration-1000 ease-in-out bg-gradient-to-b from-slate-900 via-[#030303] to-black",
+                             modality === null && (hoveredInstrument ? "blur-md brightness-50" : "blur-xl brightness-50 pointer-events-none")
+                         )}>
+                             {renderRoom()}
 
                             {/* Tech Scout Threshold Guard */}
                             <AnimatePresence>
@@ -410,27 +507,61 @@ const ProductionDeck = ({
                             {modality !== null && (
                                 <SensoryCatalystHUD
                                     wordCount={wordCount}
+                                    isDirectorOpen={isDirectorOpen}
+                                    mentorActive={mentorModeActive}
+                                    currentStage={currentStage}
                                     onCatalystDrop={(type) => {
                                         // Internal handle in MemoryForm will be needed
                                         console.log(`Catalyst Dropped: ${type}`);
                                     }}
                                 />
                             )}
+                             {/* PRODUCTION CONTROL BAR: THE HEARTBEAT */}
+                             {modality !== null && currentStage >= 2 && (
+                                 <ProductionControlBar
+                                     currentStage={currentStage}
+                                     isComplete={isActComplete}
+                                     onNext={handleNextAct}
+                                     onPrev={handlePrevAct}
+                                     onPublish={handlePublish}
+                                     charge={currentStage === 0 ? hotClarity : totalCharge}
+                                     wordCount={wordCount}
+                                     isDocked={currentStage < 2}
+                                 />
+                             )}
                         </div>
                     </div>
 
-                    {/* PRODUCTION CONTROL BAR: THE HEARTBEAT */}
-                    {modality !== null && (
-                        <ProductionControlBar
-                            currentStage={currentStage}
-                            isComplete={isActComplete}
-                            onNext={handleNextAct}
-                            onPrev={handlePrevAct}
-                            onPublish={handlePublish}
-                        />
-                    )}
-                </div>
+                 </div>
             </PerspectiveWrapper>
+
+            {/* PRODUCTION PRE-FLIGHT OVERLAY */}
+            <ProductionPreFlight
+                isOpen={showPreFlight}
+                onClose={() => setShowPreFlight(false)}
+                onConfirm={handleNextAct}
+                charge={totalCharge}
+                anchors={detectAnchors(memoryData?.description || '')}
+                dominantType={dominantType}
+                storyData={{
+                    title: memoryData?.title || '',
+                    hook: memoryData?.description || ''
+                }}
+            />
+
+            {/* STUDIO MENTOR OVERLAY (LIFELINE) */}
+            <MentorshipOverlay 
+                active={isOverlayOpen}
+                onClose={closeOverlay}
+                whisper={getWhisper(currentStage)}
+                onApplySeed={(seed) => {
+                    handleUpdate({ ...memoryData, description: (memoryData.description || '') + (memoryData.description ? '\n\n' : '') + seed });
+                    closeOverlay();
+                    toast.success("Inspiration Seed Sown", {
+                        description: "The Mentor has added a sensory anchor to your hook."
+                    });
+                }}
+            />
 
             {/* MODALITY SELECTION: STUDIO ENTRANCE */}
             <AnimatePresence>

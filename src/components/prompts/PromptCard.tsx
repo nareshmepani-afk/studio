@@ -7,7 +7,7 @@ import {
   Film,
   CheckCircle, 
   Edit, 
-  Flag, 
+  Bookmark, 
   Lock, 
   Scan, 
   X,
@@ -15,7 +15,8 @@ import {
   Rocket, 
   PencilLine,
   Play,
-  Clapperboard
+  Clapperboard,
+  Sparkles
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { 
@@ -46,9 +47,10 @@ type PromptCardProps = {
   onToggleFlagPrompt: (promptId: string) => void;
   canAccess: boolean;
   memoryDescription?: string;
-  status?: 'draft' | 'published';
+  status?: 'draft' | 'published' | 'completed';
   prompt?: Prompt;
   parentPrompt?: Prompt;
+  isRecommended?: boolean;
 };
 
 export function PromptCard(props: PromptCardProps) {
@@ -92,7 +94,8 @@ export function PromptCard(props: PromptCardProps) {
     onToggleFlagPrompt,
     canAccess,
     memoryDescription,
-    status
+    status,
+    isRecommended
   } = props;
 
   const handleAction = (e: React.MouseEvent) => {
@@ -126,6 +129,7 @@ export function PromptCard(props: PromptCardProps) {
     isCompleted 
       ? 'bg-primary/[0.03] border-primary/20 hover:border-primary/40 shadow-2xl shadow-primary/5' 
       : 'bg-white/[0.02] border-white/5 hover:border-white/20 hover:bg-white/[0.05]',
+    isRecommended && !isCompleted && "border-emerald-500/40 ring-1 ring-emerald-500/20 bg-emerald-500/[0.03] shadow-[0_0_30px_rgba(16,185,129,0.1)]",
     isBriefOpen && "border-amber-500/50 ring-1 ring-amber-500/20 shadow-[0_0_30px_rgba(251,191,36,0.1)]",
     !canAccess && "opacity-30 grayscale blur-[0.5px]"
   );
@@ -171,6 +175,15 @@ export function PromptCard(props: PromptCardProps) {
           className="absolute inset-0 z-0"
           prefetch={true}
         />
+        
+        {isRecommended && !isCompleted && (
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20">
+             <div className="bg-emerald-500 text-slate-900 text-[8px] font-black uppercase tracking-[0.3em] px-4 py-1.5 rounded-b-xl shadow-[0_10px_20px_rgba(16,185,129,0.3)] flex items-center gap-2">
+                <Sparkles className="w-2.5 h-2.5" />
+                Next Recommended
+             </div>
+          </div>
+        )}
         {/* Film Frame Aesthetic Overlay */}
         <div className="absolute top-0 left-0 w-full h-1 bg-[repeating-linear-gradient(90deg,transparent,transparent_20px,rgba(255,255,255,0.05)_20px,rgba(255,255,255,0.05)_40px)] pointer-events-none z-0" />
         <div className="absolute bottom-0 left-0 w-full h-1 bg-[repeating-linear-gradient(90deg,transparent,transparent_20px,rgba(255,255,255,0.05)_20px,rgba(255,255,255,0.05)_40px)]" />
@@ -313,19 +326,21 @@ export function PromptCard(props: PromptCardProps) {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={handleFlagToggle}
-                          className="h-8 w-8 text-white/40 hover:text-primary hover:bg-primary/5 shrink-0"
-                          aria-label={isFlaggedForReuse ? "Unflag scene" : "Flag scene for priority"}
-                          disabled={props.isLoading || !canAccess}
-                        >
-                          <Flag className={cn("h-4 w-4 transition-all", isFlaggedForReuse ? 'fill-primary text-primary' : '')} />
-                        </Button>
+                        <div className="relative z-10">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleFlagToggle}
+                            className="h-8 w-8 text-white/40 hover:text-primary hover:bg-primary/5 shrink-0"
+                            aria-label={isFlaggedForReuse ? "Remove Bookmark" : "Bookmark Scene"}
+                            disabled={props.isLoading || !canAccess}
+                          >
+                            <Bookmark className={cn("h-4 w-4 transition-all", isFlaggedForReuse ? 'fill-primary text-primary' : '')} />
+                          </Button>
+                        </div>
                       </TooltipTrigger>
-                      <TooltipContent align="start" side="top" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest">
-                        {isFlaggedForReuse ? "Remove Priority" : "Flag for Priority"}
+                      <TooltipContent align="start" side="top" className="bg-neutral-900 border-white/10 text-[10px] font-bold uppercase tracking-widest relative z-50">
+                        {isFlaggedForReuse ? "Remove Bookmark" : "Bookmark Scene"}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -338,7 +353,10 @@ export function PromptCard(props: PromptCardProps) {
         </div>
         
         {/* Glow effect on hover */}
-        <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-5 blur-[80px] transition-opacity pointer-events-none" />
+        <div className={cn(
+          "absolute inset-0 opacity-0 group-hover:opacity-5 blur-[80px] transition-opacity pointer-events-none",
+          isRecommended && !isCompleted ? "bg-emerald-500 opacity-[0.03]" : "bg-primary"
+        )} />
       </div>
   );
 

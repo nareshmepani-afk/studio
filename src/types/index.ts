@@ -15,6 +15,26 @@ export interface MediaAttachment {
   size?: number;
 }
 
+export type CatalystType = 'aroma' | 'soundscape' | 'visual' | 'polish' | 'clarity';
+
+export interface Catalyst {
+  id: string;
+  type: CatalystType;
+  value: string; // The user-defined content
+  timestamp: number;
+}
+
+export interface ScriptBlock {
+  id: string; // UUID for React rendering and drag-drop
+  type: 'hook' | 'beat' | 'bridge'; // Defines styling and AI importance
+  text: string; // The actual prose
+  catalysts: Catalyst[]; // Limited to 3 via logic
+  analysis?: {
+    sentiment: number; // -1 to 1
+    pace: 'slow' | 'balanced' | 'fast';
+  };
+}
+
 export interface Memory {
   id: string;
   userId: string;
@@ -30,7 +50,7 @@ export interface Memory {
   date: string;
   createdAt: string;
   updatedAt: string;
-  status?: 'draft' | 'published';
+  status?: 'draft' | 'published' | 'completed';
   mediaAttachments?: MediaAttachment[];
   imageUrl?: string;
   isLegacy?: boolean;
@@ -51,12 +71,24 @@ export interface Memory {
     year?: string;
   };
   prose?: string;
+  scriptBlocks?: ScriptBlock[]; // NLE architecture array
   content?: string;
   modality?: 'pen' | 'voice' | null;
   tags?: string[];
   sensory?: Record<string, string>;
   aiTakes?: { poetic?: string; direct?: string; nostalgic?: string } | null;
   productionStage?: number;
+  trimStart?: number;
+  trimEnd?: number;
+  cameraActive?: boolean;
+  videoStory?: string; // Fused narrative from Hook + Transcript
+  atmosphericSuggestions?: string[]; // Script Supervisor enhancements
+  emotionalBeats?: {
+    time: number;
+    label: string;
+    color: string;
+    description: string;
+  }[];
 }
 
 export interface TranscriptSegment {
@@ -87,6 +119,7 @@ export interface DirectorsNotepad {
     mention: string;
   }[];
   directorNotes: string;
+  videoStory?: string; // Fused narrative synthesized from transcript and hook
   suggestedChapters: Chapter[];
   analyzedAt: string;
 }

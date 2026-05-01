@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { usePrimaryFocus } from '@/hooks/studio/usePrimaryFocus';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,8 @@ const LoginForm = () => {
   const [email, setEmail] = useState('test@example.com');
   const [password, setPassword] = useState('password');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // THE INVISIBLE GUIDE: Focus the primary input for Login
+  const emailRef = usePrimaryFocus();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -41,6 +44,7 @@ const LoginForm = () => {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 group-focus-within/input:text-primary transition-colors" />
                 <Input
                   id="email"
+                  ref={emailRef as any}
                   type="email"
                   placeholder="name@studio.com"
                   required

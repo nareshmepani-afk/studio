@@ -70,6 +70,16 @@ export function StudioDashboard({
   const [flaggedPromptIds, setFlaggedPromptIds] = useState(initialFlaggedPromptIds);
   const [isCleaning, setIsCleaning] = useState(false);
 
+  // THE INVISIBLE GUIDE: Identify the next logical action for the director
+  const recommendedPromptId = React.useMemo(() => {
+    for (const chapter of chapters) {
+      for (const cp of chapter.prompts) {
+        if (!cp.memory) return cp.id;
+      }
+    }
+    return null;
+  }, [chapters]);
+
     // GUEST AUTO-OPEN logic
   // GUEST AUTO-OPEN logic
   useEffect(() => {
@@ -314,6 +324,7 @@ export function StudioDashboard({
                             promptText={cp.title}
                             storyScript={storyScripts[cp.id] || "No script available."}
                             isCompleted={isCompleted}
+                            isRecommended={cp.id === recommendedPromptId}
                             isFlaggedForReuse={flaggedPromptIds.has(cp.id)}
                             isLoading={false}
                             onStartChapter={effectiveOnStartChapter}

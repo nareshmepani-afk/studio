@@ -7,6 +7,7 @@ import { VertexAI } from '@google-cloud/vertexai';
 import { adminDb } from '@/lib/firebase-admin';
 import { revalidatePath } from 'next/cache';
 import { getSession } from '@/lib/session';
+import { ScriptBlock } from '@/types';
 
 // Parse service account for Vertex AI SDK
 const serviceAccountRaw = process.env.SERVICE_ACCOUNT_JSON;
@@ -65,7 +66,7 @@ export async function expandWithAI(
       STYLE RULES (THE GOLD STANDARD):
       - Use high-contrast metaphors (e.g., "not a map, but the soil").
       - Focus on the "Linguistically silent but culturally loud" quality of migration.
-      - Avoid AI-speak: BANNED words include "odyssey," "lineage," "tapestry," or "shores" (unless refers to a physical beach).
+      - Avoid AI-speak: BANNED words include "odyssey," "lineage," "tapestry," "vibrant," "testament," "unfolding," "interwoven," "symphony," or "shores" (unless refers to a physical beach).
       - Write for future generations.
       
       Craft three (3) distinct "Takes" in this literary style. 
@@ -110,47 +111,76 @@ export async function expandWithAI(
 }
 
 /**
- * Server action to polish the description/logline.
+ * Server action to get 2-3 atmospheric enhancements to make a hook "Cinema Ready".
  */
-export async function polishDescription(description: string): Promise<string> {
-  console.log("[AI Weaver] polishDescription triggered");
+export async function getAtmosphericPolish(description: string): Promise<string[]> {
+  console.log("[AI Weaver] getAtmosphericPolish triggered");
   const ai = await getAI();
-
   try {
     const prompt = `
-      You are an award-winning Literary Memoirist and Family Historian.
-      Your task is to transform raw voice-to-text memory fragments into a "Superior" narrative piece.
+      You are the "Script Supervisor" for Chronicle Cinema. 
+      Analyze this Story Hook and suggest exactly 3 atmospheric enhancements to make it "Cinema Ready."
+      Enhancements should focus on Sensory Anchors (Aroma, Sound, Visual).
       
-      STYLE RULES:
-      1. INTERNAL WORLD: Explore the "invisible" heritage carried across borders.
-      2. HIGH-END METAPHORS: Use grounded but profound metaphors (e.g., "Linguistically silent but culturally loud" or "Our history began not with a map, but with the soil").
-      3. BANNED AI-SPEAK: Do NOT use "odyssey," "lineage," "tapestry," "unfamiliar shores," or "unfolding."
-      4. PRESERVE AUTHENTICITY: Keep Madhapur, Nairobi, Kutch, and specific facts like "vegetarian" and "Gujarati."
-      5. LEGACY TONE: Write as if these words will be read by your grandchildren 50 years from now.
-      
-      CONSTRAINTS:
-      - Aim for 120-170 words.
-      - Return ONLY the rhythmic, literary prose. No titles, no bracketed text, no meta-commentary.
-      - Ensure the final sentence is as impactful as: "They proved that heritage isn't just the language you speak; it's the persistence you show when the words aren't there."
-
-      RAW MEMORY CONTENT:
+      [STORY HOOK]
       "${description}"
+      
+      Return the suggestions as a JSON array of strings. 
+      Example: ["Incorporate the sharp scent of ozone before the rain", "Add the rhythmic ticking of a grandfather clock", "Describe the amber glow of the setting sun hitting the floorboards"]
     `;
 
-    console.log("[AI Weaver] Sending Polish prompt to Genkit...");
+    const { output } = await pRetry(async () => {
+      return await ai.generate({
+        prompt,
+        output: {
+          schema: z.array(z.string()),
+        },
+      });
+    }, { retries: 2 });
+
+    return output || [];
+  } catch (error) {
+    console.error("[AI Weaver] Atmospheric Polish Failure:", error);
+    return ["Add a specific scent memory", "Incorporate an ambient sound cue", "Highlight a unique visual detail"];
+  }
+}
+
+/**
+ * Server action to fuse the original script/hook with the video transcript.
+ * This is the "Fusion Protocol."
+ */
+export async function fuseVideoStory(hook: string, transcript: string): Promise<string> {
+  console.log("[AI Weaver] fuseVideoStory (Fusion Protocol) triggered");
+  const ai = await getAI();
+  try {
+    const prompt = `
+      You are the "Lead Editor" and "Auteur" for Chronicle Cinema. 
+      Your task is the "Fusion Protocol": blend the original "Director's Intent" (Hook) with the "Actual Performance" (Transcript) into a cohesive, prestigious "Video Story."
+      
+      [DIRECTOR'S INTENT / HOOK]
+      "${hook}"
+      
+      [ACTUAL PERFORMANCE / TRANSCRIPT]
+      "${transcript}"
+      
+      RULES:
+      1. PRESTIGE TONE: The final story must feel like a narrated cinematic memoir.
+      2. COHESION: Resolve any discrepancies between the intent and the performance.
+      3. LITERARY DEPTH: Use high-end metaphors. 
+      4. BANNED WORDS: "odyssey", "tapestry", "lineage", "vibrant", "testament", "unfolding".
+      5. Length: 150-200 words.
+      
+      Return ONLY the fused prose.
+    `;
+
     const { text } = await pRetry(async () => {
       return await ai.generate(prompt);
     }, { retries: 2 });
-    
-    if (text) {
-      console.log("[AI Weaver] Polish successful");
-      return text.trim().replace(/^["']|["']$/g, '').replace(/```[a-z]*\n|```/g, '');
-    }
-    
-    throw new Error("AI returned no text");
-  } catch (error: any) {
-    console.error("[AI Weaver] Polish Failure:", error.message || error);
-    throw new Error(`AI Polish Blocked: ${error.message}`);
+
+    return text?.trim() || "";
+  } catch (error) {
+    console.error("[AI Weaver] Fusion Protocol Failure:", error);
+    return `${hook}\n\n(Transcript: ${transcript})`;
   }
 }
 
@@ -419,7 +449,19 @@ export async function generateDirectorsNotepad(memoryId: string, videoUrl: strin
     const notepadData = JSON.parse(jsonText);
     notepadData.analyzedAt = new Date().toISOString();
 
-    // 3. Persist to Firestore
+    // 4. Fusion Protocol: Synthesis of Hook + Transcript
+    // Fetch original hook from the memory document
+    if (!adminDb) throw new Error("Database connection unavailable");
+    const memorySnap = await adminDb.collection('users').doc(session.uid).collection('memories').doc(memoryId).get();
+    const memoryData = memorySnap.data();
+    const originalHook = memoryData?.description || "";
+    const transcriptText = notepadData.transcript.map((t: any) => t.text).join(' ');
+    
+    console.log("[Director's Notepad] Triggering Fusion Protocol...");
+    const videoStory = await fuseVideoStory(originalHook, transcriptText);
+    notepadData.videoStory = videoStory;
+
+    // 5. Persist to Firestore
     if (!adminDb) throw new Error("Database connection lost");
     
     const analysisRef = adminDb.collection('users').doc(session.uid).collection('memories').doc(memoryId).collection('analysis').doc('notepad');
@@ -431,6 +473,11 @@ export async function generateDirectorsNotepad(memoryId: string, videoUrl: strin
     
     await analysisRef.set(resultToStore);
 
+    // Also update the main memory document with the videoStory for high-level access
+    await adminDb.collection('users').doc(session.uid).collection('memories').doc(memoryId).update({
+      videoStory: videoStory
+    });
+
     revalidatePath('/studio');
     console.log("[Director's Notepad] Analysis complete and persisted to subdocument.");
     
@@ -439,5 +486,183 @@ export async function generateDirectorsNotepad(memoryId: string, videoUrl: strin
   } catch (error: any) {
     console.error("[Director's Notepad] Analysis Failed:", error);
     return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Server action to analyze the script blocks and suggest sensory catalysts.
+ * This is the "Block-Aware" AI integration for the Director's Note.
+ */
+export async function analyzeCompositionAnchors(blocks: ScriptBlock[]): Promise<Array<{
+  blockId: string;
+  type: 'aroma' | 'soundscape' | 'visual' | 'polish';
+  value: string;
+  reasoning: string;
+}>> {
+  console.log(`[AI Weaver] analyzeCompositionAnchors triggered. Blocks count: ${blocks.length}`);
+  const ai = await getAI();
+  if (!ai) {
+    console.error("[AI Weaver] Failed to initialize Genkit instance");
+    return [];
+  }
+
+  // Filter out empty blocks to save tokens
+  const activeBlocks = blocks.filter(b => b.text.trim().length > 0);
+  
+  if (activeBlocks.length === 0) {
+    return [];
+  }
+
+  const scriptContent = activeBlocks.map(b => `[ID: ${b.id}] (${b.type}): ${b.text}`).join('\n\n');
+
+  try {
+    const prompt = `
+      You are the "Lead Director" and "Sensory Designer" for Chronicle Cinema.
+      Your task is to analyze the following sequence of "Script Blocks" and suggest 1 to 3 "Sensory Catalysts" to deepen the immersion.
+      
+      [CURRENT SCRIPT COMPOSITION]
+      ${scriptContent}
+
+      [THE INSTRUCTION]
+      Do not invent new story beats. Identify existing blockId keys and propose specific Sensory Catalysts that deepen the immersion of the text already present in those blocks.
+      
+      [CATALYST TYPES]
+      - aroma: A specific scent memory (e.g. "Scent of old books", "Jasmine in the rain")
+      - soundscape: A specific audio cue (e.g. "Distant train whistle", "Muffled laughter")
+      - visual: A striking visual detail or lighting cue (e.g. "Dust motes in amber light")
+      - polish: A suggestion to refine the prose (e.g. "Strengthen the active verb here")
+
+      Return ONLY a JSON array of suggestions. Each suggestion must include:
+      - blockId: The exact ID of the block you are targeting.
+      - type: One of the catalyst types above.
+      - value: The short, evocative catalyst phrase (max 5 words).
+      - reasoning: A brief director's note explaining why this catalyst works here (max 15 words).
+    `;
+
+    console.log("[AI Weaver] Sending Composition Analysis prompt to Genkit...");
+    const { output } = await pRetry(async () => {
+      return await ai.generate({
+        prompt,
+        output: {
+          schema: z.array(z.object({
+            blockId: z.string(),
+            type: z.enum(['aroma', 'soundscape', 'visual', 'polish']),
+            value: z.string(),
+            reasoning: z.string()
+          })),
+        },
+      });
+    }, { 
+      retries: 2,
+      onFailedAttempt: error => console.warn(`[AI Weaver] Composition Analysis Attempt ${error.attemptNumber} failed. ${error.retriesLeft} retries left.`)
+    });
+    
+    if (output) {
+      console.log("[AI Weaver] Composition Analysis successful, generated", output.length, "suggestions");
+      return output;
+    }
+    
+    return [];
+  } catch (error: any) {
+    console.error("[AI Weaver] Composition Analysis Failure:", error);
+    return [];
+  }
+}
+
+/**
+ * Polishes the story hook to ensure high Scene Clarity.
+ */
+export async function polishDescription(description: string, options: { sensoryFocus?: string } = {}): Promise<string> {
+  console.log("[AI Weaver] polishDescription triggered");
+  const ai = await getAI();
+  
+  const prompt = `
+    You are the "Script Supervisor" for Memory Weaver Studio.
+    Refine the following "Story Hook" to make it "Cinema Ready."
+    
+    [ORIGINAL HOOK]
+    ${description}
+    
+    [INSTRUCTIONS]
+    - Improve the rhythm and sensory weight of the prose.
+    - ${options.sensoryFocus ? `Focus specifically on infusing ${options.sensoryFocus} details.` : 'Ensure a balanced emotional clarity.'}
+    - Keep it concise (under 80 words).
+    - Maintain the user's core intent but make it feel like a professional film treatment.
+    - BANNED: AI clichés like "tapestry," "odyssey," "whispers," "vibrant," "testament," "unfolding."
+    
+    Return ONLY the polished text. No quotes, no preamble.
+  `;
+
+  try {
+    const { text } = await pRetry(async () => {
+      return await ai.generate(prompt);
+    }, { retries: 2 });
+    
+    return text.trim();
+  } catch (error) {
+    console.error("[AI Weaver] polishDescription Failure:", error);
+    return description; // Fallback to original
+  }
+}
+/**
+ * Server action to analyze the script for grammar, spelling, and cinematic clarity.
+ */
+export async function proofreadScript(blocks: ScriptBlock[]): Promise<Array<{
+  blockId: string;
+  original: string;
+  corrected: string;
+  reason: string;
+}>> {
+  console.log(`[AI Weaver] proofreadScript triggered. Blocks count: ${blocks.length}`);
+  const ai = await getAI();
+  if (!ai) return [];
+
+  const activeBlocks = blocks.filter(b => b.text.trim().length > 0);
+  if (activeBlocks.length === 0) return [];
+
+  const scriptContent = activeBlocks.map(b => `[ID: ${b.id}]: ${b.text}`).join('\n\n');
+
+  try {
+    const prompt = `
+      You are the "Master Editor" and "Grammarian" for Chronicle Cinema.
+      Analyze the following script blocks for:
+      1. Spelling and Grammar errors.
+      2. AI-speak clichés (e.g., "tapestry", "odyssey", "whispers", "vibrant", "testament", "unfolding").
+      3. Overuse of weak adverbs (e.g., "very", "really", "actually", "simply", "just").
+      
+      [SCRIPT CONTENT]
+      ${scriptContent}
+
+      [THE INSTRUCTION]
+      Identify errors and provide a "corrected" version for each affected block. 
+      Keep the corrected version concise and maintain the user's intent.
+      
+      Return strictly a JSON array of objects:
+      {
+        "blockId": "string",
+        "original": "string (the segment with the error)",
+        "corrected": "string (the fixed segment)",
+        "reason": "string (e.g. 'Spelling error', 'AI cliché detected')"
+      }
+    `;
+
+    const { output } = await pRetry(async () => {
+      return await ai.generate({
+        prompt,
+        output: {
+          schema: z.array(z.object({
+            blockId: z.string(),
+            original: z.string(),
+            corrected: z.string(),
+            reason: z.string()
+          })),
+        },
+      });
+    }, { retries: 2 });
+    
+    return output || [];
+  } catch (error) {
+    console.error("[AI Weaver] Proofread Failure:", error);
+    return [];
   }
 }

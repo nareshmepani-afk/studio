@@ -8,6 +8,7 @@ type RoomType = 'solo' | 'collaborative' | 'guest' | 'interview' | 'host' | 'sto
 interface PerspectiveWrapperProps {
   activeRoom: RoomType;
   children: React.ReactNode;
+  dominantType?: 'aroma' | 'soundscape' | 'visual' | 'none';
 }
 
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
@@ -30,9 +31,11 @@ const cinematicThemeMap: Record<RoomType, 'amber' | 'blue' | 'default'> = {
   interview: 'default',
 };
 
-export default function PerspectiveWrapper({ activeRoom, children }: PerspectiveWrapperProps) {
+export default function PerspectiveWrapper({ activeRoom, children, dominantType }: PerspectiveWrapperProps) {
   const themeClass = themeMap[activeRoom];
-  const cinematicTheme = cinematicThemeMap[activeRoom];
+  const cinematicTheme = (dominantType && dominantType !== 'none') 
+    ? dominantType 
+    : cinematicThemeMap[activeRoom];
 
   // The lens blur and slide animation
   const variants = {

@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 interface CinematicBackgroundProps {
   children: React.ReactNode;
-  theme?: 'amber' | 'blue' | 'default';
+  theme?: 'amber' | 'blue' | 'default' | 'aroma' | 'soundscape' | 'visual';
   className?: string;
   minFullHeight?: boolean;
 }
@@ -28,13 +28,17 @@ export const CinematicBackground = ({
         {/* Primary Glow (Teal/Blue ish - The "Studio" Base) */}
         <div className={cn(
           "absolute -top-[20%] -left-[10%] w-[70%] h-[70%] rounded-full blur-[120px] transition-all duration-1000",
-          theme === 'blue' ? "bg-sky-500/15" : "bg-primary/10"
+          theme === 'blue' || theme === 'soundscape' ? "bg-sky-500/15" : 
+          theme === 'visual' ? "bg-emerald-500/15" :
+          "bg-primary/10"
         )} />
 
         {/* Accent Glow (Amber/Rose - The "Warmer" Production Side) */}
         <div className={cn(
           "absolute -bottom-[20%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[120px] transition-all duration-1000",
-          theme === 'amber' ? "bg-amber-500/15" : "bg-amber-600/5"
+          theme === 'amber' || theme === 'aroma' ? "bg-amber-500/15" : 
+          theme === 'visual' ? "bg-emerald-600/10" :
+          "bg-amber-600/5"
         )} />
 
         {/* Texture Overlay (Optional subtle noise for "Film Grain" feel) */}

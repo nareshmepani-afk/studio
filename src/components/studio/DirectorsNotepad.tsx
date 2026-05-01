@@ -31,7 +31,7 @@ export default function DirectorsNotepad({
   className = "" 
 }: DirectorsNotepadProps) {
   const [notepad, setNotepad] = useState<NotepadType | null>(initialNotepad || null);
-  const [activeTab, setActiveTab] = useState<'transcript' | 'beats' | 'notes'>('transcript');
+  const [activeTab, setActiveTab] = useState<'transcript' | 'beats' | 'notes' | 'fusion'>('transcript');
   const [isOpen, setIsOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(!initialNotepad);
 
@@ -66,6 +66,7 @@ export default function DirectorsNotepad({
     { id: 'transcript', label: 'Transcript', icon: FileText },
     { id: 'beats', label: 'Emotional Beats', icon: Activity },
     { id: 'notes', label: 'Director Notes', icon: BookOpen },
+    { id: 'fusion', label: 'Fusion Protocol', icon: SparklesIcon },
   ];
 
   return (
@@ -237,17 +238,64 @@ export default function DirectorsNotepad({
                         "{notepad.directorNotes}"
                       </p>
                     </div>
+                  </motion.div>
+                )}
 
-                    <div className="mt-8">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-4">Resolved Entities</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {notepad.entities.map((entity: any, idx: number) => (
-                          <div key={idx} className="px-3 py-1.5 bg-zinc-900 border border-white/5 rounded-lg text-[10px] text-zinc-400 flex flex-col gap-0.5">
-                            <span className="font-black text-white uppercase tracking-tighter">{entity.name}</span>
-                            <span className="opacity-40">{entity.type}</span>
-                          </div>
-                        ))}
+                {activeTab === 'fusion' && (
+                  <motion.div
+                    key="fusion"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.05 }}
+                    className="space-y-8"
+                  >
+                    <div className="p-8 bg-gradient-to-br from-emerald-500/10 via-zinc-900 to-black border border-emerald-500/20 rounded-[2.5rem] relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-30 transition-opacity">
+                        <SparklesIcon className="w-16 h-16 text-emerald-400" />
                       </div>
+                      
+                      <div className="relative z-10 space-y-6">
+                        <div className="flex items-center gap-3">
+                          <div className="px-3 py-1 bg-emerald-500/20 border border-emerald-500/40 rounded-full">
+                            <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Cohesive Narrative // V1</span>
+                          </div>
+                          <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full">
+                            <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest italic">Fusion: Active</span>
+                          </div>
+                        </div>
+
+                        <h4 className="text-xl font-serif text-white italic leading-relaxed">
+                          The Video Story
+                        </h4>
+
+                        <div className="prose prose-invert max-w-none">
+                          <p className="text-zinc-300 leading-[1.8] text-lg font-serif italic first-letter:text-5xl first-letter:font-black first-letter:text-emerald-500 first-letter:mr-3 first-letter:float-left">
+                            {notepad.videoStory || "The Fusion Protocol is synthesizing the definitive edition of your memory. This process blends your original intent with the recorded performance."}
+                          </p>
+                        </div>
+
+                        <div className="pt-8 border-t border-white/5 grid grid-cols-2 gap-4">
+                           <div className="space-y-1">
+                              <span className="text-[7px] font-black text-zinc-600 uppercase tracking-widest">Architect Intent</span>
+                              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                 <motion.div initial={{ width: 0 }} animate={{ width: '85%' }} className="h-full bg-sky-500/40" />
+                              </div>
+                           </div>
+                           <div className="space-y-1">
+                              <span className="text-[7px] font-black text-zinc-600 uppercase tracking-widest">Performance Sync</span>
+                              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                 <motion.div initial={{ width: 0 }} animate={{ width: '92%' }} className="h-full bg-emerald-500/40" />
+                              </div>
+                           </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="px-4">
+                       <h5 className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-4">Auteur's Technical Log</h5>
+                       <p className="text-[10px] text-zinc-400 leading-relaxed font-mono italic">
+                          "The Fusion Protocol has successfully mapped the emotional geometry of the Hook to the phonetic rhythm of the Transcript. The resulting prose maintains the heritage-first bias while smoothing performance artifacts."
+                       </p>
                     </div>
                   </motion.div>
                 )}

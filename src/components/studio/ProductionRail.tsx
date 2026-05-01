@@ -11,7 +11,9 @@ import {
   PenTool, 
   Mic2, 
   Scissors, 
-  Film 
+  Film,
+  Layers,
+  Radio
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -31,8 +33,8 @@ export interface Act {
 
 export const PRODUCTION_ACTS: Act[] = [
   { id: 0, title: 'The Hook', label: 'ACT I', description: 'Draft your narrative blueprint.', icon: Anchor },
-  { id: 1, title: 'The Weave', label: 'ACT II', description: 'Deep-scripting and sensory tagging.', icon: PenTool },
-  { id: 2, title: 'Capture', label: 'ACT III', description: 'Vocal testimony and video recording.', icon: Mic2 },
+  { id: 1, title: 'The Weave', label: 'ACT II', description: 'Deep-scripting and sensory tagging.', icon: Layers },
+  { id: 2, title: 'Capture', label: 'ACT III', description: 'Vocal testimony and video recording.', icon: Radio },
   { id: 3, title: 'The Cut', label: 'ACT IV', description: 'Director\'s trimmings and final edits.', icon: Scissors },
   { id: 4, title: 'Premiere', label: 'ACT V', description: 'Cinematic showcase and archive.', icon: Film },
 ];
@@ -93,9 +95,20 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
         {/* Rail Background Effects */}
         <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />
         
-        <div className="p-8 space-y-12 relative z-10">
+        <div className={cn(
+          "space-y-12 relative z-10 transition-all duration-500",
+          customWidth <= 160 ? "p-4 flex flex-col items-center" : "p-8"
+        )}>
           <div className="space-y-1">
-            <span className="text-[10px] font-black text-emerald-500/40 uppercase tracking-[0.5em] whitespace-nowrap">Production Rail</span>
+            {customWidth > 160 && (
+                <motion.span 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-[10px] font-black text-emerald-500/70 uppercase tracking-[0.5em] whitespace-nowrap block"
+                >
+                  Production Rail
+                </motion.span>
+            )}
             {customWidth > 160 && (
               <motion.h2 
                 initial={{ opacity: 0 }} 
@@ -117,7 +130,7 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                 <div key={act.id} className="relative">
                   {/* Connector Line */}
                   {index !== PRODUCTION_ACTS.length - 1 && (
-                    <div className="absolute left-[19px] top-10 bottom-[-24px] w-px bg-white/5">
+                    <div className="absolute left-[23.5px] top-10 bottom-[-24px] w-px bg-white/5">
                       <motion.div 
                         initial={false}
                         animate={{ height: completed ? '100%' : '0%' }}
@@ -135,23 +148,34 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                           className={cn(
                             "group flex items-start gap-4 text-left transition-all duration-300 w-full",
                             !available && "opacity-30 cursor-not-allowed",
-                            active && "translate-x-2"
+                            active && customWidth > 160 && "translate-x-2",
+                            customWidth <= 160 && "justify-center"
                           )}
                         >
-                          <div className={cn(
-                            "relative z-10 w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-500",
-                            active 
-                              ? "bg-emerald-500 border-emerald-400 text-slate-900 shadow-[0_0_20px_rgba(16,185,129,0.4)]" 
-                              : available 
-                                ? "bg-white/5 border-white/10 text-white/40 group-hover:border-emerald-500/50 group-hover:text-emerald-400" 
-                                : "bg-black/40 border-white/5 text-white/10"
-                          )}>
-                            {completed ? (
-                              <CheckCircle2 className="w-5 h-5" />
-                            ) : (
-                              <act.icon className="w-5 h-5" />
+                          <motion.div 
+                            layoutId={act.id === 0 ? `modality-icon-${modality}` : undefined}
+                            className={cn(
+                              "relative z-10 w-12 h-12 rounded-2xl border flex items-center justify-center transition-all duration-500 shrink-0",
+                              active 
+                                ? "bg-emerald-500 border-emerald-400 text-slate-900 shadow-[0_0_20px_rgba(16,185,129,0.4)]" 
+                                : available 
+                                  ? "bg-white/5 border-white/10 text-white/60 group-hover:border-emerald-500/50 group-hover:text-emerald-400" 
+                                  : "bg-black/40 border-white/5 text-white/10"
                             )}
-                          </div>
+                          >
+                            {completed ? (
+                              <CheckCircle2 className="w-6 h-6" />
+                            ) : (
+                              (() => {
+                                if (act.id === 0) {
+                                  if (modality === 'pen') return <PenTool className="w-6 h-6" />;
+                                  if (modality === 'voice') return <Mic2 className="w-6 h-6" />;
+                                  return <Anchor className="w-6 h-6" />;
+                                }
+                                return <act.icon className="w-6 h-6" />;
+                              })()
+                            )}
+                          </motion.div>
 
                           {customWidth > 160 && (
                             <motion.div 
@@ -161,13 +185,13 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                             >
                               <span className={cn(
                                 "text-[10px] font-black uppercase tracking-widest leading-none mb-1",
-                                active ? "text-emerald-400" : "text-white/20"
+                                active ? "text-emerald-400" : "text-white/70"
                               )}>
                                 {act.label}
                               </span>
                               <span className={cn(
                                 "text-sm font-bold tracking-tight transition-colors whitespace-nowrap",
-                                active ? "text-white" : "text-white/40 group-hover:text-white/60"
+                                active ? "text-white" : "text-white/90 group-hover:text-white"
                               )}>
                                 {act.title}
                               </span>
@@ -203,12 +227,18 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
         </div>
 
         {/* Footer info */}
-        <div className="mt-auto p-8 border-t border-white/5 space-y-4 bg-black/40">
-          <div className="flex items-center gap-3">
-             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-             <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Protocol: Ready</span>
-          </div>
-        </div>
+        {customWidth > 160 && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-auto p-8 border-t border-white/5 space-y-4 bg-black/40"
+          >
+            <div className="flex items-center gap-3">
+               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+               <span className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">Protocol: Ready</span>
+            </div>
+          </motion.div>
+        )}
       </motion.div>
 
       {/* Retract Toggle Button */}

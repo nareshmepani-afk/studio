@@ -170,9 +170,13 @@
     width: 100%;
   }
 
-  @keyframes protocol-pulse {
-    0%, 100% { opacity: 0.8; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.02); }
+  @keyframes pulse-subtle {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.02); }
+  }
+
+  .animate-pulse-subtle {
+    animation: pulse-subtle 3s ease-in-out infinite;
   }
 
   .pulse-protocol {
@@ -195,6 +199,83 @@
       black 85%,
       transparent
     );
+  }
+
+  /* Sensory Anchor Bubbles */
+  .sensory-bubble {
+    position: relative;
+    display: inline-block;
+  }
+
+  .sensory-bubble::after {
+    content: attr(data-reason);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(15, 23, 42, 0.95);
+    color: rgba(255, 255, 255, 0.9);
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    white-space: normal;
+    width: 200px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    line-height: 1.4;
+    text-align: center;
+  }
+
+  .sensory-bubble:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Arrow for bubble */
+  .sensory-bubble::before {
+    content: '';
+    position: absolute;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%) translateY(5px);
+    border-width: 6px;
+    border-style: solid;
+    border-color: rgba(15, 23, 42, 0.95) transparent transparent transparent;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  .sensory-bubble:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .aroma-bubble:hover { background-color: rgba(245, 158, 11, 0.15); border-bottom-color: rgba(245, 158, 11, 0.8); }
+  .soundscape-bubble:hover { background-color: rgba(14, 165, 233, 0.15); border-bottom-color: rgba(14, 165, 233, 0.8); }
+  .visual-bubble:hover { background-color: rgba(16, 185, 129, 0.15); border-bottom-color: rgba(16, 185, 129, 0.8); }
+  .polish-bubble:hover { background-color: rgba(129, 140, 248, 0.15); border-bottom-color: rgba(129, 140, 248, 0.8); }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
   }
 }
 

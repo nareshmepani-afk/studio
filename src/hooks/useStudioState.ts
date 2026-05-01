@@ -66,5 +66,17 @@ export function useStudioState(initialProse: string) {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, [router, pathname, searchParams]);
 
-  return { currentStage, setStage, modality: currentModality, setModality };
+  // -- DIRECTOR LOGIC --
+  const isDirectorOpen = searchParams.get('director') === 'true';
+  const setIsDirectorOpen = useCallback((open: boolean) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (open) {
+      params.set('director', 'true');
+    } else {
+      params.delete('director');
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [router, pathname, searchParams]);
+
+  return { currentStage, setStage, modality: currentModality, setModality, isDirectorOpen, setIsDirectorOpen };
 }

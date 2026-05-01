@@ -146,15 +146,18 @@ function ProductionDeckConnector() {
 }
 
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
+import { StudioProvider } from '@/hooks/studio/useStudioState';
 
 export default function AddMemoryPage() {
   return (
     <AuthenticatedPageWrapper>
-      <div className="w-full min-h-[calc(100vh-64px)] flex flex-col">
-        <Suspense fallback={<div className="p-8 text-white font-mono opacity-60">Wiring Engine...</div>}>
-          <ProductionDeckConnector />
-        </Suspense>
-      </div>
+      <StudioProvider>
+        <div className="w-full min-h-[calc(100vh-64px)] flex flex-col">
+          <Suspense fallback={<div className="p-8 text-white font-mono opacity-60">Wiring Engine...</div>}>
+            <ProductionDeckConnector />
+          </Suspense>
+        </div>
+      </StudioProvider>
     </AuthenticatedPageWrapper>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useStudioData } from '@/hooks/studio/useStudioData';
 import { storyScripts } from '@/lib/storyScripts';
@@ -22,6 +22,11 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   const router = useRouter();
   const { user } = useAuth();
   const { chapters, isLoading: studioLoading } = useStudioData(user?.uid || 'guest');
+  const pathname = usePathname();
+  
+  // THE INVISIBLE DISMISSAL: If we are in modal mode but navigated away from production, 
+  // we must return null to ensure the "layering" doesn't block the dashboard.
+  const isProductionRoute = pathname?.includes('/production/');
   
   const [selectedProductionData, setSelectedProductionData] = useState<any>(null);
   const [isReady, setIsReady] = useState(false);
@@ -145,6 +150,8 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   );
 
   if (isModal) {
+    if (!isProductionRoute) return null;
+    
     return (
       <>
         {/* Backdrop */}

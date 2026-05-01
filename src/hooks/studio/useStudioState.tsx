@@ -5,6 +5,10 @@ import { useSearchParams } from 'next/navigation';
 import { doc, onSnapshot, setDoc, DocumentReference } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { storyScripts } from '@/lib/storyScripts';
+import { CatalystType } from '@/types';
+import { DetectedAnchor } from './useDirectorInk';
+
+export type DrawerType = 'sensory' | 'poster' | 'timeline' | null;
 
 // 1. State Interface
 interface StudioState {
@@ -17,6 +21,19 @@ interface StudioState {
   isConnected: boolean;
   isRecording: boolean;
   sessionId: string;
+  isDrafting: boolean;
+  detectedAnchors: DetectedAnchor[];
+  activeAnchorTypes: CatalystType[];
+  directorialNote: string | null;
+  activeDrawer: DrawerType;
+  draggingCatalyst: CatalystType | null;
+  overloadedBlockIds: string[];
+  pendingAnchor: { text: string; type: CatalystType } | null;
+  lastDetectedAnchor: { text: string; type: CatalystType; timestamp: number } | null;
+  appliedCatalystTypes: CatalystType[];
+  dispatcher?: {
+    addCatalyst?: (blockId: string, type: CatalystType, value?: string) => { collisionDetected: boolean };
+  };
 }
 
 // 2. Actions Interface
@@ -32,6 +49,18 @@ interface StudioActions {
   setScript: (script: string) => void;
   setMode: (mode: 'solo' | 'director' | 'guest_director' | 'guest') => void;
   toggleRecording: () => void;
+  setDrafting: (isDrafting: boolean) => void;
+  setDetectedAnchors: (anchors: DetectedAnchor[]) => void;
+  setActiveAnchorTypes: (types: CatalystType[]) => void;
+  setDirectorialNote: (note: string | null) => void;
+  setActiveDrawer: (drawer: DrawerType) => void;
+  setOverloadedBlocks: (ids: string[]) => void;
+  primeCatalyst: (text: string, type: CatalystType) => void;
+  triggerSynapse: (text: string, type: CatalystType) => void;
+  clearPendingAnchor: () => void;
+  setDispatcher: (dispatcher: StudioState['dispatcher']) => void;
+  setDraggingCatalyst: (type: CatalystType | null | 'polish') => void;
+  setAppliedCatalysts: (types: CatalystType[]) => void;
 }
 
 // 3. Context Shape
@@ -71,6 +100,17 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     isConnected: !!initialState, 
     isRecording: false,
     sessionId: 'default',
+    isDrafting: false,
+    detectedAnchors: [],
+    activeAnchorTypes: [],
+    directorialNote: null,
+    activeDrawer: null,
+    draggingCatalyst: null,
+    overloadedBlockIds: [],
+    pendingAnchor: null,
+    lastDetectedAnchor: null,
+    appliedCatalystTypes: [],
+    dispatcher: undefined,
     ...(initialState || {}),
   });
 
@@ -161,7 +201,7 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     }
 
     debounceTimer.current = setTimeout(() => {
-      const { isConnected, sessionId, script, ...syncState } = state;
+      const { isConnected, sessionId, script, dispatcher, isDrafting, detectedAnchors, ...syncState } = state;
       const syncStateJSON = JSON.stringify(syncState);
 
       // GUARD: Only setDoc if the local state has diverged from the last known remote state
@@ -179,8 +219,7 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
   }, [state, studioStateRef]);
 
 
-  // The Actions (No changes needed)
-  const actions: StudioActions = {
+  const actions: StudioActions = useMemo(() => ({
     toggleScrolling: () => setState(s => ({ ...s, isScrolling: !s.isScrolling })),
     setScrollSpeed: (speed) => setState(s => ({ ...s, scrollSpeed: speed })),
     increaseSpeed: () => setState(s => ({ ...s, scrollSpeed: s.scrollSpeed + 0.5 })),
@@ -192,7 +231,53 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     setScript: (script) => setState(s => ({ ...s, script })), // Local only
     setMode: (mode) => setState(s => ({ ...s, mode })),
     toggleRecording: () => setState(s => ({ ...s, isRecording: !s.isRecording })),
-  };
+    setDrafting: (isDrafting) => setState(s => ({ ...s, isDrafting })),
+    setDetectedAnchors: (anchors) => setState(s => {
+      if (JSON.stringify(s.detectedAnchors) === JSON.stringify(anchors)) {
+        return s;
+      }
+      return { ...s, detectedAnchors: anchors };
+    }),
+    setActiveAnchorTypes: (types) => setState(s => {
+      if (JSON.stringify(s.activeAnchorTypes) === JSON.stringify(types)) return s;
+      return { ...s, activeAnchorTypes: types };
+    }),
+    setDirectorialNote: (note) => setState(s => {
+      if (s.directorialNote === note) return s;
+      return { ...s, directorialNote: note };
+    }),
+    setActiveDrawer: (drawer) => setState(s => {
+      if (s.activeDrawer === drawer) return s;
+      return { ...s, activeDrawer: drawer };
+    }),
+    setOverloadedBlocks: (ids) => setState(s => {
+      if (JSON.stringify(s.overloadedBlockIds) === JSON.stringify(ids)) return s;
+      return { ...s, overloadedBlockIds: ids };
+    }),
+    primeCatalyst: (text, type) => setState(s => ({ 
+      ...s, 
+      isDrafting: false, 
+      activeDrawer: 'sensory', 
+      pendingAnchor: { text, type } 
+    })),
+    triggerSynapse: (text, type) => setState(s => ({
+      ...s,
+      lastDetectedAnchor: { text, type, timestamp: Date.now() }
+    })),
+    clearPendingAnchor: () => setState(s => ({ ...s, pendingAnchor: null })),
+    setDispatcher: (dispatcher) => setState(s => {
+      if (s.dispatcher === dispatcher) return s;
+      return { ...s, dispatcher };
+    }),
+    setDraggingCatalyst: (type) => setState(s => {
+      if (s.draggingCatalyst === type) return s;
+      return { ...s, draggingCatalyst: type };
+    }),
+    setAppliedCatalysts: (types) => setState(s => {
+      if (JSON.stringify(s.appliedCatalystTypes) === JSON.stringify(types)) return s;
+      return { ...s, appliedCatalystTypes: types };
+    }),
+  }), []);
 
   return (
     <StudioContext.Provider value={{ ...state, actions }}>
