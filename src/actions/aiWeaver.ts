@@ -573,7 +573,13 @@ export async function analyzeCompositionAnchors(blocks: ScriptBlock[]): Promise<
  * Polishes the story hook to ensure high Scene Clarity.
  */
 export async function polishDescription(description: string, options: { sensoryFocus?: string } = {}): Promise<string> {
-  console.log("[AI Weaver] polishDescription triggered");
+  console.log(`[AI Weaver] polishDescription triggered. Payload length: ${description?.length || 0}`);
+  
+  if (!description || description.trim().length < 3) {
+    console.log("[AI Weaver] Description too short to polish. Skipping.");
+    return description || "";
+  }
+
   const ai = await getAI();
   
   const prompt = `
@@ -598,9 +604,11 @@ export async function polishDescription(description: string, options: { sensoryF
       return await ai.generate(prompt);
     }, { retries: 2 });
     
-    return text.trim();
-  } catch (error) {
-    console.error("[AI Weaver] polishDescription Failure:", error);
+    const result = text?.trim() || "";
+    console.log(`[AI Weaver] polishDescription success. Result length: ${result.length}`);
+    return result || description;
+  } catch (error: any) {
+    console.error(`[AI Weaver] polishDescription Failure [${error.name}]:`, error.message || error);
     return description; // Fallback to original
   }
 }

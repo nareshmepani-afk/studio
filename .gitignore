@@ -32,3 +32,4 @@ tmp/
 !jest.config.js
 !*.rules
 !*.json
+scratch/

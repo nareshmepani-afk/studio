@@ -58,13 +58,15 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (sessionCookie && PUBLIC_ONLY_ROUTES.some(route => pathname.startsWith(route))) {
-    return NextResponse.redirect(new URL('/studio', request.url));
-  }
+  // 3. REMOVED PUBLIC_ONLY_REDIRECT: Allow users to reach login/register even if they have a cookie.
+  // This prevents the loop where a stale cookie forces them to /studio which then fails.
 
   // 4. If user is NOT logged in and trying to access a protected route, redirect to login.
   if (!sessionCookie && PROTECTED_ROUTES.some(route => pathname.startsWith(route))) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('from', pathname);
+    loginUrl.searchParams.set('reason', 'unauthenticated');
+    return NextResponse.redirect(loginUrl);
   }
 
   // 5. If none of the above, proceed as normal.

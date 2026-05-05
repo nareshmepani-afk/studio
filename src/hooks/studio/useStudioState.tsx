@@ -29,7 +29,7 @@ interface StudioState {
   draggingCatalyst: CatalystType | null;
   overloadedBlockIds: string[];
   pendingAnchor: { text: string; type: CatalystType } | null;
-  lastDetectedAnchor: { text: string; type: CatalystType; timestamp: number } | null;
+  lastDetectedAnchor: { text: string; type: CatalystType; timestamp: number; xOffset?: number } | null;
   appliedCatalystTypes: CatalystType[];
   dispatcher?: {
     addCatalyst?: (blockId: string, type: CatalystType, value?: string) => { collisionDetected: boolean };
@@ -56,7 +56,7 @@ interface StudioActions {
   setActiveDrawer: (drawer: DrawerType) => void;
   setOverloadedBlocks: (ids: string[]) => void;
   primeCatalyst: (text: string, type: CatalystType) => void;
-  triggerSynapse: (text: string, type: CatalystType) => void;
+  triggerSynapse: (text: string, type: CatalystType, xOffset?: number) => void;
   clearPendingAnchor: () => void;
   setDispatcher: (dispatcher: StudioState['dispatcher']) => void;
   setDraggingCatalyst: (type: CatalystType | null | 'polish') => void;
@@ -260,9 +260,9 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
       activeDrawer: 'sensory', 
       pendingAnchor: { text, type } 
     })),
-    triggerSynapse: (text, type) => setState(s => ({
+    triggerSynapse: (text, type, xOffset) => setState(s => ({
       ...s,
-      lastDetectedAnchor: { text, type, timestamp: Date.now() }
+      lastDetectedAnchor: { text, type, timestamp: Date.now(), xOffset }
     })),
     clearPendingAnchor: () => setState(s => ({ ...s, pendingAnchor: null })),
     setDispatcher: (dispatcher) => setState(s => {

@@ -171,7 +171,7 @@ const ProductionDeck = ({
                     toggleMentor();
                     console.log("Mentor Auto-Activated due to inactivity in Act I.");
                 }
-            }, 30000); // 30 seconds
+            }, 90000); // 90 seconds
         };
 
         // Listen for activity in the window

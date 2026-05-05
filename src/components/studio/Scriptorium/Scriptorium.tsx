@@ -117,6 +117,7 @@ export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange }: Scrip
   
   const { playSnap } = useAudioFeedback();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [isSurging, setIsSurging] = useState(false);
   const prevAnchorsCountRef = useRef<number>(0);
 
   // 2.5 NARRATIVE BATTERY LOGIC
@@ -208,13 +209,6 @@ export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange }: Scrip
       .filter(b => detectAnchors(b.text).length >= 4)
       .map(b => b.id);
     
-    // Trigger Synapse Animation when new anchors appear
-    if (uniqueAnchors.length > prevAnchorsCountRef.current) {
-      const latestAnchor = uniqueAnchors[uniqueAnchors.length - 1];
-      actions.triggerSynapse(latestAnchor.word, latestAnchor.type);
-    }
-    prevAnchorsCountRef.current = uniqueAnchors.length;
-
     // Only update if changed to avoid unnecessary re-renders
     actions.setDetectedAnchors(uniqueAnchors);
     actions.setOverloadedBlocks(overloadedIds);
@@ -297,11 +291,11 @@ export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange }: Scrip
                 <SentenceWrapper
                   key={block.id}
                   block={block}
-                  isFocused={focusedBlockId === block.id}
-                  onFocus={() => setFocusedBlockId(block.id)}
-                  onUpdate={(text) => updateBlockText(block.id, text)}
-                  onSplit={(pos) => splitBlock(block.id, pos)}
-                  onMerge={() => mergeWithPrevious(block.id)}
+                  isActive={activeId === block.id}
+                  onFocus={() => setActiveId(block.id)}
+                  onBlur={() => setActiveId(null)}
+                  onUpdate={(text: string) => updateBlockText(block.id, text)}
+                  actions={actions}
                 />
               ))}
             </div>
@@ -311,11 +305,11 @@ export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange }: Scrip
               <div className="opacity-100 shadow-[0_0_20px_rgba(16,185,129,0.2)] bg-slate-950/80 rounded-lg backdrop-blur-md">
                 <SentenceWrapper
                   block={activeBlock}
-                  isFocused={false}
+                  isActive={true}
                   onFocus={() => {}}
+                  onBlur={() => {}}
                   onUpdate={() => {}}
-                  onSplit={() => {}}
-                  onMerge={() => {}}
+                  actions={actions}
                 />
               </div>
             ) : null}
@@ -331,7 +325,8 @@ export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange }: Scrip
             "flex flex-col gap-2 p-4 rounded-2xl border transition-all duration-700",
             auraStyles.border,
             auraStyles.bg,
-            auraStyles.glow
+            auraStyles.glow,
+            isSurging && "ring-2 ring-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.4)] scale-105"
           )}
         >
           <div className="flex items-center gap-3">

@@ -1,262 +1,197 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from 'react';
-import { motion, useAnimation } from 'framer-motion';
+import React, { useRef, useMemo, useEffect, useState, useLayoutEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ScriptBlock, CatalystType } from '@/types';
+import { ScriptBlock } from '@/types';
 import { cn } from '@/lib/utils';
-import { useStudioState } from '@/hooks/studio/useStudioState';
-import { useDirectorInk } from '@/hooks/studio/useDirectorInk';
+import { detectAnchors } from '@/hooks/studio/useDirectorInk';
+import { Sparkles } from 'lucide-react';
 
-import { Music, Sparkles, Eye, PenTool, GripVertical } from 'lucide-react';
-import { useAudioFeedback } from '@/hooks/studio/useAudioFeedback';
-import { AnimatePresence } from 'framer-motion';
-
-interface SentenceWrapperProps {
-  block: ScriptBlock;
-  isFocused: boolean;
-  onUpdate: (text: string) => void;
-  onSplit: (cursorPos: number) => void;
-  onMerge: () => void;
-  onFocus: () => void;
-}
-
-const getCatalystIcon = (type: string) => {
-  switch (type) {
-    case 'aroma': return <Sparkles className="w-4 h-4" />;
-    case 'soundscape': return <Music className="w-4 h-4" />;
-    case 'visual': return <Eye className="w-4 h-4" />;
-    case 'polish': return <PenTool className="w-4 h-4" />;
-    default: return <Sparkles className="w-4 h-4" />;
-  }
-};
-
-const SHARED_EDITOR_STYLES: React.CSSProperties = {
+const SHARED_STYLES: React.CSSProperties = {
   fontFamily: '"Courier Prime", monospace',
   fontSize: '18px',
   lineHeight: '1.6',
   letterSpacing: '0.025em',
+  whiteSpace: 'pre-wrap',
+  wordWrap: 'break-word',
   padding: '0px',
   margin: '0px',
   border: 'none',
-  boxSizing: 'border-box',
-  whiteSpace: 'pre-wrap',
-  overflowWrap: 'break-word',
-  wordWrap: 'break-word',
-  textAlign: 'left',
+  outline: 'none',
+  WebkitFontSmoothing: 'antialiased',
 };
 
-export const SentenceWrapper = ({ 
+export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({ 
   block, 
-  isFocused, 
+  isActive, 
   onUpdate, 
-  onSplit, 
-  onMerge, 
-  onFocus 
-}: SentenceWrapperProps) => {
-  const editorRef = useRef<HTMLTextAreaElement>(null);
-  const controls = useAnimation();
-  const prevCatalystCountRef = useRef(block.catalysts.length);
-  const { actions, draggingCatalyst } = useStudioState();
-  const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  onFocus, 
+  onBlur,
+  actions 
+}, ref) => {
+  const isHook = block.type === 'hook';
   
-  const { playError } = useAudioFeedback();
-  const wasOverloaded = useRef(false);
-  const { decoratedHtml, isOverloaded } = useDirectorInk(block.text);
-
-  // 0. The Sensory Overload Logic (One-shot Buzz)
-  useEffect(() => {
-    if (isOverloaded && !wasOverloaded.current) {
-      playError(); // Single sharp burst
-      wasOverloaded.current = true;
-    } else if (!isOverloaded && wasOverloaded.current) {
-      wasOverloaded.current = false;
+  // DYNAMIC STYLING FOR UNIFIED ENGINE
+  const RESOLVED_STYLES = useMemo(() => ({
+    ...SHARED_STYLES,
+    fontSize: isHook ? '24px' : '18px',
+    lineHeight: isHook ? '1.5' : '1.6',
+    fontWeight: isHook ? '500' : '400',
+  }), [isHook]);
+  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [rects, setRects] = useState<Record<string, DOMRect>>({});
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // Ref Sync Mandate
+  useLayoutEffect(() => {
+    if (!ref) return;
+    if (typeof ref === 'function') {
+      ref(editorRef.current);
+    } else {
+      (ref as any).current = editorRef.current;
     }
-  }, [isOverloaded, playError]);
+  }, [ref]);
 
-  const shakeAnimation = {
-    x: [0, -2, 2, -2, 2, 0],
-    transition: { duration: 0.4, ease: "easeInOut" as any }
-  };
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
-  const handleFocus = () => {
-    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
-    actions.setDrafting(true);
-    onFocus();
-  };
+  // AUTO-SYNC HEIGHT: Ensures the interaction layer (textarea) matches the visual layer
+  useLayoutEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.style.height = 'auto';
+      editorRef.current.style.height = `${editorRef.current.scrollHeight}px`;
+    }
+  }, [block.text]);
 
-  const handleBlur = () => {
-    blurTimeoutRef.current = setTimeout(() => {
-      actions.setDrafting(false);
-    }, 100);
-  };
+  const anchors = useMemo(() => detectAnchors(block.text), [block.text]);
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: block.id });
+  // 1. REFINED TOKENIZATION ENGINE (V4.6 - CODE RED STABILIZATION)
+  const tokens = useMemo(() => {
+    if (!block.text) return [];
+    if (anchors.length === 0) return block.text.split(/([^a-zA-Z0-9])/g).filter((t: string) => t !== "");
+
+    // Sort anchors by length (longest first) to prevent partial matching
+    const sortedAnchors = [...anchors].sort((a, b) => b.word.length - a.word.length);
+    
+    // ESCAPING MANDATE: Using the exact requested escaping structure
+    const anchorPattern = sortedAnchors.map(a => a.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+    
+    // PHRASE PROTECTION: Captures full phrases before atomic characters
+    const regex = new RegExp(`(${anchorPattern}|[^a-zA-Z0-9])`, 'gi');
+    
+    return block.text.split(regex).filter((t: string) => t !== undefined && t !== "");
+  }, [block.text, anchors]);
+
+  const updateSparklePositions = useCallback(() => {
+    if (!containerRef.current) return;
+    
+    requestAnimationFrame(() => {
+      if (!containerRef.current) return;
+      const newRects: Record<string, DOMRect> = {};
+      const spans = containerRef.current.querySelectorAll('.anchor-span');
+      
+      spans.forEach((span) => {
+        const id = span.getAttribute('data-token-id');
+        if (id) {
+          newRects[id] = span.getBoundingClientRect();
+        }
+      });
+      
+      setRects(newRects);
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    updateSparklePositions();
+    const timer = setTimeout(updateSparklePositions, 150);
+    
+    const observer = new ResizeObserver(updateSparklePositions);
+    if (containerRef.current) observer.observe(containerRef.current);
+    window.addEventListener('scroll', updateSparklePositions, true);
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+      window.removeEventListener('scroll', updateSparklePositions, true);
+    };
+  }, [tokens, updateSparklePositions]);
+
+  const portalContent = useMemo(() => tokens.map((token: string, idx: number) => {
+    const clean = token.toLowerCase();
+    const anchor = anchors.find(a => a.word.toLowerCase() === clean);
+    const tokenId = `${block.id}-${idx}`;
+    const rect = rects[tokenId];
+
+    if (!anchor || !rect || rect.width === 0) return null;
+
+    return (
+      <motion.button
+        key={tokenId}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        style={{
+          position: 'fixed',
+          left: rect.left + (rect.width / 2),
+          top: rect.top - 24,
+          pointerEvents: 'auto'
+        }}
+        className="w-6 h-6 -translate-x-1/2 rounded-full bg-slate-950 border border-emerald-400 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.5)] hover:bg-emerald-500 hover:text-slate-950 transition-all cursor-help"
+        onMouseEnter={() => {
+          const xOffset = rect.left + (rect.width / 2) - (window.innerWidth / 2);
+          actions.triggerSynapse(anchor.word, anchor.type, xOffset);
+        }}
+        onMouseLeave={() => actions.triggerSynapse('', 'visual', 0)}
+      >
+        <Sparkles className="w-3.5 h-3.5" />
+      </motion.button>
+    );
+  }), [tokens, anchors, rects, block.id, actions]);
+
+  const { setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
 
-  // 1. The Seamless Focus Jump
-  useEffect(() => {
-    if (!isFocused || !editorRef.current) return;
-
-    const focusElement = () => {
-      if (editorRef.current) {
-        editorRef.current.focus();
-        // Maintain selection if already set, otherwise move to start/end as appropriate
-        // For new blocks, we usually want to be at the start
-      }
-    };
-
-    // Try immediately
-    focusElement();
-
-    // Try after a short delay (handles framer-motion entry)
-    const timer1 = setTimeout(focusElement, 100);
-    const timer2 = setTimeout(focusElement, 300);
-
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-    };
-  }, [isFocused]);
-
-  const [lastSplash, setLastSplash] = useState<CatalystType | null>(null);
-
-  // 2. The "Director's Shake" Physics + Splash
-  useEffect(() => {
-    if (block.catalysts.length > prevCatalystCountRef.current) {
-      const newCat = block.catalysts[block.catalysts.length - 1];
-      if (newCat) {
-        setLastSplash(newCat.type as any);
-        setTimeout(() => setLastSplash(null), 1500);
-      }
-
-      controls.start({
-        x: [-3, 3, -3, 3, 0],
-        transition: { duration: 0.2, ease: "easeInOut" as any }
-      });
-    }
-    prevCatalystCountRef.current = block.catalysts.length;
-  }, [block.catalysts.length, controls]);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      onSplit(editorRef.current?.selectionStart || 0);
-    } else if (e.key === 'Backspace' && editorRef.current?.selectionStart === 0) {
-      if (block.text.length === 0 || window.confirm("Merge this beat?")) {
-        onMerge();
-      }
-    }
-  };
-
   return (
     <motion.div
-      id={`block-${block.id}`}
-      data-block-id={block.id}
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        // @ts-ignore
+        containerRef.current = node;
+      }}
       style={style}
       layout
-      animate={isOverloaded ? shakeAnimation : controls}
+      data-block-id={block.id}
       className={cn(
         "group relative flex items-start gap-8 py-2 transition-all duration-300 rounded-xl px-4",
         isDragging && "opacity-40 z-50",
-        draggingCatalyst && "ring-1 ring-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:ring-emerald-500/20",
-        draggingCatalyst === 'aroma' && "hover:shadow-[inset_0_0_20px_rgba(245,158,11,0.1)]",
-        draggingCatalyst === 'soundscape' && "hover:shadow-[inset_0_0_20px_rgba(56,189,248,0.1)]",
-        draggingCatalyst === 'visual' && "hover:shadow-[inset_0_0_20px_rgba(16,185,129,0.1)]"
+        isActive && "bg-white/[0.03]"
       )}
     >
-      <AnimatePresence>
-        {lastSplash && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.2 }}
-            className={cn(
-              "absolute inset-0 z-10 pointer-events-none rounded-xl border-2 flex items-center justify-center overflow-hidden",
-              lastSplash === 'aroma' ? "border-amber-500/50 bg-amber-500/5" :
-              lastSplash === 'soundscape' ? "border-sky-500/50 bg-sky-500/5" :
-              "border-emerald-500/50 bg-emerald-500/5"
-            )}
-          >
-            <motion.div 
-              initial={{ scale: 0, opacity: 0.5 }}
-              animate={{ scale: 4, opacity: 0 }}
-              transition={{ duration: 1, ease: "easeOut" }}
-              className={cn(
-                "absolute w-20 h-20 rounded-full border border-current",
-                lastSplash === 'aroma' ? "text-amber-500" :
-                lastSplash === 'soundscape' ? "text-sky-500" :
-                "text-emerald-500"
-              )}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* DRAG HANDLE: The "Six-Dot" Studio Tool */}
-      <div 
-        {...attributes} 
-        {...listeners}
-        className="absolute -left-6 top-3 opacity-0 group-hover:opacity-40 hover:!opacity-100 cursor-grab active:cursor-grabbing transition-opacity z-50"
-      >
-        <GripVertical className="w-4 h-4 text-slate-400" />
-      </div>
-
-      {/* THE PRIVATE PROPERTY MARGIN (Magnetic Dock Location) */}
-      <div className="absolute -left-16 flex flex-col gap-2 items-center w-12 z-10">
-        {block.catalysts.map((catalyst) => (
-          <motion.div
-            key={catalyst.id}
-            layoutId={catalyst.id}
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="w-8 h-8 rounded-lg bg-slate-900/90 border border-emerald-500/30 
-                       flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)] backdrop-blur-sm"
-          >
-            {getCatalystIcon(catalyst.type)}
-          </motion.div>
-        ))}
-      </div>
-
-      {/* THE TEXT STAGE: Mirrored Overlay */}
       <div className="relative w-full">
-        {/* 1. THE GHOST LAYER (Background) */}
-        <div
-          aria-hidden="true"
-          style={SHARED_EDITOR_STYLES}
-          className="pointer-events-none absolute inset-0 select-none text-slate-200"
-          dangerouslySetInnerHTML={{ __html: decoratedHtml || block.text }}
-        />
+        {/* APEX PORTAL: document.body level */}
+        {isMounted && createPortal(
+          <div className="fixed inset-0 pointer-events-none z-[9999]">
+            {portalContent}
+          </div>,
+          document.body
+        )}
 
-        {/* 2. THE INTERACTIVE LAYER (Foreground) */}
         <textarea
           ref={editorRef}
           value={block.text}
           onChange={(e) => onUpdate(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          placeholder="Enter a new story beat..."
-          style={SHARED_EDITOR_STYLES}
-          className={cn(
-            "relative z-10 w-full resize-none overflow-hidden outline-none",
-            "bg-transparent text-transparent caret-emerald-500 placeholder:text-slate-700/50",
-            "selection:bg-emerald-500/30",
-            isDragging && "pointer-events-none"
-          )}
+          onFocus={onFocus}
+          onBlur={onBlur}
+          style={{ ...RESOLVED_STYLES, color: 'transparent', caretColor: '#10b981' }}
+          className="relative z-[50] w-full resize-none overflow-hidden bg-transparent selection:bg-emerald-500/30"
           rows={1}
           onInput={(e) => {
             const target = e.target as HTMLTextAreaElement;
@@ -265,24 +200,32 @@ export const SentenceWrapper = ({
           }}
         />
 
-        {/* Visual Warning: Subtle Red Vignette on Overload */}
-        <AnimatePresence>
-          {isOverloaded && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="pointer-events-none absolute inset-0 border border-red-500/20 bg-red-500/5 rounded-lg z-0"
-            />
-          )}
-        </AnimatePresence>
-      </div>
+        <div
+          aria-hidden="true"
+          style={RESOLVED_STYLES}
+          className="absolute inset-0 z-10 pointer-events-none text-slate-200"
+        >
+          {tokens.map((token: string, idx: number) => {
+            const clean = token.toLowerCase();
+            const isAnchor = anchors.some(a => a.word.toLowerCase() === clean);
+            const tokenId = `${block.id}-${idx}`;
 
-      {/* BLOCK METADATA (Space Mono diagnostic feel) */}
-      <div className="absolute -right-24 top-2 opacity-0 group-hover:opacity-40 transition-opacity 
-                      font-mono text-[9px] text-emerald-500 tracking-tighter uppercase w-20 text-right">
-        {block.type} // {block.id.slice(0, 4)}
+            return (
+              <span 
+                key={tokenId}
+                data-token-id={tokenId}
+                className={cn(
+                  isAnchor && "anchor-span border-b-2 border-emerald-500/50 bg-emerald-500/5"
+                )}
+              >
+                {token}
+              </span>
+            );
+          })}
+        </div>
       </div>
     </motion.div>
   );
-};
+});
+
+SentenceWrapper.displayName = 'SentenceWrapper';

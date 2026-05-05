@@ -16,7 +16,8 @@ import {
   Volume2,
   Music,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -115,14 +116,7 @@ export const DirectorNoteDrawer: React.FC<DirectorNoteDrawerProps> = ({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop Blur to focus the Director's Eye */}
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[990]"
-          />
+
 
           <motion.div 
             initial={{ x: '100%' }}
@@ -386,48 +380,73 @@ export const DirectorNoteDrawer: React.FC<DirectorNoteDrawerProps> = ({
         {/* Footer Action: The Refresh */}
         <div className="p-8 bg-black/40 border-t border-white/5 backdrop-blur-md flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-4">
-            <button 
-              onClick={handleAnalyze}
-              disabled={isAnalyzing || isProofreading || scriptBlocks.length === 0}
-              className={cn(
-                "py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 border cursor-pointer active:scale-95",
-                isAnalyzing 
-                  ? "bg-sky-500/10 border-sky-500/30 text-sky-400" 
-                  : "bg-sky-500/20 text-sky-400 hover:bg-sky-500/30 border-sky-400/50 hover:shadow-[0_0_20px_rgba(56,189,248,0.2)]"
-              )}
-            >
-              {isAnalyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Activity className="w-3 h-3" />}
-              Analyze
-            </button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    onClick={handleAnalyze}
+                    disabled={isAnalyzing || isProofreading || scriptBlocks.length === 0}
+                    className={cn(
+                      "py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 border cursor-pointer active:scale-95",
+                      isAnalyzing 
+                        ? "bg-sky-500/10 border-sky-500/30 text-sky-400" 
+                        : "bg-sky-500/20 text-sky-400 hover:bg-sky-500/30 border-sky-400/50 hover:shadow-[0_0_20px_rgba(56,189,248,0.2)]"
+                    )}
+                  >
+                    {isAnalyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Activity className="w-3 h-3" />}
+                    ANALYSE
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-slate-900 border-white/10 text-[10px] font-black tracking-widest uppercase py-2 px-3 mb-2 max-w-[200px] text-center">
+                  Ask the AI to find descriptive details and patterns in your writing.
+                </TooltipContent>
+              </Tooltip>
 
-            <button 
-              onClick={handleProofread}
-              disabled={isAnalyzing || isProofreading || scriptBlocks.length === 0}
-              className={cn(
-                "py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 border cursor-pointer active:scale-95",
-                isProofreading 
-                  ? "bg-red-500/10 border-red-500/30 text-red-400" 
-                  : "bg-red-500/20 text-red-400 hover:bg-red-500/30 border-red-400/50 hover:shadow-[0_0_20px_rgba(248,113,113,0.2)]"
-              )}
-            >
-              {isProofreading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldCheck className="w-3 h-3" />}
-              Clarity
-            </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    onClick={handleProofread}
+                    disabled={isAnalyzing || isProofreading || scriptBlocks.length === 0}
+                    className={cn(
+                      "py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 border cursor-pointer active:scale-95",
+                      isProofreading 
+                        ? "bg-red-500/10 border-red-500/30 text-red-400" 
+                        : "bg-red-500/20 text-red-400 hover:bg-red-500/30 border-red-400/50 hover:shadow-[0_0_20px_rgba(248,113,113,0.2)]"
+                    )}
+                  >
+                    {isProofreading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldCheck className="w-3 h-3" />}
+                    CLARITY
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-slate-900 border-white/10 text-[10px] font-black tracking-widest uppercase py-2 px-3 mb-2 max-w-[200px] text-center">
+                  Check your story for clichés, grammar mistakes, and distracting details. (Red shows where you need to focus on clarity).
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
 
-          <button 
-            onClick={onPolish}
-            disabled={isPolishing}
-            className={cn(
-              "w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(0,0,0,0.5)] border cursor-pointer active:scale-95",
-              isPolishing 
-                ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" 
-                : "bg-emerald-500 text-slate-950 hover:bg-emerald-400 border-emerald-400/50 hover:shadow-[0_0_40px_rgba(16,185,129,0.3)]"
-            )}
-          >
-            {isPolishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-            Refresh AI Polish
-          </button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={onPolish}
+                  disabled={isPolishing}
+                  className={cn(
+                    "w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(0,0,0,0.5)] border cursor-pointer active:scale-95",
+                    isPolishing 
+                      ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" 
+                      : "bg-emerald-500 text-slate-950 hover:bg-emerald-400 border-emerald-400/50 hover:shadow-[0_0_40px_rgba(16,185,129,0.3)]"
+                  )}
+                >
+                  {isPolishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                  REFRESH AI POLISH
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-slate-900 border-white/10 text-[10px] font-black tracking-widest uppercase py-2 px-3 mb-2 max-w-[300px] text-center">
+                Let the AI help you sharpen your story so it feels more powerful and visual.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
           </motion.div>
         </>

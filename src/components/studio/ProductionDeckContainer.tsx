@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useStudioData } from '@/hooks/studio/useStudioData';
@@ -35,8 +35,22 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   // We can still support the drawer mode if needed, but takeover is the default.
   const [layoutMode, setLayoutMode] = useState<'takeover' | 'drawer'>('takeover');
 
+  const lastLoadedId = useRef<string | null>(null);
+
   useEffect(() => {
     if (studioLoading || !chapters.length) return;
+
+    // GUARD: Only initialize data once per promptId to prevent "Split-Brain" resets 
+    // when background Firestore snapshots fire.
+    if (lastLoadedId.current === promptId && isReady) {
+       // Supplemental Sync: If we were a local draft but now have a DB ID, update it
+       const chapterPrompts = chapters.flatMap(c => c.prompts);
+       const cp = chapterPrompts.find(p => p.id === promptId);
+       if (cp?.memory?.id && !selectedProductionData?.id) {
+          setSelectedProductionData((prev: any) => ({ ...prev, id: cp.memory!.id }));
+       }
+       return;
+    }
 
     // Logic replicated from StudioDashboard handleStartChapter
     const chapterPrompts = chapters.flatMap(c => c.prompts);
@@ -78,8 +92,9 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     if (memoryToEdit) {
         setSelectedProductionData(memoryToEdit);
         setIsReady(true);
+        lastLoadedId.current = promptId;
     }
-  }, [chapters, studioLoading, promptId]);
+  }, [chapters, studioLoading, promptId, isReady, selectedProductionData?.id]);
 
   const handleUpdateProduction = useCallback(async (updatedData: any) => {
     if (!user) return;

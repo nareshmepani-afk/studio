@@ -6,6 +6,7 @@ import React, { useEffect } from 'react';
 import SplashScreen from './SplashScreen';
 import { Loader2 } from 'lucide-react';
 
+import { deleteSessionAction } from '@/actions/createSessionAction';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
 
 interface AuthenticatedPageWrapperProps {
@@ -23,14 +24,17 @@ export function AuthenticatedPageWrapper({ children, theme = 'default' }: Authen
   const hasSessionId = typeof window !== 'undefined' ? window.location.search.includes('sessionId=') : false;
 
   useEffect(() => {
-    // GUEST BYPASS: If we are in guest mode with a session ID, don't redirect to login.
-    const isGuestBypass = pathname?.startsWith('/studio') && isGuestMode && hasSessionId;
-
-    if (!authLoading && !user && !isGuestBypass) {
-      console.log(`[AuthenticatedPageWrapper] No user found at ${pathname}, redirecting to /login`);
-      window.location.href = `/login?reason=unauthenticated&from=${encodeURIComponent(pathname || '/')}`;
+    // SYNC STATE: If Firebase says no user, ensure the server session is also cleared.
+    // This prevents the Middleware from thinking we are logged in (based on a stale cookie).
+    if (!authLoading && !user) {
+      deleteSessionAction().then(() => {
+        const isGuestBypass = pathname?.startsWith('/studio') && isGuestMode && hasSessionId;
+        if (!isGuestBypass) {
+          console.log(`[AuthenticatedPageWrapper] Session cleared. Safe to redirect.`);
+        }
+      });
     }
-  }, [user, authLoading, pathname, isGuestMode, hasSessionId]);
+  }, [user, authLoading, isGuestMode, hasSessionId, pathname]);
 
   // While we are checking (loading is true), show the splash screen
   if (authLoading) {

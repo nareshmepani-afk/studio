@@ -28,6 +28,32 @@ export const AIPolishButton: React.FC<AIPolishButtonProps> = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Particle Burn Effect (Visible during Ignition) */}
+      <AnimatePresence>
+        {isReady && !isPolishing && (
+          <>
+            {[...Array(6)].map((_, i) => (
+              <motion.div
+                key={`spark-${i}`}
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ 
+                  opacity: [0, 1, 0],
+                  scale: [0, 1, 0],
+                  x: (i % 2 === 0 ? 1 : -1) * (20 + Math.random() * 40),
+                  y: -(30 + Math.random() * 50),
+                }}
+                transition={{ 
+                  duration: 1 + Math.random(),
+                  repeat: Infinity,
+                  delay: i * 0.2
+                }}
+                className="absolute left-1/2 top-1/2 w-1 h-1 bg-emerald-400 rounded-full blur-[1px] z-0"
+              />
+            ))}
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Non-Destructive Label */}
       <AnimatePresence>
         {isHovered && (
@@ -60,12 +86,13 @@ export const AIPolishButton: React.FC<AIPolishButtonProps> = ({
             strokeDasharray="289.02"
             animate={{ 
               strokeDashoffset: 289.02 - (289.02 * charge) / 100,
-              opacity: ignitionState === 'dormant' ? 0.2 : 1
+              opacity: ignitionState === 'dormant' ? 0.2 : 1,
+              strokeWidth: isReady ? 3 : 2
             }}
             transition={{ type: "spring", stiffness: 50, damping: 20 }}
             className={cn(
               "transition-colors duration-1000",
-              isReady ? "text-emerald-500 shadow-[0_0_15px_#10b981]" : 
+              isReady ? "text-emerald-500 shadow-[0_0_20px_#10b981]" : 
               ignitionState === 'spooling' ? "text-emerald-500/60" : "text-emerald-500/20"
             )}
           />
@@ -73,14 +100,19 @@ export const AIPolishButton: React.FC<AIPolishButtonProps> = ({
       </div>
 
       {/* THE BUTTON BODY */}
-      <button
+      <motion.button
         onClick={onClick}
         disabled={!isReady || isPolishing}
+        animate={isReady && !isPolishing ? {
+          x: [0, -1, 1, -1, 1, 0],
+          transition: { duration: 0.1, repeat: Infinity, repeatType: "mirror" }
+        } : {}}
         className={cn(
           "relative z-10 flex items-center gap-3 px-8 py-3.5 rounded-full font-black text-[10px] uppercase tracking-[0.25em] transition-all duration-700 overflow-hidden",
           ignitionState === 'dormant' && "bg-slate-900/50 text-white/10 border border-white/5 opacity-40 grayscale pointer-events-none scale-95",
           ignitionState === 'spooling' && "bg-emerald-500/5 text-emerald-500/40 border border-emerald-500/10 opacity-80 scale-100",
-          ignitionState === 'ignition' && "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.15)] opacity-100 scale-100 hover:scale-105 active:scale-95"
+          ignitionState === 'ignition' && "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.15)] opacity-100 scale-100 hover:scale-105 active:scale-95",
+          isReady && "shadow-[0_0_50px_rgba(16,185,129,0.3)] ring-1 ring-emerald-500/50"
         )}
       >
         {/* Spooling Pulse */}
@@ -142,7 +174,7 @@ export const AIPolishButton: React.FC<AIPolishButtonProps> = ({
             transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
           />
         )}
-      </button>
+      </motion.button>
 
       {/* State Label */}
       {!isReady && !isPolishing && (

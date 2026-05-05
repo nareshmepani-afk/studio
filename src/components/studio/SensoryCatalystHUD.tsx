@@ -36,7 +36,7 @@ export const SensoryCatalystHUD: React.FC<SensoryCatalystHUDProps> = ({
   mentorActive = false,
   currentStage = 0
 }) => {
-  const { actions, draggingCatalyst, dispatcher, activeAnchorTypes, appliedCatalystTypes } = useStudioState();
+  const { actions, draggingCatalyst, dispatcher, activeAnchorTypes, appliedCatalystTypes, lastDetectedAnchor } = useStudioState();
   const [lastMilestone, setLastMilestone] = useState(0);
   const [pulseActive, setPulseActive] = useState(false);
   const [discoveredTypes, setDiscoveredTypes] = useState<Set<string>>(new Set());
@@ -52,16 +52,16 @@ export const SensoryCatalystHUD: React.FC<SensoryCatalystHUDProps> = ({
     }
   }, [wordCount, lastMilestone]);
 
-  // Discovery logic: Pulse when a new anchor type is detected in the text
+  // Discovery logic: Pulse when a new anchor is detected
   useEffect(() => {
-    activeAnchorTypes.forEach(type => {
-      if (!discoveredTypes.has(type)) {
-        setDiscoveredTypes(prev => new Set(prev).add(type));
-        setJustDiscovered(type);
-        setTimeout(() => setJustDiscovered(null), 3000);
-      }
-    });
-  }, [activeAnchorTypes, discoveredTypes]);
+    if (lastDetectedAnchor?.type) {
+      setJustDiscovered(lastDetectedAnchor.type);
+      setDiscoveredTypes(prev => new Set(prev).add(lastDetectedAnchor.type));
+      
+      const timer = setTimeout(() => setJustDiscovered(null), 33000);
+      return () => clearTimeout(timer);
+    }
+  }, [lastDetectedAnchor]);
 
   const catalysts = [
     { 
@@ -169,21 +169,21 @@ export const SensoryCatalystHUD: React.FC<SensoryCatalystHUDProps> = ({
                   onDragEnd={(e, info) => {
                     actions.setDraggingCatalyst(null);
                     
-                    // Temporarily hide the catalyst to allow hit-testing the element underneath
-                    const target = e.target as HTMLElement;
-                    const originalPointerEvents = target.style.pointerEvents;
-                    target.style.pointerEvents = 'none';
+                    // SCORCHED EARTH DROP DETECTION: Bounding box check is 100% reliable vs elementFromPoint
+                    const blocks = document.querySelectorAll('[data-block-id]');
+                    let droppedBlockId: string | null = null;
                     
-                    const element = document.elementFromPoint(info.point.x, info.point.y);
-                    target.style.pointerEvents = originalPointerEvents;
+                    for (const block of Array.from(blocks)) {
+                      const rect = block.getBoundingClientRect();
+                      if (info.point.x >= rect.left && info.point.x <= rect.right && 
+                          info.point.y >= rect.top && info.point.y <= rect.bottom) {
+                        droppedBlockId = block.getAttribute('data-block-id');
+                        break;
+                      }
+                    }
                     
-                    const targetBlock = element?.closest('[data-block-id]');
-                    
-                    if (targetBlock) {
-                      dispatcher?.addCatalyst?.(
-                        targetBlock.getAttribute('data-block-id')!,
-                        cat.id as any
-                      );
+                    if (droppedBlockId) {
+                      dispatcher?.addCatalyst?.(droppedBlockId, cat.id as any);
                     }
                   }}
                   whileHover={wordCount >= (idx + 1) * 25 && !appliedCatalystTypes.includes(cat.id as any) ? { scale: 1.1, x: -5 } : {}}
@@ -192,6 +192,11 @@ export const SensoryCatalystHUD: React.FC<SensoryCatalystHUDProps> = ({
                     zIndex: 10000, 
                     pointerEvents: 'none',
                     boxShadow: "0 20px 40px rgba(0,0,0,0.5), 0 0 20px rgba(var(--room-accent-rgb), 0.3)"
+                  }}
+                  onClick={() => {
+                    if (appliedCatalystTypes.includes(cat.id as any)) {
+                      dispatcher?.addCatalyst?.('story-hook', cat.id as any);
+                    }
                   }}
                   className={cn(
                     "w-14 h-14 rounded-2xl border transition-all group relative flex items-center justify-center",
@@ -202,13 +207,13 @@ export const SensoryCatalystHUD: React.FC<SensoryCatalystHUDProps> = ({
                     
                     // 2. IGNITED STATE (Charged & Not Used)
                     wordCount >= (idx + 1) * 25 && !appliedCatalystTypes.includes(cat.id as any) && cn(
-                      "bg-white/5 border-white/10 cursor-grab active:cursor-grabbing hover:bg-white/10",
-                      cat.glow,
-                      "animate-pulse-subtle"
+                       "bg-white/5 border-white/10 cursor-grab active:cursor-grabbing hover:bg-white/10",
+                       cat.glow,
+                       "animate-pulse-subtle"
                     ),
                     
                     // 3. APPLIED STATE (Used)
-                    appliedCatalystTypes.includes(cat.id as any) && "bg-emerald-500/10 border-emerald-500/30 cursor-default opacity-80",
+                    appliedCatalystTypes.includes(cat.id as any) && "bg-emerald-500/10 border-emerald-500/30 cursor-help opacity-80",
 
                     // 4. MENTOR HIGHLIGHT (Onboarding)
                     mentorActive && currentStage === 1 && !appliedCatalystTypes.includes(cat.id as any) && wordCount >= (idx + 1) * 25 &&
@@ -285,7 +290,7 @@ export const SensoryCatalystHUD: React.FC<SensoryCatalystHUDProps> = ({
                   <cat.icon className={cn("transition-all", isDirectorOpen ? "w-5 h-5" : "w-6 h-6", cat.color)} />
                   
                   {/* Visual indication of "credits" */}
-                      {wordCount >= (idx + 1) * 25 && !appliedCatalystTypes.includes(cat.id as any) && (
+                      {wordCount >= (idx + 1) * 25 && (
                         <motion.div 
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -293,21 +298,23 @@ export const SensoryCatalystHUD: React.FC<SensoryCatalystHUDProps> = ({
                             "absolute -top-1 -right-1 rounded-full flex flex-col items-center",
                           )}
                         >
-                          <div className={cn(
-                            "w-3 h-3 rounded-full flex items-center justify-center shadow-lg mb-1",
-                            cat.id === 'aroma' ? "bg-amber-500 shadow-amber-500/40" : 
-                            cat.id === 'soundscape' ? "bg-sky-500 shadow-sky-500/40" : 
-                            "bg-emerald-500 shadow-emerald-500/40"
-                          )}>
-                             <Sparkles className="w-2 h-2 text-white" />
-                          </div>
+                          {!appliedCatalystTypes.includes(cat.id as any) && (
+                            <div className={cn(
+                              "w-3 h-3 rounded-full flex items-center justify-center shadow-lg mb-1",
+                              cat.id === 'aroma' ? "bg-amber-500 shadow-amber-500/40" : 
+                              cat.id === 'soundscape' ? "bg-sky-500 shadow-sky-500/40" : 
+                              "bg-emerald-500 shadow-emerald-500/40"
+                            )}>
+                               <Sparkles className="w-2 h-2 text-white" />
+                            </div>
+                          )}
                           
                           <motion.span 
                             animate={{ opacity: [0.4, 1, 0.4] }}
                             transition={{ duration: 2, repeat: Infinity }}
-                            className="absolute -top-6 whitespace-nowrap text-[6px] font-black tracking-widest text-white/40 bg-black/40 px-1.5 py-0.5 rounded-full backdrop-blur-sm"
+                            className="absolute -top-6 whitespace-nowrap text-[6px] font-black tracking-widest text-white/40 bg-black/40 px-1.5 py-0.5 rounded-full backdrop-blur-sm uppercase"
                           >
-                            READY TO DRAG
+                            {appliedCatalystTypes.includes(cat.id as any) ? "Anchored & Stable" : "Ready to Drag"}
                           </motion.span>
                         </motion.div>
                       )}
@@ -320,8 +327,11 @@ export const SensoryCatalystHUD: React.FC<SensoryCatalystHUDProps> = ({
               >
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between mb-1">
-                    <span className={cn("font-black text-[10px] uppercase tracking-widest", cat.color)}>
+                    <span className={cn("font-black text-[10px] uppercase tracking-widest flex items-center gap-2", cat.color)}>
                       {cat.label}
+                      {wordCount >= (idx + 1) * 25 && !appliedCatalystTypes.includes(cat.id as any) && (
+                        <span className="bg-amber-500/20 text-amber-200 text-[8px] px-1.5 py-0.5 rounded-full border border-amber-500/30">CHARGE READY</span>
+                      )}
                       {appliedCatalystTypes.includes(cat.id as any) && " (Applied)"}
                       {wordCount < (idx + 1) * 25 && " (Locked)"}
                     </span>

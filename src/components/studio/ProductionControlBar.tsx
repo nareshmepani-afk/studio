@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/tooltip";
 
 import { useStudioState } from '@/hooks/studio/useStudioState';
+import { useAudioFeedback } from '@/hooks/studio/useAudioFeedback';
 import { toast } from 'sonner';
 
 interface ProductionControlBarProps {
@@ -26,30 +27,39 @@ interface ProductionControlBarProps {
   isDocked?: boolean;
 }
 
-const SynapsePulse = ({ type }: { type: string }) => {
+const SynapseTether = ({ type, xOffset = 0 }: { type: string, xOffset?: number }) => {
   const color = type === 'aroma' ? '#fbbf24' : type === 'soundscape' ? '#38bdf8' : '#10b981';
   
   return (
-    <motion.div
-      initial={{ scale: 0.5, opacity: 0, y: -100, x: 0 }}
-      animate={{ 
-        scale: [0.5, 1.2, 1],
-        opacity: [0, 1, 0],
-        y: [0, 50, 100], // Travel down towards the meter
-        filter: ['blur(0px)', 'blur(4px)', 'blur(0px)']
-      }}
-      transition={{ duration: 1.2, ease: "circOut" }}
-      className="absolute pointer-events-none z-[1000]"
-      style={{ top: '-150px', left: '50%' }}
-    >
-      <div 
-        className="w-1 h-12 rounded-full" 
-        style={{ 
-          background: `linear-gradient(to bottom, transparent, ${color}, transparent)`,
-          boxShadow: `0 0 20px ${color}` 
-        }} 
-      />
-    </motion.div>
+    <div className="fixed inset-0 pointer-events-none z-[10000]">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0"
+      >
+        <svg className="w-full h-full overflow-visible">
+          <motion.line
+            // Start from the word (approx center-screen horizontal + offset)
+            x1={window.innerWidth / 2 + xOffset}
+            y1={window.innerHeight * 0.45} 
+            // Target the inline Clarity meter (approx 33% position in screenshot)
+            x2={window.innerWidth / 2 + 250} 
+            y2={window.innerHeight * 0.52} 
+            stroke={color}
+            strokeWidth="3"
+            strokeDasharray="4 4"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: [0, 1, 0.7] }}
+            transition={{ 
+              pathLength: { duration: 0.4 },
+              opacity: { repeat: Infinity, duration: 0.8 }
+            }}
+          />
+          <circle cx={window.innerWidth / 2 + 250} cy={window.innerHeight * 0.52} r="4" fill={color} className="animate-pulse" />
+        </svg>
+      </motion.div>
+    </div>
   );
 };
 
@@ -65,6 +75,16 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 }) => {
   const { detectedAnchors, draggingCatalyst, actions, lastDetectedAnchor } = useStudioState();
   const [lastClickTime, setLastClickTime] = React.useState(0);
+  const [isSurging, setIsSurging] = React.useState(false);
+
+  // Sync surge effect with lastDetectedAnchor
+  React.useEffect(() => {
+    if (lastDetectedAnchor) {
+      setIsSurging(true);
+      const timer = setTimeout(() => setIsSurging(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [lastDetectedAnchor]);
   
   const steps = [
     { label: 'Hook', act: 'ACT I' },
@@ -184,14 +204,21 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
           </div>
         </div>
 
-        {/* --- PRODUCTION STATUS HUD (CENTER) --- */}
+            {/* --- PRODUCTION STATUS HUD (CENTER) --- */}
         {currentStage === 0 && (
           <div className="flex-1 flex flex-col items-center justify-center gap-1.5 px-4 border-l border-r border-white/5 mx-4 relative">
-             <AnimatePresence>
-               {lastDetectedAnchor && (
-                 <SynapsePulse key={lastDetectedAnchor.timestamp} type={lastDetectedAnchor.type} />
-               )}
-             </AnimatePresence>
+             {/* MOVED: SynapseTether now lives at the top of the HUD to ensure visibility */}
+             <div className="absolute inset-x-0 -top-[500px] pointer-events-none flex justify-center">
+               <AnimatePresence mode="wait">
+                 {lastDetectedAnchor && (
+                   <SynapseTether 
+                     key={lastDetectedAnchor.timestamp} 
+                     type={lastDetectedAnchor.type} 
+                     xOffset={(lastDetectedAnchor as any).xOffset}
+                   />
+                 )}
+               </AnimatePresence>
+             </div>
              <TooltipProvider>
                <Tooltip>
                  <TooltipTrigger asChild>
@@ -247,22 +274,22 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
              
              <div className={cn(
                 "w-full h-[2px] bg-white/5 rounded-full overflow-hidden mt-1 transition-all",
-                draggingCatalyst && "h-1.5 bg-cyan-500/10 shadow-[0_0_10px_rgba(6,182,212,0.3)]"
+                (draggingCatalyst || isSurging) && "h-1.5 bg-cyan-500/10 shadow-[0_0_10px_rgba(6,182,212,0.3)]"
              )}>
                 <motion.div 
-                  className={cn(
-                    "h-full transition-colors",
-                    draggingCatalyst ? "bg-cyan-400 shadow-[0_0_15px_#22d3ee]" : "bg-emerald-500/40"
-                  )}
-                  initial={{ width: 0 }}
-                  animate={{ 
-                    width: `${Math.min(charge, 100)}%`,
-                    opacity: draggingCatalyst ? [0.6, 1, 0.6] : 1
-                  }}
-                  transition={{ 
-                    width: { type: "spring", damping: 20 },
-                    opacity: { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
-                  }}
+                   className={cn(
+                     "h-full transition-colors",
+                     (draggingCatalyst || isSurging) ? "bg-cyan-400 shadow-[0_0_15px_#22d3ee]" : "bg-emerald-500/40"
+                   )}
+                   initial={{ width: 0 }}
+                   animate={{ 
+                     width: `${Math.min(charge, 100)}%`,
+                     opacity: (draggingCatalyst || isSurging) ? [0.6, 1, 0.6] : 1
+                   }}
+                   transition={{ 
+                     width: { type: "spring", damping: 20 },
+                     opacity: (draggingCatalyst || isSurging) ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" } : { duration: 0.3 }
+                   }}
                 />
              </div>
              
@@ -284,7 +311,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                 className="font-mono text-[8px] tracking-[0.4em] text-emerald-500/40 uppercase flex items-center gap-2"
               >
                 <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                // {detectedAnchors.length.toString().padStart(2, '0')} Sensory Assets Deployed
+                {detectedAnchors.length.toString().padStart(2, '0')} Sensory Assets Deployed
               </motion.div>
             </AnimatePresence>
             

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Scriptorium } from './Scriptorium/Scriptorium';
+import { SentenceWrapper } from './Scriptorium/SentenceWrapper';
 import { ScriptBlock } from '@/types';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { 
@@ -171,7 +172,13 @@ export function MemoryForm({
 
   // THE INVISIBLE GUIDE: Focus the primary input for Act I
   // We use a callback ref to handle asynchronous mounting during transitions.
-  const storyHookRef = usePrimaryFocus(productionStage === 0 && modality !== null, 300, modality);
+  const storyHookFocusRef = usePrimaryFocus(productionStage === 0 && modality !== null, 300, modality);
+  const storyHookRef = useRef<HTMLTextAreaElement | null>(null);
+  
+  const setStoryHookRef = useCallback((node: HTMLTextAreaElement | null) => {
+    storyHookRef.current = node;
+    storyHookFocusRef(node);
+  }, [storyHookFocusRef]);
   const [title, setTitle] = useState(data?.title || '');
   const [description, setDescription] = useState(data?.description || '');
   const [location, setLocation] = useState(data?.location || '');
@@ -196,7 +203,7 @@ export function MemoryForm({
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUnpublishing, setIsUnpublishing] = useState(false);
   const [prevDescription, setPrevDescription] = useState<string | null>(null);
-  const [lastFocusedField, setLastFocusedField] = useState<'title' | 'description' | 'script' | 'metadata' | null>(null);
+  const [lastFocusedField, setLastFocusedField] = useState<'title' | 'description' | 'script' | 'metadata' | 'location' | null>(null);
   const [scriptBlocks, setScriptBlocks] = useState<ScriptBlock[]>(data?.scriptBlocks || []);
   
   // Poster State
@@ -219,19 +226,67 @@ export function MemoryForm({
   const [wordCount, setWordCount] = useState(0);
   const [atmosphericSuggestions, setAtmosphericSuggestions] = useState<string[]>(data?.atmosphericSuggestions || []);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+  const [isSaturated, setIsSaturated] = useState(false);
+
+  const lastPropsId = useRef(data?.id || data?.promptId);
 
   // CRITICAL: Sync local state when external data changes (e.g. Mentor injection)
   useEffect(() => {
-    if (data?.title !== undefined && data.title !== title) setTitle(data.title);
-    if (data?.description !== undefined && data.description !== description) setDescription(data.description);
-    if (data?.location !== undefined && data.location !== location) setLocation(data.location);
-    if (data?.country !== undefined && data.country !== country) setCountry(data.country);
-    if (data?.tags !== undefined) setTags(data.tags);
-    if (data?.dateComponents?.day !== undefined) setDay(data.dateComponents.day || 'none');
-    if (data?.dateComponents?.month !== undefined) setMonth(data.dateComponents.month || 'none');
-    if (data?.dateComponents?.year !== undefined) setYear(data.dateComponents.year || 'none');
-    if (data?.scriptBlocks !== undefined) setScriptBlocks(data.scriptBlocks);
-  }, [data?.id, data?.title, data?.description, data?.location, data?.country, data?.tags, data?.dateComponents, data?.scriptBlocks]);
+    const currentId = data?.id || data?.promptId;
+    const isNavigation = currentId !== lastPropsId.current;
+
+    if (isNavigation) {
+      if (data?.title !== undefined) setTitle(data.title);
+      if (data?.description !== undefined) setDescription(data.description);
+      if (data?.location !== undefined) setLocation(data.location);
+      if (data?.country !== undefined) setCountry(data.country);
+      if (data?.tags !== undefined) setTags(data.tags);
+      if (data?.dateComponents) {
+        setDay(data.dateComponents.day || 'none');
+        setMonth(data.dateComponents.month || 'none');
+        setYear(data.dateComponents.year || 'none');
+      }
+      if (data?.scriptBlocks) setScriptBlocks(data.scriptBlocks);
+      if (data?.chapterTitle !== undefined) setChapterTitle(data.chapterTitle);
+      if (data?.posterStyle) setPosterStyle(data.posterStyle);
+      
+      lastPropsId.current = currentId;
+      return;
+    }
+
+    // Incremental Sync (Protect active fields)
+    if (data?.title !== undefined && data.title !== title && lastFocusedField !== 'title') setTitle(data.title);
+    
+    // THE "SPLIT-BRAIN" SHIELD: Never overwrite the description if the user is currently focused there
+    if (data?.description !== undefined && data.description !== description && lastFocusedField !== 'description') {
+       setDescription(data.description);
+    }
+
+    if (data?.location !== undefined && data.location !== location && lastFocusedField !== 'metadata') setLocation(data.location);
+    if (data?.scriptBlocks && JSON.stringify(data.scriptBlocks) !== JSON.stringify(scriptBlocks)) {
+       // Only sync blocks if we aren't editing script content
+       if (lastFocusedField !== 'script') {
+          setScriptBlocks(data.scriptBlocks);
+       }
+    }
+  }, [data, lastFocusedField, title, description, location, scriptBlocks]);
+
+  // LOCAL STORAGE FAIL-SAFE: Backup the Story Hook locally in case of refresh/restart
+  useEffect(() => {
+    if (!description || description.length < 5) return;
+    const id = data?.id || data?.promptId || 'unknown';
+    localStorage.setItem(`draft_hook_${id}`, description);
+  }, [description, data?.id, data?.promptId]);
+
+  // Recovery on Mount
+  useEffect(() => {
+    const id = data?.id || data?.promptId || 'unknown';
+    const backup = localStorage.getItem(`draft_hook_${id}`);
+    if (backup && (!description || description.length < 2)) {
+       console.log("[MemoryForm] Recovering Story Hook from local backup.");
+       setDescription(backup);
+    }
+  }, []);
 
   const { isDirectorOpen, setIsDirectorOpen } = useStudioState(data?.prose || '');
   
@@ -349,6 +404,17 @@ export function MemoryForm({
     }
   };
 
+  // FAIL-SAFE: Ensure dragging state is cleared if the user releases anywhere
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (draggingCatalyst) {
+        globalActions.setDraggingCatalyst(null);
+      }
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [draggingCatalyst, globalActions]);
+
   const handleToggleColumn = (col: 'sensory' | 'poster' | null) => {
     globalActions.setActiveDrawer(activeDrawer === col ? null : col as any);
     if (col !== null) {
@@ -430,19 +496,37 @@ export function MemoryForm({
       return;
     }
 
-    if (!isDescReady || isPolishingDesc) return;
+    if (isPolishingDesc) return;
+    
+    // Catalysts can be applied even if the full polish threshold isn't met
+    const isFullPolish = !sensoryType || sensoryType === 'polish';
+    if (isFullPolish && !isDescReady) return;
+    
+    // Saturation Check: Prevent redundant polishing for already infused layers
+    if (sensoryType && sensoryType !== 'polish' && appliedCatalysts.includes(sensoryType)) {
+      setIsSaturated(true);
+      setTimeout(() => setIsSaturated(false), 1000);
+      toast("Sensory Saturation Reached", {
+        description: `This beat is already rich with ${sensoryType} details. Drag Soundscape or Texture to further deepen the memory.`,
+        icon: <Zap className="w-4 h-4 text-amber-500" />
+      });
+      return;
+    }
+    
     setIsPolishingDesc(true);
     setIsDirectorOpen(true); // Reveal the Director's Note drawer
     setPrevDescription(description); // Store original for revert
-    try {
-       const polishOptions = sensoryType && sensoryType !== 'polish' ? { sensoryFocus: sensoryType } : {};
+    try {        const snapshotBeforePolish = description;
+        const polishOptions = sensoryType && sensoryType !== 'polish' ? { sensoryFocus: sensoryType } : {};
         const polished = await polishDescription(description, polishOptions);
-        setDescription(polished);
-        if (sensoryType && sensoryType !== 'polish' && !appliedCatalysts.includes(sensoryType)) {
-          setAppliedCatalysts(prev => [...prev, sensoryType]);
-          setLastAppliedType(sensoryType);
-          // Auto-clear splash after animation
-          setTimeout(() => setLastAppliedType(null), 1500);
+        
+        // COLLISION PROTECTION: Only apply AI polish if the user hasn't typed anything new
+        if (description === snapshotBeforePolish) {
+           setDescription(polished);
+        } else {
+           console.log("[MemoryForm] AI Polish Collision Detected: User typed during AI processing. Discarding AI result to protect local work.");
+           // We keep the prevDescription for the toast so they can still see what it WAS, 
+           // but we don't overwrite the fresh work.
         }
 
         // Fetch Atmospheric Suggestions if not already present
@@ -654,6 +738,19 @@ export function MemoryForm({
       setIsUnpublishing(false);
     }
   };
+
+  // UNSAVED CHANGES WARNING: Prevent accidental data loss on tab close
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const isDirty = description !== (data?.description || '');
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [description, data?.description]);
 
   return (
     <div className="relative w-full z-10 px-8 pb-24 pt-4">
@@ -1206,10 +1303,19 @@ export function MemoryForm({
 
                 <div 
                         data-block-id="story-hook"
+                        onClick={() => {
+                          if (storyHookRef.current) {
+                            storyHookRef.current.focus();
+                            // Move cursor to end if clicking empty space
+                            const len = storyHookRef.current.value.length;
+                            storyHookRef.current.setSelectionRange(len, len);
+                          }
+                        }}
                         className={cn(
-                          "relative transition-all duration-700 rounded-3xl p-8 -mx-8 group/hook",
+                          "relative transition-all duration-700 rounded-3xl p-8 -mx-8 group/hook min-h-[500px] cursor-text",
                           "hover:bg-white/[0.02] focus-within:bg-white/[0.04]",
                           "ring-1 ring-transparent focus-within:ring-white/10",
+                          isSaturated && "ring-4 ring-amber-500/50 bg-amber-500/10 scale-[1.02] shadow-[0_0_60px_rgba(245,158,11,0.2)]",
                           isListening && isDictating && modality === 'voice' && productionStage === 0 && "shadow-[0_0_30px_rgba(251,191,36,0.15)] ring-1 ring-amber-500/30 bg-amber-500/5",
                           mentorActive && productionStage === 0 && "ring-2 ring-emerald-400/50 shadow-[0_0_50px_rgba(16,185,129,0.2)] bg-emerald-500/5 scale-[1.01]",
                           draggingCatalyst && "ring-2 ring-cyan-500/50 bg-cyan-500/5 shadow-[0_0_40px_rgba(6,182,212,0.15)] scale-[1.005]"
@@ -1222,7 +1328,7 @@ export function MemoryForm({
                               initial={{ opacity: 0, scale: 0.95 }}
                               animate={{ opacity: 1, scale: 1 }}
                               exit={{ opacity: 0, scale: 0.95 }}
-                              className="absolute inset-0 z-50 rounded-3xl flex items-center justify-center bg-cyan-500/5 border-2 border-dashed border-cyan-400/30 backdrop-blur-[2px]"
+                              className="absolute inset-0 z-50 rounded-3xl flex items-center justify-center bg-cyan-500/5 border-2 border-dashed border-cyan-400/30 backdrop-blur-[2px] pointer-events-none"
                             >
                               <div className="flex flex-col items-center gap-3">
                                 <motion.div 
@@ -1233,45 +1339,34 @@ export function MemoryForm({
                                   <Sparkles className="w-6 h-6 text-cyan-400" />
                                 </motion.div>
                                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-400 drop-shadow-glow">
-                                  Drop to Anchor {draggingCatalyst.toUpperCase()}
+                                  {appliedCatalysts.includes(draggingCatalyst as any) 
+                                    ? "Sensory Saturation Reached" 
+                                    : `Drop to Anchor ${draggingCatalyst.toUpperCase()}`}
                                 </span>
                               </div>
                             </motion.div>
                           )}
                         </AnimatePresence>
-                        {/* 1. THE GHOST LAYER (Background) */}
-                        <div
-                          aria-hidden="true"
-                          className={cn(
-                            "absolute inset-8 pointer-events-none select-none text-2xl leading-relaxed italic font-mono transition-all text-slate-200",
-                            "whitespace-pre-wrap break-words"
-                          )}
-                          dangerouslySetInnerHTML={{ __html: descDecorated }}
-                        />
-
-                        {/* 2. THE INTERACTIVE LAYER (Foreground) */}
-                          <textarea 
-                            ref={storyHookRef as any}
-                            value={description}
-                            onChange={(e) => {
-                              setDescription(e.target.value);
-                              handleCaretUpdate(e);
-                            }}
-                            onSelect={handleCaretUpdate}
-                            onKeyUp={handleCaretUpdate}
-                            onFocus={() => setLastFocusedField('description')}
-                            placeholder="SET THE SCENE. WHAT IS THE EMOTIONAL CORE OF THIS REMEMBRANCE?"
-                            spellCheck={true}
-                            autoComplete="off"
-                            className={cn(
-                              "relative z-10 w-full bg-transparent border-none text-2xl placeholder:text-white/50 focus:outline-none focus:ring-0 min-h-[300px] resize-none leading-relaxed italic font-mono transition-all cursor-[inherit]",
-                              "p-0 m-0", // Ensure no default padding interferes with ghost layer
-                              modality === 'pen' ? "!caret-sky-400" : "!caret-amber-400",
-                              "text-white/30 selection:bg-emerald-500/30", // Change from text-transparent to text-white/30 for visibility
-                              "break-words",
-                              "opacity-100" // Ensure visibility of interaction layer
-                            )}
-                          />
+                        {/* 1. THE UNIFIED APEX LAYER (V4.6) */}
+                        <div className="relative pointer-events-auto">
+                          <SentenceWrapper 
+                             ref={setStoryHookRef}
+                             block={{ id: 'story-hook', text: description, type: 'hook' }} 
+                             isActive={productionStage === 0}
+                             onUpdate={(text: string) => {
+                               setDescription(text);
+                               // Update first script block title if it's the story hook
+                               if (scriptBlocks.length > 0) {
+                                 const updatedBlocks = [...scriptBlocks];
+                                 updatedBlocks[0] = { ...updatedBlocks[0], text };
+                                 setScriptBlocks(updatedBlocks);
+                               }
+                             }}
+                             onFocus={() => setLastFocusedField('description')}
+                             onBlur={handleCaretUpdate}
+                             actions={globalActions}
+                           />
+                        </div>
                         {isListening && isDictating && interimTranscript && (
                           <div className="absolute bottom-4 left-4 right-4 p-4 bg-amber-500/10 border-t border-amber-500/20 text-amber-400 font-mono italic text-lg animate-pulse backdrop-blur-md rounded-b-xl pointer-events-none">
                             {interimTranscript}
