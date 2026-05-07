@@ -173,10 +173,12 @@ export const SensoryCatalystHUD: React.FC<SensoryCatalystHUDProps> = ({
                     const blocks = document.querySelectorAll('[data-block-id]');
                     let droppedBlockId: string | null = null;
                     
+                    const TOLERANCE = 20; // Magnetic buffer for easier drops
+
                     for (const block of Array.from(blocks)) {
                       const rect = block.getBoundingClientRect();
-                      if (info.point.x >= rect.left && info.point.x <= rect.right && 
-                          info.point.y >= rect.top && info.point.y <= rect.bottom) {
+                      if (info.point.x >= rect.left - TOLERANCE && info.point.x <= rect.right + TOLERANCE && 
+                          info.point.y >= rect.top - TOLERANCE && info.point.y <= rect.bottom + TOLERANCE) {
                         droppedBlockId = block.getAttribute('data-block-id');
                         break;
                       }

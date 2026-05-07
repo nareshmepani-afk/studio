@@ -371,7 +371,7 @@ export const DirectorNoteDrawer: React.FC<DirectorNoteDrawerProps> = ({
                     <Sparkles className="absolute inset-0 m-auto w-4 h-4 text-emerald-300 animate-pulse" />
                   </div>
                   <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">
-                    {isProofreading ? "Scribe is polishing the ink..." : "Director is analyzing the soul-print..."}
+                    {isPolishing ? "Narrative Architect is infusing details..." : isProofreading ? "Scribe is polishing the ink..." : "Director is analyzing the soul-print..."}
                   </p>
                 </div>
               )}

@@ -73,7 +73,14 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   wordCount = 0,
   isDocked = false
 }) => {
-  const { detectedAnchors, draggingCatalyst, actions, lastDetectedAnchor } = useStudioState();
+  const { 
+    detectedAnchors, 
+    draggingCatalyst, 
+    actions, 
+    lastDetectedAnchor,
+    isReviewing,
+    isGeneratingDrafts
+  } = useStudioState();
   const [lastClickTime, setLastClickTime] = React.useState(0);
   const [isSurging, setIsSurging] = React.useState(false);
 
@@ -139,8 +146,13 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   };
 
   const getActionLabel = () => {
+    if (currentStage === 0) {
+        if (isGeneratingDrafts) return 'SYNTHESIZING...';
+        if (isReviewing) return 'SEAL THE MEMORY';
+        return 'DRAFT THE WEAVE';
+    }
+    
     switch (currentStage) {
-      case 0: return 'ENTER THE WEAVE';
       case 1: return 'Enter Recording Studio';
       case 2: return 'Finalize Footage';
       case 3: return 'Prepare Premiere';

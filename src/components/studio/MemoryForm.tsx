@@ -17,8 +17,8 @@ import { CinemaPoster } from '@/components/memory/CinemaPoster';
 import { analyzeSentiment, PulseState } from '@/utils/sentimentScore';
 import { polishDescription, expandWithAI, getAtmosphericPolish } from '@/actions/aiWeaver';
 import { publishMemoryAction, unpublishMemoryAction } from '@/actions/memoryActions';
-import { useStudioState } from '@/hooks/useStudioState';
 import { useStudioState as useGlobalStudioState } from '@/hooks/studio/useStudioState';
+import { useStudioState } from '@/hooks/useStudioState';
 import { DirectorNoteDrawer } from './DirectorNoteDrawer';
 import { cn } from '@/lib/utils';
 import { useDirectorInk, getAnchorAtCaret } from '@/hooks/studio/useDirectorInk';
@@ -259,7 +259,17 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
   const [appliedCatalysts, setAppliedCatalysts] = useState<CatalystType[]>([]);
   const [lastAppliedType, setLastAppliedType] = useState<CatalystType | null>(null);
   
-  const { actions: globalActions, activeDrawer, pendingAnchor, draggingCatalyst } = useGlobalStudioState();
+  const { 
+    actions: globalActions, 
+    activeDrawer, 
+    pendingAnchor, 
+    draggingCatalyst,
+    isReviewing,
+    reviewDrafts,
+    isGeneratingDrafts,
+    selectedVision
+  } = useGlobalStudioState();
+
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUnpublishing, setIsUnpublishing] = useState(false);
   const [prevDescription, setPrevDescription] = useState<string | null>(null);
@@ -572,6 +582,10 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
     anchors: descAnchors 
   });
 
+  // DIRECTOR'S CUT: Ceremony State
+  // (Consolidated into top-level hook call)
+
+
   // Hot Clarity Bridge: Update parent immediately for real-time control bar feedback
   useEffect(() => {
     onClarityChange?.(descCharge);
@@ -615,6 +629,12 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
     setIsPolishingDesc(true);
     setIsDirectorOpen(true); // Reveal the Director's Note drawer
     setPrevDescription(description); // Store original for revert
+
+    // IMMEDIATE FEEDBACK: Show the infusion overlay while AI works
+    if (sensoryType && sensoryType !== 'polish') {
+      setLastAppliedType(sensoryType);
+    }
+
     try {        const snapshotBeforePolish = description;
         const polishOptions = sensoryType && sensoryType !== 'polish' ? { sensoryFocus: sensoryType } : {};
         const polished = await polishDescription(description, polishOptions);
@@ -636,6 +656,14 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
             setIsFetchingSuggestions(false);
           }).catch(() => setIsFetchingSuggestions(false));
         }
+        // MARK AS APPLIED
+        if (sensoryType && sensoryType !== 'polish' && !appliedCatalysts.includes(sensoryType)) {
+          setAppliedCatalysts(prev => [...prev, sensoryType]);
+        }
+        
+        // Let the "Infused" state linger for 2s after completion
+        setTimeout(() => setLastAppliedType(null), 2000);
+
         toast(`Applied ${sensoryType && sensoryType !== 'polish' ? sensoryType.toUpperCase() : 'AI'} Polish`, {
           description: sensoryType && sensoryType !== 'polish' 
             ? `Narrative Architect has infused your hook with ${sensoryType} details.`
@@ -772,6 +800,7 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
 
 
   // --- AI HANDLERS ---
+
   const handleAIExpand = useCallback(async () => {
     setIsExpanding(true);
     toast("Weaving Script...", {
@@ -779,12 +808,37 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
       icon: <Sparkles className="w-4 h-4 text-sky-400" />
     });
     
-    // Simulating AI delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsExpanding(false);
-    toast.success("Script Weaved");
-  }, []);
+    try {
+      const results = await expandWithAI(
+        description,
+        sensoryConfigToUse,
+        sensoryValues,
+        tags,
+        '', // currentProse is empty for initial expansion
+        false,
+        selectedVision
+      );
+
+      if (results) {
+        setAiTakes(results);
+        // Automatically apply the 'nostalgic' take as the base script if it exists
+        if (results.nostalgic) {
+          const blocks: ScriptBlock[] = [
+            { id: crypto.randomUUID(), text: results.nostalgic, type: 'beat', catalysts: [] }
+          ];
+          setScriptBlocks(blocks);
+        }
+        toast.success("Script Weaved", {
+          description: "The Director's Vision has been expanded. Review the three takes in the drawer."
+        });
+      }
+    } catch (error) {
+      console.error("AI Expansion Failure:", error);
+      toast.error("Expansion Failed", { description: "The Director was unable to weave the narrative. Try again." });
+    } finally {
+      setIsExpanding(false);
+    }
+  }, [description, sensoryConfigToUse, sensoryValues, tags, selectedVision]);
 
   const handleScriptPolish = useCallback((blockId: string) => {
     handleAIExpand();
@@ -1026,12 +1080,23 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 1.02 }}
-                className="w-full max-w-4xl mx-auto flex flex-col pt-4 pb-0"
+                className="w-full max-w-6xl mx-auto flex flex-col pt-4 pb-0"
               >
-
-
-                {/* Centered Scriptorium Content */}
-                <div className="flex-1 flex flex-col justify-start space-y-16">
+                {isGeneratingDrafts ? (
+                  <SynthesizingOverlay />
+                ) : isReviewing ? (
+                  <SelectionDeck 
+                    drafts={reviewDrafts || []} 
+                    onSelect={(text, type, label) => {
+                      setDescription(text || '');
+                      globalActions.setSelectedVision(type as any, label);
+                    }} 
+                    selectedText={description || ''}
+                  />
+                ) : (
+                  <div className="act-1-content">
+                    {/* Centered Scriptorium Content */}
+                    <div className="flex-1 flex flex-col justify-start space-y-16">
                   <div className="space-y-6">
                     <div className="space-y-2 relative">
                       {mentorActive && (productionStage === 0 || productionStage === 1) && (
@@ -1330,6 +1395,7 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
                         </button>
                       </div>
                     </div>
+                  </div>
                       
                       <div className="relative group">
                         {/* THE WHISPER BAR: Cinematic Context */}
@@ -1401,8 +1467,13 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
                           lastAppliedType === 'soundscape' ? "text-sky-400" :
                           "text-emerald-400"
                         )} />
-                        <span className="text-white font-black uppercase tracking-[0.2em] text-xs">
-                          {lastAppliedType} Infused
+                        <span className={cn(
+                          "text-xl font-headline italic tracking-wide",
+                          lastAppliedType === 'aroma' ? "text-amber-400" :
+                          lastAppliedType === 'soundscape' ? "text-sky-400" :
+                          "text-emerald-400"
+                        )}>
+                          {isPolishingDesc ? `Synthesizing ${lastAppliedType}...` : `${lastAppliedType} Infused`}
                         </span>
                       </motion.div>
                       
@@ -1570,6 +1641,7 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
                   </div>
                 </div>
               </div>
+            )}
           </motion.div>
         )}
 
@@ -1787,8 +1859,21 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
                     whileHover={{ scale: 1.02, rotateY: -10, rotateX: 5 }}
                     className="relative"
                    >
-                     <CinemaPoster memory={{ ...data, id: data.id || '', title, chapterTitle, usePoster, posterStyle, posterImageUrl, credits: { director, producer, starring, billingLine } } as Memory} />
+                     <CinemaPoster memory={{ 
+                       ...data, 
+                       description: description || '',
+                       category: data.category || 'personal',
+                       id: data.id || '', 
+                       userId: data.userId || '', 
+                       title, 
+                       chapterTitle, 
+                       usePoster, 
+                       posterStyle, 
+                       posterImageUrl, 
+                       credits: { director, producer, starring, billingLine } 
+                     }} />
                    </motion.div>
+
                 </div>
               </motion.div>
             )}
@@ -1801,3 +1886,103 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
 }
 
 // Export removed for named export migration
+
+/* --- DIRECTOR'S CUT HELPERS --- */
+
+const SynthesizingOverlay = () => (
+  <div className="flex-1 flex flex-col items-center justify-center space-y-12 min-h-[60vh]">
+    <div className="relative">
+      <motion.div 
+        animate={{ rotate: 360 }}
+        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+        className="w-32 h-32 rounded-full border-2 border-dashed border-emerald-500/20"
+      />
+      <motion.div 
+        animate={{ rotate: -360 }}
+        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+        className="absolute inset-0 w-32 h-32 rounded-full border-2 border-dashed border-sky-500/20 scale-125"
+      />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <Sparkles className="w-10 h-10 text-emerald-400 animate-pulse" />
+      </div>
+    </div>
+    <div className="text-center space-y-3">
+      <h2 className="text-3xl font-headline italic text-white tracking-widest">Synthesizing Visions</h2>
+      <p className="text-[10px] font-black text-emerald-400/60 uppercase tracking-[0.4em]">The Director is weaving your story into three distinct paths...</p>
+    </div>
+  </div>
+);
+
+const SelectionDeck = ({ drafts, onSelect, selectedText }: { drafts: any[], onSelect: (t: string, type: string, label: string) => void, selectedText: string }) => {
+  if (!drafts || drafts.length === 0) return null;
+
+  const ICONS: Record<string, any> = {
+    soul: Heart,
+    sensory: Sparkles,
+    cinematic: Film
+  };
+
+  const AURAS: Record<string, string> = {
+    soul: 'border-amber-500/30 bg-amber-500/5',
+    sensory: 'border-sky-500/30 bg-sky-500/5',
+    cinematic: 'border-emerald-500/30 bg-emerald-500/5'
+  };
+
+  const COLORS: Record<string, string> = {
+    soul: 'text-amber-400',
+    sensory: 'text-sky-400',
+    cinematic: 'text-emerald-400'
+  };
+
+  return (
+    <div className="flex-1 flex flex-col space-y-16 py-12">
+      <div className="text-center space-y-4">
+        <h2 className="text-4xl font-headline italic text-white">Choose your Vision</h2>
+        <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.5em]">The Director has prepared narrative interpretations of your memory</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {drafts.map((opt) => {
+          const Icon = ICONS[opt.type] || Sparkles;
+          return (
+            <motion.button
+              key={opt.id}
+              whileHover={{ scale: 1.02, y: -5 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onSelect(opt.text, opt.type, opt.label)}
+              className={cn(
+                "group relative flex flex-col p-8 rounded-[2.5rem] border transition-all text-left min-h-[400px]",
+                AURAS[opt.type] || 'border-white/10 bg-white/5',
+                selectedText === opt.text ? "ring-2 ring-white/20 border-white/40 shadow-2xl bg-white/10" : "opacity-60 hover:opacity-100"
+              )}
+            >
+              <div className="flex items-center justify-between mb-8">
+                 <div className={cn("p-3 rounded-2xl bg-white/5", COLORS[opt.type] || 'text-white')}>
+                   <Icon className="w-6 h-6" />
+                 </div>
+                 {selectedText === opt.text && (
+                   <div className="px-4 py-1 bg-white text-slate-950 text-[9px] font-black uppercase tracking-widest rounded-full">
+                      Selected
+                   </div>
+                 )}
+              </div>
+              
+              <h3 className="text-xl font-headline italic text-white mb-2">{opt.label}</h3>
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-6 group-hover:text-white/40 transition-colors">
+                {opt.focus}
+              </p>
+              <p className="text-[11px] text-white/70 leading-relaxed italic font-serif">
+                 "{opt.text}"
+              </p>
+              
+              <div className="mt-auto pt-8 flex items-center gap-2">
+                 <div className="h-px flex-1 bg-white/10" />
+                 <span className="text-[8px] font-black uppercase tracking-[0.3em] text-white/20 group-hover:text-white/40 transition-colors">Apply Vision</span>
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};

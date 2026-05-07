@@ -31,6 +31,13 @@ interface StudioState {
   pendingAnchor: { text: string; type: CatalystType } | null;
   lastDetectedAnchor: { text: string; type: CatalystType; timestamp: number; xOffset?: number } | null;
   appliedCatalystTypes: CatalystType[];
+  isReviewing: boolean;
+  isGeneratingDrafts: boolean;
+  selectedVision: {
+    type: 'soul' | 'sensory' | 'cinematic' | null;
+    label: string | null;
+  };
+  reviewDrafts: { id: string, label: string, text: string, type: 'original' | 'sensory' | 'narrative' }[] | null;
   dispatcher?: {
     addCatalyst?: (blockId: string, type: CatalystType, value?: string) => { collisionDetected: boolean };
   };
@@ -61,6 +68,10 @@ interface StudioActions {
   setDispatcher: (dispatcher: StudioState['dispatcher']) => void;
   setDraggingCatalyst: (type: CatalystType | null | 'polish') => void;
   setAppliedCatalysts: (types: CatalystType[]) => void;
+  setIsReviewing: (val: boolean) => void;
+  setReviewDrafts: (drafts: any[] | null) => void;
+  setIsGeneratingDrafts: (val: boolean) => void;
+  setSelectedVision: (type: 'soul' | 'sensory' | 'cinematic' | null, label: string | null) => void;
 }
 
 // 3. Context Shape
@@ -110,6 +121,10 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     pendingAnchor: null,
     lastDetectedAnchor: null,
     appliedCatalystTypes: [],
+    isReviewing: false,
+    isGeneratingDrafts: false,
+    reviewDrafts: [],
+    selectedVision: { type: null, label: null },
     dispatcher: undefined,
     ...(initialState || {}),
   });
@@ -277,6 +292,10 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
       if (JSON.stringify(s.appliedCatalystTypes) === JSON.stringify(types)) return s;
       return { ...s, appliedCatalystTypes: types };
     }),
+    setIsReviewing: (val) => setState(s => ({ ...s, isReviewing: val })),
+    setReviewDrafts: (drafts) => setState(s => ({ ...s, reviewDrafts: drafts })),
+    setIsGeneratingDrafts: (val) => setState(s => ({ ...s, isGeneratingDrafts: val })),
+    setSelectedVision: (type, label) => setState(s => ({ ...s, selectedVision: { type, label } })),
   }), []);
 
   return (

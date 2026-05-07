@@ -34,7 +34,8 @@ export async function expandWithAI(
   sensoryValues: Record<string, string>,
   emotionTags: string[],
   currentProse: string,
-  isRewriteOfSelection: boolean = false
+  isRewriteOfSelection: boolean = false,
+  visionIntent?: { type: string | null; label: string | null }
 ): Promise<{ poetic?: string; direct?: string; nostalgic?: string }> {
   console.log("[AI Weaver] expandWithAI triggered");
   const ai = await getAI();
@@ -52,6 +53,13 @@ export async function expandWithAI(
       You are an award-winning Literary Memoirist and Family Historian specializing in "Literary Depth."
       Your task is to transform raw memory fragments into a narrative that explores the internal world and the "invisible" heritage carried across borders.
       
+      [DIRECTOR'S INTENT]
+      The Director has chosen a specific "Vision" for this story: ${visionIntent?.label || 'General Narrative'} (${visionIntent?.type || 'Standard'}).
+      ${visionIntent?.type === 'soul' ? 'Focus on the internal, emotional truth and spiritual resonance.' : 
+        visionIntent?.type === 'sensory' ? 'Prioritize vivid physical sensations, scents, and ambient sounds.' :
+        visionIntent?.type === 'cinematic' ? 'Use dramatic pacing, high-contrast metaphors, and filmic descriptions.' : 
+        'Maintain a balanced literary tone.'}
+
       [INCOMING DATA]
       "Description": ${description}
       "Emotion Tags": ${emotionTags.length > 0 ? emotionTags.join(', ') : 'None specified'}
@@ -69,7 +77,7 @@ export async function expandWithAI(
       - Avoid AI-speak: BANNED words include "odyssey," "lineage," "tapestry," "vibrant," "testament," "unfolding," "interwoven," "symphony," or "shores" (unless refers to a physical beach).
       - Write for future generations.
       
-      Craft three (3) distinct "Takes" in this literary style. 
+      Craft three (3) distinct "Takes" in this literary style, but HEAVILY influenced by the [DIRECTOR'S INTENT]. 
       Each Take must be a single, rhythmic, and meaningful paragraph (100-140 words).
       
       Take 1 ("poetic"): Internal world focus. Reflective and deeply metaphorical.
@@ -672,5 +680,70 @@ export async function proofreadScript(blocks: ScriptBlock[]): Promise<Array<{
   } catch (error) {
     console.error("[AI Weaver] Proofread Failure:", error);
     return [];
+  }
+}
+
+/**
+ * Generates three distinct variations of the story hook for the Director's Cut ceremony.
+ */
+export async function generateDraftOptions(description: string): Promise<Array<{
+  id: string;
+  label: string;
+  text: string;
+  type: 'soul' | 'sensory' | 'cinematic';
+  focus: string;
+}>> {
+  console.log(`[AI Weaver] generateDraftOptions triggered for: ${description.substring(0, 30)}...`);
+  
+  const ai = await getAI();
+  
+  const prompt = `
+    You are the "Master Director" and "Auteur" for Chronicle Cinema.
+    Your task is to take a user's raw "Story Hook" and create three (3) distinct cinematic visions (Takes).
+    
+    [ORIGINAL HOOK]
+    "${description}"
+    
+    [THE THREE TAKES]
+    1. "The Soul-Print": A polished version of the original. Fix grammar, spelling, and rhythm, but keep the exact emotional core and tone.
+    2. "The Sensory Path": Infuse the hook with deep sensory anchors, specifically Aroma and Soundscape. Make the reader "smell" and "hear" the memory.
+    3. "The Cinematic Cut": High-fidelity narrative prose. Use sophisticated metaphors and rhythmic pacing to make it feel like a professional film treatment.
+    
+    [RULES]
+    - Each take must be concise (40-70 words).
+    - Avoid AI clichés: "tapestry", "odyssey", "whispers", "vibrant", "testament", "unfolding".
+    - Focus on the "Linguistically silent but culturally loud" quality of memory.
+    
+    Return strictly a JSON array of objects:
+    [
+      { "id": "soul", "label": "The Soul-Print", "text": "...", "type": "soul", "focus": "Preserved Intent & Clarity" },
+      { "id": "sensory", "label": "The Sensory Path", "text": "...", "type": "sensory", "focus": "Aroma & Ambient Resonance" },
+      { "id": "cinematic", "label": "The Cinematic Cut", "text": "...", "type": "cinematic", "focus": "High-Fidelity Narrative" }
+    ]
+  `;
+
+  try {
+    const { output } = await pRetry(async () => {
+      return await ai.generate({
+        prompt,
+        output: {
+          schema: z.array(z.object({
+            id: z.string(),
+            label: z.string(),
+            text: z.string(),
+            type: z.enum(['soul', 'sensory', 'cinematic']),
+            focus: z.string()
+          })),
+        },
+      });
+    }, { retries: 2 });
+    
+    return output || [];
+  } catch (error) {
+    console.error("[AI Weaver] Draft Options Failure:", error);
+    // Fallback: Just return the original as the soul-print
+    return [
+      { id: 'soul', label: 'The Soul-Print', text: description, type: 'soul', focus: 'Original Hook' }
+    ];
   }
 }

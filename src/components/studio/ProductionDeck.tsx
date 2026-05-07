@@ -24,8 +24,10 @@ import { SensoryCatalystHUD } from './SensoryCatalystHUD';
 import { ThresholdGuard } from './overlays/ThresholdGuard';
 import { ProductionPreFlight } from './overlays/ProductionPreFlight';
 import { useStudioState } from '@/hooks/useStudioState';
+import { useStudioState as useGlobalStudioState } from '@/hooks/studio/useStudioState';
 import { useProductionCharge } from '@/hooks/studio/useProductionCharge';
 import { detectAnchors } from '@/hooks/studio/useDirectorInk';
+import { generateDraftOptions } from '@/actions/aiWeaver';
 
 const DEFAULT_SIDEBAR_WIDTH = 280;
 import { useMentorLifeline } from '@/hooks/studio/useMentorLifeline';
@@ -59,8 +61,25 @@ const ProductionDeck = ({
     );
     const [isRailRetracted, setIsRailRetracted] = useState(false);
 
-    // NEW: URL-based Source of Truth for the active act and modality
-    const { currentStage, setStage, modality, setModality, isDirectorOpen } = useStudioState(memoryData?.prose || '');
+    // Source of Truth for the studio state
+    const { 
+        currentStage, 
+        setStage, 
+        modality, 
+        setModality, 
+        isDirectorOpen,
+    } = useStudioState(memoryData?.description || '');
+
+    const {
+        isReviewing, 
+        selectedVision,
+        actions: {
+            setIsReviewing, 
+            setReviewDrafts, 
+            setIsGeneratingDrafts
+        }
+    } = useGlobalStudioState();
+
 
     const [sidebarWidth, setSidebarWidth] = useState(320); // Default width
     const [isDragging, setIsDragging] = useState(false);
@@ -378,25 +397,52 @@ const ProductionDeck = ({
         }
     };
 
-    const handleNextAct = () => {
+
+    const handleNextAct = async () => {
         const isAct1 = currentStage === 0;
         const clarity = isAct1 ? hotClarity : totalCharge;
         const isLowClarity = isAct1 && clarity < 40;
 
-        // NEW: Intercept Act 1 transition for the Pre-Flight Diagnostic
+        // NEW: "Director's Cut" Ceremony Trigger
+        if (isAct1 && !isReviewing) {
+            setIsGeneratingDrafts(true);
+            try {
+                const drafts = await generateDraftOptions(memoryData?.description || '');
+                setReviewDrafts(drafts as any);
+                setIsReviewing(true);
+                toast.success("Visions Synthesized", {
+                    description: "The Director has prepared three distinct paths for your memory."
+                });
+            } catch (err) {
+                toast.error("Ceremony Interrupted", { description: "The AI Weaver is recalibrating." });
+            } finally {
+                setIsGeneratingDrafts(false);
+            }
+            return;
+        }
+
+        // Transition from Review to Act II
+        if (isAct1 && isReviewing) {
+            if (!selectedVision) {
+                toast.error("Vision Required", { description: "You must select a narrative path to seal the memory." });
+                return;
+            }
+            setIsReviewing(false);
+            const next = currentStage + 1;
+            setStage(next);
+            return;
+        }
+
+        // Original logic for other stages
         if (isAct1 && !isLowClarity && !showPreFlight) {
             setShowPreFlight(true);
             return;
         }
 
-        // Note: ProductionControlBar handles the UI/Toast for the low clarity state,
-        // which prevents us from firing onNext if the gate is closed.
-        // We ensure that we only proceed if complete OR if we have clarity (or override).
         if ((isActComplete || isLowClarity || showPreFlight) && currentStage < 4) {
             const next = currentStage + 1;
             setStage(next);
             setShowPreFlight(false); // Reset pre-flight
-            // Sync highest reached stage to backend for persistence
             if ((memoryData?.productionStage || 0) < next) {
                 handleUpdate({ ...memoryData, productionStage: next });
             }
