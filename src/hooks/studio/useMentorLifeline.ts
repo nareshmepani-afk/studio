@@ -80,8 +80,11 @@ const WHISPERS: Record<MentorshipAct, MentorWhisper> = {
 export function useMentorLifeline() {
   const [mentorModeActive, setMentorModeActive] = useState(false);
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+  const [isManualMentor, setIsManualMentor] = useState(false);
+  const [customWhisper, setCustomWhisper] = useState<MentorWhisper | null>(null);
 
-  const toggleMentor = useCallback(() => {
+  const toggleMentor = useCallback((manual: boolean = false) => {
+    setIsManualMentor(manual);
     setMentorModeActive(prev => {
       const next = !prev;
       if (next) {
@@ -93,6 +96,7 @@ export function useMentorLifeline() {
         });
       } else {
         setIsOverlayOpen(false);
+        setCustomWhisper(null);
         toast("Mentor Standby", {
           description: "Guided assistance has been retracted. You're in the lead.",
         });
@@ -101,18 +105,27 @@ export function useMentorLifeline() {
     });
   }, []);
 
+  const triggerWhisper = useCallback((whisper: MentorWhisper) => {
+    setCustomWhisper(whisper);
+    setMentorModeActive(true);
+    setIsOverlayOpen(true);
+  }, []);
+
   const closeOverlay = useCallback(() => {
     setIsOverlayOpen(false);
+    setCustomWhisper(null);
   }, []);
 
   const getWhisper = useCallback((act: number): MentorWhisper => {
-    return WHISPERS[act as MentorshipAct] || WHISPERS[0];
-  }, []);
+    return customWhisper || WHISPERS[act as MentorshipAct] || WHISPERS[0];
+  }, [customWhisper]);
 
   return {
     mentorModeActive,
     isOverlayOpen,
+    isManualMentor,
     toggleMentor,
+    triggerWhisper,
     closeOverlay,
     getWhisper
   };

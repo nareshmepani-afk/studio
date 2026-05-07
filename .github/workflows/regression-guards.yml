@@ -1,0 +1,35 @@
+name: Regression Guards
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run Full Project Lint
+      run: npm run lint
+
+    - name: Run Type Checks
+      run: npm run type-check
+
+    - name: Run Regression Tests
+      run: npm run test
+
+    - name: Build Stability Check
+      run: npm run build

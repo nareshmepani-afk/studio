@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -32,6 +32,7 @@ import { useMentorLifeline } from '@/hooks/studio/useMentorLifeline';
 import { MentorshipOverlay } from './MentorshipOverlay';
 import { useRecaptcha } from '@/hooks/useRecaptcha';
 import { firebaseConfig } from '@/lib/config-schema';
+import { OnboardingOverlay } from './overlays/OnboardingOverlay';
 const SNAP_THRESHOLD = 20; // Magnetic snap range
 
 // Define a placeholder for the memory data type
@@ -70,9 +71,19 @@ const ProductionDeck = ({
     const [wordCount, setWordCount] = useState(0);
     const [hotClarity, setHotClarity] = useState(0);
     const [showPreFlight, setShowPreFlight] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(false);
+    const [highlightClarity, setHighlightClarity] = useState(false);
 
     // MOD-15: Mentorship Lifeline
-    const { mentorModeActive, isOverlayOpen, toggleMentor, closeOverlay, getWhisper } = useMentorLifeline();
+    const { 
+        mentorModeActive, 
+        isOverlayOpen, 
+        isManualMentor,
+        toggleMentor, 
+        triggerWhisper,
+        closeOverlay, 
+        getWhisper 
+    } = useMentorLifeline();
     
     // reCAPTCHA Hook
     const { executeAction } = useRecaptcha(firebaseConfig.recaptchaSiteKey);
@@ -157,38 +168,41 @@ const ProductionDeck = ({
         }
     }, [currentStage, modality]);
 
+    const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const resetIdleTimer = useCallback(() => {
+        if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+        idleTimerRef.current = setTimeout(() => {
+            if (!mentorModeActive && currentStage === 0) {
+                toggleMentor(false); // Auto-trigger, not manual
+                console.log("[Studio] User idle detected (90s). Engaging Mentor Lifeline.");
+            }
+        }, 90000); // 90 seconds
+    }, [mentorModeActive, currentStage, toggleMentor]);
+
     // AUTO-ACTIVATION: Studio Mentor Idle Protocol
     useEffect(() => {
         // Only trigger in Act I if not already active
         if (currentStage !== 0 || mentorModeActive) return;
 
-        let idleTimer: NodeJS.Timeout;
-
-        const resetTimer = () => {
-            if (idleTimer) clearTimeout(idleTimer);
-            idleTimer = setTimeout(() => {
-                if (!mentorModeActive && currentStage === 0) {
-                    toggleMentor();
-                    console.log("Mentor Auto-Activated due to inactivity in Act I.");
-                }
-            }, 90000); // 90 seconds
-        };
-
         // Listen for activity in the window
-        window.addEventListener('mousemove', resetTimer);
-        window.addEventListener('keydown', resetTimer);
-        window.addEventListener('mousedown', resetTimer);
+        window.addEventListener('mousemove', resetIdleTimer);
+        window.addEventListener('keydown', resetIdleTimer);
+        window.addEventListener('mousedown', resetIdleTimer);
+        window.addEventListener('scroll', resetIdleTimer, true);
+        window.addEventListener('touchstart', resetIdleTimer);
 
         // Initial timer start
-        resetTimer();
+        resetIdleTimer();
 
         return () => {
-            if (idleTimer) clearTimeout(idleTimer);
-            window.removeEventListener('mousemove', resetTimer);
-            window.removeEventListener('keydown', resetTimer);
-            window.removeEventListener('mousedown', resetTimer);
+            if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+            window.removeEventListener('mousemove', resetIdleTimer);
+            window.removeEventListener('keydown', resetIdleTimer);
+            window.removeEventListener('mousedown', resetIdleTimer);
+            window.removeEventListener('scroll', resetIdleTimer, true);
+            window.removeEventListener('touchstart', resetIdleTimer);
         };
-    }, [currentStage, mentorModeActive, toggleMentor]);
+    }, [currentStage, mentorModeActive, resetIdleTimer]);
 
     // Find the current group context for navigation breadcrumbs
     const currentGroup = useMemo(() => {
@@ -206,6 +220,61 @@ const ProductionDeck = ({
     }, [groupId, memoryData?.promptId]);
 
     const groupTitle = currentGroup?.title?.en || "My Life Journey";
+
+    // ONBOARDING: Director's Briefing Logic
+    useEffect(() => {
+        // PER-MEMORY TRACKING: We want a briefing for every new production
+        const onboardingKey = `onboarding_completed_${memoryData?.id || 'global'}`;
+        const hasSeenOnboarding = localStorage.getItem(onboardingKey);
+        
+        // FIND CURRENT PROMPT to check for "Untouched" state
+        const currentPrompt = currentGroup?.prompts.find(p => p.id === memoryData?.promptId);
+        const isUntouched = memoryData?.description === currentPrompt?.description;
+        // Only auto-trigger the briefing if the text is strictly UNTOUCHED.
+        // If they clear the text, we don't want to re-trigger the onboarding.
+        const isFirstProduction = isUntouched;
+
+        // MENTOR OVERRIDE: If URL has mentor=on OR Mentor Button is clicked
+        const mentorRequested = searchParams.get('mentor') === 'on' || mentorModeActive;
+
+        // Trigger if:
+        // 1. Truly first time (untouched) AND hasn't seen onboarding
+        // 2. OR Mentor button is manually clicked (mentorModeActive) while in Act I
+        //    (This allows re-watching the briefing if they click Mentor again)
+        // TIGHTENED: Only auto-trigger if untouched. 
+        // If seen once, only manual Mentor button can re-trigger it.
+        const shouldTrigger = !hasSeenOnboarding 
+            ? (isFirstProduction || mentorModeActive)
+            : (isManualMentor && mentorModeActive && currentStage === 0);
+
+        if (shouldTrigger && modality !== null && !showOnboarding) {
+            setShowOnboarding(true);
+            
+            // If we're showing the briefing, we should close the regular mentor whisper overlay
+            // to prevent UI competition
+            if (isOverlayOpen) closeOverlay();
+        }
+    }, [modality, memoryData?.id, memoryData?.description, currentStage, mentorModeActive, currentGroup, searchParams]);
+
+    const [onboardingJustClosed, setOnboardingJustClosed] = useState(false);
+
+    const handleOnboardingClose = () => {
+        setShowOnboarding(false);
+        const onboardingKey = `onboarding_completed_${memoryData?.id || 'global'}`;
+        localStorage.setItem(onboardingKey, 'true');
+        setHighlightClarity(true);
+        setOnboardingJustClosed(true);
+        
+        // Reset the closed signal after a short delay so it can be re-triggered if needed
+        setTimeout(() => setOnboardingJustClosed(false), 2000);
+        
+        // Mentor Baton Hand-off
+        triggerWhisper({
+            act: 0,
+            whisper: "The briefing is complete. Act I is your foundation—don't rush it. Focus on the sensory details that make this memory yours.",
+            toolLabel: "Director's Insight"
+        });
+    };
 
     const handleUpdate = (updatedData: MemoryData) => {
         onUpdate(updatedData);
@@ -273,6 +342,9 @@ const ProductionDeck = ({
     };
 
     const renderRoom = () => {
+        const currentPrompt = currentGroup?.prompts.find(p => p.id === memoryData?.promptId);
+        const isUntouched = memoryData?.description === currentPrompt?.description;
+
         switch (activeRoom) {
             case 'solo':
                 return (
@@ -285,12 +357,16 @@ const ProductionDeck = ({
                         currentStage={currentStage}
                         mentorActive={mentorModeActive}
                         onToggleMentor={toggleMentor}
-                        onClarityChange={setHotClarity}
+                        onClarityChange={(c: any) => console.log("Clarity:", c)}
                         onNext={handleNextAct}
                         onPrev={handlePrevAct}
                         isComplete={isActComplete}
                         charge={currentStage === 0 ? hotClarity : totalCharge}
                         wordCount={wordCount}
+                        highlightClarity={highlightClarity}
+                        onboardingJustClosed={onboardingJustClosed}
+                        isUntouched={isUntouched}
+                        onActivity={resetIdleTimer}
                     />
                 );
             case 'collaborative':
@@ -572,6 +648,12 @@ const ProductionDeck = ({
                     />
                 )}
             </AnimatePresence>
+
+            {/* DIRECTOR'S BRIEFING ONBOARDING */}
+            <OnboardingOverlay 
+                isOpen={showOnboarding}
+                onClose={handleOnboardingClose}
+            />
         </div>
     );
 };

@@ -43,11 +43,26 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     // GUARD: Only initialize data once per promptId to prevent "Split-Brain" resets 
     // when background Firestore snapshots fire.
     if (lastLoadedId.current === promptId && isReady) {
-       // Supplemental Sync: If we were a local draft but now have a DB ID, update it
+       // Supplemental Sync: Keep selectedProductionData in sync with background Firestore updates
+       // (e.g. Mentor adding content, or ID assignment)
        const chapterPrompts = chapters.flatMap(c => c.prompts);
        const cp = chapterPrompts.find(p => p.id === promptId);
-       if (cp?.memory?.id && !selectedProductionData?.id) {
-          setSelectedProductionData((prev: any) => ({ ...prev, id: cp.memory!.id }));
+       
+       if (cp?.memory) {
+         // Only update if there's a meaningful change to prevent unnecessary re-renders
+         const hasIdTransition = cp.memory.id && !selectedProductionData?.id;
+         const hasDataUpdate = cp.memory.description !== selectedProductionData?.description || 
+                               cp.memory.id !== selectedProductionData?.id;
+
+         if (hasIdTransition || hasDataUpdate) {
+            console.log("[ProductionDeckContainer] Background data sync detected.");
+            setSelectedProductionData((prev: any) => ({
+              ...prev,
+              ...cp.memory,
+              // Preserve local prose if we are currently editing it (or let MemoryForm handle it)
+              // For now, we sync everything and rely on child shields.
+            }));
+         }
        }
        return;
     }

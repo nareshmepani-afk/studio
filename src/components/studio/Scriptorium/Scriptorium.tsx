@@ -71,9 +71,10 @@ interface ScriptoriumProps {
   onSync: (blocks: ScriptBlock[]) => void;
   onPolish?: (blockId: string) => void;
   onWordCountChange?: (count: number) => void;
+  onActivity?: () => void;
 }
 
-export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange }: ScriptoriumProps) => {
+export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange, onActivity }: ScriptoriumProps) => {
   const { actions, detectedAnchors } = useStudioState();
 
   // 1. THE MIGRATION SCRIPT
@@ -294,7 +295,7 @@ export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange }: Scrip
                   isActive={activeId === block.id}
                   onFocus={() => setActiveId(block.id)}
                   onBlur={() => setActiveId(null)}
-                  onUpdate={(text: string) => updateBlockText(block.id, text)}
+                  onUpdate={(text: string) => { updateBlockText(block.id, text); onActivity?.(); }}
                   actions={actions}
                 />
               ))}

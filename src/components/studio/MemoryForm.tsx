@@ -26,6 +26,29 @@ import { useProductionCharge } from '@/hooks/studio/useProductionCharge';
 import { usePrimaryFocus } from '@/hooks/studio/usePrimaryFocus';
 import { MentorshipHotspot } from './MentorshipHotspot';
 
+const SEED_CATALOG: Record<string, string[]> = {
+  'p1': [
+    "The kitchen was always thick with the aroma of my mother's cooking...",
+    "We sat at the dinner table, the air filled with the familiar sounds of our language...",
+    "I ran my fingers over the family heirloom, feeling its unique texture..."
+  ],
+  'p2': [
+    "The smell of the living room was a mixture of old carpet and wood polish...",
+    "Outside the window, I could always hear the distant sounds of the neighborhood...",
+    "The front door handle felt cold and familiar, marking the boundary of my world..."
+  ],
+  'p3': [
+    "The scent of old schoolbooks always brings back the feeling of...",
+    "In the distance, the sounds of the playground echoed like...",
+    "I still remember the texture of my favorite toy, a comfort in the quiet moments..."
+  ],
+  'generic': [
+    "The first thing I remember about this moment was the lighting...",
+    "I can still hear the ambient hum of the background...",
+    "There was a specific texture to the air that day..."
+  ]
+};
+
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const DAYS = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
 const YEARS = Array.from({ length: 100 }, (_, i) => (2026 - i).toString());
@@ -49,8 +72,12 @@ interface MemoryFormProps {
   forceAct?: string;
   onWordCountChange?: (count: number) => void;
   mentorActive?: boolean;
-  onToggleMentor?: () => void;
+  onToggleMentor?: (manual?: boolean) => void;
   onClarityChange?: (clarity: number) => void;
+  highlightClarity?: boolean;
+  onboardingJustClosed?: boolean;
+  isUntouched?: boolean;
+  onActivity?: () => void;
 }
 
 import {
@@ -79,6 +106,7 @@ const StudioSelect = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastFocusedRef = useRef<string | null>(null);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -151,19 +179,23 @@ const StudioSelect = ({
   );
 };
 
-export function MemoryForm({ 
+export const MemoryForm: React.FC<MemoryFormProps> = ({ 
   data, 
-  update,
+  update, 
+  modality: propModality, 
+  setModality: propSetModality, 
+  onWordCountChange,
   productionStage = 0,
   setProductionStage,
-  modality: propModality,
-  setModality: propSetModality,
   forceAct,
-  onWordCountChange,
-  mentorActive = false,
+  mentorActive,
   onToggleMentor,
-  onClarityChange
-}: MemoryFormProps) {
+  onClarityChange,
+  highlightClarity,
+  onboardingJustClosed,
+  isUntouched,
+  onActivity
+}) => {
   const router = useRouter();
   // Lifted state management: use props if provided, otherwise local state
   const [internalModality, setInternalModality] = useState<'pen' | 'voice' | null>(data?.modality || null);
@@ -174,11 +206,39 @@ export function MemoryForm({
   // We use a callback ref to handle asynchronous mounting during transitions.
   const storyHookFocusRef = usePrimaryFocus(productionStage === 0 && modality !== null, 300, modality);
   const storyHookRef = useRef<HTMLTextAreaElement | null>(null);
+  const lastPolishedRef = useRef<string>(data?.description || '');
   
   const setStoryHookRef = useCallback((node: HTMLTextAreaElement | null) => {
     storyHookRef.current = node;
     storyHookFocusRef(node);
   }, [storyHookFocusRef]);
+
+  // ONBOARDING: Focus Handshake
+  useEffect(() => {
+    if (highlightClarity && storyHookRef.current) {
+      // 50ms buffer to ensure overlay is gone and browser is ready
+      const timer = setTimeout(() => {
+        storyHookRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightClarity]);
+
+  // ONBOARDING: Narrative Seed Injection Handshake
+  useEffect(() => {
+    if (onboardingJustClosed) {
+      const promptId = data?.promptId || 'generic';
+      const seeds = SEED_CATALOG[promptId] || SEED_CATALOG['generic'];
+      
+      // Inject the seeds into the Script Supervisor HUD
+      setAtmosphericSuggestions(seeds);
+      
+      toast("Director's Seeds Injected", {
+        description: "The Script Supervisor has prepared some atmospheric takes.",
+        icon: <History className="w-4 h-4 text-emerald-400" />
+      });
+    }
+  }, [onboardingJustClosed, data?.promptId]);
   const [title, setTitle] = useState(data?.title || '');
   const [description, setDescription] = useState(data?.description || '');
   const [location, setLocation] = useState(data?.location || '');
@@ -229,13 +289,21 @@ export function MemoryForm({
   const [isSaturated, setIsSaturated] = useState(false);
 
   const lastPropsId = useRef(data?.id || data?.promptId);
+  const lastPromptId = useRef(data?.promptId);
 
   // CRITICAL: Sync local state when external data changes (e.g. Mentor injection)
   useEffect(() => {
     const currentId = data?.id || data?.promptId;
-    const isNavigation = currentId !== lastPropsId.current;
+    const currentPromptId = data?.promptId;
+    
+    // NAVIGATION VS TRANSITION: 
+    // Navigation is when we move to a different prompt (different story).
+    // Transition is when we are in the same prompt but just got an ID (assigned after first save).
+    const isPromptChange = currentPromptId !== lastPromptId.current;
+    const isNavigation = isPromptChange; // Only reset if the actual prompt changed
 
     if (isNavigation) {
+      console.log(`[MemoryForm] Prompt change detected (${lastPromptId.current} -> ${currentPromptId}). Resetting state.`);
       if (data?.title !== undefined) setTitle(data.title);
       if (data?.description !== undefined) setDescription(data.description);
       if (data?.location !== undefined) setLocation(data.location);
@@ -251,18 +319,49 @@ export function MemoryForm({
       if (data?.posterStyle) setPosterStyle(data.posterStyle);
       
       lastPropsId.current = currentId;
+      lastPromptId.current = currentPromptId;
       return;
     }
+
+    // Update refs without returning so incremental sync can still happen if needed
+    lastPropsId.current = currentId;
+    lastPromptId.current = currentPromptId;
+
 
     // Incremental Sync (Protect active fields)
     if (data?.title !== undefined && data.title !== title && lastFocusedField !== 'title') setTitle(data.title);
     
-    // THE "SPLIT-BRAIN" SHIELD: Never overwrite the description if the user is currently focused there
-    if (data?.description !== undefined && data.description !== description && lastFocusedField !== 'description') {
+    // THE "SPLIT-BRAIN" SHIELD: Only sync if it's a major change or we aren't focused.
+    // We use a ref to preserve cursor position during these forced syncs.
+    // If we are focused on 'description', we SHIELD it from background updates to prevent cursor jumps and data loss.
+    const isFocusedOnDescription = lastFocusedField === 'description';
+    const isMajorChange = data?.description && Math.abs(data.description.length - (description?.length || 0)) > 50;
+
+    if (data?.description !== undefined && data.description !== description && (!isFocusedOnDescription || isMajorChange)) {
+       console.log("[MemoryForm] Shielded Sync: Overwriting description from external update (Major Change).");
+       const textarea = storyHookRef.current;
+       const start = textarea?.selectionStart;
+       const end = textarea?.selectionEnd;
+       
        setDescription(data.description);
+       
+       // Restore focus/selection after sync if possible
+       setTimeout(() => {
+         if (textarea && start !== undefined && end !== undefined) {
+           textarea.setSelectionRange(start, end);
+         }
+       }, 0);
     }
 
     if (data?.location !== undefined && data.location !== location && lastFocusedField !== 'metadata') setLocation(data.location);
+    if (data?.country !== undefined && data.country !== country && lastFocusedField !== 'metadata') setCountry(data.country);
+    
+    if (data?.dateComponents && lastFocusedField !== 'metadata') {
+      if (data.dateComponents.day !== undefined && data.dateComponents.day !== day) setDay(data.dateComponents.day);
+      if (data.dateComponents.month !== undefined && data.dateComponents.month !== month) setMonth(data.dateComponents.month);
+      if (data.dateComponents.year !== undefined && data.dateComponents.year !== year) setYear(data.dateComponents.year);
+    }
+
     if (data?.scriptBlocks && JSON.stringify(data.scriptBlocks) !== JSON.stringify(scriptBlocks)) {
        // Only sync blocks if we aren't editing script content
        if (lastFocusedField !== 'script') {
@@ -593,15 +692,36 @@ export function MemoryForm({
     setPulse(result.state);
   }, [scriptBlocks]);
 
+  // THE LIVE SCRIPT SUPERVISOR: Updates suggestions based on your typing
+  useEffect(() => {
+    if (!description || description.length < 20 || description === lastPolishedRef.current) return;
+
+    const analyzeHandler = setTimeout(async () => {
+       setIsFetchingSuggestions(true);
+       try {
+         const suggestions = await getAtmosphericPolish(description);
+         setAtmosphericSuggestions(suggestions);
+         lastPolishedRef.current = description;
+       } catch (err) {
+         console.error("Supervisor failed to listen:", err);
+       } finally {
+         setIsFetchingSuggestions(false);
+       }
+    }, 2500); // 2.5s pause in typing triggers the supervisor
+
+    return () => clearTimeout(analyzeHandler);
+  }, [description]);
+
   // Auto-save effect
   useEffect(() => {
+    // Incrementally save state to avoid loss on navigation
+    // This is a "Soft Save" - real persistence happens on explicit 'Update' or 'Close'
     const handler = setTimeout(() => {
-      // Logic: Only update if something has ACTUALLY changed compared to the incoming data prop
       const hasChanged = 
         title !== (data?.title || '') ||
         description !== (data?.description || '') ||
         location !== (data?.location || '') ||
-        country !== (data?.country || 'none') ||
+        country !== (data?.country || '') ||
         day !== (data?.dateComponents?.day || 'none') ||
         month !== (data?.dateComponents?.month || 'none') ||
         year !== (data?.dateComponents?.year || 'none') ||
@@ -927,8 +1047,8 @@ export function MemoryForm({
                       <input 
                         type="text"
                         value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        onFocus={() => setLastFocusedField('title')}
+                        onChange={(e) => { setTitle(e.target.value); onActivity?.(); }}
+                        onFocus={() => { setLastFocusedField('title'); onActivity?.(); }}
                         placeholder="GIVE YOUR MEMORY A CINEMATIC TITLE..."
                         className="w-full bg-transparent border-none text-4xl lg:text-5xl font-serif text-white/90 placeholder:text-white/5 focus:outline-none focus:ring-0 italic transition-all cursor-[inherit]"
                       />
@@ -948,7 +1068,7 @@ export function MemoryForm({
                                <motion.button 
                                  whileHover={{ scale: 1.05 }}
                                  whileTap={{ scale: 0.95 }}
-                                 onClick={onToggleMentor}
+                                 onClick={() => onToggleMentor?.(true)}
                                  className={cn(
                                    "px-5 py-1.5 rounded-full border transition-all flex items-center gap-2 relative group/mentor pointer-events-auto",
                                    mentorActive 
@@ -987,7 +1107,7 @@ export function MemoryForm({
                               <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">City / Venue</span>
                               <input 
                                 value={location}
-                                onChange={(e) => setLocation(e.target.value)}
+                                onChange={(e) => { setLocation(e.target.value); onActivity?.(); }}
                                 onFocus={() => setLastFocusedField('metadata')}
                                 placeholder="WHERE DID IT HAPPEN?"
                                 className="bg-transparent border-none text-[11px] font-black uppercase tracking-[0.15em] text-white focus:text-emerald-400 focus:outline-none w-64 placeholder:text-white/40 transition-all"
@@ -998,7 +1118,7 @@ export function MemoryForm({
                               <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Country</span>
                               <input 
                                 value={country}
-                                onChange={(e) => setCountry(e.target.value)}
+                                onChange={(e) => { setCountry(e.target.value); onActivity?.(); }}
                                 onFocus={() => setLastFocusedField('metadata')}
                                 placeholder="REGION"
                                 className="bg-transparent border-none text-[11px] font-black uppercase tracking-[0.15em] text-white focus:text-emerald-400 focus:outline-none w-32 placeholder:text-white/40 transition-all"
@@ -1022,7 +1142,7 @@ export function MemoryForm({
                               <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Day</span>
                               <StudioSelect 
                                 value={day} 
-                                onChange={setDay} 
+                                onChange={(v) => { setDay(v); onActivity?.(); }} 
                                 items={DAYS.map(d => ({ value: d, label: d }))} 
                               />
                             </div>
@@ -1031,7 +1151,7 @@ export function MemoryForm({
                               <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Month</span>
                               <StudioSelect 
                                 value={month} 
-                                onChange={setMonth} 
+                                onChange={(v) => { setMonth(v); onActivity?.(); }} 
                                 items={MONTHS.map((m, i) => ({ 
                                   value: (i + 1).toString(), 
                                   label: m.substring(0, 3).toUpperCase() 
@@ -1043,7 +1163,7 @@ export function MemoryForm({
                               <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Year</span>
                               <StudioSelect 
                                 value={year} 
-                                onChange={setYear} 
+                                onChange={(v) => { setYear(v); onActivity?.(); }} 
                                 items={YEARS.map(y => ({ value: y, label: y }))} 
                               />
                             </div>
@@ -1177,7 +1297,8 @@ export function MemoryForm({
                             "group relative flex items-center gap-3 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all border overflow-hidden",
                             isDescReady 
                               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20" 
-                              : "bg-white/10 text-white/80 border-white/10 grayscale"
+                              : "bg-white/10 text-white/80 border-white/10 grayscale",
+                            highlightClarity && "animate-pulse border-emerald-400/60 shadow-[0_0_25px_rgba(16,185,129,0.4)] bg-emerald-500/20 text-emerald-400"
                           )}
                         >
                            {/* Charge Glow Overlay */}
@@ -1355,6 +1476,7 @@ export function MemoryForm({
                              isActive={productionStage === 0}
                              onUpdate={(text: string) => {
                                setDescription(text);
+                               onActivity?.(); // Reset idle timer
                                // Update first script block title if it's the story hook
                                if (scriptBlocks.length > 0) {
                                  const updatedBlocks = [...scriptBlocks];
@@ -1379,8 +1501,20 @@ export function MemoryForm({
                         {atmosphericSuggestions.length > 0 && productionStage === 0 && (
                           <motion.div 
                             initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 20 }}
+                            animate={{ 
+                              opacity: 1, 
+                              y: 0,
+                              boxShadow: onboardingJustClosed ? [
+                                "0 0 0px rgba(16, 185, 129, 0)",
+                                "0 0 30px rgba(16, 185, 129, 0.3)",
+                                "0 0 0px rgba(16, 185, 129, 0)"
+                              ] : "0 0 0px rgba(0,0,0,0)"
+                            }}
+                            transition={{ 
+                              opacity: { duration: 0.4 },
+                              y: { duration: 0.4 },
+                              boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                            }}
                             className="p-8 mt-12 bg-zinc-900/50 border border-emerald-500/20 rounded-[2rem] backdrop-blur-xl relative overflow-hidden group"
                           >
                             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent opacity-50" />
@@ -1405,7 +1539,7 @@ export function MemoryForm({
                                   <button
                                     key={idx}
                                     onClick={() => {
-                                      setDescription(prev => prev + "\n\n" + suggestion);
+                                      setDescription(prev => isUntouched ? suggestion : prev + "\n\n" + suggestion);
                                       setAtmosphericSuggestions(prev => prev.filter((_, i) => i !== idx));
                                       toast("Enhancement Applied", {
                                         description: "Added to your Story Hook.",
@@ -1504,6 +1638,7 @@ export function MemoryForm({
                       onSync={setScriptBlocks} 
                       onPolish={handleScriptPolish} 
                       onWordCountChange={handleScriptWordCount}
+                      onActivity={onActivity}
                     />
                   </div>
                 </div>

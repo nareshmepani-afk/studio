@@ -44,13 +44,17 @@ interface RoomProps {
     onWordCountChange?: (count: number) => void;
     currentStage?: number;
     mentorActive?: boolean;
-    onToggleMentor?: () => void;
+    onToggleMentor?: (manual?: boolean) => void;
     onClarityChange?: (clarity: number) => void;
     onNext?: () => void;
     onPrev?: () => void;
     isComplete?: boolean;
     charge?: number;
     wordCount?: number;
+    highlightClarity?: boolean;
+    onboardingJustClosed?: boolean;
+    isUntouched?: boolean;
+    onActivity?: () => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -62,7 +66,8 @@ const formatTime = (seconds: number) => {
 export default function SoloStage({ 
   data, update, modality, setModality, onWordCountChange, 
   currentStage, mentorActive, onToggleMentor, onClarityChange,
-  onNext, onPrev, isComplete, charge, wordCount 
+  onNext, onPrev, isComplete, charge, wordCount, highlightClarity,
+  onboardingJustClosed, isUntouched, onActivity
 }: RoomProps) {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -400,6 +405,10 @@ export default function SoloStage({
         mentorActive={mentorActive}
         onToggleMentor={onToggleMentor}
         onClarityChange={onClarityChange}
+        highlightClarity={highlightClarity}
+        onboardingJustClosed={onboardingJustClosed}
+        isUntouched={isUntouched}
+        onActivity={onActivity}
       />
       {modality !== null && currentStage === 0 && (
         <div className="flex justify-center -mt-2">
@@ -431,6 +440,8 @@ export default function SoloStage({
         mentorActive={mentorActive}
         onToggleMentor={onToggleMentor}
         onClarityChange={onClarityChange}
+        highlightClarity={highlightClarity}
+        onActivity={onActivity}
       />
       {modality !== null && currentStage === 1 && (
         <div className="flex justify-center -mt-2">
