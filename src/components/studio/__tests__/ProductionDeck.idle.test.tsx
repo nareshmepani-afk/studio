@@ -2,22 +2,25 @@ import { render, act, fireEvent } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import ProductionDeck from '../ProductionDeck';
 import React from 'react';
-import { useStudioState } from '@/hooks/useStudioState';
+import { useStudioState } from '@/hooks/studio/useStudioState';
 
 // 1. Comprehensive Mocking for the Studio Environment
-const { mockUseStudioState } = vi.hoisted(() => ({
-  mockUseStudioState: vi.fn().mockReturnValue({
+vi.mock('@/hooks/studio/useStudioState', () => ({
+  useStudioState: vi.fn().mockReturnValue({
     currentStage: 0,
-    setStage: vi.fn(),
     modality: 'pen',
-    setModality: vi.fn(),
     isDirectorOpen: false,
-    setIsDirectorOpen: vi.fn()
-  })
-}));
-
-vi.mock('@/hooks/useStudioState', () => ({
-  useStudioState: mockUseStudioState
+    isReviewing: false,
+    selectedVision: { type: null, label: null },
+    actions: {
+      setIsReviewing: vi.fn(),
+      setReviewDrafts: vi.fn(),
+      setIsGeneratingDrafts: vi.fn(),
+      setModality: vi.fn(),
+      setStage: vi.fn(),
+      setIsDirectorOpen: vi.fn()
+    }
+  }) as any
 }));
 
 vi.mock('next/navigation', () => ({
@@ -172,14 +175,21 @@ describe('ProductionDeck Idle Experience', () => {
 
   it('does not trigger idle timer if not in Act I (currentStage !== 0)', () => {
     // Override currentStage for this test
-    mockUseStudioState.mockReturnValue({
+    vi.mocked(useStudioState).mockReturnValue({
       currentStage: 1, // Act II
-      setStage: vi.fn(),
       modality: 'pen',
-      setModality: vi.fn(),
       isDirectorOpen: false,
-      setIsDirectorOpen: vi.fn()
-    });
+      isReviewing: false,
+      selectedVision: { type: null, label: null },
+      actions: {
+        setIsReviewing: vi.fn(),
+        setReviewDrafts: vi.fn(),
+        setIsGeneratingDrafts: vi.fn(),
+        setModality: vi.fn(),
+        setStage: vi.fn(),
+        setIsDirectorOpen: vi.fn()
+      }
+    } as any);
 
     render(
       <ProductionDeck 

@@ -91,7 +91,7 @@ export function useCamera({ enabled = false }: UseCameraOptions = {}) {
       stopStream();
     }
     return () => stopStream();
-  }, [enabled, facingMode]); // Restarts when mode changes
+  }, [enabled, facingMode, startStream, stopStream]); // Restarts when mode changes
 
   return { 
     stream, 

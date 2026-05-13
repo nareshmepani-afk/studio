@@ -9,16 +9,16 @@ export interface DetectedAnchor {
 // THE SENSORY DICTIONARY (Bespoke Edition with Cinematic Rationale)
 export const SENSORY_DICTIONARY_DETAILED: Record<string, { words: string[], reason: string }> = {
   aroma: {
-    words: ['soil', 'Madhapur', 'Kutch', 'vegetarian', 'farmers', 'staple', 'food', 'village', 'oregano', 'lavender', 'musk', 'scent', 'aroma', 'spice', 'sweet', 'burnt', 'smoke', 'fresh', 'rain', 'salty', 'perfume', 'cardamom', 'sandalwood', 'petrichor', 'frankincense', 'jasmine', 'turmeric'],
-    reason: 'AROMA: Scent-memories like soil, spices, or regional food detected.'
+    words: ['soil', 'Madhapur', 'Kutch', 'vegetarian', 'farmers', 'farming', 'staple', 'food', 'village', 'machinery', 'produce', 'labourers', 'oregano', 'lavender', 'musk', 'scent', 'aroma', 'spice', 'sweet', 'burnt', 'smoke', 'fresh', 'rain', 'salty', 'perfume', 'cardamom', 'sandalwood', 'petrichor', 'frankincense', 'jasmine', 'turmeric'],
+    reason: 'AROMA: Scent-memories like soil, farming, or regional food detected.'
   },
   soundscape: {
-    words: ['language', 'Gujarati', 'lessons', 'parents', 'voice', 'culture', 'thunder', 'whisper', 'echo', 'melody', 'rhythm', 'noise', 'loud', 'quiet', 'music', 'ringing', 'crash', 'hum', 'silence', 'clatter', 'clink', 'rustle', 'crescendo', 'monotone', 'thrum', 'chime'],
-    reason: 'SOUND: Language, dialects, or environmental sounds detected.'
+    words: ['language', 'Gujarati', 'lessons', 'parents', 'voice', 'culture', 'education', 'mother tongue', 'skills', 'tongue', 'thunder', 'whisper', 'echo', 'melody', 'rhythm', 'noise', 'loud', 'quiet', 'music', 'ringing', 'crash', 'hum', 'silence', 'clatter', 'clink', 'rustle', 'crescendo', 'monotone', 'thrum', 'chime'],
+    reason: 'SOUND: Language, dialects, education, or environmental sounds detected.'
   },
   visual: {
-    words: ['Nairobi', 'Kenya', 'India', 'England', 'heritage', 'traveling', 'journey', 'values', 'neon', 'shadow', 'glow', 'emerald', 'crimson', 'bright', 'dark', 'blue', 'red', 'gold', 'clear', 'blurry', 'huge', 'tiny', 'light', 'sepia', 'monochrome', 'silhouette', 'radiant', 'amber', 'dappled', 'obsidian', 'red soil'],
-    reason: 'VISUAL: Geographic locations, lighting cues, or striking visual details detected.'
+    words: ['Nairobi', 'Kenya', 'India', 'England', 'heritage', 'traveling', 'journey', 'values', 'ancestors', 'generations', 'Granddad', 'Granddads', 'roots', 'neon', 'shadow', 'glow', 'emerald', 'crimson', 'bright', 'dark', 'blue', 'red', 'gold', 'clear', 'blurry', 'huge', 'tiny', 'light', 'sepia', 'monochrome', 'silhouette', 'radiant', 'amber', 'dappled', 'obsidian', 'red soil'],
+    reason: 'VISUAL: Geographic locations, heritage, roots, or striking visual details detected.'
   },
   clarity: {
     words: ['tapestry', 'odyssey', 'lineage', 'shallows', 'whispers', 'very', 'just', 'actually', 'really', 'simply', 'vibrant', 'testament', 'treasure trove', 'unfolding', 'delve', 'nuanced', 'embrace', 'interwoven', 'symphony', 'embark'],
@@ -44,26 +44,30 @@ const TEMPLATES: Record<CatalystType, (word: string) => string> = {
   clarity: (word) => `<span class="sensory-anchor clarity-anchor pointer-events-auto relative inline-block cursor-help" title="${SENSORY_DICTIONARY_DETAILED.clarity.reason}">${word}<span class="absolute bottom-0 left-0 w-full h-[1px] border-b border-dotted border-red-400/50"></span></span>`
 };
 
+// 1. PRE-COMPUTED ASSETS (Singleton Mandate for Performance)
+const WORD_TO_TYPE = new Map<string, CatalystType>();
+const ALL_SENSORY_WORDS_SORTED = (() => {
+  (Object.entries(SENSORY_DICTIONARY) as [CatalystType, string[]][]).forEach(([type, words]) => {
+    words.forEach(word => {
+      WORD_TO_TYPE.set(word.toLowerCase(), type);
+    });
+  });
+  return Array.from(WORD_TO_TYPE.keys()).sort((a, b) => b.length - a.length);
+})();
+
+const COMBINED_SENSORY_REGEX = new RegExp(`\\b(${ALL_SENSORY_WORDS_SORTED.join('|')})\\b`, 'gi');
+
 export const detectAnchors = (text: string): DetectedAnchor[] => {
   if (!text) return [];
   
   const anchorsMap = new Map<string, CatalystType>();
   
-  // Build a priority map: longest words first
-  const wordToType = new Map<string, CatalystType>();
-  (Object.entries(SENSORY_DICTIONARY) as [CatalystType, string[]][]).forEach(([type, words]) => {
-    words.forEach(word => {
-      wordToType.set(word.toLowerCase(), type);
-    });
-  });
-
-  const sortedWords = Array.from(wordToType.keys()).sort((a, b) => b.length - a.length);
-  const combinedRegex = new RegExp(`\\b(${sortedWords.join('|')})\\b`, 'gi');
-
+  // Use pre-compiled regex for O(n) single-pass matching
   let match;
-  while ((match = combinedRegex.exec(text)) !== null) {
+  COMBINED_SENSORY_REGEX.lastIndex = 0; // Reset state for global regex
+  while ((match = COMBINED_SENSORY_REGEX.exec(text)) !== null) {
     const word = match[1].toLowerCase();
-    const type = wordToType.get(word);
+    const type = WORD_TO_TYPE.get(word);
     if (type) {
       anchorsMap.set(word, type);
     }
@@ -78,25 +82,12 @@ export const useDirectorInk = (text: string) => {
 
     const anchorsMap = new Map<string, CatalystType>();
     
-    // 1. Create a map of word -> type for quick lookup
-    const wordToType = new Map<string, CatalystType>();
-    Object.entries(SENSORY_DICTIONARY).forEach(([type, words]) => {
-      words.forEach(word => {
-        wordToType.set(word.toLowerCase(), type as CatalystType);
-      });
-    });
-
-    // 2. Build a single regex for all words
-    // Sort words by length descending to match longer phrases first (though not strictly necessary here with \b)
-    const allWords = Array.from(wordToType.keys()).sort((a, b) => b.length - a.length);
-    const combinedRegex = new RegExp(`\\b(${allWords.join('|')})\\b`, 'gi');
-
-    // 3. Escaping for safety (only & and <)
+    // Escaping for safety (only & and <)
     const escapedText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;");
 
-    // 4. Single-pass replacement
-    const decoratedHtml = escapedText.replace(combinedRegex, (match) => {
-      const type = wordToType.get(match.toLowerCase());
+    // Single-pass replacement using pre-compiled regex
+    const decoratedHtml = escapedText.replace(COMBINED_SENSORY_REGEX, (match) => {
+      const type = WORD_TO_TYPE.get(match.toLowerCase());
       if (type) {
         anchorsMap.set(match.toLowerCase(), type);
         return TEMPLATES[type](match);

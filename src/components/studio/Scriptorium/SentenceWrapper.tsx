@@ -28,12 +28,31 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
   block, 
   isActive, 
   onUpdate, 
+  onBulkUpdate,
   onFocus, 
   onBlur,
-  actions 
+  actions,
+  hideAnchors = false
 }, ref) => {
   const isHook = block.type === 'hook';
   
+  // 0. SMART PASTE HANDLER
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const text = e.clipboardData.getData('text');
+    if (text.includes('\n')) {
+      e.preventDefault();
+      // Split by double newlines or single newlines depending on preference
+      // Here we split by any newline and filter out empty strings
+      const blocks = text.split(/\n+/).filter(line => line.trim() !== '');
+      if (blocks.length > 1) {
+        onBulkUpdate?.(blocks);
+      } else {
+        // Just a single line but maybe with trailing newlines
+        onUpdate(text.trim());
+      }
+    }
+  }, [onBulkUpdate, onUpdate]);
+
   // DYNAMIC STYLING FOR UNIFIED ENGINE
   const RESOLVED_STYLES = useMemo(() => ({
     ...SHARED_STYLES,
@@ -68,7 +87,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
     }
   }, [block.text]);
 
-  const anchors = useMemo(() => detectAnchors(block.text), [block.text]);
+  const anchors = useMemo(() => hideAnchors ? [] : detectAnchors(block.text), [block.text, hideAnchors]);
 
   // 1. REFINED TOKENIZATION ENGINE (V4.6 - CODE RED STABILIZATION)
   const tokens = useMemo(() => {
@@ -121,36 +140,39 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
     };
   }, [tokens, updateSparklePositions]);
 
-  const portalContent = useMemo(() => tokens.map((token: string, idx: number) => {
-    const clean = token.toLowerCase();
-    const anchor = anchors.find(a => a.word.toLowerCase() === clean);
-    const tokenId = `${block.id}-${idx}`;
-    const rect = rects[tokenId];
+  const portalContent = useMemo(() => {
+    if (hideAnchors) return null;
+    return tokens.map((token: string, idx: number) => {
+      const clean = token.toLowerCase();
+      const anchor = anchors.find(a => a.word.toLowerCase() === clean);
+      const tokenId = `${block.id}-${idx}`;
+      const rect = rects[tokenId];
 
-    if (!anchor || !rect || rect.width === 0) return null;
+      if (!anchor || !rect || rect.width === 0) return null;
 
-    return (
-      <motion.button
-        key={tokenId}
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        style={{
-          position: 'fixed',
-          left: rect.left + (rect.width / 2),
-          top: rect.top - 24,
-          pointerEvents: 'auto'
-        }}
-        className="w-6 h-6 -translate-x-1/2 rounded-full bg-slate-950 border border-emerald-400 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.5)] hover:bg-emerald-500 hover:text-slate-950 transition-all cursor-help"
-        onMouseEnter={() => {
-          const xOffset = rect.left + (rect.width / 2) - (window.innerWidth / 2);
-          actions.triggerSynapse(anchor.word, anchor.type, xOffset);
-        }}
-        onMouseLeave={() => actions.triggerSynapse('', 'visual', 0)}
-      >
-        <Sparkles className="w-3.5 h-3.5" />
-      </motion.button>
-    );
-  }), [tokens, anchors, rects, block.id, actions]);
+      return (
+        <motion.button
+          key={tokenId}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          style={{
+            position: 'fixed',
+            left: rect.left + (rect.width / 2),
+            top: rect.top - 24,
+            pointerEvents: 'auto'
+          }}
+          className="w-6 h-6 -translate-x-1/2 rounded-full bg-slate-950 border border-emerald-400 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.5)] hover:bg-emerald-500 hover:text-slate-950 transition-all cursor-help"
+          onMouseEnter={() => {
+            const xOffset = rect.left + (rect.width / 2) - (window.innerWidth / 2);
+            actions.triggerSynapse(anchor.word, anchor.type, xOffset);
+          }}
+          onMouseLeave={() => actions.triggerSynapse('', 'visual', 0)}
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+        </motion.button>
+      );
+    });
+  }, [tokens, anchors, rects, block.id, actions, hideAnchors]);
 
   const { setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
 
@@ -161,6 +183,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
 
   return (
     <motion.div
+      data-blueprint="SentenceWrapper"
       ref={(node) => {
         setNodeRef(node);
         // @ts-ignore
@@ -188,8 +211,10 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
           ref={editorRef}
           value={block.text}
           onChange={(e) => onUpdate(e.target.value)}
+          onPaste={handlePaste}
           onFocus={onFocus}
           onBlur={onBlur}
+          onClick={(e) => e.stopPropagation()}
           style={{ ...RESOLVED_STYLES, color: 'transparent', caretColor: '#10b981' }}
           className="relative z-[50] w-full resize-none overflow-hidden bg-transparent selection:bg-emerald-500/30"
           rows={1}
@@ -207,7 +232,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
         >
           {tokens.map((token: string, idx: number) => {
             const clean = token.toLowerCase();
-            const isAnchor = anchors.some(a => a.word.toLowerCase() === clean);
+            const isAnchor = !hideAnchors && anchors.some(a => a.word.toLowerCase() === clean);
             const tokenId = `${block.id}-${idx}`;
 
             return (

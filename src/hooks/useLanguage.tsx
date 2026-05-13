@@ -28,8 +28,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('mw-language-mode', newMode);
   };
 
+  const value = React.useMemo(() => ({ mode, setMode }), [mode]);
+
   return (
-    <LanguageContext.Provider value={{ mode, setMode }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );

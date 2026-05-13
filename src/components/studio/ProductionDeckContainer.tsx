@@ -36,6 +36,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   const [layoutMode, setLayoutMode] = useState<'takeover' | 'drawer'>('takeover');
 
   const lastLoadedId = useRef<string | null>(null);
+  const deckRef = useRef<any>(null);
 
   useEffect(() => {
     if (studioLoading || !chapters.length) return;
@@ -55,7 +56,6 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
                                cp.memory.id !== selectedProductionData?.id;
 
          if (hasIdTransition || hasDataUpdate) {
-            console.log("[ProductionDeckContainer] Background data sync detected.");
             setSelectedProductionData((prev: any) => ({
               ...prev,
               ...cp.memory,
@@ -111,33 +111,62 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     }
   }, [chapters, studioLoading, promptId, isReady, selectedProductionData?.id]);
 
-  const handleUpdateProduction = useCallback(async (updatedData: any) => {
+  const handleUpdateProduction = useCallback(async (updatedDataOrFn: any) => {
     if (!user) return;
     
-    // Optimistic Update
-    setSelectedProductionData(updatedData);
+    let resolvedData: any;
+    
+    setSelectedProductionData((prev: any) => {
+      resolvedData = typeof updatedDataOrFn === 'function' 
+        ? updatedDataOrFn(prev) 
+        : updatedDataOrFn;
+      return resolvedData;
+    });
 
+    // Firestore Sync
     try {
-      const { id, ...dataToSave } = updatedData;
+      if (!resolvedData) return;
+      
+      const { id, ...dataToSave } = resolvedData;
+      
+      // DEEP SANITIZATION: Firestore does not support 'undefined' values.
+      // We must recursively strip them or convert to null.
+      const sanitize = (obj: any): any => {
+        if (Array.isArray(obj)) return obj.map(sanitize);
+        if (obj !== null && typeof obj === 'object') {
+          return Object.fromEntries(
+            Object.entries(obj)
+              .filter(([_, v]) => v !== undefined)
+              .map(([k, v]) => [k, sanitize(v)])
+          );
+        }
+        return obj;
+      };
+
+      const cleanData = sanitize(dataToSave);
+
       if (id) {
-         await updateDoc(doc(db, 'users', user.uid, 'memories', id), dataToSave);
+         await updateDoc(doc(db, 'users', user.uid, 'memories', id), cleanData);
       } else {
-         // Create local in DB
          const memoriesRef = collection(db, 'users', user.uid, 'memories');
          const newDoc = await addDoc(memoriesRef, {
-            ...dataToSave,
+            ...cleanData,
             createdAt: new Date().toISOString()
          });
          setSelectedProductionData((prev: any) => ({ ...prev, id: newDoc.id }));
       }
     } catch (e) {
-      console.error("Auto-save error:", e);
+      console.error("[ProductionDeckContainer] Auto-save error:", e);
     }
   }, [user]);
 
-  const handleClose = () => {
-    // If it's a modal, we want to go back to the dashboard
-    router.back();
+  const handleClose = async () => {
+    if (deckRef.current?.handleExit) {
+        await deckRef.current.handleExit();
+    } else {
+        // Fallback for cases where deck hasn't mounted or exposed the ref
+        router.back();
+    }
   };
 
   const toggleLayoutMode = () => {
@@ -161,7 +190,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
            <Button 
              variant="ghost" 
              size="icon" 
-             onClick={handleClose}
+             onClick={() => deckRef.current?.handleExit ? deckRef.current.handleExit() : handleClose()}
              className="rounded-full bg-black/20 hover:bg-white/10 text-white/50 hover:text-white transition-all w-12 h-12"
            >
              <Plus className="w-6 h-6 rotate-45" />
@@ -170,10 +199,12 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
       )}
       <div className="flex-1 overflow-y-auto custom-scrollbar h-full">
         <ProductionDeck 
+          ref={deckRef}
           memoryData={selectedProductionData} 
           onUpdate={handleUpdateProduction} 
           layoutMode={layoutMode}
           onToggleLayout={toggleLayoutMode}
+          onClose={handleClose}
         />
       </div>
     </>
@@ -215,7 +246,11 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <div className="flex items-center p-4 border-b border-white/10">
-        <Button onClick={() => router.push('/studio')} variant="ghost" className="text-white/60 hover:text-white">
+        <Button 
+          onClick={() => deckRef.current?.handleExit ? deckRef.current.handleExit() : router.push('/studio')} 
+          variant="ghost" 
+          className="text-white/60 hover:text-white"
+        >
           &larr; Exit to Studio
         </Button>
       </div>

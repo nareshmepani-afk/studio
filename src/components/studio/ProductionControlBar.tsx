@@ -25,9 +25,24 @@ interface ProductionControlBarProps {
   charge?: number;
   wordCount?: number;
   isDocked?: boolean;
+  missingRequirements?: string[];
+  isLowClarity?: boolean;
+  mentorActive?: boolean;
+  isSaving?: boolean;
 }
 
 const SynapseTether = ({ type, xOffset = 0 }: { type: string, xOffset?: number }) => {
+  const [dimensions, setDimensions] = React.useState({ width: 0, height: 0 });
+  
+  React.useEffect(() => {
+    setDimensions({ width: window.innerWidth, height: window.innerHeight });
+    const handleResize = () => setDimensions({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  if (dimensions.width === 0) return null;
+
   const color = type === 'aroma' ? '#fbbf24' : type === 'soundscape' ? '#38bdf8' : '#10b981';
   
   return (
@@ -41,11 +56,11 @@ const SynapseTether = ({ type, xOffset = 0 }: { type: string, xOffset?: number }
         <svg className="w-full h-full overflow-visible">
           <motion.line
             // Start from the word (approx center-screen horizontal + offset)
-            x1={window.innerWidth / 2 + xOffset}
-            y1={window.innerHeight * 0.45} 
+            x1={dimensions.width / 2 + xOffset}
+            y1={dimensions.height * 0.45} 
             // Target the inline Clarity meter (approx 33% position in screenshot)
-            x2={window.innerWidth / 2 + 250} 
-            y2={window.innerHeight * 0.52} 
+            x2={dimensions.width / 2 + 250} 
+            y2={dimensions.height * 0.52} 
             stroke={color}
             strokeWidth="3"
             strokeDasharray="4 4"
@@ -56,7 +71,7 @@ const SynapseTether = ({ type, xOffset = 0 }: { type: string, xOffset?: number }
               opacity: { repeat: Infinity, duration: 0.8 }
             }}
           />
-          <circle cx={window.innerWidth / 2 + 250} cy={window.innerHeight * 0.52} r="4" fill={color} className="animate-pulse" />
+          <circle cx={dimensions.width / 2 + 250} cy={dimensions.height * 0.52} r="4" fill={color} className="animate-pulse" />
         </svg>
       </motion.div>
     </div>
@@ -71,18 +86,28 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   onPublish,
   charge = 0,
   wordCount = 0,
-  isDocked = false
+  isDocked = false,
+  missingRequirements = [],
+  isLowClarity = false,
+  mentorActive = false,
+  isSaving = false
 }) => {
   const { 
     detectedAnchors, 
     draggingCatalyst, 
-    actions, 
+    actions,
     lastDetectedAnchor,
     isReviewing,
     isGeneratingDrafts
   } = useStudioState();
   const [lastClickTime, setLastClickTime] = React.useState(0);
   const [isSurging, setIsSurging] = React.useState(false);
+  const [isPending, setIsPending] = React.useState(false);
+
+  // Reset pending state when stage or global loading states change
+  React.useEffect(() => {
+    setIsPending(false);
+  }, [currentStage, isGeneratingDrafts, isReviewing]);
 
   // Sync surge effect with lastDetectedAnchor
   React.useEffect(() => {
@@ -94,11 +119,11 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   }, [lastDetectedAnchor]);
   
   const steps = [
-    { label: 'Hook', act: 'ACT I' },
+    { label: 'Inciting Memory', act: 'ACT I' },
     { label: 'Weave', act: 'ACT II' },
     { label: 'Capture', act: 'ACT III' },
-    { label: 'Cut', act: 'ACT IV' },
-    { label: 'Premiere', act: 'ACT V' }
+    { label: "Director's Cut", act: 'ACT IV' },
+    { label: 'Premiere', act: 'ACT V' },
   ];
 
   const shakeAnimation = {
@@ -106,19 +131,35 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
     transition: { duration: 0.4 }
   };
 
-  const isLowClarity = currentStage === 0 && charge < 15;
-
   const handleNextClick = () => {
+    console.log("[ProductionControlBar] handleNextClick triggered", {
+      currentStage,
+      isComplete,
+      isLowClarity,
+      isPending,
+      isGeneratingDrafts,
+      isReviewing
+    });
+
+    if (isPending || isGeneratingDrafts || isSaving) {
+      console.log("[ProductionControlBar] Click blocked: isPending, isSaving or isGeneratingDrafts is true");
+      return;
+    }
+
     if (isLowClarity) {
       const now = Date.now();
       if (now - lastClickTime < 500) {
         // Double click override
+        console.log("[ProductionControlBar] Double-click override detected");
         toast.success("MECHANICAL UNLATCH: Entry Forced", {
           description: "// OVERRIDE. The weave will proceed with raw silk.",
           icon: <Rocket className="w-4 h-4" />
         });
+        setIsPending(true);
+        console.log("[ProductionControlBar] Low Clarity Override: Setting isPending: true");
         onNext();
       } else {
+        console.log("[ProductionControlBar] Low Clarity: First click detected.");
         toast.warning("// LOW CLARITY", {
           description: "The weave requires more raw silk (15% required).",
           icon: <AlertCircle className="w-4 h-4" />
@@ -128,14 +169,51 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
       return;
     }
 
+    if (!isComplete && currentStage !== 4) {
+      console.log("[ProductionControlBar] Act Incomplete. Missing:", missingRequirements);
+      toast.error("CATALYSTS REQUIRED", {
+        description: "Mandatory fields are missing. Check the tooltips for details.",
+        icon: <AlertTriangle className="w-4 h-4" />
+      });
+      return;
+    }
+
+    console.log("[ProductionControlBar] Primary Action Proceeding", { 
+      currentStage, 
+      isComplete, 
+      isLowClarity, 
+      isPending 
+    });
+
     if (currentStage === 4 && onPublish) {
       onPublish();
     } else {
+      setIsPending(true); // Immediate lock-out
+      console.log("[ProductionControlBar] Setting isPending: true");
       onNext();
     }
   };
 
-  const getIncompleteReason = () => {
+  const getRequirementTooltip = () => {
+    if (isComplete && !isLowClarity) return "Ready for the next phase.";
+    
+    if (missingRequirements.length > 0) {
+        return (
+            <div className="space-y-2">
+                <p className="text-rose-400 font-bold border-b border-rose-500/20 pb-1">INCOMPLETE CATALYSTS</p>
+                <ul className="space-y-1">
+                    {missingRequirements.map((req, i) => (
+                        <li key={i} className="flex items-center gap-2 text-white/70">
+                            <div className="w-1 h-1 bg-rose-500 rounded-full" />
+                            {req}
+                        </li>
+                    ))}
+                </ul>
+                <p className="text-[8px] text-white/30 pt-1 italic font-normal">Fill all mandatory fields to activate the Director's Cut ceremony.</p>
+            </div>
+        );
+    }
+
     switch (currentStage) {
       case 0: return isLowClarity ? "Scene Clarity below 15% threshold." : "Title, Description, and Year are mandatory catalysts.";
       case 1: return "The weave requires at least 150 words of cinematic prose.";
@@ -146,10 +224,11 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   };
 
   const getActionLabel = () => {
+    if (isSaving) return 'SAVING...';
     if (currentStage === 0) {
-        if (isGeneratingDrafts) return 'SYNTHESIZING...';
+        if (isGeneratingDrafts || isPending) return 'SYNTHESIZING...';
         if (isReviewing) return 'SEAL THE MEMORY';
-        return 'DRAFT THE WEAVE';
+        return 'DRAFT COMPLETED';
     }
     
     switch (currentStage) {
@@ -162,10 +241,12 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
   return (
     <div className={cn(
-      "z-[600] w-full max-w-4xl px-6 pointer-events-none transition-all duration-700",
-      isDocked ? "relative mx-auto -mt-12 pb-2" : "fixed bottom-12 left-1/2 -translate-x-1/2"
+      "z-[9999] w-full max-w-4xl px-6 pointer-events-none transition-all duration-700",
+      isDocked ? "relative mx-auto -mt-12 pb-2" : "fixed bottom-12 left-1/2 -translate-x-1/2",
+      isReviewing && "opacity-10 blur-sm grayscale scale-95 select-none"
     )}>
       <motion.div 
+        data-blueprint="ProductionControlBar"
         initial={{ y: 20, opacity: 0 }}
         animate={{ 
           y: [0, -8, 0], // Subtle float
@@ -237,7 +318,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                    <div className="flex items-center gap-3 cursor-help">
                       <div className={cn(
                         "w-2 h-2 rounded-full",
-                        charge >= 15 ? "bg-emerald-500 shadow-[0_0_10px_#10b981]" : "bg-white/10"
+                        charge >= 15 ? "bg-emerald-500 shadow-[0_0_10px_#10b981]" : "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
                       )} />
                        <span className="font-mono text-[9px] tracking-[0.4em] text-white/80 uppercase">
                         Clarity: {charge}%
@@ -254,7 +335,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                        <div className="space-y-1.5 font-mono text-[9px]">
                          <div className="flex justify-between items-center text-white/40">
                            <span>Narrative Density</span>
-                           <span className="text-white">{Math.min(45, Math.floor((wordCount / 30) * 45))}%</span>
+                           <span className="text-white">{Math.min(50, Math.floor((wordCount / 30) * 50))}%</span>
                          </div>
                          {detectedAnchors.length > 0 && (
                            <div className="pt-1 border-t border-white/5">
@@ -417,9 +498,17 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
           <Tooltip>
               <TooltipTrigger asChild>
                 <div className="relative">
+                  {mentorActive && (currentStage === 0 || currentStage === 1) && (
+                    <MentorshipHotspot 
+                      number={3} 
+                      label={currentStage === 0 ? "Enter the Weave" : "Enter Recording Studio"} 
+                      className="-top-4 -right-4" 
+                    />
+                  )}
                   <motion.button
-                    whileHover={(isComplete && !isLowClarity) ? { scale: 1.02 } : {}}
-                    whileTap={(isComplete && !isLowClarity) ? { scale: 0.98 } : shakeAnimation}
+                    whileHover={(!isPending && !isGeneratingDrafts && !isSaving) ? { scale: 1.02 } : {}}
+                    whileTap={(!isPending && !isGeneratingDrafts && !isSaving) ? { scale: 0.98 } : shakeAnimation}
+                    disabled={isPending || isGeneratingDrafts || isSaving}
                     onClick={handleNextClick}
                     className={cn(
                       "relative px-10 py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all flex items-center gap-3 overflow-hidden group/btn pointer-events-auto",
@@ -427,7 +516,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                         ? "bg-emerald-500 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:brightness-110 hover:shadow-[0_0_50px_rgba(16,185,129,0.6)]" 
                         : isLowClarity
                           ? "bg-white/5 text-white/40 border border-white/10 cursor-pointer hover:bg-white/10"
-                          : "bg-white/5 text-white/20 border border-white/5 cursor-not-allowed"
+                          : "bg-white/5 text-white/20 border border-white/5 cursor-not-allowed",
+                      (isPending || isGeneratingDrafts || isSaving) && "opacity-80 cursor-wait brightness-90"
                     )}
                   >
                   {isComplete && !isLowClarity && (
@@ -451,7 +541,9 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                   <span className="relative z-10">{getActionLabel()}</span>
                   
                   {isComplete && !isLowClarity ? (
-                    currentStage === 4 ? (
+                    (isPending || isGeneratingDrafts || isSaving) ? (
+                      <Loader2 className="w-4 h-4 animate-spin relative z-10" />
+                    ) : currentStage === 4 ? (
                       <Rocket className="w-4 h-4 relative z-10" />
                     ) : (
                       <ChevronRight className="w-4 h-4 relative z-10 group-hover/btn:translate-x-1 transition-transform" />
@@ -471,13 +563,13 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                 </motion.button>
               </div>
             </TooltipTrigger>
-              <TooltipContent side="top" sideOffset={12} className="bg-rose-950 border-rose-500/50 text-rose-200 text-[10px] font-bold uppercase tracking-widest px-4 py-3 mb-4 rounded-xl shadow-2xl z-[200]">
+              <TooltipContent side="top" sideOffset={12} className="bg-rose-950 border-rose-500/50 text-rose-200 text-[10px] font-bold uppercase tracking-widest px-4 py-3 mb-4 rounded-xl shadow-2xl z-[9999]">
                 <div className="flex flex-col gap-1">
                   <span className="flex items-center gap-2">
                     <AlertCircle className="w-3 h-3" /> Requirements Not Met
                   </span>
                   <span className="text-[9px] opacity-60 normal-case">
-                    {getIncompleteReason()}
+                    {getRequirementTooltip()}
                   </span>
                 </div>
               </TooltipContent>

@@ -17,7 +17,10 @@ export const DirectorMonitor = () => {
   }, [stream]);
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
+    <div 
+      data-blueprint="DirectorMonitor"
+      className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden"
+    >
       <video
         ref={videoRef}
         autoPlay

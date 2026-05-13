@@ -1,9 +1,9 @@
 'use client';
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef, useImperativeHandle } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Maximize, Monitor, Rocket, Edit3 } from 'lucide-react';
+import { Maximize, Monitor, Rocket, Edit3, Loader2 } from 'lucide-react';
 import { publishMemoryAction, unpublishMemoryAction } from '@/actions/memoryActions';
 import { mockPromptGroups } from '@/lib/mockData';
 import {
@@ -13,6 +13,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import PerspectiveWrapper from './PerspectiveWrapper';
+import { MemoryForm, ACT_TITLES } from './MemoryForm';
 import SoloStage from './SoloStage';
 import CollaborativeStage from './CollaborativeStage';
 import { InstrumentSelection } from './InstrumentSelection';
@@ -23,11 +24,12 @@ import { ProductionControlBar } from './ProductionControlBar';
 import { SensoryCatalystHUD } from './SensoryCatalystHUD';
 import { ThresholdGuard } from './overlays/ThresholdGuard';
 import { ProductionPreFlight } from './overlays/ProductionPreFlight';
-import { useStudioState } from '@/hooks/useStudioState';
 import { useStudioState as useGlobalStudioState } from '@/hooks/studio/useStudioState';
 import { useProductionCharge } from '@/hooks/studio/useProductionCharge';
 import { detectAnchors } from '@/hooks/studio/useDirectorInk';
 import { generateDraftOptions } from '@/actions/aiWeaver';
+import { StudioBlueprint } from './StudioBlueprint';
+
 
 const DEFAULT_SIDEBAR_WIDTH = 280;
 import { useMentorLifeline } from '@/hooks/studio/useMentorLifeline';
@@ -42,17 +44,19 @@ type MemoryData = any;
 
 interface ProductionDeckProps {
     memoryData: MemoryData;
-    onUpdate: (updatedData: MemoryData) => void;
+    onUpdate: (updatedData: MemoryData) => any;
     layoutMode: 'takeover' | 'drawer';
     onToggleLayout: () => void;
+    onClose?: () => void;
 }
 
-const ProductionDeck = ({
+const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     memoryData,
     onUpdate,
     layoutMode,
-    onToggleLayout
-}: ProductionDeckProps) => {
+    onToggleLayout,
+    onClose
+}, ref) => {
     const searchParams = useSearchParams();
     const urlMode = searchParams.get('mode');
     const [activeRoom, setActiveRoom] = useState<'solo' | 'collaborative' | 'guest'>(
@@ -61,22 +65,21 @@ const ProductionDeck = ({
     );
     const [isRailRetracted, setIsRailRetracted] = useState(false);
 
-    // Source of Truth for the studio state
+    // 1. Unified Global State
     const { 
         currentStage, 
-        setStage, 
         modality, 
-        setModality, 
         isDirectorOpen,
-    } = useStudioState(memoryData?.description || '');
-
-    const {
         isReviewing, 
         selectedVision,
         actions: {
             setIsReviewing, 
             setReviewDrafts, 
-            setIsGeneratingDrafts
+            setIsGeneratingDrafts,
+            setModality,
+            setStage,
+            setIsDirectorOpen,
+            setSynthesisError
         }
     } = useGlobalStudioState();
 
@@ -92,6 +95,8 @@ const ProductionDeck = ({
     const [showPreFlight, setShowPreFlight] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [highlightClarity, setHighlightClarity] = useState(false);
+    const [isSavingNext, setIsSavingNext] = useState(false);
+    const formRef = useRef<any>(null);
 
     // MOD-15: Mentorship Lifeline
     const { 
@@ -108,9 +113,10 @@ const ProductionDeck = ({
     const { executeAction } = useRecaptcha(firebaseConfig.recaptchaSiteKey);
 
     // Clarity Logic for Act I
+    const anchors = useMemo(() => detectAnchors(memoryData?.description || ''), [memoryData?.description]);
     const { totalCharge, dominantType } = useProductionCharge({
         text: memoryData?.description || '',
-        anchors: detectAnchors(memoryData?.description || '')
+        anchors
     });
 
     // Act Completion Logic
@@ -131,14 +137,36 @@ const ProductionDeck = ({
                 return wordCount >= 150;
             case 2: // Act III: Capture
                 return !!memoryData?.videoUrl;
-            case 3: // Act IV: Cut
+            case 3: // Act IV: Director's Cut
                 return true; // Usually manual review
             case 4: // Act V: Premiere
                 return true;
             default:
                 return false;
         }
-    }, [currentStage, memoryData?.title, memoryData?.description, memoryData?.videoUrl, wordCount]);
+    }, [currentStage, memoryData?.title, memoryData?.description, memoryData?.videoUrl, wordCount, memoryData?.location, memoryData?.dateComponents?.year]);
+
+    const isLowClarity = useMemo(() => {
+        const isAct1 = currentStage === 0;
+        const clarity = isAct1 ? hotClarity : totalCharge;
+        return isAct1 && clarity < 15;
+    }, [currentStage, hotClarity, totalCharge]);
+
+    const missingRequirements = useMemo(() => {
+        const reqs = [];
+        if (currentStage === 0) {
+            if (!memoryData?.title?.trim()) reqs.push("Theatrical Title");
+            if (!memoryData?.location?.trim()) reqs.push("Cinematic Location");
+            if (!memoryData?.dateComponents?.year) reqs.push("Time/Year Anchor");
+            if (memoryData?.description?.trim()?.length < 10) reqs.push("Narrative Hook (> 10 chars)");
+            if (hotClarity < 15) reqs.push("Scene Clarity (needs sensory keywords)");
+        } else if (currentStage === 1) {
+            if (wordCount < 150) reqs.push(`${150 - wordCount} more words of prose`);
+        } else if (currentStage === 2) {
+            if (!memoryData?.videoUrl) reqs.push("Video Recording");
+        }
+        return reqs;
+    }, [currentStage, memoryData, hotClarity, wordCount]);
 
     const router = useRouter();
     const groupId = searchParams.get('groupId');
@@ -193,7 +221,6 @@ const ProductionDeck = ({
         idleTimerRef.current = setTimeout(() => {
             if (!mentorModeActive && currentStage === 0) {
                 toggleMentor(false); // Auto-trigger, not manual
-                console.log("[Studio] User idle detected (90s). Engaging Mentor Lifeline.");
             }
         }, 90000); // 90 seconds
     }, [mentorModeActive, currentStage, toggleMentor]);
@@ -295,9 +322,9 @@ const ProductionDeck = ({
         });
     };
 
-    const handleUpdate = (updatedData: MemoryData) => {
-        onUpdate(updatedData);
-    };
+    const handleUpdate = useCallback((updatedData: MemoryData) => {
+        return onUpdate(updatedData);
+    }, [onUpdate]);
 
     // DRAG LOGIC
     const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
@@ -368,15 +395,16 @@ const ProductionDeck = ({
             case 'solo':
                 return (
                     <SoloStage
+                        formRef={formRef}
                         data={memoryData}
                         update={handleUpdate}
                         modality={modality}
                         setModality={setModality}
+                        onClarityChange={setHotClarity}
                         onWordCountChange={setWordCount}
                         currentStage={currentStage}
                         mentorActive={mentorModeActive}
                         onToggleMentor={toggleMentor}
-                        onClarityChange={(c: any) => console.log("Clarity:", c)}
                         onNext={handleNextAct}
                         onPrev={handlePrevAct}
                         isComplete={isActComplete}
@@ -398,25 +426,46 @@ const ProductionDeck = ({
     };
 
 
-    const handleNextAct = async () => {
+    const handleNextAct = useCallback(async () => {
+        // COMMIT MANTLE: Force child form to flush state to parent before processing transitions
+        if (formRef.current?.flush) {
+            setIsSavingNext(true);
+            try {
+                await formRef.current.flush();
+            } catch (err) {
+                console.error("Flush failed during transition", err);
+            } finally {
+                setIsSavingNext(false);
+            }
+        }
+
         const isAct1 = currentStage === 0;
-        const clarity = isAct1 ? hotClarity : totalCharge;
-        const isLowClarity = isAct1 && clarity < 40;
 
         // NEW: "Director's Cut" Ceremony Trigger
         if (isAct1 && !isReviewing) {
+            console.log("[ProductionDeck] Act I detected. Triggering AI Synthesis Ceremony...");
             setIsGeneratingDrafts(true);
+            setSynthesisError(null); // RESET: Start fresh
             try {
-                const drafts = await generateDraftOptions(memoryData?.description || '');
-                setReviewDrafts(drafts as any);
+                console.log("[ProductionDeck] Calling generateDraftOptions with description length:", memoryData?.description?.length || 0);
+                const result = await generateDraftOptions(memoryData?.description || '');
+                console.log("[ProductionDeck] AI Synthesis successful. Visions received:", result.visions?.length || 0);
+                
+                // MANTLE GATE: Ensure we don't advance to an empty selection screen
+                if (!result.visions || result.visions.length === 0) {
+                    throw new Error("The Weaver returned no visions. Recalibrating...");
+                }
+
+                setReviewDrafts(result.visions);
+                console.log("[ProductionDeck] Setting isReviewing to true. Entering SelectionDeck...");
                 setIsReviewing(true);
+                setIsGeneratingDrafts(false); // SUCCESS: Close overlay
                 toast.success("Visions Synthesized", {
                     description: "The Director has prepared three distinct paths for your memory."
                 });
-            } catch (err) {
-                toast.error("Ceremony Interrupted", { description: "The AI Weaver is recalibrating." });
-            } finally {
-                setIsGeneratingDrafts(false);
+            } catch (err: any) {
+                console.error("[ProductionDeck] Synthesis failure:", err);
+                setSynthesisError(err.message || "The AI Weaver encountered a transient knot. Reattempting may clear the thread.");
             }
             return;
         }
@@ -427,8 +476,11 @@ const ProductionDeck = ({
                 toast.error("Vision Required", { description: "You must select a narrative path to seal the memory." });
                 return;
             }
+            console.log("[ProductionDeck] Vision selected. Transitioning from Review to Act II (Weave)...");
             setIsReviewing(false);
+            setReviewDrafts([]); // Clear drafts after selection
             const next = currentStage + 1;
+            console.log("[ProductionDeck] Updating stage to:", next);
             setStage(next);
             return;
         }
@@ -444,20 +496,82 @@ const ProductionDeck = ({
             setStage(next);
             setShowPreFlight(false); // Reset pre-flight
             if ((memoryData?.productionStage || 0) < next) {
-                handleUpdate({ ...memoryData, productionStage: next });
+                handleUpdate((prev: any) => ({ ...prev, productionStage: next }));
             }
         }
-    };
+    }, [
+        currentStage, isReviewing, memoryData?.description, memoryData?.productionStage,
+        selectedVision, isLowClarity, showPreFlight, isActComplete, handleUpdate
+    ]);
 
-    const handlePrevAct = () => {
+    const handleExit = useCallback(async () => {
+        if (formRef.current?.flush) {
+            setIsSavingNext(true);
+            try {
+                await formRef.current.flush();
+            } catch (err) {
+                console.error("Flush failed during exit", err);
+            } finally {
+                setIsSavingNext(false);
+            }
+        }
+        onClose?.();
+    }, [onClose]);
+
+    useImperativeHandle(ref, () => ({
+        handleExit
+    }));
+
+    const handlePrevAct = useCallback(async () => {
         if (currentStage > 0) {
+            // COMMIT MANTLE: Flush state before retreating
+            if (formRef.current?.flush) {
+                setIsSavingNext(true);
+                try {
+                    await formRef.current.flush();
+                } catch (err) {
+                    console.error("Flush failed during retreat", err);
+                } finally {
+                    setIsSavingNext(false);
+                }
+            }
             setStage(currentStage - 1);
         }
+    }, [currentStage]);
+
+    const handleStageJump = async (newStage: number) => {
+        if (newStage === currentStage) return;
+        
+        // COMMIT MANTLE: Flush state before jumping to a specific act
+        if (formRef.current?.flush) {
+            setIsSavingNext(true);
+            try {
+                await formRef.current.flush();
+            } catch (err) {
+                console.error("Flush failed during stage jump", err);
+            } finally {
+                setIsSavingNext(false);
+            }
+        }
+        setStage(newStage);
     };
 
     const [isPublishing, setIsPublishing] = useState(false);
     const handlePublish = async () => {
         if (!memoryData?.id) return;
+        
+        // Final Handshake
+        if (formRef.current?.flush) {
+            setIsSavingNext(true);
+            try {
+                await formRef.current.flush();
+            } catch (err) {
+                console.error("Flush failed during publish", err);
+            } finally {
+                setIsSavingNext(false);
+            }
+        }
+
         setIsPublishing(true);
         try {
             // Generate reCAPTCHA token
@@ -469,7 +583,7 @@ const ProductionDeck = ({
                     description: "Your memory is now live in the Cinema.",
                     icon: <Rocket className="w-4 h-4 text-green-500" />
                 });
-                handleUpdate({ ...memoryData, status: 'published' });
+                handleUpdate((prev: any) => ({ ...prev, status: 'published' }));
                 router.push('/cinema');
             } else {
                 toast.error("Publish Failed", { description: res.message });
@@ -488,14 +602,18 @@ const ProductionDeck = ({
         <div className={`w-full h-full flex flex-col relative bg-[#020617] ${modality === null ? 'overflow-hidden' : ''}`}>
             {/* The PerspectiveWrapper handles the overall background color transition and the blurry interior swap */}
             <PerspectiveWrapper activeRoom={activeRoom} dominantType={dominantType}>
-                <div className="flex flex-col min-h-full relative overflow-hidden">
+                <div className="flex flex-col min-h-full relative overflow-hidden" data-blueprint="StageContainer">
                     {/* Navigation stays static during blur transition mapped by PerspectiveWrapper */}
                     {modality !== null && (
                         <div className="flex items-center justify-between p-4 border-b border-white/10 sticky top-0 z-50 rounded-lg backdrop-blur-md bg-black/20 mb-6">
 
                             {/* Back Navigation */}
                             <button
-                                onClick={() => {
+                                onClick={async () => {
+                                    if (formRef.current?.flush) {
+                                        toast.info("Securing Draft...", { duration: 1000 });
+                                        await formRef.current.flush();
+                                    }
                                     toast.success("Draft Saved", { description: "Your progress is secure." });
                                     router.push('/studio');
                                 }}
@@ -511,7 +629,20 @@ const ProductionDeck = ({
 
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <button onClick={() => setActiveRoom('solo')} className={`px-5 py-2 rounded-full font-medium transition-all ${activeRoom === 'solo' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'}`}>Solo Stage</button>
+                                            <button 
+                                                disabled={isSavingNext}
+                                                onClick={async () => {
+                                                  if (formRef.current?.flush) {
+                                                      setIsSavingNext(true);
+                                                      try { await formRef.current.flush(); } finally { setIsSavingNext(false); }
+                                                  }
+                                                  setActiveRoom('solo');
+                                                }} 
+                                                className={`px-5 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${activeRoom === 'solo' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'} ${isSavingNext ? 'opacity-50 cursor-wait' : ''}`}
+                                            >
+                                                {isSavingNext && activeRoom !== 'solo' && <Loader2 className="w-3 h-3 animate-spin" />}
+                                                Solo Stage
+                                            </button>
                                         </TooltipTrigger>
                                         <TooltipContent sideOffset={8} className="bg-slate-950 border border-[var(--room-accent)] text-[var(--room-accent)] font-medium">
                                             <p>Record directly from this device (Director Mode)</p>
@@ -520,7 +651,20 @@ const ProductionDeck = ({
 
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <button onClick={() => setActiveRoom('collaborative')} className={`px-5 py-2 rounded-full font-medium transition-all ${activeRoom === 'collaborative' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'}`}>Collaboration</button>
+                                            <button 
+                                                disabled={isSavingNext}
+                                                onClick={async () => {
+                                                  if (formRef.current?.flush) {
+                                                      setIsSavingNext(true);
+                                                      try { await formRef.current.flush(); } finally { setIsSavingNext(false); }
+                                                  }
+                                                  setActiveRoom('collaborative');
+                                                }} 
+                                                className={`px-5 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${activeRoom === 'collaborative' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'} ${isSavingNext ? 'opacity-50 cursor-wait' : ''}`}
+                                            >
+                                                {isSavingNext && activeRoom !== 'collaborative' && <Loader2 className="w-3 h-3 animate-spin" />}
+                                                Collaboration
+                                            </button>
                                         </TooltipTrigger>
                                         <TooltipContent sideOffset={8} className="bg-slate-950 border border-[var(--room-accent)] text-[var(--room-accent)] font-medium">
                                             <p>Connect a mobile prompter/camera for co-creation</p>
@@ -529,7 +673,20 @@ const ProductionDeck = ({
 
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <button onClick={() => setActiveRoom('guest')} className={`px-5 py-2 rounded-full font-medium transition-all ${activeRoom === 'guest' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'}`}>Guest Director</button>
+                                            <button 
+                                                disabled={isSavingNext}
+                                                onClick={async () => {
+                                                  if (formRef.current?.flush) {
+                                                      setIsSavingNext(true);
+                                                      try { await formRef.current.flush(); } finally { setIsSavingNext(false); }
+                                                  }
+                                                  setActiveRoom('guest');
+                                                }} 
+                                                className={`px-5 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${activeRoom === 'guest' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'} ${isSavingNext ? 'opacity-50 cursor-wait' : ''}`}
+                                            >
+                                                {isSavingNext && activeRoom !== 'guest' && <Loader2 className="w-3 h-3 animate-spin" />}
+                                                Guest Director
+                                            </button>
                                         </TooltipTrigger>
                                         <TooltipContent sideOffset={8} className="bg-slate-950 border border-[var(--room-accent)] text-[var(--room-accent)] font-medium">
                                             <p>Invite a professional to control your camera remotely</p>
@@ -568,12 +725,12 @@ const ProductionDeck = ({
                     >
                         {/* THE PRODUCTION RAIL: THE SIDEBAR SPINE */}
                         <ProductionRail
+                            data-blueprint="ProductionRail"
                             currentStage={currentStage}
-                            onStageChange={setStage}
+                            onStageChange={handleStageJump}
                             isRetracted={isRailRetracted}
                             onToggleRetract={() => {
                                 const newState = !isRailRetracted;
-                                console.log(`[ProductionDeck] Toggling retraction. New state will be: ${newState}`);
                                 setIsRailRetracted(newState);
                                 // If unretracting and width is too small, jump to a healthy default
                                 if (!newState && sidebarWidth < 160) {
@@ -583,6 +740,8 @@ const ProductionDeck = ({
                             modality={modality}
                             customWidth={sidebarActualWidth}
                             wordCount={wordCount}
+                            mentorActive={mentorModeActive}
+                            onToggleMentor={toggleMentor}
                         />
 
                         {/* DIRECTOR'S DRAG: THE RESIZABLE DIVIDER */}
@@ -599,7 +758,7 @@ const ProductionDeck = ({
                          <div className={cn(
                              "relative flex-1 min-h-[calc(100vh-80px)] overflow-y-auto flex flex-col transition-all duration-1000 ease-in-out bg-gradient-to-b from-slate-900 via-[#030303] to-black",
                              modality === null && (hoveredInstrument ? "blur-md brightness-50" : "blur-xl brightness-50 pointer-events-none")
-                         )}>
+                         )} data-blueprint="StageArea">
                              {renderRoom()}
 
                             {/* Tech Scout Threshold Guard */}
@@ -608,7 +767,7 @@ const ProductionDeck = ({
                                     <ThresholdGuard
                                         currentCount={wordCount}
                                         threshold={150}
-                                        actTitle={PRODUCTION_ACTS[currentStage].title}
+                                        actTitle={ACT_TITLES[currentStage]}
                                     />
                                 )}
                             </AnimatePresence>
@@ -626,7 +785,7 @@ const ProductionDeck = ({
                             )}
 
                             {/* SENSORY CATALYST HUD: FIXED DOCK */}
-                            {modality !== null && (
+                            {modality !== null && currentStage > 0 && (
                                 <SensoryCatalystHUD
                                     wordCount={wordCount}
                                     isDirectorOpen={isDirectorOpen}
@@ -634,21 +793,24 @@ const ProductionDeck = ({
                                     currentStage={currentStage}
                                     onCatalystDrop={(type) => {
                                         // Internal handle in MemoryForm will be needed
-                                        console.log(`Catalyst Dropped: ${type}`);
                                     }}
                                 />
                             )}
                              {/* PRODUCTION CONTROL BAR: THE HEARTBEAT */}
-                             {modality !== null && currentStage >= 2 && (
+                             {modality !== null && currentStage >= 0 && (
                                  <ProductionControlBar
                                      currentStage={currentStage}
                                      isComplete={isActComplete}
+                                     isLowClarity={isLowClarity}
+                                     missingRequirements={missingRequirements}
                                      onNext={handleNextAct}
                                      onPrev={handlePrevAct}
                                      onPublish={handlePublish}
                                      charge={currentStage === 0 ? hotClarity : totalCharge}
                                      wordCount={wordCount}
-                                     isDocked={currentStage < 2}
+                                     isDocked={currentStage <= 1}
+                                     mentorActive={mentorModeActive}
+                                     isSaving={isSavingNext}
                                  />
                              )}
                         </div>
@@ -657,13 +819,14 @@ const ProductionDeck = ({
                  </div>
             </PerspectiveWrapper>
 
-            {/* PRODUCTION PRE-FLIGHT OVERLAY */}
+            {/* Global Overlays */}
+            <StudioBlueprint />
             <ProductionPreFlight
                 isOpen={showPreFlight}
                 onClose={() => setShowPreFlight(false)}
                 onConfirm={handleNextAct}
                 charge={totalCharge}
-                anchors={detectAnchors(memoryData?.description || '')}
+                anchors={anchors}
                 dominantType={dominantType}
                 storyData={{
                     title: memoryData?.title || '',
@@ -677,7 +840,7 @@ const ProductionDeck = ({
                 onClose={closeOverlay}
                 whisper={getWhisper(currentStage)}
                 onApplySeed={(seed) => {
-                    handleUpdate({ ...memoryData, description: (memoryData.description || '') + (memoryData.description ? '\n\n' : '') + seed });
+                    handleUpdate((prev: any) => ({ ...prev, description: (prev.description || '') + (prev.description ? '\n\n' : '') + seed }));
                     closeOverlay();
                     toast.success("Inspiration Seed Sown", {
                         description: "The Mentor has added a sensory anchor to your hook."
@@ -687,7 +850,7 @@ const ProductionDeck = ({
 
             {/* MODALITY SELECTION: STUDIO ENTRANCE */}
             <AnimatePresence>
-                {modality === null && (
+                {modality === null && !searchParams.get('modality') && (
                     <InstrumentSelection
                         onSelect={setModality}
                         onHoverChange={setHoveredInstrument}
@@ -702,6 +865,8 @@ const ProductionDeck = ({
             />
         </div>
     );
-};
+});
+
+ProductionDeck.displayName = 'ProductionDeck';
 
 export default ProductionDeck;

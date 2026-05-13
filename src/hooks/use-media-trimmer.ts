@@ -58,14 +58,14 @@ export function useMediaTrimmer() {
     }
   }, []);
 
-  const formatTime = (timeInSeconds: number): string => {
-    const hours = Math.floor(timeInSeconds / 3600);
-    const minutes = Math.floor((timeInSeconds % 3600) / 60);
-    const seconds = timeInSeconds % 60;
-    return `${pad(hours)}:${pad(minutes)}:${seconds.toFixed(2)}`;
-  };
-
-  const pad = (num: number): string => num.toString().padStart(2, '0');
-
   return { trim, isTrimming, isProcessing };
 }
+
+const formatTime = (timeInSeconds: number): string => {
+  const hours = Math.floor(timeInSeconds / 3600);
+  const minutes = Math.floor((timeInSeconds % 3600) / 60);
+  const seconds = timeInSeconds % 60;
+  return `${pad(hours)}:${pad(minutes)}:${seconds.toFixed(2)}`;
+};
+
+const pad = (num: number): string => num.toString().padStart(2, '0');

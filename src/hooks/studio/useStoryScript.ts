@@ -4,10 +4,11 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { ScriptBlock, Catalyst, CatalystType } from '@/types';
 
 export const useStoryScript = (initialBlocks: ScriptBlock[]) => {
-  const [blocks, setBlocks] = useState<ScriptBlock[]>(initialBlocks.length > 0 
-    ? initialBlocks 
-    : [{ id: uuidv4(), type: 'hook', text: '', catalysts: [] }]
-  );
+  const [blocks, setBlocks] = useState<ScriptBlock[]>(() => {
+    if (initialBlocks && initialBlocks.length > 0) return initialBlocks;
+    // Stable placeholder for hydration safety
+    return [{ id: 'initial-block', type: 'hook', text: '', catalysts: [] }];
+  });
   
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(() => {
     if (initialBlocks.length > 0) return initialBlocks[0].id;
@@ -100,7 +101,34 @@ export const useStoryScript = (initialBlocks: ScriptBlock[]) => {
     });
   }, []);
 
-  // 5. The "Block Reorder" (Drag-and-Drop)
+  // 5. Bulk Insert (Handle Pastes)
+  const bulkInsertBlocks = useCallback((id: string, texts: string[]) => {
+    setBlocks(prev => {
+      const index = prev.findIndex(b => b.id === id);
+      if (index === -1) return prev;
+
+      const currentBlock = prev[index];
+      const newBlocks: ScriptBlock[] = texts.map((text, i) => ({
+        id: uuidv4(),
+        type: (index === 0 && i === 0) ? 'hook' : 'beat',
+        text: text.trim(),
+        catalysts: [],
+      }));
+
+      const updatedBlocks = [...prev];
+      // Replace the current block with the first pasted block, or insert all if current is empty
+      if (currentBlock.text.trim() === '') {
+        updatedBlocks.splice(index, 1, ...newBlocks);
+      } else {
+        updatedBlocks.splice(index + 1, 0, ...newBlocks);
+      }
+
+      setFocusedBlockId(newBlocks[newBlocks.length - 1].id);
+      return updatedBlocks;
+    });
+  }, []);
+
+  // 6. The "Block Reorder" (Drag-and-Drop)
   const reorderBlocks = useCallback((activeId: string, overId: string) => {
     setBlocks((prev) => {
       const oldIndex = prev.findIndex((block) => block.id === activeId);
@@ -122,6 +150,7 @@ export const useStoryScript = (initialBlocks: ScriptBlock[]) => {
     splitBlock,
     mergeWithPrevious,
     reorderBlocks,
+    bulkInsertBlocks,
     setBlocks
   };
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useImperativeHandle } from 'react';
 import { Scriptorium } from './Scriptorium/Scriptorium';
 import { SentenceWrapper } from './Scriptorium/SentenceWrapper';
 import { ScriptBlock } from '@/types';
@@ -7,9 +7,10 @@ import {
   PenTool, Mic, Sparkles, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
   Save, Rocket, AlertCircle, Loader2, Edit3, ChevronRight, ChevronDown, Maximize2, 
   Trash2, Plus, Info, Layout, Layers, Wand2, Music, Wind, Coffee, Zap,
-  FileText, Film, Image as ImageIcon, Video, Heart, Share2, MoreHorizontal, Square, History, UserCircle
+  FileText, ImageIcon, Video, Share2, MoreHorizontal, Square, History, UserCircle,
+  RotateCcw
 } from 'lucide-react';
-import { Memory, SensoryPromptTemplate, ActionResponse, CatalystType } from '@/types';
+import { Memory, SensoryPromptTemplate, ActionResponse, CatalystType, StructuredScript } from '@/types';
 import { useDictionary } from '@/hooks/use-dictionary';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -25,6 +26,12 @@ import { useDirectorInk, getAnchorAtCaret } from '@/hooks/studio/useDirectorInk'
 import { useProductionCharge } from '@/hooks/studio/useProductionCharge';
 import { usePrimaryFocus } from '@/hooks/studio/usePrimaryFocus';
 import { MentorshipHotspot } from './MentorshipHotspot';
+import { 
+  SelectionDeck, 
+  SynthesizingOverlay, 
+  ScriptLightBox 
+} from './Scriptorium/Ceremony/SelectionDeck';
+import { useMemoryPersistence } from '@/hooks/studio/useMemoryPersistence';
 
 const SEED_CATALOG: Record<string, string[]> = {
   'p1': [
@@ -53,7 +60,7 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 const DAYS = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
 const YEARS = Array.from({ length: 100 }, (_, i) => (2026 - i).toString());
 
-const ACT_TITLES = [
+export const ACT_TITLES = [
   "Act I: The Inciting Memory",
   "Act II: The Deep Weave",
   "Act III: The Sensory Capture",
@@ -64,7 +71,7 @@ const ACT_TITLES = [
 
 interface MemoryFormProps {
   data: Partial<Memory>;
-  update: (data: Partial<Memory>) => void;
+   update: (data: Partial<Memory> | ((prev: Partial<Memory>) => Partial<Memory>)) => void;
   productionStage?: number;
   setProductionStage?: (stage: number) => void;
   modality?: 'pen' | 'voice' | null;
@@ -78,6 +85,8 @@ interface MemoryFormProps {
   onboardingJustClosed?: boolean;
   isUntouched?: boolean;
   onActivity?: () => void;
+  onNext?: () => void;
+  onSavingChange?: (isSaving: boolean) => void;
 }
 
 import {
@@ -179,7 +188,7 @@ const StudioSelect = ({
   );
 };
 
-export const MemoryForm: React.FC<MemoryFormProps> = ({ 
+export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({ 
   data, 
   update, 
   modality: propModality, 
@@ -194,8 +203,10 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
   highlightClarity,
   onboardingJustClosed,
   isUntouched,
-  onActivity
-}) => {
+  onActivity,
+  onNext,
+  onSavingChange
+}, ref) => {
   const router = useRouter();
   // Lifted state management: use props if provided, otherwise local state
   const [internalModality, setInternalModality] = useState<'pen' | 'voice' | null>(data?.modality || null);
@@ -267,13 +278,19 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
     isReviewing,
     reviewDrafts,
     isGeneratingDrafts,
+    synthesisError,
     selectedVision
   } = useGlobalStudioState();
+
+  const isCleanMode = productionStage === 0 && !isReviewing;
+
+  const [selectedDraftForPreview, setSelectedDraftForPreview] = useState<any>(null);
 
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUnpublishing, setIsUnpublishing] = useState(false);
   const [prevDescription, setPrevDescription] = useState<string | null>(null);
   const [lastFocusedField, setLastFocusedField] = useState<'title' | 'description' | 'script' | 'metadata' | 'location' | null>(null);
+  const lastSyncedDescription = useRef(data?.description || '');
   const [scriptBlocks, setScriptBlocks] = useState<ScriptBlock[]>(data?.scriptBlocks || []);
   
   // Poster State
@@ -297,6 +314,51 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
   const [atmosphericSuggestions, setAtmosphericSuggestions] = useState<string[]>(data?.atmosphericSuggestions || []);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
   const [isSaturated, setIsSaturated] = useState(false);
+  const [aiTakes, setAiTakes] = useState<{ poetic?: string, direct?: string, nostalgic?: string } | null>(null);
+  const [structuredScript, setStructuredScript] = useState<StructuredScript | undefined>(data?.structuredScript || undefined);
+
+  // Initialize Persistence
+
+  const { flush, isSaving: isCloudSaving } = useMemoryPersistence({
+    data,
+    update,
+    title,
+    description,
+    location,
+    country,
+    tags,
+    day,
+    month,
+    year,
+    sensoryValues,
+    scriptBlocks,
+    chapterTitle,
+    usePoster,
+    posterStyle,
+    posterImageUrl,
+    director,
+    producer,
+    starring,
+    billingLine,
+    aiTakes,
+    structuredScript,
+    setDescription,
+    isReviewing,
+    isGeneratingDrafts
+  });
+
+  // Sync Saving State to Parent
+  useEffect(() => {
+    onSavingChange?.(isCloudSaving);
+  }, [isCloudSaving, onSavingChange]);
+
+  useImperativeHandle(ref, () => ({
+    flush: async () => {
+      // Diagnostic log throttled to prevent spam during loops
+      return await flush();
+    },
+    isSaving: isCloudSaving
+  }));
 
   const lastPropsId = useRef(data?.id || data?.promptId);
   const lastPromptId = useRef(data?.promptId);
@@ -313,9 +375,11 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
     const isNavigation = isPromptChange; // Only reset if the actual prompt changed
 
     if (isNavigation) {
-      console.log(`[MemoryForm] Prompt change detected (${lastPromptId.current} -> ${currentPromptId}). Resetting state.`);
       if (data?.title !== undefined) setTitle(data.title);
-      if (data?.description !== undefined) setDescription(data.description);
+      if (data?.description !== undefined) {
+        setDescription(data.description);
+        lastSyncedDescription.current = data.description;
+      }
       if (data?.location !== undefined) setLocation(data.location);
       if (data?.country !== undefined) setCountry(data.country);
       if (data?.tags !== undefined) setTags(data.tags);
@@ -342,13 +406,12 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
     if (data?.title !== undefined && data.title !== title && lastFocusedField !== 'title') setTitle(data.title);
     
     // THE "SPLIT-BRAIN" SHIELD: Only sync if it's a major change or we aren't focused.
-    // We use a ref to preserve cursor position during these forced syncs.
-    // If we are focused on 'description', we SHIELD it from background updates to prevent cursor jumps and data loss.
+    // We also HARD-BLOCK sync during AI Synthesis or Review to prevent the "Vanishing Script" bug.
     const isFocusedOnDescription = lastFocusedField === 'description';
-    const isMajorChange = data?.description && Math.abs(data.description.length - (description?.length || 0)) > 50;
+    const isVolatileState = isGeneratingDrafts || isReviewing;
 
-    if (data?.description !== undefined && data.description !== description && (!isFocusedOnDescription || isMajorChange)) {
-       console.log("[MemoryForm] Shielded Sync: Overwriting description from external update (Major Change).");
+    if (data?.description !== undefined && data.description !== lastSyncedDescription.current && !isFocusedOnDescription && !isVolatileState) {
+       lastSyncedDescription.current = data.description;
        const textarea = storyHookRef.current;
        const start = textarea?.selectionStart;
        const end = textarea?.selectionEnd;
@@ -380,22 +443,6 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
     }
   }, [data, lastFocusedField, title, description, location, scriptBlocks]);
 
-  // LOCAL STORAGE FAIL-SAFE: Backup the Story Hook locally in case of refresh/restart
-  useEffect(() => {
-    if (!description || description.length < 5) return;
-    const id = data?.id || data?.promptId || 'unknown';
-    localStorage.setItem(`draft_hook_${id}`, description);
-  }, [description, data?.id, data?.promptId]);
-
-  // Recovery on Mount
-  useEffect(() => {
-    const id = data?.id || data?.promptId || 'unknown';
-    const backup = localStorage.getItem(`draft_hook_${id}`);
-    if (backup && (!description || description.length < 2)) {
-       console.log("[MemoryForm] Recovering Story Hook from local backup.");
-       setDescription(backup);
-    }
-  }, []);
 
   const { isDirectorOpen, setIsDirectorOpen } = useStudioState(data?.prose || '');
   
@@ -740,63 +787,7 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
     return () => clearTimeout(analyzeHandler);
   }, [description]);
 
-  // Auto-save effect
-  useEffect(() => {
-    // Incrementally save state to avoid loss on navigation
-    // This is a "Soft Save" - real persistence happens on explicit 'Update' or 'Close'
-    const handler = setTimeout(() => {
-      const hasChanged = 
-        title !== (data?.title || '') ||
-        description !== (data?.description || '') ||
-        location !== (data?.location || '') ||
-        country !== (data?.country || '') ||
-        day !== (data?.dateComponents?.day || 'none') ||
-        month !== (data?.dateComponents?.month || 'none') ||
-        year !== (data?.dateComponents?.year || 'none') ||
-        JSON.stringify(scriptBlocks) !== JSON.stringify(data?.scriptBlocks || []) ||
-        chapterTitle !== (data?.chapterTitle || '') ||
-        posterStyle !== (data?.posterStyle || 'cinematic') ||
-        director !== (data?.credits?.director || '') ||
-        producer !== (data?.credits?.producer || '') ||
-        starring !== (data?.credits?.starring || '') ||
-        JSON.stringify(aiTakes) !== JSON.stringify(data?.aiTakes || null);
 
-      if (hasChanged) {
-        update({
-          ...data,
-          title,
-          description,
-          location,
-          country,
-          tags,
-          date: (day !== 'none' && month !== 'none' && year !== 'none') ? `${day}-${month === 'none' ? '' : month}-${year}` : '',
-          dateComponents: {
-             day: day === 'none' ? '' : day, 
-             month: month === 'none' ? '' : month, 
-             year: year === 'none' ? '' : year 
-          },
-          scriptBlocks,
-          sensory: sensoryValues,
-          chapterTitle,
-          usePoster,
-          posterStyle,
-          posterImageUrl,
-          credits: {
-             director,
-             producer,
-             starring,
-             billingLine
-          },
-          aiTakes,
-          status: data?.status || 'draft'
-        });
-      }
-    }, 1000); // Increased debounce to 1s for better performance
-
-    return () => clearTimeout(handler);
-  }, [title, description, location, country, tags, day, month, year, sensoryValues, scriptBlocks, update, data?.status, chapterTitle, usePoster, posterStyle, director, producer, starring, billingLine, posterImageUrl]);
-
-  const [aiTakes, setAiTakes] = useState<{ poetic?: string, direct?: string, nostalgic?: string } | null>(null);
 
 
   // --- AI HANDLERS ---
@@ -880,7 +871,7 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
             description: "Your memory is now live in the Cinema.",
             icon: <Rocket className="w-4 h-4 text-green-500" />
           });
-          update({ ...data, status: 'published' });
+          update(prev => ({ ...prev, status: 'published' }));
           router.push('/cinema');
        } else {
           toast.error("Publish Failed", { description: res.message });
@@ -902,7 +893,7 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
           description: "This memory has been removed from the Cinema and returned to Studio drafts.",
           icon: <Edit3 className="w-4 h-4 text-amber-500" />
         });
-        update({ ...data, status: 'draft' });
+        update(prev => ({ ...prev, status: 'draft' }));
       } else {
         toast.error("Failed to unpublish", { description: res.message });
       }
@@ -913,18 +904,6 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
     }
   };
 
-  // UNSAVED CHANGES WARNING: Prevent accidental data loss on tab close
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      const isDirty = description !== (data?.description || '');
-      if (isDirty) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [description, data?.description]);
 
   return (
     <div className="relative w-full z-10 px-8 pb-24 pt-4">
@@ -1083,15 +1062,24 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
                 className="w-full max-w-6xl mx-auto flex flex-col pt-4 pb-0"
               >
                 {isGeneratingDrafts ? (
-                  <SynthesizingOverlay />
+                  <SynthesizingOverlay 
+                    error={synthesisError} 
+                    onRetry={onNext}
+                    onCancel={() => globalActions.setIsGeneratingDrafts(false)}
+                  />
                 ) : isReviewing ? (
                   <SelectionDeck 
                     drafts={reviewDrafts || []} 
                     onSelect={(text, type, label) => {
                       setDescription(text || '');
                       globalActions.setSelectedVision(type as any, label);
+                      globalActions.setIsReviewing(false);
+                      // ADVANCE MANDATE: Seal the vision and move to Act II (The Weave)
+                      setProductionStage?.(1); 
                     }} 
+                    onPreview={(draft) => setSelectedDraftForPreview(draft)}
                     selectedText={description || ''}
+                    originalHook={description}
                   />
                 ) : (
                   <div className="act-1-content">
@@ -1261,8 +1249,48 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
                                   className="top-full mt-4 left-0" 
                                 />
                               )}
-                              <h3 className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] flex items-center">
+                              <h3 className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] flex items-center gap-4">
                                 Story Hook <RequiredIndicator />
+                                {(() => {
+                                  if (typeof window === 'undefined') return null;
+                                  const id = data?.id || data?.promptId || 'unknown';
+                                  const backup = localStorage.getItem(`draft_hook_${id}`) || localStorage.getItem('draft_hook_unknown');
+                                  const currentDesc = description || '';
+                                  
+                                  const isDefault = !currentDesc.trim() || 
+                                                  currentDesc.includes("Your birthplace, family roots") || 
+                                                  currentDesc.includes("Enter the core of your memory") ||
+                                                  currentDesc.includes("Select a prompt to begin") ||
+                                                  currentDesc.includes("Select a Sensory Seed") ||
+                                                  currentDesc.length < 50; // Threshold for "lost" script
+                                  
+                                  // If we have a backup and it's meaningfully different/longer than current default
+                                  const hasSignificantBackup = backup && backup.length > currentDesc.length && backup.length > 50;
+
+                                  if (hasSignificantBackup && isDefault) {
+                                    return (
+                                      <motion.button
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => {
+                                          console.log("[MemoryForm] Executing manual recovery from button...");
+                                          setDescription(backup!);
+                                          toast.success("Script Restored", {
+                                            description: "We've re-anchored your lost prose from the local black box.",
+                                            icon: <Sparkles className="w-4 h-4" />
+                                          });
+                                        }}
+                                        className="ml-4 px-4 py-2 bg-emerald-500/20 border border-emerald-500/40 hover:bg-emerald-500/30 text-emerald-300 text-[9px] font-black uppercase tracking-[0.2em] rounded-lg flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(16,185,129,0.1)] group/restore"
+                                      >
+                                        <RotateCcw className="w-3.5 h-3.5 group-hover/restore:rotate-[-45deg] transition-transform" />
+                                        Restore Lost Script?
+                                      </motion.button>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                               </h3>
                               
                               {/* Director's Lexicon (Legend) */}
@@ -1355,9 +1383,11 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
                              </div>
                            )}
 
-                        <button 
-                          onClick={() => handlePolishDescription()}
-                          disabled={!isDescReady || isPolishingDesc}
+                        {/* AI POLISH BUTTON (Act I Ceremony) */}
+                        {!isCleanMode && (
+                          <button 
+                            onClick={() => handlePolishDescription()}
+                            disabled={!isDescReady || isPolishingDesc}
                           className={cn(
                             "group relative flex items-center gap-3 px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all border overflow-hidden",
                             isDescReady 
@@ -1393,6 +1423,7 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
                              />
                            )}
                         </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1545,6 +1576,7 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
                              ref={setStoryHookRef}
                              block={{ id: 'story-hook', text: description, type: 'hook' }} 
                              isActive={productionStage === 0}
+                             hideAnchors={isCleanMode}
                              onUpdate={(text: string) => {
                                setDescription(text);
                                onActivity?.(); // Reset idle timer
@@ -1569,7 +1601,7 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
                       
                       {/* SCRIPT SUPERVISOR HUD (Act I Enhancements) */}
                       <AnimatePresence>
-                        {atmosphericSuggestions.length > 0 && productionStage === 0 && (
+                        {atmosphericSuggestions.length > 0 && productionStage === 0 && !isCleanMode && (
                           <motion.div 
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ 
@@ -1886,108 +1918,47 @@ export const MemoryForm: React.FC<MemoryFormProps> = ({
         </div>
       </div>
     </LayoutGroup>
+
+    <ScriptLightBox 
+      isOpen={!!selectedDraftForPreview}
+      isSaving={isCloudSaving}
+      onClose={() => setSelectedDraftForPreview(null)}
+      originalHook={description}
+      cleanScript={selectedDraftForPreview?.cleanScript || ''}
+      visionLabel={selectedDraftForPreview?.visionType || ''}
+      visionFocus={selectedDraftForPreview?.focus || ''}
+      stageDirections={selectedDraftForPreview?.stageDirections || []}
+      beatSheet={selectedDraftForPreview?.beatSheet || []}
+      onApply={() => {
+        if (selectedDraftForPreview) {
+          const type = selectedDraftForPreview.visionType.includes("Soul") ? "soul" : 
+                       selectedDraftForPreview.visionType.includes("Atmospheric") ? "sensory" : 
+                       selectedDraftForPreview.visionType.includes("Cinematic") ? "cinematic" : "sensory";
+          
+          const structured = {
+            cleanScript: selectedDraftForPreview.cleanScript || '',
+            stageDirections: selectedDraftForPreview.stageDirections || [],
+            beatSheet: selectedDraftForPreview.beatSheet || []
+          };
+
+          setDescription(structured.cleanScript);
+          setStructuredScript(structured);
+          
+          globalActions.setSelectedVision(type as any, selectedDraftForPreview.visionType);
+          globalActions.setIsReviewing(false);
+          setSelectedDraftForPreview(null);
+          // SEAL THE VISION: Move to Act II (The Weave)
+          setProductionStage?.(1);
+          // Manual Flush to ensure Firestore sync
+          flush();
+        }
+      }}
+    />
     </div>
   );
-}
+});
+
+MemoryForm.displayName = 'MemoryForm';
 
 // Export removed for named export migration
 
-/* --- DIRECTOR'S CUT HELPERS --- */
-
-const SynthesizingOverlay = () => (
-  <div className="flex-1 flex flex-col items-center justify-center space-y-12 min-h-[60vh]">
-    <div className="relative">
-      <motion.div 
-        animate={{ rotate: 360 }}
-        transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-        className="w-32 h-32 rounded-full border-2 border-dashed border-emerald-500/20"
-      />
-      <motion.div 
-        animate={{ rotate: -360 }}
-        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-        className="absolute inset-0 w-32 h-32 rounded-full border-2 border-dashed border-sky-500/20 scale-125"
-      />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <Sparkles className="w-10 h-10 text-emerald-400 animate-pulse" />
-      </div>
-    </div>
-    <div className="text-center space-y-3">
-      <h2 className="text-3xl font-headline italic text-white tracking-widest">Synthesizing Visions</h2>
-      <p className="text-[10px] font-black text-emerald-400/60 uppercase tracking-[0.4em]">The Director is weaving your story into three distinct paths...</p>
-    </div>
-  </div>
-);
-
-const SelectionDeck = ({ drafts, onSelect, selectedText }: { drafts: any[], onSelect: (t: string, type: string, label: string) => void, selectedText: string }) => {
-  if (!drafts || drafts.length === 0) return null;
-
-  const ICONS: Record<string, any> = {
-    soul: Heart,
-    sensory: Sparkles,
-    cinematic: Film
-  };
-
-  const AURAS: Record<string, string> = {
-    soul: 'border-amber-500/30 bg-amber-500/5',
-    sensory: 'border-sky-500/30 bg-sky-500/5',
-    cinematic: 'border-emerald-500/30 bg-emerald-500/5'
-  };
-
-  const COLORS: Record<string, string> = {
-    soul: 'text-amber-400',
-    sensory: 'text-sky-400',
-    cinematic: 'text-emerald-400'
-  };
-
-  return (
-    <div className="flex-1 flex flex-col space-y-16 py-12">
-      <div className="text-center space-y-4">
-        <h2 className="text-4xl font-headline italic text-white">Choose your Vision</h2>
-        <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.5em]">The Director has prepared narrative interpretations of your memory</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {drafts.map((opt) => {
-          const Icon = ICONS[opt.type] || Sparkles;
-          return (
-            <motion.button
-              key={opt.id}
-              whileHover={{ scale: 1.02, y: -5 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onSelect(opt.text, opt.type, opt.label)}
-              className={cn(
-                "group relative flex flex-col p-8 rounded-[2.5rem] border transition-all text-left min-h-[400px]",
-                AURAS[opt.type] || 'border-white/10 bg-white/5',
-                selectedText === opt.text ? "ring-2 ring-white/20 border-white/40 shadow-2xl bg-white/10" : "opacity-60 hover:opacity-100"
-              )}
-            >
-              <div className="flex items-center justify-between mb-8">
-                 <div className={cn("p-3 rounded-2xl bg-white/5", COLORS[opt.type] || 'text-white')}>
-                   <Icon className="w-6 h-6" />
-                 </div>
-                 {selectedText === opt.text && (
-                   <div className="px-4 py-1 bg-white text-slate-950 text-[9px] font-black uppercase tracking-widest rounded-full">
-                      Selected
-                   </div>
-                 )}
-              </div>
-              
-              <h3 className="text-xl font-headline italic text-white mb-2">{opt.label}</h3>
-              <p className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-6 group-hover:text-white/40 transition-colors">
-                {opt.focus}
-              </p>
-              <p className="text-[11px] text-white/70 leading-relaxed italic font-serif">
-                 "{opt.text}"
-              </p>
-              
-              <div className="mt-auto pt-8 flex items-center gap-2">
-                 <div className="h-px flex-1 bg-white/10" />
-                 <span className="text-[8px] font-black uppercase tracking-[0.3em] text-white/20 group-hover:text-white/40 transition-colors">Apply Vision</span>
-              </div>
-            </motion.button>
-          );
-        })}
-      </div>
-    </div>
-  );
-};

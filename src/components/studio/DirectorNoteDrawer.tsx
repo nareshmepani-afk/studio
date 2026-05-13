@@ -119,6 +119,7 @@ export const DirectorNoteDrawer: React.FC<DirectorNoteDrawerProps> = ({
 
 
           <motion.div 
+            data-blueprint="DirectorNoteDrawer"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}

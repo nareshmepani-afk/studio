@@ -29,7 +29,7 @@ export function useStudioData(userId: string | undefined) {
   const { user, loading } = useAuth();
   const { mode } = useLanguage();
   useEffect(() => {
-    console.log("[useStudioData] Current Language Mode:", mode);
+    // Mode sync logic could go here if needed, but logging is removed
   }, [mode]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [requests, setRequests] = useState<StoryRequest[]>([]);
@@ -47,7 +47,6 @@ export function useStudioData(userId: string | undefined) {
 
     if (!userId || userId === 'guest') {
       if (!hasSkippedRef.current) {
-        console.log("[useStudioData] Skipping Firestore subscriptions for guest user.");
         hasSkippedRef.current = true;
         setIsLoading(false);
       }
@@ -57,13 +56,7 @@ export function useStudioData(userId: string | undefined) {
     // Reset skip ref if userId becomes valid
     hasSkippedRef.current = false;
 
-    if (user) {
-      console.log("[useStudioData] Checking Auth Sync:", {
-        userIdParam: userId,
-        currentUserUid: user.uid,
-        isMatch: user.uid === userId
-      });
-    }
+    // Auth sync verification logic could go here, but logging is removed
 
     setIsLoading(true);
 

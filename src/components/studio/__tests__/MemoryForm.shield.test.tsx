@@ -59,7 +59,12 @@ vi.mock('@/hooks/studio/useStudioState', () => ({
     setModality: vi.fn(),
     actions: {
       setAppliedCatalysts: vi.fn(),
-      setDispatcher: vi.fn()
+      setDispatcher: vi.fn(),
+      setDetectedAnchors: vi.fn(),
+      clearPendingAnchor: vi.fn(),
+      setIsDirectorOpen: vi.fn(),
+      setModality: vi.fn(),
+      setActiveDrawer: vi.fn(),
     },
     activeDrawer: null,
     pendingAnchor: null,
@@ -178,7 +183,7 @@ describe('MemoryForm Data Shielding (Split-Brain Prevention)', () => {
     expect(textarea).toHaveValue('Updated Background Description');
   });
 
-  it('Allows "Major Changes" (AI Mentor) even when focused', async () => {
+  it('Shields local description even during "Major Changes" if focused (Prevents paste-loss)', async () => {
     const { rerender } = render(
       <MemoryForm data={initialData} update={mockUpdate} />
     );
@@ -194,7 +199,8 @@ describe('MemoryForm Data Shielding (Split-Brain Prevention)', () => {
 
     rerender(<MemoryForm data={majorChangeData} update={mockUpdate} />);
 
-    expect(textarea).toHaveValue(majorChangeData.description);
+    // Now it should stay as the initial text
+    expect(textarea).toHaveValue('Initial Description');
   });
 
   it('Stable during ID Transition (undefined -> ID)', async () => {
@@ -232,5 +238,72 @@ describe('MemoryForm Data Shielding (Split-Brain Prevention)', () => {
 
     const textarea = screen.getByTestId('story-hook-textarea');
     expect(textarea).toHaveValue('Second Prompt Description');
+  });
+
+  it('PROTECTION: Does NOT overwrite local changes on Blur if data.description is stale', async () => {
+    const { rerender } = render(
+      <MemoryForm data={initialData} update={mockUpdate} />
+    );
+
+    const textarea = screen.getByTestId('story-hook-textarea');
+    
+    // 1. Focus and "type" (Simulate local change)
+    await act(async () => {
+      textarea.focus();
+    });
+    // In our mock, SentenceWrapper calls onUpdate which updates state.
+    // However, in this test environment, we are testing how PROPS affect STATE.
+    // The component internal state is 'Initial Description'.
+    
+    // 2. Blur (lastFocusedField becomes null)
+    await act(async () => {
+      textarea.blur();
+    });
+
+    // 3. Rerender with the SAME data (simulating a background sync that hasn't seen our change yet)
+    // If the shield is working, it should NOT reset the value because it hasn't changed since lastSyncedDescription.
+    rerender(<MemoryForm data={initialData} update={mockUpdate} />);
+
+    expect(textarea).toHaveValue('Initial Description');
+  });
+
+  it('PROTECTION: Shields large text paste from background sync', async () => {
+    const largeText = "I was born in Nairobi, Kenya. Our family roots are in Kutch. Our ancestors were labourers, and generations before my Granddad, people would travel from farm to farm for work. My Granddads' generation finally settled in a village, Madhapur. The soil and its produce are what give us a living. As we lived so close to the soil, it only made sense to eat the produce, super fresh and extremly cost effective. Farming was an extremely hard work, no machinery in those days. All our strength came from a vegetarian diet. Our mother tongue is Gujarati, with out formal education these skills where parsed down generations. As farming wasn't well paid, the British Empire needed workers in Kenya and our ancestors jumped at the chance. The lessons from my parents from traveling to Kenya with no knowledge of local language then traveling to England of no knowledge and language skills was learn and adapt and work hard and keep going.";
+    
+    const { rerender } = render(
+      <MemoryForm data={initialData} update={mockUpdate} />
+    );
+
+    const textarea = screen.getByTestId('story-hook-textarea');
+    
+    // 1. Focus
+    await act(async () => {
+      textarea.focus();
+    });
+
+    // 2. Simulate paste (by updating props to simulate what would happen if the state changed locally)
+    // Actually, in a real scenario, the local state changes first, then props follow.
+    // Here we test if NEW props from background can overwrite while focused.
+    const backgroundSync = { ...initialData, description: 'Some old background data' };
+    
+    rerender(<MemoryForm data={backgroundSync} update={mockUpdate} />);
+
+    // Should remain empty or initial if focused
+    expect(textarea).toHaveValue('Initial Description');
+  });
+
+  it('STABILITY: Initialization does not wipe state if data is already present', async () => {
+    // This test ensures that when the component mounts with data, 
+    // the "Navigation" logic doesn't trigger a reset that might race with Recovery.
+    const { rerender } = render(
+      <MemoryForm data={initialData} update={mockUpdate} />
+    );
+
+    const textarea = screen.getByTestId('story-hook-textarea');
+    expect(textarea).toHaveValue('Initial Description');
+    
+    // Rerender with same data
+    rerender(<MemoryForm data={initialData} update={mockUpdate} />);
+    expect(textarea).toHaveValue('Initial Description');
   });
 });

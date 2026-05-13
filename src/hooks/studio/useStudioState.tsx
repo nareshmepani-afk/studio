@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useRef, useMemo, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import { doc, onSnapshot, setDoc, DocumentReference } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { storyScripts } from '@/lib/storyScripts';
@@ -37,7 +37,17 @@ interface StudioState {
     type: 'soul' | 'sensory' | 'cinematic' | null;
     label: string | null;
   };
-  reviewDrafts: { id: string, label: string, text: string, type: 'original' | 'sensory' | 'narrative' }[] | null;
+  reviewDrafts: Array<{ 
+    visionType: string; 
+    focus: string; 
+    cleanScript: string; 
+    stageDirections: Array<{ type: 'visual' | 'audio' | 'beat', content: string, timecode: string }>;
+    beatSheet: Array<{ beat: string; timing: string; visual: string }>;
+  }> | null;
+  modality: 'pen' | 'voice' | null;
+  currentStage: number;
+  isDirectorOpen: boolean;
+  synthesisError: string | null;
   dispatcher?: {
     addCatalyst?: (blockId: string, type: CatalystType, value?: string) => { collisionDetected: boolean };
   };
@@ -72,6 +82,10 @@ interface StudioActions {
   setReviewDrafts: (drafts: any[] | null) => void;
   setIsGeneratingDrafts: (val: boolean) => void;
   setSelectedVision: (type: 'soul' | 'sensory' | 'cinematic' | null, label: string | null) => void;
+  setModality: (mod: 'pen' | 'voice' | null) => void;
+  setStage: (stage: number) => void;
+  setIsDirectorOpen: (open: boolean) => void;
+  setSynthesisError: (error: string | null) => void;
 }
 
 // 3. Context Shape
@@ -84,7 +98,7 @@ const StudioContext = createContext<StudioContextType | undefined>(undefined);
 function URLStateSync({ 
   onSync 
 }: { 
-  onSync: (sessionId: string, mode: 'solo' | 'director' | 'guest_director' | 'guest', promptId: string | null) => void 
+  onSync: (sessionId: string, mode: 'solo' | 'director' | 'guest_director' | 'guest', promptId: string | null, act?: number, modality?: 'pen' | 'voice' | null, isDirectorOpen?: boolean) => void 
 }) {
   const searchParams = useSearchParams();
   
@@ -93,7 +107,20 @@ function URLStateSync({
     const urlMode = searchParams.get('mode') as 'solo' | 'director' | 'guest_director' | 'guest';
     const promptId = searchParams.get('promptId');
     const finalMode = (urlMode === 'solo' || urlMode === 'director' || urlMode === 'guest_director' || urlMode === 'guest') ? urlMode : 'solo';
-    onSync(sessionId, finalMode, promptId);
+    
+    // Act parsing
+    const actParam = searchParams.get('act');
+    const ACT_MAP = ['hook', 'weave', 'capture', 'cut', 'premiere'];
+    const actIndex = actParam ? Math.max(0, ACT_MAP.indexOf(actParam)) : 0;
+
+    // Modality parsing
+    const modParam = searchParams.get('modality');
+    const modality = modParam === 'scribe' ? 'pen' : (modParam === 'vocal' ? 'voice' : null);
+
+    // Director parsing
+    const isDirectorOpen = searchParams.get('director') === 'true';
+
+    onSync(sessionId, finalMode, promptId, actIndex, modality as any, isDirectorOpen);
   }, [searchParams, onSync]);
 
   return null;
@@ -125,19 +152,92 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     isGeneratingDrafts: false,
     reviewDrafts: [],
     selectedVision: { type: null, label: null },
+    modality: null,
+    currentStage: 0,
+    isDirectorOpen: false,
+    synthesisError: null,
     dispatcher: undefined,
     ...(initialState || {}),
   });
 
-  const [urlPromptId, setUrlPromptId] = useState<string | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  const handleURLSync = useCallback((sessionId: string, mode: 'solo' | 'director' | 'guest_director' | 'guest', promptId: string | null) => {
-    setState(prev => {
-      if (prev.sessionId === sessionId && prev.mode === mode) return prev;
-      return { ...prev, sessionId, mode };
-    });
-    setUrlPromptId(promptId);
-  }, []);
+    // Bidirectional URL Sync: Local State -> URL
+    const lastSyncedState = useRef<string>('');
+    const isInternalSync = useRef(false);
+
+    useEffect(() => {
+        if (!state.sessionId || state.sessionId === 'default') return;
+
+        // 1. Generate desired params based on current state
+        const targetParams = new URLSearchParams(searchParams.toString());
+        const ACT_MAP = ['hook', 'weave', 'capture', 'cut', 'premiere'];
+        
+        // Act Sync
+        const newActQuery = ACT_MAP[state.currentStage] || 'hook';
+        targetParams.set('act', newActQuery);
+
+        // Modality Sync
+        const newModQuery = state.modality === 'pen' ? 'scribe' : (state.modality === 'voice' ? 'vocal' : null);
+        if (newModQuery) {
+            targetParams.set('modality', newModQuery);
+        } else {
+            targetParams.delete('modality');
+        }
+
+        // Director Sync
+        if (state.isDirectorOpen) {
+            targetParams.set('director', 'true');
+        } else {
+            targetParams.delete('director');
+        }
+
+        // 2. STABLE COMPARISON: Sort and compare to prevent order-flip loops
+        targetParams.sort();
+        const targetString = targetParams.toString();
+
+        if (targetString !== lastSyncedState.current) {
+            lastSyncedState.current = targetString;
+            const newUrl = `${pathname}?${targetString}`;
+            
+            // Only replace if the URL actually differs from current browser state
+            const currentParams = new URLSearchParams(searchParams.toString());
+            currentParams.sort();
+            
+            if (targetString !== currentParams.toString()) {
+                console.log("[useStudioState] URL Syncing to:", newUrl);
+                isInternalSync.current = true;
+                router.replace(newUrl, { scroll: false });
+                // Reset the guard after a tick to allow legitimate external changes
+                setTimeout(() => { isInternalSync.current = false; }, 100);
+            }
+        }
+    }, [state.currentStage, state.modality, state.isDirectorOpen, pathname, router, searchParams]);
+
+    const [urlPromptId, setUrlPromptId] = useState<string | null>(null);
+
+    const handleURLSync = useCallback((sessionId: string, mode: 'solo' | 'director' | 'guest_director' | 'guest', promptId: string | null, act?: number, modality?: 'pen' | 'voice' | null, isDirectorOpen?: boolean) => {
+        if (isInternalSync.current) {
+            console.log("[useStudioState] handleURLSync blocked by internal sync guard");
+            return;
+        }
+
+        setState(prev => {
+            const updates: Partial<StudioState> = {};
+            if (prev.sessionId !== sessionId) updates.sessionId = sessionId;
+            if (prev.mode !== mode) updates.mode = mode;
+            if (act !== undefined && prev.currentStage !== act) updates.currentStage = act;
+            if (modality !== undefined && prev.modality !== modality) updates.modality = modality;
+            if (isDirectorOpen !== undefined && prev.isDirectorOpen !== isDirectorOpen) updates.isDirectorOpen = isDirectorOpen;
+
+            if (Object.keys(updates).length === 0) return prev;
+            console.log("[useStudioState] Applying external URL sync:", updates);
+            return { ...prev, ...updates };
+        });
+        setUrlPromptId(promptId);
+    }, []);
 
   // 2. Persistent Reference: Memoize the document reference to prevent redundant effect cycles
   const studioStateRef = useMemo(() => {
@@ -296,6 +396,13 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     setReviewDrafts: (drafts) => setState(s => ({ ...s, reviewDrafts: drafts })),
     setIsGeneratingDrafts: (val) => setState(s => ({ ...s, isGeneratingDrafts: val })),
     setSelectedVision: (type, label) => setState(s => ({ ...s, selectedVision: { type, label } })),
+    setModality: (mod) => setState(s => ({ ...s, modality: mod })),
+    setStage: (stage) => {
+      console.log(`[useStudioState] globalActions.setStage triggered: ${stage}`);
+      setState(s => ({ ...s, currentStage: stage }));
+    },
+    setIsDirectorOpen: (open) => setState(s => ({ ...s, isDirectorOpen: open })),
+    setSynthesisError: (error) => setState(s => ({ ...s, synthesisError: error })),
   }), []);
 
   return (

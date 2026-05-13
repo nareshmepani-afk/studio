@@ -197,7 +197,7 @@ export const SensoryCatalystHUD: React.FC<SensoryCatalystHUDProps> = ({
                   }}
                   onClick={() => {
                     if (appliedCatalystTypes.includes(cat.id as any)) {
-                      dispatcher?.addCatalyst?.('story-hook', cat.id as any);
+                      dispatcher?.addCatalyst?.('inciting-memory', cat.id as any);
                     }
                   }}
                   className={cn(

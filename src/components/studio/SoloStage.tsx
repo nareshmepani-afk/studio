@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 import { MemoryForm } from './MemoryForm';
 import { 
   AlertDialog, 
@@ -34,11 +35,12 @@ import { ProductionControlBar } from './ProductionControlBar';
 import CinemaStageSwitch from './CinemaStageSwitch';
 import { Memory } from '@/types';
 import CinemaPoster from '../memory/CinemaPoster';
+import { CinemaMonitor } from './CinemaMonitor';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 
 interface RoomProps {
     data: Memory;
-    update: (updatedData: Partial<Memory>) => void;
+    update: (updatedData: Partial<Memory> | ((prev: Partial<Memory>) => Partial<Memory>)) => void;
     modality?: 'pen' | 'voice' | null;
     setModality?: (val: 'pen' | 'voice' | null) => void;
     onWordCountChange?: (count: number) => void;
@@ -55,6 +57,7 @@ interface RoomProps {
     onboardingJustClosed?: boolean;
     isUntouched?: boolean;
     onActivity?: () => void;
+    formRef?: React.RefObject<any>;
 }
 
 const formatTime = (seconds: number) => {
@@ -67,7 +70,7 @@ export default function SoloStage({
   data, update, modality, setModality, onWordCountChange, 
   currentStage, mentorActive, onToggleMentor, onClarityChange,
   onNext, onPrev, isComplete, charge, wordCount, highlightClarity,
-  onboardingJustClosed, isUntouched, onActivity
+  onboardingJustClosed, isUntouched, onActivity, formRef
 }: RoomProps) {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -92,10 +95,18 @@ export default function SoloStage({
   // MOD-14: Cinematic Polish State
   const [prompterSize, setPrompterSize] = useState<'sm' | 'md' | 'lg'>('md');
 
+  const { actions: globalActions } = useStudioState();
+  
   // Cinematic Pipeline State (Shared via Firestore)
-  const productionStage = currentStage !== undefined ? currentStage : (data?.productionStage || 0);
+  // BUGFIX: Prioritize global stage from prop, but allow local data fallback ONLY if prop is undefined.
+  // We use currentStage prop as the source of truth from ProductionDeck.
+  const productionStage = currentStage ?? (data?.productionStage || 0);
+  const [isPersistenceSaving, setIsPersistenceSaving] = useState(false);
+  
   const setProductionStage = (stage: number) => {
+    console.log(`[SoloStage] Advancing to Stage: ${stage}`);
     update({ ...data, productionStage: stage });
+    globalActions.setStage(stage);
   };
 
 
@@ -383,18 +394,21 @@ export default function SoloStage({
     }
   };
 
-  const shieldedUpdate = useCallback((updatedData: Partial<Memory>) => {
-    update({
-        ...updatedData,
-        cameraActive: isCameraActive,
+  const shieldedUpdate = useCallback((updatedDataOrFn: Partial<Memory> | ((prev: Partial<Memory>) => Partial<Memory>)) => {
+    update((prev: Partial<Memory>) => {
+      const resolved = typeof updatedDataOrFn === 'function' ? updatedDataOrFn(prev) : updatedDataOrFn;
+      return {
+          ...resolved,
+          cameraActive: isCameraActive,
+      };
     });
-  }, [update, isCameraActive, data?.cameraActive]);
+  }, [update, isCameraActive]);
 
   // --- SUB-RENDERERS FOR 5-ACT JOURNEY ---
   
-  const renderHook = () => (
+  const renderIncitingMemory = () => (
     <div className="max-w-5xl mx-auto w-full pb-2 transition-all duration-700">
-      <MemoryForm 
+      <MemoryForm ref={formRef} 
         data={data} 
         update={shieldedUpdate} 
         productionStage={0} 
@@ -410,51 +424,41 @@ export default function SoloStage({
         isUntouched={isUntouched}
         onActivity={onActivity}
       />
-      {modality !== null && currentStage === 0 && (
-        <div className="flex justify-center -mt-2">
-           <ProductionControlBar
-             currentStage={0}
-             isComplete={isComplete ?? false}
-             onNext={onNext ?? (() => {})}
-             onPrev={onPrev ?? (() => {})}
-             charge={charge}
-             wordCount={wordCount}
-             isDocked={true}
-           />
-        </div>
-      )}
     </div>
   );
 
   const renderWeave = () => (
-    <div className="max-w-4xl mx-auto w-full pb-2 transition-all duration-1000">
-      <MemoryForm 
-        data={data} 
-        update={shieldedUpdate} 
-        productionStage={1} 
-        setProductionStage={setProductionStage}
-        forceAct="weave" // New Stage: Full Scripting
-        modality={modality}
-        setModality={setModality}
-        onWordCountChange={onWordCountChange}
-        mentorActive={mentorActive}
-        onToggleMentor={onToggleMentor}
-        onClarityChange={onClarityChange}
-        highlightClarity={highlightClarity}
-        onActivity={onActivity}
-      />
-      {modality !== null && currentStage === 1 && (
-        <div className="flex justify-center -mt-2">
-           <ProductionControlBar
-             currentStage={1}
-             isComplete={isComplete ?? false}
-             onNext={onNext ?? (() => {})}
-             onPrev={onPrev ?? (() => {})}
-             charge={charge}
-             wordCount={wordCount}
-             isDocked={true}
-           />
-        </div>
+    <div className={cn(
+      "w-full pb-2 transition-all duration-1000",
+      data?.structuredScript ? "max-w-[95vw] xl:max-w-screen-2xl mx-auto h-[calc(100vh-180px)]" : "max-w-4xl mx-auto"
+    )}>
+      {/* PERSISTENCE MANTLE: Keep MemoryForm mounted for flush stability */}
+      <div className={cn("w-full h-full", data?.structuredScript ? "hidden" : "block")}>
+        <MemoryForm ref={formRef} 
+          data={data} 
+          update={shieldedUpdate} 
+          productionStage={1} 
+          setProductionStage={setProductionStage}
+          forceAct="weave" 
+          modality={modality}
+          setModality={setModality}
+          onWordCountChange={onWordCountChange}
+          mentorActive={mentorActive}
+          onToggleMentor={onToggleMentor}
+          onClarityChange={onClarityChange}
+          highlightClarity={highlightClarity}
+          onActivity={onActivity}
+          onSavingChange={setIsPersistenceSaving}
+        />
+      </div>
+
+      {data?.structuredScript && (
+        <CinemaMonitor 
+          structuredScript={data.structuredScript} 
+          onActivity={onActivity}
+          onNext={onNext}
+          isSaving={isPersistenceSaving}
+        />
       )}
     </div>
   );
@@ -495,13 +499,56 @@ export default function SoloStage({
                 <div className="px-2 py-0.5 bg-white/5 rounded-md border border-white/5 text-[8px] font-bold text-white/20 uppercase">Encrypted</div>
               </div>
             </div>
-            <div className={`flex-grow pr-4 custom-scrollbar scroll-smooth overflow-y-auto ${prompterSize === 'sm' ? 'text-sm' : prompterSize === 'md' ? 'text-lg' : 'text-2xl'} font-medium text-white/95 leading-relaxed italic`}>
-              {data?.prose ? (
-                <div dangerouslySetInnerHTML={{ __html: data.prose }} className="prose-invert opacity-90 first-letter:text-4xl first-letter:font-black first-letter:mr-2 first-letter:float-left select-none" />
-              ) : (
-                <div className="text-white/20 text-sm font-black uppercase tracking-widest text-center py-20 flex flex-col items-center gap-4">
-                  <RefreshCw className="w-8 h-8 animate-spin opacity-20" />
-                  Awaiting Narrative Weave...
+            <div className="flex-grow flex gap-8 overflow-hidden min-h-0">
+              {/* Main Script Area */}
+              <div className={cn(
+                "flex-grow pr-4 custom-scrollbar scroll-smooth overflow-y-auto font-medium text-white/95 leading-relaxed italic",
+                prompterSize === 'sm' ? 'text-sm' : prompterSize === 'md' ? 'text-lg' : 'text-2xl'
+              )}>
+                {data?.prose ? (
+                  <div dangerouslySetInnerHTML={{ __html: data.prose }} className="prose-invert opacity-90 first-letter:text-4xl first-letter:font-black first-letter:mr-2 first-letter:float-left select-none" />
+                ) : (
+                  <div className="text-white/20 text-sm font-black uppercase tracking-widest text-center py-20 flex flex-col items-center gap-4">
+                    <RefreshCw className="w-8 h-8 animate-spin opacity-20" />
+                    Awaiting Narrative Weave...
+                  </div>
+                )}
+              </div>
+
+              {/* Directorial Sidebar (Conditional) */}
+              {data?.structuredScript && prompterSize !== 'sm' && (
+                <div className="w-64 flex-none border-l border-white/5 pl-8 space-y-8 overflow-y-auto custom-scrollbar">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-sky-400/60">
+                      <Sparkles className="w-3 h-3" />
+                      <span className="text-[9px] font-black uppercase tracking-widest">Beat Sheet</span>
+                    </div>
+                    {data.structuredScript.beatSheet.map((item, i) => (
+                      <div key={i} className="space-y-1 group/beat">
+                        <div className="flex items-center justify-between text-[8px] font-mono text-white/20 group-hover/beat:text-white/40">
+                          <span>{item.timing}</span>
+                          <span className="uppercase tracking-tighter">Beat {i+1}</span>
+                        </div>
+                        <p className="text-[10px] font-bold text-white/60 leading-tight group-hover/beat:text-sky-300 transition-colors">{item.beat}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-emerald-400/60">
+                      <Video className="w-3 h-3" />
+                      <span className="text-[9px] font-black uppercase tracking-widest">Live Cues</span>
+                    </div>
+                    {data.structuredScript.stageDirections.slice(0, 3).map((dir, i) => (
+                      <div key={i} className="p-3 bg-white/5 border border-white/10 rounded-xl space-y-1 hover:bg-white/10 transition-all">
+                        <div className="flex items-center justify-between">
+                           <span className="text-[8px] font-black text-emerald-400/60 uppercase">{dir.type}</span>
+                           <span className="text-[8px] font-mono text-white/20">{dir.timecode}</span>
+                        </div>
+                        <p className="text-[10px] text-white/50 leading-snug">{dir.content}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -861,14 +908,14 @@ export default function SoloStage({
       currentStage={productionStage}
       onStageChange={setProductionStage}
       acts={[
-        { id: 0, title: 'Hook', label: 'ACT I' },
+        { id: 0, title: 'Inciting Memory', label: 'ACT I' },
         { id: 1, title: 'Weave', label: 'ACT II' },
         { id: 2, title: 'Capture', label: 'ACT III' },
-        { id: 3, title: 'Cut', label: 'ACT IV' },
+        { id: 3, title: 'Director\'s Cut', label: 'ACT IV' },
         { id: 4, title: 'Premiere', label: 'ACT V' },
       ]}
     >
-      {renderHook()}
+      {renderIncitingMemory()}
       {renderWeave()}
       {renderRecording()}
       {renderNotepad()}

@@ -79,7 +79,7 @@ export function OnboardingOverlay({ isOpen, onClose }: OnboardingOverlayProps) {
                   <p>Welcome to the Stage, Director.</p>
                   <div className="space-y-1.5 border-l-2 border-emerald-500/20 pl-6 py-1 max-w-fit mx-auto text-left">
                     <p className="text-white font-medium italic">
-                      "Act I: The Hook is your film’s script."
+                      "Act I: The Inciting Memory is your film’s script."
                     </p>
                     <p className="text-emerald-400/70 font-medium italic text-[15px]">
                       "Act II: The Weave is the fusion of the script and stage performance."

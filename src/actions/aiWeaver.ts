@@ -686,64 +686,119 @@ export async function proofreadScript(blocks: ScriptBlock[]): Promise<Array<{
 /**
  * Generates three distinct variations of the story hook for the Director's Cut ceremony.
  */
-export async function generateDraftOptions(description: string): Promise<Array<{
-  id: string;
-  label: string;
-  text: string;
-  type: 'soul' | 'sensory' | 'cinematic';
-  focus: string;
-}>> {
-  console.log(`[AI Weaver] generateDraftOptions triggered for: ${description.substring(0, 30)}...`);
+export async function generateDraftOptions(description: string): Promise<{
+  visions: Array<{
+    visionType: string;
+    focus: string;
+    cleanScript: string;
+    stageDirections: Array<{
+      type: 'visual' | 'audio' | 'beat';
+      content: string;
+      timecode: string;
+    }>;
+    beatSheet: Array<{
+      beat: string;
+      timing: string;
+      visual: string;
+    }>;
+  }>
+}> {
+  console.log(`[AI Weaver] generateDraftOptions (Envision & Expand) triggered for: ${description.substring(0, 30)}...`);
   
   const ai = await getAI();
   
   const prompt = `
-    You are the "Master Director" and "Auteur" for Chronicle Cinema.
-    Your task is to take a user's raw "Story Hook" and create three (3) distinct cinematic visions (Takes).
+    ACT AS: A Master Cinematic Dramaturg and Director.
+    INPUT MEMORY: ${description}
+
+    TASK:
+    Expand the provided memory into THREE distinct, production-ready video diary scripts. 
+    Do NOT summarize. You must Envision and Expand the subtext, sensory details, and emotional gravity to create a "North Star" narrative. 
+
+    MANDATORY RULES:
+    1. WORD COUNT: Each script MUST be between 500 and 750 words. Use pacing, pauses, and deep environmental descriptions (e.g., the texture of the soil, the sound of the language) to achieve this length authentically without hallucinating fake events.
+    2. 3-ACT STRUCTURE: Every script must follow:
+       - Act I (Roots): Grounding the memory in time and place.
+       - Act II (The Deep Weave): The longest section (~350 words), focusing on the struggle, labor, and core values.
+       - Act III (Legacy): The reflection and forward-looking resolution.
+    3. DECOUPLED METADATA: Do NOT embed tags in the script. Provide a clean script and separate stage directions.
+    4. TRUTH PRESERVATION: Never change the locations, facts, or cultural specifics provided by the user.
+
+    THE THREE VISIONS TO GENERATE:
+    1. "The Soul-Print" (Focus: Legacy, internal resilience, unspoken strength).
+    2. "The Atmospheric Weave" (Focus: Sensory details, the physical environment, textures, sounds, and manual labor).
+    3. "The Cinematic Cut" (Focus: Epic movement, migration, rhythmic and sweeping pacing across generations).
+
+    OUTPUT FORMAT:
+    Return a valid JSON object matching this schema exactly. 
     
-    [ORIGINAL HOOK]
-    "${description}"
-    
-    [THE THREE TAKES]
-    1. "The Soul-Print": A polished version of the original. Fix grammar, spelling, and rhythm, but keep the exact emotional core and tone.
-    2. "The Sensory Path": Infuse the hook with deep sensory anchors, specifically Aroma and Soundscape. Make the reader "smell" and "hear" the memory.
-    3. "The Cinematic Cut": High-fidelity narrative prose. Use sophisticated metaphors and rhythmic pacing to make it feel like a professional film treatment.
-    
-    [RULES]
-    - Each take must be concise (40-70 words).
-    - Avoid AI clichés: "tapestry", "odyssey", "whispers", "vibrant", "testament", "unfolding".
-    - Focus on the "Linguistically silent but culturally loud" quality of memory.
-    
-    Return strictly a JSON array of objects:
-    [
-      { "id": "soul", "label": "The Soul-Print", "text": "...", "type": "soul", "focus": "Preserved Intent & Clarity" },
-      { "id": "sensory", "label": "The Sensory Path", "text": "...", "type": "sensory", "focus": "Aroma & Ambient Resonance" },
-      { "id": "cinematic", "label": "The Cinematic Cut", "text": "...", "type": "cinematic", "focus": "High-Fidelity Narrative" }
-    ]
+    IMPORTANT: The "cleanScript" field must be PURE NARRATIVE. 
+    NO brackets [ ], NO tags < >, NO musical cues, and NO stage directions within this string.
+    All directorial cues MUST be placed in the "stageDirections" array.
+
+    {
+      "visions": [
+        {
+          "visionType": "String (e.g., 'The Atmospheric Weave')",
+          "focus": "String (Short description of the vibe)",
+          "cleanScript": "String (The full 500-750 word script. PURE PROSE ONLY. NO TAGS.)",
+          "stageDirections": [
+            { "type": "visual | audio | beat", "content": "Directorial cue content", "timecode": "Approximate time (e.g. 1:15)" }
+          ],
+          "beatSheet": [
+            { "beat": "Emotional milestone", "timing": "0:00", "visual": "Brief visual cue" }
+          ]
+        }
+      ]
+    }
   `;
 
-  try {
+    try {
     const { output } = await pRetry(async () => {
-      return await ai.generate({
-        prompt,
-        output: {
-          schema: z.array(z.object({
-            id: z.string(),
-            label: z.string(),
-            text: z.string(),
-            type: z.enum(['soul', 'sensory', 'cinematic']),
-            focus: z.string()
-          })),
-        },
-      });
-    }, { retries: 2 });
-    
-    return output || [];
+      try {
+        console.log("[AI Weaver] ai.generate starting with model: googleai/gemini-2.0-flash");
+        return await ai.generate({
+          prompt,
+          model: 'googleai/gemini-2.0-flash',
+          output: {
+            schema: z.object({
+              visions: z.array(z.object({
+                visionType: z.string(),
+                focus: z.string(),
+                cleanScript: z.string(),
+                stageDirections: z.array(z.object({
+                  type: z.enum(['visual', 'audio', 'beat']),
+                  content: z.string(),
+                  timecode: z.string()
+                })),
+                beatSheet: z.array(z.object({
+                  beat: z.string(),
+                  timing: z.string(),
+                  visual: z.string()
+                })),
+              }))
+            }),
+          },
+          config: {
+            maxOutputTokens: 5000,
+            temperature: 0.75
+          }
+        });
+      } catch (genError: any) {
+        console.error("[AI Weaver] ai.generate internal error:", genError.message || genError);
+        throw genError; // Re-throw for pRetry
+      }
+    }, {
+      retries: 3,
+      onFailedAttempt: (error: any) => {
+        console.warn(`[AI Weaver] Draft Generation attempt ${error.attemptNumber} failed. ${error.retriesLeft} retries left. Error: ${error.message}`);
+      }
+    });
+
+    if (!output) throw new Error("AI Weaver failed to generate output.");
+    return output;
   } catch (error) {
     console.error("[AI Weaver] Draft Options Failure:", error);
-    // Fallback: Just return the original as the soul-print
-    return [
-      { id: 'soul', label: 'The Soul-Print', text: description, type: 'soul', focus: 'Original Hook' }
-    ];
+    throw error; // PROPAGATE: Ensure the UI handles the failure via the transition catch block
   }
 }

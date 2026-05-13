@@ -31,6 +31,7 @@ import { LayoutGroup } from 'framer-motion';
 import { useProductionCharge, SensoryType } from '@/hooks/studio/useProductionCharge';
 import { AIPolishButton } from './AIPolishButton';
 import { motion } from 'framer-motion';
+import { useDebounce } from '@/hooks/useDebounce';
 
 const ClarityWaveform = ({ charge, color }: { charge: number, color: string }) => {
   const points = 12;
@@ -77,33 +78,9 @@ interface ScriptoriumProps {
 export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange, onActivity }: ScriptoriumProps) => {
   const { actions, detectedAnchors } = useStudioState();
 
-  // 1. THE MIGRATION SCRIPT
-  const initialBlocks = useMemo<ScriptBlock[]>(() => {
-    // If we already have blocks, use them.
-    if (data.scriptBlocks && data.scriptBlocks.length > 0) {
-      return data.scriptBlocks;
-    }
-
-    // If we only have legacy prose, migrate it.
-    if (data.prose) {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(data.prose, 'text/html');
-      const paragraphs = Array.from(doc.querySelectorAll('p'));
-
-      if (paragraphs.length > 0) {
-        return paragraphs.map((p, index) => ({
-          id: uuidv4(),
-          type: index === 0 ? 'hook' : 'beat',
-          text: p.innerHTML, // Preserves <strong>/<em> tags
-          catalysts: [],
-        }));
-      }
-    }
-
-    // Fallback: Start a fresh session
-    return [{ id: uuidv4(), type: 'hook', text: '', catalysts: [] }];
-  }, [data.scriptBlocks, data.prose]);
-
+  // 1. THE HYDRATION-SAFE MIGRATION ENGINE
+  const [hasHydrated, setHasHydrated] = useState(false);
+  
   // 2. INITIALIZE THE ENGINE
   const {
     blocks,
@@ -114,7 +91,37 @@ export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange, onActiv
     splitBlock,
     mergeWithPrevious,
     reorderBlocks,
-  } = useStoryScript(initialBlocks);
+    bulkInsertBlocks,
+    setBlocks
+  } = useStoryScript(data.scriptBlocks || []);
+
+  useEffect(() => {
+    if (hasHydrated) return;
+    
+    // Migration logic (Client-side only)
+    if (!data.scriptBlocks || data.scriptBlocks.length === 0) {
+      if (data.prose) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(data.prose, 'text/html');
+        const paragraphs = Array.from(doc.querySelectorAll('p'));
+
+        if (paragraphs.length > 0) {
+          const migrated = paragraphs.map((p, index) => ({
+            id: uuidv4(),
+            type: (index === 0 ? 'hook' : 'beat') as 'hook' | 'beat',
+            text: p.innerHTML,
+            catalysts: [],
+          }));
+          setBlocks(migrated);
+        } else {
+          setBlocks([{ id: uuidv4(), type: 'hook', text: '', catalysts: [] }]);
+        }
+      } else {
+        setBlocks([{ id: uuidv4(), type: 'hook', text: '', catalysts: [] }]);
+      }
+    }
+    setHasHydrated(true);
+  }, [data.scriptBlocks, data.prose, hasHydrated, setBlocks]);
   
   const { playSnap } = useAudioFeedback();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -190,27 +197,47 @@ export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange, onActiv
   const lastSyncedBlocksRef = useRef<string>('');
   const lastSyncedWordCountRef = useRef<number>(-1);
 
-  // 3. AUTO-SYNC TO DATABASE & AGGREGATE ANCHORS
+  const debouncedBlocks = useDebounce(blocks, 1000); // 1-second buffer for heavy sync
+  const latestBlocksRef = useRef(blocks);
+  const onSyncRef = useRef(onSync);
+
   useEffect(() => {
-    const blocksJSON = JSON.stringify(blocks);
+    latestBlocksRef.current = blocks;
+  }, [blocks]);
+
+  useEffect(() => {
+    onSyncRef.current = onSync;
+  }, [onSync]);
+
+  // 3. REAL-TIME UI SYNC (Active Block Metadata)
+  useEffect(() => {
+    if (focusedBlock) {
+      actions.setAppliedCatalysts(focusedBlock.catalysts.map(c => c.type));
+    } else {
+      actions.setAppliedCatalysts([]);
+    }
+  }, [focusedBlock, actions]);
+
+  // 4. DEBOUNCED HEAVY SYNC (Database & Script Analysis)
+  useEffect(() => {
+    const blocksJSON = JSON.stringify(debouncedBlocks);
     
     // Aggressive Guard: Only sync if blocks actually changed
     if (blocksJSON !== lastSyncedBlocksRef.current) {
-      onSync(blocks);
+      onSync(debouncedBlocks);
       lastSyncedBlocksRef.current = blocksJSON;
     }
     
-    // Aggregate anchors across all blocks
-    const allText = blocks.map(b => b.text).join(' ');
+    // Aggregate anchors across all blocks (Heavy Regex Operation)
+    const allText = debouncedBlocks.map(b => b.text).join(' ');
     const uniqueAnchors = detectAnchors(allText);
     const activeTypes = Array.from(new Set(uniqueAnchors.map(a => a.type)));
     
     // Diagnostic: Identify Overloaded Beats
-    const overloadedIds = blocks
+    const overloadedIds = debouncedBlocks
       .filter(b => detectAnchors(b.text).length >= 4)
       .map(b => b.id);
     
-    // Only update if changed to avoid unnecessary re-renders
     actions.setDetectedAnchors(uniqueAnchors);
     actions.setOverloadedBlocks(overloadedIds);
     actions.setActiveAnchorTypes(activeTypes);
@@ -218,19 +245,17 @@ export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange, onActiv
     // DIRECTORIAL GUIDE LOGIC
     const totalWords = allText.trim().split(/\s+/).filter(w => w.length > 0).length;
     
-    // Word Count Guard: Only notify parent if count actually changed
     if (totalWords !== lastSyncedWordCountRef.current) {
       onWordCountChange?.(totalWords);
       lastSyncedWordCountRef.current = totalWords;
     }
 
     let note: string | null = null;
-
     if (totalWords < 20) {
-      note = "Begin by drafting your Story Hook. The Director's Ink will highlight sensory opportunities as you write.";
+      note = "Begin by drafting your Inciting Memory. The Director's Ink will highlight sensory opportunities as you write.";
     } else if (activeTypes.length === 0) {
       note = "Try adding sensory details like 'scent', 'sound', or 'color' to anchor your narrative in physical space.";
-    } else if (blocks.every(b => b.catalysts.length === 0)) {
+    } else if (debouncedBlocks.every(b => b.catalysts.length === 0)) {
       const firstType = activeTypes[0];
       const typeLabel = firstType === 'aroma' ? 'Wind' : firstType === 'soundscape' ? 'Music' : 'Layers';
       note = `I've detected a ${firstType} anchor. Drag the ${typeLabel} catalyst from the right rack to lock it in.`;
@@ -242,14 +267,17 @@ export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange, onActiv
 
     actions.setDirectorialNote(note);
     
-    // Sync applied catalysts for focused block
-    if (focusedBlock) {
-      actions.setAppliedCatalysts(focusedBlock.catalysts.map(c => c.type));
-    } else {
-      actions.setAppliedCatalysts([]);
-    }
-    
-  }, [blocks, onSync, actions, onWordCountChange, focusedBlock]);
+  }, [debouncedBlocks, onSync, actions, onWordCountChange]);
+
+  // 4.5 FINAL FLUSH ON UNMOUNT (Ensures last keystrokes are captured)
+  useEffect(() => {
+    return () => {
+      const finalJSON = JSON.stringify(latestBlocksRef.current);
+      if (finalJSON !== lastSyncedBlocksRef.current) {
+        onSyncRef.current(latestBlocksRef.current);
+      }
+    };
+  }, []); // Only on unmount
 
   // Bridge the latest addCatalyst logic to the stable dispatcher registration
   const addCatalystRef = useRef(addCatalyst);
@@ -296,6 +324,7 @@ export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange, onActiv
                   onFocus={() => setActiveId(block.id)}
                   onBlur={() => setActiveId(null)}
                   onUpdate={(text: string) => { updateBlockText(block.id, text); onActivity?.(); }}
+                  onBulkUpdate={(texts: string[]) => { bulkInsertBlocks(block.id, texts); onActivity?.(); }}
                   actions={actions}
                 />
               ))}

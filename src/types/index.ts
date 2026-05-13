@@ -35,6 +35,24 @@ export interface ScriptBlock {
   };
 }
 
+export interface StageDirection {
+  type: 'visual' | 'audio' | 'beat';
+  content: string;
+  timecode: string;
+}
+
+export interface BeatSheetItem {
+  beat: string;
+  timing: string;
+  visual: string;
+}
+
+export interface StructuredScript {
+  cleanScript: string;
+  stageDirections: StageDirection[];
+  beatSheet: BeatSheetItem[];
+}
+
 export interface Memory {
   id: string;
   userId: string;
@@ -89,6 +107,7 @@ export interface Memory {
     color: string;
     description: string;
   }[];
+  structuredScript?: StructuredScript;
 }
 
 export interface TranscriptSegment {

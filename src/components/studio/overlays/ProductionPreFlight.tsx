@@ -148,7 +148,7 @@ export const ProductionPreFlight: React.FC<ProductionPreFlightProps> = ({
                     show={step >= 3}
                   />
                   <DiagnosticRow 
-                    label="Narrative Hook" 
+                    label="Inciting Memory" 
                     value={storyData.title ? 'READY' : 'MISSING'} 
                     icon={<ShieldCheck className="w-4 h-4" />}
                     status={storyData.title ? 'success' : 'error'}

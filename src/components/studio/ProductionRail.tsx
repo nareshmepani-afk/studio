@@ -13,7 +13,8 @@ import {
   Scissors, 
   Film,
   Layers,
-  Radio
+  Radio,
+  Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -22,6 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ACT_TITLES } from './MemoryForm';
 
 export interface Act {
   id: number;
@@ -32,7 +34,7 @@ export interface Act {
 }
 
 export const PRODUCTION_ACTS: Act[] = [
-  { id: 0, title: 'The Hook', label: 'ACT I', description: 'Draft your narrative blueprint.', icon: Anchor },
+  { id: 0, title: 'The Inciting Memory', label: 'ACT I', description: 'Draft your narrative blueprint.', icon: Anchor },
   { id: 1, title: 'The Weave', label: 'ACT II', description: 'Deep-scripting and sensory tagging.', icon: Layers },
   { id: 2, title: 'Capture', label: 'ACT III', description: 'Vocal testimony and video recording.', icon: Radio },
   { id: 3, title: 'The Cut', label: 'ACT IV', description: 'Director\'s trimmings and final edits.', icon: Scissors },
@@ -47,6 +49,9 @@ interface ProductionRailProps {
   modality: 'pen' | 'voice' | null;
   customWidth?: number;
   wordCount: number;
+  mentorActive?: boolean;
+  onToggleMentor?: (manual?: boolean) => void;
+  isSaving?: boolean;
 }
 
 export const ProductionRail: React.FC<ProductionRailProps> = ({
@@ -56,7 +61,10 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
   onToggleRetract,
   modality,
   customWidth = 280,
-  wordCount
+  wordCount,
+  mentorActive = false,
+  onToggleMentor,
+  isSaving = false
 }) => {
   // Logic: "Soft-Locked" - Forward is locked until commit (simplified for now to currentStage)
   // Backward is always open.
@@ -123,7 +131,7 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
           <div className="space-y-6">
             {PRODUCTION_ACTS.map((act, index) => {
               const active = currentStage === act.id;
-              const available = isActAvailable(act.id);
+              const available = isActAvailable(act.id) && !isSaving;
               const completed = act.id < currentStage;
               
               return (
@@ -144,10 +152,10 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                       <TooltipTrigger asChild>
                         <button
                           onClick={() => available && onStageChange(act.id)}
-                          disabled={!available}
+                          disabled={!available || isSaving}
                           className={cn(
                             "group flex items-start gap-4 text-left transition-all duration-300 w-full",
-                            !available && "opacity-30 cursor-not-allowed",
+                            (!available || isSaving) && "opacity-30 cursor-not-allowed",
                             active && customWidth > 160 && "translate-x-2",
                             customWidth <= 160 && "justify-center"
                           )}
@@ -193,7 +201,7 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                                 "text-sm font-bold tracking-tight transition-colors whitespace-nowrap",
                                 active ? "text-white" : "text-white/90 group-hover:text-white"
                               )}>
-                                {act.title}
+                                {ACT_TITLES[act.id]}
                               </span>
                               {active && customWidth > 200 && (
                                 <motion.p 
@@ -214,7 +222,7 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                       </TooltipTrigger>
                       <TooltipContent side="right" sideOffset={10} className="bg-slate-950 border-white/10 text-white p-3 rounded-xl shadow-2xl max-w-[200px] z-[1002]">
                         <div className="space-y-1">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">{act.label}: {act.title}</span>
+                          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">{ACT_TITLES[act.id]}</span>
                           <p className="text-[10px] text-white/50 leading-relaxed italic">{act.description}</p>
                         </div>
                       </TooltipContent>
@@ -231,8 +239,33 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mt-auto p-8 border-t border-white/5 space-y-4 bg-black/40"
+            className="mt-auto p-8 border-t border-white/5 space-y-6 bg-black/40"
           >
+            {/* Mentor Toggle */}
+            <div className="space-y-3">
+              <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em]">Studio Support</span>
+              <button
+                onClick={() => onToggleMentor?.(true)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-500 group",
+                  mentorActive 
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]" 
+                    : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:border-white/20"
+                )}
+              >
+                <div className={cn(
+                  "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-500",
+                  mentorActive ? "bg-emerald-500 text-slate-900 shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "bg-white/5 text-white/40"
+                )}>
+                  <Sparkles className={cn("w-4 h-4", mentorActive && "animate-pulse")} />
+                </div>
+                <div className="flex flex-col items-start gap-0.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider">Mentor Guide</span>
+                  <span className="text-[8px] opacity-40 font-medium">{mentorActive ? 'Retract Assistance' : 'Engage Lifeline'}</span>
+                </div>
+              </button>
+            </div>
+
             <div className="flex items-center gap-3">
                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                <span className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">Protocol: Ready</span>
