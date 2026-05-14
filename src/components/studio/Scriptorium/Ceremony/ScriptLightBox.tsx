@@ -17,7 +17,8 @@ interface ScriptLightBoxProps {
   visionLabel: string;
   visionFocus: string;
   stageDirections?: StageDirection[];
-  beatSheet?: BeatSheetItem[];
+  beatSheet?: string[];
+  generatedSoundtrackUrl?: string;
   onApply: () => void;
   isSaving?: boolean;
 }
@@ -31,6 +32,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
   visionFocus,
   stageDirections = [],
   beatSheet = [],
+  generatedSoundtrackUrl,
   onApply,
   isSaving = false
 }) => {
@@ -140,15 +142,12 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                         <div className="w-6 h-px bg-sky-500/30" />
                         <span className="text-[9px] font-black text-sky-400/60 uppercase tracking-[0.4em]">Emotional Arc</span>
                       </div>
-                      <div className="space-y-6">
+                      <div className="space-y-4">
                         {beatSheet.map((b, i) => (
-                          <div key={i} className="flex flex-col gap-2 group/beat">
-                            <div className="flex items-center gap-3">
-                              <span className="flex-none w-8 text-[9px] font-mono text-white/20">{b.timing}</span>
-                              <h4 className="text-[10px] font-black text-sky-300/80 uppercase tracking-widest group-hover/beat:text-sky-400 transition-colors">{b.beat}</h4>
-                            </div>
-                            <p className="text-[11px] text-white/30 leading-relaxed italic font-serif pl-11 group-hover/beat:text-white/40 transition-colors">
-                              {b.visual}
+                          <div key={i} className="flex items-start gap-4 group/beat">
+                            <div className="flex-none w-1 h-1 rounded-full bg-sky-500/40 mt-1.5 group-hover/beat:bg-sky-400 transition-colors" />
+                            <p className="text-[11px] text-white/40 leading-relaxed font-serif group-hover/beat:text-white/60 transition-colors">
+                              {b}
                             </p>
                           </div>
                         ))}

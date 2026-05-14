@@ -37,7 +37,7 @@ interface DirectorNoteDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   modality: 'pen' | 'voice' | null;
-  onPolish: () => void;
+  onPolish: (sensoryType?: any, value?: string) => void;
   isPolishing: boolean;
   wordCount: number;
   scriptBlocks?: ScriptBlock[];
@@ -116,7 +116,13 @@ export const DirectorNoteDrawer: React.FC<DirectorNoteDrawerProps> = ({
     <AnimatePresence>
       {isOpen && (
         <>
-
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[999] cursor-pointer"
+          />
 
           <motion.div 
             data-blueprint="DirectorNoteDrawer"
@@ -388,10 +394,12 @@ export const DirectorNoteDrawer: React.FC<DirectorNoteDrawerProps> = ({
                     onClick={handleAnalyze}
                     disabled={isAnalyzing || isProofreading || scriptBlocks.length === 0}
                     className={cn(
-                      "py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 border cursor-pointer active:scale-95",
-                      isAnalyzing 
-                        ? "bg-sky-500/10 border-sky-500/30 text-sky-400" 
-                        : "bg-sky-500/20 text-sky-400 hover:bg-sky-500/30 border-sky-400/50 hover:shadow-[0_0_20px_rgba(56,189,248,0.2)]"
+                      "py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 border active:scale-95",
+                      (isAnalyzing || isProofreading || scriptBlocks.length === 0)
+                        ? "bg-white/5 border-white/5 text-white/20 cursor-not-allowed"
+                        : isAnalyzing 
+                          ? "bg-sky-500/10 border-sky-500/30 text-sky-400 cursor-pointer" 
+                          : "bg-sky-500/20 text-sky-400 hover:bg-sky-500/30 border-sky-400/50 hover:shadow-[0_0_20px_rgba(56,189,248,0.2)] cursor-pointer"
                     )}
                   >
                     {isAnalyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Activity className="w-3 h-3" />}
@@ -409,10 +417,12 @@ export const DirectorNoteDrawer: React.FC<DirectorNoteDrawerProps> = ({
                     onClick={handleProofread}
                     disabled={isAnalyzing || isProofreading || scriptBlocks.length === 0}
                     className={cn(
-                      "py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 border cursor-pointer active:scale-95",
-                      isProofreading 
-                        ? "bg-red-500/10 border-red-500/30 text-red-400" 
-                        : "bg-red-500/20 text-red-400 hover:bg-red-500/30 border-red-400/50 hover:shadow-[0_0_20px_rgba(248,113,113,0.2)]"
+                      "py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 border active:scale-95",
+                      (isAnalyzing || isProofreading || scriptBlocks.length === 0)
+                        ? "bg-white/5 border-white/5 text-white/20 cursor-not-allowed"
+                        : isProofreading 
+                          ? "bg-red-500/10 border-red-500/30 text-red-400 cursor-pointer" 
+                          : "bg-red-500/20 text-red-400 hover:bg-red-500/30 border-red-400/50 hover:shadow-[0_0_20px_rgba(248,113,113,0.2)] cursor-pointer"
                     )}
                   >
                     {isProofreading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldCheck className="w-3 h-3" />}
@@ -430,7 +440,7 @@ export const DirectorNoteDrawer: React.FC<DirectorNoteDrawerProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  onClick={onPolish}
+                  onClick={() => onPolish('polish')}
                   disabled={isPolishing}
                   className={cn(
                     "w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(0,0,0,0.5)] border cursor-pointer active:scale-95",

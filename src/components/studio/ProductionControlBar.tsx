@@ -98,7 +98,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
     actions,
     lastDetectedAnchor,
     isReviewing,
-    isGeneratingDrafts
+    isGeneratingDrafts,
+    isDirectorOpen
   } = useStudioState();
   const [lastClickTime, setLastClickTime] = React.useState(0);
   const [isSurging, setIsSurging] = React.useState(false);
@@ -241,9 +242,9 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
   return (
     <div className={cn(
-      "z-[9999] w-full max-w-4xl px-6 pointer-events-none transition-all duration-700",
+      "z-[9999] w-full max-w-4xl px-6 pointer-events-none transition-all duration-500 ease-in-out",
       isDocked ? "relative mx-auto -mt-12 pb-2" : "fixed bottom-12 left-1/2 -translate-x-1/2",
-      isReviewing && "opacity-10 blur-sm grayscale scale-95 select-none"
+      (isReviewing || isDirectorOpen) && "opacity-0 invisible blur-xl grayscale scale-95 select-none pointer-events-none"
     )}>
       <motion.div 
         data-blueprint="ProductionControlBar"
@@ -261,7 +262,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
           opacity: { duration: 0.3 }
         }}
         className={cn(
-          "pointer-events-auto bg-slate-950/80 backdrop-blur-3xl border border-white/10 p-5 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] ring-1 ring-white/5 flex items-center justify-between gap-8 transition-all",
+          "bg-slate-950/80 backdrop-blur-3xl border border-white/10 p-5 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] ring-1 ring-white/5 flex items-center justify-between gap-8 transition-all",
+          (isReviewing || isDirectorOpen) ? "pointer-events-none" : "pointer-events-auto",
           !isComplete && currentStage !== 4 && "border-rose-500/20"
         )}
       >
@@ -563,10 +565,24 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                 </motion.button>
               </div>
             </TooltipTrigger>
-              <TooltipContent side="top" sideOffset={12} className="bg-rose-950 border-rose-500/50 text-rose-200 text-[10px] font-bold uppercase tracking-widest px-4 py-3 mb-4 rounded-xl shadow-2xl z-[9999]">
+              <TooltipContent 
+                side="top" 
+                sideOffset={12} 
+                className={cn(
+                  "border text-[10px] font-bold uppercase tracking-widest px-4 py-3 mb-4 rounded-xl shadow-2xl z-[9999]",
+                  (isComplete && !isLowClarity)
+                    ? "bg-emerald-950 border-emerald-500/50 text-emerald-200"
+                    : "bg-rose-950 border-rose-500/50 text-rose-200"
+                )}
+              >
                 <div className="flex flex-col gap-1">
                   <span className="flex items-center gap-2">
-                    <AlertCircle className="w-3 h-3" /> Requirements Not Met
+                    {isComplete && !isLowClarity ? (
+                      <CheckCircle2 className="w-3 h-3" />
+                    ) : (
+                      <AlertCircle className="w-3 h-3" />
+                    )}
+                    {isComplete && !isLowClarity ? "Production Ready" : "Requirements Not Met"}
                   </span>
                   <span className="text-[9px] opacity-60 normal-case">
                     {getRequirementTooltip()}

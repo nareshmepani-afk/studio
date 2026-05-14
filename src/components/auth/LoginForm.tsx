@@ -10,8 +10,13 @@ import { Label } from '@/components/ui/label';
 import { Mail, Lock, LogIn, Ticket, Sparkles, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+import { useRecaptcha } from '@/hooks/useRecaptcha';
+import { firebaseConfig } from '@/lib/config-schema';
+import { validateAuthAttempt } from '@/actions/authActions';
+
 const LoginForm = () => {
   const { login } = useAuth();
+  const { executeAction } = useRecaptcha(firebaseConfig.recaptchaSiteKey);
   const [email, setEmail] = useState('test@example.com');
   const [password, setPassword] = useState('password');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,6 +28,17 @@ const LoginForm = () => {
     setIsSubmitting(true);
 
     try {
+      // Execute reCAPTCHA Action
+      const token = await executeAction('LOGIN');
+      console.log("[LoginForm] reCAPTCHA token generated:", !!token);
+      
+      if (!token) {
+        throw new Error("Failed to generate security token. Please check your internet connection.");
+      }
+      
+      // Verify token on the server before proceeding
+      await validateAuthAttempt(token, 'LOGIN', email);
+      
       await login(email, password);
     } catch (error: any) {
       console.error("Login failed from form submission:", error?.message || error);

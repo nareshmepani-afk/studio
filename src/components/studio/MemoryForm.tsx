@@ -32,6 +32,8 @@ import {
   ScriptLightBox 
 } from './Scriptorium/Ceremony/SelectionDeck';
 import { useMemoryPersistence } from '@/hooks/studio/useMemoryPersistence';
+import { ArchiveDrawer } from './ArchiveDrawer';
+import { Lock } from 'lucide-react';
 
 const SEED_CATALOG: Record<string, string[]> = {
   'p1': [
@@ -106,12 +108,14 @@ const StudioSelect = ({
   value, 
   onChange, 
   items, 
-  placeholder = "-" 
+  placeholder = "-",
+  disabled = false
 }: { 
   value: string, 
   onChange: (v: string) => void, 
   items: { value: string, label: string }[], 
-  placeholder?: string 
+  placeholder?: string,
+  disabled?: boolean
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -133,8 +137,12 @@ const StudioSelect = ({
     <div className="relative" ref={containerRef}>
       <button 
         type="button"
+        disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 text-[13px] font-black uppercase tracking-[0.3em] text-white hover:text-emerald-400 transition-all focus:outline-none min-w-[32px] justify-start"
+        className={cn(
+          "flex items-center gap-2 text-[13px] font-black uppercase tracking-[0.3em] text-white hover:text-emerald-400 transition-all focus:outline-none min-w-[32px] justify-start",
+          disabled && "opacity-40 cursor-not-allowed pointer-events-none"
+        )}
       >
         <span className={cn(value === 'none' && "text-white/20")}>
           {selectedItem ? selectedItem.label : placeholder}
@@ -271,7 +279,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const [lastAppliedType, setLastAppliedType] = useState<CatalystType | null>(null);
   
   const { 
-    actions: globalActions, 
+    actions: { setIsDirectorOpen, ...globalActions }, 
     activeDrawer, 
     pendingAnchor, 
     draggingCatalyst,
@@ -279,7 +287,9 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     reviewDrafts,
     isGeneratingDrafts,
     synthesisError,
-    selectedVision
+    selectedVision,
+    polishedOriginalHook,
+    isDirectorOpen
   } = useGlobalStudioState();
 
   const isCleanMode = productionStage === 0 && !isReviewing;
@@ -316,6 +326,13 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const [isSaturated, setIsSaturated] = useState(false);
   const [aiTakes, setAiTakes] = useState<{ poetic?: string, direct?: string, nostalgic?: string } | null>(null);
   const [structuredScript, setStructuredScript] = useState<StructuredScript | undefined>(data?.structuredScript || undefined);
+  const [originalHook, setOriginalHook] = useState<string>(data?.originalHook || '');
+  const [scriptHistory, setScriptHistory] = useState<any[]>(data?.scriptHistory || []);
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const { isProductionLocked: globalLocked, actions: { setIsProductionLocked: setGlobalLocked } } = useGlobalStudioState();
+  
+  // Local sync for persistence
+  const isProductionLocked = data?.isProductionLocked || globalLocked;
 
   // Initialize Persistence
 
@@ -342,6 +359,9 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     billingLine,
     aiTakes,
     structuredScript,
+    originalHook,
+    scriptHistory,
+    isProductionLocked,
     setDescription,
     isReviewing,
     isGeneratingDrafts
@@ -441,10 +461,29 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
           setScriptBlocks(data.scriptBlocks);
        }
     }
-  }, [data, lastFocusedField, title, description, location, scriptBlocks]);
+
+    // Sync Production & Archival State (Zero-Loss Mandate)
+    if (data?.structuredScript && JSON.stringify(data.structuredScript) !== JSON.stringify(structuredScript)) {
+      setStructuredScript(data.structuredScript);
+    }
+    if (data?.originalHook !== undefined && data.originalHook !== originalHook) {
+      setOriginalHook(data.originalHook);
+    }
+    if (data?.scriptHistory && JSON.stringify(data.scriptHistory) !== JSON.stringify(scriptHistory)) {
+      setScriptHistory(data.scriptHistory);
+    }
+    if (data?.sensory && JSON.stringify(data.sensory) !== JSON.stringify(sensoryValues)) {
+      setSensoryValues(data.sensory);
+    }
+    if (data?.aiTakes && JSON.stringify(data.aiTakes) !== JSON.stringify(aiTakes)) {
+      setAiTakes(data.aiTakes);
+    }
+  }, [
+    data, lastFocusedField, title, description, location, scriptBlocks, 
+    structuredScript, originalHook, scriptHistory, sensoryValues, aiTakes
+  ]);
 
 
-  const { isDirectorOpen, setIsDirectorOpen } = useStudioState(data?.prose || '');
   
   // Create refs for sensory inputs to allow programmatic focus
   const sensoryRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
@@ -934,6 +973,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 </motion.div>
               )}
 
+              {/* Director's Note Hidden for Version X */}
+              {/* 
               <button 
                 onClick={() => setIsDirectorOpen(!isDirectorOpen)}
                 className={cn(
@@ -950,6 +991,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_#10b981]" />
                 )}
               </button>
+              */}
             </div>
           </div>
         )}
@@ -962,7 +1004,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
             onPolish={handlePolishDescription}
             isPolishing={isPolishingDesc}
             wordCount={wordCount}
-            scriptBlocks={scriptBlocks}
+            scriptBlocks={scriptBlocks.length > 0 ? scriptBlocks : (description ? [{ id: 'story-hook', text: description, type: 'hook', catalysts: [] }] : [])}
           />
 
           {activeDrawer && (
@@ -1070,16 +1112,38 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 ) : isReviewing ? (
                   <SelectionDeck 
                     drafts={reviewDrafts || []} 
-                    onSelect={(text, type, label) => {
+                    onSelect={(text, type, label, structured) => {
+                      // COMMIT HANDSHAKE (Director's Lock)
+                      if (!originalHook) {
+                        setOriginalHook(polishedOriginalHook || description);
+                      }
+                      
+                      const newHistoryItem = {
+                        timestamp: new Date().toISOString(),
+                        text: description,
+                        visionType: type,
+                        visionLabel: label
+                      };
+                      setScriptHistory((prev: any[]) => [...prev, newHistoryItem]);
+                      
                       setDescription(text || '');
+                      if (structured) {
+                        setStructuredScript(structured);
+                      }
+                      
+                      setGlobalLocked(true);
+
                       globalActions.setSelectedVision(type as any, label);
                       globalActions.setIsReviewing(false);
                       // ADVANCE MANDATE: Seal the vision and move to Act II (The Weave)
                       setProductionStage?.(1); 
+                      
+                      // Manual Flush to ensure Firestore sync
+                      flush();
                     }} 
                     onPreview={(draft) => setSelectedDraftForPreview(draft)}
                     selectedText={description || ''}
-                    originalHook={description}
+                    originalHook={polishedOriginalHook || description}
                   />
                 ) : (
                   <div className="act-1-content">
@@ -1103,7 +1167,11 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         onChange={(e) => { setTitle(e.target.value); onActivity?.(); }}
                         onFocus={() => { setLastFocusedField('title'); onActivity?.(); }}
                         placeholder="GIVE YOUR MEMORY A CINEMATIC TITLE..."
-                        className="w-full bg-transparent border-none text-4xl lg:text-5xl font-serif text-white/90 placeholder:text-white/5 focus:outline-none focus:ring-0 italic transition-all cursor-[inherit]"
+                        readOnly={isProductionLocked}
+                        className={cn(
+                          "w-full bg-transparent border-none text-4xl lg:text-5xl font-serif text-white/90 placeholder:text-white/5 focus:outline-none focus:ring-0 italic transition-all cursor-[inherit]",
+                          isProductionLocked && "opacity-60 cursor-not-allowed"
+                        )}
                       />
                     </div>
 
@@ -1163,7 +1231,11 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                 onChange={(e) => { setLocation(e.target.value); onActivity?.(); }}
                                 onFocus={() => setLastFocusedField('metadata')}
                                 placeholder="WHERE DID IT HAPPEN?"
-                                className="bg-transparent border-none text-[11px] font-black uppercase tracking-[0.15em] text-white focus:text-emerald-400 focus:outline-none w-64 placeholder:text-white/40 transition-all"
+                                readOnly={isProductionLocked}
+                                className={cn(
+                                  "bg-transparent border-none text-[11px] font-black uppercase tracking-[0.15em] text-white focus:text-emerald-400 focus:outline-none w-64 placeholder:text-white/40 transition-all",
+                                  isProductionLocked && "opacity-60 cursor-not-allowed"
+                                )}
                               />
                             </div>
                             <div className="w-px h-8 bg-white/5 mx-2" />
@@ -1174,7 +1246,11 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                 onChange={(e) => { setCountry(e.target.value); onActivity?.(); }}
                                 onFocus={() => setLastFocusedField('metadata')}
                                 placeholder="REGION"
-                                className="bg-transparent border-none text-[11px] font-black uppercase tracking-[0.15em] text-white focus:text-emerald-400 focus:outline-none w-32 placeholder:text-white/40 transition-all"
+                                readOnly={isProductionLocked}
+                                className={cn(
+                                  "bg-transparent border-none text-[11px] font-black uppercase tracking-[0.15em] text-white focus:text-emerald-400 focus:outline-none w-32 placeholder:text-white/40 transition-all",
+                                  isProductionLocked && "opacity-60 cursor-not-allowed"
+                                )}
                               />
                             </div>
                           </div>
@@ -1197,6 +1273,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                 value={day} 
                                 onChange={(v) => { setDay(v); onActivity?.(); }} 
                                 items={DAYS.map(d => ({ value: d, label: d }))} 
+                                disabled={isProductionLocked}
                               />
                             </div>
                             <div className="w-px h-8 bg-white/5 mx-1" />
@@ -1209,6 +1286,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                   value: (i + 1).toString(), 
                                   label: m.substring(0, 3).toUpperCase() 
                                 }))} 
+                                disabled={isProductionLocked}
                               />
                             </div>
                             <div className="w-px h-8 bg-white/5 mx-1" />
@@ -1218,6 +1296,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                 value={year} 
                                 onChange={(v) => { setYear(v); onActivity?.(); }} 
                                 items={YEARS.map(y => ({ value: y, label: y }))} 
+                                disabled={isProductionLocked}
                               />
                             </div>
                           </div>
@@ -1249,8 +1328,37 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                   className="top-full mt-4 left-0" 
                                 />
                               )}
-                              <h3 className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] flex items-center gap-4">
-                                Story Hook <RequiredIndicator />
+                              <h3 className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] flex items-center justify-between gap-4 w-full">
+                                <div className="flex items-center gap-4">
+                                  Story Hook <RequiredIndicator />
+                                </div>
+                                
+                                <div className="flex items-center gap-2">
+                                  {isProductionLocked && (
+                                    <motion.button
+                                      initial={{ opacity: 0, scale: 0.9 }}
+                                      animate={{ opacity: 1, scale: 1 }}
+                                      onClick={() => {
+                                        if (confirm("WARNING: Releasing the lock will allow manual edits but may de-sync your Act II metadata if you change the narrative structure. Continue?")) {
+                                          setGlobalLocked(false);
+                                        }
+                                      }}
+                                      className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-500 text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-2 transition-all"
+                                    >
+                                      <Lock className="w-2 h-2" />
+                                      Release Production Lock
+                                    </motion.button>
+                                  )}
+                                  
+                                  <button 
+                                    onClick={() => setIsArchiveOpen(true)}
+                                    className="px-3 py-1 bg-white/5 border border-white/10 hover:bg-white/10 text-white/40 hover:text-white text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-2 transition-all"
+                                  >
+                                    <History className="w-2.5 h-2.5" />
+                                    Archive
+                                  </button>
+                                </div>
+                                
                                 {(() => {
                                   if (typeof window === 'undefined') return null;
                                   const id = data?.id || data?.promptId || 'unknown';
@@ -1589,6 +1697,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                              }}
                              onFocus={() => setLastFocusedField('description')}
                              onBlur={handleCaretUpdate}
+                             readOnly={isProductionLocked}
                              actions={globalActions}
                            />
                         </div>
@@ -1917,7 +2026,19 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
           </AnimatePresence>
         </div>
       </div>
-    </LayoutGroup>
+        {/* Archive Drawer */}
+        <ArchiveDrawer 
+          isOpen={isArchiveOpen}
+          onClose={() => setIsArchiveOpen(false)}
+          originalHook={originalHook}
+          scriptHistory={scriptHistory}
+          onRestore={(text) => {
+            setDescription(text);
+            setIsArchiveOpen(false);
+            toast.success("Script Version Restored");
+          }}
+        />
+      </LayoutGroup>
 
     <ScriptLightBox 
       isOpen={!!selectedDraftForPreview}
@@ -1929,8 +2050,23 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       visionFocus={selectedDraftForPreview?.focus || ''}
       stageDirections={selectedDraftForPreview?.stageDirections || []}
       beatSheet={selectedDraftForPreview?.beatSheet || []}
+      generatedSoundtrackUrl={selectedDraftForPreview?.generatedSoundtrackUrl}
       onApply={() => {
         if (selectedDraftForPreview) {
+          // COMMIT HANDSHAKE (Director's Lock)
+          if (!originalHook) {
+            setOriginalHook(description);
+          }
+          
+          const newHistoryItem = {
+            timestamp: new Date().toISOString(),
+            text: description,
+            visionType: selectedDraftForPreview.visionType.toLowerCase(),
+            visionLabel: selectedDraftForPreview.visionType
+          };
+          setScriptHistory((prev: any[]) => [...prev, newHistoryItem]);
+          setGlobalLocked(true);
+
           const type = selectedDraftForPreview.visionType.includes("Soul") ? "soul" : 
                        selectedDraftForPreview.visionType.includes("Atmospheric") ? "sensory" : 
                        selectedDraftForPreview.visionType.includes("Cinematic") ? "cinematic" : "sensory";
@@ -1938,7 +2074,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
           const structured = {
             cleanScript: selectedDraftForPreview.cleanScript || '',
             stageDirections: selectedDraftForPreview.stageDirections || [],
-            beatSheet: selectedDraftForPreview.beatSheet || []
+            beatSheet: selectedDraftForPreview.beatSheet || [],
+            generatedSoundtrackUrl: selectedDraftForPreview.generatedSoundtrackUrl
           };
 
           setDescription(structured.cleanScript);

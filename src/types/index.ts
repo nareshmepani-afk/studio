@@ -50,7 +50,8 @@ export interface BeatSheetItem {
 export interface StructuredScript {
   cleanScript: string;
   stageDirections: StageDirection[];
-  beatSheet: BeatSheetItem[];
+  beatSheet: string[];
+  generatedSoundtrackUrl?: string;
 }
 
 export interface Memory {
@@ -107,7 +108,15 @@ export interface Memory {
     color: string;
     description: string;
   }[];
-  structuredScript?: StructuredScript;
+  structuredScript?: StructuredScript | null;
+  originalHook?: string;
+  scriptHistory?: {
+    timestamp: string;
+    text: string;
+    visionType: string;
+    visionLabel?: string;
+  }[];
+  isProductionLocked?: boolean;
 }
 
 export interface TranscriptSegment {

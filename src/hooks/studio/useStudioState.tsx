@@ -42,11 +42,13 @@ interface StudioState {
     focus: string; 
     cleanScript: string; 
     stageDirections: Array<{ type: 'visual' | 'audio' | 'beat', content: string, timecode: string }>;
-    beatSheet: Array<{ beat: string; timing: string; visual: string }>;
+    beatSheet: string[];
   }> | null;
+  polishedOriginalHook: string | null;
   modality: 'pen' | 'voice' | null;
   currentStage: number;
   isDirectorOpen: boolean;
+  isProductionLocked: boolean;
   synthesisError: string | null;
   dispatcher?: {
     addCatalyst?: (blockId: string, type: CatalystType, value?: string) => { collisionDetected: boolean };
@@ -79,12 +81,14 @@ interface StudioActions {
   setDraggingCatalyst: (type: CatalystType | null | 'polish') => void;
   setAppliedCatalysts: (types: CatalystType[]) => void;
   setIsReviewing: (val: boolean) => void;
-  setReviewDrafts: (drafts: any[] | null) => void;
+  setReviewDrafts: (drafts: any[] | null | ((prev: any[] | null) => any[] | null)) => void;
+  setPolishedOriginalHook: (hook: string | null) => void;
   setIsGeneratingDrafts: (val: boolean) => void;
   setSelectedVision: (type: 'soul' | 'sensory' | 'cinematic' | null, label: string | null) => void;
   setModality: (mod: 'pen' | 'voice' | null) => void;
   setStage: (stage: number) => void;
   setIsDirectorOpen: (open: boolean) => void;
+  setIsProductionLocked: (locked: boolean) => void;
   setSynthesisError: (error: string | null) => void;
 }
 
@@ -111,16 +115,24 @@ function URLStateSync({
     // Act parsing
     const actParam = searchParams.get('act');
     const ACT_MAP = ['hook', 'weave', 'capture', 'cut', 'premiere'];
-    const actIndex = actParam ? Math.max(0, ACT_MAP.indexOf(actParam)) : 0;
+    const actIndex = actParam ? ACT_MAP.indexOf(actParam) : -1;
 
     // Modality parsing
     const modParam = searchParams.get('modality');
-    const modality = modParam === 'scribe' ? 'pen' : (modParam === 'vocal' ? 'voice' : null);
+    const modality = modParam === 'scribe' ? 'pen' : (modParam === 'vocal' ? 'voice' : undefined);
 
     // Director parsing
-    const isDirectorOpen = searchParams.get('director') === 'true';
+    const directorParam = searchParams.get('director');
+    const isDirectorOpen = directorParam === 'true';
 
-    onSync(sessionId, finalMode, promptId, actIndex, modality as any, isDirectorOpen);
+    onSync(
+      sessionId, 
+      finalMode, 
+      promptId, 
+      actIndex === -1 ? undefined : actIndex, 
+      modality as any, 
+      isDirectorOpen
+    );
   }, [searchParams, onSync]);
 
   return null;
@@ -155,7 +167,9 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     modality: null,
     currentStage: 0,
     isDirectorOpen: false,
+    isProductionLocked: false,
     synthesisError: null,
+    polishedOriginalHook: null,
     dispatcher: undefined,
     ...(initialState || {}),
   });
@@ -231,6 +245,8 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
             if (act !== undefined && prev.currentStage !== act) updates.currentStage = act;
             if (modality !== undefined && prev.modality !== modality) updates.modality = modality;
             if (isDirectorOpen !== undefined && prev.isDirectorOpen !== isDirectorOpen) updates.isDirectorOpen = isDirectorOpen;
+            // Handle explicit false (param removed)
+            if (isDirectorOpen === false && prev.isDirectorOpen === true) updates.isDirectorOpen = false;
 
             if (Object.keys(updates).length === 0) return prev;
             console.log("[useStudioState] Applying external URL sync:", updates);
@@ -393,7 +409,11 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
       return { ...s, appliedCatalystTypes: types };
     }),
     setIsReviewing: (val) => setState(s => ({ ...s, isReviewing: val })),
-    setReviewDrafts: (drafts) => setState(s => ({ ...s, reviewDrafts: drafts })),
+    setReviewDrafts: (drafts) => setState(s => ({ 
+      ...s, 
+      reviewDrafts: typeof drafts === 'function' ? drafts(s.reviewDrafts) : drafts 
+    })),
+    setPolishedOriginalHook: (hook) => setState(s => ({ ...s, polishedOriginalHook: hook })),
     setIsGeneratingDrafts: (val) => setState(s => ({ ...s, isGeneratingDrafts: val })),
     setSelectedVision: (type, label) => setState(s => ({ ...s, selectedVision: { type, label } })),
     setModality: (mod) => setState(s => ({ ...s, modality: mod })),
@@ -402,6 +422,7 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
       setState(s => ({ ...s, currentStage: stage }));
     },
     setIsDirectorOpen: (open) => setState(s => ({ ...s, isDirectorOpen: open })),
+    setIsProductionLocked: (locked) => setState(s => ({ ...s, isProductionLocked: locked })),
     setSynthesisError: (error) => setState(s => ({ ...s, synthesisError: error })),
   }), []);
 

@@ -16,6 +16,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { usePrimaryFocus } from '@/hooks/studio/usePrimaryFocus';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRecaptcha } from '@/hooks/useRecaptcha';
+import { firebaseConfig } from '@/lib/config-schema';
+import { validateAuthAttempt } from '@/actions/authActions';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -23,6 +26,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const { register, loading: authLoading } = useAuth();
+  const { executeAction } = useRecaptcha(firebaseConfig.recaptchaSiteKey);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   
@@ -50,6 +54,17 @@ export default function RegisterPage() {
 
     setIsSubmitting(true);
     try {
+      // Execute reCAPTCHA Action
+      const token = await executeAction('REGISTER');
+      console.log("[RegisterPage] reCAPTCHA token generated:", !!token);
+      
+      if (!token) {
+        throw new Error("Failed to generate security token. Please check your internet connection.");
+      }
+      
+      // Verify token on the server before proceeding
+      await validateAuthAttempt(token, 'REGISTER', email);
+      
       await register(name, email, password);
     } catch (error) {
       console.error("Register page submit error:", error);

@@ -32,7 +32,8 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
   onFocus, 
   onBlur,
   actions,
-  hideAnchors = false
+  hideAnchors = false,
+  readOnly = false
 }, ref) => {
   const isHook = block.type === 'hook';
   
@@ -195,7 +196,8 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
       className={cn(
         "group relative flex items-start gap-8 py-2 transition-all duration-300 rounded-xl px-4",
         isDragging && "opacity-40 z-50",
-        isActive && "bg-white/[0.03]"
+        isActive && "bg-white/[0.03]",
+        readOnly && "bg-[#0a0a0f] border-zinc-800/50 shadow-inner"
       )}
     >
       <div className="relative w-full">
@@ -214,6 +216,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
           onPaste={handlePaste}
           onFocus={onFocus}
           onBlur={onBlur}
+          readOnly={readOnly}
           onClick={(e) => e.stopPropagation()}
           style={{ ...RESOLVED_STYLES, color: 'transparent', caretColor: '#10b981' }}
           className="relative z-[50] w-full resize-none overflow-hidden bg-transparent selection:bg-emerald-500/30"

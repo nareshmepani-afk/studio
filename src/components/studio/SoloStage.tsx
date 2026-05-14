@@ -524,12 +524,9 @@ export default function SoloStage({
                       <span className="text-[9px] font-black uppercase tracking-widest">Beat Sheet</span>
                     </div>
                     {data.structuredScript.beatSheet.map((item, i) => (
-                      <div key={i} className="space-y-1 group/beat">
-                        <div className="flex items-center justify-between text-[8px] font-mono text-white/20 group-hover/beat:text-white/40">
-                          <span>{item.timing}</span>
-                          <span className="uppercase tracking-tighter">Beat {i+1}</span>
-                        </div>
-                        <p className="text-[10px] font-bold text-white/60 leading-tight group-hover/beat:text-sky-300 transition-colors">{item.beat}</p>
+                      <div key={i} className="flex items-start gap-3 group/beat">
+                        <div className="w-1 h-1 rounded-full bg-sky-500/30 mt-1.5 group-hover/beat:bg-sky-400 transition-colors" />
+                        <p className="text-[10px] font-bold text-white/50 leading-tight group-hover/beat:text-sky-300 transition-colors">{item}</p>
                       </div>
                     ))}
                   </div>

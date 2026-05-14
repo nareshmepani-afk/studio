@@ -583,6 +583,8 @@ export async function analyzeCompositionAnchors(blocks: ScriptBlock[]): Promise<
 export async function polishDescription(description: string, options: { sensoryFocus?: string } = {}): Promise<string> {
   console.log(`[AI Weaver] polishDescription triggered. Payload length: ${description?.length || 0}`);
   
+  // Safety guard for Next.js Server Action serialization
+  const sensoryFocus = (typeof options.sensoryFocus === 'string') ? options.sensoryFocus : undefined;
   if (!description || description.trim().length < 3) {
     console.log("[AI Weaver] Description too short to polish. Skipping.");
     return description || "";
@@ -599,7 +601,7 @@ export async function polishDescription(description: string, options: { sensoryF
     
     [INSTRUCTIONS]
     - Improve the rhythm and sensory weight of the prose.
-    - ${options.sensoryFocus ? `Focus specifically on infusing ${options.sensoryFocus} details.` : 'Ensure a balanced emotional clarity.'}
+    - ${sensoryFocus ? `Focus specifically on infusing ${sensoryFocus} details.` : 'Ensure a balanced emotional clarity.'}
     - Keep it concise (under 80 words).
     - Maintain the user's core intent but make it feel like a professional film treatment.
     - BANNED: AI clichés like "tapestry," "odyssey," "whispers," "vibrant," "testament," "unfolding."
@@ -687,6 +689,7 @@ export async function proofreadScript(blocks: ScriptBlock[]): Promise<Array<{
  * Generates three distinct variations of the story hook for the Director's Cut ceremony.
  */
 export async function generateDraftOptions(description: string): Promise<{
+  polishedOriginalHook: string;
   visions: Array<{
     visionType: string;
     focus: string;
@@ -696,11 +699,7 @@ export async function generateDraftOptions(description: string): Promise<{
       content: string;
       timecode: string;
     }>;
-    beatSheet: Array<{
-      beat: string;
-      timing: string;
-      visual: string;
-    }>;
+    beatSheet: string[];
   }>
 }> {
   console.log(`[AI Weaver] generateDraftOptions (Envision & Expand) triggered for: ${description.substring(0, 30)}...`);
@@ -708,46 +707,40 @@ export async function generateDraftOptions(description: string): Promise<{
   const ai = await getAI();
   
   const prompt = `
-    ACT AS: A Master Cinematic Dramaturg and Director.
+    ACT AS: A Master Cinematic Dramaturg, Script Editor, and British English Localiser.
     INPUT MEMORY: ${description}
 
     TASK:
-    Expand the provided memory into THREE distinct, production-ready video diary scripts. 
-    Do NOT summarize. You must Envision and Expand the subtext, sensory details, and emotional gravity to create a "North Star" narrative. 
+    1. PRE-PROCESS & POLISH: Analyze the input memory. Perform a rigorous spelling and grammar check. Apply a mild AI text enhancement to improve rhythm and emotional clarity while keeping the core facts unchanged. Save this as 'polishedOriginalHook'.
+    2. SCRIPT GENERATION: Expand the polished memory into THREE distinct, production-ready video diary scripts (500–750 words each) following a clear 3-Act arc (Roots, The Deep Weave, Legacy).
 
-    MANDATORY RULES:
-    1. WORD COUNT: Each script MUST be between 500 and 750 words. Use pacing, pauses, and deep environmental descriptions (e.g., the texture of the soil, the sound of the language) to achieve this length authentically without hallucinating fake events.
-    2. 3-ACT STRUCTURE: Every script must follow:
-       - Act I (Roots): Grounding the memory in time and place.
-       - Act II (The Deep Weave): The longest section (~350 words), focusing on the struggle, labor, and core values.
-       - Act III (Legacy): The reflection and forward-looking resolution.
-    3. DECOUPLED METADATA: Do NOT embed tags in the script. Provide a clean script and separate stage directions.
-    4. TRUTH PRESERVATION: Never change the locations, facts, or cultural specifics provided by the user.
+    MANDATORY EDITING CONSTRAINTS:
+    - LINGUISTIC COMPLIANCE: All outputted text, scripts, sidebars, and metadata MUST strictly use UK English spelling conventions (e.g., labour, colour, travelled, practised, centre). 
+    - QUALITY ASSURANCE: Perform an implicit spell-check and grammar verification on all three generated script variations before finalizing output.
+    - THE SPOKEN WORD RULE: The narrative text blocks MUST containing ONLY the exact words spoken by the narrator. You are strictly forbidden from writing cinematic placeholders, camera cues, or scene setups (e.g., do NOT write "The camera sweeps...", "We see...", "Scene opens on...") inside the script prose. All visual or musical cues must be parsed entirely out into the stageDirections array.
 
-    THE THREE VISIONS TO GENERATE:
-    1. "The Soul-Print" (Focus: Legacy, internal resilience, unspoken strength).
-    2. "The Atmospheric Weave" (Focus: Sensory details, the physical environment, textures, sounds, and manual labor).
-    3. "The Cinematic Cut" (Focus: Epic movement, migration, rhythmic and sweeping pacing across generations).
+    THE THREE VISIONS:
+    1. "The Soul-Print" (Focus: Legacy, internal resilience, unspoken generational strength).
+    2. "The Atmospheric Weave" (Focus: Visceral sensory details, physical environment, textures, and manual labor).
+    3. "The Cinematic Cut" (Focus: Epic generational movement, migration pacing, and structural narrative rhythm).
 
-    OUTPUT FORMAT:
-    Return a valid JSON object matching this schema exactly. 
-    
-    IMPORTANT: The "cleanScript" field must be PURE NARRATIVE. 
-    NO brackets [ ], NO tags < >, NO musical cues, and NO stage directions within this string.
-    All directorial cues MUST be placed in the "stageDirections" array.
-
+    OUTPUT SCHEMA FORMAT:
+    Return a valid JSON object matching this schema exactly:
     {
+      "polishedOriginalHook": "String (The corrected, grammar-checked, and mildly enhanced version of the user's raw input in UK English)",
       "visions": [
         {
-          "visionType": "String (e.g., 'The Atmospheric Weave')",
-          "focus": "String (Short description of the vibe)",
-          "cleanScript": "String (The full 500-750 word script. PURE PROSE ONLY. NO TAGS.)",
+          "visionType": "String ('The Soul-Print' | 'The Atmospheric Weave' | 'The Cinematic Cut')",
+          "focus": "String (Short description of the theme)",
+          "cleanScript": "String (The pure 500-750 word spoken narrative script, perfectly spell-checked, in UK English, completely free of embedded stage cues)",
           "stageDirections": [
-            { "type": "visual | audio | beat", "content": "Directorial cue content", "timecode": "Approximate time (e.g. 1:15)" }
+            {
+              "timecode": "String (e.g., '0:00', '0:45')",
+              "type": "String ('visual' | 'audio' | 'beat')",
+              "content": "String (Cinematic direction, camera movements, or audio cues written in UK English)"
+            }
           ],
-          "beatSheet": [
-            { "beat": "Emotional milestone", "timing": "0:00", "visual": "Brief visual cue" }
-          ]
+          "beatSheet": ["Array of Strings (5-6 high-impact emotional bullet points for the teleprompter guide)"]
         }
       ]
     }
@@ -762,6 +755,7 @@ export async function generateDraftOptions(description: string): Promise<{
           model: 'googleai/gemini-2.0-flash',
           output: {
             schema: z.object({
+              polishedOriginalHook: z.string(),
               visions: z.array(z.object({
                 visionType: z.string(),
                 focus: z.string(),
@@ -771,11 +765,7 @@ export async function generateDraftOptions(description: string): Promise<{
                   content: z.string(),
                   timecode: z.string()
                 })),
-                beatSheet: z.array(z.object({
-                  beat: z.string(),
-                  timing: z.string(),
-                  visual: z.string()
-                })),
+                beatSheet: z.array(z.string()),
               }))
             }),
           },

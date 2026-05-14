@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 
 interface SelectionDeckProps {
   drafts: any[];
-  onSelect: (text: string, type: string, label: string) => void;
+  onSelect: (text: string, type: string, label: string, structured?: any) => void;
   onPreview: (draft: any) => void;
   selectedText: string;
   originalHook?: string; // Passed from MemoryForm
@@ -121,7 +121,7 @@ export const SelectionDeck = ({
       return `--- ${d.visionType.toUpperCase()} ---
 Focus: ${d.focus}
 Stage Directions: ${d.stageDirections?.map((s: any) => `\n  • [${s.timecode}] (${s.type}) ${s.content}`).join("") || "None"}
-Beat Sheet: ${d.beatSheet?.map((b: any) => `\n  • [${b.timing}] ${b.beat} (Visual: ${b.visual})`).join("") || "None"}
+Beat Sheet: ${d.beatSheet?.map((b: string) => `\n  • ${b}`).join("") || "None"}
 
 Text:
 ${d.cleanScript}

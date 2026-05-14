@@ -24,7 +24,57 @@ export const CinemaMonitor: React.FC<CinemaMonitorProps> = ({
   isSaving = false,
   className
 }) => {
-  const { cleanScript, stageDirections = [], beatSheet = [] } = structuredScript;
+  const { cleanScript, stageDirections = [], beatSheet = [], generatedSoundtrackUrl } = structuredScript;
+  const [audioStatus, setAudioStatus] = React.useState<'loading' | 'playing' | 'error' | 'none'>('none');
+
+  // --- CINEMATIC SOUNDSTACK ORCHESTRATION ---
+  React.useEffect(() => {
+    if (!generatedSoundtrackUrl) {
+      setAudioStatus('none');
+      return;
+    }
+
+    setAudioStatus('loading');
+    const audio = new Audio(generatedSoundtrackUrl);
+    audio.loop = true;
+    audio.volume = 0;
+
+    const startAudio = async () => {
+      try {
+        await audio.play();
+        setAudioStatus('playing');
+        
+        // 5-Second Cinematic Fade-in (0.0 -> 0.4)
+        const duration = 5000;
+        const targetVolume = 0.4;
+        const interval = 50; // ms
+        const steps = duration / interval;
+        const increment = targetVolume / steps;
+
+        const fadeTimer = setInterval(() => {
+          if (audio.volume < targetVolume) {
+            audio.volume = Math.min(targetVolume, audio.volume + increment);
+          } else {
+            clearInterval(fadeTimer);
+          }
+        }, interval);
+
+        return () => clearInterval(fadeTimer);
+      } catch (err) {
+        console.warn("[CinemaMonitor] Autoplay prevented. Audio requires user interaction.", err);
+        setAudioStatus('error');
+      }
+    };
+
+    const fadeCleanup = startAudio();
+
+    return () => {
+      fadeCleanup.then(cleanup => cleanup?.());
+      audio.pause();
+      audio.src = "";
+      setAudioStatus('none');
+    };
+  }, [generatedSoundtrackUrl]);
 
   return (
     <div className={cn("w-full h-full flex overflow-hidden bg-black/20 rounded-[3rem] border border-white/5", className)} onMouseMove={onActivity}>
@@ -35,8 +85,29 @@ export const CinemaMonitor: React.FC<CinemaMonitorProps> = ({
             <Sparkles className="w-3.5 h-3.5 text-sky-400" />
             <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Director's HUD</span>
           </div>
-          <div className="px-2 py-1 bg-sky-500/10 rounded text-[8px] font-bold text-sky-400 uppercase tracking-widest border border-sky-500/20">
-            Live Metadata
+          <div className="flex items-center gap-3">
+            {audioStatus === 'playing' && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center gap-2"
+              >
+                <div className="flex gap-0.5 items-end h-3">
+                  {[1, 2, 3].map(i => (
+                    <motion.div 
+                      key={i}
+                      animate={{ height: ["20%", "100%", "20%"] }}
+                      transition={{ duration: 0.5 + i * 0.2, repeat: Infinity }}
+                      className="w-0.5 bg-sky-400"
+                    />
+                  ))}
+                </div>
+                <span className="text-[8px] font-bold text-sky-400 uppercase tracking-widest">Score Live</span>
+              </motion.div>
+            )}
+            <div className="px-2 py-1 bg-sky-500/10 rounded text-[8px] font-bold text-sky-400 uppercase tracking-widest border border-sky-500/20">
+              Live Metadata
+            </div>
           </div>
         </div>
 
@@ -48,21 +119,18 @@ export const CinemaMonitor: React.FC<CinemaMonitorProps> = ({
                 <div className="w-6 h-px bg-sky-500/30" />
                 <span className="text-[9px] font-black text-sky-400/60 uppercase tracking-[0.4em]">Emotional Arc</span>
               </div>
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {beatSheet.map((item, i) => (
                   <motion.div 
                     key={i}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.1 }}
-                    className="flex flex-col gap-2 group/beat"
+                    className="flex items-start gap-4 group/beat"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="flex-none w-8 text-[9px] font-mono text-white/20">{item.timing}</span>
-                      <h4 className="text-[10px] font-black text-sky-300/80 uppercase tracking-widest group-hover/beat:text-sky-400 transition-colors">{item.beat}</h4>
-                    </div>
-                    <p className="text-[11px] text-white/30 leading-relaxed italic font-serif pl-11 group-hover/beat:text-white/40 transition-colors">
-                      {item.visual}
+                    <div className="flex-none w-1.5 h-1.5 rounded-full bg-sky-500/40 mt-1.5 shadow-[0_0_8px_rgba(56,189,248,0.3)] group-hover/beat:bg-sky-400 transition-colors" />
+                    <p className="text-[11px] text-white/50 leading-relaxed font-serif group-hover/beat:text-white/70 transition-colors">
+                      {item}
                     </p>
                   </motion.div>
                 ))}

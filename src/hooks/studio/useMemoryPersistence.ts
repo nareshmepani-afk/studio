@@ -28,6 +28,9 @@ interface PersistenceProps {
   isReviewing?: boolean;
   isGeneratingDrafts?: boolean;
   structuredScript?: StructuredScript;
+  originalHook?: string;
+  scriptHistory?: any[];
+  isProductionLocked?: boolean;
 }
 
 export function useMemoryPersistence({
@@ -55,7 +58,10 @@ export function useMemoryPersistence({
   setDescription,
   isReviewing = false,
   isGeneratingDrafts = false,
-  structuredScript
+  structuredScript,
+  originalHook,
+  scriptHistory,
+  isProductionLocked
 }: PersistenceProps) {
   const [isSaving, setIsSaving] = useState(false);
   const lastSavedTimestamp = useRef<number>(0);
@@ -110,6 +116,9 @@ export function useMemoryPersistence({
   }, []);
 
   const flush = useCallback(async () => {
+    // RIGID GUARDRAIL: Concurrent Save Shield
+    if (isSaving) return { success: true, reason: 'already-saving' };
+
     // RIGID GUARDRAIL: Empty-State Shield
     if (description.length === 0 && previousDescription.current.length > 10) {
       console.error("[DIAGNOSTIC: ERROR] Persistence blocked: Attempted to overwrite script with empty string during transition.");
@@ -124,23 +133,39 @@ export function useMemoryPersistence({
 
     const currentData = dataRef.current;
 
-    const hasChanged = 
-      title !== (currentData?.title || '') ||
-      description !== (currentData?.description || '') ||
-      location !== (currentData?.location || '') ||
-      country !== (currentData?.country || '') ||
-      (day || 'none') !== (currentData?.dateComponents?.day || 'none') ||
-      (month || 'none') !== (currentData?.dateComponents?.month || 'none') ||
-      (year || 'none') !== (currentData?.dateComponents?.year || 'none') ||
-      JSON.stringify(scriptBlocks) !== JSON.stringify(currentData?.scriptBlocks || []) ||
-      chapterTitle !== (currentData?.chapterTitle || '') ||
-      posterStyle !== (currentData?.posterStyle || 'cinematic') ||
-      director !== (currentData?.credits?.director || '') ||
-      producer !== (currentData?.credits?.producer || '') ||
-      starring !== (currentData?.credits?.starring || '') ||
-      JSON.stringify(aiTakes) !== JSON.stringify(currentData?.aiTakes || null) ||
-      JSON.stringify(structuredScript) !== JSON.stringify(currentData?.structuredScript || null) ||
-      JSON.stringify(sensoryValues) !== JSON.stringify(currentData?.sensory || {});
+    const hasChanged = (() => {
+      const checks = {
+        title: title !== (currentData?.title || ''),
+        description: description !== (currentData?.description || ''),
+        location: location !== (currentData?.location || ''),
+        country: country !== (currentData?.country || ''),
+        date: (day || 'none') !== (currentData?.dateComponents?.day || 'none') ||
+              (month || 'none') !== (currentData?.dateComponents?.month || 'none') ||
+              (year || 'none') !== (currentData?.dateComponents?.year || 'none'),
+        scriptBlocks: JSON.stringify(scriptBlocks || []) !== JSON.stringify(currentData?.scriptBlocks || []),
+        chapterTitle: chapterTitle !== (currentData?.chapterTitle || ''),
+        posterStyle: posterStyle !== (currentData?.posterStyle || 'cinematic'),
+        credits: director !== (currentData?.credits?.director || '') ||
+                 producer !== (currentData?.credits?.producer || '') ||
+                 starring !== (currentData?.credits?.starring || ''),
+        aiTakes: JSON.stringify(aiTakes || null) !== JSON.stringify(currentData?.aiTakes || null),
+        structuredScript: JSON.stringify(structuredScript || null) !== JSON.stringify(currentData?.structuredScript || null),
+        sensoryValues: JSON.stringify(sensoryValues || {}) !== JSON.stringify(currentData?.sensory || {}),
+        originalHook: (originalHook || '') !== (currentData?.originalHook || ''),
+        scriptHistory: JSON.stringify(scriptHistory || []) !== JSON.stringify(currentData?.scriptHistory || []),
+        isProductionLocked: (isProductionLocked ?? false) !== (currentData?.isProductionLocked ?? false)
+      };
+
+      const changedFields = Object.entries(checks)
+        .filter(([_, changed]) => changed)
+        .map(([field]) => field);
+
+      if (changedFields.length > 0) {
+        console.log(`[useMemoryPersistence] Detected Changes in: ${changedFields.join(', ')}`);
+      }
+
+      return changedFields.length > 0;
+    })();
 
     if (hasChanged) {
       console.log("[useMemoryPersistence] Manual Flush Triggered (Async Handshake)");
@@ -151,11 +176,11 @@ export function useMemoryPersistence({
       try {
         const result = await updateRef.current(prev => ({
           ...prev,
-          title,
-          description,
-          location,
-          country,
-          tags,
+          title: title || '',
+          description: description || '',
+          location: location || '',
+          country: country || '',
+          tags: tags || [],
           lastEdited: now,
           date: (day !== 'none' && month !== 'none' && year !== 'none') ? `${day}-${month === 'none' ? '' : month}-${year}` : '',
           dateComponents: {
@@ -163,22 +188,25 @@ export function useMemoryPersistence({
              month: month === 'none' ? '' : month, 
              year: year === 'none' ? '' : year 
           },
-          scriptBlocks,
-          sensory: sensoryValues,
-          chapterTitle,
-          usePoster,
-          posterStyle,
-          posterImageUrl,
+          scriptBlocks: scriptBlocks || [],
+          sensory: sensoryValues || {},
+          chapterTitle: chapterTitle || '',
+          usePoster: usePoster ?? true,
+          posterStyle: posterStyle || 'cinematic',
+          posterImageUrl: posterImageUrl || '',
           credits: {
-             director,
-             producer,
-             starring,
-             billingLine
+             director: director || '',
+             producer: producer || '',
+             starring: starring || '',
+             billingLine: billingLine || ''
           },
           aiTakes: aiTakes || null,
-          structuredScript: structuredScript || undefined,
+          structuredScript: structuredScript || null,
+          originalHook: originalHook || prev?.originalHook || '',
+          scriptHistory: scriptHistory || prev?.scriptHistory || [],
+          isProductionLocked: isProductionLocked ?? prev?.isProductionLocked ?? false,
           status: prev?.status || 'draft'
-        }));
+        } as Partial<Memory>));
         return { success: true, result };
       } catch (err) {
         console.error("[useMemoryPersistence] Flush failed:", err);
@@ -193,7 +221,8 @@ export function useMemoryPersistence({
     title, description, location, country, tags, day, month, year,
     sensoryValues, scriptBlocks, chapterTitle, usePoster, 
     posterStyle, posterImageUrl, director, producer, starring, 
-    billingLine, aiTakes, structuredScript
+    billingLine, aiTakes, structuredScript,
+    originalHook, scriptHistory, isProductionLocked
   ]);
 
   // Stable Reference for Auto-Save logic to prevent loop-back cycles
@@ -221,7 +250,11 @@ export function useMemoryPersistence({
     // NOT when the flush callback changes.
     title, description, location, country, day, month, year,
     chapterTitle, posterStyle, director, producer, starring,
-    JSON.stringify(structuredScript)
+    JSON.stringify(structuredScript || null),
+    JSON.stringify(aiTakes || null),
+    JSON.stringify(sensoryValues || {}),
+    JSON.stringify(scriptBlocks || []),
+    isProductionLocked
   ]);
 
   // 4. UNSAVED CHANGES WARNING

@@ -28,6 +28,7 @@ import { useStudioState as useGlobalStudioState } from '@/hooks/studio/useStudio
 import { useProductionCharge } from '@/hooks/studio/useProductionCharge';
 import { detectAnchors } from '@/hooks/studio/useDirectorInk';
 import { generateDraftOptions } from '@/actions/aiWeaver';
+import { generateSoundtrack } from '@/actions/audioWeaver';
 import { StudioBlueprint } from './StudioBlueprint';
 
 
@@ -72,9 +73,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         isDirectorOpen,
         isReviewing, 
         selectedVision,
+        polishedOriginalHook,
         actions: {
             setIsReviewing, 
             setReviewDrafts, 
+            setPolishedOriginalHook,
             setIsGeneratingDrafts,
             setModality,
             setStage,
@@ -448,20 +451,36 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             setSynthesisError(null); // RESET: Start fresh
             try {
                 console.log("[ProductionDeck] Calling generateDraftOptions with description length:", memoryData?.description?.length || 0);
-                const result = await generateDraftOptions(memoryData?.description || '');
-                console.log("[ProductionDeck] AI Synthesis successful. Visions received:", result.visions?.length || 0);
+                const { polishedOriginalHook, visions } = await generateDraftOptions(memoryData?.description || '');
+                console.log("[ProductionDeck] AI Synthesis successful. Visions received:", visions?.length || 0);
                 
                 // MANTLE GATE: Ensure we don't advance to an empty selection screen
-                if (!result.visions || result.visions.length === 0) {
+                if (!visions || visions.length === 0) {
                     throw new Error("The Weaver returned no visions. Recalibrating...");
                 }
 
-                setReviewDrafts(result.visions);
+                setPolishedOriginalHook(polishedOriginalHook);
+                setReviewDrafts(visions);
                 console.log("[ProductionDeck] Setting isReviewing to true. Entering SelectionDeck...");
                 setIsReviewing(true);
                 setIsGeneratingDrafts(false); // SUCCESS: Close overlay
                 toast.success("Visions Synthesized", {
                     description: "The Director has prepared three distinct paths for your memory."
+                });
+
+                // --- AUTOMATED SOUNDSTACK INTEGRATION ---
+                // Trigger background audio generation for each vision path
+                visions.forEach((vision: any, index: number) => {
+                    const audioCue = vision.stageDirections.find((d: any) => d.type === 'audio');
+                    if (audioCue && memoryData?.id) {
+                        console.log(`[ProductionDeck] Triggering automated soundtrack generation for vision ${index}...`);
+                        generateSoundtrack(audioCue.content, memoryData.id, vision.visionType).then(url => {
+                            if (url) {
+                                console.log(`[ProductionDeck] Soundtrack synthesized for vision ${index}:`, url);
+                                setReviewDrafts((prev: any[] | null) => prev?.map((v: any, i: number) => i === index ? { ...v, generatedSoundtrackUrl: url } : v) || null);
+                            }
+                        });
+                    }
                 });
             } catch (err: any) {
                 console.error("[ProductionDeck] Synthesis failure:", err);
@@ -482,6 +501,16 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             const next = currentStage + 1;
             console.log("[ProductionDeck] Updating stage to:", next);
             setStage(next);
+            
+            // Seal the polished hook as the new originalHook
+            if (polishedOriginalHook) {
+                console.log("[ProductionDeck] Sealing polished hook into memory...");
+                handleUpdate((prev: any) => ({ 
+                    ...prev, 
+                    originalHook: polishedOriginalHook,
+                    productionStage: next 
+                }));
+            }
             return;
         }
 
@@ -798,20 +827,22 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                             )}
                              {/* PRODUCTION CONTROL BAR: THE HEARTBEAT */}
                              {modality !== null && currentStage >= 0 && (
-                                 <ProductionControlBar
-                                     currentStage={currentStage}
-                                     isComplete={isActComplete}
-                                     isLowClarity={isLowClarity}
-                                     missingRequirements={missingRequirements}
-                                     onNext={handleNextAct}
-                                     onPrev={handlePrevAct}
-                                     onPublish={handlePublish}
-                                     charge={currentStage === 0 ? hotClarity : totalCharge}
-                                     wordCount={wordCount}
-                                     isDocked={currentStage <= 1}
-                                     mentorActive={mentorModeActive}
-                                     isSaving={isSavingNext}
-                                 />
+                                 <div className={cn("transition-all duration-500", isDirectorOpen && "opacity-20 blur-sm pointer-events-none")}>
+                                     <ProductionControlBar
+                                         currentStage={currentStage}
+                                         isComplete={isActComplete}
+                                         isLowClarity={isLowClarity}
+                                         missingRequirements={missingRequirements}
+                                         onNext={handleNextAct}
+                                         onPrev={handlePrevAct}
+                                         onPublish={handlePublish}
+                                         charge={currentStage === 0 ? hotClarity : totalCharge}
+                                         wordCount={wordCount}
+                                         isDocked={currentStage <= 1}
+                                         mentorActive={mentorModeActive}
+                                         isSaving={isSavingNext}
+                                     />
+                                 </div>
                              )}
                         </div>
                     </div>
