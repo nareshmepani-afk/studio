@@ -266,6 +266,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const [day, setDay] = useState(data?.dateComponents?.day || 'none');
   const [month, setMonth] = useState(data?.dateComponents?.month || 'none');
   const [year, setYear] = useState(data?.dateComponents?.year || 'none');
+  const [prose, setProse] = useState(data?.prose || '');
   const [isDictating, setIsDictating] = useState(false);
   const [isPolishingDesc, setIsPolishingDesc] = useState(false);
   const [activeWhisper, setActiveWhisper] = useState<any>(null);
@@ -364,7 +365,9 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     isProductionLocked,
     setDescription,
     isReviewing,
-    isGeneratingDrafts
+    isGeneratingDrafts,
+    productionStage,
+    prose
   });
 
   // Sync Saving State to Parent
@@ -475,12 +478,15 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     if (data?.sensory && JSON.stringify(data.sensory) !== JSON.stringify(sensoryValues)) {
       setSensoryValues(data.sensory);
     }
+    if (data?.prose !== undefined && data.prose !== prose) {
+      setProse(data.prose);
+    }
     if (data?.aiTakes && JSON.stringify(data.aiTakes) !== JSON.stringify(aiTakes)) {
       setAiTakes(data.aiTakes);
     }
   }, [
     data, lastFocusedField, title, description, location, scriptBlocks, 
-    structuredScript, originalHook, scriptHistory, sensoryValues, aiTakes
+    structuredScript, originalHook, scriptHistory, sensoryValues, aiTakes, prose
   ]);
 
 
@@ -1112,7 +1118,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 ) : isReviewing ? (
                   <SelectionDeck 
                     drafts={reviewDrafts || []} 
-                    onSelect={(text, type, label, structured) => {
+                    onSelect={async (text, type, label, structured) => {
                       // COMMIT HANDSHAKE (Director's Lock)
                       if (!originalHook) {
                         setOriginalHook(polishedOriginalHook || description);
@@ -1138,8 +1144,14 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       // ADVANCE MANDATE: Seal the vision and move to Act II (The Weave)
                       setProductionStage?.(1); 
                       
-                      // Manual Flush to ensure Firestore sync
-                      flush();
+                      // Manual Flush to ensure Firestore sync (with overrides to avoid stale state)
+                      await flush({
+                        description: text || '',
+                        prose: text || '',
+                        structuredScript: structured || undefined,
+                        productionStage: 1,
+                        originalHook: polishedOriginalHook || description
+                      });
                     }} 
                     onPreview={(draft) => setSelectedDraftForPreview(draft)}
                     selectedText={description || ''}
@@ -2051,7 +2063,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       stageDirections={selectedDraftForPreview?.stageDirections || []}
       beatSheet={selectedDraftForPreview?.beatSheet || []}
       generatedSoundtrackUrl={selectedDraftForPreview?.generatedSoundtrackUrl}
-      onApply={() => {
+      onApply={async () => {
         if (selectedDraftForPreview) {
           // COMMIT HANDSHAKE (Director's Lock)
           if (!originalHook) {
@@ -2075,10 +2087,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
             cleanScript: selectedDraftForPreview.cleanScript || '',
             stageDirections: selectedDraftForPreview.stageDirections || [],
             beatSheet: selectedDraftForPreview.beatSheet || [],
-            generatedSoundtrackUrl: selectedDraftForPreview.generatedSoundtrackUrl
+            generatedSoundtrackUrl: selectedDraftForPreview.generatedSoundtrackUrl,
+            preFlightBrief: selectedDraftForPreview.preFlightBrief
           };
 
           setDescription(structured.cleanScript);
+          setProse(structured.cleanScript); // Populate prose for Act II teleprompter
           setStructuredScript(structured);
           
           globalActions.setSelectedVision(type as any, selectedDraftForPreview.visionType);
@@ -2087,7 +2101,13 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
           // SEAL THE VISION: Move to Act II (The Weave)
           setProductionStage?.(1);
           // Manual Flush to ensure Firestore sync
-          flush();
+          await flush({
+            description: structured.cleanScript,
+            prose: structured.cleanScript,
+            structuredScript: structured,
+            productionStage: 1,
+            originalHook: description
+          });
         }
       }}
     />

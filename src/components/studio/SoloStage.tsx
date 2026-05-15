@@ -105,7 +105,7 @@ export default function SoloStage({
   
   const setProductionStage = (stage: number) => {
     console.log(`[SoloStage] Advancing to Stage: ${stage}`);
-    update({ ...data, productionStage: stage });
+    update((prev: any) => ({ ...prev, productionStage: stage }));
     globalActions.setStage(stage);
   };
 
@@ -183,7 +183,6 @@ export default function SoloStage({
     if (recordedBlob && data?.id) {
       // "Soft-Clip": Inject raw numeric timestamps into Firebase payload!
       update({
-        ...data,
         trimStart: trimRange[0],
         trimEnd: trimRange[1],
       });
@@ -192,7 +191,6 @@ export default function SoloStage({
         const url = await uploadVideo(recordedBlob, data.id);
         if (url) {
           update({
-            ...data,
             trimStart: trimRange[0],
             trimEnd: trimRange[1],
             videoUrl: url,
@@ -231,7 +229,7 @@ export default function SoloStage({
          if (blob) {
             const url = await uploadMediaBlob(blob, data.id);
             if (url) {
-               update({ ...data, posterImageUrl: url }); // STANDARDIZE: Use posterImageUrl globally
+               update({ posterImageUrl: url }); // STANDARDIZE: Use posterImageUrl globally
                toast.success("Poster Updated", { 
                  description: "This frame is now your cinematic poster image.",
                  icon: <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -368,7 +366,7 @@ export default function SoloStage({
     try {
         const url = await uploadMediaBlob(file, data.id);
         if (url) {
-            update({ ...data, posterImageUrl: url });
+            update({ posterImageUrl: url });
             toast.success("Portrait Uploaded!", {
                 description: "Your uploaded image is now the cinematic poster.",
                 icon: <CheckCircle2 className="w-4 h-4 text-green-500" />

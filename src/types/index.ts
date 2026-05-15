@@ -52,6 +52,12 @@ export interface StructuredScript {
   stageDirections: StageDirection[];
   beatSheet: string[];
   generatedSoundtrackUrl?: string;
+  preFlightBrief?: {
+    sensoryAnchors: string[];
+    vocalInstructions: string[];
+    soundscapeIntegration: string;
+    heroMoment: string;
+  };
 }
 
 export interface Memory {

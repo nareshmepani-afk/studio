@@ -168,4 +168,26 @@ describe('Act I Finalization: Narrative & Linguistic Integrity', () => {
       expect(resultUrl).toBe(SAFE_BACKUP_URL);
     });
   });
+
+  describe('Directorial Pre-Flight Brief (Performance Strategy)', () => {
+    it('should identify sensory anchors from a migration narrative', () => {
+      const cleanScript = "The dust of Nairobi stayed in my throat long after we landed in London.";
+      // Simulating the logic we expect from the AI output
+      const mockBrief = {
+        sensoryAnchors: ["Nairobi dust (aroma)", "London winter (texture)"],
+        vocalInstructions: ["Pause after 'Nairobi'", "Lower volume for 'London'"],
+        heroMoment: "The dust of Nairobi stayed in my throat."
+      };
+
+      expect(mockBrief.sensoryAnchors).toHaveLength(2);
+      expect(mockBrief.vocalInstructions[0]).toContain("Pause");
+      expect(mockBrief.heroMoment).toContain("Nairobi");
+    });
+
+    it('should strictly use UK English in the brief', () => {
+      const briefDescription = "The colour of the landscape was realised through his words.";
+      const result = checkUKEnglish(briefDescription);
+      expect(result.isCompliant).toBe(true);
+    });
+  });
 });

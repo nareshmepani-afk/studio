@@ -31,6 +31,8 @@ interface PersistenceProps {
   originalHook?: string;
   scriptHistory?: any[];
   isProductionLocked?: boolean;
+  productionStage?: number;
+  prose?: string;
 }
 
 export function useMemoryPersistence({
@@ -61,11 +63,40 @@ export function useMemoryPersistence({
   structuredScript,
   originalHook,
   scriptHistory,
-  isProductionLocked
+  isProductionLocked,
+  productionStage,
+  prose
 }: PersistenceProps) {
   const [isSaving, setIsSaving] = useState(false);
   const lastSavedTimestamp = useRef<number>(0);
   const previousDescription = useRef<string>(description);
+  
+  // THE LATEST STATE REF:
+  // This is the "God Ref" that ensures flush() always has the absolute latest data,
+  // even if called from a stale closure (like an async click handler).
+  const latestStateRef = useRef({
+    title, description, location, country, tags, day, month, year,
+    sensoryValues, scriptBlocks, chapterTitle, usePoster, 
+    posterStyle, posterImageUrl, director, producer, starring, 
+    billingLine, aiTakes, structuredScript,
+    originalHook, scriptHistory, isProductionLocked, productionStage, prose
+  });
+
+  useEffect(() => {
+    latestStateRef.current = {
+      title, description, location, country, tags, day, month, year,
+      sensoryValues, scriptBlocks, chapterTitle, usePoster, 
+      posterStyle, posterImageUrl, director, producer, starring, 
+      billingLine, aiTakes, structuredScript,
+      originalHook, scriptHistory, isProductionLocked, productionStage, prose
+    };
+  }, [
+    title, description, location, country, tags, day, month, year,
+    sensoryValues, scriptBlocks, chapterTitle, usePoster, 
+    posterStyle, posterImageUrl, director, producer, starring, 
+    billingLine, aiTakes, structuredScript,
+    originalHook, scriptHistory, isProductionLocked, productionStage, prose
+  ]);
   
   // Stable references for parent state to decouple dependency arrays
   const dataRef = useRef(data);
@@ -115,12 +146,15 @@ export function useMemoryPersistence({
     }
   }, []);
 
-  const flush = useCallback(async () => {
+  const flush = useCallback(async (overrides?: Partial<PersistenceProps>) => {
     // RIGID GUARDRAIL: Concurrent Save Shield
     if (isSaving) return { success: true, reason: 'already-saving' };
 
+    const currentData = dataRef.current;
+    const s = { ...latestStateRef.current, ...overrides };
+
     // RIGID GUARDRAIL: Empty-State Shield
-    if (description.length === 0 && previousDescription.current.length > 10) {
+    if (s.description.length === 0 && previousDescription.current.length > 10) {
       console.error("[DIAGNOSTIC: ERROR] Persistence blocked: Attempted to overwrite script with empty string during transition.");
       return { success: false, reason: 'empty_shield' };
     }
@@ -131,29 +165,30 @@ export function useMemoryPersistence({
       return { success: true, reason: 'throttled' };
     }
 
-    const currentData = dataRef.current;
+
 
     const hasChanged = (() => {
       const checks = {
-        title: title !== (currentData?.title || ''),
-        description: description !== (currentData?.description || ''),
-        location: location !== (currentData?.location || ''),
-        country: country !== (currentData?.country || ''),
-        date: (day || 'none') !== (currentData?.dateComponents?.day || 'none') ||
-              (month || 'none') !== (currentData?.dateComponents?.month || 'none') ||
-              (year || 'none') !== (currentData?.dateComponents?.year || 'none'),
-        scriptBlocks: JSON.stringify(scriptBlocks || []) !== JSON.stringify(currentData?.scriptBlocks || []),
-        chapterTitle: chapterTitle !== (currentData?.chapterTitle || ''),
-        posterStyle: posterStyle !== (currentData?.posterStyle || 'cinematic'),
-        credits: director !== (currentData?.credits?.director || '') ||
-                 producer !== (currentData?.credits?.producer || '') ||
-                 starring !== (currentData?.credits?.starring || ''),
-        aiTakes: JSON.stringify(aiTakes || null) !== JSON.stringify(currentData?.aiTakes || null),
-        structuredScript: JSON.stringify(structuredScript || null) !== JSON.stringify(currentData?.structuredScript || null),
-        sensoryValues: JSON.stringify(sensoryValues || {}) !== JSON.stringify(currentData?.sensory || {}),
-        originalHook: (originalHook || '') !== (currentData?.originalHook || ''),
-        scriptHistory: JSON.stringify(scriptHistory || []) !== JSON.stringify(currentData?.scriptHistory || []),
-        isProductionLocked: (isProductionLocked ?? false) !== (currentData?.isProductionLocked ?? false)
+        title: s.title !== (currentData?.title || ''),
+        description: s.description !== (currentData?.description || ''),
+        location: s.location !== (currentData?.location || ''),
+        country: s.country !== (currentData?.country || ''),
+        date: (s.day || 'none') !== (currentData?.dateComponents?.day || 'none') ||
+              (s.month || 'none') !== (currentData?.dateComponents?.month || 'none') ||
+              (s.year || 'none') !== (currentData?.dateComponents?.year || 'none'),
+        scriptBlocks: JSON.stringify(s.scriptBlocks || []) !== JSON.stringify(currentData?.scriptBlocks || []),
+        chapterTitle: s.chapterTitle !== (currentData?.chapterTitle || ''),
+        posterStyle: s.posterStyle !== (currentData?.posterStyle || 'cinematic'),
+        credits: s.director !== (currentData?.credits?.director || '') ||
+                 s.producer !== (currentData?.credits?.producer || '') ||
+                 s.starring !== (currentData?.credits?.starring || ''),
+        aiTakes: JSON.stringify(s.aiTakes || null) !== JSON.stringify(currentData?.aiTakes || null),
+        structuredScript: JSON.stringify(s.structuredScript || null) !== JSON.stringify(currentData?.structuredScript || null),
+        sensoryValues: JSON.stringify(s.sensoryValues || {}) !== JSON.stringify(currentData?.sensory || {}),
+        originalHook: (s.originalHook || '') !== (currentData?.originalHook || ''),
+        scriptHistory: JSON.stringify(s.scriptHistory || []) !== JSON.stringify(currentData?.scriptHistory || []),
+        isProductionLocked: (s.isProductionLocked ?? false) !== (currentData?.isProductionLocked ?? false),
+        productionStage: (s.productionStage ?? 0) !== (currentData?.productionStage ?? 0)
       };
 
       const changedFields = Object.entries(checks)
@@ -174,39 +209,42 @@ export function useMemoryPersistence({
       previousDescription.current = description;
       
       try {
-        const result = await updateRef.current(prev => ({
-          ...prev,
-          title: title || '',
-          description: description || '',
-          location: location || '',
-          country: country || '',
-          tags: tags || [],
+        const delta = {
+          title: s.title || '',
+          description: s.description || '',
+          location: s.location || '',
+          country: s.country || '',
+          tags: s.tags || [],
           lastEdited: now,
-          date: (day !== 'none' && month !== 'none' && year !== 'none') ? `${day}-${month === 'none' ? '' : month}-${year}` : '',
+          date: (s.day !== 'none' && s.month !== 'none' && s.year !== 'none') ? `${s.day}-${s.month === 'none' ? '' : s.month}-${s.year}` : '',
           dateComponents: {
-             day: day === 'none' ? '' : day, 
-             month: month === 'none' ? '' : month, 
-             year: year === 'none' ? '' : year 
+             day: s.day === 'none' ? '' : s.day, 
+             month: s.month === 'none' ? '' : s.month, 
+             year: s.year === 'none' ? '' : s.year 
           },
-          scriptBlocks: scriptBlocks || [],
-          sensory: sensoryValues || {},
-          chapterTitle: chapterTitle || '',
-          usePoster: usePoster ?? true,
-          posterStyle: posterStyle || 'cinematic',
-          posterImageUrl: posterImageUrl || '',
+          scriptBlocks: s.scriptBlocks || [],
+          sensory: s.sensoryValues || {},
+          chapterTitle: s.chapterTitle || '',
+          usePoster: s.usePoster ?? true,
+          posterStyle: s.posterStyle || 'cinematic',
+          posterImageUrl: s.posterImageUrl || '',
           credits: {
-             director: director || '',
-             producer: producer || '',
-             starring: starring || '',
-             billingLine: billingLine || ''
+             director: s.director || '',
+             producer: s.producer || '',
+             starring: s.starring || '',
+             billingLine: s.billingLine || ''
           },
-          aiTakes: aiTakes || null,
-          structuredScript: structuredScript || null,
-          originalHook: originalHook || prev?.originalHook || '',
-          scriptHistory: scriptHistory || prev?.scriptHistory || [],
-          isProductionLocked: isProductionLocked ?? prev?.isProductionLocked ?? false,
-          status: prev?.status || 'draft'
-        } as Partial<Memory>));
+          aiTakes: s.aiTakes || null,
+          structuredScript: s.structuredScript || null,
+          originalHook: s.originalHook || undefined,
+          scriptHistory: s.scriptHistory || undefined,
+          isProductionLocked: s.isProductionLocked ?? undefined,
+          productionStage: s.productionStage ?? undefined,
+          prose: s.prose || undefined,
+          status: 'draft' as const // status is usually managed elsewhere but we keep it safe
+        };
+
+        const result = await updateRef.current(delta);
         return { success: true, result };
       } catch (err) {
         console.error("[useMemoryPersistence] Flush failed:", err);

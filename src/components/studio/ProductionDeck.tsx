@@ -27,7 +27,7 @@ import { ProductionPreFlight } from './overlays/ProductionPreFlight';
 import { useStudioState as useGlobalStudioState } from '@/hooks/studio/useStudioState';
 import { useProductionCharge } from '@/hooks/studio/useProductionCharge';
 import { detectAnchors } from '@/hooks/studio/useDirectorInk';
-import { generateDraftOptions } from '@/actions/aiWeaver';
+import { generateDraftOptions, generateDirectorialBrief } from '@/actions/aiWeaver';
 import { generateSoundtrack } from '@/actions/audioWeaver';
 import { StudioBlueprint } from './StudioBlueprint';
 
@@ -468,9 +468,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     description: "The Director has prepared three distinct paths for your memory."
                 });
 
-                // --- AUTOMATED SOUNDSTACK INTEGRATION ---
-                // Trigger background audio generation for each vision path
+                // --- AUTOMATED SOUNDSTACK & BRIEF INTEGRATION ---
                 visions.forEach((vision: any, index: number) => {
+                    // 1. Soundtrack Generation
                     const audioCue = vision.stageDirections.find((d: any) => d.type === 'audio');
                     if (audioCue && memoryData?.id) {
                         console.log(`[ProductionDeck] Triggering automated soundtrack generation for vision ${index}...`);
@@ -481,6 +481,15 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                             }
                         });
                     }
+
+                    // 2. Directorial Brief Generation
+                    console.log(`[ProductionDeck] Triggering directorial brief generation for vision ${index}...`);
+                    generateDirectorialBrief(vision.cleanScript, vision.stageDirections).then(brief => {
+                        if (brief) {
+                            console.log(`[ProductionDeck] Pre-flight brief generated for vision ${index}`);
+                            setReviewDrafts((prev: any[] | null) => prev?.map((v: any, i: number) => i === index ? { ...v, preFlightBrief: brief } : v) || null);
+                        }
+                    });
                 });
             } catch (err: any) {
                 console.error("[ProductionDeck] Synthesis failure:", err);
@@ -505,11 +514,10 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             // Seal the polished hook as the new originalHook
             if (polishedOriginalHook) {
                 console.log("[ProductionDeck] Sealing polished hook into memory...");
-                handleUpdate((prev: any) => ({ 
-                    ...prev, 
+                handleUpdate({ 
                     originalHook: polishedOriginalHook,
                     productionStage: next 
-                }));
+                });
             }
             return;
         }
@@ -525,7 +533,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             setStage(next);
             setShowPreFlight(false); // Reset pre-flight
             if ((memoryData?.productionStage || 0) < next) {
-                handleUpdate((prev: any) => ({ ...prev, productionStage: next }));
+                handleUpdate({ productionStage: next });
             }
         }
     }, [
@@ -612,7 +620,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     description: "Your memory is now live in the Cinema.",
                     icon: <Rocket className="w-4 h-4 text-green-500" />
                 });
-                handleUpdate((prev: any) => ({ ...prev, status: 'published' }));
+                handleUpdate({ status: 'published' });
                 router.push('/cinema');
             } else {
                 toast.error("Publish Failed", { description: res.message });

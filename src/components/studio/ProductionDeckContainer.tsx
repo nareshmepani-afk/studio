@@ -36,6 +36,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   const [layoutMode, setLayoutMode] = useState<'takeover' | 'drawer'>('takeover');
 
   const lastLoadedId = useRef<string | null>(null);
+  const lastLocalUpdateRef = useRef<number>(0);
   const deckRef = useRef<any>(null);
 
   useEffect(() => {
@@ -49,21 +50,24 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
        const chapterPrompts = chapters.flatMap(c => c.prompts);
        const cp = chapterPrompts.find(p => p.id === promptId);
        
-       if (cp?.memory) {
-         // Only update if there's a meaningful change to prevent unnecessary re-renders
+      if (cp?.memory) {
+         // SHIELD: If we recently updated locally, ignore background snapshots for 2 seconds
+         // to allow Firestore to catch up and prevent "text regression" flickers.
+         if (Date.now() - lastLocalUpdateRef.current < 2000) return;
+
+         // Only update if there's a meaningful change
          const hasIdTransition = cp.memory.id && !selectedProductionData?.id;
          const hasDataUpdate = cp.memory.description !== selectedProductionData?.description || 
+                               cp.memory.productionStage !== selectedProductionData?.productionStage ||
                                cp.memory.id !== selectedProductionData?.id;
 
          if (hasIdTransition || hasDataUpdate) {
             setSelectedProductionData((prev: any) => ({
               ...prev,
               ...cp.memory,
-              // Preserve local prose if we are currently editing it (or let MemoryForm handle it)
-              // For now, we sync everything and rely on child shields.
             }));
          }
-       }
+      }
        return;
     }
 
@@ -115,50 +119,56 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     if (!user) return;
     
     let resolvedData: any;
+    let deltaToSave: any;
     
     setSelectedProductionData((prev: any) => {
-      resolvedData = typeof updatedDataOrFn === 'function' 
-        ? updatedDataOrFn(prev) 
-        : updatedDataOrFn;
+      if (typeof updatedDataOrFn === 'function') {
+        resolvedData = updatedDataOrFn(prev);
+        // If it's a function, we unfortunately have to assume the result is the full object
+        // unless we want to do a deep diff. For now, we'll treat it as the full object.
+        deltaToSave = resolvedData;
+      } else {
+        deltaToSave = updatedDataOrFn;
+        resolvedData = { ...prev, ...updatedDataOrFn };
+      }
       return resolvedData;
     });
+    
+    lastLocalUpdateRef.current = Date.now();
 
     // Firestore Sync
     try {
-      if (!resolvedData) return;
+      if (!deltaToSave) return;
       
-      const { id, ...dataToSave } = resolvedData;
+      const { id: _, ...dataToSave } = deltaToSave;
+      const memoryId = selectedProductionData?.id || (resolvedData as any)?.id;
       
       // DEEP SANITIZATION: Firestore does not support 'undefined' values.
-      // We must recursively strip them or convert to null.
-      const sanitize = (obj: any): any => {
-        if (Array.isArray(obj)) return obj.map(sanitize);
-        if (obj !== null && typeof obj === 'object') {
-          return Object.fromEntries(
-            Object.entries(obj)
-              .filter(([_, v]) => v !== undefined)
-              .map(([k, v]) => [k, sanitize(v)])
-          );
-        }
-        return obj;
-      };
+      // JSON.stringify naturally strips undefined values from objects and handles nested structures.
+      const cleanData = JSON.parse(JSON.stringify(dataToSave));
 
-      const cleanData = sanitize(dataToSave);
+      if (!memoryId) {
+        // If no ID yet, we must save the FULL resolved data to create the document
+        const fullData = JSON.parse(JSON.stringify(resolvedData));
+        const { id: __, ...cleanFullData } = fullData;
+        
+        const memoriesRef = collection(db, 'users', user.uid, 'memories');
+        const newDoc = await addDoc(memoriesRef, {
+          ...cleanFullData,
+          createdAt: new Date().toISOString()
+        });
+        setSelectedProductionData((prev: any) => ({ ...prev, id: newDoc.id }));
+        return;
+      }
 
-      if (id) {
-         await updateDoc(doc(db, 'users', user.uid, 'memories', id), cleanData);
-      } else {
-         const memoriesRef = collection(db, 'users', user.uid, 'memories');
-         const newDoc = await addDoc(memoriesRef, {
-            ...cleanData,
-            createdAt: new Date().toISOString()
-         });
-         setSelectedProductionData((prev: any) => ({ ...prev, id: newDoc.id }));
+      // Only perform update if there is actually data to save (excluding ID)
+      if (Object.keys(cleanData).length > 0) {
+        await updateDoc(doc(db, 'users', user.uid, 'memories', memoryId), cleanData);
       }
     } catch (e) {
       console.error("[ProductionDeckContainer] Auto-save error:", e);
     }
-  }, [user]);
+  }, [user, selectedProductionData?.id]);
 
   const handleClose = async () => {
     if (deckRef.current?.handleExit) {

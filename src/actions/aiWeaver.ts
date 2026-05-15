@@ -792,3 +792,77 @@ export async function generateDraftOptions(description: string): Promise<{
     throw error; // PROPAGATE: Ensure the UI handles the failure via the transition catch block
   }
 }
+
+/**
+ * Generates a high-end Directorial Pre-Flight Brief for the Recording Floor.
+ */
+export async function generateDirectorialBrief(
+  cleanScript: string,
+  stageDirections: any[]
+): Promise<{
+  sensoryAnchors: string[];
+  vocalInstructions: string[];
+  soundscapeIntegration: string;
+  heroMoment: string;
+} | null> {
+  console.log("[AI Weaver] generateDirectorialBrief triggered");
+  const ai = await getAI();
+  
+  try {
+    const audioCues = stageDirections
+      .filter(sd => sd.type === 'audio')
+      .map(sd => sd.content)
+      .join(', ');
+
+    const prompt = `
+      ACT AS: A High-End Documentary Script Supervisor.
+      
+      [INPUT]
+      Locked Script: "${cleanScript}"
+      Audio Cues: "${audioCues || 'Ambient room tone'}"
+      
+      [TASK]
+      Generate a structured "Director's Brief" to guide the speaker during the recording session. 
+      This brief serves as a side-car guide for performance, not for the spoken text.
+      
+      [OUTPUT REQUIREMENTS (UK English Only)]
+      1. Sensory Anchors (Aroma & Texture): Identify 2-3 specific sensory memories from the text and provide "Performance Anchors" to help the speaker "feel" the scene.
+      2. Vocal Rhythm & Pacing: Provide 3 specific instructions on tone or pacing.
+      3. The Soundscape Sync: Map the audio cues to specific performance advice.
+      4. Eye-Contact Strategy: Pick the "North Star" sentence of the script for a "Direct-to-Lens" moment.
+      
+      CONSTRAINT: Strictly no camera placeholders or technical jargon. Focus on the emotional and sensory state of the speaker. Use UK English (e.g., colour, realised, centre).
+      
+      Return strictly JSON matching this schema:
+      {
+        "preFlightBrief": {
+          "sensoryAnchors": ["string", "string", "string"],
+          "vocalInstructions": ["string", "string", "string"],
+          "soundscapeIntegration": "string",
+          "heroMoment": "string"
+        }
+      }
+    `;
+
+    const { output } = await pRetry(async () => {
+      return await ai.generate({
+        prompt,
+        output: {
+          schema: z.object({
+            preFlightBrief: z.object({
+              sensoryAnchors: z.array(z.string()),
+              vocalInstructions: z.array(z.string()),
+              soundscapeIntegration: z.string(),
+              heroMoment: z.string()
+            })
+          })
+        }
+      });
+    }, { retries: 2 });
+
+    return output?.preFlightBrief || null;
+  } catch (error) {
+    console.error("[AI Weaver] generateDirectorialBrief failure:", error);
+    return null;
+  }
+}

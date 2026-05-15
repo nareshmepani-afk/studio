@@ -24,7 +24,7 @@ export const CinemaMonitor: React.FC<CinemaMonitorProps> = ({
   isSaving = false,
   className
 }) => {
-  const { cleanScript, stageDirections = [], beatSheet = [], generatedSoundtrackUrl } = structuredScript;
+  const { cleanScript, stageDirections = [], beatSheet = [], generatedSoundtrackUrl, preFlightBrief } = structuredScript;
   const [audioStatus, setAudioStatus] = React.useState<'loading' | 'playing' | 'error' | 'none'>('none');
 
   // --- CINEMATIC SOUNDSTACK ORCHESTRATION ---
@@ -112,62 +112,152 @@ export const CinemaMonitor: React.FC<CinemaMonitorProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-12">
-          {/* 1. Emotional Beat Sheet */}
-          {beatSheet.length > 0 && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="w-6 h-px bg-sky-500/30" />
-                <span className="text-[9px] font-black text-sky-400/60 uppercase tracking-[0.4em]">Emotional Arc</span>
+          {/* 1. Directorial Pre-Flight Brief (Performance Anchors) */}
+          {preFlightBrief && (
+            <div className="space-y-12">
+              {/* Sensory Anchors */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-px bg-amber-500/30" />
+                  <span className="text-[9px] font-black text-amber-400/60 uppercase tracking-[0.4em]">Sensory Anchors</span>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {preFlightBrief.sensoryAnchors.map((anchor, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center gap-2 group cursor-default shadow-[0_0_15px_rgba(245,158,11,0.05)] hover:shadow-[0_0_20px_rgba(245,158,11,0.1)] transition-all"
+                    >
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      <span className="text-[10px] font-bold text-amber-200/80 tracking-wide uppercase">{anchor}</span>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-4">
-                {beatSheet.map((item, i) => (
-                  <motion.div 
-                    key={i}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="flex items-start gap-4 group/beat"
-                  >
-                    <div className="flex-none w-1.5 h-1.5 rounded-full bg-sky-500/40 mt-1.5 shadow-[0_0_8px_rgba(56,189,248,0.3)] group-hover/beat:bg-sky-400 transition-colors" />
-                    <p className="text-[11px] text-white/50 leading-relaxed font-serif group-hover/beat:text-white/70 transition-colors">
-                      {item}
-                    </p>
-                  </motion.div>
-                ))}
+
+              {/* Vocal Instructions */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-px bg-rose-500/30" />
+                  <span className="text-[9px] font-black text-rose-400/60 uppercase tracking-[0.4em]">Vocal Rhythm</span>
+                </div>
+                <div className="space-y-4">
+                  {preFlightBrief.vocalInstructions.map((instruction, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ x: -10, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.3 + i * 0.1 }}
+                      className="flex items-start gap-4 p-4 bg-rose-500/5 border border-rose-500/10 rounded-2xl"
+                    >
+                      <div className="mt-1">
+                        <Clock className="w-3 h-3 text-rose-400/40" />
+                      </div>
+                      <p className="text-[11px] text-rose-100/60 leading-relaxed italic">"{instruction}"</p>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Soundscape Integration */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-px bg-sky-500/30" />
+                  <span className="text-[9px] font-black text-sky-400/60 uppercase tracking-[0.4em]">Audio Sync</span>
+                </div>
+                <div className="p-5 bg-sky-500/5 border border-sky-500/10 rounded-2xl space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Volume2 className="w-3.5 h-3.5 text-sky-400" />
+                    <span className="text-[10px] font-black text-sky-200 uppercase tracking-widest">Orchestration Guide</span>
+                  </div>
+                  <p className="text-[11px] text-sky-100/70 leading-relaxed font-serif">
+                    {preFlightBrief.soundscapeIntegration}
+                  </p>
+                </div>
+              </div>
+
+              {/* Eye-Contact Strategy */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-px bg-emerald-500/30" />
+                  <span className="text-[9px] font-black text-emerald-400/60 uppercase tracking-[0.4em]">Eye Contact</span>
+                </div>
+                <div className="p-5 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl border-dashed">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-[10px] font-black text-emerald-200 uppercase tracking-widest">Direct-to-Lens Moment</span>
+                  </div>
+                  <p className="text-[12px] text-white font-bold leading-relaxed border-l-2 border-emerald-500 pl-4 py-1">
+                    {preFlightBrief.heroMoment}
+                  </p>
+                </div>
               </div>
             </div>
           )}
 
-          {/* 2. Production Stage Directions */}
-          {stageDirections.length > 0 && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="w-6 h-px bg-emerald-500/30" />
-                <span className="text-[9px] font-black text-emerald-400/60 uppercase tracking-[0.4em]">Production Cues</span>
-              </div>
-              <div className="space-y-4">
-                {stageDirections.map((dir, i) => (
-                  <motion.div 
-                    key={i}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 + i * 0.1 }}
-                    className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-2 hover:bg-white/10 transition-all group/cue"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {dir.type === 'visual' && <Video className="w-3 h-3 text-emerald-400/60" />}
-                        {dir.type === 'audio' && <Volume2 className="w-3 h-3 text-sky-400/60" />}
-                        {dir.type === 'beat' && <Heart className="w-3 h-3 text-rose-400/60" />}
-                        <span className="text-[9px] font-black uppercase tracking-widest text-white/30">{dir.type}</span>
-                      </div>
-                      <span className="text-[9px] font-mono text-white/20 group-hover/cue:text-white/40 transition-colors">{dir.timecode}</span>
-                    </div>
-                    <p className="text-[11px] text-white/60 leading-relaxed group-hover/cue:text-white/80 transition-colors">{dir.content}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
+          {/* Fallback to legacy components if brief is missing */}
+          {!preFlightBrief && (
+            <>
+              {/* 1. Emotional Beat Sheet */}
+              {beatSheet.length > 0 && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-px bg-sky-500/30" />
+                    <span className="text-[9px] font-black text-sky-400/60 uppercase tracking-[0.4em]">Emotional Arc</span>
+                  </div>
+                  <div className="space-y-4">
+                    {beatSheet.map((item, i) => (
+                      <motion.div 
+                        key={i}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="flex items-start gap-4 group/beat"
+                      >
+                        <div className="flex-none w-1.5 h-1.5 rounded-full bg-sky-500/40 mt-1.5 shadow-[0_0_8px_rgba(56,189,248,0.3)] group-hover/beat:bg-sky-400 transition-colors" />
+                        <p className="text-[11px] text-white/50 leading-relaxed font-serif group-hover/beat:text-white/70 transition-colors">
+                          {item}
+                        </p>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 2. Production Stage Directions */}
+              {stageDirections.length > 0 && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-px bg-emerald-500/30" />
+                    <span className="text-[9px] font-black text-emerald-400/60 uppercase tracking-[0.4em]">Production Cues</span>
+                  </div>
+                  <div className="space-y-4">
+                    {stageDirections.map((dir, i) => (
+                      <motion.div 
+                        key={i}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 + i * 0.1 }}
+                        className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-2 hover:bg-white/10 transition-all group/cue"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {dir.type === 'visual' && <Video className="w-3 h-3 text-emerald-400/60" />}
+                            {dir.type === 'audio' && <Volume2 className="w-3 h-3 text-sky-400/60" />}
+                            {dir.type === 'beat' && <Heart className="w-3 h-3 text-rose-400/60" />}
+                            <span className="text-[9px] font-black uppercase tracking-widest text-white/30">{dir.type}</span>
+                          </div>
+                          <span className="text-[9px] font-mono text-white/20 group-hover/cue:text-white/40 transition-colors">{dir.timecode}</span>
+                        </div>
+                        <p className="text-[11px] text-white/60 leading-relaxed group-hover/cue:text-white/80 transition-colors">{dir.content}</p>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
