@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardCopy, ClipboardCheck, X, Sparkles, 
@@ -38,6 +39,12 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
 }) => {
   const [copiedOriginal, setCopiedOriginal] = useState(false);
   const [copiedExpanded, setCopiedExpanded] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   const handleCopy = async (text: string, isOriginal: boolean) => {
     await navigator.clipboard.writeText(text);
@@ -56,29 +63,38 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
   const wordCount = cleanScript.trim().split(/\s+/).length;
   const estDuration = Math.ceil(wordCount / 130); // Approx 130 wpm for dramatic pacing
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 lg:p-12 bg-slate-950/95 backdrop-blur-3xl"
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-4 lg:p-12 bg-slate-950/95 backdrop-blur-3xl"
+          onClick={onClose}
         >
-          {/* Close Button */}
-          <button 
-            onClick={onClose}
-            className="absolute top-8 right-8 p-3 bg-white/5 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-all z-[1010]"
-          >
-            <X className="w-6 h-6" />
-          </button>
-
           <motion.div
             initial={{ y: 50, scale: 0.98 }}
             animate={{ y: 0, scale: 1 }}
             exit={{ y: 50, scale: 0.98 }}
-            className="w-full max-w-[100vw] lg:max-w-7xl h-full max-h-[95vh] bg-zinc-950 border border-white/10 rounded-[3rem] overflow-hidden flex flex-col shadow-[0_0_150px_rgba(0,0,0,0.9)]"
+            className="w-full max-w-[100vw] lg:max-w-7xl h-full max-h-[95vh] bg-zinc-950 border border-white/10 rounded-[3rem] overflow-hidden flex flex-col shadow-[0_0_150px_rgba(0,0,0,0.9)] relative"
+            onClick={(e) => e.stopPropagation()}
           >
+            {/* Close Button - Moved inside relative container for better alignment or can stay outside with higher Z */}
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log("[ScriptLightBox] X clicked");
+                onClose();
+              }}
+              className="absolute top-8 right-8 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-all z-[10050] cursor-pointer pointer-events-auto"
+              aria-label="Close Review"
+            >
+              <X className="w-6 h-6 pointer-events-none" />
+            </button>
+
             {/* --- PRODUCTION SLATE HEADER --- */}
             <div className="flex-none p-6 lg:px-12 border-b border-white/5 bg-slate-900/40 flex items-center justify-between z-20">
               <div className="flex items-center gap-6">
@@ -219,7 +235,10 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
             {/* --- ACTION FOOTER --- */}
             <div className="flex-none p-8 lg:px-12 border-t border-white/5 bg-slate-900/60 backdrop-blur-xl flex items-center justify-between z-20">
               <button 
-                onClick={onClose}
+                onClick={() => {
+                  console.log("[ScriptLightBox] Return clicked");
+                  onClose();
+                }}
                 className="group flex items-center gap-3 text-[10px] font-black text-white/30 hover:text-white uppercase tracking-[0.2em] transition-all"
               >
                 <div className="p-2 bg-white/5 rounded-xl group-hover:bg-white/10 transition-colors">
@@ -257,6 +276,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };

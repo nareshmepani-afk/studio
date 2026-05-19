@@ -21,7 +21,8 @@ vi.mock('lucide-react', async (importOriginal) => {
     'Save', 'Rocket', 'AlertCircle', 'Loader2', 'Edit3', 'ChevronRight', 'ChevronDown', 
     'Maximize2', 'Trash2', 'Plus', 'Info', 'Layout', 'Layers', 'Wand2', 'Music', 'Wind', 
     'Coffee', 'Zap', 'FileText', 'Film', 'ImageIcon', 'Video', 'Heart', 'Share2', 
-    'MoreHorizontal', 'Square', 'History', 'UserCircle', 'Eye'
+    'MoreHorizontal', 'Square', 'History', 'UserCircle', 'Eye', 'Clock', 'Lock', 
+    'RotateCcw', 'Target', 'ShieldCheck', 'Users', 'ChevronUp', 'Minus', 'BookOpen'
   ];
   const mockedIcons: any = {};
   icons.forEach(icon => {

@@ -12,8 +12,13 @@ const queryClient = new QueryClient();
 // Create a new component to handle the loading state
 function AppContent({ children }: { children: React.ReactNode }) {
   const { loading } = useAuth();
+  const [mounted, setMounted] = React.useState(false);
 
-  if (loading) {
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || loading) {
     return <SplashScreen />;
   }
 

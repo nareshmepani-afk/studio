@@ -312,6 +312,7 @@ export const SensoryCatalystHUD: React.FC<SensoryCatalystHUDProps> = ({
                           )}
                           
                           <motion.span 
+                            initial={{ opacity: 0.4 }}
                             animate={{ opacity: [0.4, 1, 0.4] }}
                             transition={{ duration: 2, repeat: Infinity }}
                             className="absolute -top-6 whitespace-nowrap text-[6px] font-black tracking-widest text-white/40 bg-black/40 px-1.5 py-0.5 rounded-full backdrop-blur-sm uppercase"

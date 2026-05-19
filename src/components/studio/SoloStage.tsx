@@ -19,7 +19,8 @@ import {
   Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, 
   UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, 
   Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
-  Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft 
+  Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
+  Lock
 } from 'lucide-react';
 import { generateInterviewQuestion, analyzeFraming } from '@/actions/aiWeaver';
 import { synthesizeStudioSpeech } from '@/actions/studio-vocal';
@@ -95,7 +96,8 @@ export default function SoloStage({
   // MOD-14: Cinematic Polish State
   const [prompterSize, setPrompterSize] = useState<'sm' | 'md' | 'lg'>('md');
 
-  const { actions: globalActions } = useStudioState();
+  const stageRef = useRef<HTMLDivElement>(null);
+  const { isReviewing, isProductionLocked, actions: globalActions } = useStudioState();
   
   // Cinematic Pipeline State (Shared via Firestore)
   // BUGFIX: Prioritize global stage from prop, but allow local data fallback ONLY if prop is undefined.
@@ -156,12 +158,21 @@ export default function SoloStage({
     }
   }, [recordedBlob, productionStage]);
 
-  // NEW: Auto-activate camera when entering Production Stage (Stage 1)
+  // NEW: Manage camera activation based on active Production Stage (Stage 1/Weave & Stage 2/Recording)
   useEffect(() => {
-    if (productionStage === 1 && !isCameraActive && !recordedBlob) {
+    if ((productionStage === 1 || productionStage === 2) && !isCameraActive && !recordedBlob) {
       setIsCameraActive(true);
+    } else if (productionStage !== 1 && productionStage !== 2 && isCameraActive) {
+      setIsCameraActive(false);
     }
   }, [productionStage, isCameraActive, recordedBlob]);
+
+  const handleReattemptAccess = useCallback(() => {
+    setIsCameraActive(false);
+    setTimeout(() => {
+      setIsCameraActive(true);
+    }, 150);
+  }, []);
 
   // Phase 3 Preview Local URL
   const previewUrl = useMemo(() => {
@@ -396,6 +407,7 @@ export default function SoloStage({
     update((prev: Partial<Memory>) => {
       const resolved = typeof updatedDataOrFn === 'function' ? updatedDataOrFn(prev) : updatedDataOrFn;
       return {
+          ...prev,
           ...resolved,
           cameraActive: isCameraActive,
       };
@@ -431,7 +443,7 @@ export default function SoloStage({
       data?.structuredScript ? "max-w-[95vw] xl:max-w-screen-2xl mx-auto h-[calc(100vh-180px)]" : "max-w-4xl mx-auto"
     )}>
       {/* PERSISTENCE MANTLE: Keep MemoryForm mounted for flush stability */}
-      <div className={cn("w-full h-full", data?.structuredScript ? "hidden" : "block")}>
+      <div className={cn("w-full h-full", (data?.structuredScript && !isProductionLocked) ? "hidden" : "block")}>
         <MemoryForm ref={formRef} 
           data={data} 
           update={shieldedUpdate} 
@@ -450,11 +462,18 @@ export default function SoloStage({
         />
       </div>
 
-      {data?.structuredScript && (
+      {data?.structuredScript && isReviewing && (
         <CinemaMonitor 
           structuredScript={data.structuredScript} 
           onActivity={onActivity}
           onNext={onNext}
+          onBackToEditor={() => globalActions.setIsReviewing(false)}
+          isProductionLocked={isProductionLocked}
+          onUnlock={() => {
+            console.log("[SoloStage] Unlocking production lock via CinemaMonitor HUD");
+            globalActions.setIsProductionLocked(false);
+            update({ isProductionLocked: false });
+          }}
           isSaving={isPersistenceSaving}
         />
       )}
@@ -592,7 +611,12 @@ export default function SoloStage({
                      animate={{ opacity: 1, y: 0 }}
                      className={`flex items-center gap-3 px-4 py-2 rounded-full font-mono font-bold tracking-widest backdrop-blur-md border ${isWarningLimit ? 'bg-amber-500/20 border-amber-500 text-amber-200' : 'bg-rose-500/20 border-rose-500 text-rose-200'}`}
                    >
-                     <motion.div animate={{ opacity: [1, 0, 1] }} transition={{ repeat: Infinity, duration: 1.5 }} className={`w-3 h-3 rounded-full ${isWarningLimit ? 'bg-amber-400' : 'bg-rose-500'}`} />
+                     <motion.div 
+                       initial={{ opacity: 1 }}
+                       animate={{ opacity: [1, 0, 1] }} 
+                       transition={{ repeat: Infinity, duration: 1.5 }} 
+                       className={`w-3 h-3 rounded-full ${isWarningLimit ? 'bg-amber-400' : 'bg-rose-500'}`} 
+                     />
                      {formatTime(recordingTime)}
                    </motion.div>
                  ) : (
@@ -603,7 +627,15 @@ export default function SoloStage({
                </AnimatePresence>
              </div>
 
-             <div className="flex-1 flex flex-col items-center justify-center p-4">
+             <div 
+               ref={stageRef}
+               data-blueprint="SoloStage:StageArea"
+               className={cn(
+                 "flex-1 relative min-h-0 flex flex-col items-center justify-start py-20 px-8 transition-all duration-700",
+                 "overflow-y-auto custom-scrollbar",
+                 modality === null ? "opacity-0 scale-95" : "opacity-100 scale-100"
+               )}
+             >
                 <AnimatePresence>
                   {isInterviewMode && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl w-full bg-slate-950/70 backdrop-blur-3xl border border-sky-500/30 rounded-[2.5rem] p-8 shadow-2xl text-center pointer-events-auto">
@@ -647,7 +679,88 @@ export default function SoloStage({
              </div>
           </div>
 
-          {!isCameraActive && (
+          {error ? (
+            <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-xl p-8 overflow-y-auto custom-scrollbar">
+               {/* Premium Warning Lock Icon */}
+               <div className="relative mb-6">
+                 <div className="absolute inset-0 rounded-full bg-rose-500/20 blur-xl animate-pulse" />
+                 <div className="relative w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                    <Lock className="w-8 h-8" />
+                 </div>
+               </div>
+
+               {/* Title */}
+               <h3 className="text-2xl font-black text-white uppercase tracking-[0.2em] mb-2 text-center">
+                 Optics & Mic Locked
+               </h3>
+               
+               {/* Subtitle */}
+               <p className="text-sm text-white/60 max-w-md text-center leading-relaxed mb-6">
+                 To record your cinematic memory, browser access to your camera and microphone is required. Your stream is processed entirely locally.
+               </p>
+
+               {/* Step-by-Step Instructions */}
+               <div className="w-full max-w-xl bg-white/[0.02] border border-white/5 rounded-3xl p-6 mb-6 text-left space-y-4">
+                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                     <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">How to Unlock Permissions</span>
+                     <span className="text-[9px] font-mono text-rose-500/80 bg-rose-500/5 px-2 py-0.5 rounded border border-rose-500/10 uppercase">Required</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                     {/* Chrome/Edge Instruction */}
+                     <div className="space-y-2">
+                        <div className="font-bold text-white flex items-center gap-2">
+                           <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[9px]">1</span>
+                           Chrome / Edge / Firefox
+                        </div>
+                        <ul className="space-y-1.5 text-white/50 pl-5 list-disc">
+                           <li>Click the <strong className="text-white font-semibold">Lock Icon 🔒</strong> next to the URL in the address bar.</li>
+                           <li>Toggle <strong className="text-white font-semibold">Camera</strong> and <strong className="text-white font-semibold">Microphone</strong> to <strong className="text-emerald-400 font-semibold">Allow</strong>.</li>
+                        </ul>
+                     </div>
+
+                     {/* Safari Instruction */}
+                     <div className="space-y-2">
+                        <div className="font-bold text-white flex items-center gap-2">
+                           <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[9px]">2</span>
+                           Apple Safari
+                        </div>
+                        <ul className="space-y-1.5 text-white/50 pl-5 list-disc">
+                           <li>Click <strong className="text-white font-semibold">Safari</strong> in the menu bar, then <strong className="text-white font-semibold">Settings for This Website...</strong></li>
+                           <li>Set both <strong className="text-white font-semibold">Camera</strong> and <strong className="text-white font-semibold">Microphone</strong> to <strong className="text-emerald-400 font-semibold">Allow</strong>.</li>
+                        </ul>
+                     </div>
+                  </div>
+
+                  <p className="text-[10px] text-white/30 text-center italic pt-2 border-t border-white/5">
+                     Tip: You may need to refresh the browser if permissions don't apply immediately.
+                  </p>
+               </div>
+
+               {/* Action Buttons */}
+               <div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-md justify-center">
+                  {/* Re-attempt Access Button */}
+                  <button 
+                     onClick={handleReattemptAccess}
+                     className="w-full sm:w-auto px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[11px] uppercase tracking-widest rounded-xl hover:scale-102 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-98 transition-all flex items-center justify-center gap-2 group"
+                  >
+                     <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-700" />
+                     Re-attempt Access
+                  </button>
+
+                  {/* Go Back Button */}
+                  <button 
+                     onClick={() => {
+                        // Retreat to Scribing (Stage 0)
+                        setProductionStage(0);
+                     }}
+                     className="w-full sm:w-auto px-6 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white/60 hover:text-white font-bold text-[11px] uppercase tracking-widest rounded-xl active:scale-98 transition-all flex items-center justify-center gap-2"
+                  >
+                     Go Back
+                  </button>
+               </div>
+            </div>
+          ) : !isCameraActive && (
             <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
                <Video className="w-16 h-16 text-white/20 mb-6" />
                <h3 className="text-xl font-bold text-white mb-2">Camera Offline</h3>

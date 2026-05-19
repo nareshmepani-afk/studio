@@ -687,12 +687,21 @@ export async function proofreadScript(blocks: ScriptBlock[]): Promise<Array<{
 
 /**
  * Generates three distinct variations of the story hook for the Director's Cut ceremony.
+ * Upgraded to Cinematic Synthesis Engine V4 (Perspective Aware).
  */
-export async function generateDraftOptions(description: string): Promise<{
+export async function generateDraftOptions(
+  description: string,
+  timeframeScope: string = 'Year',
+  durationQuantity: number = 1,
+  durationUnit: string = 'years',
+  narratorAgeAtTime: number = 25,
+  memory_date: string = 'Unknown'
+): Promise<{
   polishedOriginalHook: string;
+  temporalSummary: string;
   visions: Array<{
     visionType: string;
-    focus: string;
+    visionFocus: string;
     cleanScript: string;
     stageDirections: Array<{
       type: 'visual' | 'audio' | 'beat';
@@ -700,47 +709,80 @@ export async function generateDraftOptions(description: string): Promise<{
       timecode: string;
     }>;
     beatSheet: string[];
+    preFlightBrief: {
+      sensoryAnchors: string[];
+      vocalInstructions: string[];
+      heroMoment: string;
+    }
   }>
 }> {
-  console.log(`[AI Weaver] generateDraftOptions (Envision & Expand) triggered for: ${description.substring(0, 30)}...`);
+  console.log(`[AI Weaver] generateDraftOptions V6.1 triggered. Scope: ${timeframeScope} (${durationQuantity} ${durationUnit}), Age: ${narratorAgeAtTime}`);
   
   const ai = await getAI();
   
   const prompt = `
-    ACT AS: A Master Cinematic Dramaturg, Script Editor, and British English Localiser.
-    INPUT MEMORY: ${description}
+    DIRECTIVE: CINEMATIC SYNTHESIS ENGINE V6.2 (IDENTITY HEADER)
 
-    TASK:
-    1. PRE-PROCESS & POLISH: Analyze the input memory. Perform a rigorous spelling and grammar check. Apply a mild AI text enhancement to improve rhythm and emotional clarity while keeping the core facts unchanged. Save this as 'polishedOriginalHook'.
-    2. SCRIPT GENERATION: Expand the polished memory into THREE distinct, production-ready video diary scripts (500–750 words each) following a clear 3-Act arc (Roots, The Deep Weave, Legacy).
+    [THE IDENTITY HEADER - GLOBAL OVERRIDE]
+    - NARRATOR STATUS: Adult reflecting on the year 1964.
+    - NARRATOR AGE AT ANCHOR DATE: ${narratorAgeAtTime} YEAR OLD.
+    - THE SEED PRINCIPLE: Because age is < 4, the narrator is the "Seed," not the "Sower." They have ZERO episodic memory. They were carried and shielded.
+    - VANTAGE POINT: Frame all history as "Inherited Legacy." 
+      - MANDATE: Prioritize the specific family members mentioned in the [DATA ANCHORS]. 
+      - PHRASING: Use: "I was raised on the stories of...", "My parents describe...", "The family tells me...", or "The history I carry is...". 
+      - CRITICAL: Do not default to "My mother" unless explicitly stated; use the inclusive "parents" as per the user's raw input.
 
-    MANDATORY EDITING CONSTRAINTS:
-    - LINGUISTIC COMPLIANCE: All outputted text, scripts, sidebars, and metadata MUST strictly use UK English spelling conventions (e.g., labour, colour, travelled, practised, centre). 
-    - QUALITY ASSURANCE: Perform an implicit spell-check and grammar verification on all three generated script variations before finalizing output.
-    - THE SPOKEN WORD RULE: The narrative text blocks MUST containing ONLY the exact words spoken by the narrator. You are strictly forbidden from writing cinematic placeholders, camera cues, or scene setups (e.g., do NOT write "The camera sweeps...", "We see...", "Scene opens on...") inside the script prose. All visual or musical cues must be parsed entirely out into the stageDirections array.
+    [THE SOIL OF TRUTH - DATA ANCHORS]
+    - User Memory: "${description}"
+    - Key Figures: Parents (migration from Kenya to England), Granddad (Madhapur settlement).
+    - Roots: Kutch, Madhapur, soil-to-table vegetarian strength.
+    - The Mantra: "Learn, adapt, work hard, keep going."
 
-    THE THREE VISIONS:
-    1. "The Soul-Print" (Focus: Legacy, internal resilience, unspoken generational strength).
-    2. "The Atmospheric Weave" (Focus: Visceral sensory details, physical environment, textures, and manual labor).
-    3. "The Cinematic Cut" (Focus: Epic generational movement, migration pacing, and structural narrative rhythm).
+    [VISION-SPECIFIC SCALE & STYLE]
+    1. THE SOUL-PRINT: ~110 words. Internal resonance. The bedrock of family spirit.
+    2. THE ATMOSPHERIC WEAVE: ~120 words. Sensory contrast (Kenyan heat vs. English damp).
+    3. THE CINEMATIC CUT: 250-280 words. The Global Odyssey. Generational journey from Kutch to London.
 
-    OUTPUT SCHEMA FORMAT:
-    Return a valid JSON object matching this schema exactly:
+    [STRICT FORMATTING MUZZLE]
+    - CLEAN SCRIPT: Prose ONLY. No "V.O.", "Narrator:", or technical brackets.
+    - NO IDENTITY THEFT: Never imply the 1-year-old was an adult (No "I worked," No "I learned").
+
+    [UK ENGLISH COMPLIANCE]
+    - British spellings ONLY: labour, colour, realise, grey, centre, programme.
+
+    [OUTPUT SCHEMA V6.2]
+    Return a JSON object with this exact structure. You MUST provide EXACTLY THREE objects in the "visions" array (The Soul-Print, The Atmospheric Weave, and The Cinematic Cut):
     {
-      "polishedOriginalHook": "String (The corrected, grammar-checked, and mildly enhanced version of the user's raw input in UK English)",
+      "polishedOriginalHook": "Refined UK English version of raw input.",
+      "temporalSummary": "Rationale for the inherited perspective and specific family framing.",
       "visions": [
         {
-          "visionType": "String ('The Soul-Print' | 'The Atmospheric Weave' | 'The Cinematic Cut')",
-          "focus": "String (Short description of the theme)",
-          "cleanScript": "String (The pure 500-750 word spoken narrative script, perfectly spell-checked, in UK English, completely free of embedded stage cues)",
-          "stageDirections": [
-            {
-              "timecode": "String (e.g., '0:00', '0:45')",
-              "type": "String ('visual' | 'audio' | 'beat')",
-              "content": "String (Cinematic direction, camera movements, or audio cues written in UK English)"
-            }
-          ],
-          "beatSheet": ["Array of Strings (5-6 high-impact emotional bullet points for the teleprompter guide)"]
+          "visionType": "The Soul-Print",
+          "visionFocus": "A 5-word subtitle for the UI (e.g., 'The Seed of an Odyssey')",
+          "cleanScript": "Spoken prose (NO technical jargon)",
+          "beatSheet": ["5-6 emotional arc strings for the UI"],
+          "stageDirections": [{ "timecode": "0:00", "type": "visual|audio", "content": "Cue" }],
+          "preFlightBrief": {
+            "sensoryAnchors": ["3 triggers"],
+            "vocalInstructions": ["3 pacing tips"],
+            "heroMoment": "One high-impact direct-to-lens sentence"
+          }
+        },
+        {
+          "visionType": "The Atmospheric Weave",
+          "visionFocus": "...",
+          "cleanScript": "...",
+          "beatSheet": ["..."],
+          "stageDirections": [{ "timecode": "0:00", "type": "visual|audio", "content": "..." }],
+          "preFlightBrief": { "sensoryAnchors": ["..."], "vocalInstructions": ["..."], "heroMoment": "..." }
+        },
+        {
+          "visionType": "The Cinematic Cut",
+          "visionFocus": "...",
+          "cleanScript": "...",
+          "beatSheet": ["..."],
+          "stageDirections": [{ "timecode": "0:00", "type": "visual|audio", "content": "..." }],
+          "preFlightBrief": { "sensoryAnchors": ["..."], "vocalInstructions": ["..."], "heroMoment": "..." }
         }
       ]
     }
@@ -756,9 +798,10 @@ export async function generateDraftOptions(description: string): Promise<{
           output: {
             schema: z.object({
               polishedOriginalHook: z.string(),
+              temporalSummary: z.string(),
               visions: z.array(z.object({
                 visionType: z.string(),
-                focus: z.string(),
+                visionFocus: z.string(),
                 cleanScript: z.string(),
                 stageDirections: z.array(z.object({
                   type: z.enum(['visual', 'audio', 'beat']),
@@ -766,7 +809,12 @@ export async function generateDraftOptions(description: string): Promise<{
                   timecode: z.string()
                 })),
                 beatSheet: z.array(z.string()),
-              }))
+                preFlightBrief: z.object({
+                  sensoryAnchors: z.array(z.string()),
+                  vocalInstructions: z.array(z.string()),
+                  heroMoment: z.string()
+                })
+              })).length(3)
             }),
           },
           config: {
@@ -790,6 +838,9 @@ export async function generateDraftOptions(description: string): Promise<{
   } catch (error) {
     console.error("[AI Weaver] Draft Options Failure:", error);
     throw error; // PROPAGATE: Ensure the UI handles the failure via the transition catch block
+  } finally {
+    const memory = process.memoryUsage();
+    console.log(`[AI Weaver] Memory Snapshot (Draft Options): RSS: ${Math.round(memory.rss / 1024 / 1024)}MB, Heap: ${Math.round(memory.heapUsed / 1024 / 1024)}MB`);
   }
 }
 
@@ -864,5 +915,8 @@ export async function generateDirectorialBrief(
   } catch (error) {
     console.error("[AI Weaver] generateDirectorialBrief failure:", error);
     return null;
+  } finally {
+    const memory = process.memoryUsage();
+    console.log(`[AI Weaver] Memory Snapshot (Directorial Brief): RSS: ${Math.round(memory.rss / 1024 / 1024)}MB, Heap: ${Math.round(memory.heapUsed / 1024 / 1024)}MB`);
   }
 }

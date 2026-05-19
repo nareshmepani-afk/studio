@@ -154,10 +154,10 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                           onClick={() => available && onStageChange(act.id)}
                           disabled={!available || isSaving}
                           className={cn(
-                            "group flex items-start gap-4 text-left transition-all duration-300 w-full",
+                            "group flex items-start gap-4 text-left transition-all duration-300",
                             (!available || isSaving) && "opacity-30 cursor-not-allowed",
                             active && customWidth > 160 && "translate-x-2",
-                            customWidth <= 160 && "justify-center"
+                            customWidth <= 160 ? "w-12 justify-center" : "w-full"
                           )}
                         >
                           <motion.div 
@@ -215,7 +215,7 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                             </motion.div>
                           )}
 
-                          {!isActFullyUnlocked(act.id) && !active && (
+                          {!isActFullyUnlocked(act.id) && !active && customWidth > 160 && (
                             <Lock className="w-2.5 h-2.5 text-white/5 ml-auto mt-1.5" />
                           )}
                         </button>

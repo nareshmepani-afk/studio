@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Memory, ScriptBlock, StructuredScript } from '@/types';
+import { Memory, ScriptBlock, StructuredScript, TimeframeScope } from '@/types';
 import { toast } from 'sonner';
 
 interface PersistenceProps {
@@ -33,6 +33,13 @@ interface PersistenceProps {
   isProductionLocked?: boolean;
   productionStage?: number;
   prose?: string;
+  timeframeScope?: TimeframeScope;
+  narratorAgeAtTime?: number;
+  durationQuantity?: number;
+  durationUnit?: 'days' | 'months' | 'years';
+  modality?: 'pen' | 'voice' | null;
+  activeVision?: 'soul' | 'sensory' | 'cinematic' | string;
+  productionTakes?: any[];
 }
 
 export function useMemoryPersistence({
@@ -65,9 +72,17 @@ export function useMemoryPersistence({
   scriptHistory,
   isProductionLocked,
   productionStage,
-  prose
+  prose,
+  timeframeScope,
+  durationQuantity,
+  durationUnit,
+  narratorAgeAtTime,
+  modality,
+  activeVision,
+  productionTakes
 }: PersistenceProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const isSavingRef = useRef(false);
   const lastSavedTimestamp = useRef<number>(0);
   const previousDescription = useRef<string>(description);
   
@@ -79,7 +94,9 @@ export function useMemoryPersistence({
     sensoryValues, scriptBlocks, chapterTitle, usePoster, 
     posterStyle, posterImageUrl, director, producer, starring, 
     billingLine, aiTakes, structuredScript,
-    originalHook, scriptHistory, isProductionLocked, productionStage, prose
+    originalHook, scriptHistory, isProductionLocked, productionStage, prose,
+    timeframeScope, durationQuantity, durationUnit, narratorAgeAtTime, modality,
+    activeVision, productionTakes, isReviewing
   });
 
   useEffect(() => {
@@ -88,14 +105,18 @@ export function useMemoryPersistence({
       sensoryValues, scriptBlocks, chapterTitle, usePoster, 
       posterStyle, posterImageUrl, director, producer, starring, 
       billingLine, aiTakes, structuredScript,
-      originalHook, scriptHistory, isProductionLocked, productionStage, prose
+      originalHook, scriptHistory, isProductionLocked, productionStage, prose,
+      timeframeScope, durationQuantity, durationUnit, narratorAgeAtTime, modality,
+      activeVision, productionTakes, isReviewing
     };
   }, [
     title, description, location, country, tags, day, month, year,
     sensoryValues, scriptBlocks, chapterTitle, usePoster, 
     posterStyle, posterImageUrl, director, producer, starring, 
     billingLine, aiTakes, structuredScript,
-    originalHook, scriptHistory, isProductionLocked, productionStage, prose
+    originalHook, scriptHistory, isProductionLocked, productionStage, prose,
+    timeframeScope, durationQuantity, durationUnit, narratorAgeAtTime, modality,
+    activeVision, productionTakes, isReviewing
   ]);
   
   // Stable references for parent state to decouple dependency arrays
@@ -147,8 +168,21 @@ export function useMemoryPersistence({
   }, []);
 
   const flush = useCallback(async (overrides?: Partial<PersistenceProps>) => {
-    // RIGID GUARDRAIL: Concurrent Save Shield
-    if (isSaving) return { success: true, reason: 'already-saving' };
+    // Synchronize overrides to God Ref immediately to bypass React async render batching latency
+    if (overrides) {
+      latestStateRef.current = { ...latestStateRef.current, ...overrides };
+    }
+
+    // RIGID GUARDRAIL: Concurrent Save Shield with Ref-Based Async Waiting
+    if (isSavingRef.current) {
+      console.log("[useMemoryPersistence] Save already in flight. Waiting for completion...");
+      let waitTime = 0;
+      while (isSavingRef.current && waitTime < 3000) {
+        await new Promise(r => setTimeout(r, 50));
+        waitTime += 50;
+      }
+      console.log("[useMemoryPersistence] Completed wait for concurrent save. Proceeding with fresh check.");
+    }
 
     const currentData = dataRef.current;
     const s = { ...latestStateRef.current, ...overrides };
@@ -162,10 +196,8 @@ export function useMemoryPersistence({
     // RIGID GUARDRAIL: Timestamp Validation (Throttle rapid fires)
     const now = Date.now();
     if (now - lastSavedTimestamp.current < 500) {
-      return { success: true, reason: 'throttled' };
+      return { success: true, reason: 'throttled', description: s.description, latestState: s };
     }
-
-
 
     const hasChanged = (() => {
       const checks = {
@@ -188,7 +220,25 @@ export function useMemoryPersistence({
         originalHook: (s.originalHook || '') !== (currentData?.originalHook || ''),
         scriptHistory: JSON.stringify(s.scriptHistory || []) !== JSON.stringify(currentData?.scriptHistory || []),
         isProductionLocked: (s.isProductionLocked ?? false) !== (currentData?.isProductionLocked ?? false),
-        productionStage: (s.productionStage ?? 0) !== (currentData?.productionStage ?? 0)
+        productionStage: (s.productionStage ?? 0) !== (currentData?.productionStage ?? 0),
+        timeframeScope: s.timeframeScope !== (currentData?.timeframeScope || 'Year'),
+        narratorAgeAtTime: s.narratorAgeAtTime !== (currentData?.narratorAgeAtTime !== undefined ? currentData.narratorAgeAtTime : 25),
+        durationQuantity: s.durationQuantity !== (currentData?.durationQuantity || 1),
+        durationUnit: s.durationUnit !== (currentData?.durationUnit || 'years'),
+        modality: (() => {
+          // Overwrite shield: If new modality is null/undefined but Firestore already has a set modality,
+          // ignore it as state-lag during rehydration.
+          if (!s.modality && currentData?.modality) return false;
+          return (s.modality || null) !== (currentData?.modality || null);
+        })(),
+        activeVision: (() => {
+          // Overwrite shield: If new vision is null/undefined but Firestore already has a set vision,
+          // ignore it as state-lag during rehydration.
+          if (!s.activeVision && currentData?.activeVision) return false;
+          return (s.activeVision || '') !== (currentData?.activeVision || '');
+        })(),
+        productionTakes: JSON.stringify(s.productionTakes || []) !== JSON.stringify(currentData?.productionTakes || []),
+        isReviewing: (s.isReviewing ?? false) !== (currentData?.isReviewing ?? false)
       };
 
       const changedFields = Object.entries(checks)
@@ -205,6 +255,7 @@ export function useMemoryPersistence({
     if (hasChanged) {
       console.log("[useMemoryPersistence] Manual Flush Triggered (Async Handshake)");
       setIsSaving(true);
+      isSavingRef.current = true;
       lastSavedTimestamp.current = now;
       previousDescription.current = description;
       
@@ -236,31 +287,42 @@ export function useMemoryPersistence({
           },
           aiTakes: s.aiTakes || null,
           structuredScript: s.structuredScript || null,
-          originalHook: s.originalHook || undefined,
-          scriptHistory: s.scriptHistory || undefined,
-          isProductionLocked: s.isProductionLocked ?? undefined,
-          productionStage: s.productionStage ?? undefined,
-          prose: s.prose || undefined,
+          originalHook: s.originalHook || currentData?.originalHook || undefined,
+          scriptHistory: s.scriptHistory || currentData?.scriptHistory || undefined,
+          isProductionLocked: s.isProductionLocked !== undefined ? s.isProductionLocked : (currentData?.isProductionLocked ?? undefined),
+          productionStage: s.productionStage !== undefined ? s.productionStage : (currentData?.productionStage ?? undefined),
+          prose: s.prose !== undefined ? s.prose : (currentData?.prose ?? undefined),
+          timeframeScope: (s.timeframeScope || currentData?.timeframeScope) as TimeframeScope || undefined,
+          narratorAgeAtTime: s.narratorAgeAtTime !== undefined ? s.narratorAgeAtTime : (currentData?.narratorAgeAtTime !== undefined ? currentData.narratorAgeAtTime : undefined),
+          durationQuantity: s.durationQuantity !== undefined ? s.durationQuantity : (currentData?.durationQuantity ?? undefined),
+          durationUnit: (s.durationUnit || currentData?.durationUnit) as 'days' | 'months' | 'years' || undefined,
+          modality: s.modality || currentData?.modality || null,
+          activeVision: s.activeVision || currentData?.activeVision || undefined,
+          productionTakes: s.productionTakes || currentData?.productionTakes || undefined,
+          isReviewing: s.isReviewing ?? false,
           status: 'draft' as const // status is usually managed elsewhere but we keep it safe
         };
 
         const result = await updateRef.current(delta);
-        return { success: true, result };
+        return { success: true, result, description: s.description, latestState: s };
       } catch (err) {
         console.error("[useMemoryPersistence] Flush failed:", err);
         return { success: false, error: err };
       } finally {
         setIsSaving(false);
+        isSavingRef.current = false;
       }
     }
 
-    return { success: true, changed: false };
+    return { success: true, changed: false, description: s.description, latestState: s };
   }, [
     title, description, location, country, tags, day, month, year,
     sensoryValues, scriptBlocks, chapterTitle, usePoster, 
     posterStyle, posterImageUrl, director, producer, starring, 
     billingLine, aiTakes, structuredScript,
-    originalHook, scriptHistory, isProductionLocked
+    originalHook, scriptHistory, isProductionLocked,
+    timeframeScope, durationQuantity, durationUnit, modality,
+    activeVision, productionTakes, isReviewing
   ]);
 
   // Stable Reference for Auto-Save logic to prevent loop-back cycles
@@ -292,7 +354,14 @@ export function useMemoryPersistence({
     JSON.stringify(aiTakes || null),
     JSON.stringify(sensoryValues || {}),
     JSON.stringify(scriptBlocks || []),
-    isProductionLocked
+    isProductionLocked,
+    timeframeScope,
+    narratorAgeAtTime,
+    durationQuantity,
+    durationUnit,
+    modality,
+    activeVision,
+    JSON.stringify(productionTakes || null)
   ]);
 
   // 4. UNSAVED CHANGES WARNING

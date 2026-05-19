@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,7 +16,7 @@ import type { Memory } from '@/types';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function CinemaPage() {
+function CinemaContent() {
   const { user } = useAuth();
   const { mode } = useLanguage();
   const router = useRouter();
@@ -212,5 +212,20 @@ export default function CinemaPage() {
         />
       )}
     </AuthenticatedPageWrapper>
+  );
+}
+
+export default function CinemaPage() {
+  return (
+    <Suspense fallback={
+      <AuthenticatedPageWrapper>
+        <div className='flex flex-col justify-center items-center min-h-[60vh] gap-4'>
+           <Loader2 className='animate-spin h-12 w-12 text-primary/40' />
+            <p className="text-[10px] uppercase tracking-[.4em] font-black text-white/20">Initializing Memory Cinema...</p>
+        </div>
+      </AuthenticatedPageWrapper>
+    }>
+      <CinemaContent />
+    </Suspense>
   );
 }

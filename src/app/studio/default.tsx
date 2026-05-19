@@ -25,10 +25,15 @@ export default function StudioProductionPage() {
   }, [user]);
 
   // GUEST MODE: Highest priority check for the loading state.
-  // We use URLSearchParams directly for the very first frame to avoid a flicker.
-  const isGuestModeFromURL = typeof window !== 'undefined' && 
-                            window.location.search.includes('mode=guest') &&
-                            window.location.search.includes('sessionId=');
+  // Prevent SSR hydration mismatch by resolving guest mode search parameters on mount
+  const [isGuestModeFromURL, setIsGuestModeFromURL] = useState(false);
+
+  useEffect(() => {
+    setIsGuestModeFromURL(
+      window.location.search.includes('mode=guest') &&
+      window.location.search.includes('sessionId=')
+    );
+  }, []);
 
   const isGuest = isGuestModeFromURL || (!user && state?.mode === 'guest');
 

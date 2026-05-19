@@ -136,5 +136,8 @@ export async function generateSoundtrack(
     // Return the safe ambient backup to ensure the user isn't left in silence
     console.log("[Audio Weaver] Serving cinematic fallback: ", SAFE_BACKUP_URL);
     return SAFE_BACKUP_URL;
+  } finally {
+    const memory = process.memoryUsage();
+    console.log(`[Audio Weaver] Memory Snapshot (Post-Gen): RSS: ${Math.round(memory.rss / 1024 / 1024)}MB, Heap: ${Math.round(memory.heapUsed / 1024 / 1024)}MB / ${Math.round(memory.heapTotal / 1024 / 1024)}MB`);
   }
 }

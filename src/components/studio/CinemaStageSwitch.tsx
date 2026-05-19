@@ -58,7 +58,7 @@ export default function CinemaStageSwitch({
   };
 
   return (
-    <div className="w-full h-full relative overflow-hidden flex flex-col font-sans select-none">
+    <div className="w-full h-full relative overflow-hidden flex flex-col font-sans">
       {/* HUD Header removed - Navigation handled by ProductionRail */}
 
       {/* Main Content Reel */}

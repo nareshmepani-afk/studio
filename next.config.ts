@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  serverExternalPackages: ['peerjs', 'debug'],
 };
 
 export default nextConfig;

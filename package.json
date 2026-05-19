@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node -e \"const fs = require('fs'); fs.rmSync('.next', { recursive: true, force: true });\"",
+    "predev:https": "node -e \"const fs = require('fs'); fs.rmSync('.next', { recursive: true, force: true });\"",
     "dev": "next dev -H 0.0.0.0 --experimental-https",
     "dev:https": "next dev --experimental-https",
     "dev:mobile": "npm run dev",

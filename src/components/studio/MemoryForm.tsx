@@ -6,9 +6,9 @@ import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { 
   PenTool, Mic, Sparkles, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
   Save, Rocket, AlertCircle, Loader2, Edit3, ChevronRight, ChevronDown, Maximize2, 
-  Trash2, Plus, Info, Layout, Layers, Wand2, Music, Wind, Coffee, Zap,
+  Trash2, Plus, Minus, Info, Layout, Layers, Wand2, Music, Wind, Coffee, Zap,
   FileText, ImageIcon, Video, Share2, MoreHorizontal, Square, History, UserCircle,
-  RotateCcw
+  RotateCcw, Lock
 } from 'lucide-react';
 import { Memory, SensoryPromptTemplate, ActionResponse, CatalystType, StructuredScript } from '@/types';
 import { useDictionary } from '@/hooks/use-dictionary';
@@ -26,14 +26,16 @@ import { useDirectorInk, getAnchorAtCaret } from '@/hooks/studio/useDirectorInk'
 import { useProductionCharge } from '@/hooks/studio/useProductionCharge';
 import { usePrimaryFocus } from '@/hooks/studio/usePrimaryFocus';
 import { MentorshipHotspot } from './MentorshipHotspot';
+import { useMemoryPersistence } from '@/hooks/studio/useMemoryPersistence';
 import { 
   SelectionDeck, 
   SynthesizingOverlay, 
   ScriptLightBox 
 } from './Scriptorium/Ceremony/SelectionDeck';
-import { useMemoryPersistence } from '@/hooks/studio/useMemoryPersistence';
 import { ArchiveDrawer } from './ArchiveDrawer';
-import { Lock } from 'lucide-react';
+import { ScopeToggleGroup } from './ScopeToggleGroup';
+import { TimeframeScope } from '@/types';
+import { mockPromptGroups } from '@/lib/mockData';
 
 const SEED_CATALOG: Record<string, string[]> = {
   'p1': [
@@ -97,6 +99,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const RequiredIndicator = () => (
   <span className="ml-2 text-[9px] font-black text-rose-500/60 uppercase tracking-[0.2em]">
@@ -215,6 +228,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   onNext,
   onSavingChange
 }, ref) => {
+  const [showUnlockConfirm, setShowUnlockConfirm] = useState(false);
   const router = useRouter();
   // Lifted state management: use props if provided, otherwise local state
   const [internalModality, setInternalModality] = useState<'pen' | 'voice' | null>(data?.modality || null);
@@ -260,12 +274,29 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   }, [onboardingJustClosed, data?.promptId]);
   const [title, setTitle] = useState(data?.title || '');
   const [description, setDescription] = useState(data?.description || '');
+
+  const currentPrompt = React.useMemo(() => {
+    if (!data?.promptId) return null;
+    for (const g of mockPromptGroups) {
+      const p = g.prompts.find(p => p.id === data.promptId);
+      if (p) return p;
+    }
+    return null;
+  }, [data?.promptId]);
   const [location, setLocation] = useState(data?.location || '');
   const [country, setCountry] = useState(data?.country && data.country !== 'none' ? data.country : '');
   const [tags, setTags] = useState<string[]>(data?.tags || []);
   const [day, setDay] = useState(data?.dateComponents?.day || 'none');
   const [month, setMonth] = useState(data?.dateComponents?.month || 'none');
   const [year, setYear] = useState(data?.dateComponents?.year || 'none');
+  const [timeframeScope, setTimeframeScopeLocal] = useState<TimeframeScope>(data?.timeframeScope || 'Year');
+  const [durationQuantity, setDurationQuantityLocal] = useState<number>(data?.durationQuantity || 1);
+  const [durationUnit, setDurationUnitLocal] = useState<'days' | 'months' | 'years'>(data?.durationUnit || 'years');
+  const [narratorAgeAtTime, setNarratorAgeAtTimeLocal] = useState<number>(() => {
+    const val = data?.narratorAgeAtTime !== undefined ? data.narratorAgeAtTime : 25;
+    console.log("[MemoryForm] Initializing narratorAgeAtTimeLocal:", val, "for data.id:", data?.id);
+    return val;
+  });
   const [prose, setProse] = useState(data?.prose || '');
   const [isDictating, setIsDictating] = useState(false);
   const [isPolishingDesc, setIsPolishingDesc] = useState(false);
@@ -280,7 +311,14 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const [lastAppliedType, setLastAppliedType] = useState<CatalystType | null>(null);
   
   const { 
-    actions: { setIsDirectorOpen, ...globalActions }, 
+    actions: { 
+      setIsDirectorOpen, 
+      setTimeframeScope: setGlobalTimeframeScope,
+      setDurationQuantity: setGlobalDurationQuantity,
+      setDurationUnit: setGlobalDurationUnit,
+      setNarratorAgeAtTime: setGlobalNarratorAgeAtTime,
+      ...globalActions 
+    }, 
     activeDrawer, 
     pendingAnchor, 
     draggingCatalyst,
@@ -333,7 +371,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const { isProductionLocked: globalLocked, actions: { setIsProductionLocked: setGlobalLocked } } = useGlobalStudioState();
   
   // Local sync for persistence
-  const isProductionLocked = data?.isProductionLocked || globalLocked;
+  const isProductionLocked = data?.isProductionLocked || globalLocked || (data?.productionStage || 0) >= 1;
 
   // Initialize Persistence
 
@@ -364,10 +402,17 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     scriptHistory,
     isProductionLocked,
     setDescription,
-    isReviewing,
     isGeneratingDrafts,
     productionStage,
-    prose
+    prose,
+    timeframeScope,
+    durationQuantity,
+    durationUnit,
+    narratorAgeAtTime,
+    modality,
+    activeVision: data?.activeVision,
+    productionTakes: data?.productionTakes,
+    isReviewing
   });
 
   // Sync Saving State to Parent
@@ -376,9 +421,9 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   }, [isCloudSaving, onSavingChange]);
 
   useImperativeHandle(ref, () => ({
-    flush: async () => {
+    flush: async (overrides?: any) => {
       // Diagnostic log throttled to prevent spam during loops
-      return await flush();
+      return await flush(overrides);
     },
     isSaving: isCloudSaving
   }));
@@ -454,8 +499,15 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     
     if (data?.dateComponents && lastFocusedField !== 'metadata') {
       if (data.dateComponents.day !== undefined && data.dateComponents.day !== day) setDay(data.dateComponents.day);
-      if (data.dateComponents.month !== undefined && data.dateComponents.month !== month) setMonth(data.dateComponents.month);
       if (data.dateComponents.year !== undefined && data.dateComponents.year !== year) setYear(data.dateComponents.year);
+    }
+
+    if (data?.timeframeScope !== undefined && data.timeframeScope !== timeframeScope) setTimeframeScopeLocal(data.timeframeScope);
+    if (data?.durationQuantity !== undefined && data.durationQuantity !== durationQuantity) setDurationQuantityLocal(data.durationQuantity);
+    if (data?.durationUnit !== undefined && data.durationUnit !== durationUnit) setDurationUnitLocal(data.durationUnit);
+    if (data?.narratorAgeAtTime !== undefined && data.narratorAgeAtTime !== narratorAgeAtTime) {
+      console.log("[MemoryForm] Syncing age FROM prop:", data.narratorAgeAtTime, "CURRENT local:", narratorAgeAtTime);
+      setNarratorAgeAtTimeLocal(data.narratorAgeAtTime);
     }
 
     if (data?.scriptBlocks && JSON.stringify(data.scriptBlocks) !== JSON.stringify(scriptBlocks)) {
@@ -682,6 +734,28 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   useEffect(() => {
     onClarityChange?.(descCharge);
   }, [descCharge, onClarityChange]);
+
+  const [highestClarityScript, setHighestClarityScript] = useState<string>('');
+  
+  useEffect(() => {
+    if (typeof window === 'undefined' || !data?.id) return;
+    const keyScore = `highest_clarity_score_${data.id}`;
+    const keyScript = `soul_print_script_${data.id}`;
+    
+    const savedScore = parseFloat(localStorage.getItem(keyScore) || '0');
+    const currentScore = descCharge || 0;
+    
+    if (currentScore > savedScore && description && description.length > 20) {
+      localStorage.setItem(keyScore, currentScore.toString());
+      localStorage.setItem(keyScript, description);
+      setHighestClarityScript(description);
+    } else {
+      const savedScript = localStorage.getItem(keyScript);
+      if (savedScript) {
+        setHighestClarityScript(savedScript);
+      }
+    }
+  }, [descCharge, description, data?.id]);
 
   const handlePolishDescription = useCallback(async (sensoryType?: CatalystType | 'polish', value?: string) => {
     if (value) {
@@ -1118,6 +1192,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 ) : isReviewing ? (
                   <SelectionDeck 
                     drafts={reviewDrafts || []} 
+                    onBackToEditor={async () => {
+                      globalActions.setIsReviewing(false);
+                      await flush({
+                        isReviewing: false
+                      });
+                    }}
                     onSelect={async (text, type, label, structured) => {
                       // COMMIT HANDSHAKE (Director's Lock)
                       if (!originalHook) {
@@ -1139,26 +1219,61 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       
                       setGlobalLocked(true);
 
+                       // Manual Flush to ensure Firestore sync (with overrides to avoid stale state)
+                       // We MUST await flush first to satisfy the Sync-Before-Advance Rule
+                       const result = await flush({
+                         description: text || '',
+                         prose: text || '',
+                         structuredScript: structured || undefined,
+                         productionStage: 1,
+                         originalHook: polishedOriginalHook || description,
+                         activeVision: type,
+                         isReviewing: false,
+                         isProductionLocked: true,
+                         productionTakes: reviewDrafts || []
+                       });
+
+                      if (result && !result.success) {
+                        toast.error("Failed to Seal Vision", {
+                          description: "The Director could not persist your choice to the cloud. Please try again."
+                        });
+                        return;
+                      }
+
+                      // Only upon successful persistence, transition global states and advance UI stage
                       globalActions.setSelectedVision(type as any, label);
                       globalActions.setIsReviewing(false);
-                      // ADVANCE MANDATE: Seal the vision and move to Act II (The Weave)
+                      globalActions.setReviewDrafts([]); // Clear drafts after selection
                       setProductionStage?.(1); 
-                      
-                      // Manual Flush to ensure Firestore sync (with overrides to avoid stale state)
-                      await flush({
-                        description: text || '',
-                        prose: text || '',
-                        structuredScript: structured || undefined,
-                        productionStage: 1,
-                        originalHook: polishedOriginalHook || description
-                      });
                     }} 
                     onPreview={(draft) => setSelectedDraftForPreview(draft)}
                     selectedText={description || ''}
                     originalHook={polishedOriginalHook || description}
                   />
                 ) : (
-                  <div className="act-1-content">
+                  <div className={cn(
+                    "act-1-content transition-all duration-500",
+                    (data?.productionStage || 0) >= 1 && "border border-amber-500/30 bg-amber-950/10 backdrop-blur-md rounded-[2.5rem] p-8 lg:p-12 shadow-[0_0_50px_rgba(245,158,11,0.05)] relative overflow-hidden"
+                  )}>
+                    {(data?.productionStage || 0) >= 1 && (
+                      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500/0 via-amber-500/60 to-amber-500/0" />
+                    )}
+                    {(data?.productionStage || 0) >= 1 && (
+                      <div className="mb-8 flex items-center justify-between bg-amber-500/10 border border-amber-500/20 rounded-2xl px-6 py-4 backdrop-blur-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-amber-500/20 rounded-lg border border-amber-500/30 text-amber-400">
+                            <Lock className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="text-[11px] font-black text-amber-400 uppercase tracking-[0.2em]">Picture Lock Active</div>
+                            <div className="text-[10px] text-amber-500/70 font-sans tracking-wide">Act I has been sealed. Modifications are locked to preserve Fusion Protocol sync.</div>
+                          </div>
+                        </div>
+                        <div className="text-[9px] font-mono text-amber-500/40 uppercase tracking-widest hidden md:block">
+                          Engine V6.5 LOCK
+                        </div>
+                      </div>
+                    )}
                     {/* Centered Scriptorium Content */}
                     <div className="flex-1 flex flex-col justify-start space-y-16">
                   <div className="space-y-6">
@@ -1220,51 +1335,81 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                 Invoke the Lifeline
                              </TooltipContent>
                            </Tooltip>
-                         </TooltipProvider>
+                          </TooltipProvider>
 
-                         <div className="h-px flex-1 bg-gradient-to-r from-emerald-500/30 to-transparent" />
-                       </div>
+                          <div className="h-px flex-1 bg-gradient-to-r from-emerald-500/30 to-transparent" />
+                        </div>
 
-                       <div className="flex flex-wrap gap-x-16 gap-y-10 pl-2">
+                        <div className="flex flex-wrap gap-x-16 gap-y-10 pl-2 relative z-[1010]">
                       {/* Location & Country Pair */}
                       <div className="space-y-4">
                          <span className="text-[11px] font-black text-emerald-400/70 uppercase tracking-[0.4em] flex items-center">
                            Memory Coordinates <RequiredIndicator />
                          </span>
-                        <div className="flex items-center gap-4 group/meta">
+                         <div className="flex items-center gap-4 group/meta relative z-[1020] pointer-events-auto">
                           <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover/meta:border-emerald-500/50 transition-all">
                             <MapPin className="w-4 h-4 text-emerald-400/60 group-hover/meta:text-emerald-400 transition-colors" />
                           </div>
-                          <div className="flex items-center gap-3">
-                            <div className="flex flex-col">
-                              <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">City / Venue</span>
-                              <input 
-                                value={location}
-                                onChange={(e) => { setLocation(e.target.value); onActivity?.(); }}
-                                onFocus={() => setLastFocusedField('metadata')}
-                                placeholder="WHERE DID IT HAPPEN?"
-                                readOnly={isProductionLocked}
-                                className={cn(
-                                  "bg-transparent border-none text-[11px] font-black uppercase tracking-[0.15em] text-white focus:text-emerald-400 focus:outline-none w-64 placeholder:text-white/40 transition-all",
-                                  isProductionLocked && "opacity-60 cursor-not-allowed"
+                          <div className={cn("flex items-center gap-3 transition-all", isProductionLocked && "opacity-30 blur-[0.5px]")}>
+                            <TooltipProvider>
+                              <Tooltip delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                  <div className="flex flex-col">
+                                    <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">City / Venue</span>
+                                    <input 
+                                      value={location}
+                                      onChange={(e) => { setLocation(e.target.value); onActivity?.(); }}
+                                      onFocus={() => setLastFocusedField('metadata')}
+                                      placeholder="WHERE DID IT HAPPEN?"
+                                      readOnly={isProductionLocked}
+                                      className={cn(
+                                        "bg-transparent border-none text-[11px] font-black uppercase tracking-[0.15em] text-white focus:text-emerald-400 focus:outline-none w-64 placeholder:text-white/40 transition-all",
+                                        isProductionLocked && "cursor-not-allowed"
+                                      )}
+                                    />
+                                  </div>
+                                </TooltipTrigger>
+                                {isProductionLocked && (
+                                  <TooltipContent className="bg-amber-950 border-amber-500/30 text-amber-200 text-[10px] font-bold uppercase tracking-widest px-4 py-2 mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <Lock className="w-3 h-3" />
+                                      FIELD LOCKED BY PRODUCTION
+                                    </div>
+                                    <p className="text-[8px] opacity-60 font-normal mt-1 lowercase">Release lock to edit coordinates</p>
+                                  </TooltipContent>
                                 )}
-                              />
-                            </div>
-                            <div className="w-px h-8 bg-white/5 mx-2" />
-                            <div className="flex flex-col">
-                              <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Country</span>
-                              <input 
-                                value={country}
-                                onChange={(e) => { setCountry(e.target.value); onActivity?.(); }}
-                                onFocus={() => setLastFocusedField('metadata')}
-                                placeholder="REGION"
-                                readOnly={isProductionLocked}
-                                className={cn(
-                                  "bg-transparent border-none text-[11px] font-black uppercase tracking-[0.15em] text-white focus:text-emerald-400 focus:outline-none w-32 placeholder:text-white/40 transition-all",
-                                  isProductionLocked && "opacity-60 cursor-not-allowed"
+                              </Tooltip>
+
+                              <div className="w-px h-8 bg-white/5 mx-2" />
+
+                              <Tooltip delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                  <div className="flex flex-col">
+                                    <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Country</span>
+                                    <input 
+                                      value={country}
+                                      onChange={(e) => { setCountry(e.target.value); onActivity?.(); }}
+                                      onFocus={() => setLastFocusedField('metadata')}
+                                      placeholder="REGION"
+                                      readOnly={isProductionLocked}
+                                      className={cn(
+                                        "bg-transparent border-none text-[11px] font-black uppercase tracking-[0.15em] text-white focus:text-emerald-400 focus:outline-none w-32 placeholder:text-white/40 transition-all",
+                                        isProductionLocked && "cursor-not-allowed"
+                                      )}
+                                    />
+                                  </div>
+                                </TooltipTrigger>
+                                {isProductionLocked && (
+                                  <TooltipContent className="bg-amber-950 border-amber-500/30 text-amber-200 text-[10px] font-bold uppercase tracking-widest px-4 py-2 mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <Lock className="w-3 h-3" />
+                                      FIELD LOCKED BY PRODUCTION
+                                    </div>
+                                    <p className="text-[8px] opacity-60 font-normal mt-1 lowercase">Release lock to edit coordinates</p>
+                                  </TooltipContent>
                                 )}
-                              />
-                            </div>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                         </div>
                       </div>
@@ -1274,44 +1419,132 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                          <span className="text-[11px] font-black text-emerald-400/70 uppercase tracking-[0.4em] flex items-center">
                            Memory Mark <RequiredIndicator />
                          </span>
-                        <div className="flex items-center gap-4 group/meta">
+                        <div className="flex items-center gap-4 group/meta relative z-[1005] pointer-events-auto">
                           <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group-hover/meta:border-emerald-500/50 transition-all">
                             <Calendar className="w-4 h-4 text-emerald-400/60 group-hover/meta:text-emerald-400 transition-colors" />
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex flex-col">
-                              <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Day</span>
-                              <StudioSelect 
-                                value={day} 
-                                onChange={(v) => { setDay(v); onActivity?.(); }} 
-                                items={DAYS.map(d => ({ value: d, label: d }))} 
-                                disabled={isProductionLocked}
-                              />
-                            </div>
-                            <div className="w-px h-8 bg-white/5 mx-1" />
-                            <div className="flex flex-col">
-                              <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Month</span>
-                              <StudioSelect 
-                                value={month} 
-                                onChange={(v) => { setMonth(v); onActivity?.(); }} 
-                                items={MONTHS.map((m, i) => ({ 
-                                  value: (i + 1).toString(), 
-                                  label: m.substring(0, 3).toUpperCase() 
-                                }))} 
-                                disabled={isProductionLocked}
-                              />
-                            </div>
-                            <div className="w-px h-8 bg-white/5 mx-1" />
-                            <div className="flex flex-col">
-                              <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Year</span>
-                              <StudioSelect 
-                                value={year} 
-                                onChange={(v) => { setYear(v); onActivity?.(); }} 
-                                items={YEARS.map(y => ({ value: y, label: y }))} 
-                                disabled={isProductionLocked}
-                              />
-                            </div>
+                          <div className={cn("flex items-center gap-2 transition-all", isProductionLocked && "opacity-30 blur-[0.5px]")}>
+                            <TooltipProvider>
+                              <div className="flex items-center gap-2">
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Day</span>
+                                  <StudioSelect 
+                                    value={day} 
+                                    onChange={(v) => { setDay(v); onActivity?.(); }} 
+                                    items={DAYS.map(d => ({ value: d, label: d }))} 
+                                    disabled={isProductionLocked}
+                                  />
+                                </div>
+                                <div className="w-px h-8 bg-white/5 mx-1" />
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Month</span>
+                                  <StudioSelect 
+                                    value={month} 
+                                    onChange={(v) => { setMonth(v); onActivity?.(); }} 
+                                    items={MONTHS.map((m, i) => ({ 
+                                      value: (i + 1).toString(), 
+                                      label: m.substring(0, 3).toUpperCase() 
+                                    }))} 
+                                    disabled={isProductionLocked}
+                                  />
+                                </div>
+                                <div className="w-px h-8 bg-white/5 mx-1" />
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">Year</span>
+                                  <StudioSelect 
+                                    value={year} 
+                                    onChange={(v) => { setYear(v); onActivity?.(); }} 
+                                    items={YEARS.map(y => ({ value: y, label: y }))} 
+                                    disabled={isProductionLocked}
+                                  />
+                                </div>
+                                <div className="w-px h-8 bg-white/5 mx-1" />
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] text-white/60 font-black uppercase tracking-widest mb-1">I Was</span>
+                                  <Tooltip delayDuration={0}>
+                                    <TooltipTrigger asChild>
+                                      <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-2 py-1.5 hover:border-emerald-500/50 transition-all h-[34px] relative z-[1020] pointer-events-auto">
+                                        <button 
+                                          type="button"
+                                          onClick={() => {
+                                            console.log("[MemoryForm] Minus clicked. Locked:", isProductionLocked);
+                                            if (isProductionLocked) return;
+                                            const newAge = Math.max(0, narratorAgeAtTime - 1);
+                                            setNarratorAgeAtTimeLocal(newAge);
+                                            setGlobalNarratorAgeAtTime(newAge);
+                                            onActivity?.();
+                                          }}
+                                          className={cn(
+                                            "text-white/40 hover:text-white transition-all active:scale-75 disabled:opacity-20 cursor-pointer p-1 relative z-[1030] pointer-events-auto",
+                                            isProductionLocked && "cursor-not-allowed"
+                                          )}
+                                          disabled={isProductionLocked}
+                                        >
+                                          <Minus className="w-3 h-3" />
+                                        </button>
+                                        <span className="text-[11px] font-black text-white min-w-[20px] text-center select-none">{narratorAgeAtTime}</span>
+                                        <button 
+                                          type="button"
+                                          onClick={() => {
+                                            console.log("[MemoryForm] Plus clicked. Locked:", isProductionLocked);
+                                            if (isProductionLocked) return;
+                                            const newAge = Math.min(120, narratorAgeAtTime + 1);
+                                            setNarratorAgeAtTimeLocal(newAge);
+                                            setGlobalNarratorAgeAtTime(newAge);
+                                            onActivity?.();
+                                          }}
+                                          className={cn(
+                                            "text-white/40 hover:text-white transition-all active:scale-75 disabled:opacity-20 cursor-pointer p-1 relative z-[1030] pointer-events-auto",
+                                            isProductionLocked && "cursor-not-allowed"
+                                          )}
+                                          disabled={isProductionLocked}
+                                        >
+                                          <Plus className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                    </TooltipTrigger>
+                                    {isProductionLocked && (
+                                      <TooltipContent className="bg-amber-950 border-amber-500/30 text-amber-200 text-[10px] font-bold uppercase tracking-widest px-4 py-2 mb-2">
+                                        <div className="flex items-center gap-2">
+                                          <Lock className="w-3 h-3" />
+                                          AGE STEPPER LOCKED
+                                        </div>
+                                        <p className="text-[8px] opacity-60 font-normal mt-1 lowercase">Release lock to edit age</p>
+                                      </TooltipContent>
+                                    )}
+                                  </Tooltip>
+                                </div>
+                              </div>
+                            </TooltipProvider>
                           </div>
+                        </div>
+
+                        {/* Narrative Scope */}
+                        <div className="space-y-4 pointer-events-auto">
+                          <span className="text-[11px] font-black text-emerald-400/70 uppercase tracking-[0.4em] flex items-center">
+                            Narrative Scope <Info className="w-3 h-3 ml-2 opacity-40" />
+                          </span>
+                          <ScopeToggleGroup 
+                            value={timeframeScope}
+                            onChange={(v) => { 
+                              setTimeframeScopeLocal(v); 
+                              setGlobalTimeframeScope(v);
+                              onActivity?.(); 
+                            }}
+                            durationQuantity={durationQuantity}
+                            onDurationChange={(v) => {
+                              setDurationQuantityLocal(v);
+                              setGlobalDurationQuantity(v);
+                              onActivity?.();
+                            }}
+                            durationUnit={durationUnit}
+                            onUnitChange={(v) => {
+                              setDurationUnitLocal(v);
+                              setGlobalDurationUnit(v);
+                              onActivity?.();
+                            }}
+                            disabled={isProductionLocked}
+                          />
                         </div>
                       </div>
                     </div>
@@ -1345,22 +1578,82 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                   Story Hook <RequiredIndicator />
                                 </div>
                                 
-                                <div className="flex items-center gap-2">
-                                  {isProductionLocked && (
-                                    <motion.button
-                                      initial={{ opacity: 0, scale: 0.9 }}
-                                      animate={{ opacity: 1, scale: 1 }}
-                                      onClick={() => {
-                                        if (confirm("WARNING: Releasing the lock will allow manual edits but may de-sync your Act II metadata if you change the narrative structure. Continue?")) {
-                                          setGlobalLocked(false);
-                                        }
-                                      }}
-                                      className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-500 text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-2 transition-all"
-                                    >
-                                      <Lock className="w-2 h-2" />
-                                      Release Production Lock
-                                    </motion.button>
+                                <div className="flex items-center gap-2 pointer-events-auto">
+                                  {isProductionLocked && (data?.activeVisionLabel || data?.activeVision) && (
+                                    <div className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                                      <span className="opacity-40">🎬 ESTHETIC CUT:</span>
+                                      <span className="font-bold text-[9px]">{(data?.activeVisionLabel || data?.activeVision || '').replace(/-/g, ' ')}</span>
+                                    </div>
                                   )}
+
+                                  {isProductionLocked && (
+                                    <TooltipProvider>
+                                      <Tooltip delayDuration={0}>
+                                        <TooltipTrigger asChild>
+                                          <motion.button
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => setShowUnlockConfirm(true)}
+                                            className="px-4 py-2 bg-amber-500/20 border border-amber-500/50 hover:bg-amber-500/30 text-amber-400 text-[9px] font-black uppercase tracking-widest rounded-full flex items-center gap-3 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all animate-pulse hover:animate-none"
+                                          >
+                                            <Lock className="w-3 h-3" />
+                                            Release Production Lock
+                                          </motion.button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="bg-amber-950 border-amber-500/30 text-amber-100 text-[10px] font-bold tracking-widest uppercase py-3 px-4 mb-2 max-w-[280px] shadow-2xl">
+                                          <div className="space-y-2">
+                                            <p className="flex items-center gap-2">
+                                              <AlertCircle className="w-3 h-3 text-amber-400" />
+                                              DIRECTOR'S LOCK ACTIVE
+                                            </p>
+                                            <p className="text-[8px] opacity-70 normal-case font-normal leading-relaxed">
+                                              Metadata is currently locked to preserve the narrative thread. Release this lock to enable manual control over age, coordinates, and timeframe.
+                                            </p>
+                                          </div>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  )}
+
+                                  <AlertDialog open={showUnlockConfirm} onOpenChange={setShowUnlockConfirm}>
+                                    <AlertDialogContent className="bg-slate-950/90 backdrop-blur-3xl border border-amber-500/20 max-w-md p-8 shadow-[0_0_50px_rgba(245,158,11,0.1)]">
+                                      <AlertDialogHeader className="space-y-4">
+                                        <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-2 mx-auto sm:mx-0">
+                                          <Lock className="w-6 h-6 text-amber-400" />
+                                        </div>
+                                        <AlertDialogTitle className="text-2xl font-headline text-white italic">
+                                          Release Narrative Lock?
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription className="text-white/60 text-sm leading-relaxed">
+                                          Warning: Releasing the lock will allow manual edits but may <span className="text-amber-400 font-bold">de-sync your Act II metadata</span> if you change the narrative structure significantly.
+                                          <br /><br />
+                                          Are you sure you want to proceed with manual control?
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter className="mt-8 gap-3">
+                                        <AlertDialogCancel className="bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white rounded-xl px-6 py-2 h-auto text-[10px] font-black uppercase tracking-widest transition-all">
+                                          Cancel
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction 
+                                          onClick={async () => {
+                                            console.log("[MemoryForm] Unlock confirmed. Updating states...");
+                                            setGlobalLocked(false);
+                                            await flush({ isProductionLocked: false });
+                                            update({ isProductionLocked: false });
+                                            setShowUnlockConfirm(false);
+                                            toast.success("Production Lock Released", {
+                                              description: "Manual control of metadata is now enabled."
+                                            });
+                                          }}
+                                          className="bg-amber-500 hover:bg-amber-400 text-black rounded-xl px-8 py-2 h-auto text-[10px] font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:scale-105 active:scale-95"
+                                        >
+                                          Confirm Release
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                   
                                   <button 
                                     onClick={() => setIsArchiveOpen(true)}
@@ -1744,7 +2037,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent opacity-50" />
                             <div className="relative z-10 space-y-6">
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 pointer-events-auto">
                                   <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center border border-emerald-500/20 group-hover:border-emerald-500/40 transition-all">
                                     <History className="w-5 h-5 text-emerald-400" />
                                   </div>
@@ -1864,6 +2157,16 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       onPolish={handleScriptPolish} 
                       onWordCountChange={handleScriptWordCount}
                       onActivity={onActivity}
+                      isProductionLocked={isProductionLocked}
+                      onOpenArchive={() => setIsArchiveOpen(true)}
+                      onUnlockProduction={async () => {
+                        setGlobalLocked(false);
+                        await flush({ isProductionLocked: false });
+                        update({ isProductionLocked: false });
+                        toast.success("Production Lock Released", {
+                          description: "Manual control of metadata is now enabled."
+                        });
+                      }}
                     />
                   </div>
                 </div>
@@ -2044,6 +2347,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
           onClose={() => setIsArchiveOpen(false)}
           originalHook={originalHook}
           scriptHistory={scriptHistory}
+          isProductionLocked={isProductionLocked}
+          isMediaLocked={!!data?.videoUrl}
+          currentScript={description}
+          highestClarityScript={highestClarityScript}
+          promptTemplate={currentPrompt?.description || currentPrompt?.text?.en || ''}
+          lastEchoScript={scriptHistory && scriptHistory.length > 0 ? scriptHistory[scriptHistory.length - 1].text : ''}
           onRestore={(text) => {
             setDescription(text);
             setIsArchiveOpen(false);
@@ -2059,7 +2368,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       originalHook={description}
       cleanScript={selectedDraftForPreview?.cleanScript || ''}
       visionLabel={selectedDraftForPreview?.visionType || ''}
-      visionFocus={selectedDraftForPreview?.focus || ''}
+      visionFocus={selectedDraftForPreview?.visionFocus || ''}
       stageDirections={selectedDraftForPreview?.stageDirections || []}
       beatSheet={selectedDraftForPreview?.beatSheet || []}
       generatedSoundtrackUrl={selectedDraftForPreview?.generatedSoundtrackUrl}
@@ -2095,19 +2404,32 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
           setProse(structured.cleanScript); // Populate prose for Act II teleprompter
           setStructuredScript(structured);
           
-          globalActions.setSelectedVision(type as any, selectedDraftForPreview.visionType);
-          globalActions.setIsReviewing(false);
-          setSelectedDraftForPreview(null);
-          // SEAL THE VISION: Move to Act II (The Weave)
-          setProductionStage?.(1);
           // Manual Flush to ensure Firestore sync
-          await flush({
+          // We MUST await flush first to satisfy the Sync-Before-Advance Rule
+          const result = await flush({
             description: structured.cleanScript,
             prose: structured.cleanScript,
             structuredScript: structured,
             productionStage: 1,
-            originalHook: description
+            originalHook: originalHook || description,
+            activeVision: type,
+            isReviewing: false,
+            isProductionLocked: true,
+            productionTakes: reviewDrafts || []
           });
+
+          if (result && !result.success) {
+            toast.error("Failed to Seal Vision", {
+              description: "The Director could not persist your choice to the cloud. Please try again."
+            });
+            return;
+          }
+
+          // Only upon successful persistence, transition global states and advance UI stage
+          globalActions.setSelectedVision(type as any, selectedDraftForPreview.visionType);
+          globalActions.setIsReviewing(false);
+          setSelectedDraftForPreview(null);
+          setProductionStage?.(1);
         }
       }}
     />

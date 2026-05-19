@@ -12,13 +12,22 @@ vi.mock('@/hooks/studio/useStudioState', () => ({
     isDirectorOpen: false,
     isReviewing: false,
     selectedVision: { type: null, label: null },
+    isProductionLocked: false,
     actions: {
       setIsReviewing: vi.fn(),
       setReviewDrafts: vi.fn(),
       setIsGeneratingDrafts: vi.fn(),
       setModality: vi.fn(),
       setStage: vi.fn(),
-      setIsDirectorOpen: vi.fn()
+      setIsDirectorOpen: vi.fn(),
+      setPolishedOriginalHook: vi.fn(),
+      setTimeframeScope: vi.fn(),
+      setDurationQuantity: vi.fn(),
+      setDurationUnit: vi.fn(),
+      setNarratorAgeAtTime: vi.fn(),
+      setSynthesisError: vi.fn(),
+      setSelectedVision: vi.fn(),
+      setIsProductionLocked: vi.fn()
     }
   }) as any
 }));
@@ -53,12 +62,14 @@ vi.mock('sonner', () => ({
   }),
 }));
 
+let mockMentorModeActive = false;
+let mockIsManualMentor = false;
 const mockToggleMentor = vi.fn();
 vi.mock('@/hooks/studio/useMentorLifeline', () => ({
   useMentorLifeline: () => ({
-    mentorModeActive: false,
+    mentorModeActive: mockMentorModeActive,
     isOverlayOpen: false,
-    isManualMentor: false,
+    isManualMentor: mockIsManualMentor,
     toggleMentor: mockToggleMentor,
     triggerWhisper: vi.fn(),
     closeOverlay: vi.fn(),
@@ -90,7 +101,7 @@ vi.mock('../ProductionControlBar', () => ({ ProductionControlBar: () => <div dat
 vi.mock('../SensoryCatalystHUD', () => ({ SensoryCatalystHUD: () => <div data-testid="sensory-catalyst-hud" /> }));
 vi.mock('../overlays/ThresholdGuard', () => ({ ThresholdGuard: () => <div data-testid="threshold-guard" /> }));
 vi.mock('../overlays/ProductionPreFlight', () => ({ ProductionPreFlight: () => <div data-testid="production-pre-flight" /> }));
-vi.mock('../overlays/OnboardingOverlay', () => ({ OnboardingOverlay: () => <div data-testid="onboarding-overlay" /> }));
+vi.mock('../overlays/OnboardingOverlay', () => ({ OnboardingOverlay: ({ isOpen }: any) => isOpen ? <div data-testid="onboarding-overlay" /> : null }));
 vi.mock('../MentorshipOverlay', () => ({ MentorshipOverlay: () => <div data-testid="mentorship-overlay" /> }));
 
 describe('ProductionDeck Idle Experience', () => {
@@ -105,6 +116,9 @@ describe('ProductionDeck Idle Experience', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
+    localStorage.clear();
+    mockMentorModeActive = false;
+    mockIsManualMentor = false;
   });
 
   afterEach(() => {
@@ -181,13 +195,22 @@ describe('ProductionDeck Idle Experience', () => {
       isDirectorOpen: false,
       isReviewing: false,
       selectedVision: { type: null, label: null },
+      isProductionLocked: false,
       actions: {
         setIsReviewing: vi.fn(),
         setReviewDrafts: vi.fn(),
         setIsGeneratingDrafts: vi.fn(),
         setModality: vi.fn(),
         setStage: vi.fn(),
-        setIsDirectorOpen: vi.fn()
+        setIsDirectorOpen: vi.fn(),
+        setPolishedOriginalHook: vi.fn(),
+        setTimeframeScope: vi.fn(),
+        setDurationQuantity: vi.fn(),
+        setDurationUnit: vi.fn(),
+        setNarratorAgeAtTime: vi.fn(),
+        setSynthesisError: vi.fn(),
+        setSelectedVision: vi.fn(),
+        setIsProductionLocked: vi.fn()
       }
     } as any);
 
@@ -205,5 +228,172 @@ describe('ProductionDeck Idle Experience', () => {
     });
 
     expect(mockToggleMentor).not.toHaveBeenCalled();
+  });
+
+  it('does not trigger idle timer when reviewing synthesized drafts (isReviewing === true)', () => {
+    // Override isReviewing for this test
+    vi.mocked(useStudioState).mockReturnValue({
+      currentStage: 0,
+      modality: 'pen',
+      isDirectorOpen: false,
+      isReviewing: true, // Actively reviewing
+      selectedVision: { type: null, label: null },
+      isProductionLocked: false,
+      actions: {
+        setIsReviewing: vi.fn(),
+        setReviewDrafts: vi.fn(),
+        setIsGeneratingDrafts: vi.fn(),
+        setModality: vi.fn(),
+        setStage: vi.fn(),
+        setIsDirectorOpen: vi.fn(),
+        setPolishedOriginalHook: vi.fn(),
+        setTimeframeScope: vi.fn(),
+        setDurationQuantity: vi.fn(),
+        setDurationUnit: vi.fn(),
+        setNarratorAgeAtTime: vi.fn(),
+        setSynthesisError: vi.fn(),
+        setSelectedVision: vi.fn(),
+        setIsProductionLocked: vi.fn()
+      }
+    } as any);
+
+    render(
+      <ProductionDeck 
+        memoryData={mockMemoryData} 
+        onUpdate={mockUpdate} 
+        layoutMode="takeover" 
+        onToggleLayout={vi.fn()} 
+      />
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(100000);
+    });
+
+    expect(mockToggleMentor).not.toHaveBeenCalled();
+  });
+
+  it('triggers Director Onboarding Overlay when mentorModeActive is true and not reviewing', () => {
+    mockMentorModeActive = true;
+    
+    vi.mocked(useStudioState).mockReturnValue({
+      currentStage: 0,
+      modality: 'pen',
+      isDirectorOpen: false,
+      isReviewing: false,
+      selectedVision: { type: null, label: null },
+      isProductionLocked: false,
+      actions: {
+        setIsReviewing: vi.fn(),
+        setReviewDrafts: vi.fn(),
+        setIsGeneratingDrafts: vi.fn(),
+        setModality: vi.fn(),
+        setStage: vi.fn(),
+        setIsDirectorOpen: vi.fn(),
+        setPolishedOriginalHook: vi.fn(),
+        setTimeframeScope: vi.fn(),
+        setDurationQuantity: vi.fn(),
+        setDurationUnit: vi.fn(),
+        setNarratorAgeAtTime: vi.fn(),
+        setSynthesisError: vi.fn(),
+        setSelectedVision: vi.fn(),
+        setIsProductionLocked: vi.fn()
+      }
+    } as any);
+
+    const { queryByTestId } = render(
+      <ProductionDeck 
+        memoryData={mockMemoryData} 
+        onUpdate={mockUpdate} 
+        layoutMode="takeover" 
+        onToggleLayout={vi.fn()} 
+      />
+    );
+
+    expect(queryByTestId('onboarding-overlay')).not.toBeNull();
+  });
+
+  it('does NOT trigger Director Onboarding Overlay when reviewing synthesized drafts (isReviewing === true)', () => {
+    mockMentorModeActive = true;
+    
+    vi.mocked(useStudioState).mockReturnValue({
+      currentStage: 0,
+      modality: 'pen',
+      isDirectorOpen: false,
+      isReviewing: true,
+      selectedVision: { type: null, label: null },
+      isProductionLocked: false,
+      actions: {
+        setIsReviewing: vi.fn(),
+        setReviewDrafts: vi.fn(),
+        setIsGeneratingDrafts: vi.fn(),
+        setModality: vi.fn(),
+        setStage: vi.fn(),
+        setIsDirectorOpen: vi.fn(),
+        setPolishedOriginalHook: vi.fn(),
+        setTimeframeScope: vi.fn(),
+        setDurationQuantity: vi.fn(),
+        setDurationUnit: vi.fn(),
+        setNarratorAgeAtTime: vi.fn(),
+        setSynthesisError: vi.fn(),
+        setSelectedVision: vi.fn(),
+        setIsProductionLocked: vi.fn()
+      }
+    } as any);
+
+    const { queryByTestId } = render(
+      <ProductionDeck 
+        memoryData={mockMemoryData} 
+        onUpdate={mockUpdate} 
+        layoutMode="takeover" 
+        onToggleLayout={vi.fn()} 
+      />
+    );
+
+    expect(queryByTestId('onboarding-overlay')).toBeNull();
+  });
+
+  it('rehydrates isProductionLocked state from memoryData', () => {
+    const mockSetIsProductionLocked = vi.fn();
+    vi.mocked(useStudioState).mockReturnValue({
+      currentStage: 0,
+      modality: 'pen',
+      isDirectorOpen: false,
+      isReviewing: false,
+      selectedVision: { type: null, label: null },
+      isProductionLocked: false,
+      actions: {
+        setIsReviewing: vi.fn(),
+        setReviewDrafts: vi.fn(),
+        setIsGeneratingDrafts: vi.fn(),
+        setModality: vi.fn(),
+        setStage: vi.fn(),
+        setIsDirectorOpen: vi.fn(),
+        setPolishedOriginalHook: vi.fn(),
+        setTimeframeScope: vi.fn(),
+        setDurationQuantity: vi.fn(),
+        setDurationUnit: vi.fn(),
+        setNarratorAgeAtTime: vi.fn(),
+        setSynthesisError: vi.fn(),
+        setSelectedVision: vi.fn(),
+        setIsProductionLocked: mockSetIsProductionLocked
+      }
+    } as any);
+
+    const lockedMemoryData = {
+      ...mockMemoryData,
+      isProductionLocked: true
+    };
+
+    render(
+      <ProductionDeck 
+        memoryData={lockedMemoryData} 
+        onUpdate={mockUpdate} 
+        layoutMode="takeover" 
+        onToggleLayout={vi.fn()} 
+      />
+    );
+
+    expect(mockSetIsProductionLocked).toHaveBeenCalledWith(true);
   });
 });

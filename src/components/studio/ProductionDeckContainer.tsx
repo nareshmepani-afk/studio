@@ -59,7 +59,8 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
          const hasIdTransition = cp.memory.id && !selectedProductionData?.id;
          const hasDataUpdate = cp.memory.description !== selectedProductionData?.description || 
                                cp.memory.productionStage !== selectedProductionData?.productionStage ||
-                               cp.memory.id !== selectedProductionData?.id;
+                               cp.memory.id !== selectedProductionData?.id ||
+                               (cp.memory.narratorAgeAtTime !== undefined && cp.memory.narratorAgeAtTime !== selectedProductionData?.narratorAgeAtTime);
 
          if (hasIdTransition || hasDataUpdate) {
             setSelectedProductionData((prev: any) => ({
@@ -170,12 +171,19 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     }
   }, [user, selectedProductionData?.id]);
 
-  const handleClose = async () => {
-    if (deckRef.current?.handleExit) {
-        await deckRef.current.handleExit();
+  const handleClose = () => {
+    if (isModal) {
+      router.back();
     } else {
-        // Fallback for cases where deck hasn't mounted or exposed the ref
-        router.back();
+      router.push('/studio');
+    }
+  };
+
+  const handleExitTrigger = async () => {
+    if (deckRef.current?.handleExit) {
+      await deckRef.current.handleExit();
+    } else {
+      handleClose();
     }
   };
 
@@ -197,14 +205,14 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     <>
       {isModal && (
         <div className="absolute top-6 right-6 z-[110]">
-           <Button 
-             variant="ghost" 
-             size="icon" 
-             onClick={() => deckRef.current?.handleExit ? deckRef.current.handleExit() : handleClose()}
-             className="rounded-full bg-black/20 hover:bg-white/10 text-white/50 hover:text-white transition-all w-12 h-12"
-           >
-             <Plus className="w-6 h-6 rotate-45" />
-           </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleExitTrigger}
+              className="rounded-full bg-black/20 hover:bg-white/10 text-white/50 hover:text-white transition-all w-12 h-12"
+            >
+              <Plus className="w-6 h-6 rotate-45" />
+            </Button>
         </div>
       )}
       <div className="flex-1 overflow-y-auto custom-scrollbar h-full">
@@ -257,7 +265,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <div className="flex items-center p-4 border-b border-white/10">
         <Button 
-          onClick={() => deckRef.current?.handleExit ? deckRef.current.handleExit() : router.push('/studio')} 
+          onClick={handleExitTrigger} 
           variant="ghost" 
           className="text-white/60 hover:text-white"
         >

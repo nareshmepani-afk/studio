@@ -2,11 +2,13 @@
 
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import SessionIdWitness from '../debug/SessionIdWitness';
-import CommandCenter from './CommandCenter';
-import TheDeck from './TheDeck';
-import TheStage from './TheStage';
-import TheGallery from './TheGallery';
+
+const CommandCenter = dynamic(() => import('./CommandCenter'), { ssr: false });
+const TheDeck = dynamic(() => import('./TheDeck'), { ssr: false });
+const TheStage = dynamic(() => import('./TheStage'), { ssr: false });
+const TheGallery = dynamic(() => import('./TheGallery'), { ssr: false });
 
 // Define a more specific type for the role prop
 export type StudioRole = 'director' | 'Interviewer' | 'Storyteller' | 'guest';

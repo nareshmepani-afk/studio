@@ -13,6 +13,9 @@ interface CinemaMonitorProps {
   structuredScript: StructuredScript;
   onActivity?: () => void;
   onNext?: () => void;
+  onBackToEditor?: () => void;
+  isProductionLocked?: boolean;
+  onUnlock?: () => void;
   isSaving?: boolean;
   className?: string;
 }
@@ -21,6 +24,9 @@ export const CinemaMonitor: React.FC<CinemaMonitorProps> = ({
   structuredScript,
   onActivity,
   onNext,
+  onBackToEditor,
+  isProductionLocked = false,
+  onUnlock,
   isSaving = false,
   className
 }) => {
@@ -86,6 +92,15 @@ export const CinemaMonitor: React.FC<CinemaMonitorProps> = ({
             <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Director's HUD</span>
           </div>
           <div className="flex items-center gap-3">
+            {isProductionLocked && onUnlock && (
+              <button 
+                onClick={onUnlock}
+                className="px-3 py-1.5 bg-amber-500/20 border border-amber-500/40 rounded-lg text-[9px] font-black text-amber-400 uppercase tracking-widest hover:bg-amber-500/30 transition-all flex items-center gap-2"
+              >
+                <Sparkles className="w-3 h-3" />
+                Unlock Editor
+              </button>
+            )}
             {audioStatus === 'playing' && (
               <motion.div 
                 initial={{ opacity: 0 }}
@@ -284,19 +299,30 @@ export const CinemaMonitor: React.FC<CinemaMonitorProps> = ({
             <div className="w-12 h-px bg-white/20" />
             
             {onNext && (
-              <button 
-                onClick={onNext}
-                disabled={isSaving}
-                className={cn(
-                  "flex items-center gap-6 px-12 py-5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[12px] font-black uppercase tracking-[0.4em] rounded-2xl transition-all shadow-[0_20px_50px_rgba(16,185,129,0.3)] group",
-                  isSaving && "opacity-50 cursor-wait"
+              <div className="flex flex-col items-center gap-6">
+                <button 
+                  onClick={onNext}
+                  disabled={isSaving}
+                  className={cn(
+                    "flex items-center gap-6 px-12 py-5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[12px] font-black uppercase tracking-[0.4em] rounded-2xl transition-all shadow-[0_20px_50px_rgba(16,185,129,0.3)] group",
+                    isSaving && "opacity-50 cursor-wait"
+                  )}
+                >
+                  <span className="relative z-10 flex items-center gap-4">
+                    {isSaving ? "Syncing to Studio..." : "APPLY VISION & SEAL"}
+                    {!isSaving && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+                  </span>
+                </button>
+                
+                {onBackToEditor && (
+                  <button 
+                    onClick={onBackToEditor}
+                    className="text-[10px] font-black text-white/30 hover:text-white/60 uppercase tracking-[0.4em] transition-all"
+                  >
+                    Discard & Return to Editor
+                  </button>
                 )}
-              >
-                <span className="relative z-10 flex items-center gap-4">
-                  {isSaving ? "Syncing to Studio..." : "APPLY VISION & SEAL"}
-                  {!isSaving && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
-                </span>
-              </button>
+              </div>
             )}
 
             <p className="text-[9px] font-mono uppercase tracking-[1em] opacity-10">[ END OF PRODUCTION SCORE ]</p>

@@ -16,12 +16,14 @@ export const SuggestedAnchor = ({ type, intensity }: SuggestedAnchorProps) => {
     <div className="relative flex items-center justify-center w-4 h-4">
       {/* 1. THE CORE: Constant and grounded */}
       <motion.div
+        initial={{ opacity: 0 }}
         animate={{ opacity: intensity }}
         className={`h-1.5 w-1.5 rounded-full ${colorClass} ${shadowClass} shadow-sm z-10`}
       />
 
       {/* 2. THE RIPPLE: The "Sonar" effect */}
       <motion.div
+        initial={{ scale: 1, opacity: 0 }}
         animate={{
           scale: [1, 2.5],
           opacity: [intensity * 0.6, 0],

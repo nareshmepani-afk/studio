@@ -29,6 +29,7 @@ interface ProductionControlBarProps {
   isLowClarity?: boolean;
   mentorActive?: boolean;
   isSaving?: boolean;
+  isProductionLocked?: boolean;
 }
 
 const SynapseTether = ({ type, xOffset = 0 }: { type: string, xOffset?: number }) => {
@@ -90,7 +91,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   missingRequirements = [],
   isLowClarity = false,
   mentorActive = false,
-  isSaving = false
+  isSaving = false,
+  isProductionLocked = false
 }) => {
   const { 
     detectedAnchors, 
@@ -229,6 +231,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
     if (currentStage === 0) {
         if (isGeneratingDrafts || isPending) return 'SYNTHESIZING...';
         if (isReviewing) return 'SEAL THE MEMORY';
+        if (isProductionLocked) return 'ENTER THE WEAVE';
         return 'DRAFT COMPLETED';
     }
     
@@ -376,7 +379,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                      "h-full transition-colors",
                      (draggingCatalyst || isSurging) ? "bg-cyan-400 shadow-[0_0_15px_#22d3ee]" : "bg-emerald-500/40"
                    )}
-                   initial={{ width: 0 }}
+                   initial={{ width: 0, opacity: 1 }}
                    animate={{ 
                      width: `${Math.min(charge, 100)}%`,
                      opacity: (draggingCatalyst || isSurging) ? [0.6, 1, 0.6] : 1

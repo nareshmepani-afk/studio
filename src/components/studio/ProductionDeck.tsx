@@ -12,10 +12,11 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import dynamic from 'next/dynamic';
 import PerspectiveWrapper from './PerspectiveWrapper';
 import { MemoryForm, ACT_TITLES } from './MemoryForm';
 import SoloStage from './SoloStage';
-import CollaborativeStage from './CollaborativeStage';
+const CollaborativeStage = dynamic(() => import('./CollaborativeStage'), { ssr: false });
 import { InstrumentSelection } from './InstrumentSelection';
 import { ProductionRail, PRODUCTION_ACTS } from './ProductionRail';
 import { cn } from '@/lib/utils';
@@ -74,6 +75,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         isReviewing, 
         selectedVision,
         polishedOriginalHook,
+        timeframeScope,
+        durationQuantity,
+        durationUnit,
+        narratorAgeAtTime,
+        isProductionLocked,
         actions: {
             setIsReviewing, 
             setReviewDrafts, 
@@ -82,9 +88,129 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             setModality,
             setStage,
             setIsDirectorOpen,
-            setSynthesisError
+            setSynthesisError,
+            setSelectedVision,
+            setTimeframeScope,
+            setDurationQuantity,
+            setDurationUnit,
+            setNarratorAgeAtTime,
+            setIsProductionLocked
         }
     } = useGlobalStudioState();
+
+    const lastLoadedIdRef = useRef<string | null>(null);
+    const isNewMemoryRef = useRef<boolean>(!memoryData?.id);
+
+    useEffect(() => {
+        if (!memoryData?.id) return;
+        
+        // If it was a brand new memory that just got its ID assigned, 
+        // transition it to an existing memory but do not overwrite current active state.
+        if (isNewMemoryRef.current) {
+            console.log("[ProductionDeck] New memory ID assigned:", memoryData.id, ". Avoiding rehydration overwrite.");
+            lastLoadedIdRef.current = memoryData.id;
+            isNewMemoryRef.current = false;
+            return;
+        }
+
+        // Only run sync when a different memory is loaded
+        if (memoryData.id === lastLoadedIdRef.current) return;
+        
+        const targetStage = memoryData.productionStage || 0;
+        console.log("[ProductionDeck] Syncing/Rehydrating global state from Firestore memory data:", memoryData.id, "stage:", targetStage);
+        
+        // 1. Sync stage - Entry Rule: Every session MUST mount at Act I (The Scriptorium)
+        setStage(0);
+        
+        // 2. Sync modality
+        if (memoryData.modality) {
+            setModality(memoryData.modality);
+        } else {
+            setModality(null);
+        }
+        
+        // 3. Sync original hook
+        if (memoryData.originalHook) {
+            setPolishedOriginalHook(memoryData.originalHook);
+        } else {
+            setPolishedOriginalHook(null);
+        }
+        
+        // 4. Sync selected vision
+        if (memoryData.activeVision) {
+            const type = memoryData.activeVision === 'soul' ? 'soul' :
+                         (memoryData.activeVision === 'sensory' || memoryData.activeVision === 'cinematic' ? memoryData.activeVision : null);
+            setSelectedVision(type, memoryData.activeVisionLabel || memoryData.activeVision);
+        } else {
+            setSelectedVision(null, null);
+        }
+        
+        // 5. Sync review drafts
+        if (targetStage === 0 && memoryData.productionTakes && memoryData.productionTakes.length > 0) {
+            setReviewDrafts(memoryData.productionTakes);
+            setIsReviewing(memoryData.isReviewing !== false);
+        } else {
+            setReviewDrafts([]);
+            setIsReviewing(false);
+        }
+        
+        // 6. Sync temporal parameters
+        if (memoryData.timeframeScope) setTimeframeScope(memoryData.timeframeScope);
+        if (memoryData.durationQuantity) setDurationQuantity(memoryData.durationQuantity);
+        if (memoryData.durationUnit) setDurationUnit(memoryData.durationUnit);
+        if (memoryData.narratorAgeAtTime !== undefined) setNarratorAgeAtTime(memoryData.narratorAgeAtTime);
+        
+        // 6.5. Sync production lock
+        if (memoryData.isProductionLocked !== undefined) {
+            setIsProductionLocked(memoryData.isProductionLocked);
+        } else {
+            setIsProductionLocked(false);
+        }
+        
+        // 7. Reset transient state
+        setIsGeneratingDrafts(false);
+        setSynthesisError(null);
+        
+        // Set the ref so we don't sync again for the same memory ID
+        lastLoadedIdRef.current = memoryData.id;
+        
+    }, [
+        memoryData?.id,
+        memoryData?.productionStage,
+        memoryData?.modality,
+        memoryData?.originalHook,
+        memoryData?.activeVision,
+        memoryData?.activeVisionLabel,
+        memoryData?.productionTakes,
+        memoryData?.timeframeScope,
+        memoryData?.durationQuantity,
+        memoryData?.durationUnit,
+        memoryData?.narratorAgeAtTime,
+        memoryData?.isProductionLocked,
+        setStage,
+        setModality,
+        setPolishedOriginalHook,
+        setSelectedVision,
+        setReviewDrafts,
+        setIsReviewing,
+        setTimeframeScope,
+        setDurationQuantity,
+        setDurationUnit,
+        setNarratorAgeAtTime,
+        setIsProductionLocked,
+        setIsGeneratingDrafts,
+    ]);
+
+    // Sync production lock state dynamically whenever it changes in memoryData,
+    // bypassing the early-return ID-check guard of the main sync effect.
+    useEffect(() => {
+        if (!memoryData?.id) return;
+        if (memoryData.isProductionLocked !== undefined) {
+            setIsProductionLocked(memoryData.isProductionLocked);
+        } else {
+            setIsProductionLocked(false);
+        }
+    }, [memoryData?.id, memoryData?.isProductionLocked, setIsProductionLocked]);
 
 
     const [sidebarWidth, setSidebarWidth] = useState(320); // Default width
@@ -100,6 +226,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     const [highlightClarity, setHighlightClarity] = useState(false);
     const [isSavingNext, setIsSavingNext] = useState(false);
     const formRef = useRef<any>(null);
+    const synthesisAbortRef = useRef<boolean>(false);
 
     // MOD-15: Mentorship Lifeline
     const { 
@@ -222,16 +349,22 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     const resetIdleTimer = useCallback(() => {
         if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
         idleTimerRef.current = setTimeout(() => {
-            if (!mentorModeActive && currentStage === 0) {
+            if (!mentorModeActive && currentStage === 0 && !isReviewing) {
                 toggleMentor(false); // Auto-trigger, not manual
             }
         }, 90000); // 90 seconds
-    }, [mentorModeActive, currentStage, toggleMentor]);
+    }, [mentorModeActive, currentStage, toggleMentor, isReviewing]);
 
     // AUTO-ACTIVATION: Studio Mentor Idle Protocol
     useEffect(() => {
-        // Only trigger in Act I if not already active
-        if (currentStage !== 0 || mentorModeActive) return;
+        // Only trigger in Act I if not already active and not reviewing
+        if (currentStage !== 0 || mentorModeActive || isReviewing) {
+            if (idleTimerRef.current) {
+                clearTimeout(idleTimerRef.current);
+                idleTimerRef.current = null;
+            }
+            return;
+        }
 
         // Listen for activity in the window
         window.addEventListener('mousemove', resetIdleTimer);
@@ -251,7 +384,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             window.removeEventListener('scroll', resetIdleTimer, true);
             window.removeEventListener('touchstart', resetIdleTimer);
         };
-    }, [currentStage, mentorModeActive, resetIdleTimer]);
+    }, [currentStage, mentorModeActive, isReviewing, resetIdleTimer]);
 
     // Find the current group context for navigation breadcrumbs
     const currentGroup = useMemo(() => {
@@ -272,6 +405,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
     // ONBOARDING: Director's Briefing Logic
     useEffect(() => {
+        // Only trigger briefing in Act I when not reviewing the synthesized drafts
+        if (currentStage !== 0 || isReviewing) return;
+
         // PER-MEMORY TRACKING: We want a briefing for every new production
         const onboardingKey = `onboarding_completed_${memoryData?.id || 'global'}`;
         const hasSeenOnboarding = localStorage.getItem(onboardingKey);
@@ -303,7 +439,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             // to prevent UI competition
             if (isOverlayOpen) closeOverlay();
         }
-    }, [modality, memoryData?.id, memoryData?.description, currentStage, mentorModeActive, currentGroup, searchParams]);
+    }, [modality, memoryData?.id, memoryData?.description, currentStage, mentorModeActive, currentGroup, searchParams, isReviewing]);
 
     const [onboardingJustClosed, setOnboardingJustClosed] = useState(false);
 
@@ -431,10 +567,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
     const handleNextAct = useCallback(async () => {
         // COMMIT MANTLE: Force child form to flush state to parent before processing transitions
+        let flushedState: any = null;
         if (formRef.current?.flush) {
             setIsSavingNext(true);
             try {
-                await formRef.current.flush();
+                flushedState = await formRef.current.flush();
             } catch (err) {
                 console.error("Flush failed during transition", err);
             } finally {
@@ -444,14 +581,41 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
         const isAct1 = currentStage === 0;
 
+        // If the scene has an active production lock, skip the AI Synthesis ceremony entirely
+        // and advance the user directly to the weave (Act II)
+        if (isAct1 && memoryData?.isProductionLocked) {
+            console.log("[ProductionDeck] Production is locked. Advancing directly to Act II (The Weave).");
+            const next = 1;
+            setStage(next);
+            setShowPreFlight(false);
+            if ((memoryData?.productionStage || 0) < next) {
+                handleUpdate({ productionStage: next });
+            }
+            return;
+        }
+
         // NEW: "Director's Cut" Ceremony Trigger
         if (isAct1 && !isReviewing) {
             console.log("[ProductionDeck] Act I detected. Triggering AI Synthesis Ceremony...");
             setIsGeneratingDrafts(true);
             setSynthesisError(null); // RESET: Start fresh
+            synthesisAbortRef.current = false; // Reset abort signal for new generation
             try {
-                console.log("[ProductionDeck] Calling generateDraftOptions with description length:", memoryData?.description?.length || 0);
-                const { polishedOriginalHook, visions } = await generateDraftOptions(memoryData?.description || '');
+                const latestDescription = flushedState?.description || memoryData?.description || '';
+                const latestTimeframeScope = flushedState?.latestState?.timeframeScope || timeframeScope;
+                const latestDurationQuantity = flushedState?.latestState?.durationQuantity || durationQuantity;
+                const latestDurationUnit = flushedState?.latestState?.durationUnit || durationUnit;
+                const latestNarratorAgeAtTime = flushedState?.latestState?.narratorAgeAtTime || narratorAgeAtTime;
+
+                console.log("[ProductionDeck] Calling generateDraftOptions with description length:", latestDescription.length);
+                const { polishedOriginalHook, visions, temporalSummary } = await generateDraftOptions(
+                    latestDescription,
+                    latestTimeframeScope,
+                    latestDurationQuantity,
+                    latestDurationUnit,
+                    latestNarratorAgeAtTime,
+                    memoryData?.dateComponents?.year?.toString() || 'Unknown'
+                );
                 console.log("[ProductionDeck] AI Synthesis successful. Visions received:", visions?.length || 0);
                 
                 // MANTLE GATE: Ensure we don't advance to an empty selection screen
@@ -460,7 +624,26 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                 }
 
                 setPolishedOriginalHook(polishedOriginalHook);
-                setReviewDrafts(visions);
+                // Map temporalSummary to each vision for consistent display in SelectionDeck if needed
+                const visionsWithSummary = visions.map(v => ({ ...v, temporalSummary }));
+                
+                // NEW: Add the Original Hook as a 4th option
+                const originalVision = {
+                    visionType: 'Original Polished',
+                    visionFocus: 'Your authentic voice, preserved and polished.',
+                    cleanScript: polishedOriginalHook,
+                    stageDirections: [],
+                    beatSheet: ['Original Dictation'],
+                    preFlightBrief: {
+                      sensoryAnchors: ['Your Voice'],
+                      vocalInstructions: ['Speak naturally'],
+                      heroMoment: 'Your authentic memory'
+                    },
+                    temporalSummary: temporalSummary
+                };
+                
+                const completeDrafts = [originalVision, ...visionsWithSummary];
+                setReviewDrafts(completeDrafts);
                 console.log("[ProductionDeck] Setting isReviewing to true. Entering SelectionDeck...");
                 setIsReviewing(true);
                 setIsGeneratingDrafts(false); // SUCCESS: Close overlay
@@ -468,29 +651,38 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     description: "The Director has prepared three distinct paths for your memory."
                 });
 
-                // --- AUTOMATED SOUNDSTACK & BRIEF INTEGRATION ---
-                visions.forEach((vision: any, index: number) => {
-                    // 1. Soundtrack Generation
-                    const audioCue = vision.stageDirections.find((d: any) => d.type === 'audio');
-                    if (audioCue && memoryData?.id) {
-                        console.log(`[ProductionDeck] Triggering automated soundtrack generation for vision ${index}...`);
-                        generateSoundtrack(audioCue.content, memoryData.id, vision.visionType).then(url => {
-                            if (url) {
-                                console.log(`[ProductionDeck] Soundtrack synthesized for vision ${index}:`, url);
-                                setReviewDrafts((prev: any[] | null) => prev?.map((v: any, i: number) => i === index ? { ...v, generatedSoundtrackUrl: url } : v) || null);
-                            }
-                        });
-                    }
-
-                    // 2. Directorial Brief Generation
-                    console.log(`[ProductionDeck] Triggering directorial brief generation for vision ${index}...`);
-                    generateDirectorialBrief(vision.cleanScript, vision.stageDirections).then(brief => {
-                        if (brief) {
-                            console.log(`[ProductionDeck] Pre-flight brief generated for vision ${index}`);
-                            setReviewDrafts((prev: any[] | null) => prev?.map((v: any, i: number) => i === index ? { ...v, preFlightBrief: brief } : v) || null);
-                        }
-                    });
+                // Persist the generated drafts and review state immediately to Firestore
+                await handleUpdate({
+                    productionTakes: completeDrafts,
+                    isReviewing: true
                 });
+
+                // --- AUTOMATED SOUNDSTACK & BRIEF INTEGRATION ---
+                (async () => {
+                    for (let index = 0; index < visions.length; index++) {
+                        if (synthesisAbortRef.current) {
+                            console.log("[ProductionDeck] Synthesis aborted by user navigation.");
+                            break;
+                        }
+                        const vision = visions[index];
+
+                        // 1. Soundtrack Generation
+                        const audioCue = vision.stageDirections.find((d: any) => d.type === 'audio');
+                        if (audioCue && memoryData?.id) {
+                            console.log(`[ProductionDeck] Triggering automated soundtrack generation for vision ${index}...`);
+                            try {
+                                const url = await generateSoundtrack(audioCue.content, memoryData.id, vision.visionType);
+                                if (synthesisAbortRef.current) break; // Check again after await
+                                if (url) {
+                                    console.log(`[ProductionDeck] Soundtrack synthesized for vision ${index}:`, url);
+                                    setReviewDrafts((prev: any[] | null) => prev?.map((v: any, i: number) => i === index ? { ...v, generatedSoundtrackUrl: url } : v) || null);
+                                }
+                            } catch (e) {
+                                console.error(`[ProductionDeck] Soundtrack failure for vision ${index}:`, e);
+                            }
+                        }
+                    }
+                })();
             } catch (err: any) {
                 console.error("[ProductionDeck] Synthesis failure:", err);
                 setSynthesisError(err.message || "The AI Weaver encountered a transient knot. Reattempting may clear the thread.");
@@ -498,27 +690,8 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             return;
         }
 
-        // Transition from Review to Act II
+        // Wait, if we are in Review mode, do not auto-advance via the standard stage logic!
         if (isAct1 && isReviewing) {
-            if (!selectedVision) {
-                toast.error("Vision Required", { description: "You must select a narrative path to seal the memory." });
-                return;
-            }
-            console.log("[ProductionDeck] Vision selected. Transitioning from Review to Act II (Weave)...");
-            setIsReviewing(false);
-            setReviewDrafts([]); // Clear drafts after selection
-            const next = currentStage + 1;
-            console.log("[ProductionDeck] Updating stage to:", next);
-            setStage(next);
-            
-            // Seal the polished hook as the new originalHook
-            if (polishedOriginalHook) {
-                console.log("[ProductionDeck] Sealing polished hook into memory...");
-                handleUpdate({ 
-                    originalHook: polishedOriginalHook,
-                    productionStage: next 
-                });
-            }
             return;
         }
 
@@ -537,15 +710,25 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             }
         }
     }, [
-        currentStage, isReviewing, memoryData?.description, memoryData?.productionStage,
-        selectedVision, isLowClarity, showPreFlight, isActComplete, handleUpdate
+        currentStage, isReviewing, memoryData?.description, memoryData?.productionStage, memoryData?.isProductionLocked,
+        selectedVision, isLowClarity, showPreFlight, isActComplete, handleUpdate,
+        timeframeScope, durationQuantity, durationUnit, narratorAgeAtTime, memoryData?.dateComponents?.year
     ]);
 
     const handleExit = useCallback(async () => {
+        synthesisAbortRef.current = true;
+        
+        // Clean up volatile global ceremony state on exit
+        setIsReviewing(false);
+        setIsGeneratingDrafts(false);
+        setSynthesisError(null);
+        setReviewDrafts([]);
+
         if (formRef.current?.flush) {
             setIsSavingNext(true);
             try {
-                await formRef.current.flush();
+                // Pass overrides to flush so Firestore is updated synchronously with isReviewing: false
+                await formRef.current.flush({ isReviewing: false });
             } catch (err) {
                 console.error("Flush failed during exit", err);
             } finally {
@@ -553,13 +736,14 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             }
         }
         onClose?.();
-    }, [onClose]);
+    }, [onClose, setIsReviewing, setIsGeneratingDrafts, setSynthesisError, setReviewDrafts]);
 
     useImperativeHandle(ref, () => ({
         handleExit
     }));
 
     const handlePrevAct = useCallback(async () => {
+        synthesisAbortRef.current = true;
         if (currentStage > 0) {
             // COMMIT MANTLE: Flush state before retreating
             if (formRef.current?.flush) {
@@ -577,6 +761,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     }, [currentStage]);
 
     const handleStageJump = async (newStage: number) => {
+        synthesisAbortRef.current = true;
         if (newStage === currentStage) return;
         
         // COMMIT MANTLE: Flush state before jumping to a specific act
@@ -849,6 +1034,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                          isDocked={currentStage <= 1}
                                          mentorActive={mentorModeActive}
                                          isSaving={isSavingNext}
+                                         isProductionLocked={!!memoryData?.isProductionLocked}
                                      />
                                  </div>
                              )}

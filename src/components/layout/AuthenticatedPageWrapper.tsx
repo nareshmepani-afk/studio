@@ -19,9 +19,14 @@ export function AuthenticatedPageWrapper({ children, theme = 'default' }: Authen
   const router = useRouter();
   const pathname = usePathname();
   
-  // Use window.location to avoid useSearchParams suspense boundaries crashing the router
-  const isGuestMode = typeof window !== 'undefined' ? window.location.search.includes('mode=guest') : false;
-  const hasSessionId = typeof window !== 'undefined' ? window.location.search.includes('sessionId=') : false;
+  // Prevent SSR hydration mismatches by syncing URL checks inside a useEffect on mount
+  const [isGuestMode, setIsGuestMode] = React.useState(false);
+  const [hasSessionId, setHasSessionId] = React.useState(false);
+
+  useEffect(() => {
+    setIsGuestMode(window.location.search.includes('mode=guest'));
+    setHasSessionId(window.location.search.includes('sessionId='));
+  }, []);
 
   useEffect(() => {
     // SYNC STATE: If Firebase says no user, ensure the server session is also cleared.

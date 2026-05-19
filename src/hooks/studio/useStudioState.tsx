@@ -5,7 +5,7 @@ import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import { doc, onSnapshot, setDoc, DocumentReference } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { storyScripts } from '@/lib/storyScripts';
-import { CatalystType } from '@/types';
+import { CatalystType, TimeframeScope } from '@/types';
 import { DetectedAnchor } from './useDirectorInk';
 
 export type DrawerType = 'sensory' | 'poster' | 'timeline' | null;
@@ -50,6 +50,10 @@ interface StudioState {
   isDirectorOpen: boolean;
   isProductionLocked: boolean;
   synthesisError: string | null;
+  timeframeScope: TimeframeScope;
+  durationQuantity: number;
+  durationUnit: 'days' | 'months' | 'years';
+  narratorAgeAtTime: number;
   dispatcher?: {
     addCatalyst?: (blockId: string, type: CatalystType, value?: string) => { collisionDetected: boolean };
   };
@@ -90,6 +94,10 @@ interface StudioActions {
   setIsDirectorOpen: (open: boolean) => void;
   setIsProductionLocked: (locked: boolean) => void;
   setSynthesisError: (error: string | null) => void;
+  setTimeframeScope: (scope: TimeframeScope) => void;
+  setDurationQuantity: (qty: number) => void;
+  setDurationUnit: (unit: 'days' | 'months' | 'years') => void;
+  setNarratorAgeAtTime: (age: number) => void;
 }
 
 // 3. Context Shape
@@ -170,6 +178,10 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     isProductionLocked: false,
     synthesisError: null,
     polishedOriginalHook: null,
+    timeframeScope: 'Year',
+    durationQuantity: 1,
+    durationUnit: 'years',
+    narratorAgeAtTime: 25,
     dispatcher: undefined,
     ...(initialState || {}),
   });
@@ -349,6 +361,10 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     };
   }, [state, studioStateRef]);
 
+  const setDurationUnit = (unit: 'days' | 'months' | 'years') => setState(prev => ({ ...prev, durationUnit: unit }));
+  const setNarratorAgeAtTime = (age: number) => {
+    setState(prev => ({ ...prev, narratorAgeAtTime: age }));
+  };
 
   const actions: StudioActions = useMemo(() => ({
     toggleScrolling: () => setState(s => ({ ...s, isScrolling: !s.isScrolling })),
@@ -424,6 +440,10 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     setIsDirectorOpen: (open) => setState(s => ({ ...s, isDirectorOpen: open })),
     setIsProductionLocked: (locked) => setState(s => ({ ...s, isProductionLocked: locked })),
     setSynthesisError: (error) => setState(s => ({ ...s, synthesisError: error })),
+    setTimeframeScope: (scope) => setState(s => ({ ...s, timeframeScope: scope })),
+    setDurationQuantity: (qty) => setState(s => ({ ...s, durationQuantity: qty })),
+    setDurationUnit,
+    setNarratorAgeAtTime,
   }), []);
 
   return (

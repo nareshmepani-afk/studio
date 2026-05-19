@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { verifyPasswordResetCode } from 'firebase/auth';
 import { auth } from '@/lib/firebase'; // Your client-side config
 import { resetPassword as resetPasswordAction } from '@/actions/resetPasswordAction';
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
@@ -70,5 +70,13 @@ export default function ResetPasswordPage() {
         </button>
       </form>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<p>Verifying link...</p>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

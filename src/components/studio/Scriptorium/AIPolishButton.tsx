@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Wand2, Loader2, Zap } from 'lucide-react';
+import { Sparkles, Wand2, Loader2, Zap, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AIPolishButtonProps {
@@ -10,17 +10,19 @@ interface AIPolishButtonProps {
   isReady: boolean;
   onClick: () => void;
   isPolishing?: boolean;
+  disabled?: boolean;
 }
 
 export const AIPolishButton: React.FC<AIPolishButtonProps> = ({ 
   charge, 
   isReady, 
   onClick,
-  isPolishing = false
+  isPolishing = false,
+  disabled = false
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   
-  const ignitionState = charge < 30 ? 'dormant' : charge < 60 ? 'spooling' : 'ignition';
+  const ignitionState = disabled ? 'locked' : charge < 30 ? 'dormant' : charge < 60 ? 'spooling' : 'ignition';
 
   return (
     <div 
@@ -30,7 +32,7 @@ export const AIPolishButton: React.FC<AIPolishButtonProps> = ({
     >
       {/* Particle Burn Effect (Visible during Ignition) */}
       <AnimatePresence>
-        {isReady && !isPolishing && (
+        {isReady && !isPolishing && !disabled && (
           <>
             {[...Array(6)].map((_, i) => (
               <motion.div
@@ -61,9 +63,12 @@ export const AIPolishButton: React.FC<AIPolishButtonProps> = ({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-[8px] font-black text-emerald-400/60 uppercase tracking-[0.2em]"
+            className={cn(
+              "absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-[8px] font-black uppercase tracking-[0.2em]",
+              disabled ? "text-amber-500/60" : "text-emerald-400/60"
+            )}
           >
-            // NON-DESTRUCTIVE
+            {disabled ? "// PRODUCTION LOCKED" : "// NON-DESTRUCTIVE"}
           </motion.div>
         )}
       </AnimatePresence>
@@ -84,14 +89,16 @@ export const AIPolishButton: React.FC<AIPolishButtonProps> = ({
             stroke="currentColor"
             strokeWidth="2"
             strokeDasharray="289.02"
+            initial={{ strokeDashoffset: 289.02 }}
             animate={{ 
-              strokeDashoffset: 289.02 - (289.02 * charge) / 100,
+              strokeDashoffset: disabled ? 0 : 289.02 - (289.02 * charge) / 100,
               opacity: ignitionState === 'dormant' ? 0.2 : 1,
-              strokeWidth: isReady ? 3 : 2
+              strokeWidth: isReady || disabled ? 3 : 2
             }}
             transition={{ type: "spring", stiffness: 50, damping: 20 }}
             className={cn(
               "transition-colors duration-1000",
+              disabled ? "text-amber-500 shadow-[0_0_20px_#f59e0b]" :
               isReady ? "text-emerald-500 shadow-[0_0_20px_#10b981]" : 
               ignitionState === 'spooling' ? "text-emerald-500/60" : "text-emerald-500/20"
             )}
@@ -102,23 +109,25 @@ export const AIPolishButton: React.FC<AIPolishButtonProps> = ({
       {/* THE BUTTON BODY */}
       <motion.button
         onClick={onClick}
-        disabled={!isReady || isPolishing}
-        animate={isReady && !isPolishing ? {
+        disabled={!isReady || isPolishing || disabled}
+        animate={isReady && !isPolishing && !disabled ? {
           x: [0, -1, 1, -1, 1, 0],
           transition: { duration: 0.1, repeat: Infinity, repeatType: "mirror" }
         } : {}}
         className={cn(
           "relative z-10 flex items-center gap-3 px-8 py-3.5 rounded-full font-black text-[10px] uppercase tracking-[0.25em] transition-all duration-700 overflow-hidden",
+          disabled && "bg-amber-500/5 text-amber-500/40 border border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.1)] opacity-100 scale-100 cursor-not-allowed",
           ignitionState === 'dormant' && "bg-slate-900/50 text-white/10 border border-white/5 opacity-40 grayscale pointer-events-none scale-95",
           ignitionState === 'spooling' && "bg-emerald-500/5 text-emerald-500/40 border border-emerald-500/10 opacity-80 scale-100",
           ignitionState === 'ignition' && "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.15)] opacity-100 scale-100 hover:scale-105 active:scale-95",
-          isReady && "shadow-[0_0_50px_rgba(16,185,129,0.3)] ring-1 ring-emerald-500/50"
+          isReady && !disabled && "shadow-[0_0_50px_rgba(16,185,129,0.3)] ring-1 ring-emerald-500/50"
         )}
       >
         {/* Spooling Pulse */}
         {ignitionState === 'spooling' && (
           <motion.div 
             className="absolute inset-0 bg-emerald-500/5"
+            initial={{ opacity: 0.2 }}
             animate={{ opacity: [0.2, 0.5, 0.2] }}
             transition={{ duration: 2, repeat: Infinity }}
           />
@@ -134,7 +143,15 @@ export const AIPolishButton: React.FC<AIPolishButtonProps> = ({
         )}
 
         <AnimatePresence mode="wait">
-          {isPolishing ? (
+          {disabled ? (
+            <motion.div
+              key="locked"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-500" />
+            </motion.div>
+          ) : isPolishing ? (
             <motion.div
               key="polishing"
               initial={{ opacity: 0, scale: 0.5 }}
@@ -163,11 +180,11 @@ export const AIPolishButton: React.FC<AIPolishButtonProps> = ({
         </AnimatePresence>
 
         <span className="relative z-10">
-          {isPolishing ? "POLISHING..." : isReady ? "IGNITE AI POLISH" : `SPOOLING ${charge}%`}
+          {disabled ? "POLISH LOCKED" : isPolishing ? "POLISHING..." : isReady ? "IGNITE AI POLISH" : `SPOOLING ${charge}%`}
         </span>
 
         {/* Ignition Glint */}
-        {isReady && !isPolishing && (
+        {isReady && !isPolishing && !disabled && (
           <motion.div 
             className="absolute -inset-1 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12"
             animate={{ x: ['-150%', '150%'] }}
@@ -177,13 +194,14 @@ export const AIPolishButton: React.FC<AIPolishButtonProps> = ({
       </motion.button>
 
       {/* State Label */}
-      {!isReady && !isPolishing && (
+      {ignitionState !== 'ignition' && !isPolishing && (
         <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-full text-center">
           <div className={cn(
             "text-[7px] font-black uppercase tracking-widest whitespace-nowrap transition-colors duration-700",
+            disabled ? "text-amber-500/40 animate-pulse" :
             ignitionState === 'spooling' ? "text-emerald-500/40" : "text-white/10"
           )}>
-            {ignitionState === 'dormant' ? "System Dormant" : "Awaiting Clarity"}
+            {disabled ? "Picture Locked" : ignitionState === 'dormant' ? "System Dormant" : "Awaiting Clarity"}
           </div>
         </div>
       )}

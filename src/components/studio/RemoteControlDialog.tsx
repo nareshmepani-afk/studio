@@ -30,12 +30,14 @@ export function RemoteControlDialog({ open, onClose, sessionId }: RemoteControlD
 
   const { user } = useAuth();
   const [remoteUrl, setRemoteUrl] = useState('');
+  const [directorUrl, setDirectorUrl] = useState('');
 
   useEffect(() => {
     // Prevent SSR hydration mismatch and dynamically build the absolute LAN IP for mobile
     if (typeof window !== 'undefined' && user?.uid) {
       let baseOrigin = window.location.origin;
       setRemoteUrl(`${window.location.protocol}//${window.location.hostname === 'localhost' ? '192.168.1.205' : window.location.hostname}:3000/interviewer/${sessionId}?hostId=${user.uid}`);
+      setDirectorUrl(`${baseOrigin}/director?sessionId=${sessionId}&mode=guest_director`);
     }
   }, [sessionId, user?.uid]);
 
@@ -98,22 +100,24 @@ export function RemoteControlDialog({ open, onClose, sessionId }: RemoteControlD
 
               {/* Guest Director Join Link */}
               <div className="flex gap-2">
-                 <Input 
-                   value={`${typeof window !== 'undefined' ? window.location.origin : ''}/director?sessionId=${sessionId}&mode=guest_director`} 
-                   readOnly 
-                   className="h-10 text-xs bg-black/40 border-white/10 text-white/60" 
-                 />
-                 <Button 
-                   onClick={() => {
-                     const url = `${window.location.origin}/director?sessionId=${sessionId}&mode=guest_director`;
-                     navigator.clipboard.writeText(url);
-                     toast.success("Guest Director Link Copied!");
-                   }}
-                   size="sm"
-                   className="bg-purple-600 hover:bg-purple-700"
-                 >
-                   Guest Dir
-                 </Button>
+                  <Input 
+                    value={directorUrl || 'Loading guest link...'} 
+                    readOnly 
+                    className="h-10 text-xs bg-black/40 border-white/10 text-white/60" 
+                  />
+                  <Button 
+                    onClick={() => {
+                      if (directorUrl) {
+                        navigator.clipboard.writeText(directorUrl);
+                        toast.success("Guest Director Link Copied!");
+                      }
+                    }}
+                    size="sm"
+                    className="bg-purple-600 hover:bg-purple-700"
+                    disabled={!directorUrl}
+                  >
+                    Guest Dir
+                  </Button>
               </div>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Sparkles, Heart, Film, Eye, ArrowRight, ClipboardCopy, AlertTriangle, RotateCcw
+  Sparkles, Heart, Film, Eye, ArrowRight, ClipboardCopy, AlertTriangle, RotateCcw, History, BookOpen, ArrowLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScriptLightBox } from './ScriptLightBox';
@@ -18,6 +18,7 @@ interface SelectionDeckProps {
   selectedText: string;
   originalHook?: string; // Passed from MemoryForm
   isSaving?: boolean;
+  onBackToEditor?: () => void;
 }
 
 interface SynthesizingOverlayProps {
@@ -49,51 +50,50 @@ export const SynthesizingOverlay = ({ error, onRetry, onCancel }: SynthesizingOv
         {error ? (
           <AlertTriangle className="w-10 h-10 text-rose-500 animate-pulse" />
         ) : (
-          <Sparkles className="w-10 h-10 text-emerald-400 animate-pulse" />
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="p-4 rounded-3xl bg-emerald-500/10 border border-emerald-500/20"
+          >
+            <Sparkles className="w-8 h-8 text-emerald-400" />
+          </motion.div>
         )}
       </div>
     </div>
     
-    <div className="text-center space-y-6 max-w-md px-6">
-      <div className="space-y-3">
-        <h2 className={cn(
-          "text-3xl font-headline italic tracking-widest transition-colors duration-500",
-          error ? "text-rose-200" : "text-white"
-        )}>
-          {error ? "Ceremony Interrupted" : "Synthesizing Visions"}
-        </h2>
-        <p className={cn(
-          "text-[10px] font-black uppercase tracking-[0.4em] transition-colors duration-500",
-          error ? "text-rose-400/80" : "text-emerald-400/60"
-        )}>
-          {error ? error : "The Director is weaving your story into three distinct paths..."}
-        </p>
-      </div>
-
-      {error && (
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row items-center gap-3 justify-center"
-        >
-          {onRetry && (
-            <button
-              onClick={onRetry}
-              className="px-8 py-3 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-200 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl flex items-center gap-3 transition-all"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Reattempt Synthesis
-            </button>
-          )}
-          <button
-            onClick={onCancel}
-            className="px-8 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white/60 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl flex items-center gap-3 transition-all"
-          >
-            Back to Script
-          </button>
-        </motion.div>
-      )}
+    <div className="space-y-4 max-w-sm text-center">
+      <h3 className={cn(
+        "text-xl font-headline italic transition-colors duration-500",
+        error ? "text-rose-400" : "text-white"
+      )}>
+        {error ? "Thread Tangled" : "Weaving Narrative Pathways"}
+      </h3>
+      <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/40 leading-relaxed">
+        {error ? error : "The AI Weaver is interlacing your memories into cinematic script options."}
+      </p>
     </div>
+    
+    {error && (
+      <div className="flex gap-4">
+        {onRetry && (
+          <button 
+            onClick={onRetry}
+            className="flex items-center gap-3 px-6 py-3 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 rounded-xl transition-all"
+          >
+            <RotateCcw className="w-4 h-4 text-rose-400" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-rose-400">Re-weave thread</span>
+          </button>
+        )}
+        {onCancel && (
+          <button 
+            onClick={onCancel}
+            className="flex items-center gap-3 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all"
+          >
+            <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Cancel</span>
+          </button>
+        )}
+      </div>
+    )}
   </div>
 );
 
@@ -103,12 +103,14 @@ export const SelectionDeck = ({
   onPreview, 
   selectedText,
   originalHook = "",
-  isSaving = false
+  isSaving = false,
+  onBackToEditor
 }: SelectionDeckProps) => {
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const [isCopyingBundle, setIsCopyingBundle] = React.useState(false);
 
   const getVisionId = (type: string) => {
+    if (type.includes("Original")) return "original";
     if (type.includes("Soul")) return "soul";
     if (type.includes("Atmospheric")) return "sensory";
     if (type.includes("Cinematic")) return "cinematic";
@@ -119,17 +121,15 @@ export const SelectionDeck = ({
     setIsCopyingBundle(true);
     const bundleText = drafts.map(d => {
       return `--- ${d.visionType.toUpperCase()} ---
-Focus: ${d.focus}
-Stage Directions: ${d.stageDirections?.map((s: any) => `\n  • [${s.timecode}] (${s.type}) ${s.content}`).join("") || "None"}
-Beat Sheet: ${d.beatSheet?.map((b: string) => `\n  • ${b}`).join("") || "None"}
-
-Text:
 ${d.cleanScript}
 `;
     }).join('\n\n');
 
     const fullBundle = `DIRECTOR'S CUT COMPARISON BUNDLE
 Generated: ${new Date().toLocaleString()}
+
+TEMPORAL CONTEXT:
+${drafts[0]?.temporalSummary || "N/A"}
 
 ORIGINAL HOOK:
 ${originalHook}
@@ -139,7 +139,7 @@ ${bundleText}`;
 
     await navigator.clipboard.writeText(fullBundle);
     toast.success("Comparison Bundle Captured", {
-      description: "All three narrative paths have been copied to your clipboard."
+      description: "All four narrative paths (the polished original and three synthesized visions) have been copied."
     });
     setTimeout(() => setIsCopyingBundle(false), 2000);
   };
@@ -152,6 +152,7 @@ ${bundleText}`;
             <Film className="w-8 h-8 text-white/10" />
           </div>
           <motion.div 
+            initial={{ opacity: 0.1 }}
             animate={{ opacity: [0.1, 0.3, 0.1] }}
             transition={{ duration: 2, repeat: Infinity }}
             className="absolute -inset-4 bg-sky-500/5 blur-2xl rounded-full"
@@ -169,12 +170,14 @@ ${bundleText}`;
   }
 
   const ICONS: Record<string, any> = {
+    original: BookOpen,
     soul: Heart,
     sensory: Sparkles,
     cinematic: Film
   };
 
   const AURAS: Record<string, string> = {
+    original: 'border-purple-500/30 bg-purple-500/5',
     soul: 'border-amber-500/30 bg-amber-500/5',
     sensory: 'border-sky-500/30 bg-sky-500/5',
     cinematic: 'border-emerald-500/30 bg-emerald-500/5'
@@ -196,31 +199,58 @@ ${bundleText}`;
           <h2 className="text-4xl font-headline italic text-white">Director's Cut</h2>
           <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.5em]">The Director has prepared three narrative interpretations of your memory</p>
         </div>
+
+        {drafts[0]?.temporalSummary && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-2xl mx-auto px-6 py-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 backdrop-blur-sm flex items-start gap-4"
+          >
+            <History className="w-5 h-5 text-emerald-400 mt-1 shrink-0" />
+            <div className="flex flex-col text-left">
+              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Director's Temporal Note</span>
+              <p className="text-[11px] text-white/60 leading-relaxed italic font-serif">
+                "{drafts[0].temporalSummary}"
+              </p>
+            </div>
+          </motion.div>
+        )}
         
-        <button 
-          onClick={copyComparisonBundle}
-          disabled={isCopyingBundle}
-          className="flex items-center gap-3 px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all group"
-        >
-          {isCopyingBundle ? (
-            <span className="text-emerald-400">Bundle Captured</span>
-          ) : (
-            <>
-              <span>Copy Comparison Bundle</span>
-              <ClipboardCopy className="w-3 h-3 opacity-40 group-hover:opacity-100" />
-            </>
+        <div className="flex items-center gap-4 justify-center flex-wrap">
+          {onBackToEditor && (
+            <button 
+              onClick={onBackToEditor}
+              className="flex items-center gap-3 px-6 py-2.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-full text-[9px] font-black uppercase tracking-widest text-purple-400 hover:text-purple-300 transition-all group"
+            >
+              <ArrowLeft className="w-3 h-3 text-purple-400" />
+              <span>Back to Script Editor</span>
+            </button>
           )}
-        </button>
+          
+          <button 
+            onClick={copyComparisonBundle}
+            disabled={isCopyingBundle}
+            className="flex items-center gap-3 px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all group"
+          >
+            {isCopyingBundle ? (
+              <span className="text-emerald-400">Bundle Captured</span>
+            ) : (
+              <>
+                <span>Copy Comparison Bundle</span>
+                <ClipboardCopy className="w-3 h-3 opacity-40 group-hover:opacity-100" />
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {drafts.map((opt, idx) => {
           const typeId = getVisionId(opt.visionType);
           const Icon = ICONS[typeId] || Sparkles;
           
-          const xOffset = hoveredId === opt.visionType 
-            ? (idx === 0 ? 'calc(100% + 2rem)' : idx === 2 ? 'calc(-100% - 2rem)' : 0)
-            : 0;
+          // Disable xOffset since we have 4 items, let them scale in place
+          const xOffset = 0;
 
           return (
             <div 
@@ -281,7 +311,7 @@ ${bundleText}`;
                 )}>{opt.visionType}</h3>
                 
                 <p className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-4 group-hover:text-white/40 transition-colors">
-                  {opt.focus}
+                  {opt.visionFocus}
                 </p>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar mb-6 pr-2 -mr-2 [mask-image:linear-gradient(to_bottom,black_85%,transparent)]">

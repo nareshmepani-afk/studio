@@ -22,6 +22,7 @@ const SHARED_STYLES: React.CSSProperties = {
   border: 'none',
   outline: 'none',
   WebkitFontSmoothing: 'antialiased',
+  boxSizing: 'border-box',
 };
 
 export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({ 
@@ -142,7 +143,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
   }, [tokens, updateSparklePositions]);
 
   const portalContent = useMemo(() => {
-    if (hideAnchors) return null;
+    if (hideAnchors || readOnly) return null;
     return tokens.map((token: string, idx: number) => {
       const clean = token.toLowerCase();
       const anchor = anchors.find(a => a.word.toLowerCase() === clean);
@@ -173,7 +174,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
         </motion.button>
       );
     });
-  }, [tokens, anchors, rects, block.id, actions, hideAnchors]);
+  }, [tokens, anchors, rects, block.id, actions, hideAnchors, readOnly]);
 
   const { setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
 
@@ -197,10 +198,10 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
         "group relative flex items-start gap-8 py-2 transition-all duration-300 rounded-xl px-4",
         isDragging && "opacity-40 z-50",
         isActive && "bg-white/[0.03]",
-        readOnly && "bg-[#0a0a0f] border-zinc-800/50 shadow-inner"
+        readOnly && "bg-slate-950/40 border border-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.05)] rounded-xl"
       )}
     >
-      <div className="relative w-full">
+      <div className="relative w-full grid">
         {/* APEX PORTAL: document.body level */}
         {isMounted && createPortal(
           <div className="fixed inset-0 pointer-events-none z-[9999]">
@@ -217,8 +218,17 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
           onFocus={onFocus}
           onBlur={onBlur}
           readOnly={readOnly}
+          spellCheck={false}
+          data-gramm="false"
+          data-gramm_editor="false"
+          data-enable-grammarly="false"
           onClick={(e) => e.stopPropagation()}
-          style={{ ...RESOLVED_STYLES, color: 'transparent', caretColor: '#10b981' }}
+          style={{ 
+            ...RESOLVED_STYLES, 
+            color: 'transparent', 
+            caretColor: readOnly ? 'transparent' : '#10b981',
+            gridArea: '1 / 1 / 2 / 2'
+          }}
           className="relative z-[50] w-full resize-none overflow-hidden bg-transparent selection:bg-emerald-500/30"
           rows={1}
           onInput={(e) => {
@@ -230,8 +240,11 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
 
         <div
           aria-hidden="true"
-          style={RESOLVED_STYLES}
-          className="absolute inset-0 z-10 pointer-events-none text-slate-200"
+          style={{
+            ...RESOLVED_STYLES,
+            gridArea: '1 / 1 / 2 / 2'
+          }}
+          className="z-10 pointer-events-none text-slate-200 w-full"
         >
           {tokens.map((token: string, idx: number) => {
             const clean = token.toLowerCase();

@@ -60,6 +60,8 @@ export interface StructuredScript {
   };
 }
 
+export type TimeframeScope = 'Moment' | 'Year' | 'Generation' | 'Legacy';
+
 export interface Memory {
   id: string;
   userId: string;
@@ -95,6 +97,10 @@ export interface Memory {
     month?: string;
     year?: string;
   };
+  timeframeScope?: TimeframeScope;
+  narratorAgeAtTime?: number;
+  durationQuantity?: number;
+  durationUnit?: 'days' | 'months' | 'years';
   prose?: string;
   scriptBlocks?: ScriptBlock[]; // NLE architecture array
   content?: string;
@@ -123,6 +129,10 @@ export interface Memory {
     visionLabel?: string;
   }[];
   isProductionLocked?: boolean;
+  activeVision?: 'soul' | 'sensory' | 'cinematic' | string;
+  activeVisionLabel?: string;
+  productionTakes?: any[]; // The archived alternate drafts
+  isReviewing?: boolean;
 }
 
 export interface TranscriptSegment {

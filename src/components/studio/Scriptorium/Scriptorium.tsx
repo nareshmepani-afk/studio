@@ -30,6 +30,7 @@ import { LayoutGroup } from 'framer-motion';
 
 import { useProductionCharge, SensoryType } from '@/hooks/studio/useProductionCharge';
 import { AIPolishButton } from './AIPolishButton';
+import { History, Unlock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDebounce } from '@/hooks/useDebounce';
 
@@ -44,6 +45,11 @@ const ClarityWaveform = ({ charge, color }: { charge: number, color: string }) =
         stroke={color}
         strokeWidth="2"
         strokeLinecap="round"
+        initial={{
+          d: `M 0 10 ${Array.from({ length: points }).map((_, i) => 
+            `Q ${i * step + step/2} ${10 + (Math.sin(i * 1.5) * 8) * (charge/100)} ${(i + 1) * step} 10`
+          ).join(' ')}`
+        }}
         animate={{
           d: [
             `M 0 10 ${Array.from({ length: points }).map((_, i) => 
@@ -73,9 +79,21 @@ interface ScriptoriumProps {
   onPolish?: (blockId: string) => void;
   onWordCountChange?: (count: number) => void;
   onActivity?: () => void;
+  isProductionLocked?: boolean;
+  onOpenArchive?: () => void;
+  onUnlockProduction?: () => void;
 }
 
-export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange, onActivity }: ScriptoriumProps) => {
+export const Scriptorium = ({ 
+  data, 
+  onSync, 
+  onPolish, 
+  onWordCountChange, 
+  onActivity,
+  isProductionLocked = false,
+  onOpenArchive,
+  onUnlockProduction
+}: ScriptoriumProps) => {
   const { actions, detectedAnchors } = useStudioState();
 
   // 1. THE HYDRATION-SAFE MIGRATION ENGINE
@@ -308,7 +326,7 @@ export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange, onActiv
     <section className="relative max-w-4xl mx-auto mt-12 pb-32">
       <LayoutGroup>
         <DndContext
-          sensors={sensors}
+          sensors={isProductionLocked ? [] : sensors}
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
@@ -326,6 +344,7 @@ export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange, onActiv
                   onUpdate={(text: string) => { updateBlockText(block.id, text); onActivity?.(); }}
                   onBulkUpdate={(texts: string[]) => { bulkInsertBlocks(block.id, texts); onActivity?.(); }}
                   actions={actions}
+                  readOnly={isProductionLocked}
                 />
               ))}
             </div>
@@ -340,6 +359,7 @@ export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange, onActiv
                   onBlur={() => {}}
                   onUpdate={() => {}}
                   actions={actions}
+                  readOnly={isProductionLocked}
                 />
               </div>
             ) : null}
@@ -372,11 +392,43 @@ export const Scriptorium = ({ data, onSync, onPolish, onWordCountChange, onActiv
           </p>
         </motion.div>
 
-        <AIPolishButton 
-          charge={totalCharge} 
-          isReady={isReady} 
-          onClick={() => onPolish?.(focusedBlockId || blocks[0].id)}
-        />
+        <div className="flex items-center gap-3">
+          {onOpenArchive && (
+            <div className="relative flex items-center gap-2">
+              <motion.button
+                onClick={onOpenArchive}
+                className="relative z-10 flex items-center gap-2 px-6 py-3.5 rounded-full font-black text-[10px] uppercase tracking-[0.25em] bg-amber-500/10 text-amber-400 border border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.1)] hover:bg-amber-500/20 active:scale-95 transition-all duration-300"
+              >
+                <History className="w-3.5 h-3.5" />
+                View Archive
+              </motion.button>
+              
+              {isProductionLocked && onUnlockProduction && (
+                <button
+                  onClick={() => {
+                    const confirmUnlock = window.confirm(
+                      "Unlocking this scene will allow edits to your script but may desync any recordings in Act II. Proceed?"
+                    );
+                    if (confirmUnlock) {
+                      onUnlockProduction();
+                    }
+                  }}
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-red-950/40 text-red-400 border border-red-500/20 hover:bg-red-950/60 hover:text-red-300 transition-all duration-300"
+                  title="Release Production Lock"
+                >
+                  <Unlock className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
+
+          <AIPolishButton 
+            charge={totalCharge} 
+            isReady={isReady} 
+            disabled={isProductionLocked}
+            onClick={() => onPolish?.(focusedBlockId || blocks[0].id)}
+          />
+        </div>
       </div>
 
       {/* STAGE DECORATION: The "End of Scene" Marker */}

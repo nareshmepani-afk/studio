@@ -21,7 +21,7 @@ export const ThresholdGuard: React.FC<ThresholdGuardProps> = ({
     const progress = Math.min((currentCount / threshold) * 100, 100);
 
     return (
-        <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center p-12 overflow-hidden">
+        <div data-blueprint="ThresholdGuard" className="absolute inset-0 z-[100] flex flex-col items-center justify-center p-12 overflow-hidden">
             {/* Glassmorphic Backdrop */}
             <div className="absolute inset-0 bg-black/60 backdrop-blur-[12px] surface-depth" />
             
