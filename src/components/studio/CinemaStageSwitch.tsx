@@ -17,15 +17,19 @@ export default function CinemaStageSwitch({
   children,
   acts
 }: CinemaStageSwitchProps) {
-  const [direction, setDirection] = useState(0);
-  const [prevStage, setPrevStage] = useState(currentStage);
+  const [state, setState] = useState({
+    prevStage: currentStage,
+    direction: 0,
+  });
 
-  useEffect(() => {
-    if (currentStage !== prevStage) {
-      setDirection(currentStage > prevStage ? 1 : -1);
-      setPrevStage(currentStage);
-    }
-  }, [currentStage, prevStage]);
+  if (currentStage !== state.prevStage) {
+    setState({
+      prevStage: currentStage,
+      direction: currentStage > state.prevStage ? 1 : -1,
+    });
+  }
+
+  const direction = state.direction;
 
   const variants: Variants = {
     enter: (direction: number) => ({

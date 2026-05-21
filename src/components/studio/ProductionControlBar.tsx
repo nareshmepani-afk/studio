@@ -427,35 +427,38 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                 }
 
                 return (
-                    <Tooltip key={`${anchor.word}-${i}`}>
+                     <Tooltip key={`${anchor.word}-${i}`}>
                       <TooltipTrigger asChild>
-                        <motion.button
-                          initial={{ scale: 0.8, opacity: 0 }}
-                          animate={{ 
-                            scale: 1, 
-                            opacity: 1,
-                            boxShadow: [`0 0 0px ${pulseColor}`, `0 0 10px ${pulseColor}`, `0 0 0px ${pulseColor}`]
-                          }}
-                          transition={{ 
-                            scale: { type: "spring", damping: 15 },
-                            boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
-                          }}
-                          onClick={() => actions.primeCatalyst(anchor.word, anchor.type)}
-                          className={cn(
-                            "group relative flex items-center gap-2 rounded-lg border px-3 py-1 transition-all hover:brightness-125 active:scale-95",
-                            btnClass
-                          )}
-                        >
-                          <motion.div 
-                            className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white opacity-0 group-hover:opacity-100"
-                            animate={{ scale: [1, 1.5, 1], opacity: [0, 1, 0] }}
-                            transition={{ duration: 1, repeat: Infinity }}
-                          />
-                          
-                          <span className="font-mono text-[9px] font-black uppercase tracking-widest">
-                            {anchor.word}
-                          </span>
-                        </motion.button>
+                        <span className="inline-block">
+                          <motion.button
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ 
+                              scale: 1, 
+                              opacity: 1,
+                              boxShadow: [`0 0 0px ${pulseColor}`, `0 0 10px ${pulseColor}`, `0 0 0px ${pulseColor}`]
+                            }}
+                            transition={{ 
+                              scale: { type: "spring", damping: 15 },
+                              boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                            }}
+                            onClick={() => actions.primeCatalyst(anchor.word, anchor.type)}
+                            className={cn(
+                              "group relative flex items-center gap-2 rounded-lg border px-3 py-1 transition-all hover:brightness-125 active:scale-95",
+                              btnClass
+                            )}
+                          >
+                            <motion.div 
+                              className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white opacity-0 group-hover:opacity-100"
+                              initial={{ scale: 1, opacity: 0 }}
+                              animate={{ scale: [1, 1.5, 1], opacity: [0, 1, 0] }}
+                              transition={{ duration: 1, repeat: Infinity }}
+                            />
+                            
+                            <span className="font-mono text-[9px] font-black uppercase tracking-widest">
+                              {anchor.word}
+                            </span>
+                          </motion.button>
+                        </span>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="bg-slate-900 border-white/10 text-[10px] font-bold tracking-widest uppercase py-2 px-3 mb-2 shadow-2xl">
                         <div className="flex flex-col gap-1">
@@ -529,6 +532,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                     <>
                       <motion.div 
                         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                        initial={{ x: '-100%' }}
                         animate={{ x: ['-100%', '200%'] }}
                         transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
                       />
@@ -558,6 +562,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                        <Circle className="w-4 h-4 relative z-10 opacity-20" />
                        <motion.div 
                         className="absolute inset-0 border-2 border-emerald-500 rounded-full"
+                        initial={{ scale: 1, opacity: 1 }}
                         animate={{ scale: [1, 1.5], opacity: [1, 0] }}
                         transition={{ duration: 1, repeat: Infinity }}
                        />

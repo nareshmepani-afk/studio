@@ -114,7 +114,7 @@ export default function SoloStage({
 
 
   // 1. Initialize local Camera stream (Only when explicitly enabled)
-  const { stream, error } = useCamera({ enabled: isCameraActive });
+  const { stream, error, cameraError } = useCamera({ enabled: isCameraActive });
   
   // 2. Bind the robust MediaRecorder Hook
   const { 
@@ -679,88 +679,223 @@ export default function SoloStage({
              </div>
           </div>
 
-          {error ? (
-            <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-xl p-8 overflow-y-auto custom-scrollbar">
-               {/* Premium Warning Lock Icon */}
-               <div className="relative mb-6">
-                 <div className="absolute inset-0 rounded-full bg-rose-500/20 blur-xl animate-pulse" />
-                 <div className="relative w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
-                    <Lock className="w-8 h-8" />
+          {error ? (() => {
+            const errType = cameraError?.type || 'unknown';
+            
+            let icon = <Lock className="w-8 h-8" />;
+            let title = "Optics & Mic Locked";
+            let subtitle = "To record your cinematic memory, browser access to your camera and microphone is required. Your stream is processed entirely locally.";
+            let actionLabel = "Re-attempt Access";
+            let guideTitle = "How to Unlock Permissions";
+            
+            let guideContent = (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                 {/* Chrome/Edge/Firefox Instruction */}
+                 <div className="space-y-2">
+                    <div className="font-bold text-white flex items-center gap-2">
+                       <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[9px]">1</span>
+                       Chrome / Edge / Firefox
+                    </div>
+                    <ul className="space-y-1.5 text-white/50 pl-5 list-disc">
+                       <li>Click the <strong className="text-white font-semibold">Lock Icon 🔒</strong> next to the URL in the address bar.</li>
+                       <li>Toggle <strong className="text-white font-semibold">Camera</strong> and <strong className="text-white font-semibold">Microphone</strong> to <strong className="text-emerald-400 font-semibold">Allow</strong>.</li>
+                    </ul>
                  </div>
-               </div>
 
-               {/* Title */}
-               <h3 className="text-2xl font-black text-white uppercase tracking-[0.2em] mb-2 text-center">
-                 Optics & Mic Locked
-               </h3>
-               
-               {/* Subtitle */}
-               <p className="text-sm text-white/60 max-w-md text-center leading-relaxed mb-6">
-                 To record your cinematic memory, browser access to your camera and microphone is required. Your stream is processed entirely locally.
-               </p>
+                 {/* Safari Instruction */}
+                 <div className="space-y-2">
+                    <div className="font-bold text-white flex items-center gap-2">
+                       <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[9px]">2</span>
+                       Apple Safari
+                    </div>
+                    <ul className="space-y-1.5 text-white/50 pl-5 list-disc">
+                       <li>Click <strong className="text-white font-semibold">Safari</strong> in the menu bar, then <strong className="text-white font-semibold">Settings for This Website...</strong></li>
+                       <li>Set both <strong className="text-white font-semibold">Camera</strong> and <strong className="text-white font-semibold">Microphone</strong> to <strong className="text-emerald-400 font-semibold">Allow</strong>.</li>
+                    </ul>
+                 </div>
+              </div>
+            );
 
-               {/* Step-by-Step Instructions */}
-               <div className="w-full max-w-xl bg-white/[0.02] border border-white/5 rounded-3xl p-6 mb-6 text-left space-y-4">
-                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                     <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">How to Unlock Permissions</span>
-                     <span className="text-[9px] font-mono text-rose-500/80 bg-rose-500/5 px-2 py-0.5 rounded border border-rose-500/10 uppercase">Required</span>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-                     {/* Chrome/Edge Instruction */}
-                     <div className="space-y-2">
-                        <div className="font-bold text-white flex items-center gap-2">
-                           <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[9px]">1</span>
-                           Chrome / Edge / Firefox
-                        </div>
-                        <ul className="space-y-1.5 text-white/50 pl-5 list-disc">
-                           <li>Click the <strong className="text-white font-semibold">Lock Icon 🔒</strong> next to the URL in the address bar.</li>
-                           <li>Toggle <strong className="text-white font-semibold">Camera</strong> and <strong className="text-white font-semibold">Microphone</strong> to <strong className="text-emerald-400 font-semibold">Allow</strong>.</li>
-                        </ul>
-                     </div>
+            if (errType === 'notFound') {
+              icon = <AlertTriangle className="w-8 h-8" />;
+              title = "No Media Devices Found";
+              subtitle = "No camera or microphone device could be recognised on this system. Please check your physical connections.";
+              actionLabel = "Scan for Hardware";
+              guideTitle = "Hardware Verification Steps";
+              guideContent = (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                   <div className="space-y-2">
+                      <div className="font-bold text-white flex items-center gap-2">
+                         <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[9px]">1</span>
+                         Physical Connections
+                      </div>
+                      <ul className="space-y-1.5 text-white/50 pl-5 list-disc">
+                         <li>Verify that your external webcam or microphone is firmly plugged in.</li>
+                         <li>Try using a different USB port directly on your computer.</li>
+                      </ul>
+                   </div>
+                   <div className="space-y-2">
+                      <div className="font-bold text-white flex items-center gap-2">
+                         <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[9px]">2</span>
+                         System Privacy Settings
+                      </div>
+                      <ul className="space-y-1.5 text-white/50 pl-5 list-disc">
+                         <li>On Windows, go to <strong className="text-white font-semibold">Settings &gt; Privacy &gt; Camera</strong> and enable access.</li>
+                         <li>On macOS, open <strong className="text-white font-semibold">System Settings &gt; Privacy & Security &gt; Camera</strong> and check your browser.</li>
+                      </ul>
+                   </div>
+                </div>
+              );
+            } else if (errType === 'notReadable') {
+              icon = <RefreshCw className="w-8 h-8" />;
+              title = "Hardware Already Sourced";
+              subtitle = "The camera or microphone is already in use by another programme or browser tab.";
+              actionLabel = "Re-attempt Access";
+              guideTitle = "Device Conflict Resolution";
+              guideContent = (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                   <div className="space-y-2">
+                      <div className="font-bold text-white flex items-center gap-2">
+                         <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[9px]">1</span>
+                         Active Background Applications
+                      </div>
+                      <ul className="space-y-1.5 text-white/50 pl-5 list-disc">
+                         <li>Close video-conferencing apps like Zoom, Microsoft Teams, Google Meet, or Skype.</li>
+                         <li>Ensure no other browser tabs or software are actively using your camera/mic.</li>
+                      </ul>
+                   </div>
+                   <div className="space-y-2">
+                      <div className="font-bold text-white flex items-center gap-2">
+                         <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[9px]">2</span>
+                         Hard Refresh & Re-attempt
+                      </div>
+                      <ul className="space-y-1.5 text-white/50 pl-5 list-disc">
+                         <li>Click the <strong className="text-white font-semibold">Re-attempt Access</strong> button below to force-release the device.</li>
+                         <li>Restart your browser if the device handle remains locked by the operating system.</li>
+                      </ul>
+                   </div>
+                </div>
+              );
+            } else if (errType === 'overconstrained') {
+              icon = <Settings2 className="w-8 h-8" />;
+              title = "Optics Resolution Mismatch";
+              subtitle = "The requested premium 4K or HD video resolution constraints could not be satisfied by your media hardware.";
+              actionLabel = "Retry Lower Cascade";
+              guideTitle = "Constraint Resolution Guide";
+              guideContent = (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                   <div className="space-y-2">
+                      <div className="font-bold text-white flex items-center gap-2">
+                         <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[9px]">1</span>
+                         Resolution Limits
+                      </div>
+                      <ul className="space-y-1.5 text-white/50 pl-5 list-disc">
+                         <li>Your camera may not support the high resolution constraints (e.g. 4K, 1080p, or 720p).</li>
+                         <li>The adaptive resolution system will automatically fall back to standard settings on retry.</li>
+                      </ul>
+                   </div>
+                   <div className="space-y-2">
+                      <div className="font-bold text-white flex items-center gap-2">
+                         <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[9px]">2</span>
+                         Force Default Settings
+                      </div>
+                      <ul className="space-y-1.5 text-white/50 pl-5 list-disc">
+                         <li>Click <strong className="text-white font-semibold">Retry Lower Cascade</strong> to cycle down through the adaptive cascade constraints.</li>
+                      </ul>
+                   </div>
+                </div>
+              );
+            } else if (errType === 'unknown') {
+              icon = <AlertTriangle className="w-8 h-8" />;
+              title = "Hardware Bridge Interrupted";
+              subtitle = "An unexpected error occurred while establishing the connection to your media devices.";
+              actionLabel = "Re-attempt Access";
+              guideTitle = "System Recovery Guide";
+              guideContent = (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                   <div className="space-y-2">
+                      <div className="font-bold text-white flex items-center gap-2">
+                         <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[9px]">1</span>
+                         Quick Reconnect
+                      </div>
+                      <ul className="space-y-1.5 text-white/50 pl-5 list-disc">
+                         <li>Unplug and plug your camera/mic back in to trigger system level driver resets.</li>
+                         <li>Check if the device functions properly in other web browser applications.</li>
+                      </ul>
+                   </div>
+                   <div className="space-y-2">
+                      <div className="font-bold text-white flex items-center gap-2">
+                         <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[9px]">2</span>
+                         System Diagnostics
+                      </div>
+                      <ul className="space-y-1.5 text-white/50 pl-5 list-disc">
+                         <li>Perform a full page reload (Ctrl+R or Cmd+R) to clear all stale navigator handles.</li>
+                         <li>Verify that your browser is up-to-date and fully supports WebRTC capture.</li>
+                      </ul>
+                   </div>
+                </div>
+              );
+            }
 
-                     {/* Safari Instruction */}
-                     <div className="space-y-2">
-                        <div className="font-bold text-white flex items-center gap-2">
-                           <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[9px]">2</span>
-                           Apple Safari
-                        </div>
-                        <ul className="space-y-1.5 text-white/50 pl-5 list-disc">
-                           <li>Click <strong className="text-white font-semibold">Safari</strong> in the menu bar, then <strong className="text-white font-semibold">Settings for This Website...</strong></li>
-                           <li>Set both <strong className="text-white font-semibold">Camera</strong> and <strong className="text-white font-semibold">Microphone</strong> to <strong className="text-emerald-400 font-semibold">Allow</strong>.</li>
-                        </ul>
-                     </div>
-                  </div>
+            return (
+              <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-xl p-8 overflow-y-auto custom-scrollbar">
+                 {/* Premium Warning Lock Icon */}
+                 <div className="relative mb-6">
+                   <div className="absolute inset-0 rounded-full bg-rose-500/20 blur-xl animate-pulse" />
+                   <div className="relative w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                      {icon}
+                   </div>
+                 </div>
 
-                  <p className="text-[10px] text-white/30 text-center italic pt-2 border-t border-white/5">
-                     Tip: You may need to refresh the browser if permissions don't apply immediately.
-                  </p>
-               </div>
+                 {/* Title */}
+                 <h3 className="text-2xl font-black text-white uppercase tracking-[0.2em] mb-2 text-center">
+                   {title}
+                 </h3>
+                 
+                 {/* Subtitle */}
+                 <p className="text-sm text-white/60 max-w-md text-center leading-relaxed mb-6">
+                   {subtitle}
+                 </p>
 
-               {/* Action Buttons */}
-               <div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-md justify-center">
-                  {/* Re-attempt Access Button */}
-                  <button 
-                     onClick={handleReattemptAccess}
-                     className="w-full sm:w-auto px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[11px] uppercase tracking-widest rounded-xl hover:scale-102 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-98 transition-all flex items-center justify-center gap-2 group"
-                  >
-                     <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-700" />
-                     Re-attempt Access
-                  </button>
+                 {/* Step-by-Step Instructions */}
+                 <div className="w-full max-w-xl bg-white/[0.02] border border-white/5 rounded-3xl p-6 mb-6 text-left space-y-4">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                       <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">{guideTitle}</span>
+                       <span className="text-[9px] font-mono text-rose-500/80 bg-rose-500/5 px-2 py-0.5 rounded border border-rose-500/10 uppercase">Required</span>
+                    </div>
+                    
+                    {guideContent}
 
-                  {/* Go Back Button */}
-                  <button 
-                     onClick={() => {
-                        // Retreat to Scribing (Stage 0)
-                        setProductionStage(0);
-                     }}
-                     className="w-full sm:w-auto px-6 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white/60 hover:text-white font-bold text-[11px] uppercase tracking-widest rounded-xl active:scale-98 transition-all flex items-center justify-center gap-2"
-                  >
-                     Go Back
-                  </button>
-               </div>
-            </div>
-          ) : !isCameraActive && (
+                    <p className="text-[10px] text-white/30 text-center italic pt-2 border-t border-white/5">
+                       Tip: You may need to refresh the browser if your device updates don't apply immediately.
+                    </p>
+                 </div>
+
+                 {/* Action Buttons */}
+                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-md justify-center">
+                    {/* Re-attempt Access Button */}
+                    <button 
+                       onClick={handleReattemptAccess}
+                       className="w-full sm:w-auto px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[11px] uppercase tracking-widest rounded-xl hover:scale-102 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-98 transition-all flex items-center justify-center gap-2 group"
+                    >
+                       <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-700" />
+                       {actionLabel}
+                    </button>
+
+                    {/* Go Back Button */}
+                    <button 
+                       onClick={() => {
+                          // Retreat to Scribing (Stage 0)
+                          setProductionStage(0);
+                       }}
+                       className="w-full sm:w-auto px-6 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white/60 hover:text-white font-bold text-[11px] uppercase tracking-widest rounded-xl active:scale-98 transition-all flex items-center justify-center gap-2"
+                    >
+                       Go Back
+                    </button>
+                 </div>
+              </div>
+            );
+          })() : !isCameraActive && (
             <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md">
                <Video className="w-16 h-16 text-white/20 mb-6" />
                <h3 className="text-xl font-bold text-white mb-2">Camera Offline</h3>

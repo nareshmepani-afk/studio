@@ -5,15 +5,34 @@ import React from 'react';
 import { Memory } from '@/types';
 
 // Mock all heavy dependencies and lucide-react icons
-vi.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
-    span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
-  },
-  AnimatePresence: ({ children }: any) => <>{children}</>,
-  LayoutGroup: ({ children }: any) => <>{children}</>,
-}));
+vi.mock('framer-motion', () => {
+  const cleanProps = ({
+    whileHover,
+    whileTap,
+    layoutId,
+    initial,
+    animate,
+    exit,
+    transition,
+    variants,
+    viewport,
+    drag,
+    dragElastic,
+    dragSnapToOrigin,
+    onDragStart,
+    onDragEnd,
+    ...rest
+  }: any) => rest;
+  return {
+    motion: {
+      div: ({ children, ...props }: any) => <div {...cleanProps(props)}>{children}</div>,
+      button: ({ children, ...props }: any) => <button {...cleanProps(props)}>{children}</button>,
+      span: ({ children, ...props }: any) => <span {...cleanProps(props)}>{children}</span>,
+    },
+    AnimatePresence: ({ children }: any) => <>{children}</>,
+    LayoutGroup: ({ children }: any) => <>{children}</>,
+  };
+});
 
 vi.mock('lucide-react', async (importOriginal) => {
   return {

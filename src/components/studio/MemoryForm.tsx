@@ -1313,23 +1313,25 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                          <TooltipProvider>
                            <Tooltip>
                              <TooltipTrigger asChild>
-                               <motion.button 
-                                 whileHover={{ scale: 1.05 }}
-                                 whileTap={{ scale: 0.95 }}
-                                 onClick={() => onToggleMentor?.(true)}
-                                 className={cn(
-                                   "px-5 py-1.5 rounded-full border transition-all flex items-center gap-2 relative group/mentor pointer-events-auto",
-                                   mentorActive 
-                                     ? "bg-emerald-500 border-emerald-400 text-slate-950 shadow-[0_0_15px_rgba(16,185,129,0.4)]" 
-                                     : "bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20"
-                                 )}
-                               >
-                                 <UserCircle className={cn("w-3.5 h-3.5", mentorActive && "animate-pulse")} />
-                                 <span className="text-[9px] font-black uppercase tracking-[0.3em]">Mentor</span>
-                                 {mentorActive && (
-                                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.6)] animate-pulse" />
-                                 )}
-                               </motion.button>
+                               <span className="inline-block">
+                                 <motion.button 
+                                   whileHover={{ scale: 1.05 }}
+                                   whileTap={{ scale: 0.95 }}
+                                   onClick={() => onToggleMentor?.(true)}
+                                   className={cn(
+                                     "px-5 py-1.5 rounded-full border transition-all flex items-center gap-2 relative group/mentor pointer-events-auto",
+                                     mentorActive 
+                                       ? "bg-emerald-500 border-emerald-400 text-slate-950 shadow-[0_0_15px_rgba(16,185,129,0.4)]" 
+                                       : "bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20"
+                                   )}
+                                 >
+                                   <UserCircle className={cn("w-3.5 h-3.5", mentorActive && "animate-pulse")} />
+                                   <span className="text-[9px] font-black uppercase tracking-[0.3em]">Mentor</span>
+                                   {mentorActive && (
+                                     <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.6)] animate-pulse" />
+                                   )}
+                                 </motion.button>
+                               </span>
                              </TooltipTrigger>
                              <TooltipContent side="bottom" className="bg-slate-900 border-white/10 text-[9px] font-black tracking-widest uppercase py-2 px-3">
                                 Invoke the Lifeline
@@ -1590,17 +1592,19 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                     <TooltipProvider>
                                       <Tooltip delayDuration={0}>
                                         <TooltipTrigger asChild>
-                                          <motion.button
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={() => setShowUnlockConfirm(true)}
-                                            className="px-4 py-2 bg-amber-500/20 border border-amber-500/50 hover:bg-amber-500/30 text-amber-400 text-[9px] font-black uppercase tracking-widest rounded-full flex items-center gap-3 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all animate-pulse hover:animate-none"
-                                          >
-                                            <Lock className="w-3 h-3" />
-                                            Release Production Lock
-                                          </motion.button>
+                                          <span className="inline-block">
+                                            <motion.button
+                                              initial={{ opacity: 0, scale: 0.9 }}
+                                              animate={{ opacity: 1, scale: 1 }}
+                                              whileHover={{ scale: 1.05 }}
+                                              whileTap={{ scale: 0.95 }}
+                                              onClick={() => setShowUnlockConfirm(true)}
+                                              className="px-4 py-2 bg-amber-500/20 border border-amber-500/50 hover:bg-amber-500/30 text-amber-400 text-[9px] font-black uppercase tracking-widest rounded-full flex items-center gap-3 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all animate-pulse hover:animate-none"
+                                            >
+                                              <Lock className="w-3 h-3" />
+                                              Release Production Lock
+                                            </motion.button>
+                                          </span>
                                         </TooltipTrigger>
                                         <TooltipContent side="top" className="bg-amber-950 border-amber-500/30 text-amber-100 text-[10px] font-bold tracking-widest uppercase py-3 px-4 mb-2 max-w-[280px] shadow-2xl">
                                           <div className="space-y-2">
@@ -1813,6 +1817,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                            {isDescReady && (
                              <motion.div 
                                className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/10 to-emerald-500/0"
+                               initial={{ x: '-100%' }}
                                animate={{ x: ['-100%', '200%'] }}
                                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                              />
@@ -1831,6 +1836,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                            {isDescReady && !isPolishingDesc && (
                              <motion.div 
                                className="absolute inset-0 rounded-full border border-emerald-500/50"
+                               initial={{ scale: 1, opacity: 0.5 }}
                                animate={{ scale: [1, 1.1], opacity: [0.5, 0] }}
                                transition={{ duration: 1.5, repeat: Infinity }}
                              />
@@ -1870,13 +1876,15 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                <TooltipProvider>
                                  <Tooltip>
                                    <TooltipTrigger asChild>
-                                     <motion.div 
-                                       initial={{ opacity: 0 }}
-                                       animate={{ opacity: 1 }}
-                                       className="px-4 py-1.5 rounded-full border border-white/5 bg-white/5 text-white/20 cursor-help"
-                                     >
-                                       <span className="text-[9px] font-black uppercase tracking-[0.2em]">The Architect is listening...</span>
-                                     </motion.div>
+                                     <span className="inline-block cursor-help">
+                                       <motion.div 
+                                         initial={{ opacity: 0 }}
+                                         animate={{ opacity: 1 }}
+                                         className="px-4 py-1.5 rounded-full border border-white/5 bg-white/5 text-white/20"
+                                       >
+                                         <span className="text-[9px] font-black uppercase tracking-[0.2em]">The Architect is listening...</span>
+                                       </motion.div>
+                                     </span>
                                    </TooltipTrigger>
                                    <TooltipContent side="top" className="bg-slate-900 border-white/10 text-[9px] font-black tracking-widest uppercase py-2 px-3">
                                       The AI Script Supervisor is analyzing your memory for sensory anchors in real-time.

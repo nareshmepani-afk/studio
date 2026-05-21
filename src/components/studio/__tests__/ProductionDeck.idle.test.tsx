@@ -45,15 +45,34 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/studio',
 }));
 
-vi.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
-    header: ({ children, ...props }: any) => <header {...props}>{children}</header>,
-    span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
-  },
-  AnimatePresence: ({ children }: any) => <>{children}</>,
-}));
+vi.mock('framer-motion', () => {
+  const cleanProps = ({
+    whileHover,
+    whileTap,
+    layoutId,
+    initial,
+    animate,
+    exit,
+    transition,
+    variants,
+    viewport,
+    drag,
+    dragElastic,
+    dragSnapToOrigin,
+    onDragStart,
+    onDragEnd,
+    ...rest
+  }: any) => rest;
+  return {
+    motion: {
+      div: ({ children, ...props }: any) => <div {...cleanProps(props)}>{children}</div>,
+      button: ({ children, ...props }: any) => <button {...cleanProps(props)}>{children}</button>,
+      header: ({ children, ...props }: any) => <header {...cleanProps(props)}>{children}</header>,
+      span: ({ children, ...props }: any) => <span {...cleanProps(props)}>{children}</span>,
+    },
+    AnimatePresence: ({ children }: any) => <>{children}</>,
+  };
+});
 
 vi.mock('sonner', () => ({
   toast: Object.assign(vi.fn(), {

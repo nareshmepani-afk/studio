@@ -9,15 +9,33 @@ import { render, screen, fireEvent, renderHook } from '@testing-library/react';
 import React from 'react';
 import { ScopeToggleGroup } from '@/components/studio/ScopeToggleGroup';
 
-// Mock Framer Motion to avoid animation-related issues in tests
-vi.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, layoutId, initial, ...props }: any) => <div {...props}>{children}</div>,
-    button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
-    span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
-  },
-  AnimatePresence: ({ children }: any) => <>{children}</>,
-}));
+vi.mock('framer-motion', () => {
+  const cleanProps = ({
+    whileHover,
+    whileTap,
+    layoutId,
+    initial,
+    animate,
+    exit,
+    transition,
+    variants,
+    viewport,
+    drag,
+    dragElastic,
+    dragSnapToOrigin,
+    onDragStart,
+    onDragEnd,
+    ...rest
+  }: any) => rest;
+  return {
+    motion: {
+      div: ({ children, ...props }: any) => <div {...cleanProps(props)}>{children}</div>,
+      button: ({ children, ...props }: any) => <button {...cleanProps(props)}>{children}</button>,
+      span: ({ children, ...props }: any) => <span {...cleanProps(props)}>{children}</span>,
+    },
+    AnimatePresence: ({ children }: any) => <>{children}</>,
+  };
+});
 
 // Mock Lucide icons properly
 vi.mock('lucide-react', async (importOriginal) => {
