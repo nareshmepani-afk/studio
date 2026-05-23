@@ -2,7 +2,6 @@
 
 import React, { Suspense } from "react";
 import { Inter } from "next/font/google";
-import { Toaster } from "react-hot-toast";
 import { StudioProviders } from "./StudioProviders";
 import { AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";

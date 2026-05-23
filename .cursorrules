@@ -1,0 +1,55 @@
+# Developer and AI Agent Guidelines (Rules of Engagement)
+
+This file defines the strict Rules of Engagement for all AI coding assistants (including Antigravity) and human developers working on the **Memory Weaver Studio** project.
+
+---
+
+## 🛠️ The Parity Rule (No Ticket, No Code)
+
+1. **Absolute Parity:** No code changes, component creations, or refactoring sessions may occur unless linked directly to an active `MW-*` ticket ID.
+2. **Backlog Prioritization:** Before initiating any work, verify that a corresponding ticket exists in the master backlog. If a task has been verbally requested but does not exist, a ticket must be appended to the backlog and created on the Plane.co board prior to touching the codebase.
+3. **Commit Association:** All git commit messages must be prefixed with their associated ticket ID (e.g., `git commit -m "MW-7: Elevate Mentor to Stage-Aware Global Provider"`).
+
+---
+
+## 🌿 Git Workflow Protocol
+
+1. **Branch Naming Standard:** Every branch created must be mapped to an active ticket:
+   * **Format:** `[feature|bugfix|chore]/MW-[ID]-[short-slug]`
+   * **Examples:** `feature/MW-9-git-hash-injection`, `bugfix/MW-6-opacity-crash`
+2. **Husky Pre-Commit Gates:** Local commits are strictly guarded by Husky. Before committing, Husky automatically executes:
+   * `npx lint-staged` (staged files lint check)
+   * `npm run type-check` (TypeScript compiler validation)
+   * `npm run test` (Vitest regression testing)
+   * **Rule:** If any check fails, the commit is automatically blocked. Resolve all errors locally before retrying.
+3. **CI/CD Integration:** Merging to the `main` branch requires a Pull Request (PR) where the remote "Regression Guards" action must pass green.
+
+---
+
+## 📈 directWorkflow Progression
+
+All tickets must flow sequentially through these standard industry states:
+
+```
+[Todo] ➡️ [In Progress] ➡️ [Done] ➡️ [Verified] ➡️ [Accepted]
+```
+
+* **Todo:** Task is prioritized in the backlog but not started.
+* **In Progress:** Developer/AI is actively writing code or modifying files.
+* **Done:** Implementation is complete, tests pass successfully, and PR/commit is merged.
+* **Verified:** Technical QA or automated E2E tests have verified correctness in staging.
+* **Accepted:** The Director (User) performs acceptance testing and officially signs off on the feature.
+
+---
+
+## 🇬🇧 Copy & Language Standard
+
+* All user-facing strings, prompts, logs, and tooltips must strictly adhere to **UK English** spelling standards.
+* Key terms include: *savour*, *colour*, *synthesising*, *crystallise*, *characterisation*, *optimise*.
+
+---
+
+## 🧪 Testing Protocol
+
+* A build or architectural change is only complete when all unit and integration tests pass green.
+* Run the test suite using `powershell -ExecutionPolicy Bypass -Command "npx vitest run"` to verify integrity before claiming success.

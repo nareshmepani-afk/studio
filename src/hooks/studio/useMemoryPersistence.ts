@@ -39,6 +39,7 @@ interface PersistenceProps {
   durationUnit?: 'days' | 'months' | 'years';
   modality?: 'pen' | 'voice' | null;
   activeVision?: 'soul' | 'sensory' | 'cinematic' | string;
+  activeVisionLabel?: string;
   productionTakes?: any[];
 }
 
@@ -79,6 +80,7 @@ export function useMemoryPersistence({
   narratorAgeAtTime,
   modality,
   activeVision,
+  activeVisionLabel,
   productionTakes
 }: PersistenceProps) {
   const [isSaving, setIsSaving] = useState(false);
@@ -96,7 +98,7 @@ export function useMemoryPersistence({
     billingLine, aiTakes, structuredScript,
     originalHook, scriptHistory, isProductionLocked, productionStage, prose,
     timeframeScope, durationQuantity, durationUnit, narratorAgeAtTime, modality,
-    activeVision, productionTakes, isReviewing
+    activeVision, activeVisionLabel, productionTakes, isReviewing
   });
 
   useEffect(() => {
@@ -107,7 +109,7 @@ export function useMemoryPersistence({
       billingLine, aiTakes, structuredScript,
       originalHook, scriptHistory, isProductionLocked, productionStage, prose,
       timeframeScope, durationQuantity, durationUnit, narratorAgeAtTime, modality,
-      activeVision, productionTakes, isReviewing
+      activeVision, activeVisionLabel, productionTakes, isReviewing
     };
   }, [
     title, description, location, country, tags, day, month, year,
@@ -116,7 +118,7 @@ export function useMemoryPersistence({
     billingLine, aiTakes, structuredScript,
     originalHook, scriptHistory, isProductionLocked, productionStage, prose,
     timeframeScope, durationQuantity, durationUnit, narratorAgeAtTime, modality,
-    activeVision, productionTakes, isReviewing
+    activeVision, activeVisionLabel, productionTakes, isReviewing
   ]);
   
   // Stable references for parent state to decouple dependency arrays
@@ -237,6 +239,10 @@ export function useMemoryPersistence({
           if (!s.activeVision && currentData?.activeVision) return false;
           return (s.activeVision || '') !== (currentData?.activeVision || '');
         })(),
+        activeVisionLabel: (() => {
+          if (!s.activeVisionLabel && currentData?.activeVisionLabel) return false;
+          return (s.activeVisionLabel || '') !== (currentData?.activeVisionLabel || '');
+        })(),
         productionTakes: JSON.stringify(s.productionTakes || []) !== JSON.stringify(currentData?.productionTakes || []),
         isReviewing: (s.isReviewing ?? false) !== (currentData?.isReviewing ?? false)
       };
@@ -296,8 +302,9 @@ export function useMemoryPersistence({
           narratorAgeAtTime: s.narratorAgeAtTime !== undefined ? s.narratorAgeAtTime : (currentData?.narratorAgeAtTime !== undefined ? currentData.narratorAgeAtTime : undefined),
           durationQuantity: s.durationQuantity !== undefined ? s.durationQuantity : (currentData?.durationQuantity ?? undefined),
           durationUnit: (s.durationUnit || currentData?.durationUnit) as 'days' | 'months' | 'years' || undefined,
-          modality: s.modality || currentData?.modality || null,
+          modality: s.modality || currentData?.modality || undefined,
           activeVision: s.activeVision || currentData?.activeVision || undefined,
+          activeVisionLabel: s.activeVisionLabel || currentData?.activeVisionLabel || undefined,
           productionTakes: s.productionTakes || currentData?.productionTakes || undefined,
           isReviewing: s.isReviewing ?? false,
           status: 'draft' as const // status is usually managed elsewhere but we keep it safe
@@ -322,7 +329,7 @@ export function useMemoryPersistence({
     billingLine, aiTakes, structuredScript,
     originalHook, scriptHistory, isProductionLocked,
     timeframeScope, durationQuantity, durationUnit, modality,
-    activeVision, productionTakes, isReviewing
+    activeVision, activeVisionLabel, productionTakes, isReviewing
   ]);
 
   // Stable Reference for Auto-Save logic to prevent loop-back cycles
@@ -361,6 +368,7 @@ export function useMemoryPersistence({
     durationUnit,
     modality,
     activeVision,
+    activeVisionLabel,
     JSON.stringify(productionTakes || null)
   ]);
 

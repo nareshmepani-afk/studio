@@ -4,15 +4,38 @@ import ProductionDeck from '../ProductionDeck';
 import React from 'react';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 
-// 1. Comprehensive Mocking for the Studio Environment
+// Mutable mock state variables to make the mock fully dynamic
+let mockCurrentStage = 0;
+let mockModality = 'pen' as any;
+let mockIsDirectorOpen = false;
+let mockIsReviewing = false;
+let mockIsProductionLocked = false;
+let mockMentorModeActive = false;
+let mockIsManualMentor = false;
+const mockToggleMentor = vi.fn();
+const mockSetIsProductionLocked = vi.fn();
+
+// 1. Comprehensive Dynamic Mocking for the Studio Environment
 vi.mock('@/hooks/studio/useStudioState', () => ({
-  useStudioState: vi.fn().mockReturnValue({
-    currentStage: 0,
-    modality: 'pen',
-    isDirectorOpen: false,
-    isReviewing: false,
+  useStudioState: vi.fn().mockImplementation(() => ({
+    currentStage: mockCurrentStage,
+    modality: mockModality,
+    isDirectorOpen: mockIsDirectorOpen,
+    isReviewing: mockIsReviewing,
     selectedVision: { type: null, label: null },
-    isProductionLocked: false,
+    isProductionLocked: mockIsProductionLocked,
+    mentorContext: {
+      mentorModeActive: mockMentorModeActive,
+      isOverlayOpen: mockMentorModeActive,
+      isManualMentor: mockIsManualMentor,
+      toggleMentor: mockToggleMentor,
+      triggerWhisper: vi.fn(),
+      closeOverlay: vi.fn(),
+      getWhisper: vi.fn().mockImplementation((act) => ({ 
+        act, 
+        whisper: 'Mock UK English guidance string.' 
+      }))
+    },
     actions: {
       setIsReviewing: vi.fn(),
       setReviewDrafts: vi.fn(),
@@ -27,9 +50,9 @@ vi.mock('@/hooks/studio/useStudioState', () => ({
       setNarratorAgeAtTime: vi.fn(),
       setSynthesisError: vi.fn(),
       setSelectedVision: vi.fn(),
-      setIsProductionLocked: vi.fn()
+      setIsProductionLocked: mockSetIsProductionLocked
     }
-  }) as any
+  }) as any)
 }));
 
 vi.mock('next/navigation', () => ({
@@ -81,21 +104,6 @@ vi.mock('sonner', () => ({
   }),
 }));
 
-let mockMentorModeActive = false;
-let mockIsManualMentor = false;
-const mockToggleMentor = vi.fn();
-vi.mock('@/hooks/studio/useMentorLifeline', () => ({
-  useMentorLifeline: () => ({
-    mentorModeActive: mockMentorModeActive,
-    isOverlayOpen: false,
-    isManualMentor: mockIsManualMentor,
-    toggleMentor: mockToggleMentor,
-    triggerWhisper: vi.fn(),
-    closeOverlay: vi.fn(),
-    getWhisper: vi.fn().mockReturnValue(null)
-  })
-}));
-
 vi.mock('@/hooks/studio/useProductionCharge', () => ({
   useProductionCharge: () => ({
     totalCharge: 0,
@@ -121,7 +129,7 @@ vi.mock('../SensoryCatalystHUD', () => ({ SensoryCatalystHUD: () => <div data-te
 vi.mock('../overlays/ThresholdGuard', () => ({ ThresholdGuard: () => <div data-testid="threshold-guard" /> }));
 vi.mock('../overlays/ProductionPreFlight', () => ({ ProductionPreFlight: () => <div data-testid="production-pre-flight" /> }));
 vi.mock('../overlays/OnboardingOverlay', () => ({ OnboardingOverlay: ({ isOpen }: any) => isOpen ? <div data-testid="onboarding-overlay" /> : null }));
-vi.mock('../MentorshipOverlay', () => ({ MentorshipOverlay: () => <div data-testid="mentorship-overlay" /> }));
+vi.mock('../MentorGuide', () => ({ MentorGuide: () => <div data-testid="mentorship-overlay" /> }));
 
 describe('ProductionDeck Idle Experience', () => {
   const mockUpdate = vi.fn();
@@ -136,6 +144,11 @@ describe('ProductionDeck Idle Experience', () => {
     vi.useFakeTimers();
     vi.clearAllMocks();
     localStorage.clear();
+    mockCurrentStage = 0;
+    mockModality = 'pen';
+    mockIsDirectorOpen = false;
+    mockIsReviewing = false;
+    mockIsProductionLocked = false;
     mockMentorModeActive = false;
     mockIsManualMentor = false;
   });
@@ -207,31 +220,7 @@ describe('ProductionDeck Idle Experience', () => {
   });
 
   it('does not trigger idle timer if not in Act I (currentStage !== 0)', () => {
-    // Override currentStage for this test
-    vi.mocked(useStudioState).mockReturnValue({
-      currentStage: 1, // Act II
-      modality: 'pen',
-      isDirectorOpen: false,
-      isReviewing: false,
-      selectedVision: { type: null, label: null },
-      isProductionLocked: false,
-      actions: {
-        setIsReviewing: vi.fn(),
-        setReviewDrafts: vi.fn(),
-        setIsGeneratingDrafts: vi.fn(),
-        setModality: vi.fn(),
-        setStage: vi.fn(),
-        setIsDirectorOpen: vi.fn(),
-        setPolishedOriginalHook: vi.fn(),
-        setTimeframeScope: vi.fn(),
-        setDurationQuantity: vi.fn(),
-        setDurationUnit: vi.fn(),
-        setNarratorAgeAtTime: vi.fn(),
-        setSynthesisError: vi.fn(),
-        setSelectedVision: vi.fn(),
-        setIsProductionLocked: vi.fn()
-      }
-    } as any);
+    mockCurrentStage = 1; // Act II
 
     render(
       <ProductionDeck 
@@ -250,31 +239,7 @@ describe('ProductionDeck Idle Experience', () => {
   });
 
   it('does not trigger idle timer when reviewing synthesized drafts (isReviewing === true)', () => {
-    // Override isReviewing for this test
-    vi.mocked(useStudioState).mockReturnValue({
-      currentStage: 0,
-      modality: 'pen',
-      isDirectorOpen: false,
-      isReviewing: true, // Actively reviewing
-      selectedVision: { type: null, label: null },
-      isProductionLocked: false,
-      actions: {
-        setIsReviewing: vi.fn(),
-        setReviewDrafts: vi.fn(),
-        setIsGeneratingDrafts: vi.fn(),
-        setModality: vi.fn(),
-        setStage: vi.fn(),
-        setIsDirectorOpen: vi.fn(),
-        setPolishedOriginalHook: vi.fn(),
-        setTimeframeScope: vi.fn(),
-        setDurationQuantity: vi.fn(),
-        setDurationUnit: vi.fn(),
-        setNarratorAgeAtTime: vi.fn(),
-        setSynthesisError: vi.fn(),
-        setSelectedVision: vi.fn(),
-        setIsProductionLocked: vi.fn()
-      }
-    } as any);
+    mockIsReviewing = true; // Actively reviewing
 
     render(
       <ProductionDeck 
@@ -294,31 +259,6 @@ describe('ProductionDeck Idle Experience', () => {
 
   it('triggers Director Onboarding Overlay when mentorModeActive is true and not reviewing', () => {
     mockMentorModeActive = true;
-    
-    vi.mocked(useStudioState).mockReturnValue({
-      currentStage: 0,
-      modality: 'pen',
-      isDirectorOpen: false,
-      isReviewing: false,
-      selectedVision: { type: null, label: null },
-      isProductionLocked: false,
-      actions: {
-        setIsReviewing: vi.fn(),
-        setReviewDrafts: vi.fn(),
-        setIsGeneratingDrafts: vi.fn(),
-        setModality: vi.fn(),
-        setStage: vi.fn(),
-        setIsDirectorOpen: vi.fn(),
-        setPolishedOriginalHook: vi.fn(),
-        setTimeframeScope: vi.fn(),
-        setDurationQuantity: vi.fn(),
-        setDurationUnit: vi.fn(),
-        setNarratorAgeAtTime: vi.fn(),
-        setSynthesisError: vi.fn(),
-        setSelectedVision: vi.fn(),
-        setIsProductionLocked: vi.fn()
-      }
-    } as any);
 
     const { queryByTestId } = render(
       <ProductionDeck 
@@ -334,31 +274,7 @@ describe('ProductionDeck Idle Experience', () => {
 
   it('does NOT trigger Director Onboarding Overlay when reviewing synthesized drafts (isReviewing === true)', () => {
     mockMentorModeActive = true;
-    
-    vi.mocked(useStudioState).mockReturnValue({
-      currentStage: 0,
-      modality: 'pen',
-      isDirectorOpen: false,
-      isReviewing: true,
-      selectedVision: { type: null, label: null },
-      isProductionLocked: false,
-      actions: {
-        setIsReviewing: vi.fn(),
-        setReviewDrafts: vi.fn(),
-        setIsGeneratingDrafts: vi.fn(),
-        setModality: vi.fn(),
-        setStage: vi.fn(),
-        setIsDirectorOpen: vi.fn(),
-        setPolishedOriginalHook: vi.fn(),
-        setTimeframeScope: vi.fn(),
-        setDurationQuantity: vi.fn(),
-        setDurationUnit: vi.fn(),
-        setNarratorAgeAtTime: vi.fn(),
-        setSynthesisError: vi.fn(),
-        setSelectedVision: vi.fn(),
-        setIsProductionLocked: vi.fn()
-      }
-    } as any);
+    mockIsReviewing = true;
 
     const { queryByTestId } = render(
       <ProductionDeck 
@@ -373,32 +289,6 @@ describe('ProductionDeck Idle Experience', () => {
   });
 
   it('rehydrates isProductionLocked state from memoryData', () => {
-    const mockSetIsProductionLocked = vi.fn();
-    vi.mocked(useStudioState).mockReturnValue({
-      currentStage: 0,
-      modality: 'pen',
-      isDirectorOpen: false,
-      isReviewing: false,
-      selectedVision: { type: null, label: null },
-      isProductionLocked: false,
-      actions: {
-        setIsReviewing: vi.fn(),
-        setReviewDrafts: vi.fn(),
-        setIsGeneratingDrafts: vi.fn(),
-        setModality: vi.fn(),
-        setStage: vi.fn(),
-        setIsDirectorOpen: vi.fn(),
-        setPolishedOriginalHook: vi.fn(),
-        setTimeframeScope: vi.fn(),
-        setDurationQuantity: vi.fn(),
-        setDurationUnit: vi.fn(),
-        setNarratorAgeAtTime: vi.fn(),
-        setSynthesisError: vi.fn(),
-        setSelectedVision: vi.fn(),
-        setIsProductionLocked: mockSetIsProductionLocked
-      }
-    } as any);
-
     const lockedMemoryData = {
       ...mockMemoryData,
       isProductionLocked: true

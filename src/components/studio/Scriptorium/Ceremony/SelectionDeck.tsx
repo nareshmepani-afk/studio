@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Sparkles, Heart, Film, Eye, ArrowRight, ClipboardCopy, AlertTriangle, RotateCcw, History, BookOpen, ArrowLeft
+  Sparkles, Heart, Film, Eye, ArrowRight, ClipboardCopy, AlertTriangle, RotateCcw, History, BookOpen, ArrowLeft, Award
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScriptLightBox } from './ScriptLightBox';
@@ -10,6 +10,8 @@ import {
   DialogContent,
 } from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
+import { useStudioState } from '@/hooks/studio/useStudioState';
+import { MentorshipHotspot } from '@/components/studio/MentorshipHotspot';
 
 interface SelectionDeckProps {
   drafts: any[];
@@ -25,9 +27,11 @@ interface SynthesizingOverlayProps {
   error?: string | null;
   onRetry?: () => void;
   onCancel?: () => void;
+  title?: string;
+  subtitle?: string;
 }
 
-export const SynthesizingOverlay = ({ error, onRetry, onCancel }: SynthesizingOverlayProps) => (
+export const SynthesizingOverlay = ({ error, onRetry, onCancel, title, subtitle }: SynthesizingOverlayProps) => (
   <div className="flex-1 flex flex-col items-center justify-center space-y-12 min-h-[60vh]">
     <div className="relative">
       <motion.div 
@@ -66,10 +70,10 @@ export const SynthesizingOverlay = ({ error, onRetry, onCancel }: SynthesizingOv
         "text-xl font-headline italic transition-colors duration-500",
         error ? "text-rose-400" : "text-white"
       )}>
-        {error ? "Thread Tangled" : "Weaving Narrative Pathways"}
+        {error ? "Thread Tangled" : (title || "Weaving Narrative Pathways")}
       </h3>
       <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/40 leading-relaxed">
-        {error ? error : "The AI Weaver is interlacing your memories into cinematic script options."}
+        {error ? error : (subtitle || "The AI Weaver is interlacing your memories into cinematic script options.")}
       </p>
     </div>
     
@@ -97,6 +101,45 @@ export const SynthesizingOverlay = ({ error, onRetry, onCancel }: SynthesizingOv
   </div>
 );
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 40, scale: 0.95 },
+  show: {
+    opacity: 0.6,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring" as const, stiffness: 120, damping: 18 }
+  },
+  selected: {
+    opacity: 1,
+    y: 0,
+    scale: 1.02,
+    transition: { type: "spring" as const, stiffness: 120, damping: 18 }
+  },
+  hovered: {
+    scale: 1.2,
+    opacity: 1,
+    zIndex: 100,
+    boxShadow: "0 50px 100px -20px rgba(0,0,0,0.9), 0 30px 60px -30px rgba(255,255,255,0.1)",
+    transition: { type: "spring" as const, stiffness: 260, damping: 25 }
+  },
+  dimmed: {
+    scale: 0.85,
+    opacity: 0,
+    zIndex: 1,
+    transition: { type: "spring" as const, stiffness: 260, damping: 25 }
+  }
+};
+
 export const SelectionDeck = ({ 
   drafts, 
   onSelect, 
@@ -106,14 +149,26 @@ export const SelectionDeck = ({
   isSaving = false,
   onBackToEditor
 }: SelectionDeckProps) => {
+  const { mentorContext, currentStage } = useStudioState();
+  const { mentorModeActive } = mentorContext || {};
+
+  const isActII = currentStage === 1;
+  const headerTitle = isActII ? "The Deep Weave" : "Director's Cut";
+  const headerSubtitle = isActII 
+    ? "The AI Weaver has synthesised three sensory interpretations of your script" 
+    : "The Director has prepared three narrative interpretations of your memory";
+  const temporalNoteLabel = isActII 
+    ? "Director's Sensory Note" 
+    : "Director's Temporal Note";
+
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const [isCopyingBundle, setIsCopyingBundle] = React.useState(false);
 
   const getVisionId = (type: string) => {
-    if (type.includes("Original")) return "original";
-    if (type.includes("Soul")) return "soul";
-    if (type.includes("Atmospheric")) return "sensory";
-    if (type.includes("Cinematic")) return "cinematic";
+    if (type.includes("Original") || type.includes("Committed")) return "original";
+    if (type.includes("Soul") || type.includes("Poetic")) return "soul";
+    if (type.includes("Atmospheric") || type.includes("Direct")) return "sensory";
+    if (type.includes("Cinematic") || type.includes("Generational")) return "cinematic";
     return "sensory";
   };
 
@@ -143,6 +198,9 @@ ${bundleText}`;
     });
     setTimeout(() => setIsCopyingBundle(false), 2000);
   };
+
+  const hoveredDraft = drafts.find(d => d.visionType === hoveredId);
+  const isOriginalHovered = hoveredDraft && getVisionId(hoveredDraft.visionType) === 'original';
   
   if (!drafts || drafts.length === 0) {
     return (
@@ -184,6 +242,7 @@ ${bundleText}`;
   };
 
   const COLORS: Record<string, string> = {
+    original: 'text-purple-400',
     soul: 'text-amber-400',
     sensory: 'text-sky-400',
     cinematic: 'text-emerald-400'
@@ -192,12 +251,33 @@ ${bundleText}`;
   return (
     <div 
       data-blueprint="SelectionDeck"
-      className="flex-1 flex flex-col space-y-16 py-12"
+      className="relative flex-1 flex flex-col space-y-16 py-12"
     >
+      <AnimatePresence>
+        {isOriginalHovered && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="absolute inset-0 -z-10 pointer-events-none overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.12)_0%,transparent_70%)] blur-[80px]" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex flex-col items-center space-y-6 text-center">
-        <div className="space-y-4">
-          <h2 className="text-4xl font-headline italic text-white">Director's Cut</h2>
-          <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.5em]">The Director has prepared three narrative interpretations of your memory</p>
+        <div className="space-y-4 relative">
+          {mentorModeActive && (
+            <MentorshipHotspot 
+              number={1} 
+              label="Review Narrative Interpretations" 
+              className="-top-6 -left-6" 
+            />
+          )}
+          <h2 className="text-4xl font-headline italic text-white">{headerTitle}</h2>
+          <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.5em]">{headerSubtitle}</p>
         </div>
 
         {drafts[0]?.temporalSummary && (
@@ -208,7 +288,7 @@ ${bundleText}`;
           >
             <History className="w-5 h-5 text-emerald-400 mt-1 shrink-0" />
             <div className="flex flex-col text-left">
-              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Director's Temporal Note</span>
+              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">{temporalNoteLabel}</span>
               <p className="text-[11px] text-white/60 leading-relaxed italic font-serif">
                 "{drafts[0].temporalSummary}"
               </p>
@@ -244,37 +324,30 @@ ${bundleText}`;
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6"
+      >
         {drafts.map((opt, idx) => {
           const typeId = getVisionId(opt.visionType);
           const Icon = ICONS[typeId] || Sparkles;
-          
-          // Disable xOffset since we have 4 items, let them scale in place
-          const xOffset = 0;
 
           return (
             <div 
-              key={opt.visionType}
+              key={opt.visionType || `draft-${idx}`}
               className="relative min-h-[400px]"
               onMouseEnter={() => setHoveredId(opt.visionType)}
               onMouseLeave={() => setHoveredId(null)}
             >
               <motion.div
-                animate={{
-                  x: xOffset,
-                  scale: hoveredId === opt.visionType ? 1.2 : hoveredId ? 0.85 : 1,
-                  opacity: hoveredId === opt.visionType ? 1 : hoveredId ? 0 : (selectedText === opt.cleanScript ? 1 : 0.6),
-                  zIndex: hoveredId === opt.visionType ? 100 : 1,
-                  boxShadow: hoveredId === opt.visionType 
-                    ? "0 50px 100px -20px rgba(0,0,0,0.9), 0 30px 60px -30px rgba(255,255,255,0.1)" 
-                    : "0 0 0 rgba(0,0,0,0)"
-                }}
-                transition={{ 
-                  type: "spring", 
-                  stiffness: 260, 
-                  damping: 25,
-                  mass: 0.5
-                }}
+                variants={cardVariants}
+                animate={
+                  hoveredId 
+                    ? (hoveredId === opt.visionType ? "hovered" : "dimmed") 
+                    : (selectedText === opt.cleanScript ? "selected" : "show")
+                }
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onPreview(opt)}
                 role="button"
@@ -293,8 +366,37 @@ ${bundleText}`;
                 )}
               >
                 <div className="flex items-center justify-between mb-8">
-                   <div className={cn("p-3 rounded-2xl bg-white/5", COLORS[typeId] || 'text-white')}>
-                     <Icon className="w-6 h-6" />
+                   <div className="flex items-center gap-3">
+                      {typeId === 'original' ? (
+                        <motion.div 
+                          className="wax-seal-container p-3 rounded-2xl relative transition-all duration-300 bg-gradient-to-br from-purple-600 to-purple-800 border border-purple-400/40 shadow-[0_4px_12px_rgba(168,85,247,0.4)] scale-105 text-purple-100"
+                          style={{ perspective: 1000, transformStyle: "preserve-3d" }}
+                          whileHover={{ 
+                            scale: 1.15,
+                            rotateY: 15,
+                            rotateX: -10,
+                            z: 50,
+                            boxShadow: "0 20px 25px -5px rgba(168,85,247,0.4), 0 10px 10px -5px rgba(168,85,247,0.2)"
+                          }}
+                          transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                        >
+                          <div className="absolute inset-1 rounded-xl border border-purple-300/25 pointer-events-none" />
+                          <Award className="w-6 h-6 text-purple-100 relative z-10" />
+                        </motion.div>
+                      ) : (
+                        <div className={cn(
+                          "p-3 rounded-2xl relative transition-all duration-300 bg-white/5",
+                          COLORS[typeId] || 'text-white'
+                        )}>
+                          <Icon className="w-6 h-6" />
+                        </div>
+                      )}
+                      {typeId === 'original' && (
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-purple-500/15 border border-purple-400/30 rounded-full text-[8px] font-black uppercase tracking-widest text-purple-300 shadow-[0_2px_8px_rgba(168,85,247,0.2)] animate-pulse">
+                           <Award className="w-3 h-3 text-purple-400" />
+                           <span>Official Record</span>
+                        </div>
+                      )}
                    </div>
                     <button 
                       onClick={(e) => { e.stopPropagation(); onPreview(opt); }}
@@ -328,7 +430,7 @@ ${bundleText}`;
             </div>
           );
         })}
-      </div>
+      </motion.div>
     </div>
   );
 };

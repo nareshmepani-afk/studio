@@ -180,7 +180,7 @@ export const AIPolishButton: React.FC<AIPolishButtonProps> = ({
         </AnimatePresence>
 
         <span className="relative z-10">
-          {disabled ? "POLISH LOCKED" : isPolishing ? "POLISHING..." : isReady ? "IGNITE AI POLISH" : `SPOOLING ${charge}%`}
+          {disabled ? "POLISH LOCKED" : isPolishing ? "POLISHING..." : isReady ? "IGNITE SENSORY POLISH" : `SPOOLING ${charge}%`}
         </span>
 
         {/* Ignition Glint */}

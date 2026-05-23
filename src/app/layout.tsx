@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { Toaster } from "react-hot-toast";
 import { Providers } from "@/components/layout/Providers";
 import { Navbar } from "@/components/layout/Navbar";
 import BuildIdLogger from "@/components/layout/BuildIdLogger";
@@ -32,7 +31,6 @@ export default function RootLayout({
           <Navbar />
           {children}
         </Providers>
-        <Toaster />
         <SonnerToaster />
       </body>
     </html>

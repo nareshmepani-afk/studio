@@ -2,26 +2,57 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, Wind, Music, Eye, Zap, BrainCircuit, Play } from 'lucide-react';
-import { MentorWhisper } from '@/hooks/studio/useMentorLifeline';
+import { Sparkles, X, Wind, Music, Eye, Zap } from 'lucide-react';
+import { useStudioMentor, MentorWhisper } from '@/context/StudioMentorContext';
+import { useStudioState } from '@/hooks/studio/useStudioState';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
-interface MentorshipOverlayProps {
-  active: boolean;
-  onClose: () => void;
-  whisper: MentorWhisper;
+interface MentorGuideProps {
+  active?: boolean;
+  onClose?: () => void;
+  whisper?: MentorWhisper;
   onApplySeed?: (seed: string) => void;
 }
 
-export const MentorshipOverlay: React.FC<MentorshipOverlayProps> = ({
+export const MentorGuide: React.FC<MentorGuideProps> = ({
   active,
   onClose,
   whisper,
   onApplySeed
 }) => {
+  const mentor = useStudioMentor();
+  const state = useStudioState();
+
+  const prevStageRef = React.useRef(state.currentStage);
+  React.useEffect(() => {
+    if (state.currentStage !== prevStageRef.current) {
+      mentor.closeOverlay();
+      prevStageRef.current = state.currentStage;
+    }
+  }, [state.currentStage, mentor]);
+
+  React.useEffect(() => {
+    if (state.currentStage === 1) {
+      const seen = localStorage.getItem('mw_mentor_act2_toast_seen');
+      if (!seen) {
+        localStorage.setItem('mw_mentor_act2_toast_seen', 'true');
+        toast("Whisper", {
+          description: "The Architect has prepared your takes. Open the drawer below to choose your path.",
+          icon: "🧠",
+          duration: 8000,
+        });
+      }
+    }
+  }, [state.currentStage]);
+
+  const isOverlayOpen = active !== undefined ? active : mentor.isOverlayOpen;
+  const handleClose = onClose || mentor.closeOverlay;
+  const currentWhisper = whisper || mentor.getWhisper(state.currentStage);
+
   return (
     <AnimatePresence>
-      {active && (
+      {isOverlayOpen && currentWhisper && (
         <>
           {/* Studio Dim Effect */}
           <motion.div 
@@ -29,7 +60,7 @@ export const MentorshipOverlay: React.FC<MentorshipOverlayProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-slate-950/60 backdrop-blur-[2px] z-[200] pointer-events-auto"
-            onClick={onClose}
+            onClick={handleClose}
           />
 
           {/* Mentor Persona & Whisper */}
@@ -53,8 +84,11 @@ export const MentorshipOverlay: React.FC<MentorshipOverlayProps> = ({
               <div className="relative z-10 flex flex-col items-center text-center space-y-8">
                 {/* Mentor Avatar Icon */}
                 <div className="relative">
-                  <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/20">
-                    <Sparkles className="w-10 h-10 text-emerald-400" />
+                  <div className={cn(
+                    "w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/20 transition-all",
+                    state.currentStage === 1 && "shadow-[0_0_30px_rgba(16,185,129,0.6)] border-emerald-400 bg-emerald-500/20"
+                  )}>
+                    <Sparkles className={cn("w-10 h-10 text-emerald-400", state.currentStage === 1 && "animate-pulse")} />
                   </div>
                   <motion.div 
                     animate={{ rotate: 360 }}
@@ -66,14 +100,14 @@ export const MentorshipOverlay: React.FC<MentorshipOverlayProps> = ({
                 <div className="space-y-4">
                   <h3 className="text-[10px] font-black uppercase tracking-[0.5em] text-emerald-500/60">Studio Mentor // Lifeline</h3>
                   <p className="text-2xl text-white font-medium leading-relaxed italic serif">
-                    "{whisper.whisper}"
+                    "{currentWhisper.whisper}"
                   </p>
                 </div>
 
                 {/* Contextual Tools */}
-                {whisper.seeds && (
+                {currentWhisper.seeds && (
                   <div className="grid grid-cols-3 gap-4 w-full">
-                    {whisper.seeds.map((seed, idx) => (
+                    {currentWhisper.seeds.map((seed, idx) => (
                       <button
                         key={idx}
                         onClick={() => onApplySeed?.(seed.label)}
@@ -90,7 +124,7 @@ export const MentorshipOverlay: React.FC<MentorshipOverlayProps> = ({
                   </div>
                 )}
 
-                {whisper.act === 3 && (
+                {currentWhisper.act === 3 && (
                   <div className="flex flex-col items-center gap-4">
                     <div className="flex items-center gap-2">
                        <Zap className="w-4 h-4 text-emerald-400 animate-pulse" />
@@ -107,8 +141,8 @@ export const MentorshipOverlay: React.FC<MentorshipOverlayProps> = ({
                 )}
 
                 <button 
-                  onClick={onClose}
-                  className="px-8 py-3 bg-white text-slate-950 rounded-full text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 transition-all shadow-xl"
+                  onClick={handleClose}
+                  className="px-8 py-3 bg-white text-slate-950 rounded-full text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 transition-all shadow-xl cursor-pointer"
                 >
                   Return to Studio
                 </button>
@@ -116,8 +150,8 @@ export const MentorshipOverlay: React.FC<MentorshipOverlayProps> = ({
 
               {/* Close Button Top Right */}
               <button 
-                onClick={onClose}
-                className="absolute top-6 right-6 p-2 text-white/20 hover:text-white transition-colors"
+                onClick={handleClose}
+                className="absolute top-6 right-6 p-2 text-white/20 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>

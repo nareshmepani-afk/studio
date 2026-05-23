@@ -14,6 +14,7 @@ interface ScriptLightBoxProps {
   isOpen: boolean;
   onClose: () => void;
   originalHook: string;
+  originalHookLabel?: string;
   cleanScript: string;
   visionLabel: string;
   visionFocus: string;
@@ -28,6 +29,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
   isOpen,
   onClose,
   originalHook,
+  originalHookLabel,
   cleanScript,
   visionLabel,
   visionFocus,
@@ -76,9 +78,9 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
           onClick={onClose}
         >
           <motion.div
-            initial={{ y: 50, scale: 0.98 }}
-            animate={{ y: 0, scale: 1 }}
-            exit={{ y: 50, scale: 0.98 }}
+            initial={{ y: 50, scale: 0.98, opacity: 0 }}
+            animate={{ y: 0, scale: 1, opacity: 1 }}
+            exit={{ y: 50, scale: 0.98, opacity: 0 }}
             className="w-full max-w-[100vw] lg:max-w-7xl h-full max-h-[95vh] bg-zinc-950 border border-white/10 rounded-[3rem] overflow-hidden flex flex-col shadow-[0_0_150px_rgba(0,0,0,0.9)] relative"
             onClick={(e) => e.stopPropagation()}
           >
@@ -138,7 +140,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                   {/* 1. Original Spark */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">Original Spark</span>
+                      <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">{originalHookLabel || "Original Spark"}</span>
                       <button 
                         onClick={() => handleCopy(originalHook, true)}
                         className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-white/20 hover:text-white transition-all"

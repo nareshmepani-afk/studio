@@ -30,7 +30,7 @@ import { LayoutGroup } from 'framer-motion';
 
 import { useProductionCharge, SensoryType } from '@/hooks/studio/useProductionCharge';
 import { AIPolishButton } from './AIPolishButton';
-import { History, Unlock } from 'lucide-react';
+import { History, Unlock, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDebounce } from '@/hooks/useDebounce';
 
@@ -94,7 +94,7 @@ export const Scriptorium = ({
   onOpenArchive,
   onUnlockProduction
 }: ScriptoriumProps) => {
-  const { actions, detectedAnchors } = useStudioState();
+  const { actions, detectedAnchors, activeDrawer } = useStudioState();
 
   // 1. THE HYDRATION-SAFE MIGRATION ENGINE
   const [hasHydrated, setHasHydrated] = useState(false);
@@ -403,6 +403,19 @@ export const Scriptorium = ({
                 View Archive
               </motion.button>
               
+              <motion.button
+                onClick={() => actions.setActiveDrawer(activeDrawer === 'architect' ? null : 'architect')}
+                className={cn(
+                  "relative z-10 flex items-center gap-2 px-6 py-3.5 rounded-full font-black text-[10px] uppercase tracking-[0.25em] transition-all duration-300 cursor-pointer",
+                  activeDrawer === 'architect'
+                    ? "bg-amber-500 text-slate-950 border border-amber-400 shadow-[0_0_25px_rgba(245,158,11,0.4)]"
+                    : "bg-white/5 text-white/80 border border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white"
+                )}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                Architect's Drawer
+              </motion.button>
+              
               {isProductionLocked && onUnlockProduction && (
                 <button
                   onClick={() => {
@@ -435,7 +448,7 @@ export const Scriptorium = ({
       <div className="mt-16 flex items-center gap-4 opacity-20">
         <div className="h-px flex-1 bg-emerald-500/50" />
         <span className="font-mono text-[10px] tracking-[0.4em] text-emerald-500 uppercase">
-          End of Act II
+          {isProductionLocked ? "Directorial Blueprint Locked" : "End of Script Blueprint"}
         </span>
         <div className="h-px flex-1 bg-emerald-500/50" />
       </div>

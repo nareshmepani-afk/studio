@@ -7,8 +7,9 @@ import { db } from "@/lib/firebase";
 import { storyScripts } from '@/lib/storyScripts';
 import { CatalystType, TimeframeScope } from '@/types';
 import { DetectedAnchor } from './useDirectorInk';
+import { StudioMentorProvider, useStudioMentor } from '@/context/StudioMentorContext';
 
-export type DrawerType = 'sensory' | 'poster' | 'timeline' | null;
+export type DrawerType = 'sensory' | 'poster' | 'timeline' | 'architect' | null;
 
 // 1. State Interface
 interface StudioState {
@@ -54,6 +55,7 @@ interface StudioState {
   durationQuantity: number;
   durationUnit: 'days' | 'months' | 'years';
   narratorAgeAtTime: number;
+  selectedTake: string | null;
   dispatcher?: {
     addCatalyst?: (blockId: string, type: CatalystType, value?: string) => { collisionDetected: boolean };
   };
@@ -98,6 +100,7 @@ interface StudioActions {
   setDurationQuantity: (qty: number) => void;
   setDurationUnit: (unit: 'days' | 'months' | 'years') => void;
   setNarratorAgeAtTime: (age: number) => void;
+  setSelectedTake: (take: string | null) => void;
 }
 
 // 3. Context Shape
@@ -182,6 +185,7 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     durationQuantity: 1,
     durationUnit: 'years',
     narratorAgeAtTime: 25,
+    selectedTake: null,
     dispatcher: undefined,
     ...(initialState || {}),
   });
@@ -444,23 +448,32 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     setDurationQuantity: (qty) => setState(s => ({ ...s, durationQuantity: qty })),
     setDurationUnit,
     setNarratorAgeAtTime,
+    setSelectedTake: (take) => setState(s => ({ ...s, selectedTake: take })),
   }), []);
 
   return (
     <StudioContext.Provider value={{ ...state, actions }}>
-      <Suspense fallback={null}>
-        <URLStateSync onSync={handleURLSync} />
-      </Suspense>
-      {children}
+      <StudioMentorProvider>
+        <Suspense fallback={null}>
+          <URLStateSync onSync={handleURLSync} />
+        </Suspense>
+        {children}
+      </StudioMentorProvider>
     </StudioContext.Provider>
   );
 };
 
-// 6. Custom Hook (No changes needed)
+// 6. Custom Hook (Exposes mentorContext helper)
 export const useStudioState = () => {
   const context = useContext(StudioContext);
   if (context === undefined) {
     throw new Error('useStudioState must be used within a StudioProvider');
   }
-  return context;
+
+  const mentorContext = useStudioMentor();
+
+  return {
+    ...context,
+    mentorContext
+  };
 };

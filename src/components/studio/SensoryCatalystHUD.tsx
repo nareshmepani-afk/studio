@@ -150,13 +150,6 @@ export const SensoryCatalystHUD: React.FC<SensoryCatalystHUDProps> = ({
           pulseActive ? "ring-2 ring-emerald-500/50 shadow-[0_0_40px_rgba(16,185,129,0.2)]" : "ring-1 ring-white/5"
         )}
       >
-        {mentorActive && currentStage === 1 && (
-          <MentorshipHotspot 
-            number={1} 
-            label="Select a Catalyst" 
-            className="-top-4 -left-4" 
-          />
-        )}
         <TooltipProvider delayDuration={100}>
           {catalysts.map((cat, idx) => (
             <Tooltip key={cat.id}>

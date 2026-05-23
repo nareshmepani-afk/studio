@@ -21,6 +21,7 @@ import { publishMemoryAction, unpublishMemoryAction } from '@/actions/memoryActi
 import { useStudioState as useGlobalStudioState } from '@/hooks/studio/useStudioState';
 import { useStudioState } from '@/hooks/useStudioState';
 import { DirectorNoteDrawer } from './DirectorNoteDrawer';
+import { ArchitectDrawer } from './ArchitectDrawer';
 import { cn } from '@/lib/utils';
 import { useDirectorInk, getAnchorAtCaret } from '@/hooks/studio/useDirectorInk';
 import { useProductionCharge } from '@/hooks/studio/useProductionCharge';
@@ -240,6 +241,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const storyHookFocusRef = usePrimaryFocus(productionStage === 0 && modality !== null, 300, modality);
   const storyHookRef = useRef<HTMLTextAreaElement | null>(null);
   const lastPolishedRef = useRef<string>(data?.description || '');
+  const hasAutoWeaved = useRef(false);
   
   const setStoryHookRef = useCallback((node: HTMLTextAreaElement | null) => {
     storyHookRef.current = node;
@@ -328,7 +330,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     synthesisError,
     selectedVision,
     polishedOriginalHook,
-    isDirectorOpen
+    isDirectorOpen,
+    mentorContext
   } = useGlobalStudioState();
 
   const isCleanMode = productionStage === 0 && !isReviewing;
@@ -356,6 +359,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   // Sensory State
   const [sensoryValues, setSensoryValues] = useState<Record<string, string>>(data?.sensory || {});
   const [isExpanding, setIsExpanding] = useState(false);
+  const [expansionError, setExpansionError] = useState<string | null>(null);
   
   // UI States
   const [isGuideFullyClosed, setIsGuideFullyClosed] = useState(false);
@@ -368,6 +372,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const [originalHook, setOriginalHook] = useState<string>(data?.originalHook || '');
   const [scriptHistory, setScriptHistory] = useState<any[]>(data?.scriptHistory || []);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [isReviewingSensory, setIsReviewingSensory] = useState(false);
   const { isProductionLocked: globalLocked, actions: { setIsProductionLocked: setGlobalLocked } } = useGlobalStudioState();
   
   // Local sync for persistence
@@ -410,7 +415,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     durationUnit,
     narratorAgeAtTime,
     modality,
-    activeVision: data?.activeVision,
+    activeVision: data?.activeVision || selectedVision?.type || undefined,
+    activeVisionLabel: data?.activeVisionLabel || selectedVision?.label || undefined,
     productionTakes: data?.productionTakes,
     isReviewing
   });
@@ -913,6 +919,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
 
   const handleAIExpand = useCallback(async () => {
     setIsExpanding(true);
+    setExpansionError(null);
     toast("Weaving Script...", {
       description: "The Director is expanding your memory hook into a full narrative sequence.",
       icon: <Sparkles className="w-4 h-4 text-sky-400" />
@@ -931,19 +938,16 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
 
       if (results) {
         setAiTakes(results);
-        // Automatically apply the 'nostalgic' take as the base script if it exists
-        if (results.nostalgic) {
-          const blocks: ScriptBlock[] = [
-            { id: crypto.randomUUID(), text: results.nostalgic, type: 'beat', catalysts: [] }
-          ];
-          setScriptBlocks(blocks);
-        }
-        toast.success("Script Weaved", {
-          description: "The Director's Vision has been expanded. Review the three takes in the drawer."
+        setIsReviewingSensory(true);
+        toast.success("Sensory Weave Completed", {
+          description: "The Director has generated three sensory takes. Review and select your performance blueprint."
         });
+      } else {
+        throw new Error("The Weaver returned no sensory takes. Recalibrating...");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("AI Expansion Failure:", error);
+      setExpansionError(error?.message || "The Director was unable to weave the sensory layers. Check your connection.");
       toast.error("Expansion Failed", { description: "The Director was unable to weave the narrative. Try again." });
     } finally {
       setIsExpanding(false);
@@ -960,6 +964,13 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       onWordCountChange?.(count);
     }
   }, [productionStage, onWordCountChange]);
+
+  useEffect(() => {
+    if (productionStage === 1 && data?.isProductionLocked && !hasAutoWeaved.current) {
+      hasAutoWeaved.current = true;
+      handleAIExpand();
+    }
+  }, [productionStage, data?.isProductionLocked, handleAIExpand]);
 
   const handlePublish = async () => {
     if (!data?.id) {
@@ -1120,8 +1131,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
-                  {(sensoryConfigToUse as SensoryPromptTemplate[]).map((config) => (
-                    <div key={config.id} className="space-y-4">
+                  {(sensoryConfigToUse as SensoryPromptTemplate[]).map((config, idx) => (
+                    <div key={config.id || `sensory-${idx}`} className="space-y-4">
                       <h3 className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em]">{config.label}</h3>
                       <textarea 
                         value={sensoryValues[config.id] || ''}
@@ -1167,6 +1178,16 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 </div>
               </motion.div>
             )}
+
+            {activeDrawer === 'architect' && (
+              <ArchitectDrawer 
+                isOpen={activeDrawer === 'architect'}
+                onClose={() => handleToggleColumn(null)}
+                originalHook={originalHook || description}
+                activeVisionLabel={data?.activeVisionLabel || selectedVision?.label || undefined}
+                activeVision={data?.activeVision || selectedVision?.type || undefined}
+              />
+            )}
           </>
         )}
         </AnimatePresence>
@@ -1200,9 +1221,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                     }}
                     onSelect={async (text, type, label, structured) => {
                       // COMMIT HANDSHAKE (Director's Lock)
-                      if (!originalHook) {
-                        setOriginalHook(polishedOriginalHook || description);
-                      }
+                      setOriginalHook(text || polishedOriginalHook || description);
+                      globalActions.setSelectedTake(text || '');
                       
                       const newHistoryItem = {
                         timestamp: new Date().toISOString(),
@@ -1226,8 +1246,9 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                          prose: text || '',
                          structuredScript: structured || undefined,
                          productionStage: 1,
-                         originalHook: polishedOriginalHook || description,
+                         originalHook: text || polishedOriginalHook || description,
                          activeVision: type,
+                         activeVisionLabel: label,
                          isReviewing: false,
                          isProductionLocked: true,
                          productionTakes: reviewDrafts || []
@@ -1244,6 +1265,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       globalActions.setSelectedVision(type as any, label);
                       globalActions.setIsReviewing(false);
                       globalActions.setReviewDrafts([]); // Clear drafts after selection
+                      mentorContext?.closeOverlay();
                       setProductionStage?.(1); 
                     }} 
                     onPreview={(draft) => setSelectedDraftForPreview(draft)}
@@ -1278,7 +1300,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                     <div className="flex-1 flex flex-col justify-start space-y-16">
                   <div className="space-y-6">
                     <div className="space-y-2 relative">
-                      {mentorActive && (productionStage === 0 || productionStage === 1) && (
+                      {mentorActive && productionStage === 0 && (
                         <MentorshipHotspot 
                           number={1} 
                           label="Title your Remembrance" 
@@ -1568,10 +1590,10 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="flex flex-col gap-1 relative">
-                              {mentorActive && (productionStage === 0 || productionStage === 1) && (
+                              {mentorActive && productionStage === 0 && (
                                 <MentorshipHotspot 
                                   number={2} 
-                                  label={productionStage === 0 ? "Cast the Story Hook" : "Infuse your Script"} 
+                                  label="Cast the Story Hook" 
                                   className="top-full mt-4 left-0" 
                                 />
                               )}
@@ -1947,7 +1969,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
 
                 <div 
                         data-block-id="story-hook"
-                        onClick={() => {
+                        onClick={(e) => {
+                          // Double Defense: if click originates from inside the editor wrapper, do not force cursor to the end
+                          const target = e.target as HTMLElement;
+                          if (target.closest('[data-blueprint="SentenceWrapper"]')) {
+                            return;
+                          }
                           if (storyHookRef.current) {
                             storyHookRef.current.focus();
                             // Move cursor to end if clicking empty space
@@ -2106,7 +2133,10 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="w-full max-w-4xl mx-auto flex flex-col pt-4 pb-0"
+                className={cn(
+                  "w-full mx-auto flex flex-col pt-4 pb-0 transition-all duration-500",
+                  (isExpanding || expansionError || (isReviewingSensory && aiTakes)) ? "max-w-6xl" : "max-w-4xl"
+                )}
               >
                 {/* Pinned Metadata Header */}
                 <div className="mb-12">
@@ -2137,47 +2167,149 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                     </div>
                   </div>
                 </div>
-
-                {/* Centered Editor Content */}
-                <div className="flex-1 flex flex-col justify-start space-y-12">
-                  <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-4xl font-serif text-white/90 italic flex items-center">
-                      Script & Dialogue <RequiredIndicator />
-                    </h2>
-                    <button 
-                      onClick={handleAIExpand}
-                      disabled={isExpanding}
-                      className="group relative flex items-center gap-4 px-10 py-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-all overflow-hidden"
-                    >
-                       <div className="absolute inset-0 bg-gradient-to-r from-sky-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                       {isExpanding ? <Loader2 className="w-5 h-5 animate-spin text-sky-400" /> : <Sparkles className="w-5 h-5 text-sky-400 group-hover:rotate-12 transition-transform" />}
-                       <span className="text-[11px] font-black text-white uppercase tracking-[0.2em] relative z-10">Weave Script with AI</span>
-                    </button>
-                  </div>
-
-                  <div className={cn(
-                    "relative scriptorium-fade min-h-[600px] transition-all duration-700 rounded-[2.5rem]",
-                    mentorActive && productionStage === 1 && "ring-2 ring-emerald-400/50 shadow-[0_0_50px_rgba(16,185,129,0.2)] bg-emerald-500/5 scale-[1.01] p-4 -m-4"
-                  )}>
-                    <Scriptorium 
-                      data={data} 
-                      onSync={setScriptBlocks} 
-                      onPolish={handleScriptPolish} 
-                      onWordCountChange={handleScriptWordCount}
-                      onActivity={onActivity}
-                      isProductionLocked={isProductionLocked}
-                      onOpenArchive={() => setIsArchiveOpen(true)}
-                      onUnlockProduction={async () => {
-                        setGlobalLocked(false);
-                        await flush({ isProductionLocked: false });
-                        update({ isProductionLocked: false });
-                        toast.success("Production Lock Released", {
-                          description: "Manual control of metadata is now enabled."
-                        });
+                {isExpanding || expansionError ? (
+                  <div className="flex-1 flex flex-col items-center justify-center">
+                    <SynthesizingOverlay 
+                      title="Weaving Sensory Anchors"
+                      subtitle="The AI Weaver is interlacing emotional resonance and atmospheric details into your scene blueprint."
+                      error={expansionError}
+                      onRetry={handleAIExpand}
+                      onCancel={() => {
+                        setIsExpanding(false);
+                        setExpansionError(null);
                       }}
                     />
                   </div>
-                </div>
+                ) : isReviewingSensory && aiTakes ? (
+                  <SelectionDeck 
+                    drafts={[
+                      {
+                        visionType: `Committed: ${data?.activeVisionLabel || selectedVision?.label || 'Act I Script'}`,
+                        visionFocus: "Your locked Act I performance blueprint.",
+                        cleanScript: originalHook || description || "",
+                        beatSheet: ["Act I Committal", "Sealed Blueprint"],
+                        stageDirections: [],
+                        preFlightBrief: {
+                          sensoryAnchors: ["Directorial Lock"],
+                          vocalInstructions: ["Maintain original pacing"],
+                          heroMoment: "Committed core vision."
+                        },
+                        temporalSummary: "Sensory layers successfully grafted. The Weaver has synthesised three atmospheric interpretations. Compare these variations against your committed benchmark to define your physical recording blueprint."
+                      },
+                      {
+                        visionType: "The Poetic Weave",
+                        visionFocus: "Internal resonance and metaphorical depth.",
+                        cleanScript: aiTakes.poetic || "",
+                        beatSheet: ["Sensory Immersion", "Internal Landscapes", "Poetic Nuance"],
+                        stageDirections: [],
+                        preFlightBrief: {
+                          sensoryAnchors: ["Vivid Physical Details", "Emotional Tone"],
+                          vocalInstructions: ["Speak softly", "Take your time"],
+                          heroMoment: "A moment of deep internal clarity."
+                        }
+                      },
+                      {
+                        visionType: "The Direct Weave",
+                        visionFocus: "Documentary-style, authentic human weight.",
+                        cleanScript: aiTakes.direct || "",
+                        beatSheet: ["Human Persistence", "Documentary Integrity", "Authentic Recall"],
+                        stageDirections: [],
+                        preFlightBrief: {
+                          sensoryAnchors: ["Grounded Truths", "Realist Context"],
+                          vocalInstructions: ["Speak clearly", "Assertive delivery"],
+                          heroMoment: "Direct connection to your audience."
+                        }
+                      },
+                      {
+                        visionType: "The Generational Weave",
+                        visionFocus: "Ancestral persistence and legacy values.",
+                        cleanScript: aiTakes.nostalgic || "",
+                        beatSheet: ["Generational Roots", "Inherited Strengths", "Mantra Reflection"],
+                        stageDirections: [],
+                        preFlightBrief: {
+                          sensoryAnchors: ["Legacy Anchors", "Family History"],
+                          vocalInstructions: ["Speak with pride", "Storyteller rhythm"],
+                          heroMoment: "The bridge of memory across generations."
+                        }
+                      },
+                      ...(scriptBlocks.length > 0 && scriptBlocks.some(b => b.text.trim()) && scriptBlocks.map(b => b.text).join('\n\n').trim() !== (originalHook || description).trim() ? [
+                        {
+                          visionType: "Current Draft",
+                          visionFocus: "Your active performance blueprint edits.",
+                          cleanScript: scriptBlocks.map(b => b.text).join('\n\n'),
+                          beatSheet: ["User Edits", "Custom Storyflow"],
+                          stageDirections: [],
+                          preFlightBrief: {
+                            sensoryAnchors: ["Custom Details"],
+                            vocalInstructions: ["Speak naturally"],
+                            heroMoment: "Your tailored sequence."
+                          }
+                        }
+                      ] : [])
+                    ]} 
+                    onBackToEditor={() => setIsReviewingSensory(false)}
+                    onSelect={async (text, type, label, structured) => {
+                      const blocks: ScriptBlock[] = [
+                        { id: crypto.randomUUID(), text: text, type: 'beat', catalysts: [] }
+                      ];
+                      setScriptBlocks(blocks);
+                      setIsReviewingSensory(false);
+                      
+                      await flush({
+                        prose: text,
+                        scriptBlocks: blocks
+                      });
+                      
+                      toast.success("Sensory Weave Sealed", {
+                        description: `The Scriptorium has been updated with ${label}.`
+                      });
+                    }}
+                    onPreview={(draft) => setSelectedDraftForPreview(draft)}
+                    selectedText={scriptBlocks.map(b => b.text).join(' ')}
+                    originalHook={originalHook || description}
+                  />
+                ) : (
+                  /* Centered Editor Content */
+                  <div className="flex-1 flex flex-col justify-start space-y-12">
+                    <div className="flex items-center justify-between mb-8">
+                      <h2 className="text-4xl font-serif text-white/90 italic flex items-center">
+                        Script & Dialogue <RequiredIndicator />
+                      </h2>
+                      <button 
+                        onClick={handleAIExpand}
+                        disabled={isExpanding}
+                        className="group relative flex items-center gap-4 px-10 py-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-all overflow-hidden"
+                      >
+                         <div className="absolute inset-0 bg-gradient-to-r from-sky-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                         <Sparkles className="w-5 h-5 text-sky-400 group-hover:rotate-12 transition-transform" />
+                         <span className="text-[11px] font-black text-white uppercase tracking-[0.2em] relative z-10">Synthesise Sensory Weave</span>
+                      </button>
+                    </div>
+
+                    <div className={cn(
+                      "relative scriptorium-fade min-h-[600px] transition-all duration-700 rounded-[2.5rem]",
+                      mentorActive && productionStage === 1 && "ring-2 ring-emerald-400/50 shadow-[0_0_50px_rgba(16,185,129,0.2)] bg-emerald-500/5 scale-[1.01] p-4 -m-4"
+                    )}>
+                      <Scriptorium 
+                        data={data} 
+                        onSync={setScriptBlocks} 
+                        onPolish={handleScriptPolish} 
+                        onWordCountChange={handleScriptWordCount}
+                        onActivity={onActivity}
+                        isProductionLocked={isProductionLocked}
+                        onOpenArchive={() => setIsArchiveOpen(true)}
+                        onUnlockProduction={async () => {
+                          setGlobalLocked(false);
+                          await flush({ isProductionLocked: false });
+                          update({ isProductionLocked: false });
+                          toast.success("Production Lock Released", {
+                            description: "Manual control of metadata is now enabled."
+                          });
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -2200,9 +2332,9 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  {(sensoryConfigToUse as SensoryPromptTemplate[]).map((config: SensoryPromptTemplate) => (
+                  {(sensoryConfigToUse as SensoryPromptTemplate[]).map((config: SensoryPromptTemplate, idx) => (
                     <motion.div 
-                      key={config.id}
+                      key={config.id || `sensory-act3-${idx}`}
                       whileHover={{ translateY: -5 }}
                       className="p-8 rounded-[2rem] bg-white/[0.03] border border-white/5 space-y-6 group hover:bg-white/[0.05] transition-all"
                     >
@@ -2373,7 +2505,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       isOpen={!!selectedDraftForPreview}
       isSaving={isCloudSaving}
       onClose={() => setSelectedDraftForPreview(null)}
-      originalHook={description}
+      originalHook={productionStage === 1 ? (originalHook || description) : (polishedOriginalHook || description)}
+      originalHookLabel={productionStage === 1 ? ("Committed: " + (data?.activeVisionLabel || selectedVision?.label || 'Act I Script')) : "Original Spark"}
       cleanScript={selectedDraftForPreview?.cleanScript || ''}
       visionLabel={selectedDraftForPreview?.visionType || ''}
       visionFocus={selectedDraftForPreview?.visionFocus || ''}
@@ -2382,10 +2515,32 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       generatedSoundtrackUrl={selectedDraftForPreview?.generatedSoundtrackUrl}
       onApply={async () => {
         if (selectedDraftForPreview) {
-          // COMMIT HANDSHAKE (Director's Lock)
-          if (!originalHook) {
-            setOriginalHook(description);
+          if (productionStage === 1) {
+            // ACT II: SENSORY WEAVE COMMITMENT
+            const text = selectedDraftForPreview.cleanScript || '';
+            const label = selectedDraftForPreview.visionType;
+            
+            const blocks: ScriptBlock[] = [
+              { id: crypto.randomUUID(), text: text, type: 'beat', catalysts: [] }
+            ];
+            setScriptBlocks(blocks);
+            setIsReviewingSensory(false);
+            setSelectedDraftForPreview(null);
+            
+            await flush({
+              prose: text,
+              scriptBlocks: blocks
+            });
+            
+            toast.success("Sensory Weave Sealed", {
+              description: `The Scriptorium has been updated with ${label}.`
+            });
+            return;
           }
+
+          // COMMIT HANDSHAKE (Director's Lock) - ACT I
+          const cleanScriptText = selectedDraftForPreview.cleanScript || description;
+          setOriginalHook(cleanScriptText);
           
           const newHistoryItem = {
             timestamp: new Date().toISOString(),
@@ -2412,19 +2567,20 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
           setProse(structured.cleanScript); // Populate prose for Act II teleprompter
           setStructuredScript(structured);
           
-          // Manual Flush to ensure Firestore sync
-          // We MUST await flush first to satisfy the Sync-Before-Advance Rule
-          const result = await flush({
-            description: structured.cleanScript,
-            prose: structured.cleanScript,
-            structuredScript: structured,
-            productionStage: 1,
-            originalHook: originalHook || description,
-            activeVision: type,
-            isReviewing: false,
-            isProductionLocked: true,
-            productionTakes: reviewDrafts || []
-          });
+           // Manual Flush to ensure Firestore sync
+           // We MUST await flush first to satisfy the Sync-Before-Advance Rule
+           const result = await flush({
+             description: structured.cleanScript,
+             prose: structured.cleanScript,
+             structuredScript: structured,
+             productionStage: 1,
+             originalHook: cleanScriptText,
+             activeVision: type,
+             activeVisionLabel: selectedDraftForPreview.visionType,
+             isReviewing: false,
+             isProductionLocked: true,
+             productionTakes: reviewDrafts || []
+           });
 
           if (result && !result.success) {
             toast.error("Failed to Seal Vision", {

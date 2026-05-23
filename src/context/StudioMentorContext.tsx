@@ -1,4 +1,6 @@
-import { useState, useCallback } from 'react';
+'use client';
+
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 
 export type MentorshipAct = 0 | 1 | 2 | 3 | 4;
@@ -20,7 +22,7 @@ export interface MentorWhisper {
 const WHISPERS: Record<MentorshipAct, MentorWhisper> = {
   0: {
     act: 0,
-    whisper: "Stuck on the first frame? Focus on a single sense. What did the air feel like?",
+    whisper: "Stuck on the first frame? Focus on a single sense. What did the air smell like? Savour the colour of this moment.",
     toolLabel: "Inspiration Seeds",
     seeds: [
       { type: 'aroma', label: 'The scent of rain on dry earth' },
@@ -35,17 +37,16 @@ const WHISPERS: Record<MentorshipAct, MentorWhisper> = {
   },
   1: {
     act: 1,
-    whisper: "The story has a heartbeat, but it needs a body. Drag a Catalyst to a highlighted word to anchor a sound or a scent.",
+    whisper: "Savour the contrast in these takes. One leans into the atmosphere, another into the soul. Which is your authorised vision?",
     toolLabel: "The Magnetic Pulse",
     hotspots: [
-      { number: 1, label: "Select a Catalyst", elementId: "sensory-hud" },
-      { number: 2, label: "Infuse your Script", elementId: "story-script" },
-      { number: 3, label: "Enter Recording Studio", elementId: "next-act-btn" }
+      { number: 1, label: "Review Narrative Interpretations", elementId: "selection-deck" },
+      { number: 2, label: "Enter Recording Studio", elementId: "next-act-btn" }
     ]
   },
   2: {
     act: 2,
-    whisper: "Don't perform for the camera; perform for the memory. If you stumble, the 'Fusion Protocol' will catch you. Just keep speaking.",
+    whisper: "Do not perform for the camera; perform for the memory. If you stumble, the 'Fusion Protocol' will support you. Simply keep speaking.",
     toolLabel: "Soul-Script Calibration",
     seeds: [
       { type: 'visual', label: 'Breathe Deep' },
@@ -59,7 +60,7 @@ const WHISPERS: Record<MentorshipAct, MentorWhisper> = {
   },
   3: {
     act: 3,
-    whisper: "The Studio is weaving your intent with your energy. This is the alchemy of memory.",
+    whisper: "The Studio is synthesising your intent with your energy. This is the alchemy of memory.",
     toolLabel: "Calibrating Clarity",
     hotspots: [
       { number: 1, label: "Review Weave", elementId: "fusion-display" },
@@ -77,7 +78,19 @@ const WHISPERS: Record<MentorshipAct, MentorWhisper> = {
   }
 };
 
-export function useMentorLifeline() {
+export interface StudioMentorContextType {
+  mentorModeActive: boolean;
+  isOverlayOpen: boolean;
+  isManualMentor: boolean;
+  toggleMentor: (manual?: boolean) => void;
+  triggerWhisper: (whisper: MentorWhisper) => void;
+  closeOverlay: () => void;
+  getWhisper: (act: number) => MentorWhisper;
+}
+
+const StudioMentorContext = createContext<StudioMentorContextType | undefined>(undefined);
+
+export const StudioMentorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [mentorModeActive, setMentorModeActive] = useState(false);
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const [isManualMentor, setIsManualMentor] = useState(false);
@@ -117,16 +130,39 @@ export function useMentorLifeline() {
   }, []);
 
   const getWhisper = useCallback((act: number): MentorWhisper => {
-    return customWhisper || WHISPERS[act as MentorshipAct] || WHISPERS[0];
+    if (customWhisper && customWhisper.act === act) {
+      return customWhisper;
+    }
+    return WHISPERS[act as MentorshipAct] || WHISPERS[0];
   }, [customWhisper]);
 
-  return {
-    mentorModeActive,
-    isOverlayOpen,
-    isManualMentor,
-    toggleMentor,
-    triggerWhisper,
-    closeOverlay,
-    getWhisper
-  };
-}
+  return (
+    <StudioMentorContext.Provider value={{
+      mentorModeActive,
+      isOverlayOpen,
+      isManualMentor,
+      toggleMentor,
+      triggerWhisper,
+      closeOverlay,
+      getWhisper
+    }}>
+      {children}
+    </StudioMentorContext.Provider>
+  );
+};
+
+export const useStudioMentor = () => {
+  const context = useContext(StudioMentorContext);
+  if (context === undefined) {
+    return {
+      mentorModeActive: false,
+      isOverlayOpen: false,
+      isManualMentor: false,
+      toggleMentor: () => {},
+      triggerWhisper: () => {},
+      closeOverlay: () => {},
+      getWhisper: () => ({ act: 0, whisper: '' })
+    } as StudioMentorContextType;
+  }
+  return context;
+};

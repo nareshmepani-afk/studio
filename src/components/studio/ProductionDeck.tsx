@@ -23,7 +23,6 @@ import { cn } from '@/lib/utils';
 import { ResizableDivider } from './ResizableDivider';
 import { ProductionControlBar } from './ProductionControlBar';
 import { SensoryCatalystHUD } from './SensoryCatalystHUD';
-import { ThresholdGuard } from './overlays/ThresholdGuard';
 import { ProductionPreFlight } from './overlays/ProductionPreFlight';
 import { useStudioState as useGlobalStudioState } from '@/hooks/studio/useStudioState';
 import { useProductionCharge } from '@/hooks/studio/useProductionCharge';
@@ -34,8 +33,7 @@ import { StudioBlueprint } from './StudioBlueprint';
 
 
 const DEFAULT_SIDEBAR_WIDTH = 280;
-import { useMentorLifeline } from '@/hooks/studio/useMentorLifeline';
-import { MentorshipOverlay } from './MentorshipOverlay';
+import { MentorGuide } from './MentorGuide';
 import { useRecaptcha } from '@/hooks/useRecaptcha';
 import { firebaseConfig } from '@/lib/config-schema';
 import { OnboardingOverlay } from './overlays/OnboardingOverlay';
@@ -80,6 +78,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         durationUnit,
         narratorAgeAtTime,
         isProductionLocked,
+        mentorContext,
         actions: {
             setIsReviewing, 
             setReviewDrafts, 
@@ -228,16 +227,16 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     const formRef = useRef<any>(null);
     const synthesisAbortRef = useRef<boolean>(false);
 
-    // MOD-15: Mentorship Lifeline
+    // MOD-15: Mentorship Lifeline (Elevated to global StudioMentorProvider)
     const { 
-        mentorModeActive, 
-        isOverlayOpen, 
-        isManualMentor,
-        toggleMentor, 
-        triggerWhisper,
-        closeOverlay, 
-        getWhisper 
-    } = useMentorLifeline();
+        mentorModeActive = false, 
+        isOverlayOpen = false, 
+        isManualMentor = false,
+        toggleMentor = () => {}, 
+        triggerWhisper = () => {},
+        closeOverlay = () => {}, 
+        getWhisper = () => ({ act: 0, whisper: '' } as any)
+    } = mentorContext || {};
     
     // reCAPTCHA Hook
     const { executeAction } = useRecaptcha(firebaseConfig.recaptchaSiteKey);
@@ -264,7 +263,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     memoryData?.dateComponents?.year !== ''
                 );
             case 1: // Act II: Weave
-                return wordCount >= 150;
+                return true;
             case 2: // Act III: Capture
                 return !!memoryData?.videoUrl;
             case 3: // Act IV: Director's Cut
@@ -274,7 +273,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             default:
                 return false;
         }
-    }, [currentStage, memoryData?.title, memoryData?.description, memoryData?.videoUrl, wordCount, memoryData?.location, memoryData?.dateComponents?.year]);
+    }, [currentStage, memoryData?.title, memoryData?.description, memoryData?.videoUrl, memoryData?.location, memoryData?.dateComponents?.year]);
 
     const isLowClarity = useMemo(() => {
         const isAct1 = currentStage === 0;
@@ -290,13 +289,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             if (!memoryData?.dateComponents?.year) reqs.push("Time/Year Anchor");
             if (memoryData?.description?.trim()?.length < 10) reqs.push("Narrative Hook (> 10 chars)");
             if (hotClarity < 15) reqs.push("Scene Clarity (needs sensory keywords)");
-        } else if (currentStage === 1) {
-            if (wordCount < 150) reqs.push(`${150 - wordCount} more words of prose`);
         } else if (currentStage === 2) {
             if (!memoryData?.videoUrl) reqs.push("Video Recording");
         }
         return reqs;
-    }, [currentStage, memoryData, hotClarity, wordCount]);
+    }, [currentStage, memoryData, hotClarity]);
 
     const router = useRouter();
     const groupId = searchParams.get('groupId');
@@ -583,7 +580,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
         // If the scene has an active production lock, skip the AI Synthesis ceremony entirely
         // and advance the user directly to the weave (Act II)
-        if (isAct1 && memoryData?.isProductionLocked) {
+        if (isAct1 && isProductionLocked) {
             console.log("[ProductionDeck] Production is locked. Advancing directly to Act II (The Weave).");
             const next = 1;
             setStage(next);
@@ -710,7 +707,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             }
         }
     }, [
-        currentStage, isReviewing, memoryData?.description, memoryData?.productionStage, memoryData?.isProductionLocked,
+        currentStage, isReviewing, memoryData?.description, memoryData?.productionStage, isProductionLocked,
         selectedVision, isLowClarity, showPreFlight, isActComplete, handleUpdate,
         timeframeScope, durationQuantity, durationUnit, narratorAgeAtTime, memoryData?.dateComponents?.year
     ]);
@@ -955,7 +952,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                 const newState = !isRailRetracted;
                                 setIsRailRetracted(newState);
                                 // If unretracting and width is too small, jump to a healthy default
-                                if (!newState && sidebarWidth < 160) {
+                                if (!newState && sidebarWidth < 220) {
                                     setSidebarWidth(320);
                                 }
                             }}
@@ -983,17 +980,6 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                          )} data-blueprint="StageArea">
                              {renderRoom()}
 
-                            {/* Tech Scout Threshold Guard */}
-                            <AnimatePresence>
-                                {modality !== null && currentStage > 1 && wordCount < 150 && (
-                                    <ThresholdGuard
-                                        currentCount={wordCount}
-                                        threshold={150}
-                                        actTitle={ACT_TITLES[currentStage]}
-                                    />
-                                )}
-                            </AnimatePresence>
-
                             {/* HUD Watermark Label - Relocated to Bottom Left */}
                             {modality !== null && (
                                 <div className="absolute bottom-6 left-6 select-none z-10 group cursor-help">
@@ -1007,7 +993,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                             )}
 
                             {/* SENSORY CATALYST HUD: FIXED DOCK */}
-                            {modality !== null && currentStage > 0 && (
+                            {modality !== null && currentStage > 1 && (
                                 <SensoryCatalystHUD
                                     wordCount={wordCount}
                                     isDirectorOpen={isDirectorOpen}
@@ -1034,7 +1020,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                          isDocked={currentStage <= 1}
                                          mentorActive={mentorModeActive}
                                          isSaving={isSavingNext}
-                                         isProductionLocked={!!memoryData?.isProductionLocked}
+                                         isProductionLocked={!!isProductionLocked}
                                      />
                                  </div>
                              )}
@@ -1060,7 +1046,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             />
 
             {/* STUDIO MENTOR OVERLAY (LIFELINE) */}
-            <MentorshipOverlay 
+            <MentorGuide 
                 active={isOverlayOpen}
                 onClose={closeOverlay}
                 whisper={getWhisper(currentStage)}

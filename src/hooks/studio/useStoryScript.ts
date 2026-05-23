@@ -5,14 +5,22 @@ import { ScriptBlock, Catalyst, CatalystType } from '@/types';
 
 export const useStoryScript = (initialBlocks: ScriptBlock[]) => {
   const [blocks, setBlocks] = useState<ScriptBlock[]>(() => {
-    if (initialBlocks && initialBlocks.length > 0) return initialBlocks;
+    if (initialBlocks && initialBlocks.length > 0) {
+      return initialBlocks.map(b => ({
+        ...b,
+        id: b.id && b.id.trim() !== "" ? b.id : uuidv4()
+      }));
+    }
     // Stable placeholder for hydration safety
     return [{ id: 'initial-block', type: 'hook', text: '', catalysts: [] }];
   });
   
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(() => {
-    if (initialBlocks.length > 0) return initialBlocks[0].id;
-    return null; // Will be set by blocks initialization if needed
+    if (initialBlocks && initialBlocks.length > 0) {
+      const firstId = initialBlocks[0].id;
+      return firstId && firstId.trim() !== "" ? firstId : null;
+    }
+    return null;
   });
 
   // Ensure first block is focused if none is set

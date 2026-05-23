@@ -194,6 +194,14 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
       style={style}
       layout
       data-block-id={block.id}
+      onClick={(e) => {
+        // Prevent click events on the wrapper padding/margins/empty areas from bubbling to the parent
+        // container (which would force the cursor to jump to the end of the script).
+        if (e.target !== editorRef.current && editorRef.current) {
+          editorRef.current.focus();
+        }
+        e.stopPropagation();
+      }}
       className={cn(
         "group relative flex items-start gap-8 py-2 transition-all duration-300 rounded-xl px-4",
         isDragging && "opacity-40 z-50",

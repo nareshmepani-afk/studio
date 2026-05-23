@@ -66,6 +66,27 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
   onToggleMentor,
   isSaving = false
 }) => {
+  const [isFirstTimeAct2, setIsFirstTimeAct2] = React.useState(false);
+
+  React.useEffect(() => {
+    if (currentStage === 1) {
+      const seen = localStorage.getItem('mw_mentor_act2_glow_seen');
+      if (!seen) {
+        setIsFirstTimeAct2(true);
+      }
+    } else {
+      setIsFirstTimeAct2(false);
+    }
+  }, [currentStage]);
+
+  const handleMentorClick = () => {
+    if (currentStage === 1) {
+      localStorage.setItem('mw_mentor_act2_glow_seen', 'true');
+      setIsFirstTimeAct2(false);
+    }
+    onToggleMentor?.(true);
+  };
+
   // Logic: "Soft-Locked" - Forward is locked until commit (simplified for now to currentStage)
   // Backward is always open.
   // Logic: "Tech Scout" Mode - All acts are clickable for "Peeking"
@@ -105,10 +126,10 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
         
         <div className={cn(
           "space-y-12 relative z-10 transition-all duration-500",
-          customWidth <= 160 ? "p-4 flex flex-col items-center" : "p-8"
+          customWidth <= 220 ? "p-4 flex flex-col items-center" : "p-8"
         )}>
           <div className="space-y-1">
-            {customWidth > 160 && (
+            {customWidth > 220 && (
                 <motion.span 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -117,7 +138,7 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                   Production Rail
                 </motion.span>
             )}
-            {customWidth > 160 && (
+            {customWidth > 220 && (
               <motion.h2 
                 initial={{ opacity: 0 }} 
                 animate={{ opacity: 1 }} 
@@ -156,8 +177,8 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                           className={cn(
                             "group flex items-start gap-4 text-left transition-all duration-300",
                             (!available || isSaving) && "opacity-30 cursor-not-allowed",
-                            active && customWidth > 160 && "translate-x-2",
-                            customWidth <= 160 ? "w-12 justify-center" : "w-full"
+                            active && customWidth > 220 && "translate-x-2",
+                            customWidth <= 220 ? "w-12 justify-center" : "w-full"
                           )}
                         >
                           <motion.div 
@@ -185,14 +206,14 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                             )}
                           </motion.div>
 
-                          {customWidth > 160 && (
+                          {customWidth > 220 && (
                             <motion.div 
                               initial={{ opacity: 0, x: -10 }}
                               animate={{ opacity: 1, x: 0 }}
                               className="flex flex-col pt-1 overflow-hidden"
                             >
                               <span className={cn(
-                                "text-[10px] font-black uppercase tracking-widest leading-none mb-1",
+                                "text-[10px] font-black uppercase tracking-widest leading-none mb-1 whitespace-nowrap",
                                 active ? "text-emerald-400" : "text-white/70"
                               )}>
                                 {act.label}
@@ -201,9 +222,9 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                                 "text-sm font-bold tracking-tight transition-colors whitespace-nowrap",
                                 active ? "text-white" : "text-white/90 group-hover:text-white"
                               )}>
-                                {ACT_TITLES[act.id]}
+                                {act.title}
                               </span>
-                              {active && customWidth > 200 && (
+                              {active && customWidth > 240 && (
                                 <motion.p 
                                   initial={{ opacity: 0, height: 0 }}
                                   animate={{ opacity: 1, height: 'auto' }}
@@ -215,14 +236,14 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                             </motion.div>
                           )}
 
-                          {!isActFullyUnlocked(act.id) && !active && customWidth > 160 && (
+                          {!isActFullyUnlocked(act.id) && !active && customWidth > 220 && (
                             <Lock className="w-2.5 h-2.5 text-white/5 ml-auto mt-1.5" />
                           )}
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="right" sideOffset={10} className="bg-slate-950 border-white/10 text-white p-3 rounded-xl shadow-2xl max-w-[200px] z-[1002]">
                         <div className="space-y-1">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">{ACT_TITLES[act.id]}</span>
+                          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">{act.title}</span>
                           <p className="text-[10px] text-white/50 leading-relaxed italic">{act.description}</p>
                         </div>
                       </TooltipContent>
@@ -235,7 +256,7 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
         </div>
 
         {/* Footer info */}
-        {customWidth > 160 && (
+        {customWidth > 220 && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -245,19 +266,23 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
             <div className="space-y-3">
               <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em]">Studio Support</span>
               <button
-                onClick={() => onToggleMentor?.(true)}
+                onClick={handleMentorClick}
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-500 group",
-                  mentorActive 
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]" 
-                    : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:border-white/20"
+                  isFirstTimeAct2
+                    ? "bg-emerald-500/20 border-emerald-500 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.8)] animate-pulse"
+                    : mentorActive 
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]" 
+                      : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:border-white/20"
                 )}
               >
                 <div className={cn(
                   "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-500",
-                  mentorActive ? "bg-emerald-500 text-slate-900 shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "bg-white/5 text-white/40"
+                  isFirstTimeAct2
+                    ? "bg-emerald-500 text-slate-900 shadow-[0_0_15px_rgba(16,185,129,0.6)] animate-bounce"
+                    : mentorActive ? "bg-emerald-500 text-slate-900 shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "bg-white/5 text-white/40"
                 )}>
-                  <Sparkles className={cn("w-4 h-4", mentorActive && "animate-pulse")} />
+                  <Sparkles className={cn("w-4 h-4", (mentorActive || isFirstTimeAct2) && "animate-pulse")} />
                 </div>
                 <div className="flex flex-col items-start gap-0.5">
                   <span className="text-[10px] font-black uppercase tracking-wider">Mentor Guide</span>

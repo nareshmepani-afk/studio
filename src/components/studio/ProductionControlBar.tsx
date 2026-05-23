@@ -219,7 +219,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
     switch (currentStage) {
       case 0: return isLowClarity ? "Scene Clarity below 15% threshold." : "Title, Description, and Year are mandatory catalysts.";
-      case 1: return "The weave requires at least 150 words of cinematic prose.";
+      case 1: return "Your script is ready for recording.";
       case 2: return "A video recording is required to anchor this memory.";
       case 3: return "Final review pending.";
       default: return "Requirements not met.";
@@ -508,7 +508,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                 <div className="relative">
                   {mentorActive && (currentStage === 0 || currentStage === 1) && (
                     <MentorshipHotspot 
-                      number={3} 
+                      number={currentStage === 0 ? 3 : 2} 
                       label={currentStage === 0 ? "Enter the Weave" : "Enter Recording Studio"} 
                       className="-top-4 -right-4" 
                     />

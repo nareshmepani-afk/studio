@@ -80,7 +80,7 @@ export default function DirectorsNotepad({
       </button>
 
       <motion.div 
-        initial={false}
+        initial={{ width: isOpen ? 400 : 0, opacity: isOpen ? 1 : 0 }}
         animate={{ width: isOpen ? 400 : 0, opacity: isOpen ? 1 : 0 }}
         className="h-full bg-zinc-950 border-l border-white/10 overflow-hidden flex flex-col shadow-2xl"
       >

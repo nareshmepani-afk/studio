@@ -38,6 +38,8 @@ import { Memory } from '@/types';
 import CinemaPoster from '../memory/CinemaPoster';
 import { CinemaMonitor } from './CinemaMonitor';
 import { useStudioState } from '@/hooks/studio/useStudioState';
+import { Teleprompter } from './Teleprompter';
+import { useAudioMonitor } from '@/hooks/useAudioMonitor';
 
 interface RoomProps {
     data: Memory;
@@ -133,6 +135,9 @@ export default function SoloStage({
   } = useMediaRecorder(stream);
 
   const micLevel = useAudioLevel(stream);
+  
+  // NEW: Tap into live MediaStream for frequency & volume monitoring
+  const { volume, waveform } = useAudioMonitor(stream, cameraError);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
@@ -498,9 +503,9 @@ export default function SoloStage({
               width: prompterSize === 'sm' ? 320 : prompterSize === 'md' ? 480 : 720,
               height: prompterSize === 'sm' ? 300 : prompterSize === 'md' ? 500 : 700
             }}
-            className="absolute top-10 right-10 z-30 bg-black/40 backdrop-blur-3xl border border-white/10 p-8 rounded-[2rem] shadow-2xl group/points transition-all duration-700 hover:bg-black/60 overflow-hidden flex flex-col"
+            className="absolute top-10 right-10 z-30 bg-zinc-950/85 backdrop-blur-3xl border border-white/10 p-8 rounded-[2rem] shadow-2xl group/points transition-all duration-700 hover:bg-zinc-900/90 overflow-hidden flex flex-col pointer-events-auto"
           >
-            <div className="flex items-center justify-between mb-6 shrink-0">
+            <div className="flex items-center justify-between mb-4 shrink-0">
               <div className="flex items-center gap-3">
                 <div className={`w-2.5 h-2.5 rounded-full ${isRecording ? 'bg-rose-500 animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.6)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]'}`} />
                 <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Stage Prompt // v2.0</span>
@@ -508,28 +513,17 @@ export default function SoloStage({
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setPrompterSize(prev => prev === 'sm' ? 'md' : prev === 'md' ? 'lg' : 'sm')}
-                  className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/30 hover:text-white hover:bg-white/10 transition-all"
+                  className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/30 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
                 >
                   <Maximize2 className="w-3.5 h-3.5" />
                 </button>
-                <div className="grow w-px h-4 bg-white/10 mx-1" />
-                <div className="px-2 py-0.5 bg-white/5 rounded-md border border-white/5 text-[8px] font-bold text-white/20 uppercase">Encrypted</div>
               </div>
             </div>
+            
             <div className="flex-grow flex gap-8 overflow-hidden min-h-0">
-              {/* Main Script Area */}
-              <div className={cn(
-                "flex-grow pr-4 custom-scrollbar scroll-smooth overflow-y-auto font-medium text-white/95 leading-relaxed italic",
-                prompterSize === 'sm' ? 'text-sm' : prompterSize === 'md' ? 'text-lg' : 'text-2xl'
-              )}>
-                {data?.prose ? (
-                  <div dangerouslySetInnerHTML={{ __html: data.prose }} className="prose-invert opacity-90 first-letter:text-4xl first-letter:font-black first-letter:mr-2 first-letter:float-left select-none" />
-                ) : (
-                  <div className="text-white/20 text-sm font-black uppercase tracking-widest text-center py-20 flex flex-col items-center gap-4">
-                    <RefreshCw className="w-8 h-8 animate-spin opacity-20" />
-                    Awaiting Narrative Weave...
-                  </div>
-                )}
+              {/* Main Teleprompter */}
+              <div className="flex-grow min-w-0 h-full">
+                <Teleprompter />
               </div>
 
               {/* Directorial Sidebar (Conditional) */}
@@ -565,12 +559,6 @@ export default function SoloStage({
                   </div>
                 </div>
               )}
-            </div>
-            <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-center shrink-0">
-               <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">Master Production Reel</span>
-               <div className="flex gap-1">
-                 {[1,2,3].map(i => <div key={i} className="w-1 h-1 rounded-full bg-white/10" />)}
-               </div>
             </div>
           </motion.div>
 
@@ -669,11 +657,20 @@ export default function SoloStage({
                 )}
 
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
-                    <Volume2 className="w-4 h-4 text-white/40" />
-                    <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                       <motion.div className="h-full bg-emerald-500" animate={{ width: `${micLevel}%` }} />
+                  <div className="flex items-center gap-4 bg-black/40 backdrop-blur-md px-6 py-2.5 rounded-full border border-white/10 pointer-events-auto">
+                    <Volume2 className="w-4 h-4 text-emerald-400" />
+                    {/* Glowing Frequency Waveform Visualizer */}
+                    <div className="flex items-end gap-[2px] h-6 w-32 px-1">
+                      {waveform.slice(0, 24).map((value, i) => (
+                        <motion.div
+                          key={i}
+                          className="w-[3px] bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                          animate={{ height: `${Math.max(4, value * 24)}px` }}
+                          transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                        />
+                      ))}
                     </div>
+                    <span className="text-[10px] font-mono font-bold text-emerald-400 w-8 text-right">{volume}%</span>
                   </div>
                 </div>
              </div>
