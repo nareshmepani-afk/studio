@@ -41,7 +41,8 @@ vi.mock('lucide-react', async (importOriginal) => {
     'Maximize2', 'Trash2', 'Plus', 'Info', 'Layout', 'Layers', 'Wand2', 'Music', 'Wind', 
     'Coffee', 'Zap', 'FileText', 'Film', 'ImageIcon', 'Video', 'Heart', 'Share2', 
     'MoreHorizontal', 'Square', 'History', 'UserCircle', 'Eye', 'Clock', 'Lock', 
-    'RotateCcw', 'Target', 'ShieldCheck', 'Users', 'ChevronUp', 'Minus', 'BookOpen'
+    'RotateCcw', 'Target', 'ShieldCheck', 'Users', 'ChevronUp', 'Minus', 'BookOpen',
+    'ClipboardCopy', 'Copy', 'Check', 'Award'
   ];
   const mockedIcons: any = {};
   icons.forEach(icon => {
@@ -85,6 +86,11 @@ vi.mock('@/hooks/studio/useStudioState', () => ({
       setIsDirectorOpen: vi.fn(),
       setModality: vi.fn(),
       setActiveDrawer: vi.fn(),
+      setSelectedVision: vi.fn(),
+      setIsReviewing: vi.fn(),
+      setReviewDrafts: vi.fn(),
+      setDraggingCatalyst: vi.fn(),
+      setDrafting: vi.fn(),
     },
     activeDrawer: null,
     pendingAnchor: null,
@@ -325,5 +331,63 @@ describe('MemoryForm Data Shielding (Split-Brain Prevention)', () => {
     // Rerender with same data
     rerender(<MemoryForm data={initialData} update={mockUpdate} />);
     expect(textarea).toHaveValue('Initial Description');
+  });
+
+  it('Act II: Auto-show Selection Deck if aiTakes are present and no sensory weave is selected yet', async () => {
+    const act2Data = {
+      ...initialData,
+      aiTakes: {
+        poetic: 'Poetic Take',
+        direct: 'Direct Take',
+        nostalgic: 'Nostalgic Take'
+      },
+      activeVision: 'soul',
+      activeVisionLabel: 'The Cinematic Cut'
+    };
+
+    render(<MemoryForm data={act2Data} update={mockUpdate} productionStage={1} />);
+
+    expect(screen.queryByText('Synthesise Sensory Weave')).toBeNull();
+  });
+
+  it('Act II: Displays Sensory Lock when committed, and clicking Release unlocks it', async () => {
+    const act2DataSelected = {
+      ...initialData,
+      aiTakes: {
+        poetic: 'Poetic Take',
+        direct: 'Direct Take',
+        nostalgic: 'Nostalgic Take'
+      },
+      activeVision: 'poetic',
+      activeVisionLabel: 'The Poetic Weave'
+    };
+
+    const { rerender } = render(<MemoryForm data={act2DataSelected} update={mockUpdate} productionStage={1} />);
+
+    // 1. Verify locked state: "Sensory Sealed" and "Sensory Lock Active" are visible
+    expect(screen.getByText('Sensory Sealed')).toBeInTheDocument();
+    expect(screen.getByText('Sensory Lock Active')).toBeInTheDocument();
+    expect(screen.queryByText('Synthesise Sensory Weave')).toBeNull();
+
+    // 2. Click "Release Sensory Lock" button
+    const releaseButton = screen.getByText('Release Sensory Lock');
+    await act(async () => {
+      releaseButton.click();
+    });
+
+    // Rerender with unlocked prop values to simulate parent database update
+    const act2DataUnlocked = {
+      ...act2DataSelected,
+      activeVision: undefined,
+      activeVisionLabel: undefined
+    };
+    rerender(<MemoryForm data={act2DataUnlocked} update={mockUpdate} productionStage={1} />);
+
+    // 3. Verify that the lock is released and the auto-show transitions them directly to Selection Deck
+    expect(screen.queryByText('Sensory Sealed')).toBeNull();
+    expect(screen.queryByText('Sensory Lock Active')).toBeNull();
+    
+    // Selection Deck compare view should be visible immediately
+    expect(screen.getByText("Director's Cut")).toBeInTheDocument();
   });
 });

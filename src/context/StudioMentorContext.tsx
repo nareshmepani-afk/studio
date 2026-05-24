@@ -46,8 +46,8 @@ const WHISPERS: Record<MentorshipAct, MentorWhisper> = {
   },
   2: {
     act: 2,
-    whisper: "Do not perform for the camera; perform for the memory. If you stumble, the 'Fusion Protocol' will support you. Simply keep speaking.",
-    toolLabel: "Soul-Script Calibration",
+    whisper: "The floor is yours. Settle in, adjust your lighting, and choose your station. Shall we record in solitude, or is this a narrative that demands an ensemble?",
+    toolLabel: "Stage Manager's Briefing",
     seeds: [
       { type: 'visual', label: 'Breathe Deep' },
       { type: 'visual', label: 'Slow Down' },

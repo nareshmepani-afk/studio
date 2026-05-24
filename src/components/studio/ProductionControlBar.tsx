@@ -219,7 +219,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
     switch (currentStage) {
       case 0: return isLowClarity ? "Scene Clarity below 15% threshold." : "Title, Description, and Year are mandatory catalysts.";
-      case 1: return "Your script is ready for recording.";
+      case 1: return "Selecting a Sensory Weave is required before recording.";
       case 2: return "A video recording is required to anchor this memory.";
       case 3: return "Final review pending.";
       default: return "Requirements not met.";

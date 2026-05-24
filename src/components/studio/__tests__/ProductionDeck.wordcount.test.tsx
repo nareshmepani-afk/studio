@@ -145,7 +145,7 @@ describe('ProductionDeck Word Count Bypass tests', () => {
     isProductionLocked: false
   };
 
-  it('allows progression in Act II at any word count even when production is unlocked', () => {
+  it('restricts progression in Act II if no sensory weave has been selected', () => {
     mockCurrentStage = 1;
     mockIsProductionLocked = false;
     capturedSoloStageProps = null;
@@ -160,23 +160,24 @@ describe('ProductionDeck Word Count Bypass tests', () => {
     );
 
     expect(capturedSoloStageProps).not.toBeNull();
-    // Progression should always be allowed in Act II regardless of word count
-    expect(capturedSoloStageProps.isComplete).toBe(true);
+    // Progression is blocked because activeVision is not selected
+    expect(capturedSoloStageProps.isComplete).toBe(false);
   });
 
-  it('allows progression in Act II even if word count < 150 if production is locked', () => {
+  it('allows progression in Act II once a valid sensory weave has been selected', () => {
     mockCurrentStage = 1;
     mockIsProductionLocked = true;
     capturedSoloStageProps = null;
 
-    const lockedMemoryData = {
+    const wovenMemoryData = {
       ...mockMemoryData,
-      isProductionLocked: true
+      activeVision: 'poetic',
+      activeVisionLabel: 'The Poetic Weave'
     };
 
     render(
       <ProductionDeck 
-        memoryData={lockedMemoryData} 
+        memoryData={wovenMemoryData} 
         onUpdate={mockUpdate} 
         layoutMode="takeover" 
         onToggleLayout={vi.fn()} 
@@ -184,7 +185,7 @@ describe('ProductionDeck Word Count Bypass tests', () => {
     );
 
     expect(capturedSoloStageProps).not.toBeNull();
-    // isComplete should be true regardless of production lock in Act II now
+    // isComplete should be true since a valid weave has been selected
     expect(capturedSoloStageProps.isComplete).toBe(true);
   });
 });

@@ -16,13 +16,13 @@ import dynamic from 'next/dynamic';
 import PerspectiveWrapper from './PerspectiveWrapper';
 import { MemoryForm, ACT_TITLES } from './MemoryForm';
 import SoloStage from './SoloStage';
+import { StudioLobby } from './StudioLobby';
 const CollaborativeStage = dynamic(() => import('./CollaborativeStage'), { ssr: false });
 import { InstrumentSelection } from './InstrumentSelection';
 import { ProductionRail, PRODUCTION_ACTS } from './ProductionRail';
 import { cn } from '@/lib/utils';
 import { ResizableDivider } from './ResizableDivider';
 import { ProductionControlBar } from './ProductionControlBar';
-import { SensoryCatalystHUD } from './SensoryCatalystHUD';
 import { ProductionPreFlight } from './overlays/ProductionPreFlight';
 import { useStudioState as useGlobalStudioState } from '@/hooks/studio/useStudioState';
 import { useProductionCharge } from '@/hooks/studio/useProductionCharge';
@@ -137,8 +137,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         
         // 4. Sync selected vision
         if (memoryData.activeVision) {
-            const type = memoryData.activeVision === 'soul' ? 'soul' :
-                         (memoryData.activeVision === 'sensory' || memoryData.activeVision === 'cinematic' ? memoryData.activeVision : null);
+            const type = (memoryData.activeVision === 'soul' || memoryData.activeVision === 'poetic') ? 'soul' :
+                         (memoryData.activeVision === 'sensory' || memoryData.activeVision === 'direct') ? 'sensory' :
+                         (memoryData.activeVision === 'cinematic' || memoryData.activeVision === 'nostalgic') ? 'cinematic' : null;
             setSelectedVision(type, memoryData.activeVisionLabel || memoryData.activeVision);
         } else {
             setSelectedVision(null, null);
@@ -226,6 +227,14 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     const [isSavingNext, setIsSavingNext] = useState(false);
     const formRef = useRef<any>(null);
     const synthesisAbortRef = useRef<boolean>(false);
+    const [lobbyConfirmed, setLobbyConfirmed] = useState<boolean>(false);
+
+    // Reset Lobby Confirmation when navigating away from Act III (Capture / stage 2)
+    useEffect(() => {
+        if (currentStage !== 2) {
+            setLobbyConfirmed(false);
+        }
+    }, [currentStage]);
 
     // MOD-15: Mentorship Lifeline (Elevated to global StudioMentorProvider)
     const { 
@@ -263,7 +272,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     memoryData?.dateComponents?.year !== ''
                 );
             case 1: // Act II: Weave
-                return true;
+                return ['poetic', 'direct', 'nostalgic'].includes(memoryData?.activeVision || '');
             case 2: // Act III: Capture
                 return !!memoryData?.videoUrl;
             case 3: // Act IV: Director's Cut
@@ -273,7 +282,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             default:
                 return false;
         }
-    }, [currentStage, memoryData?.title, memoryData?.description, memoryData?.videoUrl, memoryData?.location, memoryData?.dateComponents?.year]);
+    }, [currentStage, memoryData?.title, memoryData?.description, memoryData?.videoUrl, memoryData?.location, memoryData?.dateComponents?.year, memoryData?.activeVision]);
 
     const isLowClarity = useMemo(() => {
         const isAct1 = currentStage === 0;
@@ -289,6 +298,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             if (!memoryData?.dateComponents?.year) reqs.push("Time/Year Anchor");
             if (memoryData?.description?.trim()?.length < 10) reqs.push("Narrative Hook (> 10 chars)");
             if (hotClarity < 15) reqs.push("Scene Clarity (needs sensory keywords)");
+        } else if (currentStage === 1) {
+            const hasWeave = ['poetic', 'direct', 'nostalgic'].includes(memoryData?.activeVision || '');
+            if (!hasWeave) reqs.push("Sensory Weave Selection");
         } else if (currentStage === 2) {
             if (!memoryData?.videoUrl) reqs.push("Video Recording");
         }
@@ -978,7 +990,16 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                              "relative flex-1 min-h-[calc(100vh-80px)] overflow-y-auto flex flex-col transition-all duration-1000 ease-in-out bg-gradient-to-b from-slate-900 via-[#030303] to-black",
                              modality === null && (hoveredInstrument ? "blur-md brightness-50" : "blur-xl brightness-50 pointer-events-none")
                          )} data-blueprint="StageArea">
-                             {renderRoom()}
+                             {currentStage === 2 && !lobbyConfirmed ? (
+                                 <StudioLobby
+                                     onConfirm={(mode) => {
+                                         setLobbyConfirmed(true);
+                                         setActiveRoom(mode);
+                                     }}
+                                 />
+                             ) : (
+                                 renderRoom()
+                             )}
 
                             {/* HUD Watermark Label - Relocated to Bottom Left */}
                             {modality !== null && (
@@ -992,18 +1013,6 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                 </div>
                             )}
 
-                            {/* SENSORY CATALYST HUD: FIXED DOCK */}
-                            {modality !== null && currentStage > 1 && (
-                                <SensoryCatalystHUD
-                                    wordCount={wordCount}
-                                    isDirectorOpen={isDirectorOpen}
-                                    mentorActive={mentorModeActive}
-                                    currentStage={currentStage}
-                                    onCatalystDrop={(type) => {
-                                        // Internal handle in MemoryForm will be needed
-                                    }}
-                                />
-                            )}
                              {/* PRODUCTION CONTROL BAR: THE HEARTBEAT */}
                              {modality !== null && currentStage >= 0 && (
                                  <div className={cn("transition-all duration-500", isDirectorOpen && "opacity-20 blur-sm pointer-events-none")}>

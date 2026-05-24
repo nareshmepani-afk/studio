@@ -241,7 +241,6 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const storyHookFocusRef = usePrimaryFocus(productionStage === 0 && modality !== null, 300, modality);
   const storyHookRef = useRef<HTMLTextAreaElement | null>(null);
   const lastPolishedRef = useRef<string>(data?.description || '');
-  const hasAutoWeaved = useRef(false);
   
   const setStoryHookRef = useCallback((node: HTMLTextAreaElement | null) => {
     storyHookRef.current = node;
@@ -377,6 +376,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   
   // Local sync for persistence
   const isProductionLocked = data?.isProductionLocked || globalLocked || (data?.productionStage || 0) >= 1;
+  const isSensory = ['poetic', 'direct', 'nostalgic', 'The Poetic Weave', 'The Direct Weave', 'The Generational Weave'].includes(data?.activeVision || data?.activeVisionLabel || '');
 
   // Initialize Persistence
 
@@ -567,6 +567,16 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     if (forceAct === 'sensory') globalActions.setActiveDrawer('sensory');
     else if (forceAct === 'poster') globalActions.setActiveDrawer('poster');
   }, [forceAct, globalActions]);
+
+  // Automatically open sensory review if AI takes are already synthesized but no sensory weave is selected yet in Act II
+  useEffect(() => {
+    if (productionStage === 1 && aiTakes && !isReviewingSensory) {
+      const hasSelectedSensory = ['poetic', 'direct', 'nostalgic', 'The Poetic Weave', 'The Direct Weave', 'The Generational Weave'].includes(data?.activeVision || data?.activeVisionLabel || '');
+      if (!hasSelectedSensory) {
+        setIsReviewingSensory(true);
+      }
+    }
+  }, [productionStage, aiTakes, data?.activeVision, data?.activeVisionLabel, isReviewingSensory]);
 
   // THE PRELUDE: Sensory Anchor Auto-Injection
   useEffect(() => {
@@ -965,12 +975,6 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     }
   }, [productionStage, onWordCountChange]);
 
-  useEffect(() => {
-    if (productionStage === 1 && data?.isProductionLocked && !hasAutoWeaved.current) {
-      hasAutoWeaved.current = true;
-      handleAIExpand();
-    }
-  }, [productionStage, data?.isProductionLocked, handleAIExpand]);
 
   const handlePublish = async () => {
     if (!data?.id) {
@@ -2255,9 +2259,14 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       setScriptBlocks(blocks);
                       setIsReviewingSensory(false);
                       
+                      // Match Act I: Set selection dynamically in local state
+                      globalActions.setSelectedVision(type as any, label);
+                      
                       await flush({
                         prose: text,
-                        scriptBlocks: blocks
+                        scriptBlocks: blocks,
+                        activeVision: type,
+                        activeVisionLabel: label
                       });
                       
                       toast.success("Sensory Weave Sealed", {
@@ -2272,24 +2281,80 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                   /* Centered Editor Content */
                   <div className="flex-1 flex flex-col justify-start space-y-12">
                     <div className="flex items-center justify-between mb-8">
-                      <h2 className="text-4xl font-serif text-white/90 italic flex items-center">
-                        Script & Dialogue <RequiredIndicator />
-                      </h2>
-                      <button 
-                        onClick={handleAIExpand}
-                        disabled={isExpanding}
-                        className="group relative flex items-center gap-4 px-10 py-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-all overflow-hidden"
-                      >
-                         <div className="absolute inset-0 bg-gradient-to-r from-sky-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                         <Sparkles className="w-5 h-5 text-sky-400 group-hover:rotate-12 transition-transform" />
-                         <span className="text-[11px] font-black text-white uppercase tracking-[0.2em] relative z-10">Synthesise Sensory Weave</span>
-                      </button>
+                      <div className="flex items-center gap-6">
+                        <h2 className="text-4xl font-serif text-white/90 italic flex items-center">
+                          Script & Dialogue <RequiredIndicator />
+                        </h2>
+                        {isProductionLocked && (data?.activeVisionLabel || data?.activeVision) && (
+                          <div className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)] animate-fade-in">
+                            <span className="opacity-40">
+                              {isSensory ? "🎬 SENSORY WEAVE:" : "🎬 ESTHETIC CUT:"}
+                            </span>
+                            <span className="font-bold text-[9px]">
+                              {(data?.activeVisionLabel || data?.activeVision || '').replace(/-/g, ' ')}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      {isSensory ? (
+                        <div className="px-8 py-3.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-black uppercase tracking-[0.15em] rounded-2xl flex items-center gap-3 shadow-[0_0_20px_rgba(245,158,11,0.05)] select-none animate-fade-in">
+                          <Lock className="w-4 h-4 text-amber-400 animate-pulse" />
+                          <span>Sensory Sealed</span>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => {
+                            if (aiTakes) {
+                              setIsReviewingSensory(true);
+                            } else {
+                              handleAIExpand();
+                            }
+                          }}
+                          disabled={isExpanding}
+                          className="group relative flex items-center gap-4 px-10 py-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-all overflow-hidden"
+                        >
+                           <div className="absolute inset-0 bg-gradient-to-r from-sky-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                           <Sparkles className="w-5 h-5 text-sky-400 group-hover:rotate-12 transition-transform" />
+                           <span className="text-[11px] font-black text-white uppercase tracking-[0.2em] relative z-10">Synthesise Sensory Weave</span>
+                        </button>
+                      )}
                     </div>
 
                     <div className={cn(
                       "relative scriptorium-fade min-h-[600px] transition-all duration-700 rounded-[2.5rem]",
                       mentorActive && productionStage === 1 && "ring-2 ring-emerald-400/50 shadow-[0_0_50px_rgba(16,185,129,0.2)] bg-emerald-500/5 scale-[1.01] p-4 -m-4"
                     )}>
+                      {isSensory && (
+                        <div className="mb-8 flex items-center justify-between bg-amber-500/10 border border-amber-500/20 rounded-2xl px-6 py-4 backdrop-blur-sm relative z-20 animate-fade-in">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-amber-500/20 rounded-lg border border-amber-500/30 text-amber-400 animate-pulse">
+                              <Lock className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <div className="text-[11px] font-black text-amber-400 uppercase tracking-[0.2em]">Sensory Lock Active</div>
+                              <div className="text-[10px] text-amber-500/70 font-sans tracking-wide">
+                                Atmospheric layers have been successfully grafted. Scriptorium edit capabilities are sealed to preserve recording fidelity.
+                              </div>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={async () => {
+                              // Release sensory lock
+                              globalActions.setSelectedVision(null as any, null);
+                              await flush({
+                                activeVision: undefined,
+                                activeVisionLabel: undefined
+                              });
+                              toast.success("Sensory Weave Unlocked", {
+                                description: "You can now edit your script or select another sensory weave."
+                              });
+                            }}
+                            className="px-5 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[9px] font-black uppercase tracking-widest rounded-xl border border-amber-500/30 transition-all cursor-pointer relative z-30"
+                          >
+                            Release Sensory Lock
+                          </button>
+                        </div>
+                      )}
                       <Scriptorium 
                         data={data} 
                         onSync={setScriptBlocks} 
@@ -2527,9 +2592,19 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
             setIsReviewingSensory(false);
             setSelectedDraftForPreview(null);
             
+            // Map label to activeVision key
+            const type = label.includes("Poetic") ? "poetic" : 
+                         label.includes("Direct") ? "direct" : 
+                         label.includes("Generational") ? "nostalgic" : "direct";
+
+            // Sync with global state so navigation knows about the selection
+            globalActions.setSelectedVision(type as any, label);
+            
             await flush({
               prose: text,
-              scriptBlocks: blocks
+              scriptBlocks: blocks,
+              activeVision: type,
+              activeVisionLabel: label
             });
             
             toast.success("Sensory Weave Sealed", {
