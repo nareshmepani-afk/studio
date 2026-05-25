@@ -14,6 +14,7 @@ let mockMentorModeActive = false;
 let mockIsManualMentor = false;
 const mockToggleMentor = vi.fn();
 const mockSetIsProductionLocked = vi.fn();
+const mockSetSelectedTake = vi.fn();
 
 // 1. Comprehensive Dynamic Mocking for the Studio Environment
 vi.mock('@/hooks/studio/useStudioState', () => ({
@@ -50,7 +51,8 @@ vi.mock('@/hooks/studio/useStudioState', () => ({
       setNarratorAgeAtTime: vi.fn(),
       setSynthesisError: vi.fn(),
       setSelectedVision: vi.fn(),
-      setIsProductionLocked: mockSetIsProductionLocked
+      setIsProductionLocked: mockSetIsProductionLocked,
+      setSelectedTake: mockSetSelectedTake
     }
   }) as any)
 }));
@@ -304,5 +306,28 @@ describe('ProductionDeck Idle Experience', () => {
     );
 
     expect(mockSetIsProductionLocked).toHaveBeenCalledWith(true);
+  });
+
+  it('automatically locks production and rehydrates selectedTake from prose if productionStage >= 1', () => {
+    const memoryDataStage1 = {
+      ...mockMemoryData,
+      productionStage: 1,
+      prose: 'Committed Sensory Take Script',
+      isProductionLocked: false // Database says false, but stage says 1
+    };
+
+    render(
+      <ProductionDeck 
+        memoryData={memoryDataStage1} 
+        onUpdate={mockUpdate} 
+        layoutMode="takeover" 
+        onToggleLayout={vi.fn()} 
+      />
+    );
+
+    // Should lock production state automatically
+    expect(mockSetIsProductionLocked).toHaveBeenCalledWith(true);
+    // Should rehydrate selectedTake with prose script
+    expect(mockSetSelectedTake).toHaveBeenCalledWith('Committed Sensory Take Script');
   });
 });

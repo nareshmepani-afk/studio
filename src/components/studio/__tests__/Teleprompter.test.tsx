@@ -40,7 +40,7 @@ describe('Teleprompter Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders default text when no script or take is selected', () => {
+  it('renders authorisation prompt when no take is selected', () => {
     mockUseStudioState.mockReturnValueOnce({
       selectedTake: null,
       script: '',
@@ -52,10 +52,10 @@ describe('Teleprompter Component', () => {
     });
 
     render(<Teleprompter />);
-    expect(screen.getByText('Awaiting script select...')).toBeInTheDocument();
+    expect(screen.getByText("Please select an authorised take in the Architect's Drawer.")).toBeInTheDocument();
   });
 
-  it('renders script text when selectedTake is not available', () => {
+  it('strictly enforces selectedTake over any background state and prompts if missing', () => {
     mockUseStudioState.mockReturnValueOnce({
       selectedTake: null,
       script: 'This is the main script content.',
@@ -67,7 +67,7 @@ describe('Teleprompter Component', () => {
     });
 
     render(<Teleprompter />);
-    expect(screen.getByText('This is the main script content.')).toBeInTheDocument();
+    expect(screen.getByText("Please select an authorised take in the Architect's Drawer.")).toBeInTheDocument();
   });
 
   it('prioritises selectedTake over script', () => {

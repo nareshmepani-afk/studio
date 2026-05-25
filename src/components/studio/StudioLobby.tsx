@@ -68,8 +68,13 @@ export const StudioLobby: React.FC<StudioLobbyProps> = ({ onConfirm }) => {
   };
 
   const handleSelectStation = (station: 'solo' | 'collaborative' | 'guest') => {
-    setSelectedStation(station);
-    handlePause(); // Once manually clicked/focused, disable auto-roll
+    if (selectedStation === station) {
+      handlePause();
+      onConfirm(station);
+    } else {
+      setSelectedStation(station);
+      handlePause(); // Once manually clicked/focused, disable auto-roll
+    }
   };
 
   const handleProceed = () => {
@@ -81,10 +86,10 @@ export const StudioLobby: React.FC<StudioLobbyProps> = ({ onConfirm }) => {
   const filmLeaderNumber = Math.max(1, Math.ceil(timeLeft));
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-slate-950 via-[#04040a] to-slate-950 min-h-[calc(100vh-160px)]">
+    <div className="flex-1 flex flex-col items-center justify-center p-8 pb-36 bg-gradient-to-b from-slate-950 via-[#04040a] to-slate-950 min-h-[calc(100vh-160px)]">
       
       {/* Title Header */}
-      <div className="text-center max-w-2xl mb-12 select-none">
+      <div className="text-center max-w-2xl mb-8 select-none">
         <span className="font-mono text-[9px] tracking-[0.5em] text-white/40 uppercase block mb-3">ACT III // PREPARATION</span>
         <h1 className="text-4xl font-headline tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-white to-purple-400 uppercase mb-4">
           THE STAGE DOOR
@@ -95,7 +100,7 @@ export const StudioLobby: React.FC<StudioLobbyProps> = ({ onConfirm }) => {
       </div>
 
       {/* Grid of Stations */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl w-full mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl w-full mb-8">
 
         {/* 1. SOLO BOOTH (Primary Stage) */}
         <div

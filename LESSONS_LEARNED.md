@@ -31,3 +31,16 @@ This document codifies the critical lessons learned from our development Sprints
 **Root Cause:** A failure to complete the full E2E (End-to-End) implementation of a feature. I committed code that introduced a new environment secret (`GUEST_SESSION_SECRET`) but failed to ensure that secret was configured in the deployment environment. This created a ticking time bomb that exploded in a later Sprint, and my failure to remember my own work led to a disastrous diagnostic process.
 
 **The Protocol:** A feature is not "Done" until its code, configuration, and documentation are complete. Before committing, I will review the full dependency chain of my changes. If a change requires a new secret, a database migration, an environment variable, or a documentation update, I will not consider the work complete until those corresponding assets are also created and committed. I am responsible for the *entire lifecycle* of the feature, not just the code.
+
+---
+
+### Lesson 4: On Regression Testing as Part of our DNA
+
+**Verdict:** The Sealed Ceremony
+**User Feedback:** "Don't you need to add a test, in order for the bug not appearing again, which would mean you learnt from a mistake?"
+**Root Cause:** A failure to build a permanent defensive wall around a critical fix. Fixing a bug in the code resolves the symptom for today, but without a dedicated regression test, future refactoring or state rehydration changes could easily re-introduce the same issue.
+
+**The Protocol:** Regression testing is a core part of my DNA. Whenever a bug is identified and resolved:
+1. I will immediately analyze the root cause and write a highly specific, isolated regression test targeting the exact failure state.
+2. I will not consider a bug "Resolved" or complete my turn until the regression test is written, integrated into the test runner, and verified as passing.
+3. Every lesson learned from a bug must be codified as an automated gatekeeper. This turns temporary corrections into permanent platform intelligence.

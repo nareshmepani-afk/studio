@@ -64,6 +64,7 @@ interface StudioState {
 // 2. Actions Interface
 interface StudioActions {
   toggleScrolling: () => void;
+  setScrolling: (val: boolean) => void;
   setScrollSpeed: (speed: number) => void;
   increaseSpeed: () => void;
   decreaseSpeed: () => void;
@@ -372,6 +373,7 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
 
   const actions: StudioActions = useMemo(() => ({
     toggleScrolling: () => setState(s => ({ ...s, isScrolling: !s.isScrolling })),
+    setScrolling: (val) => setState(s => ({ ...s, isScrolling: val })),
     setScrollSpeed: (speed) => setState(s => ({ ...s, scrollSpeed: speed })),
     increaseSpeed: () => setState(s => ({ ...s, scrollSpeed: s.scrollSpeed + 0.5 })),
     decreaseSpeed: () => setState(s => ({ ...s, scrollSpeed: Math.max(0.5, s.scrollSpeed - 0.5) })),

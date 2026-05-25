@@ -2261,6 +2261,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       
                       // Match Act I: Set selection dynamically in local state
                       globalActions.setSelectedVision(type as any, label);
+                      globalActions.setSelectedTake(text || '');
                       
                       await flush({
                         prose: text,
@@ -2599,6 +2600,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
 
             // Sync with global state so navigation knows about the selection
             globalActions.setSelectedVision(type as any, label);
+            globalActions.setSelectedTake(text || '');
             
             await flush({
               prose: text,

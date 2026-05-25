@@ -19,6 +19,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageToggle } from './LanguageToggle';
+import { OpticsPrivacyShield } from './OpticsPrivacyShield';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function Navbar() {
@@ -56,7 +57,7 @@ export function Navbar() {
   }
 
   const isAuthenticated = !!user;
-  const isStudio = pathname === '/studio' || pathname?.startsWith('/add-memory');
+  const isStudio = pathname?.startsWith('/studio') || pathname?.startsWith('/add-memory');
   const isInterviewer = pathname?.startsWith('/interviewer');
   
   // PREMIUM ACCESS LOGIC: Check if the user has a valid Director Pass
@@ -149,6 +150,7 @@ export function Navbar() {
           )}
 
           <div className="flex items-center ml-auto space-x-2 sm:space-x-4">
+            {isStudio && <OpticsPrivacyShield />}
             <LanguageToggle />
             <ThemeToggle />
             {isGuestDirectorView ? (

@@ -19,6 +19,21 @@ export function useCamera({ enabled = false }: UseCameraOptions = {}) {
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const [zoomValue, setZoomValue] = useState(1);
   const [capabilities, setCapabilities] = useState<any>(null);
+  
+  const [isMuted, setIsMuted] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('privacy_optics_muted') === 'true';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const handleMuteChange = () => {
+      setIsMuted(localStorage.getItem('privacy_optics_muted') === 'true');
+    };
+    window.addEventListener('privacy-optics-changed', handleMuteChange);
+    return () => window.removeEventListener('privacy-optics-changed', handleMuteChange);
+  }, []);
 
   // Check for multiple cameras (Front vs Back)
   useEffect(() => {
@@ -37,6 +52,11 @@ export function useCamera({ enabled = false }: UseCameraOptions = {}) {
   }, []);
 
   const startStream = useCallback(async () => {
+    if (isMuted) {
+      console.log("[useCamera] Optics are muted by privacy shield. Aborting startStream.");
+      stopStream();
+      return;
+    }
     stopStream();
     setError(null);
     setCameraError(null);
@@ -168,7 +188,7 @@ export function useCamera({ enabled = false }: UseCameraOptions = {}) {
         console.error(lastError);
       }
     }
-  }, [facingMode, stopStream]);
+  }, [facingMode, isMuted, stopStream]);
 
   const applyZoom = useCallback(async (value: number) => {
      if (streamRef.current) {
@@ -188,7 +208,7 @@ export function useCamera({ enabled = false }: UseCameraOptions = {}) {
   }, []);
 
   useEffect(() => {
-    if (enabled) {
+    if (enabled && !isMuted) {
       startStream();
     } else {
       stopStream();
@@ -196,7 +216,47 @@ export function useCamera({ enabled = false }: UseCameraOptions = {}) {
       setCameraError(null);
     }
     return () => stopStream();
-  }, [enabled, facingMode, startStream, stopStream]); // Restarts when mode changes
+  }, [enabled, isMuted, facingMode, startStream, stopStream]); // Restarts when mode or mute changes
+
+  // Listen to browser permission state changes and reload automatically when granted
+  useEffect(() => {
+    if (!enabled || !cameraError || cameraError.type !== 'permission') return;
+
+    let cameraStatus: PermissionStatus | null = null;
+    let micStatus: PermissionStatus | null = null;
+
+    const handlePermissionChange = () => {
+      const camGranted = cameraStatus ? cameraStatus.state === 'granted' : false;
+      const micGranted = micStatus ? micStatus.state === 'granted' : false;
+
+      // In Chrome, if a previously denied permission changes to 'granted',
+      // we can automatically trigger a page reload to apply the new devices cleanly
+      // and close the browser's black reload bar instantly!
+      if (camGranted || micGranted) {
+        console.log('[useCamera] Permission granted via browser Site Settings. Reloading to apply settings...');
+        window.location.reload();
+      }
+    };
+
+    // Query camera status
+    if (typeof navigator !== 'undefined' && navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'camera' as any }).then(status => {
+        cameraStatus = status;
+        status.onchange = handlePermissionChange;
+      }).catch(e => console.warn('Permissions query for camera not supported', e));
+
+      // Query microphone status
+      navigator.permissions.query({ name: 'microphone' as any }).then(status => {
+        micStatus = status;
+        status.onchange = handlePermissionChange;
+      }).catch(e => console.warn('Permissions query for microphone not supported', e));
+    }
+
+    return () => {
+      if (cameraStatus) cameraStatus.onchange = null;
+      if (micStatus) micStatus.onchange = null;
+    };
+  }, [enabled, cameraError]);
 
   return { 
     stream, 
@@ -207,6 +267,7 @@ export function useCamera({ enabled = false }: UseCameraOptions = {}) {
     facingMode,
     zoomValue,
     applyZoom,
-    capabilities
+    capabilities,
+    isMuted
   };
 }

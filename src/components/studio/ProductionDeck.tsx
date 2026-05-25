@@ -78,6 +78,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         durationUnit,
         narratorAgeAtTime,
         isProductionLocked,
+        selectedTake,
         mentorContext,
         actions: {
             setIsReviewing, 
@@ -93,7 +94,8 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             setDurationQuantity,
             setDurationUnit,
             setNarratorAgeAtTime,
-            setIsProductionLocked
+            setIsProductionLocked,
+            setSelectedTake
         }
     } = useGlobalStudioState();
 
@@ -161,10 +163,16 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         if (memoryData.narratorAgeAtTime !== undefined) setNarratorAgeAtTime(memoryData.narratorAgeAtTime);
         
         // 6.5. Sync production lock
-        if (memoryData.isProductionLocked !== undefined) {
-            setIsProductionLocked(memoryData.isProductionLocked);
+        const isLocked = !!(memoryData.isProductionLocked || targetStage >= 1);
+        setIsProductionLocked(isLocked);
+        if (isLocked) {
+            if (typeof setSelectedTake === 'function') {
+                setSelectedTake(memoryData.prose || memoryData.description || null);
+            }
         } else {
-            setIsProductionLocked(false);
+            if (typeof setSelectedTake === 'function') {
+                setSelectedTake(null);
+            }
         }
         
         // 7. Reset transient state
@@ -199,18 +207,33 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         setNarratorAgeAtTime,
         setIsProductionLocked,
         setIsGeneratingDrafts,
+        setSelectedTake,
     ]);
 
     // Sync production lock state dynamically whenever it changes in memoryData,
     // bypassing the early-return ID-check guard of the main sync effect.
     useEffect(() => {
         if (!memoryData?.id) return;
-        if (memoryData.isProductionLocked !== undefined) {
-            setIsProductionLocked(memoryData.isProductionLocked);
+        const isLocked = !!(memoryData.isProductionLocked || (memoryData.productionStage || 0) >= 1);
+        setIsProductionLocked(isLocked);
+        if (isLocked) {
+            if (typeof setSelectedTake === 'function') {
+                setSelectedTake(memoryData.prose || memoryData.description || null);
+            }
         } else {
-            setIsProductionLocked(false);
+            if (typeof setSelectedTake === 'function') {
+                setSelectedTake(null);
+            }
         }
-    }, [memoryData?.id, memoryData?.isProductionLocked, setIsProductionLocked]);
+    }, [
+        memoryData?.id,
+        memoryData?.isProductionLocked,
+        memoryData?.productionStage,
+        memoryData?.prose,
+        memoryData?.description,
+        setIsProductionLocked,
+        setSelectedTake
+    ]);
 
 
     const [sidebarWidth, setSidebarWidth] = useState(320); // Default width

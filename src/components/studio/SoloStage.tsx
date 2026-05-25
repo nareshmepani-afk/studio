@@ -20,7 +20,7 @@ import {
   UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, 
   Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
   Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
-  Lock
+  Lock, ShieldAlert
 } from 'lucide-react';
 import { generateInterviewQuestion, analyzeFraming } from '@/actions/aiWeaver';
 import { synthesizeStudioSpeech } from '@/actions/studio-vocal';
@@ -40,6 +40,12 @@ import { CinemaMonitor } from './CinemaMonitor';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { Teleprompter } from './Teleprompter';
 import { useAudioMonitor } from '@/hooks/useAudioMonitor';
+import { useCaptureLogic } from '@/hooks/studio/useCaptureLogic';
+import { useAlchemy } from '@/hooks/studio/useAlchemy';
+import { useQRBridge } from '@/hooks/studio/useQRBridge';
+import { useInterviewMode } from '@/hooks/studio/useInterviewMode';
+import { QRController } from './QRController';
+import { BeatSheet } from './BeatSheet';
 
 interface RoomProps {
     data: Memory;
@@ -97,9 +103,22 @@ export default function SoloStage({
   
   // MOD-14: Cinematic Polish State
   const [prompterSize, setPrompterSize] = useState<'sm' | 'md' | 'lg'>('md');
+  const [prompterLayout, setPrompterLayout] = useState<'side' | 'center'>('side');
 
   const stageRef = useRef<HTMLDivElement>(null);
-  const { isReviewing, isProductionLocked, actions: globalActions } = useStudioState();
+  const { isReviewing, isProductionLocked, selectedTake, actions: globalActions } = useStudioState();
+  
+  // QR Mobile Remote Bridge
+  const { peerState } = useQRBridge(data?.id);
+  
+  // Interview Modality Modeler
+  const {
+    modalityMode,
+    toggleModalityMode,
+    triggerNextCue,
+    activeBeatIndex,
+    setActiveBeatIndex
+  } = useInterviewMode();
   
   // Cinematic Pipeline State (Shared via Firestore)
   // BUGFIX: Prioritize global stage from prop, but allow local data fallback ONLY if prop is undefined.
@@ -116,7 +135,7 @@ export default function SoloStage({
 
 
   // 1. Initialize local Camera stream (Only when explicitly enabled)
-  const { stream, error, cameraError } = useCamera({ enabled: isCameraActive });
+  const { stream, error, cameraError, isMuted } = useCamera({ enabled: isCameraActive });
   
   // 2. Bind the robust MediaRecorder Hook
   const { 
@@ -133,6 +152,56 @@ export default function SoloStage({
     uploadProgress, 
     uploadResult 
   } = useMediaRecorder(stream);
+
+  // Bind Cinematic Capture & Sealing Hooks
+  const {
+    countIn,
+    isCountingIn,
+    statusLabel,
+    startCapture,
+    cancelCapture
+  } = useCaptureLogic({
+    stream,
+    startRecording,
+    stopRecording,
+    isRecording
+  });
+
+  // Listen to remote reset / restart take commands safely
+  useEffect(() => {
+    const handleRestartTake = () => {
+      cancelCapture();
+      setActiveBeatIndex(0);
+      toast.info("Take Restarted", { description: "Prompt scroll position and recording state have been safely reset." });
+    };
+    window.addEventListener('studio-restart-take', handleRestartTake);
+    return () => window.removeEventListener('studio-restart-take', handleRestartTake);
+  }, [cancelCapture, setActiveBeatIndex]);
+
+  const {
+    isSaving: isAlchemySaving,
+    progress: alchemyProgress,
+    error: alchemyError,
+    isComplete: isAlchemyComplete,
+    isRetrying: isAlchemyRetrying,
+    startAlchemy
+  } = useAlchemy({
+    userId: data?.userId,
+    memoryId: data?.id,
+    selectedTake: selectedTake || data?.prose || data?.description || null,
+    wordCount: wordCount || 0,
+    onComplete: () => {
+      console.log("[SoloStage] Alchemy Complete! Advancing production deck to Act IV.");
+    }
+  });
+
+  // AUTOMATION: Silently upload and seal take in database immediately upon MediaRecorder stop
+  useEffect(() => {
+    if (recordedBlob && !isAlchemySaving && !isAlchemyComplete) {
+      console.log("[SoloStage] Compiled performance reel acquired. Triggering silent Alchemy save...");
+      startAlchemy(recordedBlob);
+    }
+  }, [recordedBlob, isAlchemySaving, isAlchemyComplete, startAlchemy]);
 
   const micLevel = useAudioLevel(stream);
   
@@ -493,27 +562,97 @@ export default function SoloStage({
             autoPlay 
             playsInline 
             muted
-            className="absolute inset-0 w-full h-full object-cover z-0 grayscale-[0.2] contrast-[1.1]"
+            className={cn(
+              "absolute inset-0 w-full h-full object-cover z-0 grayscale-[0.2] contrast-[1.1] transition-all duration-[5000ms] ease-out",
+              isCountingIn ? "blur-[20px]" : "blur-0"
+            )}
           />
+          {isMuted && (
+            <div className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center z-20 animate-fade-in border border-rose-500/20 rounded-[2.5rem]">
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="flex flex-col items-center max-w-md text-center px-6"
+              >
+                <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(239,68,68,0.1)]">
+                  <ShieldAlert className="w-8 h-8 text-rose-400 animate-pulse" />
+                </div>
+                <h3 className="font-headline text-lg font-bold text-white uppercase tracking-wider mb-2">Optics Shield Active</h3>
+                <p className="text-xs text-white/50 leading-relaxed">
+                  Your camera and microphone streams are completely stopped at the hardware layer. Click the shield icon in the top toolbar to enable access.
+                </p>
+              </motion.div>
+            </div>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/40 z-10 pointer-events-none" />
           
           {/* Cinematic Teleprompter Overlay */}
           <motion.div 
-            animate={{ 
-              width: prompterSize === 'sm' ? 320 : prompterSize === 'md' ? 480 : 720,
-              height: prompterSize === 'sm' ? 300 : prompterSize === 'md' ? 500 : 700
+            animate={prompterLayout === 'center' ? {
+              left: "50%",
+              top: "50%",
+              x: "-50%",
+              y: "-50%",
+              width: "75%",
+              height: "65%",
+            } : {
+              left: "auto",
+              right: 40,
+              top: 40,
+              x: 0,
+              y: 0,
+              width: prompterSize === 'sm' ? 380 : prompterSize === 'md' ? 580 : 820,
+              height: prompterSize === 'sm' ? 350 : prompterSize === 'md' ? 520 : 720
             }}
-            className="absolute top-10 right-10 z-30 bg-zinc-950/85 backdrop-blur-3xl border border-white/10 p-8 rounded-[2rem] shadow-2xl group/points transition-all duration-700 hover:bg-zinc-900/90 overflow-hidden flex flex-col pointer-events-auto"
+            transition={{ type: "spring", stiffness: 120, damping: 22 }}
+            className={cn(
+              "z-30 border border-white/10 p-8 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col pointer-events-auto",
+              prompterLayout === 'center'
+                ? "absolute bg-zinc-950/65 backdrop-blur-md opacity-90"
+                : "absolute bg-zinc-950/85 backdrop-blur-3xl hover:bg-zinc-900/90 duration-700"
+            )}
           >
             <div className="flex items-center justify-between mb-4 shrink-0">
               <div className="flex items-center gap-3">
                 <div className={`w-2.5 h-2.5 rounded-full ${isRecording ? 'bg-rose-500 animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.6)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]'}`} />
-                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">Stage Prompt // v2.0</span>
+                <span className="text-[10px] font-black text-emerald-400/80 uppercase tracking-[0.3em] animate-pulse">BLUEPRINT: SELECTED TAKE (ACT II)</span>
               </div>
               <div className="flex items-center gap-2">
+                {/* QR Remote Controller Pair Trigger */}
+                <QRController memoryId={data?.id || ''} peerState={peerState} />
+
+                {/* Modality Mode Toggle Button */}
+                <button
+                  onClick={toggleModalityMode}
+                  className={cn(
+                    "px-3 py-1.5 rounded-xl border text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer",
+                    modalityMode === 'interview'
+                      ? "bg-sky-500/20 border-sky-500/30 text-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.25)] hover:bg-sky-500/30"
+                      : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10"
+                  )}
+                  title="Toggle Scripted vs Interview Mode"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{modalityMode === 'interview' ? 'Interview' : 'Scripted'}</span>
+                </button>
+
+                <button 
+                  onClick={() => setPrompterLayout(prev => prev === 'side' ? 'center' : 'side')}
+                  className={cn(
+                    "p-1.5 rounded-lg border text-white/30 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5",
+                    prompterLayout === 'center' ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" : "bg-white/5 border-white/10"
+                  )}
+                  title="Toggle Eye-Contact Center Mode"
+                >
+                  <Layout className="w-3.5 h-3.5" />
+                  <span className="text-[9px] font-black uppercase tracking-widest hidden sm:inline">
+                    {prompterLayout === 'center' ? 'Center' : 'Overlay'}
+                  </span>
+                </button>
                 <button 
                   onClick={() => setPrompterSize(prev => prev === 'sm' ? 'md' : prev === 'md' ? 'lg' : 'sm')}
                   className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/30 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                  title="Toggle Teleprompter Size"
                 >
                   <Maximize2 className="w-3.5 h-3.5" />
                 </button>
@@ -523,24 +662,23 @@ export default function SoloStage({
             <div className="flex-grow flex gap-8 overflow-hidden min-h-0">
               {/* Main Teleprompter */}
               <div className="flex-grow min-w-0 h-full">
-                <Teleprompter />
+                <Teleprompter 
+                  modalityMode={modalityMode}
+                  activeBeatIndex={activeBeatIndex}
+                  onActiveBeatChange={setActiveBeatIndex}
+                />
               </div>
 
-              {/* Directorial Sidebar (Conditional) */}
-              {data?.structuredScript && prompterSize !== 'sm' && (
+              {/* Directorial Sidebar (Conditional) - Restricted to 'lg' size to prevent layout collisions */}
+              {data?.structuredScript && prompterSize === 'lg' && (
                 <div className="w-64 flex-none border-l border-white/5 pl-8 space-y-8 overflow-y-auto custom-scrollbar">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-sky-400/60">
-                      <Sparkles className="w-3 h-3" />
-                      <span className="text-[9px] font-black uppercase tracking-widest">Beat Sheet</span>
-                    </div>
-                    {data.structuredScript.beatSheet.map((item, i) => (
-                      <div key={i} className="flex items-start gap-3 group/beat">
-                        <div className="w-1 h-1 rounded-full bg-sky-500/30 mt-1.5 group-hover/beat:bg-sky-400 transition-colors" />
-                        <p className="text-[10px] font-bold text-white/50 leading-tight group-hover/beat:text-sky-300 transition-colors">{item}</p>
-                      </div>
-                    ))}
-                  </div>
+                  <BeatSheet 
+                    beats={data.structuredScript.beatSheet}
+                    activeBeatIndex={activeBeatIndex}
+                    onBeatClick={(i) => {
+                      window.dispatchEvent(new CustomEvent('studio-scroll-to-beat', { detail: { index: i } }));
+                    }}
+                  />
 
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-emerald-400/60">
@@ -591,7 +729,7 @@ export default function SoloStage({
 
           <div className="absolute inset-0 z-20 flex flex-col justify-between p-10 w-full mx-auto pointer-events-none">
              <div className="flex justify-between items-start w-full pointer-events-auto">
-               <AnimatePresence>
+               <AnimatePresence mode="wait">
                  {isRecording ? (
                    <motion.div 
                      key="recording"
@@ -607,9 +745,19 @@ export default function SoloStage({
                      />
                      {formatTime(recordingTime)}
                    </motion.div>
+                 ) : isCountingIn ? (
+                   <motion.div 
+                     key="countin"
+                     initial={{ opacity: 0, y: -20 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     className="flex items-center gap-3 px-4 py-2 rounded-full font-mono font-bold tracking-widest backdrop-blur-md border bg-emerald-500/20 border-emerald-500 text-emerald-200"
+                   >
+                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                     {statusLabel}
+                   </motion.div>
                  ) : (
                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-white/20 text-white/50 backdrop-blur-md text-xs">
-                     <Disc className="w-3.5 h-3.5" /> STUDIO READY
+                     <Disc className="w-3.5 h-3.5" /> {statusLabel}
                    </div>
                  )}
                </AnimatePresence>
@@ -625,7 +773,27 @@ export default function SoloStage({
                )}
              >
                 <AnimatePresence>
-                  {isInterviewMode && (
+                  {isCountingIn && countIn !== null && (
+                    <motion.div 
+                      key="countdown"
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: [1, 1.2, 1], opacity: 1 }}
+                      exit={{ scale: 1.5, opacity: 0 }}
+                      transition={{ duration: 0.8 }}
+                      className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none z-40"
+                    >
+                      <span className="font-serif text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-emerald-400 drop-shadow-[0_0_40px_rgba(16,185,129,0.6)]">
+                        {countIn}
+                      </span>
+                      <span className="text-xs font-mono uppercase tracking-[0.4em] text-white/40 mt-4 animate-pulse">
+                        {statusLabel}
+                      </span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                  {isInterviewMode && !isCountingIn && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl w-full bg-slate-950/70 backdrop-blur-3xl border border-sky-500/30 rounded-[2.5rem] p-8 shadow-2xl text-center pointer-events-auto">
                         <p className="text-xl font-headline text-white leading-relaxed mb-6 italic">"{currentQuestion || 'Ready to start the interview...'}"</p>
                         <div className="flex items-center gap-4 justify-center">
@@ -646,8 +814,12 @@ export default function SoloStage({
                    {isInterviewMode ? 'Interviewer Active' : 'Start Interview'}
                 </button>
 
-                {!isRecording ? (
-                  <button onClick={startRecording} disabled={!stream || uploading} className="w-20 h-20 rounded-full bg-white/10 border-4 border-white/40 hover:border-rose-500 hover:bg-rose-500/20 transition-all flex items-center justify-center group">
+                {isCountingIn ? (
+                  <button onClick={cancelCapture} className="w-20 h-20 rounded-full bg-emerald-500/10 border-4 border-emerald-500 hover:bg-emerald-500/30 transition-all flex items-center justify-center animate-pulse group">
+                    <Square className="w-6 h-6 text-emerald-400 fill-current" />
+                  </button>
+                ) : !isRecording ? (
+                  <button onClick={startCapture} disabled={!stream || uploading || isAlchemySaving} className="w-20 h-20 rounded-full bg-white/10 border-4 border-white/40 hover:border-rose-500 hover:bg-rose-500/20 transition-all flex items-center justify-center group">
                     <div className="w-6 h-6 rounded-full bg-rose-500 group-hover:scale-125 transition-all" />
                   </button>
                 ) : (
@@ -658,22 +830,86 @@ export default function SoloStage({
 
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-4 bg-black/40 backdrop-blur-md px-6 py-2.5 rounded-full border border-white/10 pointer-events-auto">
-                    <Volume2 className="w-4 h-4 text-emerald-400" />
+                    <Volume2 className={cn("w-4 h-4 transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")} />
                     {/* Glowing Frequency Waveform Visualizer */}
                     <div className="flex items-end gap-[2px] h-6 w-32 px-1">
                       {waveform.slice(0, 24).map((value, i) => (
                         <motion.div
                           key={i}
-                          className="w-[3px] bg-emerald-400 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"
-                          animate={{ height: `${Math.max(4, value * 24)}px` }}
+                          className={cn(
+                            "w-[3px] rounded-full transition-all",
+                            isRecording 
+                              ? "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)]" 
+                              : "bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                          )}
+                          animate={{ height: `${Math.max(4, value * (isRecording ? 48 : 24))}px` }}
                           transition={{ type: 'spring', stiffness: 300, damping: 15 }}
                         />
                       ))}
                     </div>
-                    <span className="text-[10px] font-mono font-bold text-emerald-400 w-8 text-right">{volume}%</span>
+                    <span className={cn("text-[10px] font-mono font-bold w-8 text-right transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")}>{volume}%</span>
                   </div>
                 </div>
              </div>
+
+             {/* Cinematic Slate / Alchemy Saving Ceremony Overlay (MW-35) */}
+             <AnimatePresence>
+                {isAlchemySaving && (
+                   <motion.div 
+                     initial={{ opacity: 0 }} 
+                     animate={{ opacity: 1 }} 
+                     exit={{ opacity: 0 }} 
+                     className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/98 backdrop-blur-2xl p-10"
+                   >
+                      {/* Vintage Projector/Slate Style Loader */}
+                      <div className="relative w-80 aspect-video rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl mb-8 bg-black">
+                         {recordedBlob && (
+                            <video 
+                               autoPlay 
+                               loop 
+                               muted 
+                               playsInline
+                               className="w-full h-full object-cover opacity-60 grayscale scale-102 blur-[0.5px]"
+                               src={URL.createObjectURL(recordedBlob)}
+                            />
+                         )}
+                         {/* Mastering Watermark */}
+                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
+                            <div className="border border-rose-500/40 px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-400 font-mono text-[9px] uppercase tracking-widest animate-pulse flex items-center gap-2">
+                               <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                               Mastering in Progress
+                            </div>
+                         </div>
+                      </div>
+
+                      <h3 className="text-2xl font-black text-white uppercase tracking-[0.2em] mb-2 text-center">
+                         {isAlchemyRetrying ? "Sync Interrupted" : "Synthesising Master"}
+                      </h3>
+                      
+                      <p className="text-xs text-white/50 max-w-sm text-center leading-relaxed mb-6 font-mono uppercase tracking-wider">
+                         {isAlchemyRetrying 
+                            ? "Connection interrupted. Retrying authorisation..."
+                            : "Sealing Ceremony in progress. Please do not close the studio."}
+                      </p>
+
+                      {/* Progress Bar */}
+                      <div className="w-full max-w-md bg-white/5 h-2 rounded-full overflow-hidden border border-white/5 relative mb-4">
+                         <motion.div 
+                            className={cn(
+                              "h-full rounded-full transition-all duration-300", 
+                              isAlchemyRetrying ? "bg-amber-500" : "bg-emerald-500"
+                            )} 
+                            style={{ width: `${alchemyProgress}%` }}
+                         />
+                      </div>
+
+                      <div className="flex items-center gap-2 font-mono text-[9px] text-white/30 uppercase tracking-widest">
+                         <span>Archival Progress:</span>
+                         <span className={isAlchemyRetrying ? "text-amber-400 animate-pulse" : "text-emerald-400 font-bold"}>{alchemyProgress}%</span>
+                      </div>
+                   </motion.div>
+                )}
+             </AnimatePresence>
           </div>
 
           {error ? (() => {
@@ -694,7 +930,7 @@ export default function SoloStage({
                        Chrome / Edge / Firefox
                     </div>
                     <ul className="space-y-1.5 text-white/50 pl-5 list-disc">
-                       <li>Click the <strong className="text-white font-semibold">Lock Icon 🔒</strong> next to the URL in the address bar.</li>
+                       <li>Click the <strong className="text-white font-semibold">Site Settings / Lock Icon (🔒 or 🎛️ sliders)</strong> next to the URL in the address bar.</li>
                        <li>Toggle <strong className="text-white font-semibold">Camera</strong> and <strong className="text-white font-semibold">Microphone</strong> to <strong className="text-emerald-400 font-semibold">Allow</strong>.</li>
                     </ul>
                  </div>
