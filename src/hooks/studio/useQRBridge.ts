@@ -47,14 +47,15 @@ export function useQRBridge(memoryId: string | null) {
           switch (data.type) {
             case 'PLAY_PAUSE':
               actions.toggleScrolling();
+              window.dispatchEvent(new CustomEvent('studio-remote-command', { detail: { command: 'PLAY_PAUSE' } }));
               break;
             case 'NEXT_CUE':
-              // Dispatch event to advance prompter
               window.dispatchEvent(new Event('studio-next-cue'));
+              window.dispatchEvent(new CustomEvent('studio-remote-command', { detail: { command: 'NEXT_CUE' } }));
               break;
             case 'RESTART_TAKE':
-              // Dispatch event to restart active performance take safely
               window.dispatchEvent(new Event('studio-restart-take'));
+              window.dispatchEvent(new CustomEvent('studio-remote-command', { detail: { command: 'RESTART_TAKE' } }));
               break;
             default:
               console.warn('[useQRBridge] Unknown command type:', data.type);

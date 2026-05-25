@@ -31,6 +31,7 @@ vi.mock('framer-motion', () => {
     },
     AnimatePresence: ({ children }: any) => <>{children}</>,
     LayoutGroup: ({ children }: any) => <>{children}</>,
+    useDragControls: () => ({ start: vi.fn() }),
   };
 });
 

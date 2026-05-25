@@ -89,7 +89,7 @@ export const AIPolishButton: React.FC<AIPolishButtonProps> = ({
             stroke="currentColor"
             strokeWidth="2"
             strokeDasharray="289.02"
-            initial={{ strokeDashoffset: 289.02 }}
+            initial={{ strokeDashoffset: 289.02, opacity: 0.2 }}
             animate={{ 
               strokeDashoffset: disabled ? 0 : 289.02 - (289.02 * charge) / 100,
               opacity: ignitionState === 'dormant' ? 0.2 : 1,

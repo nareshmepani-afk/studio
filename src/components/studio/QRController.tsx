@@ -15,14 +15,17 @@ interface QRControllerProps {
 
 export function QRController({ memoryId, peerState }: QRControllerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [pairingUrl, setPairingUrl] = useState('');
+  const [host, setHost] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Use the window location to build the URL dynamically so LAN IPs work natively
-      setPairingUrl(`${window.location.protocol}//${window.location.host}/remote?sessionId=${memoryId}`);
+      setHost(window.location.hostname);
     }
-  }, [memoryId]);
+  }, []);
+
+  const pairingUrl = typeof window !== 'undefined'
+    ? `${window.location.protocol}//${host || window.location.hostname}${window.location.port ? `:${window.location.port}` : ''}/remote?sessionId=${memoryId}`
+    : '';
 
   return (
     <>
@@ -59,7 +62,32 @@ export function QRController({ memoryId, peerState }: QRControllerProps) {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col items-center justify-center p-6 bg-white/5 rounded-2xl border border-white/10 gap-4 my-2">
+          {/* Local network configuration input to solve phone Wi-Fi mapping (Only visible in local dev) */}
+          {typeof window !== 'undefined' && (
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1' ||
+            window.location.hostname.startsWith('192.168.') ||
+            window.location.hostname.startsWith('10.') ||
+            window.location.hostname.startsWith('172.')
+          ) && (
+            <div className="space-y-1 bg-white/5 p-3.5 rounded-xl border border-white/10 my-1 animate-fadeIn">
+              <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block mb-1">
+                Local IP Address / Hostname
+              </label>
+              <input 
+                type="text" 
+                value={host}
+                onChange={(e) => setHost(e.target.value)}
+                className="w-full bg-black/50 border border-white/10 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-sky-500/50"
+                placeholder="e.g. 192.168.1.50"
+              />
+              <p className="text-[9px] text-zinc-500 leading-relaxed mt-1">
+                Change <span className="text-zinc-300 font-bold">"localhost"</span> to your computer's local LAN IP (e.g. 192.168.x.x) so your phone can locate this computer over Wi-Fi.
+              </p>
+            </div>
+          )}
+
+          <div className="flex flex-col items-center justify-center p-6 bg-white/5 rounded-2xl border border-white/10 gap-4 my-1">
             <div className="relative p-3 bg-white rounded-xl">
               {pairingUrl ? (
                 <QRCodeCanvas value={pairingUrl} size={200} level="H" includeMargin={false} className="rounded" />

@@ -15,6 +15,7 @@ interface TeleprompterProps {
   modalityMode?: 'scripted' | 'interview';
   activeBeatIndex?: number;
   onActiveBeatChange?: (index: number) => void;
+  isMini?: boolean;
 }
 
 const highlightSensoryAnchors = (text: string): string => {
@@ -46,7 +47,8 @@ const highlightSensoryAnchors = (text: string): string => {
 export const Teleprompter: React.FC<TeleprompterProps> = ({
   modalityMode = 'scripted',
   activeBeatIndex: externalActiveBeatIndex,
-  onActiveBeatChange
+  onActiveBeatChange,
+  isMini = false
 }) => {
   const { 
     selectedTake, 
@@ -243,7 +245,8 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   return (
     <div className="flex flex-col h-full w-full select-none">
       {/* Control Header: UK English Labels */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4 mb-4 shrink-0">
+      {!isMini && (
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4 mb-4 shrink-0">
         <div className="flex items-center gap-2">
           {modalityMode !== 'interview' && (
             <button 
@@ -330,18 +333,19 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           </div>
         </div>
       </div>
+      )}
 
       {/* Main Script Scrolling Area */}
       <div 
         ref={containerRef}
         onScroll={handleScrollTelemetry}
-        style={{ fontSize: `${fontSize}px` }}
+        style={{ fontSize: isMini ? '16px' : `${fontSize}px` }}
         className={cn(
           "flex-grow overflow-y-auto pr-2 custom-scrollbar scroll-smooth leading-relaxed italic font-serif select-none relative",
           isMirrored && "transform -scale-x-100"
         )}
       >
-        <div className="prose-invert opacity-90 pb-[400px] select-none space-y-8">
+        <div className={cn("prose-invert opacity-90 select-none", isMini ? "pb-[150px] space-y-4" : "pb-[400px] space-y-8")}>
           {paragraphs.map((para, idx) => {
             const html = highlightSensoryAnchors(para);
             const isActive = idx === activeBeatIndex;
