@@ -116,10 +116,7 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
           opacity: 1, // Always visible (Icons)
           x: 0 // Always in frame
         }}
-        className={cn(
-          "h-full bg-slate-950 border-r border-white/5 flex flex-col overflow-hidden relative",
-          currentStage === 2 && !isRetracted ? "opacity-0 pointer-events-none" : "opacity-100" // Clear the Frame logic (handled here or in parent)
-        )}
+        className="h-full bg-slate-950 border-r border-white/5 flex flex-col overflow-hidden relative"
       >
         {/* Rail Background Effects */}
         <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent pointer-events-none" />

@@ -40,7 +40,7 @@ const VOICE_MAP: Record<string, string> = {
  */
 export async function synthesizeStudioSpeech(text: string, voiceName: string = 'Achird') {
   if (!credentials) {
-    throw new Error("Missing Studio Credentials for TTS.");
+    return null;
   }
 
   try {
@@ -87,7 +87,7 @@ export async function synthesizeStudioSpeech(text: string, voiceName: string = '
     // Return base64 audioContent
     return data.audioContent;
   } catch (error: any) {
-    console.error("[TTS Action Failure]", error);
-    throw new Error(error.message || "Speech Synthesis Failed.");
+    console.warn("[TTS Action Failure - Resilient Bypass Active]", error.message || error);
+    return null;
   }
 }

@@ -109,6 +109,10 @@ export default function SoloStage({
   // MOD-14: Cinematic Polish State
   const [prompterSize, setPrompterSize] = useState<'mini' | 'sm' | 'md' | 'lg'>('md');
   const [prompterLayout, setPrompterLayout] = useState<'side' | 'center'>('side');
+  const [techAlignmentConfirmed, setTechAlignmentConfirmed] = useState(false);
+  const [opticsBrightness, setOpticsBrightness] = useState(100);
+  const [opticsContrast, setOpticsContrast] = useState(110);
+  const [opticsFilter, setOpticsFilter] = useState<'default' | 'warm' | 'cool' | 'noir'>('default');
 
   const stageRef = useRef<HTMLDivElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
@@ -146,7 +150,7 @@ export default function SoloStage({
 
 
   // 1. Initialize local Camera stream (Only when explicitly enabled)
-  const { stream, error, cameraError, isMuted } = useCamera({ enabled: isCameraActive });
+  const { stream, error, cameraError, isMuted, capabilities, applyZoom, zoomValue, switchCamera, hasMultipleCameras } = useCamera({ enabled: isCameraActive });
   const [isPersistenceSaving, setIsPersistenceSaving] = useState(false);
   
   // 2. Bind the robust MediaRecorder Hook
@@ -634,7 +638,6 @@ export default function SoloStage({
       )}
     </div>
   );
-
   const renderRecording = () => (
     <div className="w-full h-full flex flex-col items-center justify-center relative pb-24">
        <div 
@@ -647,14 +650,23 @@ export default function SoloStage({
             playsInline 
             muted
             className={cn(
-              "absolute inset-0 w-full h-full object-cover z-0 grayscale-[0.2] contrast-[1.1] transition-all duration-[5000ms] ease-out",
+              "absolute inset-0 w-full h-full object-cover z-0 transition-all duration-500 ease-out",
               isCountingIn ? "blur-[20px]" : "blur-0"
             )}
+            style={{
+              filter: `
+                brightness(${opticsBrightness || 100}%) 
+                contrast(${opticsContrast || 100}%) 
+                ${opticsFilter === 'noir' ? 'grayscale(1) contrast(1.2)' : ''}
+                ${opticsFilter === 'warm' ? 'sepia(0.2) saturate(1.1) hue-rotate(-10deg)' : ''}
+                ${opticsFilter === 'cool' ? 'saturate(0.9) hue-rotate(10deg)' : ''}
+              `
+            }}
           />
           {mounted && isMuted && (
             <div 
               onClick={unmuteOptics}
-              className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center z-20 animate-fade-in border border-rose-500/20 rounded-[2.5rem] cursor-pointer group/cam transition-all duration-500 hover:bg-slate-950/90"
+              className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center z-[35] animate-fade-in border border-rose-500/20 rounded-[2.5rem] cursor-pointer group/cam transition-all duration-500 hover:bg-slate-950/90"
               title="Click anywhere to ignite camera and mic"
             >
               <motion.div 
@@ -711,6 +723,17 @@ export default function SoloStage({
                       Authorised
                     </span>
                   </div>
+
+                  {/* Dynamic AI Director Standby Cue (MW-39 integration) */}
+                  {mentorActive && (
+                    <div className="p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl flex items-start gap-2.5 shadow-[0_0_15px_rgba(16,185,129,0.02)] animate-pulse">
+                      <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <div className="flex flex-col text-left">
+                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Director's Rehearsal Tip</span>
+                        <span className="text-[10px] text-white/60 leading-relaxed font-sans">Relax, frame yourself in the center, and click below to ignite camera & mic. We will linter your shot once live.</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <button 
@@ -784,8 +807,8 @@ export default function SoloStage({
           </AnimatePresence>
 
           {/* Floating 'Start Performance' Red record ignition trigger overlay */}
-          {mounted && !isMuted && !isRecording && !isCountingIn && (
-            <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none animate-fade-in">
+          {mounted && !isMuted && !isRecording && !isCountingIn && techAlignmentConfirmed && (
+            <div className="absolute left-[25%] top-1/2 -translate-x-1/2 -translate-y-1/2 z-[35] pointer-events-none animate-fade-in">
               <motion.button
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -798,6 +821,198 @@ export default function SoloStage({
                 <span>Start Performance</span>
               </motion.button>
             </div>
+          )}
+
+          {/* Floating 'Director's Tech Scout' Calibration Card (MW-39 full-view check) */}
+          {mounted && !isMuted && !techAlignmentConfirmed && (
+            <div className="absolute inset-0 flex items-center justify-center z-[35] pointer-events-none animate-fade-in bg-black/5">
+              <motion.div 
+                drag
+                dragConstraints={videoContainerRef}
+                dragElastic={0.05}
+                dragMomentum={false}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                style={{ touchAction: 'none' }}
+                className="flex flex-col items-center max-w-md text-center px-8 pt-3 pb-8 bg-slate-900/75 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.6)] pointer-events-auto cursor-grab active:cursor-grabbing select-none"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Drag Grip Indicator Handle */}
+                <div className="w-12 h-1 rounded-full bg-white/10 hover:bg-white/20 mb-4 shrink-0 transition-colors" />
+                <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(16,185,129,0.15)] animate-pulse">
+                  <Sparkles className="w-6 h-6 text-emerald-400" />
+                </div>
+                <h3 className="font-headline text-base font-bold text-white uppercase tracking-widest mb-1">Director's Tech Scout</h3>
+                <p className="text-[9px] text-white/40 uppercase tracking-widest mb-6">Camera, Lighting & Sound Check</p>
+
+                <div className="w-full space-y-3.5 mb-8 text-left">
+                  {/* Item 1: Camera Check */}
+                  <div className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <Camera className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-white/90">Camera Angle & Lighting</span>
+                        <span className="text-[9px] text-white/40">Optics active. Video stream is in full view.</span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black uppercase tracking-wider text-emerald-400 shrink-0">
+                      Active
+                    </span>
+                  </div>
+
+                  {/* Item 2: Acoustics Check (Live Sound Check Visualiser) */}
+                  <div className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
+                    <div className="flex items-center gap-3 w-full">
+                      <Mic className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
+                      <div className="flex flex-col w-full min-w-0 pr-2">
+                        <span className="text-xs font-bold text-white/90">Acoustics Check</span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[8px] text-white/40 uppercase tracking-wider font-mono">Live levels:</span>
+                          <div className="flex-grow bg-white/10 h-1.5 rounded-full overflow-hidden relative">
+                            <div 
+                              className="bg-emerald-400 h-full rounded-full transition-all duration-75 shadow-[0_0_8px_rgba(52,211,153,0.6)]" 
+                              style={{ width: `${volume}%` }} 
+                            />
+                          </div>
+                          <span className="text-[9px] font-mono font-bold text-emerald-400 shrink-0">{volume}%</span>
+                        </div>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black uppercase tracking-wider text-emerald-400 shrink-0">
+                      {volume > 5 ? 'Active' : 'Listening'}
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-white/50 leading-relaxed mb-8 italic">
+                  Take a moment to verify your framing, lighting, and background in full view. Click below once you are satisfied with the setup.
+                </p>
+
+                <button 
+                  onClick={() => {
+                    setTechAlignmentConfirmed(true);
+                    toast.success("Technical Alignment Confirmed", {
+                      description: "Engaging prompter guide. Settle in for your performance!"
+                    });
+                  }}
+                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] cursor-pointer"
+                >
+                  Confirm Technical Alignment
+                </button>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Floating 'Camera Control Deck' calibration overlay */}
+          {mounted && !isMuted && !techAlignmentConfirmed && (
+            <div className="absolute right-10 top-1/2 -translate-y-1/2 z-[35] pointer-events-auto">
+               <motion.div
+                 drag
+                 dragConstraints={videoContainerRef}
+                 dragElastic={0.05}
+                 dragMomentum={false}
+                 initial={{ scale: 0.9, opacity: 0, x: 50 }}
+                 animate={{ scale: 1, opacity: 1, x: 0 }}
+                 style={{ touchAction: 'none' }}
+                 className="flex flex-col w-72 bg-slate-900/75 backdrop-blur-2xl border border-white/10 p-6 rounded-[2.5rem] shadow-2xl cursor-grab active:cursor-grabbing select-none space-y-5"
+               >
+                 {/* Drag handle */}
+                 <div className="w-12 h-1 rounded-full bg-white/10 mx-auto hover:bg-white/20 transition-colors shrink-0" />
+                 
+                 <div className="border-b border-white/5 pb-2">
+                   <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block">Optics Grading</span>
+                   <h4 className="text-xs font-bold text-white uppercase tracking-wider mt-0.5">Cinematic Styling</h4>
+                 </div>
+
+                 {/* Brightness Control */}
+                 <div className="space-y-1.5">
+                   <div className="flex items-center justify-between text-[10px] text-white/60">
+                     <span>Brightness</span>
+                     <span className="font-mono text-emerald-400">{opticsBrightness}%</span>
+                   </div>
+                   <input
+                     type="range"
+                     min="60"
+                     max="140"
+                     value={opticsBrightness}
+                     onChange={(e) => setOpticsBrightness(Number(e.target.value))}
+                     className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                   />
+                 </div>
+
+                 {/* Contrast Control */}
+                 <div className="space-y-1.5">
+                   <div className="flex items-center justify-between text-[10px] text-white/60">
+                     <span>Contrast</span>
+                     <span className="font-mono text-emerald-400">{opticsContrast}%</span>
+                   </div>
+                   <input
+                     type="range"
+                     min="60"
+                     max="140"
+                     value={opticsContrast}
+                     onChange={(e) => setOpticsContrast(Number(e.target.value))}
+                     className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                   />
+                 </div>
+
+                 {/* Zoom Control (Hardware Zoom if supported, otherwise digital scale fallback) */}
+                 <div className="space-y-1.5">
+                   <div className="flex items-center justify-between text-[10px] text-white/60">
+                     <span>Zoom Level</span>
+                     <span className="font-mono text-emerald-400">{capabilities?.zoom ? `${zoomValue}x` : '1.0x (Standard)'}</span>
+                   </div>
+                   <input
+                     type="range"
+                     min={capabilities?.zoom?.min || 1}
+                     max={capabilities?.zoom?.max || 3}
+                     step={capabilities?.zoom?.step || 0.1}
+                     value={zoomValue}
+                     onChange={(e) => applyZoom(Number(e.target.value))}
+                     disabled={!capabilities?.zoom}
+                     className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                   />
+                   {!capabilities?.zoom && (
+                     <span className="text-[7px] text-white/30 uppercase tracking-wider block">Hardware zoom not supported by webcam</span>
+                   )}
+                 </div>
+
+                 {/* Cinematic Filter Presets */}
+                 <div className="space-y-2">
+                   <span className="text-[9px] text-white/40 uppercase tracking-wider font-bold block">Color Grade Filter</span>
+                   <div className="grid grid-cols-2 gap-1.5">
+                     {(['default', 'warm', 'cool', 'noir'] as const).map((filter) => (
+                       <button
+                         key={filter}
+                         onClick={() => setOpticsFilter(filter)}
+                         className={cn(
+                           "py-1.5 text-[8px] font-black uppercase tracking-wider rounded-lg border transition-all cursor-pointer",
+                           opticsFilter === filter 
+                             ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                             : "bg-white/5 border-white/5 text-white/50 hover:bg-white/10"
+                         )}
+                       >
+                         {filter === 'default' && 'Default'}
+                         {filter === 'warm' && 'Warm Tint'}
+                         {filter === 'cool' && 'Cool modern'}
+                         {filter === 'noir' && 'Noir Slate'}
+                       </button>
+                     ))}
+                   </div>
+                 </div>
+
+                 {/* Camera Switcher (Only if multi-cam) */}
+                 {hasMultipleCameras && (
+                   <button
+                     onClick={switchCamera}
+                     className="w-full py-2.5 mt-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
+                   >
+                     <RefreshCw className="w-3.5 h-3.5 animate-spin-slow" />
+                     <span>Switch Camera Feed</span>
+                   </button>
+                 )}
+               </motion.div>
+             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/40 z-10 pointer-events-none" />
           
@@ -826,15 +1041,20 @@ export default function SoloStage({
             }}
             transition={{ type: "spring", stiffness: 120, damping: 22 }}
             className={cn(
-              "z-30 border border-white/10 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col pointer-events-auto",
+              "z-30 border border-white/10 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col pointer-events-auto transition-all duration-1000",
               prompterSize === 'mini' ? "p-4 bg-zinc-950/90" : "p-8",
+              (isMuted || !mounted || !techAlignmentConfirmed) && "hidden",
+              (!isRecording && !isCountingIn)
+                ? "opacity-30 grayscale-[0.3] blur-[0.5px] pointer-events-none"
+                : "opacity-100 blur-0",
               prompterLayout === 'center'
-                ? "absolute bg-zinc-950/65 backdrop-blur-md opacity-90"
-                : "absolute bg-zinc-950/85 backdrop-blur-3xl hover:bg-zinc-900/90 duration-700"
+                ? "absolute bg-zinc-950/65 backdrop-blur-md"
+                : "absolute bg-zinc-950/85 backdrop-blur-3xl"
             )}
           >
             <div 
               onPointerDown={(e) => prompterLayout === 'side' && dragControls.start(e)}
+              style={{ touchAction: 'none' }}
               className={cn(
                 "flex items-center justify-between shrink-0 select-none",
                 prompterSize === 'mini' ? "mb-2" : "mb-4",
@@ -948,6 +1168,25 @@ export default function SoloStage({
                 </div>
               )}
             </div>
+            {/* Mini Selfie Feed (Floating inside Teleprompter) */}
+            {stream && prompterSize !== 'mini' && (
+              <div className="absolute bottom-6 right-6 w-24 h-24 rounded-2xl overflow-hidden border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] pointer-events-none z-50">
+                 <video
+                   autoPlay
+                   playsInline
+                   muted
+                   className="w-full h-full object-cover scale-x-[-1]"
+                   ref={(el) => {
+                     if (el && stream) {
+                       el.srcObject = stream;
+                     }
+                   }}
+                 />
+                 <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/60 border border-white/10 text-[7px] font-black uppercase tracking-wider text-white">
+                   Selfie
+                 </div>
+              </div>
+            )}
           </motion.div>
 
           {/* Cinematic Camera Overlays (Safe Areas/REC) */}
@@ -1107,9 +1346,9 @@ export default function SoloStage({
                 ) : !isRecording ? (
                     <button 
                       onClick={startCapture} 
-                      disabled={!stream || uploading || isAlchemySaving} 
+                      disabled={!stream || uploading || isAlchemySaving || !techAlignmentConfirmed} 
                       className="w-20 h-20 rounded-full bg-white/10 border-4 border-white/40 hover:border-rose-500 hover:bg-rose-500/20 transition-all flex items-center justify-center group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-white/40 disabled:hover:bg-white/10"
-                      title={!stream ? "Hardware access muted or blocked. Re-enable camera and mic access to record." : undefined}
+                      title={!stream ? "Hardware access muted or blocked. Re-enable camera and mic access to record." : !techAlignmentConfirmed ? "Please confirm technical alignment before starting performance." : undefined}
                     >
                       <div className="w-6 h-6 rounded-full bg-rose-500 group-hover:scale-125 group-disabled:group-hover:scale-100 transition-all" />
                     </button>
