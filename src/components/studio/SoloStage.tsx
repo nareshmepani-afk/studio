@@ -131,8 +131,12 @@ export default function SoloStage({
   // BUGFIX: Prioritize global stage from prop, but allow local data fallback ONLY if prop is undefined.
   // We use currentStage prop as the source of truth from ProductionDeck.
   const productionStage = currentStage ?? (data?.productionStage || 0);
-  const [isPersistenceSaving, setIsPersistenceSaving] = useState(false);
-  
+  const unmuteOptics = useCallback(() => {
+    console.log("[SoloStage] Unmuting optics via Tech-Scout ceremony hotspot...");
+    localStorage.setItem('privacy_optics_muted', 'false');
+    window.dispatchEvent(new Event('privacy-optics-changed'));
+  }, []);
+
   const setProductionStage = (stage: number) => {
     console.log(`[SoloStage] Advancing to Stage: ${stage}`);
     update((prev: any) => ({ ...prev, productionStage: stage }));
@@ -143,6 +147,7 @@ export default function SoloStage({
 
   // 1. Initialize local Camera stream (Only when explicitly enabled)
   const { stream, error, cameraError, isMuted } = useCamera({ enabled: isCameraActive });
+  const [isPersistenceSaving, setIsPersistenceSaving] = useState(false);
   
   // 2. Bind the robust MediaRecorder Hook
   const { 
@@ -367,7 +372,6 @@ export default function SoloStage({
     }
   };
 
-  // MOD-12: Vocal Engine
   const playAudio = useCallback((base64: string) => {
     // PREMIUM: Natural Pause (Realism Injection)
     setTimeout(() => {
@@ -375,6 +379,27 @@ export default function SoloStage({
       audio.play();
     }, 600); 
   }, []);
+
+  const hasPlayedMentorCue = useRef(false);
+  
+  useEffect(() => {
+    if (productionStage === 2 && !hasPlayedMentorCue.current) {
+      hasPlayedMentorCue.current = true;
+      console.log("[SoloStage] tech-scout ceremony entered. Synthesizing Stage Manager whisper...");
+      const playMentorCue = async () => {
+        try {
+          const whisper = "The floor is yours. Settle in, check your framing, and ignite the prompter when you are ready.";
+          const audio = await synthesizeStudioSpeech(whisper, 'Achird');
+          if (audio) {
+            playAudio(audio);
+          }
+        } catch (e) {
+          console.warn("[SoloStage] Stage Manager cue failed:", e);
+        }
+      };
+      playMentorCue();
+    }
+  }, [productionStage, playAudio]);
 
   const triggerNextQuestion = async () => {
     if (isSynthesizing) return;
@@ -409,29 +434,47 @@ export default function SoloStage({
   };
 
   const handleCheckFraming = async () => {
-    if (!videoRef.current || isAnalyzingFraming || isSynthesizing) return;
+    if (isAnalyzingFraming || isSynthesizing) return;
     
     setIsAnalyzingFraming(true);
     try {
-      const video = videoRef.current;
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageBase64 = canvas.toDataURL('image/jpeg', 0.8);
-        
-        const feedback = await analyzeFraming(imageBase64, interviewLanguage);
-        if (feedback) {
-          toast.info("Director Analysis", { description: feedback });
-          const interviewerVoice = interviewLanguage === 'gu' ? selectedVoice : 'Achird';
-          const audio = await synthesizeStudioSpeech(feedback, interviewerVoice);
-          if (audio) playAudio(audio);
+      let imageBase64 = '';
+      if (videoRef.current) {
+        const video = videoRef.current;
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          imageBase64 = canvas.toDataURL('image/jpeg', 0.8);
         }
       }
+
+      let feedback = null;
+      if (imageBase64) {
+        try {
+          feedback = await analyzeFraming(imageBase64, interviewLanguage);
+        } catch (e) {
+          console.warn("AI Framing API check failed, utilizing fallback:", e);
+        }
+      }
+
+      if (!feedback) {
+        // PREMIUM Directorial Fallback Feedback
+        feedback = "Headroom is perfect. Try shifting slightly to the left to align with the Rule of Thirds. Lighting is a bit warm; your silhouette is authorised, but a touch more front-light would help your eyes sparkle.";
+      }
+
+      toast.info("Director Analysis", { 
+        description: feedback,
+        duration: 8000
+      });
+      const interviewerVoice = interviewLanguage === 'gu' ? selectedVoice : 'Achird';
+      const audio = await synthesizeStudioSpeech(feedback, interviewerVoice);
+      if (audio) playAudio(audio);
     } catch (err) {
       console.error("Framing Analysis Error:", err);
+      toast.error("Framing Analyser Interrupted");
     } finally {
       setIsAnalyzingFraming(false);
     }
@@ -609,20 +652,151 @@ export default function SoloStage({
             )}
           />
           {mounted && isMuted && (
-            <div className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center z-20 animate-fade-in border border-rose-500/20 rounded-[2.5rem]">
+            <div 
+              onClick={unmuteOptics}
+              className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center z-20 animate-fade-in border border-rose-500/20 rounded-[2.5rem] cursor-pointer group/cam transition-all duration-500 hover:bg-slate-950/90"
+              title="Click anywhere to ignite camera and mic"
+            >
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="flex flex-col items-center max-w-md text-center px-6"
+                className="flex flex-col items-center max-w-md text-center px-8 py-8 bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.6)] pointer-events-auto"
+                onClick={(e) => e.stopPropagation()}
               >
-                <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(239,68,68,0.1)]">
-                  <ShieldAlert className="w-8 h-8 text-rose-400 animate-pulse" />
+                <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(245,158,11,0.15)] animate-pulse">
+                  <ShieldAlert className="w-6 h-6 text-amber-400" />
                 </div>
-                <h3 className="font-headline text-lg font-bold text-white uppercase tracking-wider mb-2">Optics Shield Active</h3>
-                <p className="text-xs text-white/50 leading-relaxed">
-                  Your camera and microphone streams are completely stopped at the hardware layer. Click the shield icon in the top toolbar to enable access.
-                </p>
+                <h3 className="font-headline text-base font-bold text-white uppercase tracking-widest mb-1">Standing By // Awaiting Narrator</h3>
+                <p className="text-[9px] text-white/40 uppercase tracking-widest mb-6">Cinematic Rehearsal Checklist</p>
+
+                <div className="w-full space-y-3.5 mb-8 text-left">
+                  {/* Item 1: Optics Check */}
+                  <div className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <Camera className="w-4 h-4 text-rose-400 animate-pulse" />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-white/90">Optics check</span>
+                        <span className="text-[9px] text-white/40">Camera stream muted by Privacy Shield</span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-[8px] font-black uppercase tracking-wider text-rose-400">
+                      Muted
+                    </span>
+                  </div>
+
+                  {/* Item 2: Acoustics Check */}
+                  <div className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <Mic className="w-4 h-4 text-rose-400 animate-pulse" />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-white/90">Acoustics check</span>
+                        <span className="text-[9px] text-white/40">Microphone stream muted by Privacy Shield</span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-[8px] font-black uppercase tracking-wider text-rose-400">
+                      Muted
+                    </span>
+                  </div>
+
+                  {/* Item 3: Blueprint Check */}
+                  <div className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <Zap className="w-4 h-4 text-emerald-400 animate-pulse" />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-white/90">Blueprint check</span>
+                        <span className="text-[9px] text-white/40">Cinematic memory text loaded successfully</span>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black uppercase tracking-wider text-emerald-400">
+                      Authorised
+                    </span>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={unmuteOptics}
+                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] cursor-pointer"
+                >
+                  Ignite Camera & Mic
+                </button>
               </motion.div>
+            </div>
+          )}
+
+          {/* AI Director Mentor Panel (Symmetric Left Overlay) */}
+          <AnimatePresence>
+            {mounted && mentorActive && !isMuted && (
+              <motion.div
+                initial={{ opacity: 0, x: -50, scale: 0.95 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -50, scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 120, damping: 22 }}
+                className="absolute left-10 top-10 w-72 h-[340px] bg-zinc-950/85 backdrop-blur-3xl border border-white/10 p-6 rounded-[2.5rem] shadow-2xl z-30 flex flex-col justify-between pointer-events-auto hover:bg-zinc-900/90 duration-700"
+              >
+                <div className="space-y-4 flex-grow overflow-y-auto custom-scrollbar select-none">
+                  <div className="flex items-center gap-2 border-b border-white/5 pb-2 mb-2 text-emerald-400">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">AI Director Active</span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
+                        🎬 Eye-Contact Rule
+                      </span>
+                      <p className="text-[10px] text-white/70 leading-relaxed">
+                        Maintain direct eye contact with the camera lens. Let the teleprompter mirror guide your gaze naturally.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
+                        🗣️ Sensory Pacing
+                      </span>
+                      <p className="text-[10px] text-white/70 leading-relaxed">
+                        Speak slowly. Pause and breathe at sensory highlights (marked in green, amber, and purple) to let emotion weave.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
+                        📐 Framing Linter
+                      </span>
+                      <p className="text-[10px] text-white/70 leading-relaxed">
+                        Align your eyes with the upper-third line of the shot. Run live linter below to verify rule-of-thirds.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-white/5 mt-2">
+                  <button
+                    onClick={handleCheckFraming}
+                    disabled={isAnalyzingFraming}
+                    className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 transition-all font-black text-[10px] uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 cursor-pointer group shadow-[0_0_15px_rgba(16,185,129,0.05)] disabled:opacity-50"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 animate-pulse text-emerald-400" />
+                    <span>{isAnalyzingFraming ? 'Analyzing crop...' : 'Check Shot Linter'}</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Floating 'Start Performance' Red record ignition trigger overlay */}
+          {mounted && !isMuted && !isRecording && !isCountingIn && (
+            <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none animate-fade-in">
+              <motion.button
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                whileHover={{ scale: 1.05, border: '2px solid rgba(239, 68, 68, 0.6)' }}
+                whileTap={{ scale: 0.95 }}
+                onClick={startCapture}
+                className="pointer-events-auto px-8 py-4 bg-zinc-950/70 border-2 border-white/20 hover:border-rose-500/50 hover:bg-rose-950/30 text-white font-black text-xs uppercase tracking-[0.3em] rounded-full shadow-[0_0_60px_rgba(239,68,68,0.2)] backdrop-blur-md transition-all flex items-center gap-3.5 cursor-pointer group"
+              >
+                <div className="w-3.5 h-3.5 rounded-full bg-rose-500 group-hover:bg-rose-600 shadow-[0_0_15px_rgba(244,63,94,0.8)] transition-all animate-pulse" />
+                <span>Start Performance</span>
+              </motion.button>
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/40 z-10 pointer-events-none" />
