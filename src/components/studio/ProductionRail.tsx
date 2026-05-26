@@ -253,7 +253,7 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
         </div>
 
         {/* Footer info */}
-        {customWidth > 220 && (
+        {customWidth > 220 ? (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -293,6 +293,35 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                <span className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">Protocol: Ready</span>
             </div>
           </motion.div>
+        ) : (
+          /* Compact Icon-Only Mentor Toggle for Narrow/Collapsed Sidebar */
+          <div className="mt-auto p-4 border-t border-white/5 flex flex-col items-center gap-4 bg-black/40 w-full">
+            <TooltipProvider delayDuration={100}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleMentorClick}
+                    className={cn(
+                      "w-12 h-12 rounded-2xl border flex items-center justify-center transition-all duration-500 shrink-0",
+                      isFirstTimeAct2
+                        ? "bg-emerald-500 border-emerald-400 text-slate-900 shadow-[0_0_20px_rgba(16,185,129,0.8)] animate-pulse"
+                        : mentorActive 
+                          ? "bg-emerald-500 border-emerald-400 text-slate-900 shadow-[0_0_20px_rgba(16,185,129,0.4)]" 
+                          : "bg-white/5 border-white/10 text-white/40 hover:border-emerald-500/50 hover:text-emerald-400"
+                    )}
+                  >
+                    <Sparkles className={cn("w-5 h-5", (mentorActive || isFirstTimeAct2) && "animate-pulse")} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={10} className="bg-slate-950 border-white/10 text-white p-3 rounded-xl shadow-2xl z-[1002]">
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">Mentor Guide</span>
+                    <p className="text-[10px] text-white/50 leading-relaxed italic">{mentorActive ? 'Retract Assistance' : 'Engage Lifeline'}</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         )}
       </motion.div>
 
