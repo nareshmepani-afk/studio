@@ -114,6 +114,11 @@ export default function SoloStage({
   const [opticsContrast, setOpticsContrast] = useState(110);
   const [opticsFilter, setOpticsFilter] = useState<'default' | 'warm' | 'cool' | 'noir'>('default');
 
+  // Minimise / Restore panel states (pre-flight checks calibration stage)
+  const [isDirectorMinimised, setIsDirectorMinimised] = useState(false);
+  const [isTechScoutMinimised, setIsTechScoutMinimised] = useState(false);
+  const [isOpticsMinimised, setIsOpticsMinimised] = useState(false);
+
   const stageRef = useRef<HTMLDivElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
@@ -265,8 +270,8 @@ export default function SoloStage({
       videoRef.current.srcObject = stream;
     }
     
-    // Auto-trigger sound check on initialization in Stage 1 (Recording)
-    if (stream && !recordedBlob && !isRecording && !showSoundCheck && !data?.videoUrl && productionStage === 1 && !hasDoneMicFeedback) {
+    // Auto-trigger sound check on initialization in Stage 2 (Recording)
+    if (stream && !recordedBlob && !isRecording && !showSoundCheck && !data?.videoUrl && productionStage === 2 && !hasDoneMicFeedback) {
       setShowSoundCheck(true);
       setHasDoneMicFeedback(true);
     }
@@ -440,6 +445,7 @@ export default function SoloStage({
   const handleCheckFraming = async () => {
     if (isAnalyzingFraming || isSynthesizing) return;
     
+    setIsTechScoutMinimised(true);
     setIsAnalyzingFraming(true);
     try {
       let imageBase64 = '';
@@ -748,61 +754,130 @@ export default function SoloStage({
 
           {/* AI Director Mentor Panel (Symmetric Left Overlay) */}
           <AnimatePresence>
-            {mounted && mentorActive && !isMuted && (
-              <motion.div
-                initial={{ opacity: 0, x: -50, scale: 0.95 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: -50, scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 120, damping: 22 }}
-                className="absolute left-10 top-10 w-72 h-[340px] bg-zinc-950/85 backdrop-blur-3xl border border-white/10 p-6 rounded-[2.5rem] shadow-2xl z-30 flex flex-col justify-between pointer-events-auto hover:bg-zinc-900/90 duration-700"
+            {mounted && (mentorActive || !techAlignmentConfirmed) && !isMuted && (
+              <div 
+                className={cn(
+                  "absolute z-30 pointer-events-auto",
+                  !techAlignmentConfirmed 
+                    ? "left-6 xl:left-12 top-1/2 -translate-y-1/2" 
+                    : "left-10 top-10"
+                )}
               >
-                <div className="space-y-4 flex-grow overflow-y-auto custom-scrollbar select-none">
-                  <div className="flex items-center gap-2 border-b border-white/5 pb-2 mb-2 text-emerald-400">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">AI Director Active</span>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
-                        🎬 Eye-Contact Rule
-                      </span>
-                      <p className="text-[10px] text-white/70 leading-relaxed">
-                        Maintain direct eye contact with the camera lens. Let the teleprompter mirror guide your gaze naturally.
-                      </p>
+                <motion.div
+                  drag
+                  dragConstraints={videoContainerRef}
+                  dragElastic={0.05}
+                  dragMomentum={false}
+                  initial={{ 
+                    opacity: 0, 
+                    x: -50, 
+                    scale: 0.95,
+                    height: isDirectorMinimised ? '56px' : '420px',
+                    width: isDirectorMinimised ? '200px' : '288px'
+                  }}
+                  animate={{ 
+                    opacity: 1, 
+                    x: 0, 
+                    scale: 1,
+                    height: isDirectorMinimised ? '56px' : '420px',
+                    width: isDirectorMinimised ? '200px' : '288px',
+                    borderRadius: isDirectorMinimised ? '9999px' : '2.5rem'
+                  }}
+                  exit={{ opacity: 0, x: -50, scale: 0.95 }}
+                  transition={{ 
+                    opacity: { duration: 0.2 },
+                    scale: { duration: 0.2 },
+                    height: { type: "spring", stiffness: 150, damping: 20 },
+                    width: { type: "spring", stiffness: 150, damping: 20 },
+                    borderRadius: { type: "spring", stiffness: 150, damping: 20 }
+                  }}
+                  style={{ touchAction: 'none' }}
+                  className={cn(
+                    "bg-zinc-950/85 backdrop-blur-3xl border border-white/10 p-6 shadow-2xl flex flex-col justify-between hover:bg-zinc-900/90 duration-700 select-none cursor-grab active:cursor-grabbing",
+                    isDirectorMinimised && "p-3 px-4 flex-row items-center justify-between"
+                  )}
+                >
+                  {isDirectorMinimised ? (
+                    <div className="flex items-center justify-between w-full" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">AI Director</span>
+                      </div>
+                      <button 
+                        onClick={() => setIsDirectorMinimised(false)}
+                        className="p-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-full transition-all cursor-pointer"
+                        title="Restore Panel"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
                     </div>
+                  ) : (
+                    <>
+                      <div className="space-y-4 flex-grow overflow-y-auto custom-scrollbar select-none">
+                        {/* Drag Grip Handle */}
+                        <div className="w-12 h-1 rounded-full bg-white/10 mx-auto hover:bg-white/20 mb-2 transition-colors shrink-0" />
+                        
+                        <div className="flex items-center justify-between border-b border-white/5 pb-2 mb-2 text-emerald-400">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">AI Director Active</span>
+                          </div>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsDirectorMinimised(true);
+                            }}
+                            className="p-1 bg-white/5 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-all cursor-pointer"
+                            title="Minimise Panel"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
+                              🎬 Eye-Contact Rule
+                            </span>
+                            <p className="text-[10px] text-white/70 leading-relaxed">
+                              Maintain direct eye contact with the camera lens. Let the teleprompter mirror guide your gaze naturally.
+                            </p>
+                          </div>
 
-                    <div className="space-y-1">
-                      <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
-                        🗣️ Sensory Pacing
-                      </span>
-                      <p className="text-[10px] text-white/70 leading-relaxed">
-                        Speak slowly. Pause and breathe at sensory highlights (marked in green, amber, and purple) to let emotion weave.
-                      </p>
-                    </div>
+                          <div className="space-y-1">
+                            <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
+                              🗣️ Sensory Pacing
+                            </span>
+                            <p className="text-[10px] text-white/70 leading-relaxed">
+                              Speak slowly. Pause and breathe at sensory highlights (marked in green, amber, and purple) to let emotion weave.
+                            </p>
+                          </div>
 
-                    <div className="space-y-1">
-                      <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
-                        📐 Framing Linter
-                      </span>
-                      <p className="text-[10px] text-white/70 leading-relaxed">
-                        Align your eyes with the upper-third line of the shot. Run live linter below to verify rule-of-thirds.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                          <div className="space-y-1">
+                            <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
+                              📐 Framing Linter
+                            </span>
+                            <p className="text-[10px] text-white/70 leading-relaxed">
+                              Align your eyes with the upper-third line of the shot. Run live linter below to verify rule-of-thirds.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
 
-                <div className="pt-4 border-t border-white/5 mt-2">
-                  <button
-                    onClick={handleCheckFraming}
-                    disabled={isAnalyzingFraming}
-                    className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 transition-all font-black text-[10px] uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 cursor-pointer group shadow-[0_0_15px_rgba(16,185,129,0.05)] disabled:opacity-50"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 animate-pulse text-emerald-400" />
-                    <span>{isAnalyzingFraming ? 'Analyzing crop...' : 'Check Shot Linter'}</span>
-                  </button>
-                </div>
-              </motion.div>
+                      <div className="pt-4 border-t border-white/5 mt-2">
+                        <button
+                          onClick={handleCheckFraming}
+                          disabled={isAnalyzingFraming}
+                          className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 transition-all font-black text-[10px] uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 cursor-pointer group shadow-[0_0_15px_rgba(16,185,129,0.05)] disabled:opacity-50"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 animate-pulse text-emerald-400" />
+                          <span>{isAnalyzingFraming ? 'Analyzing crop...' : 'Check Shot Linter'}</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </motion.div>
+              </div>
             )}
           </AnimatePresence>
 
@@ -825,191 +900,289 @@ export default function SoloStage({
 
           {/* Floating 'Director's Tech Scout' Calibration Card (MW-39 full-view check) */}
           {mounted && !isMuted && !techAlignmentConfirmed && (
-            <div className="absolute inset-0 flex items-center justify-center z-[35] pointer-events-none animate-fade-in bg-black/5">
+            <div className={cn(
+              "absolute z-[35]",
+              isTechScoutMinimised 
+                ? "left-[40%] top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto" 
+                : "inset-0 flex items-center justify-center pointer-events-none bg-black/5 animate-fade-in"
+            )}>
               <motion.div 
                 drag
                 dragConstraints={videoContainerRef}
                 dragElastic={0.05}
                 dragMomentum={false}
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
+                initial={{ 
+                  scale: 0.9, 
+                  opacity: 0,
+                  height: isTechScoutMinimised ? '56px' : '420px',
+                  width: isTechScoutMinimised ? '200px' : '448px'
+                }}
+                animate={{ 
+                  scale: 1, 
+                  opacity: 1,
+                  height: isTechScoutMinimised ? '56px' : '420px',
+                  width: isTechScoutMinimised ? '200px' : '448px',
+                  borderRadius: isTechScoutMinimised ? '9999px' : '2.5rem'
+                }}
                 style={{ touchAction: 'none' }}
-                className="flex flex-col items-center max-w-md text-center px-8 pt-3 pb-8 bg-slate-900/75 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.6)] pointer-events-auto cursor-grab active:cursor-grabbing select-none"
+                className={cn(
+                  "flex flex-col items-center bg-slate-900/75 backdrop-blur-2xl border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.6)] pointer-events-auto cursor-grab active:cursor-grabbing select-none",
+                  isTechScoutMinimised ? "p-3 px-4 flex-row justify-between w-[200px]" : "max-w-md text-center px-8 pt-3 pb-8"
+                )}
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Drag Grip Indicator Handle */}
-                <div className="w-12 h-1 rounded-full bg-white/10 hover:bg-white/20 mb-4 shrink-0 transition-colors" />
-                <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(16,185,129,0.15)] animate-pulse">
-                  <Sparkles className="w-6 h-6 text-emerald-400" />
-                </div>
-                <h3 className="font-headline text-base font-bold text-white uppercase tracking-widest mb-1">Director's Tech Scout</h3>
-                <p className="text-[9px] text-white/40 uppercase tracking-widest mb-6">Camera, Lighting & Sound Check</p>
-
-                <div className="w-full space-y-3.5 mb-8 text-left">
-                  {/* Item 1: Camera Check */}
-                  <div className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
-                    <div className="flex items-center gap-3">
-                      <Camera className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-white/90">Camera Angle & Lighting</span>
-                        <span className="text-[9px] text-white/40">Optics active. Video stream is in full view.</span>
-                      </div>
+                {isTechScoutMinimised ? (
+                  <div className="flex items-center justify-between w-full" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">Tech Scout</span>
                     </div>
-                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black uppercase tracking-wider text-emerald-400 shrink-0">
-                      Active
-                    </span>
+                    <button 
+                      onClick={() => setIsTechScoutMinimised(false)}
+                      className="p-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-full transition-all cursor-pointer"
+                      title="Restore Panel"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
                   </div>
+                ) : (
+                  <>
+                    {/* Drag Grip Indicator Handle */}
+                    <div className="w-full flex items-center justify-between border-b border-white/5 pb-2 mb-4 shrink-0">
+                      <div className="w-8 h-8" /> {/* spacer */}
+                      <div className="w-12 h-1 rounded-full bg-white/10 hover:bg-white/20 transition-colors" />
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsTechScoutMinimised(true);
+                        }}
+                        className="p-1 bg-white/5 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-all cursor-pointer"
+                        title="Minimise Panel"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
 
-                  {/* Item 2: Acoustics Check (Live Sound Check Visualiser) */}
-                  <div className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
-                    <div className="flex items-center gap-3 w-full">
-                      <Mic className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
-                      <div className="flex flex-col w-full min-w-0 pr-2">
-                        <span className="text-xs font-bold text-white/90">Acoustics Check</span>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[8px] text-white/40 uppercase tracking-wider font-mono">Live levels:</span>
-                          <div className="flex-grow bg-white/10 h-1.5 rounded-full overflow-hidden relative">
-                            <div 
-                              className="bg-emerald-400 h-full rounded-full transition-all duration-75 shadow-[0_0_8px_rgba(52,211,153,0.6)]" 
-                              style={{ width: `${volume}%` }} 
-                            />
+                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(16,185,129,0.15)] animate-pulse">
+                      <Sparkles className="w-6 h-6 text-emerald-400" />
+                    </div>
+                    <h3 className="font-headline text-base font-bold text-white uppercase tracking-widest mb-1">Director's Tech Scout</h3>
+                    <p className="text-[9px] text-white/40 uppercase tracking-widest mb-6">Camera, Lighting & Sound Check</p>
+
+                    <div className="w-full space-y-3.5 mb-8 text-left">
+                      {/* Item 1: Camera Check */}
+                      <div className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
+                        <div className="flex items-center gap-3">
+                          <Camera className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-white/90">Camera Angle & Lighting</span>
+                            <span className="text-[9px] text-white/40">Optics active. Video stream is in full view.</span>
                           </div>
-                          <span className="text-[9px] font-mono font-bold text-emerald-400 shrink-0">{volume}%</span>
                         </div>
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black uppercase tracking-wider text-emerald-400 shrink-0">
+                          Active
+                        </span>
+                      </div>
+
+                      {/* Item 2: Acoustics Check (Live Sound Check Visualiser) */}
+                      <div className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
+                        <div className="flex items-center gap-3 w-full">
+                          <Mic className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
+                          <div className="flex flex-col w-full min-w-0 pr-2">
+                            <span className="text-xs font-bold text-white/90">Acoustics Check</span>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[8px] text-white/40 uppercase tracking-wider font-mono">Live levels:</span>
+                              <div className="flex-grow bg-white/10 h-1.5 rounded-full overflow-hidden relative">
+                                <div 
+                                  className="bg-emerald-400 h-full rounded-full transition-all duration-75 shadow-[0_0_8px_rgba(52,211,153,0.6)]" 
+                                  style={{ width: `${volume}%` }} 
+                                />
+                              </div>
+                              <span className="text-[9px] font-mono font-bold text-emerald-400 shrink-0">{volume}%</span>
+                            </div>
+                          </div>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black uppercase tracking-wider text-emerald-400 shrink-0">
+                          {volume > 5 ? 'Active' : 'Listening'}
+                        </span>
                       </div>
                     </div>
-                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black uppercase tracking-wider text-emerald-400 shrink-0">
-                      {volume > 5 ? 'Active' : 'Listening'}
-                    </span>
-                  </div>
-                </div>
 
-                <p className="text-[10px] text-white/50 leading-relaxed mb-8 italic">
-                  Take a moment to verify your framing, lighting, and background in full view. Click below once you are satisfied with the setup.
-                </p>
+                    <p className="text-[10px] text-white/50 leading-relaxed mb-8 italic">
+                      Take a moment to verify your framing, lighting, and background in full view. Click below once you are satisfied with the setup.
+                    </p>
 
-                <button 
-                  onClick={() => {
-                    setTechAlignmentConfirmed(true);
-                    toast.success("Technical Alignment Confirmed", {
-                      description: "Engaging prompter guide. Settle in for your performance!"
-                    });
-                  }}
-                  className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] cursor-pointer"
-                >
-                  Confirm Technical Alignment
-                </button>
+                    <button 
+                      onClick={() => {
+                        setTechAlignmentConfirmed(true);
+                        toast.success("Technical Alignment Confirmed", {
+                          description: "Engaging prompter guide. Settle in for your performance!"
+                        });
+                      }}
+                      className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] cursor-pointer"
+                    >
+                      Confirm Technical Alignment
+                    </button>
+                  </>
+                )}
               </motion.div>
             </div>
           )}
 
           {/* Floating 'Camera Control Deck' calibration overlay */}
           {mounted && !isMuted && !techAlignmentConfirmed && (
-            <div className="absolute right-10 top-1/2 -translate-y-1/2 z-[35] pointer-events-auto">
+            <div className="absolute right-6 xl:right-12 top-1/2 -translate-y-1/2 z-[35] pointer-events-auto">
                <motion.div
                  drag
                  dragConstraints={videoContainerRef}
                  dragElastic={0.05}
                  dragMomentum={false}
-                 initial={{ scale: 0.9, opacity: 0, x: 50 }}
-                 animate={{ scale: 1, opacity: 1, x: 0 }}
+                 initial={{ 
+                   scale: 0.9, 
+                   opacity: 0, 
+                   x: 50,
+                   height: isOpticsMinimised ? '56px' : '420px',
+                   width: isOpticsMinimised ? '200px' : '288px'
+                 }}
+                 animate={{ 
+                   scale: 1, 
+                   opacity: 1, 
+                   x: 0,
+                   height: isOpticsMinimised ? '56px' : '420px',
+                   width: isOpticsMinimised ? '200px' : '288px',
+                   borderRadius: isOpticsMinimised ? '9999px' : '2.5rem'
+                 }}
                  style={{ touchAction: 'none' }}
-                 className="flex flex-col w-72 bg-slate-900/75 backdrop-blur-2xl border border-white/10 p-6 rounded-[2.5rem] shadow-2xl cursor-grab active:cursor-grabbing select-none space-y-5"
+                 className={cn(
+                   "flex flex-col bg-slate-900/75 backdrop-blur-2xl border border-white/10 shadow-2xl cursor-grab active:cursor-grabbing select-none",
+                   isOpticsMinimised ? "p-3 px-4 flex-row items-center justify-between w-[200px]" : "w-72 p-6 space-y-5"
+                 )}
                >
-                 {/* Drag handle */}
-                 <div className="w-12 h-1 rounded-full bg-white/10 mx-auto hover:bg-white/20 transition-colors shrink-0" />
-                 
-                 <div className="border-b border-white/5 pb-2">
-                   <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block">Optics Grading</span>
-                   <h4 className="text-xs font-bold text-white uppercase tracking-wider mt-0.5">Cinematic Styling</h4>
-                 </div>
-
-                 {/* Brightness Control */}
-                 <div className="space-y-1.5">
-                   <div className="flex items-center justify-between text-[10px] text-white/60">
-                     <span>Brightness</span>
-                     <span className="font-mono text-emerald-400">{opticsBrightness}%</span>
+                 {isOpticsMinimised ? (
+                   <div className="flex items-center justify-between w-full" onClick={(e) => e.stopPropagation()}>
+                     <div className="flex items-center gap-2">
+                       <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                       <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">Optics</span>
+                     </div>
+                     <button 
+                       onClick={() => setIsOpticsMinimised(false)}
+                       className="p-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-full transition-all cursor-pointer"
+                       title="Restore Panel"
+                     >
+                       <Plus className="w-3.5 h-3.5" />
+                     </button>
                    </div>
-                   <input
-                     type="range"
-                     min="60"
-                     max="140"
-                     value={opticsBrightness}
-                     onChange={(e) => setOpticsBrightness(Number(e.target.value))}
-                     className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-emerald-500"
-                   />
-                 </div>
-
-                 {/* Contrast Control */}
-                 <div className="space-y-1.5">
-                   <div className="flex items-center justify-between text-[10px] text-white/60">
-                     <span>Contrast</span>
-                     <span className="font-mono text-emerald-400">{opticsContrast}%</span>
-                   </div>
-                   <input
-                     type="range"
-                     min="60"
-                     max="140"
-                     value={opticsContrast}
-                     onChange={(e) => setOpticsContrast(Number(e.target.value))}
-                     className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-emerald-500"
-                   />
-                 </div>
-
-                 {/* Zoom Control (Hardware Zoom if supported, otherwise digital scale fallback) */}
-                 <div className="space-y-1.5">
-                   <div className="flex items-center justify-between text-[10px] text-white/60">
-                     <span>Zoom Level</span>
-                     <span className="font-mono text-emerald-400">{capabilities?.zoom ? `${zoomValue}x` : '1.0x (Standard)'}</span>
-                   </div>
-                   <input
-                     type="range"
-                     min={capabilities?.zoom?.min || 1}
-                     max={capabilities?.zoom?.max || 3}
-                     step={capabilities?.zoom?.step || 0.1}
-                     value={zoomValue}
-                     onChange={(e) => applyZoom(Number(e.target.value))}
-                     disabled={!capabilities?.zoom}
-                     className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed"
-                   />
-                   {!capabilities?.zoom && (
-                     <span className="text-[7px] text-white/30 uppercase tracking-wider block">Hardware zoom not supported by webcam</span>
-                   )}
-                 </div>
-
-                 {/* Cinematic Filter Presets */}
-                 <div className="space-y-2">
-                   <span className="text-[9px] text-white/40 uppercase tracking-wider font-bold block">Color Grade Filter</span>
-                   <div className="grid grid-cols-2 gap-1.5">
-                     {(['default', 'warm', 'cool', 'noir'] as const).map((filter) => (
-                       <button
-                         key={filter}
-                         onClick={() => setOpticsFilter(filter)}
-                         className={cn(
-                           "py-1.5 text-[8px] font-black uppercase tracking-wider rounded-lg border transition-all cursor-pointer",
-                           opticsFilter === filter 
-                             ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.1)]"
-                             : "bg-white/5 border-white/5 text-white/50 hover:bg-white/10"
-                         )}
+                 ) : (
+                   <>
+                     {/* Drag handle */}
+                     <div className="flex items-center justify-between border-b border-white/5 pb-2 shrink-0">
+                       <div className="w-8 h-8" />
+                       <div className="w-12 h-1 rounded-full bg-white/10 hover:bg-white/20 transition-colors" />
+                       <button 
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           setIsOpticsMinimised(true);
+                         }}
+                         className="p-1 bg-white/5 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-all cursor-pointer"
+                         title="Minimise Panel"
                        >
-                         {filter === 'default' && 'Default'}
-                         {filter === 'warm' && 'Warm Tint'}
-                         {filter === 'cool' && 'Cool modern'}
-                         {filter === 'noir' && 'Noir Slate'}
+                         <Minus className="w-3.5 h-3.5" />
                        </button>
-                     ))}
-                   </div>
-                 </div>
+                     </div>
+                     
+                     <div className="border-b border-white/5 pb-2">
+                       <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block">Optics Grading</span>
+                       <h4 className="text-xs font-bold text-white uppercase tracking-wider mt-0.5">Cinematic Styling</h4>
+                     </div>
 
-                 {/* Camera Switcher (Only if multi-cam) */}
-                 {hasMultipleCameras && (
-                   <button
-                     onClick={switchCamera}
-                     className="w-full py-2.5 mt-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
-                   >
-                     <RefreshCw className="w-3.5 h-3.5 animate-spin-slow" />
-                     <span>Switch Camera Feed</span>
-                   </button>
+                     {/* Brightness Control */}
+                     <div className="space-y-1.5">
+                       <div className="flex items-center justify-between text-[10px] text-white/60">
+                         <span>Brightness</span>
+                         <span className="font-mono text-emerald-400">{opticsBrightness}%</span>
+                       </div>
+                       <input
+                         type="range"
+                         min="60"
+                         max="140"
+                         value={opticsBrightness}
+                         onChange={(e) => setOpticsBrightness(Number(e.target.value))}
+                         className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                       />
+                     </div>
+
+                     {/* Contrast Control */}
+                     <div className="space-y-1.5">
+                       <div className="flex items-center justify-between text-[10px] text-white/60">
+                         <span>Contrast</span>
+                         <span className="font-mono text-emerald-400">{opticsContrast}%</span>
+                       </div>
+                       <input
+                         type="range"
+                         min="60"
+                         max="140"
+                         value={opticsContrast}
+                         onChange={(e) => setOpticsContrast(Number(e.target.value))}
+                         className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                       />
+                     </div>
+
+                     {/* Zoom Control (Hardware Zoom if supported, otherwise digital scale fallback) */}
+                     <div className="space-y-1.5">
+                       <div className="flex items-center justify-between text-[10px] text-white/60">
+                         <span>Zoom Level</span>
+                         <span className="font-mono text-emerald-400">{capabilities?.zoom ? `${zoomValue}x` : '1.0x (Standard)'}</span>
+                       </div>
+                       <input
+                         type="range"
+                         min={capabilities?.zoom?.min || 1}
+                         max={capabilities?.zoom?.max || 3}
+                         step={capabilities?.zoom?.step || 0.1}
+                         value={zoomValue}
+                         onChange={(e) => applyZoom(Number(e.target.value))}
+                         disabled={!capabilities?.zoom}
+                         className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                       />
+                       {!capabilities?.zoom && (
+                         <span className="text-[7px] text-white/30 uppercase tracking-wider block">Hardware zoom not supported by webcam</span>
+                       )}
+                     </div>
+
+                     {/* Cinematic Filter Presets */}
+                     <div className="space-y-2">
+                       <span className="text-[9px] text-white/40 uppercase tracking-wider font-bold block">Color Grade Filter</span>
+                       <div className="grid grid-cols-2 gap-1.5">
+                         {(['default', 'warm', 'cool', 'noir'] as const).map((filter) => (
+                           <button
+                             key={filter}
+                             onClick={() => setOpticsFilter(filter)}
+                             className={cn(
+                               "py-1.5 text-[8px] font-black uppercase tracking-wider rounded-lg border transition-all cursor-pointer",
+                               opticsFilter === filter 
+                                 ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                                 : "bg-white/5 border-white/5 text-white/50 hover:bg-white/10"
+                             )}
+                           >
+                             {filter === 'default' && 'Default'}
+                             {filter === 'warm' && 'Warm Tint'}
+                             {filter === 'cool' && 'Cool modern'}
+                             {filter === 'noir' && 'Noir Slate'}
+                           </button>
+                         ))}
+                       </div>
+                     </div>
+
+                     {/* Camera Switcher (Only if multi-cam) */}
+                     {hasMultipleCameras && (
+                       <button
+                         onClick={switchCamera}
+                         className="w-full py-2.5 mt-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
+                       >
+                         <RefreshCw className="w-3.5 h-3.5 animate-spin-slow" />
+                         <span>Switch Camera Feed</span>
+                       </button>
+                     )}
+                   </>
                  )}
                </motion.div>
              </div>
@@ -1674,7 +1847,10 @@ export default function SoloStage({
                    <div className={`p-6 rounded-full border-4 mx-auto w-24 mb-8 ${micLevel > 15 ? 'bg-emerald-500/20 border-emerald-500' : 'bg-rose-500/10 border-rose-500/30'}`}>
                       <Mic2 className={`w-10 h-10 ${micLevel > 15 ? 'text-emerald-400' : 'text-rose-400'}`} />
                    </div>
-                   <h2 className="text-2xl font-black text-white mb-4 uppercase">Sound Check</h2>
+                    <h2 className="text-2xl font-black text-white mb-2 uppercase">Sound Check</h2>
+                    <p className="text-xs text-white/50 leading-relaxed mb-6 font-light">
+                      Speak clearly into your microphone to verify acoustic levels. Say a quick <strong className="text-emerald-400">"test 1, 2, 3"</strong> before we initiate capture!
+                    </p>
                    <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden mb-8">
                       <motion.div className={`h-full ${micLevel > 15 ? 'bg-emerald-500' : 'bg-rose-500'}`} animate={{ width: `${micLevel}%` }} />
                    </div>
