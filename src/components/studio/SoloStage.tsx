@@ -590,6 +590,9 @@ export default function SoloStage({
         feedback += " Since your desktop camera angle appears a bit static or offset, we highly recommend scanning the QR code under the [USE PHONE AS CAMERA] button in the Optics panel to pair your phone as a flexible wireless camera lens!";
       }
 
+      // Contextual collaborative suggestion if struggling with lens alignment alone
+      feedback += " If you are struggling to adjust your camera lens in Solo Booth, why not consider working with a friend in Collab Suite or Guest Director mode?";
+
       toast.info("Director Analysis", { 
         description: feedback,
         duration: 8000
@@ -972,8 +975,17 @@ export default function SoloStage({
                             <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
                               📐 Framing Linter
                             </span>
-                            <p className="text-[10px] text-white/70 leading-relaxed">
+                            <p className="text-[10px] text-white/70 leading-relaxed font-sans">
                               Align your eyes with the upper-third line of the shot. Run live linter below to verify rule-of-thirds.
+                            </p>
+                          </div>
+
+                          <div className="space-y-1 bg-sky-500/5 border border-sky-500/20 p-2.5 rounded-xl mt-1">
+                            <span className="text-[9px] font-black text-sky-400 uppercase tracking-widest flex items-center gap-1.5 font-sans">
+                              🤝 Collaborative Tip
+                            </span>
+                            <p className="text-[9.5px] text-sky-300/90 leading-relaxed font-medium font-sans">
+                              If you are struggling to adjust your camera lens in Solo Booth, why not consider working with a friend in <strong className="text-white">COLLAB SUITE</strong> or <strong className="text-white">GUEST DIRECTOR</strong> mode?
                             </p>
                           </div>
                         </div>

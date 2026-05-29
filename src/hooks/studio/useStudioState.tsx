@@ -155,7 +155,7 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
   const [state, setState] = useState<StudioState>({
     isScrolling: false,
     scrollSpeed: 1,
-    fontSize: 48,
+    fontSize: 24,
     isMirrored: false,
     script: 'Loading your script...',
     mode: 'solo',

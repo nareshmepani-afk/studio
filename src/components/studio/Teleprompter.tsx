@@ -79,14 +79,17 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const lastActiveIndexRef = useRef<number>(-1);
 
-  // Smooth variable-speed auto-scroll using requestAnimationFrame
+  // Smooth variable-speed auto-scroll using requestAnimationFrame with sub-pixel accumulator
   useEffect(() => {
     if (!isScrolling || modalityMode === 'interview') return;
     
     let animationId: number;
+    const scrollPosRef = { current: containerRef.current ? containerRef.current.scrollTop : 0 };
+    
     const scroll = () => {
       if (containerRef.current) {
-        containerRef.current.scrollTop += scrollSpeed * 0.4;
+        scrollPosRef.current += scrollSpeed * 0.4;
+        containerRef.current.scrollTop = Math.floor(scrollPosRef.current);
         
         const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
         if (scrollTop >= scrollHeight - clientHeight - 2) {
@@ -335,13 +338,12 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       </div>
       )}
 
-      {/* Main Script Scrolling Area */}
       <div 
         ref={containerRef}
         onScroll={handleScrollTelemetry}
         style={{ fontSize: isMini ? '16px' : `${fontSize}px` }}
         className={cn(
-          "flex-grow overflow-y-auto pr-2 custom-scrollbar scroll-smooth leading-relaxed italic font-serif select-none relative",
+          "flex-grow overflow-y-auto pr-2 custom-scrollbar leading-relaxed italic font-serif select-none relative",
           isMirrored && "transform -scale-x-100"
         )}
       >
