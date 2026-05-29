@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SoloStage from '../SoloStage';
 import React from 'react';
 import { Memory } from '@/types';
+import { toast } from 'sonner';
 
 // Mock framer-motion to simplify DOM checks and animations
 vi.mock('framer-motion', () => {
@@ -69,6 +70,10 @@ vi.mock('@/hooks/useAuth', () => ({
 const stableStream = { getAudioTracks: () => [] };
 const stableCapabilities = {};
 
+let mockIsWirelessLinked = false;
+let mockActiveInput = 'studio';
+const mockSwitchInput = vi.fn();
+
 vi.mock('@/hooks/useCamera', () => ({
   useCamera: () => ({ 
     active: true, 
@@ -80,7 +85,10 @@ vi.mock('@/hooks/useCamera', () => ({
     applyZoom: vi.fn(),
     zoomValue: 1.0,
     switchCamera: vi.fn(),
-    hasMultipleCameras: false
+    hasMultipleCameras: false,
+    activeInput: mockActiveInput,
+    switchInput: mockSwitchInput,
+    isWirelessLinked: mockIsWirelessLinked
   }),
 }));
 
@@ -173,8 +181,7 @@ describe('SoloStage Calibration Panels Test', () => {
     const aiDirectorText = screen.getByText('AI Director Active');
     const aiDirectorWrapper = aiDirectorText.closest('.pointer-events-auto');
     expect(aiDirectorWrapper).toHaveClass('left-6');
-    expect(aiDirectorWrapper).toHaveClass('top-1/2');
-    expect(aiDirectorWrapper).toHaveClass('-translate-y-1/2');
+    expect(aiDirectorWrapper).toHaveClass('top-6');
 
     // Verify Director's Tech Scout is present
     expect(screen.getByText("Director's Tech Scout")).toBeInTheDocument();
@@ -186,8 +193,7 @@ describe('SoloStage Calibration Panels Test', () => {
     const cinematicStylingText = screen.getByText('Cinematic Styling');
     const cinematicStylingWrapper = cinematicStylingText.closest('.pointer-events-auto');
     expect(cinematicStylingWrapper).toHaveClass('right-6');
-    expect(cinematicStylingWrapper).toHaveClass('top-1/2');
-    expect(cinematicStylingWrapper).toHaveClass('-translate-y-1/2');
+    expect(cinematicStylingWrapper).toHaveClass('top-6');
   });
 
 
@@ -329,6 +335,62 @@ describe('SoloStage Calibration Panels Test', () => {
     // Tech Scout panel should be minimised automatically
     expect(screen.getByText('Tech Scout')).toBeInTheDocument();
     expect(screen.queryByText("Director's Tech Scout")).not.toBeInTheDocument();
+  });
+
+  it('renders multi-cam switcher and viewport metadata when remote camera is linked', () => {
+    // Enable wireless connection simulation
+    mockIsWirelessLinked = true;
+    mockActiveInput = 'wireless';
+    
+    const formRef = React.createRef<any>();
+    render(
+      <SoloStage 
+        data={initialMemory} 
+        update={mockUpdate} 
+        currentStage={2}
+        mentorActive={true}
+        formRef={formRef}
+      />
+    );
+    
+    // Verify viewport metadata tag shows Remote Wireless input
+    expect(screen.getByText('INPUT: REMOTE WIRELESS LENS (1080p)')).toBeInTheDocument();
+    
+    // Verify switcher button segments are rendered
+    expect(screen.getByText('Studio Cam')).toBeInTheDocument();
+    expect(screen.getByText('Wireless Lens')).toBeInTheDocument();
+  });
+
+  it('automatically opens and active-syncs Interviewer window when record is clicked in interview modality', () => {
+    const formRef = React.createRef<any>();
+    render(
+      <SoloStage 
+        data={initialMemory} 
+        update={mockUpdate} 
+        currentStage={2}
+        mentorActive={true}
+        formRef={formRef}
+      />
+    );
+    
+    // Confirm technical alignment first to render performance controls
+    const techConfirmBtn = screen.getByText('Confirm Technical Alignment');
+    fireEvent.click(techConfirmBtn);
+    
+    // Toggle modality to interview
+    const modalityBtn = screen.getByTitle('Toggle Scripted vs Interview Mode');
+    fireEvent.click(modalityBtn);
+    
+    // Auto effect makes isInterviewMode true. Let's toggle it to false to close interviewer card.
+    const startInterviewBtn = screen.getByText('Interviewer Active');
+    fireEvent.click(startInterviewBtn);
+    
+    // Click Start Performance button
+    const recordBtn = screen.getByRole('button', { name: /Start Performance/i });
+    fireEvent.click(recordBtn);
+    
+    // Both windows should be automatically opened/active-synced
+    expect(screen.getByText('Interviewer Active')).toBeInTheDocument();
   });
 });
 

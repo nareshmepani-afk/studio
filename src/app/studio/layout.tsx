@@ -17,6 +17,15 @@ export default function StudioLayout({
   modal: React.ReactNode;
 }>) {
   const pathname = usePathname();
+  
+  if (pathname === "/studio/remote-camera") {
+    return (
+      <div className="relative min-h-screen bg-neutral-950 text-white selection:bg-primary/30">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <StudioProviders>
       <div className="relative min-h-screen bg-neutral-950 text-white selection:bg-primary/30">

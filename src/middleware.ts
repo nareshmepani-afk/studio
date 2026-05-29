@@ -35,6 +35,7 @@ export async function middleware(request: NextRequest) {
   // 1. Allow storyteller and guest director routes to pass through with sessionId
   if (pathname.startsWith('/remote/') || 
       (pathname.startsWith('/director') && request.nextUrl.searchParams.has('sessionId')) ||
+      (pathname.startsWith('/studio/remote-camera') && request.nextUrl.searchParams.has('sessionId')) ||
       (pathname.startsWith('/studio') && request.nextUrl.searchParams.has('sessionId') && request.nextUrl.searchParams.get('mode') === 'guest')) {
     return NextResponse.next();
   }

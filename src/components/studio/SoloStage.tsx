@@ -20,8 +20,11 @@ import {
   UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, 
   Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
   Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
-  Lock, ShieldAlert, Smartphone
+  Lock, ShieldAlert, Smartphone, ShieldCheck
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { QRCodeCanvas } from 'qrcode.react';
 import { generateInterviewQuestion, analyzeFraming } from '@/actions/aiWeaver';
 import { synthesizeStudioSpeech } from '@/actions/studio-vocal';
 import { useCamera } from '@/hooks/useCamera';
@@ -114,6 +117,7 @@ export default function SoloStage({
   const [opticsContrast, setOpticsContrast] = useState(110);
   const [opticsFilter, setOpticsFilter] = useState<'default' | 'warm' | 'cool' | 'noir'>('default');
 
+
   // Minimise / Restore panel states (pre-flight checks calibration stage)
   const [isDirectorMinimised, setIsDirectorMinimised] = useState(false);
   const [isTechScoutMinimised, setIsTechScoutMinimised] = useState(false);
@@ -135,6 +139,15 @@ export default function SoloStage({
     activeBeatIndex,
     setActiveBeatIndex
   } = useInterviewMode();
+
+  // Automatically auto-start Interview Mode when modalityMode is set to 'interview'
+  useEffect(() => {
+    if (modalityMode === 'interview') {
+      setIsInterviewMode(true);
+    } else {
+      setIsInterviewMode(false);
+    }
+  }, [modalityMode]);
   
   // Cinematic Pipeline State (Shared via Firestore)
   // BUGFIX: Prioritize global stage from prop, but allow local data fallback ONLY if prop is undefined.
@@ -154,9 +167,47 @@ export default function SoloStage({
 
 
 
+  // Wireless Camera/Lens setup state
+  const [isCameraQRModalOpen, setIsCameraQRModalOpen] = useState(false);
+  const [hostIP, setHostIP] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setHostIP(window.location.hostname);
+    }
+  }, []);
+
+  const cameraPairingUrl = typeof window !== 'undefined'
+    ? `${window.location.protocol}//${hostIP || window.location.hostname}${window.location.port ? `:${window.location.port}` : ''}/studio/remote-camera?sessionId=solo-remote-${data?.id}-host`
+    : '';
+
   // 1. Initialize local Camera stream (Only when explicitly enabled)
-  const { stream, error, cameraError, isMuted, capabilities, applyZoom, zoomValue, switchCamera, hasMultipleCameras } = useCamera({ enabled: isCameraActive });
+  const { 
+    stream, 
+    error, 
+    cameraError, 
+    isMuted, 
+    capabilities, 
+    applyZoom, 
+    zoomValue, 
+    switchCamera, 
+    hasMultipleCameras,
+    activeInput,
+    switchInput,
+    isWirelessLinked
+  } = useCamera({ enabled: isCameraActive });
   const [isPersistenceSaving, setIsPersistenceSaving] = useState(false);
+
+  // Automatically close the Wireless Lens Bridge modal once linked
+  useEffect(() => {
+    if (isWirelessLinked && isCameraQRModalOpen) {
+      console.log("[SoloStage] Wireless lens linked! Automatically closing pairing modal.");
+      setIsCameraQRModalOpen(false);
+      toast.success("Wireless Lens Connected", {
+        description: "Your smartphone feed is now active and selected as the main camera stream!"
+      });
+    }
+  }, [isWirelessLinked, isCameraQRModalOpen]);
   
   // 2. Bind the robust MediaRecorder Hook
   const { 
@@ -188,6 +239,30 @@ export default function SoloStage({
     isRecording
   });
 
+  // Automatically force layout based on Interview Mode and recording / counting-in states
+  useEffect(() => {
+    if (isInterviewMode) {
+      if (isRecording || isCountingIn) {
+        if (prompterLayout !== 'center') {
+          setPrompterLayout('center');
+        }
+      } else {
+        if (prompterLayout !== 'side') {
+          setPrompterLayout('side');
+        }
+      }
+    }
+  }, [isInterviewMode, isRecording, isCountingIn, prompterLayout]);
+
+  // Check if both windows are open and active in interview modality before camera starts rolling
+  const handleStartCapture = useCallback(() => {
+    if (modalityMode === 'interview' || isInterviewMode) {
+      setIsInterviewMode(true);
+      setPrompterLayout('center');
+    }
+    startCapture();
+  }, [modalityMode, isInterviewMode, startCapture]);
+
   // Listen to remote reset / restart take commands safely
   useEffect(() => {
     const handleRestartTake = () => {
@@ -198,6 +273,41 @@ export default function SoloStage({
     window.addEventListener('studio-restart-take', handleRestartTake);
     return () => window.removeEventListener('studio-restart-take', handleRestartTake);
   }, [cancelCapture, setActiveBeatIndex]);
+
+  // MOD-15: Auto-minimise calibration panels and auto-start interviewer mode when recording starts
+  useEffect(() => {
+    if (isRecording) {
+      console.log('[SoloStage] Recording active. Collapsing pre-flight panels and engaging performance modes...');
+      setIsDirectorMinimised(true);
+      setIsTechScoutMinimised(true);
+      setIsOpticsMinimised(true);
+      
+      // Auto-start Interview Mode if 'interview' modality is selected in the script header
+      if (modalityMode === 'interview') {
+        setIsInterviewMode(true);
+      }
+    }
+  }, [isRecording, modalityMode]);
+
+  // Enforce a strict 6-minute (360 seconds) hard recording limit on the desktop
+  useEffect(() => {
+    if (!isRecording) return;
+    
+    if (recordingTime === 300) {
+      toast.warning("Recording Limit Warning", {
+        description: "You have reached 5 minutes. A hard stop will be enforced in 1 minute (60 seconds)!",
+        duration: 10000
+      });
+    }
+    
+    if (recordingTime >= 360) {
+      toast.success("Hard Limit Reached", {
+        description: "Enforcing 6-minute limit. Safely stopping and preserving your take..."
+      });
+      stopRecording();
+      setIsCameraActive(false);
+    }
+  }, [isRecording, recordingTime, stopRecording]);
 
   // Floating Remote Command Alert Overlay
   const [remoteCommandAlert, setRemoteCommandAlert] = useState<string | null>(null);
@@ -446,6 +556,7 @@ export default function SoloStage({
     if (isAnalyzingFraming || isSynthesizing) return;
     
     setIsTechScoutMinimised(true);
+    setIsOpticsMinimised(true);
     setIsAnalyzingFraming(true);
     try {
       let imageBase64 = '';
@@ -473,6 +584,10 @@ export default function SoloStage({
       if (!feedback) {
         // PREMIUM Directorial Fallback Feedback
         feedback = "Headroom is perfect. Try shifting slightly to the left to align with the Rule of Thirds. Lighting is a bit warm; your silhouette is authorised, but a touch more front-light would help your eyes sparkle.";
+      }
+
+      if (!isWirelessLinked) {
+        feedback += " Since your desktop camera angle appears a bit static or offset, we highly recommend scanning the QR code under the [USE PHONE AS CAMERA] button in the Optics panel to pair your phone as a flexible wireless camera lens!";
       }
 
       toast.info("Director Analysis", { 
@@ -648,7 +763,7 @@ export default function SoloStage({
     <div className="w-full h-full flex flex-col items-center justify-center relative pb-24">
        <div 
          ref={videoContainerRef}
-         className={`w-full max-w-[90vw] xl:max-w-7xl aspect-video relative bg-black border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden transition-all duration-1000 ${isRecording ? 'ring-2 ring-rose-500/50 shadow-[0_0_120px_rgba(244,63,94,0.3)] scale-[1.01]' : 'shadow-2xl'}`}
+         className={`w-full max-w-[90vw] xl:max-w-7xl aspect-video min-h-[580px] md:min-h-[660px] relative bg-black border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden transition-all duration-1000 ${isRecording ? 'ring-2 ring-rose-500/50 shadow-[0_0_120px_rgba(244,63,94,0.3)] scale-[1.01]' : 'shadow-2xl'}`}
        >
           <video 
             ref={videoRef}
@@ -759,7 +874,7 @@ export default function SoloStage({
                 className={cn(
                   "absolute z-30 pointer-events-auto",
                   !techAlignmentConfirmed 
-                    ? "left-6 xl:left-12 top-1/2 -translate-y-1/2" 
+                    ? "left-6 xl:left-12 top-6" 
                     : "left-10 top-10"
                 )}
               >
@@ -793,7 +908,7 @@ export default function SoloStage({
                   }}
                   style={{ touchAction: 'none' }}
                   className={cn(
-                    "bg-zinc-950/85 backdrop-blur-3xl border border-white/10 p-6 shadow-2xl flex flex-col justify-between hover:bg-zinc-900/90 duration-700 select-none cursor-grab active:cursor-grabbing",
+                    "bg-zinc-950/85 backdrop-blur-3xl border border-white/10 p-6 shadow-2xl flex flex-col justify-between hover:bg-zinc-900/90 transition-colors duration-700 select-none cursor-grab active:cursor-grabbing",
                     isDirectorMinimised && "p-3 px-4 flex-row items-center justify-between"
                   )}
                 >
@@ -889,7 +1004,7 @@ export default function SoloStage({
                 animate={{ scale: 1, opacity: 1 }}
                 whileHover={{ scale: 1.05, border: '2px solid rgba(239, 68, 68, 0.6)' }}
                 whileTap={{ scale: 0.95 }}
-                onClick={startCapture}
+                onClick={handleStartCapture}
                 className="pointer-events-auto px-8 py-4 bg-zinc-950/70 border-2 border-white/20 hover:border-rose-500/50 hover:bg-rose-950/30 text-white font-black text-xs uppercase tracking-[0.3em] rounded-full shadow-[0_0_60px_rgba(239,68,68,0.2)] backdrop-blur-md transition-all flex items-center gap-3.5 cursor-pointer group"
               >
                 <div className="w-3.5 h-3.5 rounded-full bg-rose-500 group-hover:bg-rose-600 shadow-[0_0_15px_rgba(244,63,94,0.8)] transition-all animate-pulse" />
@@ -971,17 +1086,123 @@ export default function SoloStage({
 
                     <div className="w-full space-y-3.5 mb-8 text-left">
                       {/* Item 1: Camera Check */}
-                      <div className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-2xl">
-                        <div className="flex items-center gap-3">
-                          <Camera className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold text-white/90">Camera Angle & Lighting</span>
-                            <span className="text-[9px] text-white/40">Optics active. Video stream is in full view.</span>
+                      <div className="flex flex-col gap-2 p-3 bg-white/5 border border-white/5 rounded-2xl">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Camera className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-white/90">Camera Angle & Lighting</span>
+                              <span className="text-[9px] text-white/40">Optics active. Video stream is in full view.</span>
+                            </div>
                           </div>
+                          <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black uppercase tracking-wider text-emerald-400 shrink-0">
+                            Active
+                          </span>
                         </div>
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black uppercase tracking-wider text-emerald-400 shrink-0">
-                          Active
-                        </span>
+                        
+                        {/* Wireless Setup Link directly in Tech Scout Panel */}
+                        <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+                          <span className="text-[8px] text-white/40 uppercase tracking-widest">Setup/Angle Stack:</span>
+                          
+                          {isWirelessLinked ? (
+                            <span className="text-[8px] text-emerald-400 font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+                              Wireless Lens Connected
+                            </span>
+                          ) : (
+                            <Dialog open={isCameraQRModalOpen} onOpenChange={setIsCameraQRModalOpen}>
+                              <DialogTrigger asChild>
+                                <button className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 transition-all font-black text-[8px] uppercase tracking-wider rounded-lg flex items-center gap-1 cursor-pointer">
+                                  <Smartphone className="w-2.5 h-2.5" />
+                                  <span>Use Phone as Camera</span>
+                                </button>
+                              </DialogTrigger>
+                              <DialogContent className="sm:max-w-md bg-zinc-950 border-white/10 text-white">
+                                <DialogHeader>
+                                  <DialogTitle className="font-headline text-lg uppercase tracking-wide text-white">
+                                    Wireless Lens Bridge
+                                  </DialogTitle>
+                                  <DialogDescription className="text-zinc-400 text-xs">
+                                    Scan this QR code with your mobile device to link your smartphone as a premium wireless camera lens.
+                                  </DialogDescription>
+                                </DialogHeader>
+
+                                {typeof window !== 'undefined' && (
+                                  window.location.hostname === 'localhost' ||
+                                  window.location.hostname === '127.0.0.1' ||
+                                  window.location.hostname.startsWith('192.168.') ||
+                                  window.location.hostname.startsWith('10.') ||
+                                  window.location.hostname.startsWith('172.')
+                                ) && (
+                                  <div className="space-y-1 bg-white/5 p-3.5 rounded-xl border border-white/10 my-1 animate-fadeIn">
+                                    <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block mb-1">
+                                      Local IP Address / Hostname
+                                    </label>
+                                    <input 
+                                      type="text" 
+                                      value={hostIP}
+                                      onChange={(e) => setHostIP(e.target.value)}
+                                      className="w-full bg-black/50 border border-white/10 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-emerald-500/50"
+                                      placeholder="e.g. 192.168.1.50"
+                                    />
+                                    <p className="text-[9px] text-zinc-500 leading-relaxed mt-1">
+                                      Change <span className="text-zinc-300 font-bold">"localhost"</span> to your computer's local LAN IP (e.g. 192.168.x.x) so your phone can locate this computer over Wi-Fi.
+                                    </p>
+                                  </div>
+                                )}
+
+                                <div className="flex flex-col items-center justify-center p-6 bg-white/5 rounded-2xl border border-white/10 gap-4 my-1">
+                                  <div className="relative p-3 bg-white rounded-xl">
+                                    {cameraPairingUrl ? (
+                                      <QRCodeCanvas value={cameraPairingUrl} size={200} level="H" includeMargin={false} className="rounded" />
+                                    ) : (
+                                      <div className="w-[200px] h-[200px] flex items-center justify-center text-zinc-800">
+                                        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="w-full flex flex-col items-center gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className={cn(
+                                        "w-2 h-2 rounded-full",
+                                        isWirelessLinked
+                                          ? "bg-emerald-500 animate-pulse"
+                                          : "bg-zinc-600"
+                                      )} />
+                                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-300">
+                                        {isWirelessLinked ? 'WIRELESS FEED SYNCD' : 'WAITING FOR SOURCE STREAM'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center justify-between text-zinc-500 text-[9px] tracking-widest uppercase border-t border-white/5 pt-4">
+                                  <div className="flex items-center gap-1.5">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500/40" />
+                                    <span>Secure WebRTC stream</span>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      if (cameraPairingUrl) {
+                                        navigator.clipboard.writeText(cameraPairingUrl);
+                                        toast.success("Wireless Lens URL copied to clipboard!");
+                                      }
+                                    }}
+                                    className="text-[9px] font-black text-sky-400 hover:text-sky-300 transition-colors uppercase tracking-wider cursor-pointer bg-transparent border-0 outline-none"
+                                  >
+                                    Copy Link
+                                  </button>
+                                </div>
+
+                                <DialogFooter className="mt-2">
+                                  <Button variant="outline" onClick={() => setIsCameraQRModalOpen(false)} className="bg-white/5 border-white/10 hover:bg-white/10 hover:text-white text-zinc-300 text-xs">
+                                    Close
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                          )}
+                        </div>
                       </div>
 
                       {/* Item 2: Acoustics Check (Live Sound Check Visualiser) */}
@@ -1031,7 +1252,7 @@ export default function SoloStage({
 
           {/* Floating 'Camera Control Deck' calibration overlay */}
           {mounted && !isMuted && !techAlignmentConfirmed && (
-            <div className="absolute right-6 xl:right-12 top-1/2 -translate-y-1/2 z-[35] pointer-events-auto">
+            <div className="absolute right-6 xl:right-12 top-6 z-[35] pointer-events-auto">
                <motion.div
                  drag
                  dragConstraints={videoContainerRef}
@@ -1148,6 +1369,140 @@ export default function SoloStage({
                        )}
                      </div>
 
+                     {/* Wireless Camera Bridge Setup & Switcher */}
+                     <div className="space-y-2 pt-2 border-t border-white/5">
+                       <span className="text-[9px] text-white/40 uppercase tracking-wider font-bold block">Wireless camera Input</span>
+                       
+                       {isWirelessLinked ? (
+                         <div className="flex flex-col gap-1.5">
+                           <span className="text-[8px] text-emerald-400 font-bold uppercase tracking-wider block bg-emerald-500/10 border border-emerald-500/20 py-1 px-2 rounded-lg text-center">
+                             ✓ Remote Wireless Lens Connected
+                           </span>
+                           
+                           {/* Premium Segment Switcher Button */}
+                           <div className="grid grid-cols-2 gap-1.5 p-1 bg-white/5 rounded-xl border border-white/10">
+                             <button
+                               onClick={() => switchInput('studio')}
+                               className={cn(
+                                 "py-1.5 text-[8px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer",
+                                 activeInput === 'studio'
+                                   ? "bg-emerald-500 text-slate-950 font-black shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                                   : "text-white/50 hover:bg-white/5"
+                               )}
+                             >
+                               Studio Cam
+                             </button>
+                             <button
+                               onClick={() => switchInput('wireless')}
+                               className={cn(
+                                 "py-1.5 text-[8px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer",
+                                 activeInput === 'wireless'
+                                   ? "bg-emerald-500 text-slate-950 font-black shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                                   : "text-white/50 hover:bg-white/5"
+                               )}
+                             >
+                               Wireless Lens
+                             </button>
+                           </div>
+                         </div>
+                       ) : (
+                         <Dialog open={isCameraQRModalOpen} onOpenChange={setIsCameraQRModalOpen}>
+                           <DialogTrigger asChild>
+                             <button
+                               className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 border border-emerald-500/30 text-slate-950 transition-all font-black text-[9px] uppercase tracking-widest rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+                             >
+                               <Smartphone className="w-3.5 h-3.5" />
+                               <span>Use Phone as Camera</span>
+                             </button>
+                           </DialogTrigger>
+                           <DialogContent className="sm:max-w-md bg-zinc-950 border-white/10 text-white">
+                             <DialogHeader>
+                               <DialogTitle className="font-headline text-lg uppercase tracking-wide text-white">
+                                 Wireless Lens Bridge
+                               </DialogTitle>
+                               <DialogDescription className="text-zinc-400 text-xs">
+                                 Scan this QR code with your mobile device to link your smartphone as a premium wireless camera lens.
+                               </DialogDescription>
+                             </DialogHeader>
+
+                             {typeof window !== 'undefined' && (
+                               window.location.hostname === 'localhost' ||
+                               window.location.hostname === '127.0.0.1' ||
+                               window.location.hostname.startsWith('192.168.') ||
+                               window.location.hostname.startsWith('10.') ||
+                               window.location.hostname.startsWith('172.')
+                             ) && (
+                               <div className="space-y-1 bg-white/5 p-3.5 rounded-xl border border-white/10 my-1 animate-fadeIn">
+                                 <label className="text-[9px] font-black text-zinc-400 uppercase tracking-widest block mb-1">
+                                   Local IP Address / Hostname
+                                 </label>
+                                 <input 
+                                   type="text" 
+                                   value={hostIP}
+                                   onChange={(e) => setHostIP(e.target.value)}
+                                   className="w-full bg-black/50 border border-white/10 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-emerald-500/50"
+                                   placeholder="e.g. 192.168.1.50"
+                                 />
+                                 <p className="text-[9px] text-zinc-500 leading-relaxed mt-1">
+                                   Change <span className="text-zinc-300 font-bold">"localhost"</span> to your computer's local LAN IP (e.g. 192.168.x.x) so your phone can locate this computer over Wi-Fi.
+                                 </p>
+                               </div>
+                             )}
+
+                             <div className="flex flex-col items-center justify-center p-6 bg-white/5 rounded-2xl border border-white/10 gap-4 my-1">
+                               <div className="relative p-3 bg-white rounded-xl">
+                                 {cameraPairingUrl ? (
+                                   <QRCodeCanvas value={cameraPairingUrl} size={200} level="H" includeMargin={false} className="rounded" />
+                                 ) : (
+                                   <div className="w-[200px] h-[200px] flex items-center justify-center text-zinc-800">
+                                     <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+                                   </div>
+                                 )}
+                               </div>
+
+                               <div className="w-full flex flex-col items-center gap-2">
+                                 <div className="flex items-center gap-2">
+                                   <span className={cn(
+                                     "w-2 h-2 rounded-full",
+                                     isWirelessLinked
+                                       ? "bg-emerald-500 animate-pulse"
+                                       : "bg-zinc-600"
+                                   )} />
+                                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-300">
+                                     {isWirelessLinked ? 'WIRELESS FEED SYNCD' : 'WAITING FOR SOURCE STREAM'}
+                                   </span>
+                                 </div>
+                               </div>
+                             </div>
+
+                             <div className="flex items-center justify-between text-zinc-500 text-[9px] tracking-widest uppercase border-t border-white/5 pt-4">
+                               <div className="flex items-center gap-1.5">
+                                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-500/40" />
+                                 <span>Secure WebRTC stream</span>
+                               </div>
+                               <button
+                                 onClick={() => {
+                                   if (cameraPairingUrl) {
+                                     navigator.clipboard.writeText(cameraPairingUrl);
+                                     toast.success("Wireless Lens URL copied to clipboard!");
+                                   }
+                                 }}
+                                 className="text-[9px] font-black text-sky-400 hover:text-sky-300 transition-colors uppercase tracking-wider cursor-pointer bg-transparent border-0 outline-none"
+                               >
+                                 Copy Link
+                               </button>
+                             </div>
+
+                             <DialogFooter className="mt-2">
+                               <Button variant="outline" onClick={() => setIsCameraQRModalOpen(false)} className="bg-white/5 border-white/10 hover:bg-white/10 hover:text-white text-zinc-300 text-xs">
+                                 Close
+                               </Button>
+                             </DialogFooter>
+                           </DialogContent>
+                         </Dialog>
+                       )}
+                     </div>
+
                      {/* Cinematic Filter Presets */}
                      <div className="space-y-2">
                        <span className="text-[9px] text-white/40 uppercase tracking-wider font-bold block">Color Grade Filter</span>
@@ -1191,35 +1546,47 @@ export default function SoloStage({
           
           {/* Cinematic Teleprompter Overlay */}
           <motion.div 
-            key={`${prompterLayout}-${prompterSize}`}
+            layout
+            key="cinematic-teleprompter"
             drag={prompterLayout === 'side'}
             dragControls={dragControls}
             dragListener={false}
             dragConstraints={videoContainerRef}
             dragElastic={0.05}
             dragMomentum={false}
-            animate={prompterLayout === 'center' ? {
-              left: "50%",
-              top: "50%",
-              x: "-50%",
-              y: "-50%",
-              width: "75%",
-              height: "65%",
-            } : {
+            animate={prompterLayout === 'center' ? (
+              isInterviewMode ? {
+                left: "50%",
+                x: "-50%",
+                top: 170,
+                y: 0,
+                width: 680,
+                height: 340,
+              } : {
+                left: "50%",
+                top: "50%",
+                x: "-50%",
+                y: "-50%",
+                width: "75%",
+                height: "65%",
+              }
+            ) : {
               left: "auto",
               right: 40,
               top: 40,
-              width: prompterSize === 'mini' ? 280 : prompterSize === 'sm' ? 380 : prompterSize === 'md' ? 580 : 820,
-              height: prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 350 : prompterSize === 'md' ? 520 : 720
+              width: isInterviewMode 
+                ? (prompterSize === 'mini' ? 280 : 340)
+                : (prompterSize === 'mini' ? 280 : prompterSize === 'sm' ? 380 : prompterSize === 'md' ? 580 : 820),
+              height: isInterviewMode
+                ? (prompterSize === 'mini' ? 180 : 320)
+                : (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 350 : prompterSize === 'md' ? 520 : 720)
             }}
             transition={{ type: "spring", stiffness: 120, damping: 22 }}
             className={cn(
               "z-30 border border-white/10 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col pointer-events-auto transition-all duration-1000",
               prompterSize === 'mini' ? "p-4 bg-zinc-950/90" : "p-8",
               (isMuted || !mounted || !techAlignmentConfirmed) && "hidden",
-              (!isRecording && !isCountingIn)
-                ? "opacity-30 grayscale-[0.3] blur-[0.5px] pointer-events-none"
-                : "opacity-100 blur-0",
+              "opacity-100 blur-0",
               prompterLayout === 'center'
                 ? "absolute bg-zinc-950/65 backdrop-blur-md"
                 : "absolute bg-zinc-950/85 backdrop-blur-3xl"
@@ -1350,8 +1717,12 @@ export default function SoloStage({
                    muted
                    className="w-full h-full object-cover scale-x-[-1]"
                    ref={(el) => {
-                     if (el && stream) {
+                     if (el && stream && el.srcObject !== stream) {
                        el.srcObject = stream;
+                       const playPromise = el.play();
+                       if (playPromise !== undefined) {
+                         playPromise.catch(e => console.warn("Selfie play error:", e));
+                       }
                      }
                    }}
                  />
@@ -1364,6 +1735,14 @@ export default function SoloStage({
 
           {/* Cinematic Camera Overlays (Safe Areas/REC) */}
           <div className="absolute inset-0 z-20 pointer-events-none border-[40px] border-transparent">
+             {/* Sleek Metadata Tag in Top-Left Corner */}
+             <div className="absolute top-8 left-8 flex items-center gap-2 px-4 py-1.5 bg-black/60 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white/70 backdrop-blur-md">
+               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+               <span>
+                 INPUT: {activeInput === 'wireless' ? 'REMOTE WIRELESS LENS (1080p)' : 'STUDIO WEBCAM (720p)'}
+               </span>
+             </div>
+
              {/* Corner Accents */}
              <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white/20 rounded-tl-xl" />
              <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white/20 rounded-tr-xl" />
@@ -1490,70 +1869,130 @@ export default function SoloStage({
                   )}
                 </AnimatePresence>
 
-                <AnimatePresence>
-                  {isInterviewMode && !isCountingIn && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl w-full bg-slate-950/70 backdrop-blur-3xl border border-sky-500/30 rounded-[2.5rem] p-8 shadow-2xl text-center pointer-events-auto">
-                        <p className="text-xl font-headline text-white leading-relaxed mb-6 italic">"{currentQuestion || 'Ready to start the interview...'}"</p>
-                        <div className="flex items-center gap-4 justify-center">
-                           <button onClick={triggerNextQuestion} disabled={isSynthesizing} className="px-6 py-3 bg-sky-500 text-slate-950 font-black rounded-xl hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-50">
-                              <MessageSquare className="w-4 h-4" /> Next Question
-                           </button>
-                           <button onClick={handleCheckFraming} disabled={isAnalyzingFraming} className="px-6 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-all flex items-center gap-2 disabled:opacity-50">
-                              <Layout className="w-4 h-4 text-emerald-400" /> Check Shot
-                           </button>
-                        </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                 <AnimatePresence>
+                    {isInterviewMode && (
+                      <motion.div 
+                        key="interviewer-card"
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={prompterLayout === 'center' ? {
+                          opacity: 1,
+                          left: "50%",
+                          x: "-50%",
+                          top: 30,
+                          y: 0,
+                          width: 680,
+                          height: 120
+                        } : {
+                          opacity: 1,
+                          left: 40,
+                          x: 0,
+                          top: 40,
+                          y: 0,
+                          width: 340,
+                          height: 320
+                        }}
+                        exit={{ opacity: 0, x: -50 }}
+                        transition={{ type: "spring", stiffness: 120, damping: 22 }}
+                        className={cn(
+                          "absolute bg-slate-950/85 backdrop-blur-3xl border border-sky-500/30 rounded-[2.5rem] p-6 shadow-2xl pointer-events-auto z-20 overflow-hidden flex",
+                          prompterLayout === 'center' ? "flex-row items-center gap-6 justify-between" : "flex-col text-center justify-between"
+                        )}
+                      >
+                        {prompterLayout === 'center' ? (
+                          <>
+                            <div className="flex flex-col gap-1 items-start select-none shrink-0 w-32 border-r border-white/10 pr-4">
+                               <span className="text-[9px] font-black text-sky-400 uppercase tracking-widest animate-pulse">AI DIRECTOR</span>
+                               <span className="text-[7px] font-mono text-white/40 tracking-wider font-bold">INTERVIEW LIVE</span>
+                            </div>
+                            <div className="flex-grow flex items-center justify-start min-h-0 px-2 overflow-hidden">
+                               <p className="text-xs md:text-sm font-headline text-white leading-relaxed italic overflow-y-auto custom-scrollbar pr-2 max-h-[80px] text-left w-full">
+                                  "{currentQuestion || 'Ready to start the interview...'}"
+                               </p>
+                            </div>
+                            <div className="flex items-center gap-2.5 shrink-0 pl-2">
+                               <button onClick={triggerNextQuestion} disabled={isSynthesizing} className="px-4 py-2 bg-sky-500 text-slate-950 font-black text-[9px] uppercase tracking-widest rounded-xl hover:scale-105 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
+                                  <MessageSquare className="w-3.5 h-3.5" /> Next
+                               </button>
+                               <button onClick={handleCheckFraming} disabled={isAnalyzingFraming} className="px-4 py-2 bg-white/5 border border-white/10 text-white font-bold text-[9px] uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
+                                  <Layout className="w-3.5 h-3.5 text-emerald-400" /> Lint
+                               </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex flex-col gap-1 items-center mb-1 select-none shrink-0">
+                               <span className="text-[10px] font-black text-sky-400 uppercase tracking-[0.3em] animate-pulse">AI DIRECTOR: INTERVIEW ACTIVE</span>
+                               <div className="w-8 h-[1px] bg-sky-500/30 my-1" />
+                            </div>
+                            <div className="flex-grow flex items-center justify-center min-h-0 py-2">
+                               <p className="text-xs md:text-sm font-headline text-white leading-relaxed italic max-h-[140px] overflow-y-auto custom-scrollbar px-1">
+                                  "{currentQuestion || 'Ready to start the interview...'}"
+                               </p>
+                            </div>
+                            <div className="flex items-center gap-3 justify-center pt-2 shrink-0">
+                               <button onClick={triggerNextQuestion} disabled={isSynthesizing} className="px-4 py-2 bg-sky-500 text-slate-950 font-black text-[10px] uppercase tracking-widest rounded-xl hover:scale-105 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
+                                  <MessageSquare className="w-3.5 h-3.5" /> Next
+                               </button>
+                               <button onClick={handleCheckFraming} disabled={isAnalyzingFraming} className="px-4 py-2 bg-white/5 border border-white/10 text-white font-bold text-[10px] uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
+                                  <Layout className="w-3.5 h-3.5 text-emerald-400" /> Lint
+                               </button>
+                            </div>
+                          </>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
              </div>
 
-             <div className="flex justify-between items-center w-full px-12 pb-6 pointer-events-auto">
-                <button onClick={() => setIsInterviewMode(!isInterviewMode)} className={`px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest border transition-all ${isInterviewMode ? 'bg-sky-500/20 border-sky-500 text-sky-400' : 'bg-black/40 border-white/10 text-white/40'}`}>
-                   {isInterviewMode ? 'Interviewer Active' : 'Start Interview'}
-                </button>
-
-                {isCountingIn ? (
-                  <button onClick={cancelCapture} className="w-20 h-20 rounded-full bg-emerald-500/10 border-4 border-emerald-500 hover:bg-emerald-500/30 transition-all flex items-center justify-center animate-pulse group">
-                    <Square className="w-6 h-6 text-emerald-400 fill-current" />
+             {techAlignmentConfirmed && (
+               <div className="flex justify-between items-center w-full px-12 pb-6 pointer-events-auto">
+                  <button onClick={() => setIsInterviewMode(!isInterviewMode)} className={`px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest border transition-all ${isInterviewMode ? 'bg-sky-500/20 border-sky-500 text-sky-400' : 'bg-black/40 border-white/10 text-white/40'}`}>
+                     {isInterviewMode ? 'Interviewer Active' : 'Start Interview'}
                   </button>
-                ) : !isRecording ? (
-                    <button 
-                      onClick={startCapture} 
-                      disabled={!stream || uploading || isAlchemySaving || !techAlignmentConfirmed} 
-                      className="w-20 h-20 rounded-full bg-white/10 border-4 border-white/40 hover:border-rose-500 hover:bg-rose-500/20 transition-all flex items-center justify-center group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-white/40 disabled:hover:bg-white/10"
-                      title={!stream ? "Hardware access muted or blocked. Re-enable camera and mic access to record." : !techAlignmentConfirmed ? "Please confirm technical alignment before starting performance." : undefined}
-                    >
-                      <div className="w-6 h-6 rounded-full bg-rose-500 group-hover:scale-125 group-disabled:group-hover:scale-100 transition-all" />
+
+                  {isCountingIn ? (
+                    <button onClick={cancelCapture} className="w-20 h-20 rounded-full bg-emerald-500/10 border-4 border-emerald-500 hover:bg-emerald-500/30 transition-all flex items-center justify-center animate-pulse group">
+                      <Square className="w-6 h-6 text-emerald-400 fill-current" />
                     </button>
-                ) : (
-                  <button onClick={() => { stopRecording(); setIsCameraActive(false); }} className="w-20 h-20 rounded-full bg-rose-500/20 border-4 border-rose-500 hover:bg-rose-500 transition-all flex items-center justify-center">
-                    <Square className="w-6 h-6 text-white fill-current" />
-                  </button>
-                )}
+                  ) : !isRecording ? (
+                      <button 
+                        onClick={handleStartCapture} 
+                        disabled={!stream || uploading || isAlchemySaving || !techAlignmentConfirmed} 
+                        className="w-20 h-20 rounded-full bg-white/10 border-4 border-white/40 hover:border-rose-500 hover:bg-rose-500/20 transition-all flex items-center justify-center group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-white/40 disabled:hover:bg-white/10"
+                        title={!stream ? "Hardware access muted or blocked. Re-enable camera and mic access to record." : !techAlignmentConfirmed ? "Please confirm technical alignment before starting performance." : undefined}
+                      >
+                        <div className="w-6 h-6 rounded-full bg-rose-500 group-hover:scale-125 group-disabled:group-hover:scale-100 transition-all" />
+                      </button>
+                  ) : (
+                    <button onClick={() => { stopRecording(); setIsCameraActive(false); }} className="w-20 h-20 rounded-full bg-rose-500/20 border-4 border-rose-500 hover:bg-rose-500 transition-all flex items-center justify-center">
+                      <Square className="w-6 h-6 text-white fill-current" />
+                    </button>
+                  )}
 
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-4 bg-black/40 backdrop-blur-md px-6 py-2.5 rounded-full border border-white/10 pointer-events-auto">
-                    <Volume2 className={cn("w-4 h-4 transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")} />
-                    {/* Glowing Frequency Waveform Visualizer */}
-                    <div className="flex items-end gap-[2px] h-6 w-32 px-1">
-                      {waveform.slice(0, 24).map((value, i) => (
-                        <motion.div
-                          key={i}
-                          className={cn(
-                            "w-[3px] rounded-full transition-all",
-                            isRecording 
-                              ? "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)]" 
-                              : "bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
-                          )}
-                          animate={{ height: `${Math.max(4, value * (isRecording ? 48 : 24))}px` }}
-                          transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-                        />
-                      ))}
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 bg-black/40 backdrop-blur-md px-6 py-2.5 rounded-full border border-white/10 pointer-events-auto">
+                      <Volume2 className={cn("w-4 h-4 transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")} />
+                      {/* Glowing Frequency Waveform Visualizer */}
+                      <div className="flex items-end gap-[2px] h-6 w-32 px-1">
+                        {waveform.slice(0, 24).map((value, i) => (
+                          <motion.div
+                            key={i}
+                            className={cn(
+                              "w-[3px] rounded-full transition-all",
+                              isRecording 
+                                ? "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)]" 
+                                : "bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                            )}
+                            animate={{ height: `${Math.max(4, value * (isRecording ? 48 : 24))}px` }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                          />
+                        ))}
+                      </div>
+                      <span className={cn("text-[10px] font-mono font-bold w-8 text-right transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")}>{volume}%</span>
                     </div>
-                    <span className={cn("text-[10px] font-mono font-bold w-8 text-right transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")}>{volume}%</span>
                   </div>
-                </div>
-             </div>
+               </div>
+             )}
 
              {/* Cinematic Slate / Alchemy Saving Ceremony Overlay (MW-35) */}
              <AnimatePresence>

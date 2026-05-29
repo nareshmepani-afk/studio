@@ -72,9 +72,10 @@ export function Navbar() {
   // Specific Roles Views
   const isGuestDirectorView = pathname === '/director';
   
-  // MOBILE REMOTE STEALH: Do not render the navbar AT ALL on the interviewer screen
-  // to ensure maximum focus and screen real-estate for the story script.
-  if (isInterviewer) return null;
+  // MOBILE REMOTE STEALTH: Do not render the navbar AT ALL on the interviewer or remote camera screens
+  // to ensure maximum focus and screen real-estate.
+  const isRemoteCamera = pathname?.startsWith('/studio/remote-camera');
+  if (isInterviewer || isRemoteCamera) return null;
 
   return (
     <TooltipProvider delayDuration={300}>

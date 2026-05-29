@@ -9,8 +9,24 @@ export function useQRBridge(memoryId: string | null) {
   const connRef = useRef<any>(null);
   const { actions } = useStudioState();
 
+  const [isOpticsMuted, setIsOpticsMuted] = useState(false);
+
   useEffect(() => {
-    if (!memoryId || typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return;
+    setIsOpticsMuted(localStorage.getItem('privacy_optics_muted') === 'true');
+
+    const handleMuteChange = () => {
+      setIsOpticsMuted(localStorage.getItem('privacy_optics_muted') === 'true');
+    };
+    window.addEventListener('privacy-optics-changed', handleMuteChange);
+    return () => window.removeEventListener('privacy-optics-changed', handleMuteChange);
+  }, []);
+
+  useEffect(() => {
+    if (!memoryId || typeof window === 'undefined' || isOpticsMuted) {
+      setPeerState('idle');
+      return;
+    }
 
     let isMounted = true;
     let peerInstance: any = null;
@@ -19,7 +35,11 @@ export function useQRBridge(memoryId: string | null) {
       if (!isMounted) return;
 
       const peer = new Peer(`solo-remote-${memoryId}-host`, {
-        debug: 1,
+        host: '0.peerjs.com',
+        port: 443,
+        path: '/',
+        secure: true,
+        debug: 3,
         config: {
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
@@ -70,6 +90,20 @@ export function useQRBridge(memoryId: string | null) {
         });
       });
 
+      peer.on('call', (call) => {
+        if (!isMounted) { call.close(); return; }
+        console.log('[useQRBridge] Incoming remote camera Media Call received...');
+        call.answer(); // Answer the call
+
+        call.on('stream', (remoteStream) => {
+          if (!isMounted) return;
+          console.log('[useQRBridge] WebRTC Remote Camera stream received and bound.');
+          window.dispatchEvent(new CustomEvent('remote-camera-active', {
+            detail: { stream: remoteStream }
+          }));
+        });
+      });
+
       peer.on('error', (err: any) => {
         console.error('[useQRBridge] PeerJS Error:', err);
       });
@@ -84,7 +118,7 @@ export function useQRBridge(memoryId: string | null) {
         peerInstance.destroy();
       }
     };
-  }, [memoryId, actions]);
+  }, [memoryId, actions, isOpticsMuted]);
 
   return { peerState };
 }

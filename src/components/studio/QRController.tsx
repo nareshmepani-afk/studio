@@ -23,6 +23,17 @@ export function QRController({ memoryId, peerState }: QRControllerProps) {
     }
   }, []);
 
+  // Auto-close modal when pairing is successful and authorised
+  useEffect(() => {
+    if (peerState === 'authorised' && isOpen) {
+      console.log('[QRController] P2P channel authorised. Auto-closing pairing modal in 1.5s...');
+      const timer = setTimeout(() => {
+        setIsOpen(false);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [peerState, isOpen]);
+
   const pairingUrl = typeof window !== 'undefined'
     ? `${window.location.protocol}//${host || window.location.hostname}${window.location.port ? `:${window.location.port}` : ''}/remote?sessionId=${memoryId}`
     : '';

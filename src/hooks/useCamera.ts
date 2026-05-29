@@ -13,12 +13,41 @@ interface UseCameraOptions {
 export function useCamera({ enabled = false }: UseCameraOptions = {}) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const [wirelessStream, setWirelessStream] = useState<MediaStream | null>(null);
+  const [activeInput, setActiveInput] = useState<'studio' | 'wireless'>('studio');
   const [error, setError] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<CameraErrorDetails | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const [zoomValue, setZoomValue] = useState(1);
   const [capabilities, setCapabilities] = useState<any>(null);
+
+  // WebRTC Remote Camera Hook Listener
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleRemoteCamera = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && customEvent.detail.stream) {
+        console.log('[useCamera] Lock-on to P2P Wireless stream feed:', customEvent.detail.stream);
+        setWirelessStream(customEvent.detail.stream);
+        setActiveInput('wireless'); // Auto-switch to wireless lens on connection
+      }
+    };
+
+    window.addEventListener('remote-camera-active', handleRemoteCamera);
+    return () => {
+      window.removeEventListener('remote-camera-active', handleRemoteCamera);
+    };
+  }, []);
+
+  const switchInput = useCallback((input: 'studio' | 'wireless') => {
+    if (input === 'wireless' && !wirelessStream) {
+      console.warn('[useCamera] Cannot switch: Wireless lens is not linked.');
+      return;
+    }
+    setActiveInput(input);
+  }, [wirelessStream]);
   
   const [isMuted, setIsMuted] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -258,8 +287,16 @@ export function useCamera({ enabled = false }: UseCameraOptions = {}) {
     };
   }, [enabled, cameraError]);
 
+  // Dynamically resolve active stream
+  const activeStream = activeInput === 'wireless' ? wirelessStream : stream;
+
   return { 
-    stream, 
+    stream: activeStream, 
+    localStream: stream,
+    wirelessStream,
+    activeInput,
+    switchInput,
+    isWirelessLinked: !!wirelessStream,
     error, 
     cameraError,
     switchCamera, 

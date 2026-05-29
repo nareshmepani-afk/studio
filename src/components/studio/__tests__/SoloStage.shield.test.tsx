@@ -46,7 +46,8 @@ vi.mock('lucide-react', async (importOriginal) => {
     Rocket: () => null, PenTool: () => null, Mic: () => null, MapPin: () => null,
     Calendar: () => null, Tag: () => null, ArrowRight: () => null, ArrowLeft: () => null,
     Film: () => null, BrainCircuit: () => null, Maximize2: () => null, Minus: () => null,
-    Plus: () => null, ChevronRight: () => null, ChevronLeft: () => null, Lock: () => null
+    Plus: () => null, ChevronRight: () => null, ChevronLeft: () => null, Lock: () => null,
+    Smartphone: () => null, ShieldCheck: () => null
   };
 });
 
