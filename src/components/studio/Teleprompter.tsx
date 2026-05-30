@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useStudioState } from '@/hooks/studio/useStudioState';
-import { FlipHorizontal, Play, Pause, ChevronUp, ChevronDown } from 'lucide-react';
+import { FlipHorizontal, Play, Pause, ChevronUp, ChevronDown, Layout } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -16,6 +16,9 @@ interface TeleprompterProps {
   activeBeatIndex?: number;
   onActiveBeatChange?: (index: number) => void;
   isMini?: boolean;
+  stream?: MediaStream | null;
+  prompterLayout?: 'side' | 'center';
+  onPrompterLayoutToggle?: () => void;
 }
 
 const highlightSensoryAnchors = (text: string): string => {
@@ -48,7 +51,10 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   modalityMode = 'scripted',
   activeBeatIndex: externalActiveBeatIndex,
   onActiveBeatChange,
-  isMini = false
+  isMini = false,
+  stream = null,
+  prompterLayout = 'side',
+  onPrompterLayoutToggle
 }) => {
   const { 
     selectedTake, 
@@ -64,6 +70,8 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       decreaseFontSize
     }
   } = useStudioState();
+
+  const isLayoutLocked = modalityMode === 'interview' || isScrolling;
 
   const [localActiveBeatIndex, setLocalActiveBeatIndex] = useState(0);
   const activeBeatIndex = externalActiveBeatIndex !== undefined ? externalActiveBeatIndex : localActiveBeatIndex;
@@ -81,7 +89,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
   // Smooth variable-speed auto-scroll using requestAnimationFrame with sub-pixel accumulator
   useEffect(() => {
-    if (!isScrolling || modalityMode === 'interview') return;
+    if (!isScrolling || modalityMode === 'interview' || isMini) return;
     
     let animationId: number;
     const scrollPosRef = { current: containerRef.current ? containerRef.current.scrollTop : 0 };
@@ -101,7 +109,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
     animationId = requestAnimationFrame(scroll);
     return () => cancelAnimationFrame(animationId);
-  }, [isScrolling, scrollSpeed, toggleScrolling, modalityMode]);
+  }, [isScrolling, scrollSpeed, toggleScrolling, modalityMode, isMini]);
 
   // Listener to scroll programmatically to a specific beat index
   useEffect(() => {
@@ -250,125 +258,237 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       {/* Control Header: UK English Labels */}
       {!isMini && (
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4 mb-4 shrink-0">
-        <div className="flex items-center gap-2">
-          {modalityMode !== 'interview' && (
-            <button 
-              onClick={toggleScrolling}
-              className={cn(
-                "px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer",
-                isScrolling ? "bg-emerald-500 text-slate-900 shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
-              )}
-            >
-              {isScrolling ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-              {isScrolling ? 'Scrolling' : 'Scroll'}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {modalityMode !== 'interview' && (
+              <button 
+                onClick={toggleScrolling}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer",
+                  isScrolling ? "bg-emerald-500 text-slate-900 shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
+                )}
+              >
+                {isScrolling ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                {isScrolling ? 'Scrolling' : 'Scroll'}
+              </button>
+            )}
 
-          {modalityMode === 'interview' && (
-            <button 
-              onClick={() => window.dispatchEvent(new Event('studio-next-cue'))}
-              className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-sky-500 hover:bg-sky-600 text-slate-900 shadow-[0_0_15px_rgba(56,189,248,0.4)] transition-all flex items-center gap-2 cursor-pointer"
-            >
-              Next Cue
-            </button>
-          )}
-          
-          {modalityMode !== 'interview' && (
-            <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
-              <span className="text-[9px] font-black uppercase tracking-widest text-white/40 whitespace-nowrap">Synchronised Speed</span>
+            {modalityMode === 'interview' && (
               <button 
-                onClick={() => setScrollSpeed(Math.max(0.5, scrollSpeed - 0.5))}
-                className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white cursor-pointer"
+                onClick={() => window.dispatchEvent(new Event('studio-next-cue'))}
+                className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-sky-500 hover:bg-sky-600 text-slate-900 shadow-[0_0_15px_rgba(56,189,248,0.4)] transition-all flex items-center gap-2 cursor-pointer"
               >
-                <ChevronDown className="w-3 h-3" />
+                Next Cue
               </button>
-              <span className="text-[10px] font-mono font-bold text-emerald-400 w-6 text-center">{scrollSpeed.toFixed(1)}x</span>
-              <button 
-                onClick={() => setScrollSpeed(scrollSpeed + 0.5)}
-                className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white cursor-pointer"
-              >
-                <ChevronUp className="w-3 h-3" />
-              </button>
+            )}
+            
+            {modalityMode !== 'interview' && (
+              <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
+                <span className="text-[9px] font-black uppercase tracking-widest text-white/40 whitespace-nowrap">Synchronised Speed</span>
+                <button 
+                  onClick={() => setScrollSpeed(Math.max(0.5, scrollSpeed - 0.5))}
+                  className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white cursor-pointer"
+                >
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                <span className="text-[10px] font-mono font-bold text-emerald-400 w-6 text-center">{scrollSpeed.toFixed(1)}x</span>
+                <button 
+                  onClick={() => setScrollSpeed(scrollSpeed + 0.5)}
+                  className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white cursor-pointer"
+                >
+                  <ChevronUp className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Settings in header only if selfie stream is not active to keep it clean */}
+          {(!stream || isMini) && (
+            <div className="flex items-center gap-2">
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={toggleMirror}
+                      title="Mirror Mode"
+                      className={cn(
+                        "p-2 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5",
+                        isMirrored ? "bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:text-white"
+                      )}
+                    >
+                      <FlipHorizontal className="w-4 h-4" />
+                      <span className="text-[9px] font-black uppercase tracking-widest">Mirror</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="bg-neutral-950 border-white/5 max-w-[280px] p-3 text-xs leading-relaxed text-zinc-300">
+                    <div className="space-y-2">
+                      <p className="font-bold text-[9px] uppercase tracking-widest text-amber-400">Mirror Mode Guidance</p>
+                      <p className="text-[11px] text-zinc-400">Flips script text horizontally so it appears normal when reflected on a physical teleprompter glass hood.</p>
+                      <div className="space-y-1.5 pt-1 text-[11px]">
+                        <div className="flex gap-1.5 items-start">
+                          <span>🔴</span>
+                          <p><strong className="text-white">ON:</strong> Using a physical teleprompter glass hood in front of the camera lens.</p>
+                        </div>
+                        <div className="flex gap-1.5 items-start">
+                          <span>⚪</span>
+                          <p><strong className="text-white">OFF:</strong> Reading straight off a computer, laptop, or mobile screen.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl px-2 py-1">
+                <span className="text-[8px] font-black uppercase tracking-widest text-white/30 px-1">Optimised Layout</span>
+                <button onClick={decreaseFontSize} className="p-1 hover:bg-white/10 text-white/50 hover:text-white font-black text-xs px-2 cursor-pointer">-</button>
+                <span className="text-[10px] font-mono font-bold text-white/70 w-8 text-center">{fontSize}px</span>
+                <button onClick={increaseFontSize} className="p-1 hover:bg-white/10 text-white/50 hover:text-white font-black text-xs px-2 cursor-pointer">+</button>
+              </div>
             </div>
           )}
         </div>
-
-        <div className="flex items-center gap-2">
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={toggleMirror}
-                  title="Mirror Mode"
-                  className={cn(
-                    "p-2 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5",
-                    isMirrored ? "bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:text-white"
-                  )}
-                >
-                  <FlipHorizontal className="w-4 h-4" />
-                  <span className="text-[9px] font-black uppercase tracking-widest">Mirror</span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-neutral-950 border-white/5 max-w-[280px] p-3 text-xs leading-relaxed text-zinc-300">
-                <div className="space-y-2">
-                  <p className="font-bold text-[9px] uppercase tracking-widest text-amber-400">Mirror Mode Guidance</p>
-                  <p className="text-[11px] text-zinc-400">Flips script text horizontally so it appears normal when reflected on a physical teleprompter glass hood.</p>
-                  <div className="space-y-1.5 pt-1 text-[11px]">
-                    <div className="flex gap-1.5 items-start">
-                      <span>🔴</span>
-                      <p><strong className="text-white">ON:</strong> Using a physical teleprompter glass hood in front of the camera lens.</p>
-                    </div>
-                    <div className="flex gap-1.5 items-start">
-                      <span>⚪</span>
-                      <p><strong className="text-white">OFF:</strong> Reading straight off a computer, laptop, or mobile screen.</p>
-                    </div>
-                  </div>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl px-2 py-1">
-            <span className="text-[8px] font-black uppercase tracking-widest text-white/30 px-1">Optimised Layout</span>
-            <button onClick={decreaseFontSize} className="p-1 hover:bg-white/10 text-white/50 hover:text-white font-black text-xs px-2 cursor-pointer">-</button>
-            <span className="text-[10px] font-mono font-bold text-white/70 w-8 text-center">{fontSize}px</span>
-            <button onClick={increaseFontSize} className="p-1 hover:bg-white/10 text-white/50 hover:text-white font-black text-xs px-2 cursor-pointer">+</button>
-          </div>
-        </div>
-      </div>
       )}
 
-      <div 
-        ref={containerRef}
-        onScroll={handleScrollTelemetry}
-        style={{ fontSize: isMini ? '16px' : `${fontSize}px` }}
-        className={cn(
-          "flex-grow overflow-y-auto pr-2 custom-scrollbar leading-relaxed italic font-serif select-none relative",
-          isMirrored && "transform -scale-x-100"
-        )}
-      >
-        <div className={cn("prose-invert opacity-90 select-none", isMini ? "pb-[150px] space-y-4" : "pb-[400px] space-y-8")}>
-          {paragraphs.map((para, idx) => {
-            const html = highlightSensoryAnchors(para);
-            const isActive = idx === activeBeatIndex;
-            return (
-              <p
-                key={idx}
-                className={cn(
-                  "prose-block transition-all duration-700",
-                  modalityMode === 'interview'
-                    ? isActive
-                      ? 'opacity-100 scale-100 text-emerald-300 font-bold shadow-teal-500/10'
-                      : idx < activeBeatIndex
-                      ? 'opacity-10 scale-95 duration-100'
-                      : 'opacity-30 scale-95'
-                    : 'opacity-90'
-                )}
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
-            );
-          })}
+      {/* Main Content Area split into columns when stream is active */}
+      <div className="flex-grow flex min-h-0 w-full gap-6 overflow-hidden">
+        {/* Left Column: Script Viewport */}
+        <div 
+          ref={containerRef}
+          onScroll={handleScrollTelemetry}
+          style={{ fontSize: isMini ? '16px' : `${fontSize}px` }}
+          className={cn(
+            "flex-grow overflow-y-auto pr-2 custom-scrollbar leading-relaxed italic font-serif select-none relative",
+            isMirrored && "transform -scale-x-100"
+          )}
+        >
+          <div className={cn("prose-invert opacity-90 select-none", isMini ? "pb-[150px] space-y-4" : "pb-[400px] space-y-8")}>
+            {paragraphs.map((para, idx) => {
+              const html = highlightSensoryAnchors(para);
+              const isActive = idx === activeBeatIndex;
+              return (
+                <p
+                  key={idx}
+                  className={cn(
+                    "prose-block transition-all duration-700",
+                    modalityMode === 'interview'
+                      ? isActive
+                        ? 'opacity-100 scale-100 text-emerald-300 font-bold shadow-teal-500/10'
+                        : idx < activeBeatIndex
+                        ? 'opacity-10 scale-95 duration-100'
+                        : 'opacity-30 scale-95'
+                      : 'opacity-90'
+                  )}
+                  dangerouslySetInnerHTML={{ __html: html }}
+                />
+              );
+            })}
+          </div>
         </div>
+
+        {/* Right Column: Visual Controls & Selfie Sidebar (Active Camera Mode) */}
+        {!isMini && stream && (
+          <div className="w-[124px] flex-none flex flex-col gap-3.5 border-l border-white/5 pl-4 shrink-0 overflow-y-auto custom-scrollbar select-none">
+            {/* Live Selfie Monitor */}
+            <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.4)] bg-zinc-950 shrink-0">
+              <video
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover scale-x-[-1]"
+                ref={(el) => {
+                  if (el && stream && el.srcObject !== stream) {
+                    el.srcObject = stream;
+                    const playPromise = el.play();
+                    if (playPromise !== undefined) {
+                      playPromise.catch(e => console.warn("Selfie play error:", e));
+                    }
+                  }
+                }}
+              />
+              <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/60 border border-white/10 text-[7px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1 shadow-sm">
+                <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Selfie</span>
+              </div>
+            </div>
+
+            {/* Mirror Option */}
+            <div className="flex flex-col shrink-0">
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={toggleMirror}
+                      title="Mirror Mode"
+                      className={cn(
+                        "w-full py-2 rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5",
+                        isMirrored ? "bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:text-white"
+                      )}
+                    >
+                      <FlipHorizontal className="w-3.5 h-3.5" />
+                      <span className="text-[9px] font-black uppercase tracking-widest">Mirror</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="bg-neutral-950 border-white/5 max-w-[200px] p-3 text-xs leading-relaxed text-zinc-300">
+                    <div className="space-y-1.5">
+                      <p className="font-bold text-[9px] uppercase tracking-widest text-amber-400">Mirror Mode</p>
+                      <p className="text-[10px] text-zinc-400 leading-normal">Flips text horizontally for glass hoods reflection.</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            {/* Layout Mode (Overlay vs Center) Option */}
+            {onPrompterLayoutToggle && (
+              <div className="flex flex-col shrink-0">
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={onPrompterLayoutToggle}
+                        disabled={isLayoutLocked}
+                        title="Toggle Prompter Layout Mode"
+                        className={cn(
+                          "w-full py-2 rounded-xl border transition-all flex items-center justify-center gap-1.5",
+                          isLayoutLocked
+                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400/50 cursor-not-allowed opacity-75"
+                            : prompterLayout === 'center'
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                            : "bg-white/5 border-white/10 text-white/60 hover:text-white cursor-pointer"
+                        )}
+                      >
+                        <Layout className="w-3.5 h-3.5" />
+                        <span className="text-[9px] font-black uppercase tracking-widest">
+                          {prompterLayout === 'center' ? 'Center' : 'Overlay'}
+                        </span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="bg-neutral-950 border-white/5 max-w-[200px] p-3 text-xs leading-relaxed text-zinc-300">
+                      <div className="space-y-1.5">
+                        <p className="font-bold text-[9px] uppercase tracking-widest text-emerald-400">Layout Alignment</p>
+                        {isLayoutLocked ? (
+                          <p className="text-[10px] text-zinc-400 leading-normal">Fixed to <strong>Center</strong> mode during active performance to guarantee eye-contact alignment.</p>
+                        ) : (
+                          <p className="text-[10px] text-zinc-400 leading-normal">Switch between <strong>Center</strong> (camera alignment) and <strong>Overlay</strong> (movable card) layouts.</p>
+                        )}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+
+            {/* Optimised Font Size controls inside column */}
+            <div className="flex flex-col gap-1.5 bg-white/5 border border-white/10 rounded-2xl p-2 items-center shrink-0">
+              <span className="text-[8px] font-black uppercase tracking-widest text-white/30 text-center w-full block">Optimised Layout</span>
+              <div className="flex items-center justify-between w-full mt-1.5">
+                <button onClick={decreaseFontSize} className="w-6.5 h-6.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-black text-xs cursor-pointer flex items-center justify-center">-</button>
+                <span className="text-[10px] font-mono font-bold text-white/90 w-8 text-center">{fontSize}px</span>
+                <button onClick={increaseFontSize} className="w-6.5 h-6.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-black text-xs cursor-pointer flex items-center justify-center">+</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

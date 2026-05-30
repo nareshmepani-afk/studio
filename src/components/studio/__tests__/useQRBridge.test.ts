@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useQRBridge } from '@/hooks/studio/useQRBridge';
 
@@ -42,11 +42,10 @@ describe('useQRBridge Hook & Muting Handshake', () => {
     const { result } = renderHook(() => useQRBridge('test-memory-id'));
 
     // Wait for the dynamic peerjs import and initialization
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 100));
+    await waitFor(() => {
+      expect(mockConstructor).toHaveBeenCalledWith('solo-remote-test-memory-id-host', expect.any(Object));
     });
 
-    expect(mockConstructor).toHaveBeenCalledWith('solo-remote-test-memory-id-host', expect.any(Object));
     expect(result.current.peerState).toBe('idle'); // starts at idle
   });
 
@@ -56,7 +55,7 @@ describe('useQRBridge Hook & Muting Handshake', () => {
     const { result } = renderHook(() => useQRBridge('test-memory-id'));
 
     await act(async () => {
-      await new Promise((r) => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 100));
     });
 
     expect(mockConstructor).not.toHaveBeenCalled();
@@ -67,11 +66,9 @@ describe('useQRBridge Hook & Muting Handshake', () => {
     const { result } = renderHook(() => useQRBridge('test-memory-id'));
 
     // Wait for peer to initialize
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 50));
+    await waitFor(() => {
+      expect(mockConstructor).toHaveBeenCalled();
     });
-
-    expect(mockConstructor).toHaveBeenCalled();
 
     // Mute optics and trigger event
     act(() => {

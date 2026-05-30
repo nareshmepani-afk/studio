@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from 'react';
 
-export function useInterviewMode() {
-  const [modalityMode, setModalityMode] = useState<'scripted' | 'interview'>('scripted');
+export function useInterviewMode(initialMode: 'scripted' | 'interview' = 'scripted') {
+  const [modalityMode, setModalityMode] = useState<'scripted' | 'interview'>(initialMode);
   const [activeBeatIndex, setActiveBeatIndex] = useState(0);
 
   const toggleModalityMode = useCallback(() => {

@@ -377,11 +377,8 @@ describe('SoloStage Calibration Panels Test', () => {
     const techConfirmBtn = screen.getByText('Confirm Technical Alignment');
     fireEvent.click(techConfirmBtn);
     
-    // Toggle modality to interview
-    const modalityBtn = screen.getByTitle('Toggle Scripted vs Interview Mode');
-    fireEvent.click(modalityBtn);
-    
-    // Auto effect makes isInterviewMode true. Let's toggle it to false to close interviewer card.
+    // modalityMode already defaults to 'interview' in Act III, and isInterviewMode is true.
+    // Let's click 'Interviewer Active' to close the interviewer card manually.
     const startInterviewBtn = screen.getByText('Interviewer Active');
     fireEvent.click(startInterviewBtn);
     

@@ -95,6 +95,11 @@ export default function SoloStage({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSlowMo, setIsSlowMo] = useState(false);
 
+  // Cinematic Pipeline State (Shared via Firestore)
+  // BUGFIX: Prioritize global stage from prop, but allow local data fallback ONLY if prop is undefined.
+  // We use currentStage prop as the source of truth from ProductionDeck.
+  const productionStage = currentStage ?? (data?.productionStage || 0);
+
   // MOD-12: AI Interviewer State
   const [isInterviewMode, setIsInterviewMode] = useState(false);
   const [interviewLanguage, setInterviewLanguage] = useState<'en' | 'gu'>('en');
@@ -134,11 +139,12 @@ export default function SoloStage({
   // Interview Modality Modeler
   const {
     modalityMode,
+    setModalityMode,
     toggleModalityMode,
     triggerNextCue,
     activeBeatIndex,
     setActiveBeatIndex
-  } = useInterviewMode();
+  } = useInterviewMode(productionStage === 2 ? 'interview' : 'scripted');
 
   // Automatically auto-start Interview Mode when modalityMode is set to 'interview'
   useEffect(() => {
@@ -149,10 +155,7 @@ export default function SoloStage({
     }
   }, [modalityMode]);
   
-  // Cinematic Pipeline State (Shared via Firestore)
-  // BUGFIX: Prioritize global stage from prop, but allow local data fallback ONLY if prop is undefined.
-  // We use currentStage prop as the source of truth from ProductionDeck.
-  const productionStage = currentStage ?? (data?.productionStage || 0);
+
   const unmuteOptics = useCallback(() => {
     console.log("[SoloStage] Unmuting optics via Tech-Scout ceremony hotspot...");
     localStorage.setItem('privacy_optics_muted', 'false');
@@ -1008,22 +1011,6 @@ export default function SoloStage({
             )}
           </AnimatePresence>
 
-          {/* Floating 'Start Performance' Red record ignition trigger overlay */}
-          {mounted && !isMuted && !isRecording && !isCountingIn && techAlignmentConfirmed && (
-            <div className="absolute left-[25%] top-1/2 -translate-x-1/2 -translate-y-1/2 z-[35] pointer-events-none animate-fade-in">
-              <motion.button
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                whileHover={{ scale: 1.05, border: '2px solid rgba(239, 68, 68, 0.6)' }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleStartCapture}
-                className="pointer-events-auto px-8 py-4 bg-zinc-950/70 border-2 border-white/20 hover:border-rose-500/50 hover:bg-rose-950/30 text-white font-black text-xs uppercase tracking-[0.3em] rounded-full shadow-[0_0_60px_rgba(239,68,68,0.2)] backdrop-blur-md transition-all flex items-center gap-3.5 cursor-pointer group"
-              >
-                <div className="w-3.5 h-3.5 rounded-full bg-rose-500 group-hover:bg-rose-600 shadow-[0_0_15px_rgba(244,63,94,0.8)] transition-all animate-pulse" />
-                <span>Start Performance</span>
-              </motion.button>
-            </div>
-          )}
 
           {/* Floating 'Director's Tech Scout' Calibration Card (MW-39 full-view check) */}
           {mounted && !isMuted && !techAlignmentConfirmed && (
@@ -1248,6 +1235,9 @@ export default function SoloStage({
                     <button 
                       onClick={() => {
                         setTechAlignmentConfirmed(true);
+                        if (modalityMode === 'interview') {
+                          setIsInterviewMode(true);
+                        }
                         toast.success("Technical Alignment Confirmed", {
                           description: "Engaging prompter guide. Settle in for your performance!"
                         });
@@ -1587,10 +1577,10 @@ export default function SoloStage({
               right: 40,
               top: 40,
               width: isInterviewMode 
-                ? (prompterSize === 'mini' ? 280 : 340)
+                ? (prompterSize === 'mini' ? 280 : 520)
                 : (prompterSize === 'mini' ? 280 : prompterSize === 'sm' ? 380 : prompterSize === 'md' ? 580 : 820),
               height: isInterviewMode
-                ? (prompterSize === 'mini' ? 180 : 320)
+                ? (prompterSize === 'mini' ? 180 : 420)
                 : (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 350 : prompterSize === 'md' ? 520 : 720)
             }}
             transition={{ type: "spring", stiffness: 120, damping: 22 }}
@@ -1604,13 +1594,13 @@ export default function SoloStage({
                 : "absolute bg-zinc-950/85 backdrop-blur-3xl"
             )}
           >
+            {/* Header Top Line: Title & Size Actions */}
             <div 
               onPointerDown={(e) => prompterLayout === 'side' && dragControls.start(e)}
               style={{ touchAction: 'none' }}
               className={cn(
-                "flex items-center justify-between shrink-0 select-none",
-                prompterSize === 'mini' ? "mb-2" : "mb-4",
-                prompterLayout === 'side' ? "cursor-grab active:cursor-grabbing border-b border-white/5 pb-2" : ""
+                "flex items-center justify-between shrink-0 select-none border-b border-white/5 pb-2 mb-3",
+                prompterLayout === 'side' ? "cursor-grab active:cursor-grabbing" : ""
               )}
             >
               <div className="flex items-center gap-3">
@@ -1626,59 +1616,49 @@ export default function SoloStage({
                     </div>
                   </div>
                 )}
-                <div className={`w-2.5 h-2.5 rounded-full ${isRecording ? 'bg-rose-500 animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.6)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]'}`} />
+                <div className={`w-2 h-2 rounded-full ${isRecording ? 'bg-rose-500 animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.6)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]'}`} />
                 {prompterSize !== 'mini' && (
-                  <span className="text-[10px] font-black text-emerald-400/80 uppercase tracking-[0.3em] animate-pulse">BLUEPRINT: SELECTED TAKE (ACT II)</span>
+                  <span className="text-[10px] font-black text-emerald-400/90 uppercase tracking-[0.25em] animate-pulse whitespace-nowrap">BLUEPRINT: SELECTED TAKE (ACT II)</span>
                 )}
                 {prompterSize === 'mini' && (
-                  <span className="text-[9px] font-black text-emerald-400/80 uppercase tracking-widest animate-pulse">BLUEPRINT</span>
+                  <span className="text-[9px] font-black text-emerald-400/90 uppercase tracking-widest animate-pulse">BLUEPRINT</span>
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {/* QR Remote Controller Pair Trigger */}
-                {prompterSize !== 'mini' && (
-                  <QRController memoryId={data?.id || ''} peerState={peerState} />
-                )}
+                <button 
+                  onClick={() => setPrompterSize(prev => prev === 'mini' ? 'sm' : prev === 'sm' ? 'md' : prev === 'md' ? 'lg' : 'mini')}
+                  className="p-1 rounded bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center w-6 h-6 shrink-0"
+                  title="Toggle Teleprompter Size"
+                >
+                  <Maximize2 className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
 
-                {/* Modality Mode Toggle Button */}
-                {prompterSize !== 'mini' && (
+            {/* Header Second Row: Action Buttons */}
+            {prompterSize !== 'mini' && (
+              <div className="flex items-center justify-between gap-4 border-b border-white/5 pb-3 mb-4 shrink-0">
+                <div className="flex items-center gap-2">
+                  {/* QR Remote Controller Pair Trigger */}
+                  <QRController memoryId={data?.id || ''} peerState={peerState} />
+
+                  {/* Modality Mode Toggle Button */}
                   <button
                     onClick={toggleModalityMode}
                     className={cn(
-                      "px-3 py-1.5 rounded-xl border text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer",
+                      "px-3 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer",
                       modalityMode === 'interview'
                         ? "bg-sky-500/20 border-sky-500/30 text-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.25)] hover:bg-sky-500/30"
                         : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10"
                     )}
                     title="Toggle Scripted vs Interview Mode"
                   >
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <Sparkles className="w-3 h-3" />
                     <span>{modalityMode === 'interview' ? 'Interview' : 'Scripted'}</span>
                   </button>
-                )}
-
-                <button 
-                  onClick={() => setPrompterLayout(prev => prev === 'side' ? 'center' : 'side')}
-                  className={cn(
-                    "p-1.5 rounded-lg border text-white/30 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5",
-                    prompterLayout === 'center' ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400" : "bg-white/5 border-white/10"
-                  )}
-                  title="Toggle Eye-Contact Center Mode"
-                >
-                  <Layout className="w-3.5 h-3.5" />
-                  <span className="text-[9px] font-black uppercase tracking-widest hidden sm:inline">
-                    {prompterLayout === 'center' ? 'Center' : 'Overlay'}
-                  </span>
-                </button>
-                <button 
-                  onClick={() => setPrompterSize(prev => prev === 'mini' ? 'sm' : prev === 'sm' ? 'md' : prev === 'md' ? 'lg' : 'mini')}
-                  className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/30 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-                  title="Toggle Teleprompter Size"
-                >
-                  <Maximize2 className="w-3.5 h-3.5" />
-                </button>
+                </div>
               </div>
-            </div>
+            )}
             
             <div className={cn("flex-grow flex overflow-hidden min-h-0", prompterSize === 'mini' ? "gap-2" : "gap-8")}>
               {/* Main Teleprompter */}
@@ -1688,6 +1668,9 @@ export default function SoloStage({
                   activeBeatIndex={activeBeatIndex}
                   onActiveBeatChange={setActiveBeatIndex}
                   isMini={prompterSize === 'mini'}
+                  stream={stream}
+                  prompterLayout={prompterLayout}
+                  onPrompterLayoutToggle={() => setPrompterLayout(prev => prev === 'side' ? 'center' : 'side')}
                 />
               </div>
 
@@ -1720,29 +1703,6 @@ export default function SoloStage({
                 </div>
               )}
             </div>
-            {/* Mini Selfie Feed (Floating inside Teleprompter) */}
-            {stream && prompterSize !== 'mini' && (
-              <div className="absolute bottom-6 right-6 w-24 h-24 rounded-2xl overflow-hidden border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] pointer-events-none z-50">
-                 <video
-                   autoPlay
-                   playsInline
-                   muted
-                   className="w-full h-full object-cover scale-x-[-1]"
-                   ref={(el) => {
-                     if (el && stream && el.srcObject !== stream) {
-                       el.srcObject = stream;
-                       const playPromise = el.play();
-                       if (playPromise !== undefined) {
-                         playPromise.catch(e => console.warn("Selfie play error:", e));
-                       }
-                     }
-                   }}
-                 />
-                 <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-black/60 border border-white/10 text-[7px] font-black uppercase tracking-wider text-white">
-                   Selfie
-                 </div>
-              </div>
-            )}
           </motion.div>
 
           {/* Cinematic Camera Overlays (Safe Areas/REC) */}
@@ -1967,14 +1927,23 @@ export default function SoloStage({
                       <Square className="w-6 h-6 text-emerald-400 fill-current" />
                     </button>
                   ) : !isRecording ? (
+                    <div className="relative flex flex-col items-center">
+                      {!isRecording && !isCountingIn && techAlignmentConfirmed && (
+                        <div className="absolute -top-12 px-4 py-1.5 bg-rose-600 border border-rose-500 text-white text-[8px] font-black uppercase tracking-[0.25em] rounded-full animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.6)] shrink-0 select-none pointer-events-none whitespace-nowrap flex items-center gap-1.5 z-40">
+                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+                          Start Performance
+                        </div>
+                      )}
                       <button 
                         onClick={handleStartCapture} 
+                        aria-label="Start Performance"
                         disabled={!stream || uploading || isAlchemySaving || !techAlignmentConfirmed} 
-                        className="w-20 h-20 rounded-full bg-white/10 border-4 border-white/40 hover:border-rose-500 hover:bg-rose-500/20 transition-all flex items-center justify-center group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-white/40 disabled:hover:bg-white/10"
+                        className="w-20 h-20 rounded-full bg-white/10 border-4 border-white/40 hover:border-rose-500 hover:bg-rose-500/20 transition-all flex items-center justify-center group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-white/40 disabled:hover:bg-white/10 relative"
                         title={!stream ? "Hardware access muted or blocked. Re-enable camera and mic access to record." : !techAlignmentConfirmed ? "Please confirm technical alignment before starting performance." : undefined}
                       >
                         <div className="w-6 h-6 rounded-full bg-rose-500 group-hover:scale-125 group-disabled:group-hover:scale-100 transition-all" />
                       </button>
+                    </div>
                   ) : (
                     <button onClick={() => { stopRecording(); setIsCameraActive(false); }} className="w-20 h-20 rounded-full bg-rose-500/20 border-4 border-rose-500 hover:bg-rose-500 transition-all flex items-center justify-center">
                       <Square className="w-6 h-6 text-white fill-current" />
