@@ -20,7 +20,7 @@ import {
   UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, 
   Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
   Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
-  Lock, ShieldAlert, Smartphone, ShieldCheck
+  Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -49,6 +49,9 @@ import { useQRBridge } from '@/hooks/studio/useQRBridge';
 import { useInterviewMode } from '@/hooks/studio/useInterviewMode';
 import { QRController } from './QRController';
 import { BeatSheet } from './BeatSheet';
+import { useTableRead } from '@/hooks/studio/useTableRead';
+import { TableReadPanel } from './TableReadPanel';
+import { StudioBriefing } from './StudioBriefing';
 
 interface RoomProps {
     data: Memory;
@@ -85,6 +88,7 @@ export default function SoloStage({
   onboardingJustClosed, isUntouched, onActivity, formRef
 }: RoomProps) {
   const [mounted, setMounted] = useState(false);
+  const { isReviewing, isProductionLocked, selectedTake, fontSize, actions: globalActions } = useStudioState();
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -128,10 +132,53 @@ export default function SoloStage({
   const [isTechScoutMinimised, setIsTechScoutMinimised] = useState(false);
   const [isOpticsMinimised, setIsOpticsMinimised] = useState(false);
 
+  // MOD-17: Table Read (Acoustic Rehearsal Mode) State Triggers
+  const {
+    isTableReadActive,
+    setIsTableReadActive,
+    rehearsalSpeed,
+    setRehearsalSpeed,
+    captureLayoutSnapshot,
+    restoreLayoutSnapshot
+  } = useTableRead();
+  const [showRehearsalFeedback, setShowRehearsalFeedback] = useState(false);
+
+  // MW-48: Unified HUD & Focus Mode State Variables
+  const [activeDirectorTab, setActiveDirectorTab] = useState<'director' | 'rehearse'>('director');
+  const [isFocusModeActive, setIsFocusModeActive] = useState(false);
+
+  const handleEngageRehearsal = useCallback(() => {
+    captureLayoutSnapshot(prompterLayout, prompterSize, fontSize);
+    setIsTableReadActive(true);
+    toast.info("Entering Acoustic Rehearsal", {
+      description: "Sidebar calibration controls minimised. Zen performance stage engaged."
+    });
+  }, [prompterLayout, prompterSize, fontSize, captureLayoutSnapshot, setIsTableReadActive]);
+
+  const handleEndRehearsal = useCallback(() => {
+    setIsTableReadActive(false);
+    const snap = restoreLayoutSnapshot();
+    if (snap) {
+      setPrompterLayout(snap.layout);
+      setPrompterSize(snap.size);
+      globalActions.setFontSize(snap.fontSize);
+    }
+    toast.success("Rhythm Authorised", {
+      description: "Stage layout successfully restored to your previous blueprint configuration."
+    });
+  }, [restoreLayoutSnapshot, setIsTableReadActive, globalActions]);
+
+  const prompterWidth = isInterviewMode 
+    ? (prompterSize === 'mini' ? 280 : 520)
+    : (prompterSize === 'mini' ? 280 : prompterSize === 'sm' ? 380 : prompterSize === 'md' ? 580 : 820);
+
+  const prompterHeight = isInterviewMode
+    ? (prompterSize === 'mini' ? 180 : 420)
+    : (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 350 : prompterSize === 'md' ? 520 : 720);
+
   const stageRef = useRef<HTMLDivElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
-  const { isReviewing, isProductionLocked, selectedTake, actions: globalActions } = useStudioState();
   
   // QR Mobile Remote Bridge
   const { peerState } = useQRBridge(data?.id);
@@ -172,13 +219,20 @@ export default function SoloStage({
 
   // Wireless Camera/Lens setup state
   const [isCameraQRModalOpen, setIsCameraQRModalOpen] = useState(false);
-  const [hostIP, setHostIP] = useState('');
+  const [hostIP, setHostIP] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('studio_host_ip');
+      if (saved) return saved;
+      return window.location.hostname;
+    }
+    return '';
+  });
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setHostIP(window.location.hostname);
+    if (typeof window !== 'undefined' && hostIP) {
+      localStorage.setItem('studio_host_ip', hostIP);
     }
-  }, []);
+  }, [hostIP]);
 
   const cameraPairingUrl = typeof window !== 'undefined'
     ? `${window.location.protocol}//${hostIP || window.location.hostname}${window.location.port ? `:${window.location.port}` : ''}/studio/remote-camera?sessionId=solo-remote-${data?.id}-host`
@@ -291,6 +345,15 @@ export default function SoloStage({
       }
     }
   }, [isRecording, modalityMode]);
+
+  // Auto-minimise AI Director mentor panel when Interview mode / Start Interview is engaged/open
+  useEffect(() => {
+    if (isInterviewMode && techAlignmentConfirmed) {
+      setIsDirectorMinimised(true);
+    }
+  }, [isInterviewMode, techAlignmentConfirmed]);
+
+
 
   // Enforce a strict 6-minute (360 seconds) hard recording limit on the desktop
   useEffect(() => {
@@ -502,10 +565,76 @@ export default function SoloStage({
     }, 600); 
   }, []);
 
+  // MW-49: The Grand Tour & Onboarding Briefing States
   const hasPlayedMentorCue = useRef(false);
-  
+  const [hasSeenTour, setHasSeenTour] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('has_seen_studio_tour') === 'true';
+    }
+    return false;
+  });
+  const [isBriefingOpen, setIsBriefingOpen] = useState<boolean>(false);
+  const [showStageManagerCue, setShowStageManagerCue] = useState(false);
+
+  const handleCloseBriefing = useCallback(async (completed: boolean) => {
+    setIsBriefingOpen(false);
+    setHasSeenTour(true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('has_seen_studio_tour', 'true');
+    }
+    
+    if (completed) {
+      hasPlayedMentorCue.current = true; // Mark as played so general whisper cue doesn't double-trigger
+      setShowStageManagerCue(true);
+      toast.success("Briefing Complete", {
+        description: "Stage Manager welcome cue initialized."
+      });
+      
+      try {
+        const cueText = "This stage is your sanctuary. Take a walk around, try the buttons, and make yourself at home. We'll be in the wings when you're ready.";
+        const audio = await synthesizeStudioSpeech(cueText, 'Achird');
+        if (audio) {
+          playAudio(audio);
+        }
+      } catch (e) {
+        console.warn("Achird vocal greeting failed:", e);
+      }
+    } else {
+      toast.info("Fast Start Engaged", {
+        description: "Bypassing guided briefing. Calibration dashboard ready."
+      });
+    }
+  }, [playAudio]);
+
   useEffect(() => {
-    if (productionStage === 2 && !hasPlayedMentorCue.current) {
+    if (productionStage === 2 && !hasSeenTour) {
+      setIsBriefingOpen(true);
+    }
+  }, [productionStage, hasSeenTour]);
+
+  // Listen for Table Read complete event to trigger AI Director's UK-English rehearsal note
+  useEffect(() => {
+    const handleTableReadEnded = async () => {
+      setShowRehearsalFeedback(true);
+      
+      // Auto-speak supportive feedback
+      try {
+        const note = "That felt authorised. The pacing on the 'Nairobi' section is your soul-print. Shall we take it to the floor for a real capture?";
+        const audio = await synthesizeStudioSpeech(note, 'Achernar');
+        if (audio) {
+          playAudio(audio);
+        }
+      } catch (e) {
+        console.warn("Table Read end TTS feedback failed:", e);
+      }
+    };
+    
+    window.addEventListener('studio-table-read-ended', handleTableReadEnded);
+    return () => window.removeEventListener('studio-table-read-ended', handleTableReadEnded);
+  }, [playAudio]);
+
+  useEffect(() => {
+    if (productionStage === 2 && !isBriefingOpen && hasSeenTour && !hasPlayedMentorCue.current) {
       hasPlayedMentorCue.current = true;
       console.log("[SoloStage] tech-scout ceremony entered. Synthesizing Stage Manager whisper...");
       const playMentorCue = async () => {
@@ -521,7 +650,7 @@ export default function SoloStage({
       };
       playMentorCue();
     }
-  }, [productionStage, playAudio]);
+  }, [productionStage, isBriefingOpen, hasSeenTour, playAudio]);
 
   const triggerNextQuestion = async () => {
     if (isSynthesizing) return;
@@ -766,10 +895,14 @@ export default function SoloStage({
     </div>
   );
   const renderRecording = () => (
-    <div className="w-full h-full flex flex-col items-center justify-center relative pb-24">
+    <div className={cn("w-full h-full flex flex-col items-center justify-center relative pb-24 transition-colors duration-1000", isTableReadActive ? "bg-[#030303]" : "")}>
        <div 
          ref={videoContainerRef}
-         className={`w-full max-w-[90vw] xl:max-w-7xl aspect-video min-h-[580px] md:min-h-[660px] relative bg-black border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] overflow-hidden transition-all duration-1000 ${isRecording ? 'ring-2 ring-rose-500/50 shadow-[0_0_120px_rgba(244,63,94,0.3)] scale-[1.01]' : 'shadow-2xl'}`}
+         className={cn(
+           "w-full max-w-[90vw] xl:max-w-7xl aspect-video min-h-[580px] md:min-h-[660px] relative overflow-hidden transition-all duration-1000",
+           isRecording ? 'ring-2 ring-rose-500/50 shadow-[0_0_120px_rgba(244,63,94,0.3)] scale-[1.01]' : 'shadow-2xl',
+           isTableReadActive ? "bg-[#030303] border-sky-500/20" : "bg-black border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)]"
+         )}
        >
           <video 
             ref={videoRef}
@@ -777,8 +910,9 @@ export default function SoloStage({
             playsInline 
             muted
             className={cn(
-              "absolute inset-0 w-full h-full object-cover z-0 transition-all duration-500 ease-out",
-              isCountingIn ? "blur-[20px]" : "blur-0"
+              "absolute inset-0 w-full h-full object-cover z-0 transition-all duration-700 ease-out",
+              isCountingIn ? "blur-[20px]" : "blur-0",
+              isTableReadActive ? "opacity-0 scale-95 pointer-events-none" : "opacity-100 scale-100"
             )}
             style={{
               filter: `
@@ -873,10 +1007,25 @@ export default function SoloStage({
             </div>
           )}
 
-          {/* AI Director Mentor Panel (Symmetric Left Overlay) */}
+          {/* Focus Mode Cinematic Dimmer Overlay */}
           <AnimatePresence>
-            {mounted && (mentorActive || !techAlignmentConfirmed) && !isMuted && (
+            {isFocusModeActive && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.5 }}
+                className="fixed inset-0 bg-[#030303]/75 backdrop-blur-[0.5px] z-25 pointer-events-none"
+              />
+            )}
+          </AnimatePresence>
+
+          {/* Unified Director's HUD (Left Calibration Stack) */}
+          <AnimatePresence>
+            {mounted && !isMuted && !isTableReadActive && (
               <div 
+                data-blueprint="DirectorsHUD"
+                data-tour="directors-hud"
                 className={cn(
                   "absolute z-30 pointer-events-auto",
                   !techAlignmentConfirmed 
@@ -921,12 +1070,27 @@ export default function SoloStage({
                   {isDirectorMinimised ? (
                     <div className="flex items-center justify-between w-full" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">AI Director</span>
+                        <div className={cn(
+                          "w-2 h-2 rounded-full animate-pulse",
+                          activeDirectorTab === 'rehearse' 
+                            ? "bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.6)]" 
+                            : "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]"
+                        )} />
+                        <span className={cn(
+                          "text-[10px] font-black uppercase tracking-wider",
+                          activeDirectorTab === 'rehearse' ? "text-sky-400" : "text-emerald-400"
+                        )}>
+                          {activeDirectorTab === 'rehearse' ? 'Table Read' : 'AI Director'}
+                        </span>
                       </div>
                       <button 
                         onClick={() => setIsDirectorMinimised(false)}
-                        className="p-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 rounded-full transition-all cursor-pointer"
+                        className={cn(
+                          "p-1.5 rounded-full transition-all cursor-pointer border",
+                          activeDirectorTab === 'rehearse' 
+                            ? "bg-sky-500/10 border-sky-500/20 text-sky-400 hover:bg-sky-500/20" 
+                            : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
+                        )}
                         title="Restore Panel"
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -938,71 +1102,191 @@ export default function SoloStage({
                         {/* Drag Grip Handle */}
                         <div className="w-12 h-1 rounded-full bg-white/10 mx-auto hover:bg-white/20 mb-2 transition-colors shrink-0" />
                         
-                        <div className="flex items-center justify-between border-b border-white/5 pb-2 mb-2 text-emerald-400">
+                        <div className="flex items-center justify-between border-b border-white/5 pb-2 mb-2">
+                          {techAlignmentConfirmed ? (
+                            <div className="flex items-center bg-white/5 p-1 rounded-full border border-white/5 gap-1">
+                              <button
+                                onClick={() => setActiveDirectorTab('director')}
+                                className={cn(
+                                  "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider transition-all",
+                                  activeDirectorTab === 'director'
+                                    ? "bg-emerald-500 text-zinc-950 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+                                    : "text-white/60 hover:text-white hover:bg-white/5"
+                                )}
+                              >
+                                🎬 Director
+                              </button>
+                              <button
+                                onClick={() => setActiveDirectorTab('rehearse')}
+                                data-tour="table-rehearse"
+                                className={cn(
+                                  "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider transition-all",
+                                  activeDirectorTab === 'rehearse'
+                                    ? "bg-sky-500 text-zinc-950 shadow-[0_0_12px_rgba(56,189,248,0.3)]"
+                                    : "text-white/60 hover:text-white hover:bg-white/5"
+                                )}
+                              >
+                                🎙️ Rehearse
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 text-emerald-400">
+                              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                              <span className="text-[10px] font-black uppercase tracking-[0.2em]">AI Director Active</span>
+                            </div>
+                          )}
+
                           <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">AI Director Active</span>
+                            {/* Focus Mode Cinematic Lamp Toggle */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsFocusModeActive(!isFocusModeActive);
+                                if (!isFocusModeActive) {
+                                  toast.info("Focus Mode Activated", {
+                                    description: "Ambient lights dimmed. Focusing on prompter & direct camera feed.",
+                                  });
+                                } else {
+                                  toast.info("Focus Mode Deactivated", {
+                                    description: "Ambient lights restored.",
+                                  });
+                                }
+                              }}
+                              className={cn(
+                                "p-1.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center",
+                                isFocusModeActive
+                                  ? "bg-amber-500/20 border-amber-500/40 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.25)] hover:bg-amber-500/30"
+                                  : "bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10"
+                              )}
+                              title={isFocusModeActive ? "Deactivate Focus Mode" : "Activate Focus Mode"}
+                            >
+                              <Lightbulb className={cn("w-3.5 h-3.5 transition-transform duration-500", isFocusModeActive && "rotate-12 scale-110")} />
+                            </button>
+
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsDirectorMinimised(true);
+                              }}
+                              className="p-1 bg-white/5 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-all cursor-pointer"
+                              title="Minimise Panel"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
                           </div>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setIsDirectorMinimised(true);
-                            }}
-                            className="p-1 bg-white/5 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-all cursor-pointer"
-                            title="Minimise Panel"
-                          >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
                         </div>
                         
-                        <div className="space-y-3">
-                          <div className="space-y-1">
-                            <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
-                              🎬 Eye-Contact Rule
-                            </span>
-                            <p className="text-[10px] text-white/70 leading-relaxed">
-                              Maintain direct eye contact with the camera lens. Let the teleprompter mirror guide your gaze naturally.
-                            </p>
-                          </div>
+                        {activeDirectorTab === 'director' || !techAlignmentConfirmed ? (
+                          <div className="space-y-3">
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
+                                🎬 Eye-Contact Rule
+                              </span>
+                              <p className="text-[10px] text-white/70 leading-relaxed">
+                                Maintain direct eye contact with the camera lens. Let the teleprompter mirror guide your gaze naturally.
+                              </p>
+                            </div>
 
-                          <div className="space-y-1">
-                            <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
-                              🗣️ Sensory Pacing
-                            </span>
-                            <p className="text-[10px] text-white/70 leading-relaxed">
-                              Speak slowly. Pause and breathe at sensory highlights (marked in green, amber, and purple) to let emotion weave.
-                            </p>
-                          </div>
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
+                                🗣️ Sensory Pacing
+                              </span>
+                              <p className="text-[10px] text-white/70 leading-relaxed">
+                                Speak slowly. Pause and breathe at sensory highlights (marked in green, amber, and purple) to let emotion weave.
+                              </p>
+                            </div>
 
-                          <div className="space-y-1">
-                            <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
-                              📐 Framing Linter
-                            </span>
-                            <p className="text-[10px] text-white/70 leading-relaxed font-sans">
-                              Align your eyes with the upper-third line of the shot. Run live linter below to verify rule-of-thirds.
-                            </p>
-                          </div>
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
+                                📐 Framing Linter
+                              </span>
+                              <p className="text-[10px] text-white/70 leading-relaxed font-sans">
+                                Align your eyes with the upper-third line of the shot. Run live linter below to verify rule-of-thirds.
+                              </p>
+                            </div>
 
-                          <div className="space-y-1 bg-sky-500/5 border border-sky-500/20 p-2.5 rounded-xl mt-1">
-                            <span className="text-[9px] font-black text-sky-400 uppercase tracking-widest flex items-center gap-1.5 font-sans">
-                              🤝 Collaborative Tip
-                            </span>
-                            <p className="text-[9.5px] text-sky-300/90 leading-relaxed font-medium font-sans">
-                              If you are struggling to adjust your camera lens in Solo Booth, why not consider working with a friend in <strong className="text-white">COLLAB SUITE</strong> or <strong className="text-white">GUEST DIRECTOR</strong> mode?
-                            </p>
+                            <div className="space-y-1 bg-sky-500/5 border border-sky-500/20 p-2.5 rounded-xl mt-1">
+                              <span className="text-[9px] font-black text-sky-400 uppercase tracking-widest flex items-center gap-1.5 font-sans">
+                                🤝 Collaborative Tip
+                              </span>
+                              <p className="text-[9.5px] text-sky-300/90 leading-relaxed font-medium font-sans">
+                                If you are struggling to adjust your camera lens in Solo Booth, why not consider working with a friend in <strong className="text-white">COLLAB SUITE</strong> or <strong className="text-white">GUEST DIRECTOR</strong> mode?
+                              </p>
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
+                                🎙️ Voice Shadowing
+                              </span>
+                              <p className="text-[10px] text-white/70 leading-relaxed font-sans font-medium">
+                                Engage rhythm-shadowing with director <strong className="text-sky-400 font-bold">Achernar</strong>. Follow the synthesized flow to calibrate voice pitch.
+                              </p>
+                            </div>
+
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
+                                <Languages className="w-3 h-3 text-sky-400" /> Bilingual Pacing Status
+                              </span>
+                              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-white/5 rounded-xl border border-white/5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                <span className="text-[9.5px] font-mono font-bold uppercase tracking-wider text-zinc-300">
+                                  {interviewLanguage === 'gu' ? 'Gujarati (WaveNet-A)' : 'UK English (Achernar)'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Pace Dial (Words Per Minute / Speed multiplier) */}
+                            <div className="space-y-2 pt-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9px] font-black text-white/50 uppercase tracking-widest flex items-center gap-1.5">
+                                  🎛️ Rehearsal Pace Dial
+                                </span>
+                                <span className="text-[10px] font-mono font-bold text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded-md">
+                                  {(rehearsalSpeed * 100).toFixed(0)} WPM
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="text-[9px] text-white/30 font-bold">Slow</span>
+                                <input
+                                  type="range"
+                                  min="0.5"
+                                  max="2.5"
+                                  step="0.1"
+                                  value={rehearsalSpeed}
+                                  onChange={(e) => setRehearsalSpeed(Number(e.target.value))}
+                                  className="flex-grow accent-sky-400 bg-white/10 h-1.5 rounded-lg appearance-none cursor-pointer"
+                                />
+                                <span className="text-[9px] text-white/30 font-bold">Fast</span>
+                              </div>
+                              <p className="text-[8.5px] text-white/40 italic leading-normal">
+                                Adjust pacing specifically for the table read without altering production speed.
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="pt-4 border-t border-white/5 mt-2">
-                        <button
-                          onClick={handleCheckFraming}
-                          disabled={isAnalyzingFraming}
-                          className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 transition-all font-black text-[10px] uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 cursor-pointer group shadow-[0_0_15px_rgba(16,185,129,0.05)] disabled:opacity-50"
-                        >
-                          <Sparkles className="w-3.5 h-3.5 animate-pulse text-emerald-400" />
-                          <span>{isAnalyzingFraming ? 'Analyzing crop...' : 'Check Shot Linter'}</span>
-                        </button>
+                        {activeDirectorTab === 'director' || !techAlignmentConfirmed ? (
+                          <button
+                            onClick={handleCheckFraming}
+                            disabled={isAnalyzingFraming}
+                            className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-400 transition-all font-black text-[10px] uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 cursor-pointer group shadow-[0_0_15px_rgba(16,185,129,0.05)] disabled:opacity-50"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 animate-pulse text-emerald-400" />
+                            <span>{isAnalyzingFraming ? 'Analyzing crop...' : 'Check Shot Linter'}</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={handleEngageRehearsal}
+                            className="w-full py-3 bg-sky-500 hover:bg-sky-400 active:scale-95 transition-all text-slate-950 font-black text-xs uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(56,189,248,0.2)]"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 animate-pulse text-slate-950" />
+                            <span>Engage Rehearsal</span>
+                          </button>
+                        )}
                       </div>
                     </>
                   )}
@@ -1013,12 +1297,13 @@ export default function SoloStage({
 
 
           {/* Floating 'Director's Tech Scout' Calibration Card (MW-39 full-view check) */}
-          {mounted && !isMuted && !techAlignmentConfirmed && (
+          {mounted && !isMuted && !techAlignmentConfirmed && !isTableReadActive && (
             <div className={cn(
-              "absolute z-[35]",
+              "absolute z-[35] transition-all duration-500",
               isTechScoutMinimised 
                 ? "left-[40%] top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto" 
-                : "inset-0 flex items-center justify-center pointer-events-none bg-black/5 animate-fade-in"
+                : "inset-0 flex items-center justify-center pointer-events-none bg-black/5 animate-fade-in",
+              isFocusModeActive && "opacity-50 blur-[0.5px] pointer-events-none"
             )}>
               <motion.div 
                 drag
@@ -1110,7 +1395,7 @@ export default function SoloStage({
                           ) : (
                             <Dialog open={isCameraQRModalOpen} onOpenChange={setIsCameraQRModalOpen}>
                               <DialogTrigger asChild>
-                                <button className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 transition-all font-black text-[8px] uppercase tracking-wider rounded-lg flex items-center gap-1 cursor-pointer">
+                                <button data-tour="wireless-lens" className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 transition-all font-black text-[8px] uppercase tracking-wider rounded-lg flex items-center gap-1 cursor-pointer">
                                   <Smartphone className="w-2.5 h-2.5" />
                                   <span>Use Phone as Camera</span>
                                 </button>
@@ -1171,6 +1456,9 @@ export default function SoloStage({
                                       <span className="text-[10px] font-black uppercase tracking-widest text-zinc-300">
                                         {isWirelessLinked ? 'WIRELESS FEED SYNCD' : 'WAITING FOR SOURCE STREAM'}
                                       </span>
+                                    </div>
+                                    <div className="text-[9px] leading-relaxed text-amber-400 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl text-center mt-1 w-full font-medium">
+                                      <strong>⚠️ SSL Certificate Warning:</strong> Local WebRTC camera access requires HTTPS. If your phone blocks the connection, tap <strong>"Advanced" ➔ "Proceed"</strong> (or visit <span className="underline font-mono">https://{hostIP || '192.168.x.x'}:3000</span> first to accept the local dev certificate).
                                     </div>
                                   </div>
                                 </div>
@@ -1253,8 +1541,8 @@ export default function SoloStage({
           )}
 
           {/* Floating 'Camera Control Deck' calibration overlay */}
-          {mounted && !isMuted && !techAlignmentConfirmed && (
-            <div className="absolute right-6 xl:right-12 top-6 z-[35] pointer-events-auto">
+          {mounted && !isMuted && !techAlignmentConfirmed && !isTableReadActive && (
+            <div className={cn("absolute right-6 xl:right-12 top-6 z-[35] pointer-events-auto transition-all duration-500", isFocusModeActive && "opacity-50 blur-[0.5px] pointer-events-none")}>
                <motion.div
                  drag
                  dragConstraints={videoContainerRef}
@@ -1474,6 +1762,9 @@ export default function SoloStage({
                                      {isWirelessLinked ? 'WIRELESS FEED SYNCD' : 'WAITING FOR SOURCE STREAM'}
                                    </span>
                                  </div>
+                                 <div className="text-[9px] leading-relaxed text-amber-400 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl text-center mt-1 w-full font-medium">
+                                   <strong>⚠️ SSL Certificate Warning:</strong> Local WebRTC camera access requires HTTPS. If your phone blocks the connection, tap <strong>"Advanced" ➔ "Proceed"</strong> (or visit <span className="underline font-mono">https://{hostIP || '192.168.x.x'}:3000</span> first to accept the local dev certificate).
+                                 </div>
                                </div>
                              </div>
 
@@ -1548,52 +1839,61 @@ export default function SoloStage({
           
           {/* Cinematic Teleprompter Overlay */}
           <motion.div 
-            layout
-            key="cinematic-teleprompter"
-            drag={prompterLayout === 'side'}
-            dragControls={dragControls}
-            dragListener={false}
-            dragConstraints={videoContainerRef}
-            dragElastic={0.05}
-            dragMomentum={false}
-            animate={prompterLayout === 'center' ? (
-              isInterviewMode ? {
-                left: "50%",
-                x: "-50%",
-                top: 170,
-                y: 0,
-                width: 680,
-                height: 340,
-              } : {
-                left: "50%",
-                top: "50%",
-                x: "-50%",
-                y: "-50%",
-                width: "75%",
-                height: "65%",
-              }
-            ) : {
-              left: "auto",
-              right: 40,
-              top: 40,
-              width: isInterviewMode 
-                ? (prompterSize === 'mini' ? 280 : 520)
-                : (prompterSize === 'mini' ? 280 : prompterSize === 'sm' ? 380 : prompterSize === 'md' ? 580 : 820),
-              height: isInterviewMode
-                ? (prompterSize === 'mini' ? 180 : 420)
-                : (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 350 : prompterSize === 'md' ? 520 : 720)
-            }}
-            transition={{ type: "spring", stiffness: 120, damping: 22 }}
-            className={cn(
-              "z-30 border border-white/10 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col pointer-events-auto transition-all duration-1000",
-              prompterSize === 'mini' ? "p-4 bg-zinc-950/90" : "p-8",
-              (isMuted || !mounted || !techAlignmentConfirmed) && "hidden",
-              "opacity-100 blur-0",
-              prompterLayout === 'center'
-                ? "absolute bg-zinc-950/65 backdrop-blur-md"
-                : "absolute bg-zinc-950/85 backdrop-blur-3xl"
-            )}
-          >
+             key="cinematic-teleprompter"
+             drag={prompterLayout === 'side' && !isTableReadActive}
+             dragControls={dragControls}
+             dragListener={false}
+             dragConstraints={videoContainerRef}
+             dragElastic={0.05}
+             dragMomentum={false}
+             animate={isTableReadActive ? {
+               left: "3%",
+               top: "40px",
+               x: 0,
+               y: 0,
+               width: "94%",
+               height: "84%",
+             } : prompterLayout === 'center' ? (
+               isInterviewMode ? {
+                 left: "calc(50% - 340px)",
+                 x: 0,
+                 top: 170,
+                 y: 0,
+                 width: 680,
+                 height: 340,
+               } : {
+                 left: "12.5%",
+                 top: "17.5%",
+                 x: 0,
+                 y: 0,
+                 width: "75%",
+                 height: "65%",
+               }
+             ) : {
+               left: `calc(100% - ${prompterWidth}px - 40px)`,
+               top: "40px",
+               x: 0,
+               y: 0,
+               width: prompterWidth,
+               height: prompterHeight
+             }}
+             transition={{ type: "spring", stiffness: 120, damping: 22 }}
+             style={{
+               touchAction: 'none',
+               ...((isTableReadActive || prompterLayout === 'center') ? { x: 0, y: 0 } : {})
+             }}
+             className={cn(
+               "z-30 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col pointer-events-auto",
+               prompterSize === 'mini' ? "p-4 bg-zinc-950/90" : "p-8",
+               (isMuted || !mounted || !techAlignmentConfirmed) && "hidden",
+               "opacity-100 blur-0",
+               isTableReadActive
+                 ? "absolute bg-[#030303] border-2 border-sky-500/25 shadow-[0_0_50px_rgba(56,189,248,0.15)]"
+                 : prompterLayout === 'center'
+                 ? "absolute bg-zinc-950/65 backdrop-blur-md border border-white/10"
+                 : "absolute bg-zinc-950/85 backdrop-blur-3xl border border-white/10"
+             )}
+           >
             {/* Header Top Line: Title & Size Actions */}
             <div 
               onPointerDown={(e) => prompterLayout === 'side' && dragControls.start(e)}
@@ -1632,13 +1932,20 @@ export default function SoloStage({
                 >
                   <Maximize2 className="w-3 h-3" />
                 </button>
+                <button
+                  onClick={() => setIsBriefingOpen(true)}
+                  className="p-1 rounded bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center w-6 h-6 shrink-0"
+                  title="Open Stage Briefing & Tour"
+                >
+                  <Theater className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
 
             {/* Header Second Row: Action Buttons */}
             {prompterSize !== 'mini' && (
               <div className="flex items-center justify-between gap-4 border-b border-white/5 pb-3 mb-4 shrink-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2" data-tour="remote-bridge">
                   {/* QR Remote Controller Pair Trigger */}
                   <QRController memoryId={data?.id || ''} peerState={peerState} />
 
@@ -1671,6 +1978,9 @@ export default function SoloStage({
                   stream={stream}
                   prompterLayout={prompterLayout}
                   onPrompterLayoutToggle={() => setPrompterLayout(prev => prev === 'side' ? 'center' : 'side')}
+                  isTableReadActive={isTableReadActive}
+                  onTableReadToggle={isTableReadActive ? handleEndRehearsal : handleEngageRehearsal}
+                  rehearsalSpeed={rehearsalSpeed}
                 />
               </div>
 
@@ -1706,57 +2016,60 @@ export default function SoloStage({
           </motion.div>
 
           {/* Cinematic Camera Overlays (Safe Areas/REC) */}
-          <div className="absolute inset-0 z-20 pointer-events-none border-[40px] border-transparent">
-             {/* Sleek Metadata Tag in Top-Left Corner */}
-             <div className="absolute top-8 left-8 flex items-center gap-2 px-4 py-1.5 bg-black/60 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white/70 backdrop-blur-md">
-               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-               <span>
-                 INPUT: {activeInput === 'wireless' ? 'REMOTE WIRELESS LENS (1080p)' : 'STUDIO WEBCAM (720p)'}
-               </span>
-             </div>
+          {!isTableReadActive && (
+            <div className="absolute inset-0 z-20 pointer-events-none border-[40px] border-transparent">
+               {/* Sleek Metadata Tag in Top-Left Corner */}
+               <div className="absolute top-8 left-8 flex items-center gap-2 px-4 py-1.5 bg-black/60 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white/70 backdrop-blur-md">
+                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                 <span>
+                   INPUT: {activeInput === 'wireless' ? 'REMOTE WIRELESS LENS (1080p)' : 'STUDIO WEBCAM (720p)'}
+                 </span>
+               </div>
 
-             {/* Corner Accents */}
-             <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white/20 rounded-tl-xl" />
-             <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white/20 rounded-tr-xl" />
-             <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white/20 rounded-bl-xl" />
-             <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white/20 rounded-br-xl" />
-             
-             {/* Safe Area Guides */}
-             <div className="absolute inset-8 border border-dashed border-white/5 rounded-2xl" />
-             
-             {/* REC Indicator */}
-             <AnimatePresence>
-               {isRecording && (
-                 <motion.div 
-                   initial={{ opacity: 0 }}
-                   animate={{ opacity: 1 }}
-                   exit={{ opacity: 0 }}
-                   className="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-3 px-6 py-2 bg-rose-500 text-white rounded-full text-[10px] font-black uppercase tracking-[0.3em] shadow-[0_0_30px_rgba(244,63,94,0.4)]"
-                 >
-                   <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                   On Air • Recording
-                 </motion.div>
-               )}
-             </AnimatePresence>
+               {/* Corner Accents */}
+               <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white/20 rounded-tl-xl" />
+               <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white/20 rounded-tr-xl" />
+               <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white/20 rounded-bl-xl" />
+               <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white/20 rounded-br-xl" />
+               
+               {/* Safe Area Guides */}
+               <div className="absolute inset-8 border border-dashed border-white/5 rounded-2xl" />
+               
+               {/* REC Indicator */}
+               <AnimatePresence>
+                 {isRecording && (
+                   <motion.div 
+                     initial={{ opacity: 0 }}
+                     animate={{ opacity: 1 }}
+                     exit={{ opacity: 0 }}
+                     className="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-3 px-6 py-2 bg-rose-500 text-white rounded-full text-[10px] font-black uppercase tracking-[0.3em] shadow-[0_0_30px_rgba(244,63,94,0.4)]"
+                   >
+                     <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                     On Air • Recording
+                   </motion.div>
+                 )}
+               </AnimatePresence>
 
-             {/* Remote Connection Pulse HUD (Top Right) */}
-             <AnimatePresence>
-               {peerState === 'authorised' && (
-                 <motion.div
-                   initial={{ opacity: 0, x: 20 }}
-                   animate={{ opacity: 1, x: 0 }}
-                   exit={{ opacity: 0, x: 20 }}
-                   className="absolute top-8 right-8 flex items-center gap-2 px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-[9px] font-black uppercase tracking-widest text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)] pointer-events-auto"
-                 >
-                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                   Remote Linked
-                 </motion.div>
-               )}
-             </AnimatePresence>
-          </div>
+               {/* Remote Connection Pulse HUD (Top Right) */}
+               <AnimatePresence>
+                 {peerState === 'authorised' && (
+                   <motion.div
+                     initial={{ opacity: 0, x: 20 }}
+                     animate={{ opacity: 1, x: 0 }}
+                     exit={{ opacity: 0, x: 20 }}
+                     className="absolute top-8 right-8 flex items-center gap-2 px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-[9px] font-black uppercase tracking-widest text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)] pointer-events-auto"
+                   >
+                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                     Remote Linked
+                   </motion.div>
+                 )}
+               </AnimatePresence>
+            </div>
+          )}
 
-          <div className="absolute inset-0 z-20 flex flex-col justify-between p-10 w-full mx-auto pointer-events-none">
-             <div className="flex justify-between items-start w-full pointer-events-auto">
+          {!isTableReadActive && (
+             <div className="absolute inset-0 z-20 flex flex-col justify-between p-10 w-full mx-auto pointer-events-none">
+                <div className="flex justify-between items-start w-full pointer-events-auto">
                <AnimatePresence mode="wait">
                  {isRecording ? (
                    <motion.div 
@@ -1842,7 +2155,7 @@ export default function SoloStage({
                 </AnimatePresence>
 
                  <AnimatePresence>
-                    {isInterviewMode && (
+                    {isInterviewMode && techAlignmentConfirmed && (
                       <motion.div 
                         key="interviewer-card"
                         initial={{ opacity: 0, x: -50 }}
@@ -2034,6 +2347,7 @@ export default function SoloStage({
                 )}
              </AnimatePresence>
           </div>
+          )}
 
           {error ? (() => {
             const errType = cameraError?.type || 'unknown';
@@ -2279,7 +2593,56 @@ export default function SoloStage({
              </motion.div>
           )}
        </AnimatePresence>
-    </div>
+
+        {/* Directorial Rehearsal Feedback Note Card */}
+        <AnimatePresence>
+          {showRehearsalFeedback && (
+             <motion.div 
+               initial={{ opacity: 0 }} 
+               animate={{ opacity: 1 }} 
+               exit={{ opacity: 0 }} 
+               className="fixed inset-0 z-[600] flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-3xl"
+             >
+                <motion.div 
+                  initial={{ scale: 0.9, y: 20 }}
+                  animate={{ scale: 1, y: 0 }}
+                  exit={{ scale: 0.9, y: 20 }}
+                  className="max-w-md w-full bg-slate-900 border border-white/10 rounded-[3rem] p-10 text-center shadow-2xl space-y-6"
+                >
+                   <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+                      <Sparkles className="w-8 h-8 text-emerald-400 animate-pulse" />
+                   </div>
+                   <div className="space-y-2">
+                      <h2 className="text-xl font-black text-white uppercase tracking-widest">REHEARSAL DESK // AUTHORISED BLUEPRINT</h2>
+                      <p className="text-[10px] text-sky-400 font-bold uppercase tracking-widest">Rhythm Authorised. Restore Stage?</p>
+                   </div>
+                   <p className="text-sm text-white/80 leading-relaxed italic font-serif py-2">
+                      "That felt authorised. The pacing on the 'Nairobi' section is your soul-print. Shall we take it to the floor for a real capture?"
+                   </p>
+                   <div className="pt-2 flex flex-col gap-3">
+                      <button 
+                        onClick={() => {
+                           setShowRehearsalFeedback(false);
+                           handleEndRehearsal();
+                       }} 
+                        className="w-full py-3.5 bg-sky-500 hover:bg-sky-600 active:scale-95 transition-all text-slate-950 font-black text-xs uppercase tracking-widest rounded-xl shadow-[0_0_20px_rgba(56,189,248,0.2)] cursor-pointer"
+                      >
+                         Restore Stage & Take to Floor
+                      </button>
+                      <button 
+                        onClick={() => {
+                           setShowRehearsalFeedback(false);
+                        }} 
+                        className="w-full py-3.5 bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-white/60 hover:text-white font-black text-xs uppercase tracking-widest rounded-xl border border-white/10 cursor-pointer"
+                      >
+                         Keep Rehearsing
+                      </button>
+                   </div>
+                </motion.div>
+             </motion.div>
+          )}
+        </AnimatePresence>
+     </div>
   );
 
   const renderNotepad = () => (
@@ -2537,6 +2900,48 @@ export default function SoloStage({
             <Smartphone className="w-4 h-4 animate-bounce" />
             <span>{remoteCommandAlert}</span>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* UK English Stage Manager welcome cue banner */}
+      <AnimatePresence>
+        {showStageManagerCue && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-lg bg-zinc-950/90 backdrop-blur-3xl border border-sky-500/30 p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4 text-center mx-4"
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.6)]" />
+              <span className="text-[9px] font-black text-sky-400 uppercase tracking-[0.25em]">Stage Manager Briefing // Sanctuary Cue</span>
+            </div>
+            
+            <p className="text-xs text-white/95 leading-relaxed font-headline italic px-2">
+              "This stage is your sanctuary. Take a walk around, try the buttons, and make yourself at home. We'll be in the wings when you're ready."
+            </p>
+
+            <button
+              onClick={() => setShowStageManagerCue(false)}
+              className="px-6 py-2 bg-sky-500 hover:bg-sky-400 active:scale-95 text-slate-950 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-md"
+            >
+              Begin Performance
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* The Grand Tour & Onboarding Walkthrough Overlay */}
+      <AnimatePresence>
+        {isBriefingOpen && (
+          <StudioBriefing
+            isOpen={isBriefingOpen}
+            onClose={handleCloseBriefing}
+            cameraPairingUrl={cameraPairingUrl}
+            peerState={peerState}
+            hostIP={hostIP}
+            setHostIP={setHostIP}
+          />
         )}
       </AnimatePresence>
     </>

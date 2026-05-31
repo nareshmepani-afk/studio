@@ -55,7 +55,10 @@ export async function synthesizeStudioSpeech(text: string, voiceName: string = '
 
     if (!token) throw new Error("Failed to generate Auth Token for TTS.");
 
-    const canonicalVoice = VOICE_MAP[voiceName] || voiceName;
+    // Intelligent auto-detection: If text contains Gujarati characters (Unicode U+0A80 to U+0AFF),
+    // automatically map it to the authentic Gujarati voice to guarantee native pronunciation.
+    const hasGujarati = /[\u0A80-\u0AFF]/.test(text);
+    const canonicalVoice = hasGujarati ? 'gu-IN-Wavenet-A' : (VOICE_MAP[voiceName] || voiceName);
 
     const response = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize', {
       method: 'POST',

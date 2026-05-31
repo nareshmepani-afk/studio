@@ -2,8 +2,9 @@
 
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useStudioState } from '@/hooks/studio/useStudioState';
-import { FlipHorizontal, Play, Pause, ChevronUp, ChevronDown, Layout } from 'lucide-react';
+import { FlipHorizontal, Play, Pause, ChevronUp, ChevronDown, Layout, Music, Volume2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { synthesizeStudioSpeech } from '@/actions/studio-vocal';
 import {
   Tooltip,
   TooltipContent,
@@ -19,6 +20,9 @@ interface TeleprompterProps {
   stream?: MediaStream | null;
   prompterLayout?: 'side' | 'center';
   onPrompterLayoutToggle?: () => void;
+  isTableReadActive?: boolean;
+  onTableReadToggle?: () => void;
+  rehearsalSpeed?: number;
 }
 
 const highlightSensoryAnchors = (text: string): string => {
@@ -35,14 +39,26 @@ const highlightSensoryAnchors = (text: string): string => {
 
   let processed = text;
 
-  const soundRegex = new RegExp(`\\b(${soundPattern})\\b`, 'gi');
-  processed = processed.replace(soundRegex, `<span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.25)] font-bold transition-all hover:bg-emerald-500/20" title="Sound Anchor">$1</span>`);
+  // Sound Anchors (Exclude matching inside HTML tags/attributes)
+  const soundRegex = new RegExp(`(<[^>]*>)|\\b(${soundPattern})\\b`, 'gi');
+  processed = processed.replace(soundRegex, (match, tag, word) => {
+    if (tag) return tag;
+    return `<span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.25)] font-bold transition-all hover:bg-emerald-500/20" title="Sound Anchor">${word}</span>`;
+  });
 
-  const aromaRegex = new RegExp(`\\b(${aromaPattern})\\b`, 'gi');
-  processed = processed.replace(aromaRegex, `<span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.25)] font-bold transition-all hover:bg-amber-500/20" title="Scent Anchor">$1</span>`);
+  // Aroma Anchors (Exclude matching inside HTML tags/attributes)
+  const aromaRegex = new RegExp(`(<[^>]*>)|\\b(${aromaPattern})\\b`, 'gi');
+  processed = processed.replace(aromaRegex, (match, tag, word) => {
+    if (tag) return tag;
+    return `<span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.25)] font-bold transition-all hover:bg-amber-500/20" title="Scent Anchor">${word}</span>`;
+  });
 
-  const visualRegex = new RegExp(`\\b(${visualPattern})\\b`, 'gi');
-  processed = processed.replace(visualRegex, `<span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 shadow-[0_0_12px_rgba(168,85,247,0.25)] font-bold transition-all hover:bg-purple-500/20" title="Visual/Texture Anchor">$1</span>`);
+  // Visual Anchors (Exclude matching inside HTML tags/attributes)
+  const visualRegex = new RegExp(`(<[^>]*>)|\\b(${visualPattern})\\b`, 'gi');
+  processed = processed.replace(visualRegex, (match, tag, word) => {
+    if (tag) return tag;
+    return `<span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 shadow-[0_0_12px_rgba(168,85,247,0.25)] font-bold transition-all hover:bg-purple-500/20" title="Visual/Texture Anchor">${word}</span>`;
+  });
 
   return processed;
 };
@@ -54,7 +70,10 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   isMini = false,
   stream = null,
   prompterLayout = 'side',
-  onPrompterLayoutToggle
+  onPrompterLayoutToggle,
+  isTableReadActive = false,
+  onTableReadToggle,
+  rehearsalSpeed = 1.5
 }) => {
   const { 
     selectedTake, 
@@ -73,8 +92,74 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
   const isLayoutLocked = modalityMode === 'interview' || isScrolling;
 
+  const [isRehearsingAudio, setIsRehearsingAudio] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   const [localActiveBeatIndex, setLocalActiveBeatIndex] = useState(0);
   const activeBeatIndex = externalActiveBeatIndex !== undefined ? externalActiveBeatIndex : localActiveBeatIndex;
+
+  // MOD-17: Extract first N sentences for vocal shadowing lead-in pacing reference
+  const getFirstNSentences = (text: string, n: number) => {
+    if (!text) return '';
+    // Match up to N sentences ending in . or ! or ?
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+    return sentences.slice(0, n).join(' ');
+  };
+
+  const handleToggleRehearsalAudio = async () => {
+    if (isRehearsingAudio) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      setIsRehearsingAudio(false);
+      if (isScrolling) {
+        toggleScrolling();
+      }
+      return;
+    }
+
+    const sentencesText = getFirstNSentences(selectedTake || '', 3);
+    if (!sentencesText) return;
+
+    setIsRehearsingAudio(true);
+    try {
+      // Call Google/Edge TTS synthesiser using 'Achernar' premium voice
+      const base64 = await synthesizeStudioSpeech(sentencesText, 'Achernar');
+      if (base64) {
+        const audio = new Audio(`data:audio/mp3;base64,${base64}`);
+        audioRef.current = audio;
+
+        // Automatically start smooth prompter scroll at natural pacing speed
+        if (!isScrolling) {
+          toggleScrolling();
+        }
+
+        audio.play();
+
+        // Establish the smooth fade-out and silent continued shadowing scroll
+        audio.onended = () => {
+          setIsRehearsingAudio(false);
+          audioRef.current = null;
+        };
+      } else {
+        setIsRehearsingAudio(false);
+      }
+    } catch (e) {
+      console.warn("TTS Rehearsal failed:", e);
+      setIsRehearsingAudio(false);
+    }
+  };
+
+  // Safe cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   const textToPrompt = selectedTake 
     ? selectedTake 
@@ -96,12 +181,16 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     
     const scroll = () => {
       if (containerRef.current) {
-        scrollPosRef.current += scrollSpeed * 0.4;
+        const activeSpeed = isTableReadActive && rehearsalSpeed !== undefined ? rehearsalSpeed : scrollSpeed;
+        scrollPosRef.current += activeSpeed * 0.4;
         containerRef.current.scrollTop = Math.floor(scrollPosRef.current);
         
         const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
         if (scrollTop >= scrollHeight - clientHeight - 2) {
           toggleScrolling();
+          if (isTableReadActive) {
+            window.dispatchEvent(new Event('studio-table-read-ended'));
+          }
         }
       }
       animationId = requestAnimationFrame(scroll);
@@ -109,7 +198,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
     animationId = requestAnimationFrame(scroll);
     return () => cancelAnimationFrame(animationId);
-  }, [isScrolling, scrollSpeed, toggleScrolling, modalityMode, isMini]);
+  }, [isScrolling, scrollSpeed, rehearsalSpeed, toggleScrolling, modalityMode, isMini, isTableReadActive]);
 
   // Listener to scroll programmatically to a specific beat index
   useEffect(() => {
@@ -355,9 +444,10 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         <div 
           ref={containerRef}
           onScroll={handleScrollTelemetry}
-          style={{ fontSize: isMini ? '16px' : `${fontSize}px` }}
+          style={{ fontSize: isMini ? '16px' : isTableReadActive ? '64px' : `${fontSize}px` }}
           className={cn(
-            "flex-grow overflow-y-auto pr-2 custom-scrollbar leading-relaxed italic font-serif select-none relative",
+            "flex-grow overflow-y-auto pr-2 custom-scrollbar leading-relaxed italic font-serif select-none relative transition-all duration-700",
+            isTableReadActive ? "text-center px-6 max-w-5xl mx-auto py-16 scroll-smooth" : "",
             isMirrored && "transform -scale-x-100"
           )}
         >
@@ -385,61 +475,127 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Visual Controls & Selfie Sidebar (Active Camera Mode) */}
-        {!isMini && stream && (
+        {/* Right Column: Visual Controls & Selfie Sidebar (Active Camera/Rehearsal Mode) */}
+        {!isMini && (stream || isTableReadActive) && (
           <div className="w-[124px] flex-none flex flex-col gap-3.5 border-l border-white/5 pl-4 shrink-0 overflow-y-auto custom-scrollbar select-none">
             {/* Live Selfie Monitor */}
-            <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.4)] bg-zinc-950 shrink-0">
-              <video
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover scale-x-[-1]"
-                ref={(el) => {
-                  if (el && stream && el.srcObject !== stream) {
-                    el.srcObject = stream;
-                    const playPromise = el.play();
-                    if (playPromise !== undefined) {
-                      playPromise.catch(e => console.warn("Selfie play error:", e));
+            {stream && (
+              <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.4)] bg-zinc-950 shrink-0">
+                <video
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover scale-x-[-1]"
+                  ref={(el) => {
+                    if (el && stream && el.srcObject !== stream) {
+                      el.srcObject = stream;
+                      const playPromise = el.play();
+                      if (playPromise !== undefined) {
+                        playPromise.catch(e => console.warn("Selfie play error:", e));
+                      }
                     }
-                  }
-                }}
-              />
-              <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/60 border border-white/10 text-[7px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1 shadow-sm">
-                <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Selfie</span>
+                  }}
+                />
+                <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/60 border border-white/10 text-[7px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1 shadow-sm">
+                  <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Selfie</span>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Mirror Option */}
-            <div className="flex flex-col shrink-0">
-              <TooltipProvider delayDuration={300}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={toggleMirror}
-                      title="Mirror Mode"
-                      className={cn(
-                        "w-full py-2 rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5",
-                        isMirrored ? "bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:text-white"
-                      )}
-                    >
-                      <FlipHorizontal className="w-3.5 h-3.5" />
-                      <span className="text-[9px] font-black uppercase tracking-widest">Mirror</span>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="left" className="bg-neutral-950 border-white/5 max-w-[200px] p-3 text-xs leading-relaxed text-zinc-300">
-                    <div className="space-y-1.5">
-                      <p className="font-bold text-[9px] uppercase tracking-widest text-amber-400">Mirror Mode</p>
-                      <p className="text-[10px] text-zinc-400 leading-normal">Flips text horizontally for glass hoods reflection.</p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
+            {/* Glowing Table Read Option (Interactive mode trigger) */}
+            {onTableReadToggle && (
+              <div className="flex flex-col shrink-0">
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={onTableReadToggle}
+                        title="Toggle Immersive Table Read Rehearsal Mode"
+                        className={cn(
+                          "w-full py-2.5 rounded-xl border font-bold text-[9px] uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-1.5",
+                          isTableReadActive
+                            ? "bg-sky-500 text-slate-900 border-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.4)]"
+                            : "bg-gradient-to-r from-sky-500/10 to-indigo-500/10 border-sky-500/30 text-sky-400 hover:text-sky-300 hover:border-sky-500/50"
+                        )}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>{isTableReadActive ? 'End Read' : 'Table Read'}</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="bg-neutral-950 border-white/5 max-w-[200px] p-3 text-xs leading-relaxed text-zinc-300">
+                      <div className="space-y-1.5">
+                        <p className="font-bold text-[9px] uppercase tracking-widest text-sky-400">Table Read</p>
+                        <p className="text-[10px] text-zinc-400 leading-normal">Engage a zero-distraction acoustic rehearsal workspace to shadow delivery.</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
 
-            {/* Layout Mode (Overlay vs Center) Option */}
-            {onPrompterLayoutToggle && (
+            {/* Vocal Shadowing Lead-In Audio Playback (Available during active Table Read) */}
+            {isTableReadActive && (
+              <div className="flex flex-col shrink-0">
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={handleToggleRehearsalAudio}
+                        title="Start Vocal Shadowing Audio"
+                        className={cn(
+                          "w-full py-2 rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5 font-black text-[9px] uppercase tracking-widest",
+                          isRehearsingAudio
+                            ? "bg-amber-500 text-slate-900 border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.45)]"
+                            : "bg-white/5 border-white/10 text-white/60 hover:text-white"
+                        )}
+                      >
+                        {isRehearsingAudio ? <Volume2 className="w-3.5 h-3.5 animate-bounce" /> : <Music className="w-3.5 h-3.5" />}
+                        <span>{isRehearsingAudio ? 'Shadowing' : 'Vocal'}</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="bg-neutral-950 border-white/5 max-w-[200px] p-3 text-xs leading-relaxed text-zinc-300">
+                      <div className="space-y-1.5">
+                        <p className="font-bold text-[9px] uppercase tracking-widest text-amber-400">Vocal Shadowing</p>
+                        <p className="text-[10px] text-zinc-400 leading-normal">Play first 3 sentences aloud to establish rhythm, then fade to silent shadowing scroll.</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+
+            {/* Mirror Option (Hide during active Table Read) */}
+            {!isTableReadActive && (
+              <div className="flex flex-col shrink-0">
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={toggleMirror}
+                        title="Mirror Mode"
+                        className={cn(
+                          "w-full py-2 rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5",
+                          isMirrored ? "bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:text-white"
+                        )}
+                      >
+                        <FlipHorizontal className="w-3.5 h-3.5" />
+                        <span className="text-[9px] font-black uppercase tracking-widest">Mirror</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="bg-neutral-950 border-white/5 max-w-[200px] p-3 text-xs leading-relaxed text-zinc-300">
+                      <div className="space-y-1.5">
+                        <p className="font-bold text-[9px] uppercase tracking-widest text-amber-400">Mirror Mode</p>
+                        <p className="text-[10px] text-zinc-400 leading-normal">Flips text horizontally for glass hoods reflection.</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+
+            {/* Layout Mode (Overlay vs Center) Option (Hide during active Table Read) */}
+            {!isTableReadActive && onPrompterLayoutToggle && (
               <div className="flex flex-col shrink-0">
                 <TooltipProvider delayDuration={300}>
                   <Tooltip>
@@ -478,15 +634,17 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
               </div>
             )}
 
-            {/* Optimised Font Size controls inside column */}
-            <div className="flex flex-col gap-1.5 bg-white/5 border border-white/10 rounded-2xl p-2 items-center shrink-0">
-              <span className="text-[8px] font-black uppercase tracking-widest text-white/30 text-center w-full block">Optimised Layout</span>
-              <div className="flex items-center justify-between w-full mt-1.5">
-                <button onClick={decreaseFontSize} className="w-6.5 h-6.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-black text-xs cursor-pointer flex items-center justify-center">-</button>
-                <span className="text-[10px] font-mono font-bold text-white/90 w-8 text-center">{fontSize}px</span>
-                <button onClick={increaseFontSize} className="w-6.5 h-6.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-black text-xs cursor-pointer flex items-center justify-center">+</button>
+            {/* Optimised Font Size controls inside column (Hide during active Table Read) */}
+            {!isTableReadActive && (
+              <div className="flex flex-col gap-1.5 bg-white/5 border border-white/10 rounded-2xl p-2 items-center shrink-0">
+                <span className="text-[8px] font-black uppercase tracking-widest text-white/30 text-center w-full block">Optimised Layout</span>
+                <div className="flex items-center justify-between w-full mt-1.5">
+                  <button onClick={decreaseFontSize} className="w-6.5 h-6.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-black text-xs cursor-pointer flex items-center justify-center">-</button>
+                  <span className="text-[10px] font-mono font-bold text-white/90 w-8 text-center">{fontSize}px</span>
+                  <button onClick={increaseFontSize} className="w-6.5 h-6.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-black text-xs cursor-pointer flex items-center justify-center">+</button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>

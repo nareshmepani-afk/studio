@@ -36,18 +36,9 @@ vi.mock('framer-motion', () => {
 });
 
 vi.mock('lucide-react', async (importOriginal) => {
+  const actual = await importOriginal() as any;
   return {
-    Video: () => null, Disc: () => null, Square: () => null, AlertTriangle: () => null,
-    UploadCloud: () => null, CheckCircle2: () => null, Scissors: () => null,
-    Play: () => null, Pause: () => null, Camera: () => null, Loader2: () => null,
-    Mic2: () => null, MessageSquare: () => null, Volume2: () => null, Sparkles: () => null,
-    UserCircle: () => null, Languages: () => null, Layout: () => null, Zap: () => null,
-    Settings2: () => null, RefreshCw: () => null, CheckCircle: () => null,
-    Rocket: () => null, PenTool: () => null, Mic: () => null, MapPin: () => null,
-    Calendar: () => null, Tag: () => null, ArrowRight: () => null, ArrowLeft: () => null,
-    Film: () => null, BrainCircuit: () => null, Maximize2: () => null, Minus: () => null,
-    Plus: () => null, ChevronRight: () => null, ChevronLeft: () => null, Lock: () => null,
-    Smartphone: () => null, ShieldCheck: () => null
+    ...actual,
   };
 });
 
