@@ -58,12 +58,59 @@ vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({ user: { uid: 'test-user-id' }, loading: false }),
 }));
 
+const mockClearRecording = vi.fn();
+const mockStartRecording = vi.fn();
+const mockStopRecording = vi.fn();
+let mockRecordedBlob: any = null;
+
+const mockStartAlchemy = vi.fn();
+let mockIsSaving = false;
+
 vi.mock('@/hooks/useCamera', () => ({
   useCamera: () => ({ active: false, start: vi.fn(), stop: vi.fn(), stream: null }),
 }));
 
-vi.mock('@/hooks/use-media-recorder', () => ({
-  useMediaRecorder: () => ({ status: 'inactive', startRecording: vi.fn(), stopRecording: vi.fn(), mediaBlobUrl: null }),
+vi.mock('@/hooks/use-media-recorder', () => {
+  return {
+    useMediaRecorder: () => {
+      const [blob, setBlob] = React.useState(mockRecordedBlob);
+      React.useEffect(() => {
+        setBlob(mockRecordedBlob);
+      }, [mockRecordedBlob]);
+
+      const clear = React.useCallback(() => {
+        mockClearRecording();
+        mockRecordedBlob = null;
+        setBlob(null);
+      }, []);
+
+      return {
+        isRecording: false,
+        startRecording: mockStartRecording,
+        stopRecording: mockStopRecording,
+        recordingTime: 0,
+        isWarningLimit: false,
+        recordedBlob: blob,
+        clearRecording: clear,
+        uploadVideo: vi.fn(),
+        uploadMediaBlob: vi.fn(),
+        uploading: false,
+        uploadProgress: 0,
+        uploadResult: null
+      };
+    }
+  };
+});
+
+vi.mock('@/hooks/studio/useAlchemy', () => ({
+  useAlchemy: () => ({
+    isSaving: mockIsSaving,
+    progress: 0,
+    error: null,
+    isComplete: false,
+    isRetrying: false,
+    startAlchemy: mockStartAlchemy,
+  }),
 }));
 
 vi.mock('@/hooks/use-audio-level', () => ({
@@ -159,5 +206,90 @@ describe('SoloStage Shielded Update Protection', () => {
     expect(result.title).toBe('Historic Journey');
     expect(result.location).toBe('Nairobi');
     expect(result.description).toBe('Updated script description');
+  });
+});
+
+describe('Video Review & Approval Stage State Transitions', () => {
+  const mockUpdate = vi.fn();
+  const initialMemory: Memory = {
+    id: 'test-secure-id',
+    title: 'Historic Journey',
+    description: 'Initial script description',
+    location: 'Nairobi',
+    country: 'Kenya',
+    tags: ['family', '1964'],
+    status: 'draft',
+    lastEdited: Date.now(),
+    dateComponents: { day: '12', month: 'May', year: '1964' },
+    scriptBlocks: []
+  } as any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRecordedBlob = null;
+    mockIsSaving = false;
+    global.URL.createObjectURL = vi.fn(() => 'blob:http://localhost/test-blob');
+    global.URL.revokeObjectURL = vi.fn();
+  });
+
+  it('enters reviewTake mode immediately after recording stops (and isAlchemySaving remains false)', async () => {
+    const testBlob = new Blob(['dummy-content'], { type: 'video/webm' });
+    mockRecordedBlob = testBlob;
+
+    const { getByText, queryByText } = render(
+      <SoloStage 
+        data={initialMemory} 
+        update={mockUpdate} 
+        currentStage={2}
+      />
+    );
+
+    expect(getByText('Review Performance Take')).toBeDefined();
+    expect(queryByText('Mastering in Progress')).toBeNull();
+  });
+
+  it('memory management: Discarding the take clears the recordedBlob, resets reference, and revokes local object URL', async () => {
+    const testBlob = new Blob(['dummy-content'], { type: 'video/webm' });
+    mockRecordedBlob = testBlob;
+
+    const { getByText } = render(
+      <SoloStage 
+        data={initialMemory} 
+        update={mockUpdate} 
+        currentStage={2}
+      />
+    );
+
+    const discardButton = getByText('Discard & Re-Shoot');
+    expect(discardButton).toBeDefined();
+
+    await act(async () => {
+      discardButton.click();
+    });
+
+    expect(mockClearRecording).toHaveBeenCalledTimes(1);
+    expect(global.URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/test-blob');
+  });
+
+  it('happy path: Approving the take triggers startAlchemy with correct blob metadata', async () => {
+    const testBlob = new Blob(['dummy-content'], { type: 'video/webm' });
+    mockRecordedBlob = testBlob;
+
+    const { getByText } = render(
+      <SoloStage 
+        data={initialMemory} 
+        update={mockUpdate} 
+        currentStage={2}
+      />
+    );
+
+    const approveButton = getByText('Approve & Synthesize');
+    expect(approveButton).toBeDefined();
+
+    await act(async () => {
+      approveButton.click();
+    });
+
+    expect(mockStartAlchemy).toHaveBeenCalledWith(testBlob);
   });
 });

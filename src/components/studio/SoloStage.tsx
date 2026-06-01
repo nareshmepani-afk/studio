@@ -20,7 +20,7 @@ import {
   UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, 
   Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
   Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
-  Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater
+  Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater, Trash2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -114,6 +114,7 @@ export default function SoloStage({
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [isAnalyzingFraming, setIsAnalyzingFraming] = useState(false);
   const [interviewHistory, setInterviewHistory] = useState<string[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(-1);
   
   // MOD-13: Sound Check State
   const [showSoundCheck, setShowSoundCheck] = useState(false);
@@ -255,6 +256,8 @@ export default function SoloStage({
     isWirelessLinked
   } = useCamera({ enabled: isCameraActive });
   const [isPersistenceSaving, setIsPersistenceSaving] = useState(false);
+  const [reviewTake, setReviewTake] = useState(false);
+  const [reviewVideoUrl, setReviewVideoUrl] = useState<string | null>(null);
 
   // Automatically close the Wireless Lens Bridge modal once linked
   useEffect(() => {
@@ -424,13 +427,45 @@ export default function SoloStage({
     }
   });
 
-  // AUTOMATION: Silently upload and seal take in database immediately upon MediaRecorder stop
+  const lastAttemptedBlobRef = useRef<Blob | null>(null);
+
+  // Memoize recordedBlob URL safely to avoid browser memory leaks and duplicate URL instantiations
   useEffect(() => {
-    if (recordedBlob && !isAlchemySaving && !isAlchemyComplete) {
-      console.log("[SoloStage] Compiled performance reel acquired. Triggering silent Alchemy save...");
-      startAlchemy(recordedBlob);
+    if (!recordedBlob) {
+      setReviewVideoUrl(null);
+      return;
     }
-  }, [recordedBlob, isAlchemySaving, isAlchemyComplete, startAlchemy]);
+    const url = URL.createObjectURL(recordedBlob);
+    setReviewVideoUrl(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [recordedBlob]);
+
+  // Intercept MediaRecorder stop event and trigger Review overlay before sealing
+  useEffect(() => {
+    if (recordedBlob && recordedBlob !== lastAttemptedBlobRef.current && !isAlchemySaving && !isAlchemyComplete) {
+      console.log(`[SoloStage] SUCCESS: Compiled performance reel acquired (${recordedBlob.size} bytes). Triggering Review overlay...`);
+      setReviewTake(true);
+    }
+  }, [recordedBlob, isAlchemySaving, isAlchemyComplete]);
+
+  const handleApproveTake = () => {
+    if (recordedBlob) {
+      lastAttemptedBlobRef.current = recordedBlob;
+      console.log("[SoloStage] User approved take. Triggering Alchemy save...");
+      startAlchemy(recordedBlob);
+      setReviewTake(false);
+    }
+  };
+
+  const handleDiscardTake = () => {
+    console.log("[SoloStage] User discarded take. Cleaning up resources...");
+    clearRecording();
+    lastAttemptedBlobRef.current = null;
+    setReviewTake(false);
+    setIsCameraActive(true);
+  };
 
   const micLevel = useAudioLevel(stream);
   
@@ -478,9 +513,7 @@ export default function SoloStage({
   }, []);
 
   // Phase 3 Preview Local URL
-  const previewUrl = useMemo(() => {
-    return recordedBlob ? URL.createObjectURL(recordedBlob) : null;
-  }, [recordedBlob]);
+  const previewUrl = reviewVideoUrl;
 
   const togglePreviewPlay = () => {
     if (previewVideoRef.current) {
@@ -661,25 +694,64 @@ export default function SoloStage({
     const interviewerVoice = interviewLanguage === 'gu' ? selectedVoice : 'Achird';
     
     try {
-      const question = await generateInterviewQuestion(
-        data?.prose || '', 
-        interviewHistory,
-        interviewLanguage,
-        isFluidMode ? 'fluid' : 'strict'
-      );
-      
-      if (question) {
-        setCurrentQuestion(question);
-        setInterviewHistory(prev => [...prev, `AI: ${question}`]);
+      // If we are currently navigating historical questions and not at the end of the history array
+      if (currentQuestionIndex < interviewHistory.length - 1) {
+        const nextIndex = currentQuestionIndex + 1;
+        const nextQuestion = interviewHistory[nextIndex].replace(/^AI:\s*/, '');
+        setCurrentQuestion(nextQuestion);
+        setCurrentQuestionIndex(nextIndex);
         
-        const audio = await synthesizeStudioSpeech(question, interviewerVoice);
+        const audio = await synthesizeStudioSpeech(nextQuestion, interviewerVoice);
         if (audio) {
           playAudio(audio);
+        }
+      } else {
+        // Otherwise, generate a fresh new question using the AI bridge
+        const question = await generateInterviewQuestion(
+          data?.prose || '', 
+          interviewHistory,
+          interviewLanguage,
+          isFluidMode ? 'fluid' : 'strict'
+        );
+        
+        if (question) {
+          setCurrentQuestion(question);
+          const newHistory = [...interviewHistory, `AI: ${question}`];
+          setInterviewHistory(newHistory);
+          setCurrentQuestionIndex(newHistory.length - 1);
+          
+          const audio = await synthesizeStudioSpeech(question, interviewerVoice);
+          if (audio) {
+            playAudio(audio);
+          }
         }
       }
     } catch (err) {
       console.error("Interviewer Error:", err);
       toast.error("Vocal Bridge Interrupted");
+    } finally {
+      setIsSynthesizing(false);
+    }
+  };
+
+  const triggerPrevQuestion = async () => {
+    if (isSynthesizing || currentQuestionIndex <= 0) return;
+    setIsSynthesizing(true);
+    
+    const interviewerVoice = interviewLanguage === 'gu' ? selectedVoice : 'Achird';
+    
+    try {
+      const prevIndex = currentQuestionIndex - 1;
+      const prevQuestion = interviewHistory[prevIndex].replace(/^AI:\s*/, '');
+      setCurrentQuestion(prevQuestion);
+      setCurrentQuestionIndex(prevIndex);
+      
+      const audio = await synthesizeStudioSpeech(prevQuestion, interviewerVoice);
+      if (audio) {
+        playAudio(audio);
+      }
+    } catch (err) {
+      console.error("Interviewer Back Error:", err);
     } finally {
       setIsSynthesizing(false);
     }
@@ -900,7 +972,8 @@ export default function SoloStage({
        <div 
          ref={videoContainerRef}
          className={cn(
-           "w-full max-w-[90vw] xl:max-w-7xl aspect-video min-h-[580px] md:min-h-[660px] relative overflow-hidden transition-all duration-1000",
+           "w-full max-w-[90vw] xl:max-w-7xl relative overflow-hidden transition-all duration-1000",
+           !isTableReadActive ? "aspect-video min-h-[580px] md:min-h-[660px]" : "h-[calc(100vh-240px)] min-h-[480px] max-h-[720px]",
            isRecording ? 'ring-2 ring-rose-500/50 shadow-[0_0_120px_rgba(244,63,94,0.3)] scale-[1.01]' : 'shadow-2xl',
            isTableReadActive ? "bg-[#030303] border-sky-500/20" : "bg-black border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)]"
          )}
@@ -1841,13 +1914,16 @@ export default function SoloStage({
           {/* Cinematic Teleprompter Overlay */}
           <motion.div 
              key="cinematic-teleprompter"
-             drag={prompterLayout === 'side' && !isTableReadActive}
-             dragControls={dragControls}
-             dragListener={false}
+             drag={true}
              dragConstraints={videoContainerRef}
              dragElastic={0.05}
              dragMomentum={false}
-             animate={isTableReadActive ? {
+             animate={isAlchemySaving ? {
+               opacity: 0,
+               scale: 0.95,
+             } : isTableReadActive ? {
+               opacity: 1,
+               scale: 1,
                left: "3%",
                top: "40px",
                x: 0,
@@ -1856,6 +1932,8 @@ export default function SoloStage({
                height: "84%",
              } : prompterLayout === 'center' ? (
                isInterviewMode ? {
+                 opacity: 1,
+                 scale: 1,
                  left: "calc(50% - 340px)",
                  x: 0,
                  top: 170,
@@ -1863,6 +1941,8 @@ export default function SoloStage({
                  width: 680,
                  height: 340,
                } : {
+                 opacity: 1,
+                 scale: 1,
                  left: "12.5%",
                  top: "17.5%",
                  x: 0,
@@ -1871,6 +1951,8 @@ export default function SoloStage({
                  height: "65%",
                }
              ) : {
+               opacity: 1,
+               scale: 1,
                left: `calc(100% - ${prompterWidth}px - 40px)`,
                top: "40px",
                x: 0,
@@ -1881,13 +1963,13 @@ export default function SoloStage({
              transition={{ type: "spring", stiffness: 120, damping: 22 }}
              style={{
                touchAction: 'none',
-               ...((isTableReadActive || prompterLayout === 'center') ? { x: 0, y: 0 } : {})
+               ...(prompterLayout === 'center' ? { x: 0, y: 0 } : {})
              }}
              className={cn(
-               "z-30 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col pointer-events-auto",
+               "z-30 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col cursor-grab active:cursor-grabbing select-none relative",
                prompterSize === 'mini' ? "p-4 bg-zinc-950/90" : "p-8",
                (isMuted || !mounted || !techAlignmentConfirmed) && "hidden",
-               "opacity-100 blur-0",
+               isAlchemySaving ? "opacity-0 pointer-events-none" : "opacity-100 blur-0",
                isTableReadActive
                  ? "absolute bg-[#030303] border-2 border-sky-500/25 shadow-[0_0_50px_rgba(56,189,248,0.15)]"
                  : prompterLayout === 'center'
@@ -1895,28 +1977,14 @@ export default function SoloStage({
                  : "absolute bg-zinc-950/85 backdrop-blur-3xl border border-white/10"
              )}
            >
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/10 rounded-full opacity-50" />
             {/* Header Top Line: Title & Size Actions */}
             <div 
-              onPointerDown={(e) => prompterLayout === 'side' && dragControls.start(e)}
-              style={{ touchAction: 'none' }}
               className={cn(
-                "flex items-center justify-between shrink-0 select-none border-b border-white/5 pb-2 mb-3",
-                prompterLayout === 'side' ? "cursor-grab active:cursor-grabbing" : ""
+                "flex items-center justify-between shrink-0 select-none border-b border-white/5 pb-2 mb-3 mt-1"
               )}
             >
               <div className="flex items-center gap-3">
-                {prompterLayout === 'side' && (
-                  <div className="flex flex-col gap-0.5 text-white/30 mr-1 shrink-0">
-                    <div className="flex gap-0.5">
-                      <div className="w-1 h-1 rounded-full bg-current" />
-                      <div className="w-1 h-1 rounded-full bg-current" />
-                    </div>
-                    <div className="flex gap-0.5">
-                      <div className="w-1 h-1 rounded-full bg-current" />
-                      <div className="w-1 h-1 rounded-full bg-current" />
-                    </div>
-                  </div>
-                )}
                 <div className={`w-2 h-2 rounded-full ${isRecording ? 'bg-rose-500 animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.6)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]'}`} />
                 {prompterSize !== 'mini' && (
                   <span className="text-[10px] font-black text-emerald-400/90 uppercase tracking-[0.25em] animate-pulse whitespace-nowrap">BLUEPRINT: SELECTED TAKE (ACT II)</span>
@@ -2185,9 +2253,33 @@ export default function SoloStage({
                     {isInterviewMode && techAlignmentConfirmed && (
                       <motion.div 
                         key="interviewer-card"
-                        initial={{ opacity: 0, x: -50 }}
-                        animate={prompterLayout === 'center' ? {
+                        drag
+                        dragConstraints={!isTableReadActive ? stageRef : undefined}
+                        dragElastic={0.05}
+                        dragMomentum={false}
+                        initial={prompterLayout === 'center' ? {
+                          opacity: 0,
+                          left: "50%",
+                          x: "-50%",
+                          top: 30,
+                          y: 0,
+                          width: 680,
+                          height: 120
+                        } : {
+                          opacity: 0,
+                          left: 40,
+                          x: 0,
+                          top: 100,
+                          y: 0,
+                          width: 340,
+                          height: 320
+                        }}
+                        animate={isAlchemySaving ? {
+                          opacity: 0,
+                          scale: 0.95,
+                        } : prompterLayout === 'center' ? {
                           opacity: 1,
+                          scale: 1,
                           left: "50%",
                           x: "-50%",
                           top: 30,
@@ -2196,20 +2288,24 @@ export default function SoloStage({
                           height: 120
                         } : {
                           opacity: 1,
+                          scale: 1,
                           left: 40,
                           x: 0,
-                          top: 40,
+                          top: 100,
                           y: 0,
                           width: 340,
                           height: 320
                         }}
                         exit={{ opacity: 0, x: -50 }}
+                        style={{ touchAction: 'none' }}
                         transition={{ type: "spring", stiffness: 120, damping: 22 }}
                         className={cn(
-                          "absolute bg-slate-950/85 backdrop-blur-3xl border border-sky-500/30 rounded-[2.5rem] p-6 shadow-2xl pointer-events-auto z-20 overflow-hidden flex",
+                          "absolute bg-slate-950/85 backdrop-blur-3xl border border-sky-500/30 rounded-[2.5rem] p-6 shadow-2xl z-40 overflow-hidden flex cursor-grab active:cursor-grabbing select-none",
+                          isAlchemySaving ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto",
                           prompterLayout === 'center' ? "flex-row items-center gap-6 justify-between" : "flex-col text-center justify-between"
                         )}
                       >
+                        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/10 rounded-full opacity-50" />
                         {prompterLayout === 'center' ? (
                           <>
                             <div className="flex flex-col gap-1 items-start select-none shrink-0 w-32 border-r border-white/10 pr-4">
@@ -2222,6 +2318,11 @@ export default function SoloStage({
                                </p>
                             </div>
                             <div className="flex items-center gap-2.5 shrink-0 pl-2">
+                               {currentQuestionIndex > 0 && (
+                                 <button onClick={triggerPrevQuestion} disabled={isSynthesizing} className="px-3 py-2 bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-1 cursor-pointer">
+                                    <ArrowLeft className="w-3 h-3" /> Back
+                                 </button>
+                               )}
                                <button onClick={triggerNextQuestion} disabled={isSynthesizing} className="px-4 py-2 bg-sky-500 text-slate-950 font-black text-[9px] uppercase tracking-widest rounded-xl hover:scale-105 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
                                   <MessageSquare className="w-3.5 h-3.5" /> Next
                                </button>
@@ -2242,6 +2343,11 @@ export default function SoloStage({
                                </p>
                             </div>
                             <div className="flex items-center gap-3 justify-center pt-2 shrink-0">
+                               {currentQuestionIndex > 0 && (
+                                 <button onClick={triggerPrevQuestion} disabled={isSynthesizing} className="px-3 py-2 bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-1 cursor-pointer">
+                                    <ArrowLeft className="w-3 h-3" /> Back
+                                 </button>
+                               )}
                                <button onClick={triggerNextQuestion} disabled={isSynthesizing} className="px-4 py-2 bg-sky-500 text-slate-950 font-black text-[10px] uppercase tracking-widest rounded-xl hover:scale-105 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer">
                                   <MessageSquare className="w-3.5 h-3.5" /> Next
                                </button>
@@ -2263,9 +2369,18 @@ export default function SoloStage({
                   </button>
 
                   {isCountingIn ? (
-                    <button onClick={cancelCapture} className="w-20 h-20 rounded-full bg-emerald-500/10 border-4 border-emerald-500 hover:bg-emerald-500/30 transition-all flex items-center justify-center animate-pulse group">
-                      <Square className="w-6 h-6 text-emerald-400 fill-current" />
-                    </button>
+                    <div className="relative flex flex-col items-center">
+                      <div className="absolute -top-12 px-4 py-1.5 bg-emerald-600 border border-emerald-500 text-white text-[8px] font-black uppercase tracking-[0.25em] rounded-full animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.6)] shrink-0 select-none pointer-events-none whitespace-nowrap flex items-center gap-1.5 z-40">
+                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+                        Rolling in {countIn}...
+                      </div>
+                      <button onClick={cancelCapture} className="w-20 h-20 rounded-full bg-emerald-500/10 border-4 border-emerald-500 hover:bg-emerald-500/30 transition-all flex items-center justify-center animate-pulse group relative">
+                        <Square className="w-6 h-6 text-emerald-400 fill-current opacity-20 group-hover:opacity-100 transition-opacity" />
+                        <span className="absolute inset-0 flex items-center justify-center font-mono text-lg font-black text-emerald-400 select-none pointer-events-none">
+                          {countIn}
+                        </span>
+                      </button>
+                    </div>
                   ) : !isRecording ? (
                     <div className="relative flex flex-col items-center">
                       {!isRecording && !isCountingIn && techAlignmentConfirmed && (
@@ -2333,7 +2448,7 @@ export default function SoloStage({
                                muted 
                                playsInline
                                className="w-full h-full object-cover opacity-60 grayscale scale-102 blur-[0.5px]"
-                               src={URL.createObjectURL(recordedBlob)}
+                               src={reviewVideoUrl || ''}
                             />
                          )}
                          {/* Mastering Watermark */}
@@ -2369,6 +2484,69 @@ export default function SoloStage({
                       <div className="flex items-center gap-2 font-mono text-[9px] text-white/30 uppercase tracking-widest">
                          <span>Archival Progress:</span>
                          <span className={isAlchemyRetrying ? "text-amber-400 animate-pulse" : "text-emerald-400 font-bold"}>{alchemyProgress}%</span>
+                      </div>
+                   </motion.div>
+                )}
+             </AnimatePresence>
+
+             {/* Premium Post-Capture Review & Approval Overlay */}
+             <AnimatePresence>
+                {reviewTake && reviewVideoUrl && (
+                   <motion.div 
+                     initial={{ opacity: 0 }} 
+                     animate={{ opacity: 1 }} 
+                     exit={{ opacity: 0 }} 
+                     className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-xl p-6 md:p-10 animate-fade-in"
+                   >
+                      <div className="w-full max-w-2xl bg-slate-900/60 border border-white/10 rounded-[2.5rem] shadow-2xl p-6 flex flex-col gap-6 backdrop-blur-md relative overflow-hidden">
+                         <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/20 via-transparent to-white/5 pointer-events-none" />
+                         
+                         {/* Header */}
+                         <div className="flex items-center justify-between border-b border-white/5 pb-4 z-10">
+                            <div className="flex items-center gap-3">
+                               <div className="w-3 h-3 rounded-full bg-rose-500 animate-pulse" />
+                               <h3 className="text-lg font-black text-white uppercase tracking-[0.15em] font-mono">
+                                  Review Performance Take
+                               </h3>
+                            </div>
+                            <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest bg-white/5 px-2.5 py-1 rounded-full border border-white/5">
+                               Post-Capture Verification
+                            </span>
+                         </div>
+
+                         {/* Playback Container */}
+                         <div className="relative aspect-video rounded-3xl overflow-hidden bg-black border border-white/5 shadow-inner">
+                            <video 
+                               autoPlay 
+                               controls 
+                               playsInline
+                               className="w-full h-full object-cover"
+                               src={reviewVideoUrl}
+                            />
+                         </div>
+
+                         {/* Info Callout */}
+                         <p className="text-[11px] text-white/50 text-center leading-relaxed font-mono uppercase tracking-wider bg-white/5 px-4 py-2.5 rounded-2xl border border-white/5">
+                            Verify visual framing, lighting levels, and vocal presence. Your local raw reel is completely secure.
+                         </p>
+
+                         {/* Actions */}
+                         <div className="flex flex-col sm:flex-row items-center gap-3 w-full border-t border-white/5 pt-4 z-10">
+                            <button
+                               onClick={handleDiscardTake}
+                               className="w-full sm:w-1/2 py-3.5 px-6 rounded-2xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-200 font-mono text-xs uppercase font-bold tracking-widest transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(239,68,68,0.2)]"
+                            >
+                               <Trash2 className="w-4 h-4" />
+                               Discard & Re-Shoot
+                            </button>
+                            <button
+                               onClick={handleApproveTake}
+                               className="w-full sm:w-1/2 py-3.5 px-6 rounded-2xl bg-emerald-500 hover:bg-emerald-400 border border-emerald-400/30 text-slate-950 font-mono text-xs uppercase font-black tracking-widest transition-all duration-300 active:scale-[0.98] flex items-center justify-center gap-2 hover:shadow-[0_0_30px_rgba(16,185,129,0.4)]"
+                            >
+                               <CheckCircle className="w-4 h-4" />
+                               Approve & Synthesize
+                            </button>
+                         </div>
                       </div>
                    </motion.div>
                 )}

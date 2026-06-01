@@ -4,6 +4,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
 import localforage from 'localforage';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UseAlchemyOptions {
   userId: string | undefined;
@@ -20,6 +21,9 @@ export function useAlchemy({
   wordCount,
   onComplete
 }: UseAlchemyOptions) {
+  const { user } = useAuth();
+  const activeUserId = userId || user?.uid;
+
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +31,7 @@ export function useAlchemy({
   const [isRetrying, setIsRetrying] = useState(false);
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null);
   const uploadTaskRef = useRef<any>(null);
+  const retryCountRef = useRef<number>(0);
 
   // tab close prevention during the Sealing Ceremony
   useEffect(() => {
@@ -56,11 +61,11 @@ export function useAlchemy({
   }, []);
 
   const performUploadAndSync = useCallback(async (blob: Blob): Promise<string> => {
-    if (!userId || !memoryId) {
-      throw new Error("Missing credentials for upload");
+    if (!activeUserId || !memoryId) {
+      throw new Error(`Missing credentials for upload: activeUserId=${activeUserId}, memoryId=${memoryId}`);
     }
 
-    const storagePath = `users/${userId}/memories/${memoryId}/takes/performance.webm`;
+    const storagePath = `users/${activeUserId}/memories/${memoryId}/takes/performance.webm`;
     const storageRef = ref(storage, storagePath);
 
     return new Promise((resolve, reject) => {
@@ -83,7 +88,7 @@ export function useAlchemy({
             const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
 
             console.log("[useAlchemy] Fusing metadata. Updating Firestore document...");
-            const memoryDocRef = doc(db, 'users', userId, 'memories', memoryId);
+            const memoryDocRef = doc(db, 'users', activeUserId, 'memories', memoryId);
 
             // Atomic Firestore Handshake:
             // Set productionStatus to AUTHORISED, update videoUrl, take ID, and word count.
@@ -105,11 +110,21 @@ export function useAlchemy({
         }
       );
     });
-  }, [userId, memoryId, selectedTake, wordCount]);
+  }, [activeUserId, memoryId, selectedTake, wordCount]);
 
   const startAlchemy = useCallback(async (blob: Blob) => {
-    if (!userId || !memoryId) {
-      setError("Cannot initiate Alchemy: missing user or memory identification.");
+    console.log("[useAlchemy] startAlchemy invoked!", {
+      blobSize: blob.size,
+      activeUserId,
+      memoryId,
+      hasActiveUserId: !!activeUserId,
+      hasMemoryId: !!memoryId
+    });
+
+    if (!activeUserId || !memoryId) {
+      const errMsg = `Cannot initiate Alchemy: missing active user (${activeUserId || 'undefined'}) or memory (${memoryId || 'undefined'}) identification.`;
+      console.error("[useAlchemy] CRITICAL ERROR:", errMsg);
+      setError(errMsg);
       return;
     }
 
@@ -118,6 +133,7 @@ export function useAlchemy({
     setError(null);
     setIsComplete(false);
     setIsRetrying(false);
+    retryCountRef.current = 0;
 
     const cacheKey = `backup_take_${memoryId}`;
 
@@ -149,22 +165,33 @@ export function useAlchemy({
           onComplete(downloadUrl);
         }
       } catch (err: any) {
-        console.warn("[useAlchemy] Alchemy handshake encountered a network barrier. Retrying...", err);
-        setIsRetrying(true);
-        setError("Connection interrupted. Retrying authorisation...");
-        toast.error("Connection interrupted. Retrying authorisation...", {
-          description: "Your performance is securely saved locally. Retrying the Sealing Ceremony..."
-        });
+        console.warn("[useAlchemy] Alchemy handshake encountered a network barrier.", err);
+        
+        if (retryCountRef.current < 3) {
+          retryCountRef.current += 1;
+          setIsRetrying(true);
+          setError(`Connection interrupted. Retrying authorisation (Attempt ${retryCountRef.current}/3)...`);
+          toast.error(`Connection interrupted. Retrying... (Attempt ${retryCountRef.current}/3)`, {
+            description: "Your performance is securely saved locally. Retrying the Sealing Ceremony..."
+          });
 
-        // Retry in 5 seconds
-        retryTimerRef.current = setTimeout(() => {
-          attemptSync();
-        }, 5000);
+          // Retry in 5 seconds
+          retryTimerRef.current = setTimeout(() => {
+            attemptSync();
+          }, 5000);
+        } else {
+          setIsSaving(false);
+          setIsRetrying(false);
+          setError("Authorisation failed. Please check network connection or permissions.");
+          toast.error("Sealing Ceremony Failed", {
+            description: "Could not authorise stream upload after multiple attempts. Please check network connection or Firebase storage permissions."
+          });
+        }
       }
     };
 
     attemptSync();
-  }, [userId, memoryId, performUploadAndSync, onComplete]);
+  }, [activeUserId, memoryId, performUploadAndSync, onComplete]);
 
   return {
     isSaving,

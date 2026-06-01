@@ -48,6 +48,11 @@ vi.mock('@/lib/firebase', () => ({
   db: {}
 }));
 
+// Mock useAuth hook
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({ user: { uid: 'user-123' }, loading: false })
+}));
+
 describe('useAlchemy Persistence Shield & Handshake', () => {
   const onCompleteMock = vi.fn();
 

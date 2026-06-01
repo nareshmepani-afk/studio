@@ -40,22 +40,30 @@ export const useMediaRecorder = (stream: MediaStream | null) => {
     });
     
     recorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
+      if (e.data && e.data.size > 0) {
+        chunksRef.current.push(e.data);
+        console.log(`[MediaRecorder] Chunk received: ${e.data.size} bytes. Total chunks: ${chunksRef.current.length}`);
+      } else {
+        console.warn("[MediaRecorder] Received empty or invalid chunk data.");
+      }
     };
 
     recorder.onstop = () => {
+      console.log(`[MediaRecorder] stop event fired. Commencing compilation of ${chunksRef.current.length} chunks...`);
       const blob = new Blob(chunksRef.current, { type: mimeType });
-      console.log(`[MediaRecorder] Stopped. Compiled Blob Size: ${blob.size} bytes. Modules: ${chunksRef.current.length}`);
+      console.log(`[MediaRecorder] Compiled Blob Info - Size: ${blob.size} bytes, Type: ${mimeType}`);
       setIsRecording(false);
       
       if (blob.size === 0) {
-        console.error("Recording blob is empty. Trashed.");
+        console.error("[MediaRecorder] CRITICAL: Recording blob is completely empty (0 bytes). Trashing recording.");
         return;
       }
 
+      console.log("[MediaRecorder] Successfully compiled recording blob. Updating recordedBlob state...");
       setRecordedBlob(blob);
     };
 
+    console.log(`[MediaRecorder] Initiating recording with mimeType: ${mimeType}, high-bitrate target (8Mbps)`);
     recorder.start(1000);
     mediaRecorderRef.current = recorder;
     setIsRecording(true);
