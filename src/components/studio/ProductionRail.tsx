@@ -249,6 +249,68 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
                 </div>
               );
             })}
+
+            {/* Separator Line */}
+            <div className="h-px bg-white/10 my-4" />
+
+            {/* Mentor Toggle Button placed nearer to the Acts */}
+            {customWidth > 220 ? (
+              <div className="space-y-3">
+                <button
+                  onClick={handleMentorClick}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-500 group pointer-events-auto",
+                    isFirstTimeAct2
+                      ? "bg-emerald-500/20 border-emerald-500 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.8)] animate-pulse"
+                      : mentorActive 
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]" 
+                        : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:border-white/20 hover:text-emerald-400 hover:border-emerald-500/30"
+                  )}
+                >
+                  <div className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-500",
+                    isFirstTimeAct2
+                      ? "bg-emerald-500 text-slate-900 shadow-[0_0_15px_rgba(16,185,129,0.6)] animate-bounce"
+                      : mentorActive ? "bg-emerald-500 text-slate-900 shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "bg-white/5 text-white/40"
+                  )}>
+                    <Sparkles className={cn("w-4 h-4", (mentorActive || isFirstTimeAct2) && "animate-pulse")} />
+                  </div>
+                  <div className="flex flex-col items-start gap-0.5">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-left">Mentor Guide</span>
+                    <span className="text-[8px] opacity-40 font-medium text-left">{mentorActive ? 'Retract Assistance' : 'Engage Lifeline'}</span>
+                  </div>
+                </button>
+              </div>
+            ) : (
+              /* Compact Icon-Only Mentor Toggle for Narrow/Collapsed Sidebar */
+              <div className="flex justify-center w-full">
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={handleMentorClick}
+                        className={cn(
+                          "w-12 h-12 rounded-2xl border flex items-center justify-center transition-all duration-500 shrink-0 cursor-pointer pointer-events-auto",
+                          isFirstTimeAct2
+                            ? "bg-emerald-500 border-emerald-400 text-slate-900 shadow-[0_0_20px_rgba(16,185,129,0.8)] animate-pulse"
+                            : mentorActive 
+                              ? "bg-emerald-500 border-emerald-400 text-slate-900 shadow-[0_0_20px_rgba(16,185,129,0.4)]" 
+                              : "bg-white/5 border-white/10 text-white/40 hover:border-emerald-500/50 hover:text-emerald-400"
+                        )}
+                      >
+                        <Sparkles className={cn("w-5 h-5", (mentorActive || isFirstTimeAct2) && "animate-pulse")} />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" sideOffset={10} className="bg-slate-950 border-white/10 text-white p-3 rounded-xl shadow-2xl z-[1002]">
+                      <div className="space-y-1 text-left">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">Mentor Guide</span>
+                        <p className="text-[10px] text-white/50 leading-relaxed italic">{mentorActive ? 'Retract Assistance' : 'Engage Lifeline'}</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
           </div>
         </div>
 
@@ -257,70 +319,17 @@ export const ProductionRail: React.FC<ProductionRailProps> = ({
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mt-auto p-8 border-t border-white/5 space-y-6 bg-black/40"
+            className="mt-auto p-8 border-t border-white/5 space-y-3 bg-black/40 w-full shrink-0"
           >
-            {/* Mentor Toggle */}
-            <div className="space-y-3">
-              <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em]">Studio Support</span>
-              <button
-                onClick={handleMentorClick}
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-500 group",
-                  isFirstTimeAct2
-                    ? "bg-emerald-500/20 border-emerald-500 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.8)] animate-pulse"
-                    : mentorActive 
-                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]" 
-                      : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:border-white/20"
-                )}
-              >
-                <div className={cn(
-                  "w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-500",
-                  isFirstTimeAct2
-                    ? "bg-emerald-500 text-slate-900 shadow-[0_0_15px_rgba(16,185,129,0.6)] animate-bounce"
-                    : mentorActive ? "bg-emerald-500 text-slate-900 shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "bg-white/5 text-white/40"
-                )}>
-                  <Sparkles className={cn("w-4 h-4", (mentorActive || isFirstTimeAct2) && "animate-pulse")} />
-                </div>
-                <div className="flex flex-col items-start gap-0.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider">Mentor Guide</span>
-                  <span className="text-[8px] opacity-40 font-medium">{mentorActive ? 'Retract Assistance' : 'Engage Lifeline'}</span>
-                </div>
-              </button>
-            </div>
-
             <div className="flex items-center gap-3">
                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                <span className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">Protocol: Ready</span>
             </div>
           </motion.div>
         ) : (
-          /* Compact Icon-Only Mentor Toggle for Narrow/Collapsed Sidebar */
-          <div className="mt-auto p-4 border-t border-white/5 flex flex-col items-center gap-4 bg-black/40 w-full">
-            <TooltipProvider delayDuration={100}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={handleMentorClick}
-                    className={cn(
-                      "w-12 h-12 rounded-2xl border flex items-center justify-center transition-all duration-500 shrink-0",
-                      isFirstTimeAct2
-                        ? "bg-emerald-500 border-emerald-400 text-slate-900 shadow-[0_0_20px_rgba(16,185,129,0.8)] animate-pulse"
-                        : mentorActive 
-                          ? "bg-emerald-500 border-emerald-400 text-slate-900 shadow-[0_0_20px_rgba(16,185,129,0.4)]" 
-                          : "bg-white/5 border-white/10 text-white/40 hover:border-emerald-500/50 hover:text-emerald-400"
-                    )}
-                  >
-                    <Sparkles className={cn("w-5 h-5", (mentorActive || isFirstTimeAct2) && "animate-pulse")} />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" sideOffset={10} className="bg-slate-950 border-white/10 text-white p-3 rounded-xl shadow-2xl z-[1002]">
-                  <div className="space-y-1">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">Mentor Guide</span>
-                    <p className="text-[10px] text-white/50 leading-relaxed italic">{mentorActive ? 'Retract Assistance' : 'Engage Lifeline'}</p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+          /* Compact Protocol indicator for narrow/collapsed sidebar */
+          <div className="mt-auto p-4 border-t border-white/5 flex flex-col items-center justify-center bg-black/40 w-full shrink-0">
+             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Protocol: Ready" />
           </div>
         )}
       </motion.div>

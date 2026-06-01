@@ -52,6 +52,7 @@ import { BeatSheet } from './BeatSheet';
 import { useTableRead } from '@/hooks/studio/useTableRead';
 import { TableReadPanel } from './TableReadPanel';
 import { StudioBriefing } from './StudioBriefing';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 
 interface RoomProps {
     data: Memory;
@@ -1029,7 +1030,7 @@ export default function SoloStage({
                 className={cn(
                   "absolute z-30 pointer-events-auto",
                   !techAlignmentConfirmed 
-                    ? "left-6 xl:left-12 top-6" 
+                    ? "left-6 xl:left-12 top-1/2 -translate-y-1/2" 
                     : "left-10 top-10"
                 )}
               >
@@ -1542,7 +1543,7 @@ export default function SoloStage({
 
           {/* Floating 'Camera Control Deck' calibration overlay */}
           {mounted && !isMuted && !techAlignmentConfirmed && !isTableReadActive && (
-            <div className={cn("absolute right-6 xl:right-12 top-6 z-[35] pointer-events-auto transition-all duration-500", isFocusModeActive && "opacity-50 blur-[0.5px] pointer-events-none")}>
+            <div className={cn("absolute right-6 xl:right-12 top-1/2 -translate-y-1/2 z-[35] pointer-events-auto transition-all duration-500", isFocusModeActive && "opacity-50 blur-[0.5px] pointer-events-none")}>
                <motion.div
                  drag
                  dragConstraints={videoContainerRef}
@@ -2018,14 +2019,7 @@ export default function SoloStage({
           {/* Cinematic Camera Overlays (Safe Areas/REC) */}
           {!isTableReadActive && (
             <div className="absolute inset-0 z-20 pointer-events-none border-[40px] border-transparent">
-               {/* Sleek Metadata Tag in Top-Left Corner */}
-               <div className="absolute top-8 left-8 flex items-center gap-2 px-4 py-1.5 bg-black/60 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white/70 backdrop-blur-md">
-                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                 <span>
-                   INPUT: {activeInput === 'wireless' ? 'REMOTE WIRELESS LENS (1080p)' : 'STUDIO WEBCAM (720p)'}
-                 </span>
-               </div>
-
+               
                {/* Corner Accents */}
                <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white/20 rounded-tl-xl" />
                <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white/20 rounded-tr-xl" />
@@ -2050,14 +2044,14 @@ export default function SoloStage({
                  )}
                </AnimatePresence>
 
-               {/* Remote Connection Pulse HUD (Top Right) */}
+               {/* Remote Connection Pulse HUD (Right, Centered) */}
                <AnimatePresence>
                  {peerState === 'authorised' && (
                    <motion.div
                      initial={{ opacity: 0, x: 20 }}
                      animate={{ opacity: 1, x: 0 }}
                      exit={{ opacity: 0, x: 20 }}
-                     className="absolute top-8 right-8 flex items-center gap-2 px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-[9px] font-black uppercase tracking-widest text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)] pointer-events-auto"
+                     className="absolute top-1/2 -translate-y-1/2 right-8 flex items-center gap-2 px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-[9px] font-black uppercase tracking-widest text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)] pointer-events-auto"
                    >
                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                      Remote Linked
@@ -2070,60 +2064,93 @@ export default function SoloStage({
           {!isTableReadActive && (
              <div className="absolute inset-0 z-20 flex flex-col justify-between p-10 w-full mx-auto pointer-events-none">
                 <div className="flex justify-between items-start w-full pointer-events-auto">
-               <AnimatePresence mode="wait">
-                 {isRecording ? (
-                   <motion.div 
-                     key="recording"
-                     initial={{ opacity: 0, y: -20 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     className={`flex items-center gap-3 px-4 py-2 rounded-full font-mono font-bold tracking-widest backdrop-blur-md border ${isWarningLimit ? 'bg-amber-500/20 border-amber-500 text-amber-200' : 'bg-rose-500/20 border-rose-500 text-rose-200'}`}
-                   >
-                     <motion.div 
-                       initial={{ opacity: 1 }}
-                       animate={{ opacity: [1, 0, 1] }} 
-                       transition={{ repeat: Infinity, duration: 1.5 }} 
-                       className={`w-3 h-3 rounded-full ${isWarningLimit ? 'bg-amber-400' : 'bg-rose-500'}`} 
-                     />
-                     {formatTime(recordingTime)}
-                   </motion.div>
-                 ) : isCountingIn ? (
-                    <motion.div 
-                      key="countin"
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-3 px-4 py-2 rounded-full font-mono font-bold tracking-widest backdrop-blur-md border bg-emerald-500/20 border-emerald-500 text-emerald-200"
-                    >
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                      {statusLabel}
-                    </motion.div>
-                  ) : (
-                    <div className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md text-xs transition-all font-mono font-bold tracking-wider",
-                      (mounted && isMuted)
-                        ? "bg-rose-500/20 border-rose-500/50 text-rose-300 shadow-[0_0_15px_rgba(244,63,94,0.15)] animate-pulse"
-                        : (mounted && error)
-                        ? "bg-amber-500/20 border-amber-500/50 text-amber-300"
-                        : "bg-black/40 border-white/20 text-white/50"
-                    )}>
-                      {mounted && isMuted ? (
-                        <>
-                          <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
-                          <span>OPTICS SHIELD ACTIVE // RE-ENABLE HARDWARE TO RECORD</span>
-                        </>
-                      ) : mounted && error ? (
-                        <>
-                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                          <span>HARDWARE ACCESS DENIED</span>
-                        </>
+                  <div className="flex items-center gap-3">
+                    <AnimatePresence mode="wait">
+                      {isRecording ? (
+                        <motion.div 
+                          key="recording"
+                          initial={{ opacity: 0, y: -20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className={`flex items-center gap-3 px-4 py-2 rounded-full font-mono font-bold tracking-widest backdrop-blur-md border ${isWarningLimit ? 'bg-amber-500/20 border-amber-500 text-amber-200' : 'bg-rose-500/20 border-rose-500 text-rose-200'}`}
+                        >
+                          <motion.div 
+                            initial={{ opacity: 1 }}
+                            animate={{ opacity: [1, 0, 1] }} 
+                            transition={{ repeat: Infinity, duration: 1.5 }} 
+                            className={`w-3 h-3 rounded-full ${isWarningLimit ? 'bg-amber-400' : 'bg-rose-500'}`} 
+                          />
+                          {formatTime(recordingTime)}
+                        </motion.div>
+                      ) : isCountingIn ? (
+                        <motion.div 
+                          key="countin"
+                          initial={{ opacity: 0, y: -20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex items-center gap-3 px-4 py-2 rounded-full font-mono font-bold tracking-widest backdrop-blur-md border bg-emerald-500/20 border-emerald-500 text-emerald-200"
+                        >
+                          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                          {statusLabel}
+                        </motion.div>
                       ) : (
-                        <>
-                          <Disc className="w-3.5 h-3.5" /> {statusLabel}
-                        </>
+                        <div className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md text-xs transition-all font-mono font-bold tracking-wider",
+                          (mounted && isMuted)
+                            ? "bg-rose-500/20 border-rose-500/50 text-rose-300 shadow-[0_0_15px_rgba(244,63,94,0.15)] animate-pulse"
+                            : (mounted && error)
+                            ? "bg-amber-500/20 border-amber-500/50 text-amber-300"
+                            : "bg-black/40 border-white/20 text-white/50"
+                        )}>
+                          {mounted && isMuted ? (
+                            <>
+                              <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                              <span>OPTICS SHIELD ACTIVE // RE-ENABLE HARDWARE TO RECORD</span>
+                            </>
+                          ) : mounted && error ? (
+                            <>
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                              <span>HARDWARE ACCESS DENIED</span>
+                            </>
+                          ) : (
+                            <>
+                              <Disc className="w-3.5 h-3.5" /> {statusLabel}
+                            </>
+                          )}
+                        </div>
                       )}
+                    </AnimatePresence>
+ 
+                    {/* Sleek Metadata Tag & Replay Tour aligned side-by-side with Status Label */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 px-4 py-1.5 bg-black/60 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white/70 backdrop-blur-md h-[30px]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>
+                          INPUT: {activeInput === 'wireless' ? 'REMOTE WIRELESS LENS (1080p)' : 'STUDIO WEBCAM (720p)'}
+                        </span>
+                      </div>
+ 
+                      {/* Replay Planning Tour Button */}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => setIsBriefingOpen(true)}
+                              className="w-[30px] h-[30px] rounded-full bg-zinc-950/80 backdrop-blur-md border border-white/10 text-emerald-400 hover:text-emerald-300 hover:border-emerald-500/30 hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center cursor-pointer pointer-events-auto"
+                              aria-label="Replay Planning Tour"
+                            >
+                              <Theater className="w-4 h-4 text-emerald-400 animate-pulse" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="bg-slate-900 border-white/10 text-[10px] font-black uppercase tracking-widest py-2 px-3 shadow-2xl z-[10002]">
+                            <div className="flex flex-col gap-1 text-left">
+                              <span className="text-emerald-400 font-bold">Replay Planning Tour</span>
+                              <span className="text-[9px] text-white/40 normal-case font-normal">Refresh your memory on studio tools</span>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
-                  )}
-               </AnimatePresence>
-             </div>
+                  </div>
+                </div>
 
              <div 
                ref={stageRef}
@@ -2907,10 +2934,10 @@ export default function SoloStage({
       <AnimatePresence>
         {showStageManagerCue && (
           <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            initial={{ opacity: 0, y: -50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-lg bg-zinc-950/90 backdrop-blur-3xl border border-sky-500/30 p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4 text-center mx-4"
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="fixed top-24 right-6 md:right-10 z-[1000] w-[calc(100%-3rem)] max-w-md bg-zinc-950/95 backdrop-blur-3xl border border-sky-500/30 p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-4 text-center"
           >
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.6)]" />

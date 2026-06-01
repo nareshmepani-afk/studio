@@ -181,7 +181,7 @@ describe('SoloStage Calibration Panels Test', () => {
     const aiDirectorText = screen.getByText('AI Director Active');
     const aiDirectorWrapper = aiDirectorText.closest('.pointer-events-auto');
     expect(aiDirectorWrapper).toHaveClass('left-6');
-    expect(aiDirectorWrapper).toHaveClass('top-6');
+    expect(aiDirectorWrapper).toHaveClass('top-1/2');
 
     // Verify Director's Tech Scout is present
     expect(screen.getByText("Director's Tech Scout")).toBeInTheDocument();
@@ -193,7 +193,7 @@ describe('SoloStage Calibration Panels Test', () => {
     const cinematicStylingText = screen.getByText('Cinematic Styling');
     const cinematicStylingWrapper = cinematicStylingText.closest('.pointer-events-auto');
     expect(cinematicStylingWrapper).toHaveClass('right-6');
-    expect(cinematicStylingWrapper).toHaveClass('top-6');
+    expect(cinematicStylingWrapper).toHaveClass('top-1/2');
   });
 
 
