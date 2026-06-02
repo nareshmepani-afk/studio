@@ -47,6 +47,7 @@ interface StudioState {
   }> | null;
   polishedOriginalHook: string | null;
   modality: 'pen' | 'voice' | null;
+  captureModality: 'scripted' | 'interview' | 'raw';
   currentStage: number;
   isDirectorOpen: boolean;
   isProductionLocked: boolean;
@@ -93,6 +94,7 @@ interface StudioActions {
   setIsGeneratingDrafts: (val: boolean) => void;
   setSelectedVision: (type: 'soul' | 'sensory' | 'cinematic' | null, label: string | null) => void;
   setModality: (mod: 'pen' | 'voice' | null) => void;
+  setCaptureModality: (mode: 'scripted' | 'interview' | 'raw') => void;
   setStage: (stage: number) => void;
   setIsDirectorOpen: (open: boolean) => void;
   setIsProductionLocked: (locked: boolean) => void;
@@ -177,6 +179,7 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     reviewDrafts: [],
     selectedVision: { type: null, label: null },
     modality: null,
+    captureModality: 'scripted',
     currentStage: 0,
     isDirectorOpen: false,
     isProductionLocked: false,
@@ -439,6 +442,7 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     setIsGeneratingDrafts: (val) => setState(s => ({ ...s, isGeneratingDrafts: val })),
     setSelectedVision: (type, label) => setState(s => ({ ...s, selectedVision: { type, label } })),
     setModality: (mod) => setState(s => ({ ...s, modality: mod })),
+    setCaptureModality: (mode) => setState(s => ({ ...s, captureModality: mode })),
     setStage: (stage) => {
       console.log(`[useStudioState] globalActions.setStage triggered: ${stage}`);
       setState(s => ({ ...s, currentStage: stage }));

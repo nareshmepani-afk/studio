@@ -124,6 +124,7 @@ vi.mock('@/hooks/studio/useStudioState', () => ({
       setIsReviewing: vi.fn(),
       setAppliedCatalysts: vi.fn(),
       toggleScrolling: vi.fn(),
+      setCaptureModality: vi.fn(),
     }
   }),
 }));
@@ -374,7 +375,7 @@ describe('SoloStage Calibration Panels Test', () => {
     );
     
     // Confirm technical alignment first to render performance controls
-    const techConfirmBtn = screen.getByText('Confirm Technical Alignment');
+    const techConfirmBtn = screen.getByText('Confirm Alignment');
     fireEvent.click(techConfirmBtn);
     
     // modalityMode already defaults to 'interview' in Act III, and isInterviewMode is true.

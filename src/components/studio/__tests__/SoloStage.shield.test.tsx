@@ -1,4 +1,4 @@
-import { render, act } from '@testing-library/react';
+import { render, act, fireEvent, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SoloStage from '../SoloStage';
 import React from 'react';
@@ -126,17 +126,25 @@ vi.mock('@/actions/studio-vocal', () => ({
   synthesizeStudioSpeech: vi.fn(),
 }));
 
+let mockCaptureModality = 'scripted';
+const mockSetCaptureModality = vi.fn((mode) => {
+  mockCaptureModality = mode;
+});
+const mockSetStage = vi.fn();
+
 vi.mock('@/hooks/studio/useStudioState', () => ({
   useStudioState: () => ({ 
     currentStage: 0, 
-    setStage: vi.fn(), 
+    setStage: mockSetStage, 
     modality: 'pen', 
     isReviewing: false,
     isProductionLocked: false,
+    captureModality: mockCaptureModality,
     actions: {
       setSelectedVision: vi.fn(),
       setIsReviewing: vi.fn(),
       setAppliedCatalysts: vi.fn(),
+      setCaptureModality: mockSetCaptureModality,
     }
   }),
 }));
@@ -332,5 +340,70 @@ describe('Video Review & Approval Stage State Transitions', () => {
     expect(playSpy).toHaveBeenCalled();
     playSpy.mockRestore();
     pauseSpy.mockRestore();
+  });
+});
+
+describe('Documentary Raw Capture Modality', () => {
+  const mockUpdate = vi.fn();
+  const initialMemory: Memory = {
+    id: 'test-raw-id',
+    title: 'Historic Journey',
+    description: 'Script description',
+    location: 'Nairobi',
+    country: 'Kenya',
+    tags: ['family', '1964'],
+    status: 'draft',
+    lastEdited: Date.now(),
+    dateComponents: { day: '12', month: 'May', year: '1964' },
+    scriptBlocks: []
+  } as any;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCaptureModality = 'scripted';
+  });
+
+  it('sets captureModality to raw when clicking Just Roll Camera button', async () => {
+    render(
+      <SoloStage 
+        data={initialMemory} 
+        update={mockUpdate} 
+        currentStage={2}
+      />
+    );
+
+    // Prior to confirmation, the setup buttons are visible
+    const justRollBtn = screen.getByText('Just Roll Camera');
+    expect(justRollBtn).toBeDefined();
+
+    await act(async () => {
+      justRollBtn.click();
+    });
+
+    expect(mockSetCaptureModality).toHaveBeenCalledWith('raw');
+  });
+
+  it('renders raw modality HUD elements when captureModality is raw', async () => {
+    mockCaptureModality = 'scripted';
+    
+    render(
+      <SoloStage 
+        data={initialMemory} 
+        update={mockUpdate} 
+        currentStage={2}
+      />
+    );
+
+    // Prior to confirming alignment, click Just Roll Camera
+    const justRollBtn = screen.getByText('Just Roll Camera');
+    await act(async () => {
+      justRollBtn.click();
+    });
+
+    // Confirm that the MODE: UNTETHERED badge is rendered
+    expect(screen.getByText('MODE: UNTETHERED AUDIO-VISUAL CAPTURE')).toBeDefined();
+
+    // Confirm that the start performance indicator badge exists
+    expect(screen.getByText('Start Performance')).toBeDefined();
   });
 });

@@ -267,6 +267,60 @@ export async function generatePosterAesthetics(
 /**
  * Server action to generate a "Podcast-style" interview question based on the script.
  */
+/**
+ * Helper function to retrieve a non-repeating fallback question from a pool of atmospheric cues.
+ */
+function getFallbackQuestion(history: string[], language: 'en' | 'gu'): string {
+  const englishFallbacks = [
+    "Tell me more about that moment; what do you remember most clearly?",
+    "Could you elaborate on the most vivid part of this memory for me?",
+    "How did that experience make you feel at the time?",
+    "Are there any specific sounds or scents that stand out when you think about it?",
+    "Who else was there with you, and how did they react?",
+    "What is the single most important detail you want to preserve from this memory?"
+  ];
+
+  const gujaratiFallbacks = [
+    "તમારી આ યાદ વિશે મને વધુ કહો; તમને સૌથી વધુ સ્પષ્ટપણે શું યાદ છે?",
+    "શું તમે મારી માટે આ યાદના સૌથી આબેહૂબ ભાગ વિશે વિગતવાર જણાવી શકો છો?",
+    "તે સમયે આ અનુભવે તમને કેવો અહેસાસ કરાવ્યો હતો?",
+    "જ્યારે તમે આ વિશે વિચારો છો ત્યારે કોઈ ખાસ અવાજ અથવા સુગંધ યાદ આવે છે?",
+    "તમારી સાથે ત્યાં બીજું કોણ હતું, અને તેમની પ્રતિક્રિયા શું હતી?",
+    "આ યાદમાંથી તમે કઈ એક સૌથી મહત્વપૂર્ણ વિગત સાચવી રાખવા માંગો છો?"
+  ];
+
+  const englishOutros = [
+    "You've shared some beautiful layers. As you bring your take to a close, what final reflection or legacy would you like to summarize?",
+    "Take a deep breath. Share any final thoughts on how this memory shapes who you are today before wrapping up.",
+    "Think about the future generations listening to this. What is the parting advice you want to leave them with?"
+  ];
+
+  const gujaratiOutros = [
+    "તમે ખૂબ જ સુંદર વિગતો શેર કરી છે. તમારી આ વાત પૂર્ણ કરતા પહેલા, તમે કઈ અંતિમ વિગત અથવા વારસો સાચવવા માંગો છો?",
+    "ઊંડો શ્વાસ લો. આ યાદ આજે તમારા વ્યક્તિત્વને કેવી રીતે આકાર આપે છે તે વિશેના અંતિમ વિચારો જણાવીને વાત પૂર્ણ કરો.",
+    "ભવિષ્યની પેઢીઓ માટે તમે કઈ છેલ્લી સલાહ કે સંદેશ છોડવા માંગો છો?"
+  ];
+
+  // Normalize history to check for existing questions
+  const historyText = history.map(h => h.replace(/^AI:\s*/i, '').trim().toLowerCase());
+
+  // Determine if we should serve an outro question (after 6 questions have been asked)
+  const isOutroStage = historyText.length >= 6;
+  const pool = isOutroStage 
+    ? (language === 'gu' ? gujaratiOutros : englishOutros)
+    : (language === 'gu' ? gujaratiFallbacks : englishFallbacks);
+
+  // Find a question in the selected pool that isn't in history
+  for (const q of pool) {
+    if (!historyText.includes(q.toLowerCase().trim())) {
+      return q;
+    }
+  }
+
+  // If all questions in the pool have been used, return a random one from the pool
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 export async function generateInterviewQuestion(
   script: string,
   history: string[] = [],
@@ -308,10 +362,18 @@ export async function generateInterviewQuestion(
       return await ai.generate(prompt);
     }, { retries: 2 });
 
-    return text?.trim() || (isGujarati ? "તમારી આ યાદ વિશે મને વધુ કહો; તમને સૌથી વધુ સ્પષ્ટપણે શું યાદ છે?" : "Tell me more about that moment; what do you remember most clearly?");
+    const trimmedText = text?.trim();
+    
+    // Check if the generated text is a duplicate of a previously asked question
+    const historyText = history.map(h => h.replace(/^AI:\s*/i, '').trim().toLowerCase());
+    if (trimmedText && !historyText.includes(trimmedText.toLowerCase())) {
+      return trimmedText;
+    }
+
+    return getFallbackQuestion(history, language);
   } catch (error: any) {
     console.error("Failed to generate interview question:", error);
-    return language === 'gu' ? "શું તમે મારી માટે આ યાદના સૌથી આબેહૂબ ભાગ વિશે વિગતવાર જણાવી શકો છો?" : "Could you elaborate on the most vivid part of this memory for me?";
+    return getFallbackQuestion(history, language);
   }
 }
 

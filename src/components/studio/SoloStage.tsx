@@ -89,7 +89,7 @@ export default function SoloStage({
   onboardingJustClosed, isUntouched, onActivity, formRef
 }: RoomProps) {
   const [mounted, setMounted] = useState(false);
-  const { isReviewing, isProductionLocked, selectedTake, fontSize, actions: globalActions } = useStudioState();
+  const { isReviewing, isProductionLocked, selectedTake, fontSize, captureModality, actions: globalActions } = useStudioState();
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -458,19 +458,48 @@ export default function SoloStage({
     }
   }, [recordedBlob, isAlchemySaving, isAlchemyComplete]);
 
+  // Force loading video source when review takeover becomes active to fix dynamic blob loading bugs in Safari/Chrome
+  useEffect(() => {
+    if (reviewTake && reviewVideoUrl && reviewVideoRef.current) {
+      console.log("[SoloStage] Review takeover active. Force loading video stream source...");
+      try {
+        reviewVideoRef.current.load();
+      } catch (err) {
+        console.error("[SoloStage] Error loading video source:", err);
+      }
+    }
+  }, [reviewTake, reviewVideoUrl]);
+
   const toggleReviewPlay = () => {
+    console.log("[SoloStage] toggleReviewPlay invoked. Ref:", reviewVideoRef.current);
     if (reviewVideoRef.current) {
       if (reviewEnded) {
         reviewVideoRef.current.currentTime = 0;
-        reviewVideoRef.current.play().catch(err => console.log('Replay error:', err));
-        setReviewPlaying(true);
-        setReviewEnded(false);
-      } else if (reviewPlaying) {
-        reviewVideoRef.current.pause();
-        setReviewPlaying(false);
+        reviewVideoRef.current.play()
+          .then(() => {
+            console.log("[SoloStage] Replay started successfully.");
+            setReviewEnded(false);
+          })
+          .catch(err => {
+            console.error("[SoloStage] Replay failed:", err);
+            toast.error("Playback Failed", {
+              description: "The browser blocked unmuted video autoplay. Please click play again."
+            });
+          });
+      } else if (reviewVideoRef.current.paused) {
+        reviewVideoRef.current.play()
+          .then(() => {
+            console.log("[SoloStage] Play started successfully.");
+          })
+          .catch(err => {
+            console.error("[SoloStage] Play failed:", err);
+            toast.error("Playback Failed", {
+              description: "Playback blocked. Please interact directly with the player to enable video."
+            });
+          });
       } else {
-        reviewVideoRef.current.play().catch(err => console.log('Play error:', err));
-        setReviewPlaying(true);
+        reviewVideoRef.current.pause();
+        console.log("[SoloStage] Play paused manually.");
       }
     }
   };
@@ -486,7 +515,6 @@ export default function SoloStage({
     if (reviewVideoRef.current) {
       reviewVideoRef.current.pause();
       reviewVideoRef.current.currentTime = 0;
-      setReviewPlaying(false);
       setReviewEnded(false);
       setReviewCurrentTime(0);
     }
@@ -1022,16 +1050,21 @@ export default function SoloStage({
     </div>
   );
   const renderRecording = () => (
-    <div className={cn("w-full h-full flex flex-col items-center justify-center relative pb-24 transition-colors duration-1000", isTableReadActive ? "bg-[#030303]" : "")}>
+    <div className={cn("w-full h-full flex flex-col items-center justify-center relative pb-24 transition-colors duration-1000", (isTableReadActive || captureModality === 'raw') ? "bg-[#030303]" : "")}>
        <div 
          ref={videoContainerRef}
          className={cn(
            "w-full max-w-[90vw] xl:max-w-7xl relative overflow-hidden transition-all duration-1000",
-           !isTableReadActive ? "aspect-video min-h-[580px] md:min-h-[660px]" : "h-[calc(100vh-240px)] min-h-[480px] max-h-[720px]",
+           !(isTableReadActive || captureModality === 'raw') ? "aspect-video min-h-[580px] md:min-h-[660px]" : "h-[calc(100vh-240px)] min-h-[480px] max-h-[720px]",
            isRecording ? 'ring-2 ring-rose-500/50 shadow-[0_0_120px_rgba(244,63,94,0.3)] scale-[1.01]' : 'shadow-2xl',
-           isTableReadActive ? "bg-[#030303] border-sky-500/20" : "bg-black border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)]"
+           (isTableReadActive || captureModality === 'raw') ? "bg-[#030303] border-sky-500/20" : "bg-black border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)]"
          )}
        >
+          {mounted && captureModality === 'raw' && (
+            <div className="absolute top-6 right-8 z-[35] bg-black/60 backdrop-blur-md border border-white/10 px-4 py-1.5 rounded-full font-mono text-[9px] uppercase tracking-[0.2em] text-white/40 pointer-events-none select-none">
+              MODE: UNTETHERED AUDIO-VISUAL CAPTURE
+            </div>
+          )}
           <video 
             ref={videoRef}
             autoPlay 
@@ -1040,7 +1073,7 @@ export default function SoloStage({
             className={cn(
               "absolute inset-0 w-full h-full object-cover z-0 transition-all duration-700 ease-out",
               isCountingIn ? "blur-[20px]" : "blur-0",
-              isTableReadActive ? "opacity-0 scale-95 pointer-events-none" : "opacity-100 scale-100"
+              (isTableReadActive || captureModality === 'raw') ? "opacity-100 scale-100" : "opacity-100 scale-100"
             )}
             style={{
               filter: `
@@ -1648,20 +1681,35 @@ export default function SoloStage({
                       Take a moment to verify your framing, lighting, and background in full view. Click below once you are satisfied with the setup.
                     </p>
 
-                    <button 
-                      onClick={() => {
-                        setTechAlignmentConfirmed(true);
-                        if (modalityMode === 'interview') {
-                          setIsInterviewMode(true);
-                        }
-                        toast.success("Technical Alignment Confirmed", {
-                          description: "Engaging prompter guide. Settle in for your performance!"
-                        });
-                      }}
-                      className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] cursor-pointer"
-                    >
-                      Confirm Technical Alignment
-                    </button>
+                    <div className="flex gap-4 w-full">
+                      <button 
+                        onClick={() => {
+                          globalActions.setCaptureModality('scripted');
+                          setTechAlignmentConfirmed(true);
+                          if (modalityMode === 'interview') {
+                            setIsInterviewMode(true);
+                          }
+                          toast.success("Technical Alignment Confirmed", {
+                            description: "Engaging prompter guide. Settle in for your performance!"
+                          });
+                        }}
+                        className="flex-grow flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] cursor-pointer"
+                      >
+                        Confirm Alignment
+                      </button>
+                      <button 
+                        onClick={() => {
+                          globalActions.setCaptureModality('raw');
+                          setTechAlignmentConfirmed(true);
+                          toast.success("Documentary Raw Modality Active", {
+                            description: "Optics rolling untethered. Take your stage!"
+                          });
+                        }}
+                        className="flex-grow flex-1 py-4 bg-transparent border border-white/20 hover:border-white/40 hover:bg-white/5 active:scale-95 transition-all text-white font-black text-xs uppercase tracking-widest rounded-2xl cursor-pointer"
+                      >
+                        Just Roll Camera
+                      </button>
+                    </div>
                   </>
                 )}
               </motion.div>
@@ -1972,9 +2020,10 @@ export default function SoloStage({
              dragConstraints={videoContainerRef}
              dragElastic={0.05}
              dragMomentum={false}
-             animate={isAlchemySaving || reviewTake ? {
+             animate={isAlchemySaving || reviewTake || captureModality === 'raw' ? {
                opacity: 0,
                scale: 0.95,
+               x: 800,
              } : isTableReadActive ? {
                opacity: 1,
                scale: 1,
@@ -2023,7 +2072,7 @@ export default function SoloStage({
                "z-30 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col cursor-grab active:cursor-grabbing select-none relative",
                prompterSize === 'mini' ? "p-4 bg-zinc-950/90" : "p-8",
                (isMuted || !mounted || !techAlignmentConfirmed) && "hidden",
-               isAlchemySaving || reviewTake ? "opacity-0 pointer-events-none" : "opacity-100 blur-0",
+               isAlchemySaving || reviewTake || captureModality === 'raw' ? "opacity-0 pointer-events-none" : "opacity-100 blur-0",
                isTableReadActive
                  ? "absolute bg-[#030303] border-2 border-sky-500/25 shadow-[0_0_50px_rgba(56,189,248,0.15)]"
                  : prompterLayout === 'center'
@@ -2108,7 +2157,7 @@ export default function SoloStage({
               </div>
 
               {/* Directorial Sidebar (Conditional) - Restricted to 'lg' size to prevent layout collisions */}
-              {data?.structuredScript && prompterSize === 'lg' && (
+              {data?.structuredScript && prompterSize === 'lg' && captureModality !== 'raw' && (
                 <div className="w-64 flex-none border-l border-white/5 pl-8 space-y-8 overflow-y-auto custom-scrollbar">
                   <BeatSheet 
                     beats={data.structuredScript.beatSheet}
@@ -2328,7 +2377,7 @@ export default function SoloStage({
                           width: 340,
                           height: 320
                         }}
-                        animate={isAlchemySaving || reviewTake ? {
+                        animate={isAlchemySaving || reviewTake || captureModality === 'raw' ? {
                           opacity: 0,
                           scale: 0.95,
                         } : prompterLayout === 'center' ? {
@@ -2355,7 +2404,7 @@ export default function SoloStage({
                         transition={{ type: "spring", stiffness: 120, damping: 22 }}
                         className={cn(
                           "absolute bg-slate-950/85 backdrop-blur-3xl border border-sky-500/30 rounded-[2.5rem] p-6 shadow-2xl z-40 overflow-hidden flex cursor-grab active:cursor-grabbing select-none",
-                          isAlchemySaving || reviewTake ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto",
+                          isAlchemySaving || reviewTake || captureModality === 'raw' ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto",
                           prompterLayout === 'center' ? "flex-row items-center gap-6 justify-between" : "flex-col text-center justify-between"
                         )}
                       >
@@ -2417,71 +2466,99 @@ export default function SoloStage({
              </div>
 
              {techAlignmentConfirmed && (
-               <div className="flex justify-between items-center w-full px-12 pb-6 pointer-events-auto">
-                  <button onClick={() => setIsInterviewMode(!isInterviewMode)} className={`px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest border transition-all ${isInterviewMode ? 'bg-sky-500/20 border-sky-500 text-sky-400' : 'bg-black/40 border-white/10 text-white/40'}`}>
-                     {isInterviewMode ? 'Interviewer Active' : 'Start Interview'}
-                  </button>
+                <div className="flex justify-between items-center w-full px-12 pb-6 pointer-events-auto">
+                   {captureModality === 'raw' ? (
+                     /* Bottom-Left: Elegant visual microphone level meter bar */
+                     <div className="flex items-center gap-4 bg-black/40 backdrop-blur-md px-6 py-2.5 rounded-full border border-white/10 pointer-events-auto">
+                       <Volume2 className={cn("w-4 h-4 transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")} />
+                       <div className="flex items-end gap-[2px] h-6 w-32 px-1">
+                         {waveform.slice(0, 24).map((value, i) => (
+                           <motion.div
+                             key={i}
+                             className={cn(
+                               "w-[3px] rounded-full transition-all",
+                               isRecording 
+                                 ? "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)]" 
+                                 : "bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                             )}
+                             animate={{ height: `${Math.max(4, value * (isRecording ? 48 : 24))}px` }}
+                             transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                           />
+                         ))}
+                       </div>
+                       <span className={cn("text-[10px] font-mono font-bold w-8 text-right transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")}>{volume}%</span>
+                     </div>
+                   ) : (
+                     <button onClick={() => setIsInterviewMode(!isInterviewMode)} className={`px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest border transition-all ${isInterviewMode ? 'bg-sky-500/20 border-sky-500 text-sky-400' : 'bg-black/40 border-white/10 text-white/40'}`}>
+                        {isInterviewMode ? 'Interviewer Active' : 'Start Interview'}
+                     </button>
+                   )}
 
-                  {isCountingIn ? (
-                    <div className="relative flex flex-col items-center">
-                      <div className="absolute -top-12 px-4 py-1.5 bg-emerald-600 border border-emerald-500 text-white text-[8px] font-black uppercase tracking-[0.25em] rounded-full animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.6)] shrink-0 select-none pointer-events-none whitespace-nowrap flex items-center gap-1.5 z-40">
-                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
-                        Rolling in {countIn}...
-                      </div>
-                      <button onClick={cancelCapture} className="w-20 h-20 rounded-full bg-emerald-500/10 border-4 border-emerald-500 hover:bg-emerald-500/30 transition-all flex items-center justify-center animate-pulse group relative">
-                        <Square className="w-6 h-6 text-emerald-400 fill-current opacity-20 group-hover:opacity-100 transition-opacity" />
-                        <span className="absolute inset-0 flex items-center justify-center font-mono text-lg font-black text-emerald-400 select-none pointer-events-none">
-                          {countIn}
-                        </span>
-                      </button>
-                    </div>
-                  ) : !isRecording ? (
-                    <div className="relative flex flex-col items-center">
-                      {!isRecording && !isCountingIn && techAlignmentConfirmed && (
-                        <div className="absolute -top-12 px-4 py-1.5 bg-rose-600 border border-rose-500 text-white text-[8px] font-black uppercase tracking-[0.25em] rounded-full animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.6)] shrink-0 select-none pointer-events-none whitespace-nowrap flex items-center gap-1.5 z-40">
-                          <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
-                          Start Performance
-                        </div>
-                      )}
-                      <button 
-                        onClick={handleStartCapture} 
-                        aria-label="Start Performance"
-                        disabled={!stream || uploading || isAlchemySaving || !techAlignmentConfirmed} 
-                        className="w-20 h-20 rounded-full bg-white/10 border-4 border-white/40 hover:border-rose-500 hover:bg-rose-500/20 transition-all flex items-center justify-center group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-white/40 disabled:hover:bg-white/10 relative"
-                        title={!stream ? "Hardware access muted or blocked. Re-enable camera and mic access to record." : !techAlignmentConfirmed ? "Please confirm technical alignment before starting performance." : undefined}
-                      >
-                        <div className="w-6 h-6 rounded-full bg-rose-500 group-hover:scale-125 group-disabled:group-hover:scale-100 transition-all" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button onClick={() => { stopRecording(); setIsCameraActive(false); }} className="w-20 h-20 rounded-full bg-rose-500/20 border-4 border-rose-500 hover:bg-rose-500 transition-all flex items-center justify-center">
-                      <Square className="w-6 h-6 text-white fill-current" />
-                    </button>
-                  )}
+                   {/* Center: Record button */}
+                   {isCountingIn ? (
+                     <div className="relative flex flex-col items-center">
+                       <div className="absolute -top-12 px-4 py-1.5 bg-emerald-600 border border-emerald-500 text-white text-[8px] font-black uppercase tracking-[0.25em] rounded-full animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.6)] shrink-0 select-none pointer-events-none whitespace-nowrap flex items-center gap-1.5 z-40">
+                         <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+                         Rolling in {countIn}...
+                       </div>
+                       <button onClick={cancelCapture} className="w-20 h-20 rounded-full bg-emerald-500/10 border-4 border-emerald-500 hover:bg-emerald-500/30 transition-all flex items-center justify-center animate-pulse group relative">
+                         <Square className="w-6 h-6 text-emerald-400 fill-current opacity-20 group-hover:opacity-100 transition-opacity" />
+                         <span className="absolute inset-0 flex items-center justify-center font-mono text-lg font-black text-emerald-400 select-none pointer-events-none">
+                           {countIn}
+                         </span>
+                       </button>
+                     </div>
+                   ) : !isRecording ? (
+                     <div className="relative flex flex-col items-center">
+                       {!isRecording && !isCountingIn && techAlignmentConfirmed && (
+                         <div className="absolute -top-12 px-4 py-1.5 bg-rose-600 border border-rose-500 text-white text-[8px] font-black uppercase tracking-[0.25em] rounded-full animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.6)] shrink-0 select-none pointer-events-none whitespace-nowrap flex items-center gap-1.5 z-40">
+                           <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+                           Start Performance
+                         </div>
+                       )}
+                       <button 
+                         onClick={handleStartCapture} 
+                         aria-label="Start Performance"
+                         disabled={!stream || uploading || isAlchemySaving || !techAlignmentConfirmed} 
+                         className="w-20 h-20 rounded-full bg-white/10 border-4 border-white/40 hover:border-rose-500 hover:bg-rose-500/20 transition-all flex items-center justify-center group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-white/40 disabled:hover:bg-white/10 relative"
+                         title={!stream ? "Hardware access muted or blocked. Re-enable camera and mic access to record." : !techAlignmentConfirmed ? "Please confirm technical alignment before starting performance." : undefined}
+                       >
+                         <div className="w-6 h-6 rounded-full bg-rose-500 group-hover:scale-125 group-disabled:group-hover:scale-100 transition-all" />
+                       </button>
+                     </div>
+                   ) : (
+                     <button onClick={() => { stopRecording(); setIsCameraActive(false); }} className="w-20 h-20 rounded-full bg-rose-500/20 border-4 border-rose-500 hover:bg-rose-500 transition-all flex items-center justify-center">
+                       <Square className="w-6 h-6 text-white fill-current" />
+                     </button>
+                   )}
 
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-4 bg-black/40 backdrop-blur-md px-6 py-2.5 rounded-full border border-white/10 pointer-events-auto">
-                      <Volume2 className={cn("w-4 h-4 transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")} />
-                      {/* Glowing Frequency Waveform Visualizer */}
-                      <div className="flex items-end gap-[2px] h-6 w-32 px-1">
-                        {waveform.slice(0, 24).map((value, i) => (
-                          <motion.div
-                            key={i}
-                            className={cn(
-                              "w-[3px] rounded-full transition-all",
-                              isRecording 
-                                ? "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)]" 
-                                : "bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
-                            )}
-                            animate={{ height: `${Math.max(4, value * (isRecording ? 48 : 24))}px` }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-                          />
-                        ))}
-                      </div>
-                      <span className={cn("text-[10px] font-mono font-bold w-8 text-right transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")}>{volume}%</span>
-                    </div>
-                  </div>
-               </div>
+                   {/* Right: Spacer or original Volume visualizer */}
+                   {captureModality === 'raw' ? (
+                     <div className="w-[180px]" /> /* Spacer to balance the mic visualizer width on the left */
+                   ) : (
+                     <div className="flex items-center gap-4">
+                       <div className="flex items-center gap-4 bg-black/40 backdrop-blur-md px-6 py-2.5 rounded-full border border-white/10 pointer-events-auto">
+                         <Volume2 className={cn("w-4 h-4 transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")} />
+                         <div className="flex items-end gap-[2px] h-6 w-32 px-1">
+                           {waveform.slice(0, 24).map((value, i) => (
+                             <motion.div
+                               key={i}
+                               className={cn(
+                                 "w-[3px] rounded-full transition-all",
+                                 isRecording 
+                                   ? "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)]" 
+                                   : "bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                               )}
+                               animate={{ height: `${Math.max(4, value * (isRecording ? 48 : 24))}px` }}
+                               transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                             />
+                           ))}
+                         </div>
+                         <span className={cn("text-[10px] font-mono font-bold w-8 text-right transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")}>{volume}%</span>
+                       </div>
+                     </div>
+                   )}
+                </div>
              )}
 
              {/* Cinematic Slate / Alchemy Saving Ceremony Overlay (MW-35) */}
@@ -2550,32 +2627,38 @@ export default function SoloStage({
                      initial={{ opacity: 0 }} 
                      animate={{ opacity: 1 }} 
                      exit={{ opacity: 0 }} 
-                     className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-xl p-6 md:p-10 animate-fade-in"
+                     className="absolute inset-0 z-[100] pointer-events-auto flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-xl p-6 md:p-10 animate-fade-in"
+                     style={{ pointerEvents: 'auto' }}
                    >
-                      <div className="w-full max-w-2xl bg-slate-900/60 border border-white/10 rounded-[2.5rem] shadow-2xl p-6 flex flex-col gap-6 backdrop-blur-md relative overflow-hidden">
+                      <div className="w-full max-w-2xl bg-slate-900/60 border border-white/10 rounded-[2.5rem] shadow-2xl p-6 flex flex-col gap-6 backdrop-blur-md relative overflow-hidden pointer-events-auto">
                          <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/20 via-transparent to-white/5 pointer-events-none" />
                          
                          {/* Header */}
-                         <div className="flex items-center justify-between border-b border-white/5 pb-4 z-10">
-                            <div className="flex items-center gap-3">
+                         <div className="flex items-center justify-between border-b border-white/5 pb-4 z-10 pointer-events-auto">
+                            <div className="flex items-center gap-3 pointer-events-auto">
                                <div className="w-3 h-3 rounded-full bg-rose-500 animate-pulse" />
-                               <h3 className="text-lg font-black text-white uppercase tracking-[0.15em] font-mono">
+                               <h3 className="text-lg font-black text-white uppercase tracking-[0.15em] font-mono pointer-events-auto">
                                   Review Performance Take
-                               </h3>
+                                </h3>
                             </div>
-                            <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest bg-white/5 px-2.5 py-1 rounded-full border border-white/5">
+                            <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest bg-white/5 px-2.5 py-1 rounded-full border border-white/5 pointer-events-auto">
                                Post-Capture Verification
                             </span>
                          </div>
 
                          {/* Playback Container */}
-                          <div className="relative aspect-video rounded-3xl overflow-hidden bg-black border border-white/5 shadow-inner cursor-pointer group/video">
+                          <div 
+                             onClick={toggleReviewPlay}
+                             className="relative aspect-video rounded-3xl overflow-hidden bg-black border border-white/5 shadow-inner cursor-pointer group/video pointer-events-auto"
+                             style={{ pointerEvents: 'auto' }}
+                          >
                              <video 
                                 ref={reviewVideoRef}
                                 data-testid="review-video"
                                 autoPlay 
                                 playsInline
-                                className="w-full h-full object-cover z-0"
+                                className="w-full h-full object-cover z-0 pointer-events-auto"
+                                style={{ pointerEvents: 'auto' }}
                                 src={reviewVideoUrl}
                                 onClick={toggleReviewPlay}
                                 onPlay={() => { setReviewPlaying(true); setReviewEnded(false); }}
@@ -2592,25 +2675,29 @@ export default function SoloStage({
                                       animate={{ opacity: 1, scale: 1 }}
                                       exit={{ opacity: 0, scale: 0.95 }}
                                       onClick={toggleReviewPlay}
-                                      className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/40 backdrop-blur-[2px] transition-all duration-300 group-hover/video:bg-slate-950/50"
+                                      className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/40 backdrop-blur-[2px] transition-all duration-300 group-hover/video:bg-slate-950/50 pointer-events-auto"
+                                      style={{ pointerEvents: 'auto' }}
                                    >
-                                      <motion.button
-                                         whileHover={{ scale: 1.05 }}
-                                         whileTap={{ scale: 0.95 }}
-                                         className="px-6 py-3.5 rounded-full bg-slate-900/90 border border-white/15 text-white font-mono text-xs uppercase font-bold tracking-[0.2em] shadow-2xl flex items-center gap-3 backdrop-blur-md transition-all duration-300 hover:border-emerald-500/30 hover:bg-slate-950/95"
+                                      <button
+                                         onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleReviewPlay();
+                                         }}
+                                         className="px-6 py-3.5 rounded-full bg-slate-900/90 border border-white/15 text-white font-mono text-xs uppercase font-bold tracking-[0.2em] shadow-2xl flex items-center gap-3 backdrop-blur-md transition-all duration-300 hover:border-emerald-500/30 hover:bg-slate-950/95 cursor-pointer active:scale-95 transform pointer-events-auto"
+                                         style={{ pointerEvents: 'auto' }}
                                       >
                                          {reviewEnded ? (
                                             <>
-                                               <RefreshCw className="w-4 h-4 text-emerald-400 animate-spin-slow" />
-                                               <span>Replay Take</span>
+                                               <RefreshCw className="w-4 h-4 text-emerald-400 animate-spin-slow pointer-events-auto" />
+                                               <span className="pointer-events-auto">Replay Take</span>
                                             </>
                                          ) : (
                                             <>
-                                               <Play className="w-4 h-4 text-emerald-400 fill-current" />
-                                               <span>Play Take</span>
+                                               <Play className="w-4 h-4 text-emerald-400 fill-current pointer-events-auto" />
+                                               <span className="pointer-events-auto">Play Take</span>
                                             </>
                                          )}
-                                      </motion.button>
+                                      </button>
                                    </motion.div>
                                 )}
                              </AnimatePresence>
@@ -2624,24 +2711,32 @@ export default function SoloStage({
                                 )}
                              >
                                 {/* Scrubber Bar */}
-                                <div className="flex items-center gap-3 w-full">
-                                   <span className="text-[10px] font-mono text-white/60 select-none w-8 text-left">{formatReviewTime(reviewCurrentTime)}</span>
-                                   <input 
-                                      type="range"
-                                      min={0}
-                                      max={reviewDuration || 100}
-                                      value={reviewCurrentTime}
-                                      onChange={(e) => {
-                                         const time = parseFloat(e.target.value);
-                                         if (reviewVideoRef.current) {
-                                            reviewVideoRef.current.currentTime = time;
-                                            setReviewCurrentTime(time);
-                                         }
-                                      }}
-                                      className="flex-1 h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-emerald-400 focus:outline-none transition-all hover:bg-white/30"
-                                   />
-                                   <span className="text-[10px] font-mono text-white/60 select-none w-8 text-right">{formatReviewTime(reviewDuration)}</span>
-                                </div>
+                                {(() => {
+                                   const isDurationValid = Number.isFinite(reviewDuration) && reviewDuration > 0;
+                                   const maxScrubTime = isDurationValid ? reviewDuration : (recordingTime || 360);
+                                   return (
+                                      <div className="flex items-center gap-3 w-full">
+                                         <span className="text-[10px] font-mono text-white/60 select-none w-8 text-left">{formatReviewTime(reviewCurrentTime)}</span>
+                                         <input 
+                                            type="range"
+                                            min={0}
+                                            max={maxScrubTime}
+                                            value={reviewCurrentTime}
+                                            onChange={(e) => {
+                                               const time = parseFloat(e.target.value);
+                                               if (reviewVideoRef.current) {
+                                                  reviewVideoRef.current.currentTime = time;
+                                                  setReviewCurrentTime(time);
+                                               }
+                                            }}
+                                            className="flex-1 h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-emerald-400 focus:outline-none transition-all hover:bg-white/30"
+                                         />
+                                         <span className="text-[10px] font-mono text-white/60 select-none w-8 text-right">
+                                            {formatReviewTime(maxScrubTime)}
+                                         </span>
+                                      </div>
+                                   );
+                                })()}
 
                                 {/* Control Action Buttons */}
                                 <div className="flex items-center justify-between mt-1">
