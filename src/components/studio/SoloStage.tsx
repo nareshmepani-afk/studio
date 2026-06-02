@@ -258,6 +258,12 @@ export default function SoloStage({
   const [isPersistenceSaving, setIsPersistenceSaving] = useState(false);
   const [reviewTake, setReviewTake] = useState(false);
   const [reviewVideoUrl, setReviewVideoUrl] = useState<string | null>(null);
+  const reviewVideoRef = useRef<HTMLVideoElement>(null);
+  const [reviewPlaying, setReviewPlaying] = useState(true);
+  const [reviewEnded, setReviewEnded] = useState(false);
+  const [reviewCurrentTime, setReviewCurrentTime] = useState(0);
+  const [reviewDuration, setReviewDuration] = useState(0);
+  const [reviewMuted, setReviewMuted] = useState(false);
 
   // Automatically close the Wireless Lens Bridge modal once linked
   useEffect(() => {
@@ -447,8 +453,52 @@ export default function SoloStage({
     if (recordedBlob && recordedBlob !== lastAttemptedBlobRef.current && !isAlchemySaving && !isAlchemyComplete) {
       console.log(`[SoloStage] SUCCESS: Compiled performance reel acquired (${recordedBlob.size} bytes). Triggering Review overlay...`);
       setReviewTake(true);
+      setReviewPlaying(true);
+      setReviewEnded(false);
     }
   }, [recordedBlob, isAlchemySaving, isAlchemyComplete]);
+
+  const toggleReviewPlay = () => {
+    if (reviewVideoRef.current) {
+      if (reviewEnded) {
+        reviewVideoRef.current.currentTime = 0;
+        reviewVideoRef.current.play().catch(err => console.log('Replay error:', err));
+        setReviewPlaying(true);
+        setReviewEnded(false);
+      } else if (reviewPlaying) {
+        reviewVideoRef.current.pause();
+        setReviewPlaying(false);
+      } else {
+        reviewVideoRef.current.play().catch(err => console.log('Play error:', err));
+        setReviewPlaying(true);
+      }
+    }
+  };
+
+  const formatReviewTime = (timeInSeconds: number) => {
+    if (isNaN(timeInSeconds)) return "0:00";
+    const mins = Math.floor(timeInSeconds / 60);
+    const secs = Math.floor(timeInSeconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  const stopReviewVideo = () => {
+    if (reviewVideoRef.current) {
+      reviewVideoRef.current.pause();
+      reviewVideoRef.current.currentTime = 0;
+      setReviewPlaying(false);
+      setReviewEnded(false);
+      setReviewCurrentTime(0);
+    }
+  };
+
+  const toggleReviewMute = () => {
+    if (reviewVideoRef.current) {
+      const nextMuted = !reviewVideoRef.current.muted;
+      reviewVideoRef.current.muted = nextMuted;
+      setReviewMuted(nextMuted);
+    }
+  };
 
   const handleApproveTake = () => {
     if (recordedBlob) {
@@ -456,6 +506,8 @@ export default function SoloStage({
       console.log("[SoloStage] User approved take. Triggering Alchemy save...");
       startAlchemy(recordedBlob);
       setReviewTake(false);
+      setReviewPlaying(true);
+      setReviewEnded(false);
     }
   };
 
@@ -465,6 +517,8 @@ export default function SoloStage({
     lastAttemptedBlobRef.current = null;
     setReviewTake(false);
     setIsCameraActive(true);
+    setReviewPlaying(true);
+    setReviewEnded(false);
   };
 
   const micLevel = useAudioLevel(stream);
@@ -1918,7 +1972,7 @@ export default function SoloStage({
              dragConstraints={videoContainerRef}
              dragElastic={0.05}
              dragMomentum={false}
-             animate={isAlchemySaving ? {
+             animate={isAlchemySaving || reviewTake ? {
                opacity: 0,
                scale: 0.95,
              } : isTableReadActive ? {
@@ -1969,7 +2023,7 @@ export default function SoloStage({
                "z-30 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col cursor-grab active:cursor-grabbing select-none relative",
                prompterSize === 'mini' ? "p-4 bg-zinc-950/90" : "p-8",
                (isMuted || !mounted || !techAlignmentConfirmed) && "hidden",
-               isAlchemySaving ? "opacity-0 pointer-events-none" : "opacity-100 blur-0",
+               isAlchemySaving || reviewTake ? "opacity-0 pointer-events-none" : "opacity-100 blur-0",
                isTableReadActive
                  ? "absolute bg-[#030303] border-2 border-sky-500/25 shadow-[0_0_50px_rgba(56,189,248,0.15)]"
                  : prompterLayout === 'center'
@@ -2274,7 +2328,7 @@ export default function SoloStage({
                           width: 340,
                           height: 320
                         }}
-                        animate={isAlchemySaving ? {
+                        animate={isAlchemySaving || reviewTake ? {
                           opacity: 0,
                           scale: 0.95,
                         } : prompterLayout === 'center' ? {
@@ -2301,7 +2355,7 @@ export default function SoloStage({
                         transition={{ type: "spring", stiffness: 120, damping: 22 }}
                         className={cn(
                           "absolute bg-slate-950/85 backdrop-blur-3xl border border-sky-500/30 rounded-[2.5rem] p-6 shadow-2xl z-40 overflow-hidden flex cursor-grab active:cursor-grabbing select-none",
-                          isAlchemySaving ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto",
+                          isAlchemySaving || reviewTake ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto",
                           prompterLayout === 'center' ? "flex-row items-center gap-6 justify-between" : "flex-col text-center justify-between"
                         )}
                       >
@@ -2515,15 +2569,115 @@ export default function SoloStage({
                          </div>
 
                          {/* Playback Container */}
-                         <div className="relative aspect-video rounded-3xl overflow-hidden bg-black border border-white/5 shadow-inner">
-                            <video 
-                               autoPlay 
-                               controls 
-                               playsInline
-                               className="w-full h-full object-cover"
-                               src={reviewVideoUrl}
-                            />
-                         </div>
+                          <div className="relative aspect-video rounded-3xl overflow-hidden bg-black border border-white/5 shadow-inner cursor-pointer group/video">
+                             <video 
+                                ref={reviewVideoRef}
+                                data-testid="review-video"
+                                autoPlay 
+                                playsInline
+                                className="w-full h-full object-cover z-0"
+                                src={reviewVideoUrl}
+                                onClick={toggleReviewPlay}
+                                onPlay={() => { setReviewPlaying(true); setReviewEnded(false); }}
+                                onPause={() => setReviewPlaying(false)}
+                                onEnded={() => { setReviewPlaying(false); setReviewEnded(true); }}
+                                onTimeUpdate={(e) => setReviewCurrentTime(e.currentTarget.currentTime)}
+                                onDurationChange={(e) => setReviewDuration(e.currentTarget.duration)}
+                             />
+                             {/* Glassmorphic Play/Replay Hover Overlay */}
+                             <AnimatePresence>
+                                {(!reviewPlaying || reviewEnded) && (
+                                   <motion.div 
+                                      initial={{ opacity: 0, scale: 0.95 }}
+                                      animate={{ opacity: 1, scale: 1 }}
+                                      exit={{ opacity: 0, scale: 0.95 }}
+                                      onClick={toggleReviewPlay}
+                                      className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/40 backdrop-blur-[2px] transition-all duration-300 group-hover/video:bg-slate-950/50"
+                                   >
+                                      <motion.button
+                                         whileHover={{ scale: 1.05 }}
+                                         whileTap={{ scale: 0.95 }}
+                                         className="px-6 py-3.5 rounded-full bg-slate-900/90 border border-white/15 text-white font-mono text-xs uppercase font-bold tracking-[0.2em] shadow-2xl flex items-center gap-3 backdrop-blur-md transition-all duration-300 hover:border-emerald-500/30 hover:bg-slate-950/95"
+                                      >
+                                         {reviewEnded ? (
+                                            <>
+                                               <RefreshCw className="w-4 h-4 text-emerald-400 animate-spin-slow" />
+                                               <span>Replay Take</span>
+                                            </>
+                                         ) : (
+                                            <>
+                                               <Play className="w-4 h-4 text-emerald-400 fill-current" />
+                                               <span>Play Take</span>
+                                            </>
+                                         )}
+                                      </motion.button>
+                                   </motion.div>
+                                )}
+                             </AnimatePresence>
+
+                             {/* Premium Custom Control Bar */}
+                             <div 
+                                onClick={(e) => e.stopPropagation()} // Prevent card play/pause toggle when scrubbing or clicking buttons
+                                className={cn(
+                                   "absolute bottom-0 inset-x-0 z-20 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent p-4 flex flex-col gap-2 transition-all duration-300 pointer-events-auto",
+                                   (!reviewPlaying || reviewEnded) ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 group-hover/video:opacity-100 group-hover/video:translate-y-0"
+                                )}
+                             >
+                                {/* Scrubber Bar */}
+                                <div className="flex items-center gap-3 w-full">
+                                   <span className="text-[10px] font-mono text-white/60 select-none w-8 text-left">{formatReviewTime(reviewCurrentTime)}</span>
+                                   <input 
+                                      type="range"
+                                      min={0}
+                                      max={reviewDuration || 100}
+                                      value={reviewCurrentTime}
+                                      onChange={(e) => {
+                                         const time = parseFloat(e.target.value);
+                                         if (reviewVideoRef.current) {
+                                            reviewVideoRef.current.currentTime = time;
+                                            setReviewCurrentTime(time);
+                                         }
+                                      }}
+                                      className="flex-1 h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-emerald-400 focus:outline-none transition-all hover:bg-white/30"
+                                   />
+                                   <span className="text-[10px] font-mono text-white/60 select-none w-8 text-right">{formatReviewTime(reviewDuration)}</span>
+                                </div>
+
+                                {/* Control Action Buttons */}
+                                <div className="flex items-center justify-between mt-1">
+                                   <div className="flex items-center gap-4">
+                                      {/* Play/Pause */}
+                                      <button 
+                                         onClick={toggleReviewPlay}
+                                         className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                                         title={reviewPlaying ? "Pause" : "Play"}
+                                      >
+                                         {reviewPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
+                                      </button>
+
+                                      {/* Stop */}
+                                      <button 
+                                         onClick={stopReviewVideo}
+                                         className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                                         title="Stop & Reset"
+                                      >
+                                         <Square className="w-4 h-4" />
+                                      </button>
+                                   </div>
+
+                                   <div className="flex items-center gap-4">
+                                      {/* Volume/Mute */}
+                                      <button 
+                                         onClick={toggleReviewMute}
+                                         className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                                         title={reviewMuted ? "Unmute" : "Mute"}
+                                      >
+                                         {reviewMuted ? <Mic2 className="w-4 h-4 text-rose-400" /> : <Volume2 className="w-4 h-4" />}
+                                      </button>
+                                   </div>
+                                </div>
+                             </div>
+                          </div>
 
                          {/* Info Callout */}
                          <p className="text-[11px] text-white/50 text-center leading-relaxed font-mono uppercase tracking-wider bg-white/5 px-4 py-2.5 rounded-2xl border border-white/5">

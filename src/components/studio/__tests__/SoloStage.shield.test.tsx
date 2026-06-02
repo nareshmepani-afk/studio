@@ -236,7 +236,7 @@ describe('Video Review & Approval Stage State Transitions', () => {
     const testBlob = new Blob(['dummy-content'], { type: 'video/webm' });
     mockRecordedBlob = testBlob;
 
-    const { getByText, queryByText } = render(
+    const { getByText, queryByText, container } = render(
       <SoloStage 
         data={initialMemory} 
         update={mockUpdate} 
@@ -246,6 +246,10 @@ describe('Video Review & Approval Stage State Transitions', () => {
 
     expect(getByText('Review Performance Take')).toBeDefined();
     expect(queryByText('Mastering in Progress')).toBeNull();
+
+    // Verify teleprompter and AI director cards are faded out to avoid overlap
+    const teleprompter = container.querySelector('.group\\/points');
+    expect(teleprompter?.className).toContain('opacity-0 pointer-events-none');
   });
 
   it('memory management: Discarding the take clears the recordedBlob, resets reference, and revokes local object URL', async () => {
@@ -291,5 +295,42 @@ describe('Video Review & Approval Stage State Transitions', () => {
     });
 
     expect(mockStartAlchemy).toHaveBeenCalledWith(testBlob);
+  });
+
+  it('review replay: allows replaying the video take by resetting progress and triggering play', async () => {
+    const testBlob = new Blob(['dummy-content'], { type: 'video/webm' });
+    mockRecordedBlob = testBlob;
+
+    const playSpy = vi.spyOn(HTMLVideoElement.prototype, 'play').mockImplementation(() => Promise.resolve());
+    const pauseSpy = vi.spyOn(HTMLVideoElement.prototype, 'pause').mockImplementation(() => {});
+
+    const { getByText, findByText, container } = render(
+      <SoloStage 
+        data={initialMemory} 
+        update={mockUpdate} 
+        currentStage={2}
+      />
+    );
+
+    // Wait for the review takeover overlay to appear dynamically
+    await findByText('Review Performance Take');
+
+    const videoElement = container.querySelector('[data-testid="review-video"]') as HTMLVideoElement;
+    expect(videoElement).toBeDefined();
+
+    await act(async () => {
+      videoElement.dispatchEvent(new Event('ended'));
+    });
+
+    const replayButton = getByText('Replay Take');
+    expect(replayButton).toBeDefined();
+
+    await act(async () => {
+      replayButton.click();
+    });
+
+    expect(playSpy).toHaveBeenCalled();
+    playSpy.mockRestore();
+    pauseSpy.mockRestore();
   });
 });
