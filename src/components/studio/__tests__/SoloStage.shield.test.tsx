@@ -1,4 +1,4 @@
-import { render, act, fireEvent, screen } from '@testing-library/react';
+import { render, act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SoloStage from '../SoloStage';
 import React from 'react';
@@ -47,7 +47,15 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
+  toast: Object.assign(
+    vi.fn(),
+    {
+      success: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      warning: vi.fn(),
+    }
+  ),
 }));
 
 vi.mock('@/hooks/use-dictionary', () => ({
@@ -56,6 +64,38 @@ vi.mock('@/hooks/use-dictionary', () => ({
 
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({ user: { uid: 'test-user-id' }, loading: false }),
+}));
+
+// Mock firebase storage, functions and localforage for RecordEditingSuite integration
+const mockUploadBytesResumable = vi.fn().mockResolvedValue({
+  ref: {}
+});
+
+const mockHttpsCallable = vi.fn().mockResolvedValue({
+  data: { success: true, videoUrl: 'blob:http://localhost/stitched-video' }
+});
+
+vi.mock('@/lib/firebase', () => ({
+  app: {},
+  storage: {},
+}));
+
+vi.mock('firebase/storage', () => ({
+  ref: vi.fn(),
+  uploadBytesResumable: (...args: any[]) => mockUploadBytesResumable(...args),
+}));
+
+vi.mock('firebase/functions', () => ({
+  getFunctions: vi.fn(),
+  httpsCallable: vi.fn(() => mockHttpsCallable),
+}));
+
+vi.mock('localforage', () => ({
+  default: {
+    removeItem: vi.fn().mockResolvedValue(undefined),
+    setItem: vi.fn().mockResolvedValue(undefined),
+    getItem: vi.fn().mockResolvedValue(null),
+  }
 }));
 
 const mockClearRecording = vi.fn();
@@ -70,6 +110,12 @@ vi.mock('@/hooks/useCamera', () => ({
   useCamera: () => ({ active: false, start: vi.fn(), stop: vi.fn(), stream: null }),
 }));
 
+let mockRecordedSegments: any[] = [];
+const mockSetRecordedSegments = vi.fn((segs) => {
+  mockRecordedSegments = segs;
+});
+const mockPunchIn = vi.fn();
+
 vi.mock('@/hooks/use-media-recorder', () => {
   return {
     useMediaRecorder: () => {
@@ -82,15 +128,19 @@ vi.mock('@/hooks/use-media-recorder', () => {
         mockClearRecording();
         mockRecordedBlob = null;
         setBlob(null);
+        mockRecordedSegments = [];
       }, []);
 
       return {
         isRecording: false,
         startRecording: mockStartRecording,
         stopRecording: mockStopRecording,
+        punchIn: mockPunchIn,
         recordingTime: 0,
         isWarningLimit: false,
         recordedBlob: blob,
+        recordedSegments: mockRecordedSegments,
+        setRecordedSegments: mockSetRecordedSegments,
         clearRecording: clear,
         uploadVideo: vi.fn(),
         uploadMediaBlob: vi.fn(),
@@ -236,6 +286,7 @@ describe('Video Review & Approval Stage State Transitions', () => {
     vi.clearAllMocks();
     mockRecordedBlob = null;
     mockIsSaving = false;
+    mockRecordedSegments = [];
     global.URL.createObjectURL = vi.fn(() => 'blob:http://localhost/test-blob');
     global.URL.revokeObjectURL = vi.fn();
   });
@@ -252,7 +303,7 @@ describe('Video Review & Approval Stage State Transitions', () => {
       />
     );
 
-    expect(getByText('Review Performance Take')).toBeDefined();
+    expect(getByText('EDITING SUITE')).toBeDefined();
     expect(queryByText('Mastering in Progress')).toBeNull();
 
     // Verify teleprompter and AI director cards are faded out to avoid overlap
@@ -272,7 +323,7 @@ describe('Video Review & Approval Stage State Transitions', () => {
       />
     );
 
-    const discardButton = getByText('Discard & Re-Shoot');
+    const discardButton = getByText('Discard Take');
     expect(discardButton).toBeDefined();
 
     await act(async () => {
@@ -283,9 +334,17 @@ describe('Video Review & Approval Stage State Transitions', () => {
     expect(global.URL.revokeObjectURL).toHaveBeenCalledWith('blob:http://localhost/test-blob');
   });
 
-  it('happy path: Approving the take triggers startAlchemy with correct blob metadata', async () => {
+  it('happy path: Approving the take triggers stitching and uploads manifest', async () => {
     const testBlob = new Blob(['dummy-content'], { type: 'video/webm' });
     mockRecordedBlob = testBlob;
+    mockRecordedSegments = [{
+      segmentId: 'seg_1',
+      blobUrl: 'blob:http://localhost/seg_1',
+      startOffset: 0,
+      endOffset: 10,
+      duration: 10,
+      blob: testBlob
+    }];
 
     const { getByText } = render(
       <SoloStage 
@@ -295,24 +354,35 @@ describe('Video Review & Approval Stage State Transitions', () => {
       />
     );
 
-    const approveButton = getByText('Approve & Synthesize');
+    const approveButton = getByText('Stitch & Approve');
     expect(approveButton).toBeDefined();
 
     await act(async () => {
       approveButton.click();
     });
 
-    expect(mockStartAlchemy).toHaveBeenCalledWith(testBlob);
+    await waitFor(() => {
+      expect(mockUploadBytesResumable).toHaveBeenCalled();
+      expect(mockHttpsCallable).toHaveBeenCalled();
+    });
   });
 
   it('review replay: allows replaying the video take by resetting progress and triggering play', async () => {
     const testBlob = new Blob(['dummy-content'], { type: 'video/webm' });
     mockRecordedBlob = testBlob;
+    mockRecordedSegments = [{
+      segmentId: 'seg_1',
+      blobUrl: 'blob:http://localhost/seg_1',
+      startOffset: 0,
+      endOffset: 10,
+      duration: 10,
+      blob: testBlob
+    }];
 
     const playSpy = vi.spyOn(HTMLVideoElement.prototype, 'play').mockImplementation(() => Promise.resolve());
     const pauseSpy = vi.spyOn(HTMLVideoElement.prototype, 'pause').mockImplementation(() => {});
 
-    const { getByText, findByText, container } = render(
+    const { findByText, getByTestId } = render(
       <SoloStage 
         data={initialMemory} 
         update={mockUpdate} 
@@ -321,20 +391,13 @@ describe('Video Review & Approval Stage State Transitions', () => {
     );
 
     // Wait for the review takeover overlay to appear dynamically
-    await findByText('Review Performance Take');
+    await findByText('EDITING SUITE');
 
-    const videoElement = container.querySelector('[data-testid="review-video"]') as HTMLVideoElement;
-    expect(videoElement).toBeDefined();
-
-    await act(async () => {
-      videoElement.dispatchEvent(new Event('ended'));
-    });
-
-    const replayButton = getByText('Replay Take');
-    expect(replayButton).toBeDefined();
+    const playPauseBtn = getByTestId('play-pause-overlay-btn');
+    expect(playPauseBtn).toBeDefined();
 
     await act(async () => {
-      replayButton.click();
+      playPauseBtn.click();
     });
 
     expect(playSpy).toHaveBeenCalled();
@@ -405,5 +468,31 @@ describe('Documentary Raw Capture Modality', () => {
 
     // Confirm that the start performance indicator badge exists
     expect(screen.getByText('Start Performance')).toBeDefined();
+  });
+
+  it('renders RecordEditingSuite when reviewTake is active and segments exist', async () => {
+    mockRecordedBlob = new Blob(['dummy'], { type: 'video/webm' });
+    mockRecordedSegments = [{
+      segmentId: 'seg_1',
+      blobUrl: 'blob:http://localhost/seg_1',
+      startOffset: 0,
+      endOffset: 10,
+      duration: 10,
+      blob: mockRecordedBlob
+    }];
+
+    render(
+      <SoloStage 
+        data={initialMemory} 
+        update={mockUpdate} 
+        currentStage={2}
+      />
+    );
+
+    // Assert that the EDITING SUITE header and timeline are rendered
+    expect(screen.getByText('EDITING SUITE')).toBeDefined();
+    expect(screen.getByText('VIRTUAL EDL ACTIVE')).toBeDefined();
+    expect(screen.getByText('Split Segment')).toBeDefined();
+    expect(screen.getByText('AI Auto-Trim (Silence Cut)')).toBeDefined();
   });
 });
