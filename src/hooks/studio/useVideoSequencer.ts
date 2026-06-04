@@ -28,17 +28,112 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
     edl,
   });
 
-  useEffect(() => {
-    stateRef.current.edl = edl;
-  }, [edl]);
-
-  const totalDuration = edl.reduce((acc, seg) => acc + seg.duration, 0);
+  const prevOffsetsRef = useRef<{ [key: string]: { startOffset: number; endOffset: number } }>({});
 
   const getPlayers = useCallback(() => {
     const active = activeBuffer === 'A' ? videoARef.current : videoBRef.current;
     const standby = activeBuffer === 'A' ? videoBRef.current : videoARef.current;
     return { active, standby };
   }, [activeBuffer]);
+
+  // Sync segment changes to internal ref and active player currentTime
+  useEffect(() => {
+    stateRef.current.edl = edl;
+    
+    if (edl.length === 0) return;
+
+    const activeVideo = activeBuffer === 'A' ? videoARef.current : videoBRef.current;
+    const currentSeg = edl[currentSegmentIndex];
+    const prevSegOffsets = currentSeg ? prevOffsetsRef.current[currentSeg.segmentId] : null;
+
+    if (activeVideo && currentSeg) {
+      // Prime the active player with the first segment's source on initial load
+      if (!activeVideo.src) {
+        activeVideo.src = currentSeg.blobUrl;
+        activeVideo.currentTime = currentSeg.startOffset;
+        activeVideo.load();
+        console.log(`[Sequencer] Initialized active buffer with segment: ${currentSeg.segmentId}`);
+      } else if (activeVideo.src !== currentSeg.blobUrl) {
+        // If the URL is different, load it
+        activeVideo.src = currentSeg.blobUrl;
+        activeVideo.currentTime = currentSeg.startOffset;
+        activeVideo.load();
+        activeVideo.removeAttribute('data-primed');
+      } else if (prevSegOffsets) {
+        // If the same URL but crop boundaries changed, sync playhead to the boundary
+        if (currentSeg.startOffset !== prevSegOffsets.startOffset) {
+          activeVideo.currentTime = currentSeg.startOffset;
+          // Calculate new cumulative time for the timeline
+          let leadTime = 0;
+          for (let i = 0; i < currentSegmentIndex; i++) {
+            leadTime += edl[i].duration;
+          }
+          setCumulativeTime(leadTime);
+        } else if (currentSeg.endOffset !== prevSegOffsets.endOffset) {
+          activeVideo.currentTime = currentSeg.endOffset;
+          // Calculate new cumulative time for the timeline
+          let leadTime = 0;
+          for (let i = 0; i < currentSegmentIndex; i++) {
+            leadTime += edl[i].duration;
+          }
+          setCumulativeTime(leadTime + currentSeg.duration);
+        }
+      }
+    }
+
+    // Keep track of the offsets to detect changes next time
+    const newOffsets: { [key: string]: { startOffset: number; endOffset: number } } = {};
+    edl.forEach((seg) => {
+      newOffsets[seg.segmentId] = {
+        startOffset: seg.startOffset,
+        endOffset: seg.endOffset,
+      };
+    });
+    prevOffsetsRef.current = newOffsets;
+
+  }, [edl, currentSegmentIndex, activeBuffer]);
+
+  const totalDuration = edl.reduce((acc, seg) => acc + seg.duration, 0);
+
+  const seekTo = useCallback((targetTime: number) => {
+    let accumulated = 0;
+    let targetSegmentIndex = 0;
+    let targetOffset = 0;
+
+    for (let i = 0; i < edl.length; i++) {
+      if (targetTime <= accumulated + edl[i].duration) {
+        targetSegmentIndex = i;
+        targetOffset = edl[i].startOffset + (targetTime - accumulated);
+        break;
+      }
+      accumulated += edl[i].duration;
+    }
+
+    stateRef.current.currentSegmentIndex = targetSegmentIndex;
+    setCurrentSegmentIndex(targetSegmentIndex);
+    setCumulativeTime(targetTime);
+
+    const { active, standby } = getPlayers();
+    if (active) {
+      const targetSeg = edl[targetSegmentIndex];
+      const needsLoad = active.src !== targetSeg.blobUrl;
+      active.src = targetSeg.blobUrl;
+      active.currentTime = targetOffset;
+      active.removeAttribute('data-primed');
+      if (needsLoad) {
+        active.load();
+      }
+
+      if (stateRef.current.isPlaying) {
+        active.play().catch(() => {});
+      }
+    }
+    
+    if (standby) {
+      standby.pause();
+      standby.removeAttribute('data-primed');
+    }
+  }, [edl, getPlayers]);
 
   const togglePlay = useCallback(() => {
     const { active } = getPlayers();
@@ -49,11 +144,30 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
       setIsPlaying(false);
       stateRef.current.isPlaying = false;
     } else {
-      active.play().catch((err) => console.warn('[Sequencer] Play blocked:', err));
-      setIsPlaying(true);
-      stateRef.current.isPlaying = true;
+      // Auto-rewind if the user clicks play at the very end of the entire timeline
+      const currentSeg = stateRef.current.edl[stateRef.current.currentSegmentIndex];
+      const isAtEnd = currentSeg ? active.currentTime >= currentSeg.endOffset - 0.1 : false;
+      const isLastSegment = stateRef.current.currentSegmentIndex === stateRef.current.edl.length - 1;
+
+      if (isAtEnd && isLastSegment) {
+        seekTo(0);
+      } else if (currentSeg && active.currentTime < currentSeg.startOffset) {
+        // Clamp playhead to segment boundaries if needed
+        active.currentTime = currentSeg.startOffset;
+      }
+
+      active.play()
+        .then(() => {
+          setIsPlaying(true);
+          stateRef.current.isPlaying = true;
+        })
+        .catch((err) => {
+          console.warn('[Sequencer] Play blocked:', err);
+          setIsPlaying(false);
+          stateRef.current.isPlaying = false;
+        });
     }
-  }, [isPlaying, getPlayers]);
+  }, [isPlaying, getPlayers, seekTo]);
 
   const handleTimeUpdate = useCallback((bufferChanged: 'A' | 'B') => {
     if (bufferChanged !== activeBuffer) return;
@@ -102,42 +216,6 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
       }
     }
   }, [activeBuffer, getPlayers, onTimeUpdate]);
-
-  const seekTo = useCallback((targetTime: number) => {
-    let accumulated = 0;
-    let targetSegmentIndex = 0;
-    let targetOffset = 0;
-
-    for (let i = 0; i < edl.length; i++) {
-      if (targetTime <= accumulated + edl[i].duration) {
-        targetSegmentIndex = i;
-        targetOffset = edl[i].startOffset + (targetTime - accumulated);
-        break;
-      }
-      accumulated += edl[i].duration;
-    }
-
-    stateRef.current.currentSegmentIndex = targetSegmentIndex;
-    setCurrentSegmentIndex(targetSegmentIndex);
-    setCumulativeTime(targetTime);
-
-    const { active, standby } = getPlayers();
-    if (active) {
-      const targetSeg = edl[targetSegmentIndex];
-      active.src = targetSeg.blobUrl;
-      active.currentTime = targetOffset;
-      active.removeAttribute('data-primed');
-
-      if (stateRef.current.isPlaying) {
-        active.play().catch(() => {});
-      }
-    }
-    
-    if (standby) {
-      standby.pause();
-      standby.removeAttribute('data-primed');
-    }
-  }, [edl, getPlayers]);
 
   return {
     videoARef,

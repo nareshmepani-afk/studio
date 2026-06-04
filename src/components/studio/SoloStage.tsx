@@ -463,6 +463,7 @@ export default function SoloStage({
   // Intercept MediaRecorder stop event and trigger Review overlay before sealing
   useEffect(() => {
     if (recordedBlob && recordedBlob !== lastAttemptedBlobRef.current && !isAlchemySaving && !isAlchemyComplete) {
+      lastAttemptedBlobRef.current = recordedBlob;
       console.log(`[SoloStage] SUCCESS: Compiled performance reel acquired (${recordedBlob.size} bytes). Triggering Review overlay...`);
       setReviewTake(true);
       setReviewPlaying(true);
@@ -2153,7 +2154,7 @@ export default function SoloStage({
              }}
              className={cn(
                "z-30 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col cursor-grab active:cursor-grabbing select-none relative",
-               prompterSize === 'mini' ? "p-4 bg-zinc-950/90" : "p-8",
+               (prompterSize === 'mini' && !isTableReadActive) ? "p-4 bg-zinc-950/90" : "p-8",
                (isMuted || !mounted || !techAlignmentConfirmed) && "hidden",
                isAlchemySaving || reviewTake || captureModality === 'raw' ? "opacity-0 pointer-events-none" : "opacity-100 blur-0",
                isTableReadActive
@@ -2315,9 +2316,9 @@ export default function SoloStage({
             </div>
           )}
 
-          {!isTableReadActive && (
-             <div className="absolute inset-0 z-20 flex flex-col justify-between p-10 w-full mx-auto pointer-events-none">
-                <div className="flex justify-between items-start w-full pointer-events-auto">
+             <div className="absolute inset-0 z-40 flex flex-col justify-between p-10 w-full mx-auto pointer-events-none">
+                {!isTableReadActive ? (
+                  <div className="flex justify-between items-start w-full pointer-events-auto">
                   <div className="flex items-center gap-3">
                     <AnimatePresence mode="wait">
                       {isRecording ? (
@@ -2404,19 +2405,21 @@ export default function SoloStage({
                       </TooltipProvider>
                     </div>
                   </div>
-                </div>
+                  </div>
+                ) : null}
 
-             <div 
-               ref={stageRef}
-               data-blueprint="SoloStage:StageArea"
-               className={cn(
-                 "flex-1 relative min-h-0 flex flex-col items-center justify-start py-20 px-8 transition-all duration-700",
-                 "overflow-y-auto custom-scrollbar",
-                 modality === null ? "opacity-0 scale-95" : "opacity-100 scale-100"
-               )}
-             >
-                <AnimatePresence>
-                  {isCountingIn && countIn !== null && (
+             {!isTableReadActive ? (
+               <div 
+                 ref={stageRef}
+                 data-blueprint="SoloStage:StageArea"
+                 className={cn(
+                   "flex-1 relative min-h-0 flex flex-col items-center justify-start py-20 px-8 transition-all duration-700",
+                   "overflow-y-auto custom-scrollbar",
+                   modality === null ? "opacity-0 scale-95" : "opacity-100 scale-100"
+                 )}
+               >
+                 <AnimatePresence>
+                   {isCountingIn && countIn !== null && (
                     <motion.div 
                       key="countdown"
                       initial={{ scale: 0.5, opacity: 0 }}
@@ -2547,6 +2550,9 @@ export default function SoloStage({
                     )}
                   </AnimatePresence>
              </div>
+             ) : (
+               <div className="flex-grow min-h-0 w-full flex flex-col items-center justify-center relative pointer-events-none" />
+             )}
 
              {techAlignmentConfirmed && (
                 <div className="flex justify-between items-center w-full px-12 pb-6 pointer-events-auto">
@@ -2610,9 +2616,22 @@ export default function SoloStage({
                        </button>
                      </div>
                    ) : (
-                     <button onClick={() => { stopRecording(); setIsCameraActive(false); }} className="w-20 h-20 rounded-full bg-rose-500/20 border-4 border-rose-500 hover:bg-rose-500 transition-all flex items-center justify-center">
-                       <Square className="w-6 h-6 text-white fill-current" />
-                     </button>
+                      <div className="relative flex items-center gap-4">
+                        
+                        {/* Dedicated Recording Timer Next to the Recording Button */}
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-950/60 border border-rose-500/30 text-rose-400 text-xs font-mono font-bold tracking-widest rounded-full shadow-[0_0_15px_rgba(244,63,94,0.2)] select-none pointer-events-auto transition-all animate-pulse">
+                          <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-ping" />
+                          <span>{formatTime(recordingTime)}</span>
+                        </div>
+
+                        <button 
+                          onClick={() => { stopRecording(); setIsCameraActive(false); }} 
+                          className="w-20 h-20 rounded-full bg-rose-500/20 border-4 border-rose-500 hover:bg-rose-500 transition-all flex items-center justify-center cursor-pointer active:scale-95 z-50 pointer-events-auto"
+                          aria-label="Stop Recording"
+                        >
+                          <Square className="w-6 h-6 text-white fill-current" />
+                        </button>
+                      </div>
                    )}
 
                    {/* Right: Spacer or original Volume visualizer */}
@@ -2722,7 +2741,6 @@ export default function SoloStage({
                 )}
              </AnimatePresence>
           </div>
-          )}
 
           {error ? (() => {
             const errType = cameraError?.type || 'unknown';

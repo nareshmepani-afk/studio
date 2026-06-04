@@ -476,7 +476,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         </div>
 
         {/* Right Column: Visual Controls & Selfie Sidebar (Active Camera/Rehearsal Mode) */}
-        {!isMini && (stream || isTableReadActive) && (
+        {(!isMini || isTableReadActive) && (stream || isTableReadActive) && (
           <div className="w-[124px] flex-none flex flex-col gap-3.5 border-l border-white/5 pl-4 shrink-0 overflow-y-auto custom-scrollbar select-none">
             {/* Live Selfie Monitor */}
             {stream && (
