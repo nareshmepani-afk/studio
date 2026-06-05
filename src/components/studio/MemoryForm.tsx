@@ -375,7 +375,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const { isProductionLocked: globalLocked, actions: { setIsProductionLocked: setGlobalLocked } } = useGlobalStudioState();
   
   // Local sync for persistence
-  const isProductionLocked = data?.isProductionLocked || globalLocked || (data?.productionStage || 0) >= 1;
+  const isProductionLocked = data?.isProductionLocked !== false && (data?.isProductionLocked || globalLocked || (data?.productionStage || 0) >= 1);
   const isSensory = ['poetic', 'direct', 'nostalgic', 'The Poetic Weave', 'The Direct Weave', 'The Generational Weave'].includes(data?.activeVision || data?.activeVisionLabel || '');
 
   // Initialize Persistence
@@ -426,10 +426,18 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     onSavingChange?.(isCloudSaving);
   }, [isCloudSaving, onSavingChange]);
 
+  const scriptoriumRef = useRef<any>(null);
+
   useImperativeHandle(ref, () => ({
     flush: async (overrides?: any) => {
-      // Diagnostic log throttled to prevent spam during loops
-      return await flush(overrides);
+      let finalOverrides = { ...overrides };
+      if (scriptoriumRef.current?.flush) {
+        const latestBlocks = scriptoriumRef.current.flush();
+        if (latestBlocks) {
+          finalOverrides.scriptBlocks = latestBlocks;
+        }
+      }
+      return await flush(finalOverrides);
     },
     isSaving: isCloudSaving
   }));
@@ -2357,6 +2365,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         </div>
                       )}
                       <Scriptorium 
+                        ref={scriptoriumRef}
                         data={data} 
                         onSync={setScriptBlocks} 
                         onPolish={handleScriptPolish} 
@@ -2370,6 +2379,14 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                           update({ isProductionLocked: false });
                           toast.success("Production Lock Released", {
                             description: "Manual control of metadata is now enabled."
+                          });
+                        }}
+                        onLockProduction={async () => {
+                          setGlobalLocked(true);
+                          await flush({ isProductionLocked: true });
+                          update({ isProductionLocked: true });
+                          toast.success("Production Sealed", {
+                            description: "Script editor is now locked to preserve changes."
                           });
                         }}
                       />

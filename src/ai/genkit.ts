@@ -62,12 +62,12 @@ export async function getAI() {
         customHeaders
       })
     ],
-    model: 'googleai/gemini-2.0-flash',
+    model: 'googleai/gemini-flash-latest',
   });
 }
 
 // Keeping a legacy export for compatibility, though getAI() is now preferred for auth-vetted calls
 export const ai = genkit({
   plugins: [googleAI({ apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY })],
-  model: 'googleai/gemini-2.0-flash',
+  model: 'googleai/gemini-flash-latest',
 });

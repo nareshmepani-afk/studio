@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import {
   DndContext,
@@ -30,9 +28,19 @@ import { LayoutGroup } from 'framer-motion';
 
 import { useProductionCharge, SensoryType } from '@/hooks/studio/useProductionCharge';
 import { AIPolishButton } from './AIPolishButton';
-import { History, Unlock, BookOpen } from 'lucide-react';
+import { History, Lock, Unlock, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDebounce } from '@/hooks/useDebounce';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const ClarityWaveform = ({ charge, color }: { charge: number, color: string }) => {
   const points = 12;
@@ -82,9 +90,10 @@ interface ScriptoriumProps {
   isProductionLocked?: boolean;
   onOpenArchive?: () => void;
   onUnlockProduction?: () => void;
+  onLockProduction?: () => void;
 }
 
-export const Scriptorium = ({ 
+export const Scriptorium = forwardRef<any, ScriptoriumProps>(({ 
   data, 
   onSync, 
   onPolish, 
@@ -92,12 +101,14 @@ export const Scriptorium = ({
   onActivity,
   isProductionLocked = false,
   onOpenArchive,
-  onUnlockProduction
-}: ScriptoriumProps) => {
+  onUnlockProduction,
+  onLockProduction
+}, ref) => {
   const { actions, detectedAnchors, activeDrawer } = useStudioState();
 
   // 1. THE HYDRATION-SAFE MIGRATION ENGINE
   const [hasHydrated, setHasHydrated] = useState(false);
+  const [showUnlockConfirm, setShowUnlockConfirm] = useState(false);
   
   // 2. INITIALIZE THE ENGINE
   const {
@@ -297,6 +308,17 @@ export const Scriptorium = ({
     };
   }, []); // Only on unmount
 
+  useImperativeHandle(ref, () => ({
+    flush: () => {
+      const finalJSON = JSON.stringify(latestBlocksRef.current);
+      if (finalJSON !== lastSyncedBlocksRef.current) {
+        onSync(latestBlocksRef.current);
+        lastSyncedBlocksRef.current = finalJSON;
+      }
+      return latestBlocksRef.current;
+    }
+  }));
+
   // Bridge the latest addCatalyst logic to the stable dispatcher registration
   const addCatalystRef = useRef(addCatalyst);
   useEffect(() => {
@@ -416,21 +438,24 @@ export const Scriptorium = ({
                 Architect's Drawer
               </motion.button>
               
-              {isProductionLocked && onUnlockProduction && (
-                <button
-                  onClick={() => {
-                    const confirmUnlock = window.confirm(
-                      "Unlocking this scene will allow edits to your script but may desync any recordings in Act II. Proceed?"
-                    );
-                    if (confirmUnlock) {
-                      onUnlockProduction();
-                    }
-                  }}
-                  className="flex items-center justify-center w-10 h-10 rounded-full bg-red-950/40 text-red-400 border border-red-500/20 hover:bg-red-950/60 hover:text-red-300 transition-all duration-300"
-                  title="Release Production Lock"
-                >
-                  <Unlock className="w-4 h-4" />
-                </button>
+              {onUnlockProduction && (
+                isProductionLocked ? (
+                  <button
+                    onClick={() => setShowUnlockConfirm(true)}
+                    className="flex items-center justify-center w-10 h-10 rounded-full bg-red-950/40 text-red-400 border border-red-500/20 hover:bg-red-950/60 hover:text-red-300 transition-all duration-300"
+                    title="Release Production Lock"
+                  >
+                    <Lock className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onLockProduction?.()}
+                    className="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-950/40 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-950/60 hover:text-emerald-300 transition-all duration-300"
+                    title="Seal Production Lock"
+                  >
+                    <Unlock className="w-4 h-4" />
+                  </button>
+                )
               )}
             </div>
           )}
@@ -452,7 +477,37 @@ export const Scriptorium = ({
         </span>
         <div className="h-px flex-1 bg-emerald-500/50" />
       </div>
+
+      {/* Custom Alert Dialog for Unlocking Production */}
+      <AlertDialog open={showUnlockConfirm} onOpenChange={setShowUnlockConfirm}>
+        <AlertDialogContent className="bg-slate-900 border border-white/10 text-white rounded-3xl p-6 max-w-md shadow-2xl">
+          <AlertDialogHeader className="space-y-3">
+            <AlertDialogTitle className="text-lg font-black uppercase tracking-wider text-rose-400 font-mono">
+              Release Production Lock?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400 text-xs leading-relaxed font-sans">
+              Unlocking this scene will allow edits to your script but may desync any recordings in Act II. Proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 flex gap-3 justify-end">
+            <AlertDialogCancel className="bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-5 py-2.5 text-xs font-bold uppercase tracking-widest transition-all cursor-pointer">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                onUnlockProduction?.();
+                setShowUnlockConfirm(false);
+              }}
+              className="bg-rose-600 hover:bg-rose-500 text-white border-none rounded-xl px-5 py-2.5 text-xs font-black uppercase tracking-widest shadow-lg shadow-rose-950/50 transition-all cursor-pointer"
+            >
+              Unlock
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
-};
+});
+
+Scriptorium.displayName = 'Scriptorium';
 

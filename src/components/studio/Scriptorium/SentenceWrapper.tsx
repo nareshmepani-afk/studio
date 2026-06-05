@@ -8,7 +8,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { ScriptBlock } from '@/types';
 import { cn } from '@/lib/utils';
 import { detectAnchors } from '@/hooks/studio/useDirectorInk';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Lock } from 'lucide-react';
+import { toast } from 'sonner';
 
 const SHARED_STYLES: React.CSSProperties = {
   fontFamily: '"Courier Prime", monospace',
@@ -23,6 +24,307 @@ const SHARED_STYLES: React.CSSProperties = {
   outline: 'none',
   WebkitFontSmoothing: 'antialiased',
   boxSizing: 'border-box',
+};
+
+interface PivotSuggestions {
+  poetic: string[];
+  grit: string[];
+  heritage: string[];
+}
+
+const TONAL_PIVOT_MAP: Record<string, PivotSuggestions> = {
+  sustenance: {
+    poetic: ["lifeline", "vitality"],
+    grit: ["rations", "provisions"],
+    heritage: ["nourishment", "soul-food"]
+  },
+  hardship: {
+    poetic: ["stoicism", "tribulation"],
+    grit: ["struggle", "adversity"],
+    heritage: ["privation", "austerity"]
+  },
+  persistence: {
+    poetic: ["tenacity", "unwavering path", "perseverance"],
+    grit: ["grit", "resolve"],
+    heritage: ["resilience", "steadfastness", "stoutheartedness", "loyalty"]
+  },
+  tongue: {
+    poetic: ["native voice", "inner speaker"],
+    grit: ["dialect", "speech"],
+    heritage: ["ancestral voice", "first language"]
+  },
+  mother: {
+    poetic: ["maternal star", "lifegiver"],
+    grit: ["guardian", "caretaker"],
+    heritage: ["ancestress", "matriarch"]
+  },
+  story: {
+    poetic: ["narrative", "chronicle"],
+    grit: ["account", "records"],
+    heritage: ["tale", "oral history"]
+  },
+  forebears: {
+    poetic: ["lineage", "ancestors"],
+    grit: ["predecessors", "settlers"],
+    heritage: ["forefathers", "kin"]
+  },
+  tethered: {
+    poetic: ["intertwined", "anchored"],
+    grit: ["bound", "shackled"],
+    heritage: ["linked", "tethered"]
+  },
+  stubborn: {
+    poetic: ["persistent", "resolute"],
+    grit: ["obstinate", "stiff-necked"],
+    heritage: ["unyielding", "steadfast"]
+  },
+  soil: {
+    poetic: ["clay", "cradle"],
+    grit: ["dust", "turf"],
+    heritage: ["earth", "homeland"]
+  },
+  bounty: {
+    poetic: ["overflow", "plenty"],
+    grit: ["yield", "harvest"],
+    heritage: ["abundance", "provisions"]
+  },
+  nairobi: {
+    poetic: ["my birthplace", "cradle of my memory"],
+    grit: ["the capital", "the urban expanse"],
+    heritage: ["our homestead", "the first station"]
+  },
+  kutch: {
+    poetic: ["the salt flats", "the arid cradle"],
+    grit: ["the province", "the borderlands"],
+    heritage: ["our ancestral homeland", "our origin region"]
+  },
+  madhapur: {
+    poetic: ["our sanctuary", "the silent village"],
+    grit: ["the township", "the dust roads"],
+    heritage: ["our ancestral village", "our roots settlement"]
+  },
+  born: {
+    poetic: ["nurtured", "brought forth"],
+    grit: ["forged", "raised"],
+    heritage: ["native to", "descended in"]
+  },
+  begins: {
+    poetic: ["unfolds", "awakens"],
+    grit: ["starts", "commences"],
+    heritage: ["originates", "roots itself"]
+  },
+  passport: {
+    poetic: ["talisman", "ticket"],
+    grit: ["permit", "license"],
+    heritage: ["credential", "papers"]
+  },
+  hands: {
+    poetic: ["palms", "instruments"],
+    grit: ["grips", "fists"],
+    heritage: ["ancestral tools", "touchstones"]
+  },
+  origin: {
+    poetic: ["source", "wellspring"],
+    grit: ["rooting", "startpoint"],
+    heritage: ["birthplace", "descent"]
+  },
+  landscape: {
+    poetic: ["vista", "canvas"],
+    grit: ["terrain", "scenery"],
+    heritage: ["homestead", "territory"]
+  },
+  etched: {
+    poetic: ["engraved", "imprinted"],
+    grit: ["scratched", "marked"],
+    heritage: ["carved", "stamped"]
+  },
+  drew: {
+    poetic: ["derived", "elicited"],
+    grit: ["pulled", "extracted"],
+    heritage: ["gathered", "inherited"]
+  },
+  land: {
+    poetic: ["soil", "ground"],
+    grit: ["turf", "fields"],
+    heritage: ["country", "homeland"]
+  },
+  vegetarian: {
+    poetic: ["plant-based", "pure diet"],
+    grit: ["meat-free", "herbivorous"],
+    heritage: ["customary diet", "faith-aligned"]
+  },
+  necessity: {
+    poetic: ["obligation", "destiny"],
+    grit: ["requirement", "essential"],
+    heritage: ["customary law", "tradition"]
+  },
+  strong: {
+    poetic: ["resilient", "robust"],
+    grit: ["powerful", "tough"],
+    heritage: ["sturdy", "unyielding"]
+  },
+  virtue: {
+    poetic: ["integrity", "purity"],
+    grit: ["strength", "discipline"],
+    heritage: ["honor", "heritage"]
+  },
+  passed: {
+    poetic: ["transmitted", "whispered"],
+    grit: ["handed", "delivered"],
+    heritage: ["bequeathed", "passed down"]
+  },
+  generations: {
+    poetic: ["lineages", "descendants"],
+    grit: ["waves", "predecessors"],
+    heritage: ["ancestral lines", "kinfolk"]
+  },
+  constant: {
+    poetic: ["anchor", "fixture"],
+    grit: ["mainstay", "certainty"],
+    heritage: ["tradition", "linchpin"]
+  },
+  opportunity: {
+    poetic: ["chance", "opening"],
+    grit: ["prospect", "avenue"],
+    heritage: ["calling", "beckoning"]
+  },
+  arrived: {
+    poetic: ["appeared", "emerged"],
+    grit: ["came", "materialized"],
+    heritage: ["arrived", "settled"]
+  },
+  shadow: {
+    poetic: ["reach", "canopy"],
+    grit: ["influence", "presence"],
+    heritage: ["empire", "colonial echo"]
+  },
+  passage: {
+    poetic: ["voyage", "journey"],
+    grit: ["transition", "crossing"],
+    heritage: ["travel", "exile"]
+  },
+  lessons: {
+    poetic: ["teachings", "wisdom"],
+    grit: ["rules", "principles"],
+    heritage: ["lore", "creeds"]
+  },
+  imprinted: {
+    poetic: ["engraved", "impressed"],
+    grit: ["stamped", "embossed"],
+    heritage: ["bequeathed", "passed down"]
+  },
+  learn: {
+    poetic: ["absorb", "acquire"],
+    grit: ["master", "study"],
+    heritage: ["internalize", "retain"]
+  },
+  language: {
+    poetic: ["speech", "expression"],
+    grit: ["dialect", "tongue"],
+    heritage: ["lexicon", "ancestry"]
+  },
+  new: {
+    poetic: ["unfamiliar", "untold"],
+    grit: ["different", "strange"],
+    heritage: ["adopted", "foreign"]
+  },
+  world: {
+    poetic: ["realm", "planet", "domain"],
+    grit: ["society", "territory"],
+    heritage: ["foreign land", "diaspora"]
+  },
+  adapt: {
+    poetic: ["adjust", "acclimate"],
+    grit: ["conform", "endure"],
+    heritage: ["assimilate", "blend"]
+  },
+  cruelties: {
+    poetic: ["severities", "harshness"],
+    grit: ["hardships", "excesses"],
+    heritage: ["oppressions", "trials"]
+  },
+  work: {
+    poetic: ["strive", "struggle"],
+    grit: ["labor", "toil"],
+    heritage: ["farming", "crafting"]
+  },
+  relentlessly: {
+    poetic: ["tirelessly", "ceaselessly"],
+    grit: ["persistently", "unflinchingly"],
+    heritage: ["steadfastly", "unwaveringly"]
+  },
+  survival: {
+    poetic: ["endurance", "resilience"],
+    grit: ["existence", "tenacity"],
+    heritage: ["continuation", "bequest"]
+  },
+  miracle: {
+    poetic: ["wonder", "blessing"],
+    grit: ["fluke", "coincidence"],
+    heritage: ["divine hand", "grace"]
+  },
+  practiced: {
+    poetic: ["refined", "seasoned"],
+    grit: ["trained", "skilled"],
+    heritage: ["time-honored", "customary"]
+  },
+  skill: {
+    poetic: ["craft", "expertise"],
+    grit: ["ability", "tactics"],
+    heritage: ["artistry", "trade"]
+  },
+  hand: {
+    poetic: ["passed down", "imparted"],
+    grit: ["transferred", "handed over"],
+    heritage: ["descended", "inherited"]
+  },
+  inheritance: {
+    poetic: ["legacy", "patrimony"],
+    grit: ["bequest", "provisions"],
+    heritage: ["heritage", "birthright"]
+  },
+  unwavering: {
+    poetic: ["steadfast", "resolute"],
+    grit: ["firm", "stubborn"],
+    heritage: ["unbroken", "uncompromising"]
+  },
+  will: {
+    poetic: ["drive", "spirit"],
+    grit: ["determination", "resolve"],
+    heritage: ["ancestral intent", "destiny"]
+  },
+  keep: {
+    poetic: ["persist in", "strive to"],
+    grit: ["continue", "proceed"],
+    heritage: ["carry on", "preserve"]
+  },
+  moving: {
+    poetic: ["progressing", "journeying"],
+    grit: ["advancing", "running"],
+    heritage: ["migrating", "traveling"]
+  }
+};
+
+const getSuggestions = (word: string): PivotSuggestions | null => {
+  const clean = word.toLowerCase().trim().replace(/[^\w]/g, '');
+  if (TONAL_PIVOT_MAP[clean]) {
+    const isCapitalized = word[0] === word[0].toUpperCase();
+    const isAllUppercase = word === word.toUpperCase() && word.length > 1;
+    
+    const applyCasing = (sug: string) => {
+      if (isAllUppercase) return sug.toUpperCase();
+      if (isCapitalized) return sug.split(' ').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+      return sug;
+    };
+
+    const pivots = TONAL_PIVOT_MAP[clean];
+    return {
+      poetic: pivots.poetic.map(applyCasing),
+      grit: pivots.grit.map(applyCasing),
+      heritage: pivots.heritage.map(applyCasing),
+    };
+  }
+  return null;
 };
 
 export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({ 
@@ -43,13 +345,10 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
     const text = e.clipboardData.getData('text');
     if (text.includes('\n')) {
       e.preventDefault();
-      // Split by double newlines or single newlines depending on preference
-      // Here we split by any newline and filter out empty strings
       const blocks = text.split(/\n+/).filter(line => line.trim() !== '');
       if (blocks.length > 1) {
         onBulkUpdate?.(blocks);
       } else {
-        // Just a single line but maybe with trailing newlines
         onUpdate(text.trim());
       }
     }
@@ -66,6 +365,14 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
   const containerRef = useRef<HTMLDivElement>(null);
   const [rects, setRects] = useState<Record<string, DOMRect>>({});
   const [isMounted, setIsMounted] = useState(false);
+  const [ghostWordInfo, setGhostWordInfo] = useState<{
+    word: string;
+    start: number;
+    end: number;
+    tokenIndex: number;
+    rect: DOMRect;
+  } | null>(null);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   
   // Ref Sync Mandate
   useLayoutEffect(() => {
@@ -96,13 +403,8 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
     if (!block.text) return [];
     if (anchors.length === 0) return block.text.split(/([^a-zA-Z0-9])/g).filter((t: string) => t !== "");
 
-    // Sort anchors by length (longest first) to prevent partial matching
     const sortedAnchors = [...anchors].sort((a, b) => b.word.length - a.word.length);
-    
-    // ESCAPING MANDATE: Using the exact requested escaping structure
     const anchorPattern = sortedAnchors.map(a => a.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-    
-    // PHRASE PROTECTION: Captures full phrases before atomic characters
     const regex = new RegExp(`(${anchorPattern}|[^a-zA-Z0-9])`, 'gi');
     
     return block.text.split(regex).filter((t: string) => t !== undefined && t !== "");
@@ -142,6 +444,94 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
     };
   }, [tokens, updateSparklePositions]);
 
+  // Listen to Caret Position and Text Selection to auto-identify Word Pivot Target
+  const handleCaretOrSelectionChange = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+    const target = e.currentTarget;
+    const start = target.selectionStart;
+    const end = target.selectionEnd;
+
+    if (readOnly) {
+      const selectedText = target.value.substring(start, end).trim();
+      if (!selectedText || start === end) {
+        setGhostWordInfo(null);
+        return;
+      }
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        if (rect && rect.width > 0) {
+          setGhostWordInfo({
+            word: selectedText,
+            start: start,
+            end: end,
+            tokenIndex: -1,
+            rect: rect,
+          });
+        }
+      }
+      return;
+    }
+
+    let startPos = start;
+    let endPos = end;
+    
+    // Collapsed selection: expand range outwards to find the bounding word boundaries
+    if (start === end) {
+      const text = target.value;
+      let left = start - 1;
+      while (left >= 0 && /[a-zA-Z0-9'’-]/.test(text[left])) {
+        left--;
+      }
+      left++;
+
+      let right = start;
+      while (right < text.length && /[a-zA-Z0-9'’-]/.test(text[right])) {
+        right++;
+      }
+      
+      startPos = left;
+      endPos = right;
+    }
+
+    const selectedText = target.value.substring(startPos, endPos).trim();
+    if (!selectedText || startPos === endPos || /[^a-zA-Z0-9'’-]/.test(selectedText)) {
+      setGhostWordInfo(null);
+      return;
+    }
+
+    // Map characters to visual token offset span
+    let charCount = 0;
+    let foundIdx = -1;
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      const tokenStart = charCount;
+      const tokenEnd = charCount + token.length;
+      charCount = tokenEnd;
+
+      if (startPos >= tokenStart && endPos <= tokenEnd) {
+        foundIdx = i;
+        break;
+      }
+    }
+
+    if (foundIdx !== -1) {
+      const tokenId = `${block.id}-${foundIdx}`;
+      const spanEl = containerRef.current?.querySelector(`[data-token-id="${tokenId}"]`);
+      if (spanEl) {
+        setGhostWordInfo({
+          word: selectedText,
+          start: startPos,
+          end: endPos,
+          tokenIndex: foundIdx,
+          rect: spanEl.getBoundingClientRect(),
+        });
+      }
+    } else {
+      setGhostWordInfo(null);
+    }
+  };
+
   const portalContent = useMemo(() => {
     if (hideAnchors || readOnly) return null;
     return tokens.map((token: string, idx: number) => {
@@ -176,6 +566,140 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
     });
   }, [tokens, anchors, rects, block.id, actions, hideAnchors, readOnly]);
 
+  // Selection ghosting trigger button floating above the highlighted word
+  const sparkleTriggerPortal = useMemo(() => {
+    if (readOnly || !ghostWordInfo || suggestionsOpen) return null;
+    const { word, rect } = ghostWordInfo;
+    const hasPivots = getSuggestions(word) !== null;
+    if (!hasPivots) return null;
+
+    return (
+      <motion.button
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0, opacity: 0 }}
+        style={{
+          position: 'fixed',
+          left: rect.left + (rect.width / 2),
+          top: rect.top - 20,
+          pointerEvents: 'auto',
+        }}
+        onMouseDown={(e) => {
+          e.preventDefault(); // Keep textarea focus
+          setSuggestionsOpen(true);
+        }}
+        className="w-5 h-5 -translate-x-1/2 rounded-full bg-slate-950 border border-emerald-400 flex items-center justify-center text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.4)] hover:bg-emerald-500 hover:text-slate-950 transition-all cursor-pointer z-[9999]"
+        title="Open Tonal Pivot Menu"
+      >
+        <Sparkles className="w-3 h-3" />
+      </motion.button>
+    );
+  }, [ghostWordInfo, suggestionsOpen, readOnly]);
+
+  // Tonal Spectrum suggestions grouped layout
+  const suggestionsPortal = useMemo(() => {
+    if (readOnly || !ghostWordInfo || !suggestionsOpen) return null;
+
+    const { word, start, end, rect } = ghostWordInfo;
+    const pivots = getSuggestions(word);
+
+    if (!pivots) return null;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        style={{
+          position: 'fixed',
+          left: rect.left + (rect.width / 2),
+          top: rect.top - 12,
+          pointerEvents: 'auto',
+        }}
+        className="suggestions-popover -translate-x-1/2 -translate-y-full mb-2 bg-slate-950/95 border border-emerald-500/30 rounded-2xl p-4 flex flex-col gap-3 shadow-[0_10px_35px_rgba(0,0,0,0.85),0_0_20px_rgba(16,185,129,0.2)] z-[10000] w-72 backdrop-blur-md"
+      >
+        <div className="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-widest border-b border-white/5 pb-1 flex items-center justify-between">
+          <span>Linguistic Pivot</span>
+          <button 
+            onMouseDown={(e) => { e.preventDefault(); setSuggestionsOpen(false); }}
+            className="text-white/40 hover:text-white text-[9px] cursor-pointer"
+          >
+            Close
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {(['poetic', 'grit', 'heritage'] as const).map((tone) => {
+            const list = pivots[tone];
+            if (list.length === 0) return null;
+            
+            const toneColors = {
+              poetic: "text-sky-400 bg-sky-500/10 border-sky-500/20",
+              grit: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+              heritage: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+            };
+
+            return (
+              <div key={tone} className="space-y-1.5 animate-fade-in">
+                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border inline-block ${toneColors[tone]}`}>
+                  {tone}
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {list.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        
+                        const prefix = block.text.slice(0, start);
+                        const suffix = block.text.slice(end);
+                        const newText = prefix + suggestion + suffix;
+                        
+                        onUpdate(newText);
+                        setSuggestionsOpen(false);
+                        setGhostWordInfo(null);
+                        
+                        toast.success(`Pivoted to ${tone} texture`, {
+                          description: `Replaced "${word}" with "${suggestion}"`
+                        });
+                      }}
+                      className="px-2.5 py-1 bg-white/5 hover:bg-emerald-500 hover:text-slate-950 text-white rounded-lg text-[10px] font-mono transition-all cursor-pointer border border-white/5 hover:border-emerald-400"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </motion.div>
+    );
+  }, [ghostWordInfo, suggestionsOpen, block.text, onUpdate, readOnly]);
+
+  // Tooltip portal when readOnly is true and a word is selected
+  const lockedTooltipPortal = useMemo(() => {
+    if (!readOnly || !ghostWordInfo) return null;
+    const { rect } = ghostWordInfo;
+    return (
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 5 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 5 }}
+        style={{
+          position: 'fixed',
+          left: rect.left + (rect.width / 2),
+          top: rect.top - 12,
+          pointerEvents: 'none',
+        }}
+        className="fixed -translate-x-1/2 -translate-y-full mb-1 bg-slate-950/95 border border-red-500/30 text-rose-400 font-mono text-[9px] uppercase tracking-wider px-3 py-1.5 rounded-lg shadow-xl backdrop-blur-md z-[10000] whitespace-nowrap flex items-center gap-1.5"
+      >
+        <Lock className="w-3 h-3 text-red-400 animate-pulse" />
+        Unlock editor to edit this script
+      </motion.div>
+    );
+  }, [ghostWordInfo, readOnly]);
+
   const { setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
 
   const style = {
@@ -195,8 +719,6 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
       layout
       data-block-id={block.id}
       onClick={(e) => {
-        // Prevent click events on the wrapper padding/margins/empty areas from bubbling to the parent
-        // container (which would force the cursor to jump to the end of the script).
         if (e.target !== editorRef.current && editorRef.current) {
           editorRef.current.focus();
         }
@@ -214,6 +736,15 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
         {isMounted && createPortal(
           <div className="fixed inset-0 pointer-events-none z-[9999]">
             {portalContent}
+            <AnimatePresence>
+              {sparkleTriggerPortal}
+            </AnimatePresence>
+            <AnimatePresence>
+              {suggestionsPortal}
+            </AnimatePresence>
+            <AnimatePresence>
+              {lockedTooltipPortal}
+            </AnimatePresence>
           </div>,
           document.body
         )}
@@ -224,7 +755,14 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
           onChange={(e) => onUpdate(e.target.value)}
           onPaste={handlePaste}
           onFocus={onFocus}
-          onBlur={onBlur}
+          onBlur={(e) => {
+            setSuggestionsOpen(false);
+            setGhostWordInfo(null);
+            onBlur?.(e);
+          }}
+          onSelect={handleCaretOrSelectionChange}
+          onKeyUp={handleCaretOrSelectionChange}
+          onMouseUp={handleCaretOrSelectionChange}
           readOnly={readOnly}
           spellCheck={false}
           data-gramm="false"
@@ -258,13 +796,15 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
             const clean = token.toLowerCase();
             const isAnchor = !hideAnchors && anchors.some(a => a.word.toLowerCase() === clean);
             const tokenId = `${block.id}-${idx}`;
+            const isGhosted = ghostWordInfo?.tokenIndex === idx;
 
             return (
               <span 
                 key={tokenId}
                 data-token-id={tokenId}
                 className={cn(
-                  isAnchor && "anchor-span border-b-2 border-emerald-500/50 bg-emerald-500/5"
+                  isAnchor && "anchor-span border-b-2 border-emerald-500/50 bg-emerald-500/5",
+                  isGhosted && "bg-emerald-400/20 border-b border-emerald-400 animate-pulse rounded-md px-0.5"
                 )}
               >
                 {token}

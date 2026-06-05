@@ -1095,7 +1095,7 @@ export default function SoloStage({
       data?.structuredScript ? "max-w-[95vw] xl:max-w-screen-2xl mx-auto h-[calc(100vh-180px)]" : "max-w-4xl mx-auto"
     )}>
       {/* PERSISTENCE MANTLE: Keep MemoryForm mounted for flush stability */}
-      <div className={cn("w-full h-full", (data?.structuredScript && !isProductionLocked) ? "hidden" : "block")}>
+      <div className={cn("w-full h-full", (data?.structuredScript && isReviewing) ? "hidden" : "block")}>
         <MemoryForm ref={formRef} 
           data={data} 
           update={shieldedUpdate} 

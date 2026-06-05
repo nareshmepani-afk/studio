@@ -853,10 +853,10 @@ export async function generateDraftOptions(
     try {
     const { output } = await pRetry(async () => {
       try {
-        console.log("[AI Weaver] ai.generate starting with model: googleai/gemini-2.0-flash");
+        console.log("[AI Weaver] ai.generate starting with model: googleai/gemini-2.5-flash");
         return await ai.generate({
           prompt,
-          model: 'googleai/gemini-2.0-flash',
+          model: 'googleai/gemini-2.5-flash',
           output: {
             schema: z.object({
               polishedOriginalHook: z.string(),
