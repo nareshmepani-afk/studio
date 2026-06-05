@@ -100,6 +100,9 @@ exports.stitchPerformanceReel = functions.https.onCall(async (data, context) => 
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "User must be authenticated.");
   }
+  if (data.simulateError === true) {
+    throw new functions.https.HttpsError("internal", "Simulated Transcoder API Failure (Dev HUD Override).");
+  }
   const uid = context.auth.uid;
   const memoryId = data.memoryId;
   if (!memoryId) {

@@ -215,13 +215,24 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     useEffect(() => {
         if (!memoryData?.id) return;
         const isLocked = !!(memoryData.isProductionLocked || (memoryData.productionStage || 0) >= 1);
+        console.log("[ProductionDeck:SyncLock] Syncing production lock. memoryData:", {
+            id: memoryData.id,
+            isProductionLocked: memoryData.isProductionLocked,
+            productionStage: memoryData.productionStage,
+            proseLength: memoryData.prose?.length || 0,
+            descriptionLength: memoryData.description?.length || 0,
+            isLocked
+        });
         setIsProductionLocked(isLocked);
         if (isLocked) {
             if (typeof setSelectedTake === 'function') {
-                setSelectedTake(memoryData.prose || memoryData.description || null);
+                const targetTake = memoryData.prose || memoryData.description || null;
+                console.log("[ProductionDeck:SyncLock] Setting selectedTake to:", targetTake ? targetTake.substring(0, 60) + "..." : null);
+                setSelectedTake(targetTake);
             }
         } else {
             if (typeof setSelectedTake === 'function') {
+                console.log("[ProductionDeck:SyncLock] Clearing selectedTake (null)");
                 setSelectedTake(null);
             }
         }

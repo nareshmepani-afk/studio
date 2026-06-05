@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useStudioState } from '@/hooks/studio/useStudioState';
-import { FlipHorizontal, Play, Pause, ChevronUp, ChevronDown, Layout, Music, Volume2, Sparkles } from 'lucide-react';
+import { FlipHorizontal, Play, Pause, ChevronUp, ChevronDown, Layout, Music, Volume2, Sparkles, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { synthesizeStudioSpeech } from '@/actions/studio-vocal';
 import {
@@ -76,6 +76,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   rehearsalSpeed = 1.5
 }) => {
   const { 
+    sessionId,
     selectedTake, 
     isScrolling,
     scrollSpeed,
@@ -83,7 +84,9 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     isMirrored,
     actions: {
       toggleScrolling,
+      setScrolling,
       setScrollSpeed,
+      setFontSize,
       toggleMirror,
       increaseFontSize,
       decreaseFontSize
@@ -93,6 +96,96 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   const isLayoutLocked = modalityMode === 'interview' || isScrolling;
 
   const [isRehearsingAudio, setIsRehearsingAudio] = useState(false);
+  const isInternalScroll = useRef(false);
+
+  // Setup BroadcastChannel for popout synchronization
+  useEffect(() => {
+    if (!sessionId || sessionId === 'default') return;
+
+    const channelName = `teleprompter_sync_${sessionId}`;
+    const channel = new BroadcastChannel(channelName);
+
+    const handleMessage = (event: MessageEvent) => {
+      const { type, progress, sender, ...payload } = event.data;
+      if (sender === 'main') return; // Ignore own echoes
+
+      if (type === 'scroll' && containerRef.current) {
+        const container = containerRef.current;
+        const maxScroll = container.scrollHeight - container.clientHeight;
+        isInternalScroll.current = true;
+        container.scrollTop = progress * maxScroll;
+        setTimeout(() => { isInternalScroll.current = false; }, 20);
+      } else if (type === 'state') {
+        if (payload.isScrolling !== undefined && payload.isScrolling !== isScrolling) {
+          setScrolling(payload.isScrolling);
+        }
+        if (payload.fontSize !== undefined && payload.fontSize !== fontSize) {
+          setFontSize(payload.fontSize);
+        }
+        if (payload.isMirrored !== undefined && payload.isMirrored !== isMirrored) {
+          if (payload.isMirrored !== isMirrored) {
+            toggleMirror();
+          }
+        }
+      } else if (type === 'join') {
+        // Popout just opened! Send current states immediately to popout for instant alignment
+        if (containerRef.current) {
+          const container = containerRef.current;
+          const maxScroll = container.scrollHeight - container.clientHeight;
+          const currentProgress = maxScroll > 0 ? container.scrollTop / maxScroll : 0;
+          channel.postMessage({
+            type: 'state',
+            isScrolling,
+            scrollSpeed,
+            fontSize,
+            isMirrored,
+            sender: 'main'
+          });
+          channel.postMessage({
+            type: 'scroll',
+            progress: currentProgress,
+            sender: 'main'
+          });
+        }
+      }
+    };
+
+    channel.addEventListener('message', handleMessage);
+
+    return () => {
+      channel.removeEventListener('message', handleMessage);
+      channel.close();
+    };
+  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, setScrolling, setFontSize, toggleMirror]);
+
+  // Synchronize state changes dynamically to popout window
+  useEffect(() => {
+    if (!sessionId || sessionId === 'default') return;
+    const channelName = `teleprompter_sync_${sessionId}`;
+    const channel = new BroadcastChannel(channelName);
+    channel.postMessage({
+      type: 'state',
+      isScrolling,
+      scrollSpeed,
+      fontSize,
+      isMirrored,
+      sender: 'main'
+    });
+    channel.close();
+  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored]);
+
+  const handlePopout = () => {
+    if (!sessionId || sessionId === 'default') return;
+    const width = 800;
+    const height = 360;
+    const left = (window.screen.width - width) / 2;
+    const top = 0; // Align with the absolute top of the screen
+    window.open(
+      `/studio/teleprompter-popout?sessionId=${sessionId}`,
+      `TeleprompterPopout_${sessionId}`,
+      `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no,resizable=yes`
+    );
+  };
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [localActiveBeatIndex, setLocalActiveBeatIndex] = useState(0);
@@ -314,6 +407,23 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   const handleScrollTelemetry = () => {
     if (!containerRef.current) return;
     const container = containerRef.current;
+
+    // Broadcast scroll progress if it's a user/auto scroll and not an incoming message sync
+    if (!isInternalScroll.current && sessionId && sessionId !== 'default') {
+      const maxScroll = container.scrollHeight - container.clientHeight;
+      if (maxScroll > 0) {
+        const progress = container.scrollTop / maxScroll;
+        const channelName = `teleprompter_sync_${sessionId}`;
+        const channel = new BroadcastChannel(channelName);
+        channel.postMessage({
+          type: 'scroll',
+          progress,
+          sender: 'main'
+        });
+        channel.close();
+      }
+    }
+
     const blocks = Array.from(container.querySelectorAll('.prose-block'));
     if (blocks.length === 0) return;
     
@@ -422,6 +532,27 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                           <p><strong className="text-white">OFF:</strong> Reading straight off a computer, laptop, or mobile screen.</p>
                         </div>
                       </div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handlePopout}
+                      title="Pop Out Teleprompter"
+                      className="p-2 rounded-xl border border-white/10 bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      <span className="text-[9px] font-black uppercase tracking-widest">Pop Out</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="bg-neutral-950 border-white/5 max-w-[200px] p-3 text-xs leading-relaxed text-zinc-300">
+                    <div className="space-y-1">
+                      <p className="font-bold text-[9px] uppercase tracking-widest text-cyan-400">Pop Out Teleprompter</p>
+                      <p className="text-[10px] text-zinc-400 leading-normal">Opens a standalone, borderless prompter window to place directly under your camera bezel.</p>
                     </div>
                   </TooltipContent>
                 </Tooltip>
@@ -587,6 +718,32 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                       <div className="space-y-1.5">
                         <p className="font-bold text-[9px] uppercase tracking-widest text-amber-400">Mirror Mode</p>
                         <p className="text-[10px] text-zinc-400 leading-normal">Flips text horizontally for glass hoods reflection.</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+
+            {/* Pop Out Option (Hide during active Table Read) */}
+            {!isTableReadActive && (
+              <div className="flex flex-col shrink-0">
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={handlePopout}
+                        title="Pop Out Teleprompter"
+                        className="w-full py-2 rounded-xl border border-white/10 bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span className="text-[9px] font-black uppercase tracking-widest">Pop Out</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="bg-neutral-950 border-white/5 max-w-[200px] p-3 text-xs leading-relaxed text-zinc-300">
+                      <div className="space-y-1.5">
+                        <p className="font-bold text-[9px] uppercase tracking-widest text-cyan-400">Pop Out Prompter</p>
+                        <p className="text-[10px] text-zinc-400 leading-normal">Open a standalone, bezel-less overlay window aligned right below the camera lens.</p>
                       </div>
                     </TooltipContent>
                   </Tooltip>

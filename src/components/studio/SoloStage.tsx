@@ -578,7 +578,11 @@ export default function SoloStage({
         description: "Your editing layout is locked. Aligning memory segments..."
       });
 
-      const res = await stitchPerformanceReel({ memoryId: data?.id });
+      const simulateError = typeof window !== 'undefined' && localStorage.getItem('dev_simulate_transcoder_error') === 'true';
+      const res = await stitchPerformanceReel({ 
+        memoryId: data?.id,
+        simulateError: simulateError
+      });
       const resultData = res.data as { success: boolean; videoUrl: string };
 
       if (resultData.success) {
@@ -1272,7 +1276,7 @@ export default function SoloStage({
                 className={cn(
                   "absolute z-30 pointer-events-auto",
                   !techAlignmentConfirmed 
-                    ? "left-6 xl:left-12 top-1/2 -translate-y-1/2" 
+                    ? "left-6 xl:left-12 top-12" 
                     : "left-10 top-10"
                 )}
               >
@@ -1541,31 +1545,35 @@ export default function SoloStage({
 
           {/* Floating 'Director's Tech Scout' Calibration Card (MW-39 full-view check) */}
           {mounted && !isMuted && !techAlignmentConfirmed && !isTableReadActive && (
-            <div className={cn(
-              "absolute z-[35] transition-all duration-500",
-              isTechScoutMinimised 
-                ? "left-[40%] top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto" 
-                : "inset-0 flex items-center justify-center pointer-events-none bg-black/5 animate-fade-in",
-              isFocusModeActive && "opacity-50 blur-[0.5px] pointer-events-none"
-            )}>
-              <motion.div 
-                drag
-                dragConstraints={videoContainerRef}
-                dragElastic={0.05}
-                dragMomentum={false}
-                initial={{ 
-                  scale: 0.9, 
-                  opacity: 0,
-                  height: isTechScoutMinimised ? '56px' : '420px',
-                  width: isTechScoutMinimised ? '200px' : '448px'
-                }}
-                animate={{ 
-                  scale: 1, 
-                  opacity: 1,
-                  height: isTechScoutMinimised ? '56px' : '420px',
-                  width: isTechScoutMinimised ? '200px' : '448px',
-                  borderRadius: isTechScoutMinimised ? '9999px' : '2.5rem'
-                }}
+            <>
+              {!isTechScoutMinimised && (
+                <div className="absolute inset-0 bg-black/5 pointer-events-none z-[34] animate-fade-in" />
+              )}
+              <div className={cn(
+                "absolute z-[35] transition-all duration-500",
+                isTechScoutMinimised 
+                  ? "left-[40%] top-12 -translate-x-1/2 pointer-events-auto" 
+                  : "left-1/2 top-12 -translate-x-1/2 pointer-events-auto",
+                isFocusModeActive && "opacity-50 blur-[0.5px] pointer-events-none"
+              )}>
+                <motion.div 
+                  drag
+                  dragConstraints={videoContainerRef}
+                  dragElastic={0.05}
+                  dragMomentum={false}
+                  initial={{ 
+                    scale: 0.9, 
+                    opacity: 0,
+                    height: isTechScoutMinimised ? '56px' : '530px',
+                    width: isTechScoutMinimised ? '200px' : '448px'
+                  }}
+                  animate={{ 
+                    scale: 1, 
+                    opacity: 1,
+                    height: isTechScoutMinimised ? '56px' : '530px',
+                    width: isTechScoutMinimised ? '200px' : '448px',
+                    borderRadius: isTechScoutMinimised ? '9999px' : '2.5rem'
+                  }}
                 style={{ touchAction: 'none' }}
                 className={cn(
                   "flex flex-col items-center bg-slate-900/75 backdrop-blur-2xl border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.6)] pointer-events-auto cursor-grab active:cursor-grabbing select-none",
@@ -1798,11 +1806,12 @@ export default function SoloStage({
                 )}
               </motion.div>
             </div>
+            </>
           )}
 
           {/* Floating 'Camera Control Deck' calibration overlay */}
           {mounted && !isMuted && !techAlignmentConfirmed && !isTableReadActive && (
-            <div className={cn("absolute right-6 xl:right-12 top-1/2 -translate-y-1/2 z-[35] pointer-events-auto transition-all duration-500", isFocusModeActive && "opacity-50 blur-[0.5px] pointer-events-none")}>
+            <div className={cn("absolute right-6 xl:right-12 top-12 z-[35] pointer-events-auto transition-all duration-500", isFocusModeActive && "opacity-50 blur-[0.5px] pointer-events-none")}>
                <motion.div
                  drag
                  dragConstraints={videoContainerRef}

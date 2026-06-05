@@ -2,10 +2,9 @@
 
 import { adminStorage } from '@/lib/firebase-admin';
 import pRetry, { AbortError } from 'p-retry';
+import { getActiveModel } from '@/ai/models';
 
 const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
-// MusicGen Large model version
-const MUSICGEN_MODEL_VERSION = "b05b39c70a243e86c07172088f117c014db7f7b11d8c11438965f7c32087c53d";
 // Safe ambient fallback to prevent stalling the Recording Floor
 const SAFE_BACKUP_URL = "https://firebasestorage.googleapis.com/v0/b/memory-weaver-8rk9t.appspot.com/o/assets%2Fsfx%2Fambient_director_fallback.mp3?alt=media";
 const GENERATION_TIMEOUT_MS = 45000; // Hard 45s limit as per Directive
@@ -49,6 +48,7 @@ export async function generateSoundtrack(
     console.log(`[Audio Weaver] Cache miss. Initiating Replicate synthesis: "${prompt}"`);
 
     // 2. Trigger Replicate Prediction
+    const activeModelVersion = await getActiveModel('replicate');
     const response = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
       headers: {
@@ -56,7 +56,7 @@ export async function generateSoundtrack(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        version: MUSICGEN_MODEL_VERSION,
+        version: activeModelVersion,
         input: {
           prompt: `${prompt}, cinematic, high quality, atmospheric, ambient loop`,
           duration: 30,

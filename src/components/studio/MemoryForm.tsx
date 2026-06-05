@@ -435,9 +435,16 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
         const latestBlocks = scriptoriumRef.current.flush();
         if (latestBlocks) {
           finalOverrides.scriptBlocks = latestBlocks;
+          const joinedProse = latestBlocks.map((b: any) => b.text).join('\n\n');
+          finalOverrides.prose = joinedProse;
+          setProse(joinedProse);
+          console.log("[MemoryForm:flush] Scriptorium flushed. Appending scriptBlocks and prose to finalOverrides:", { blocksCount: latestBlocks.length, proseLength: joinedProse.length, proseSnippet: joinedProse.substring(0, 80) + "..." });
         }
       }
-      return await flush(finalOverrides);
+      console.log("[MemoryForm:flush] Calling useMemoryPersistence flush with overrides:", finalOverrides);
+      const res = await flush(finalOverrides);
+      console.log("[MemoryForm:flush] useMemoryPersistence flush returned:", res);
+      return res;
     },
     isSaving: isCloudSaving
   }));
@@ -2367,7 +2374,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       <Scriptorium 
                         ref={scriptoriumRef}
                         data={data} 
-                        onSync={setScriptBlocks} 
+                        onSync={(blocks) => {
+                          const joined = blocks.map(b => b.text).join('\n\n');
+                          console.log("[MemoryForm:onSync] Syncing blocks to scriptBlocks and prose:", { blocksCount: blocks.length, joinedProseLength: joined.length, snippet: joined.substring(0, 80) + "..." });
+                          setScriptBlocks(blocks);
+                          setProse(joined);
+                        }} 
                         onPolish={handleScriptPolish} 
                         onWordCountChange={handleScriptWordCount}
                         onActivity={onActivity}

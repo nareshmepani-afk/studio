@@ -1,6 +1,7 @@
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 import { GoogleAuth } from 'google-auth-library';
+import { GENKIT_MODELS, getActiveModel } from '@/ai/models';
 
 /**
  * Chronicle Cinema "Dynamic Token Bridge"
@@ -55,6 +56,8 @@ export async function getAI() {
     }
   }
 
+  const activeModel = await getActiveModel('genkit');
+
   return genkit({
     plugins: [
       googleAI({ 
@@ -62,12 +65,12 @@ export async function getAI() {
         customHeaders
       })
     ],
-    model: 'googleai/gemini-flash-latest',
+    model: activeModel,
   });
 }
 
 // Keeping a legacy export for compatibility, though getAI() is now preferred for auth-vetted calls
 export const ai = genkit({
   plugins: [googleAI({ apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY })],
-  model: 'googleai/gemini-flash-latest',
+  model: GENKIT_MODELS.FLASH,
 });

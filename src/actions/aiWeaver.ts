@@ -1,6 +1,7 @@
 'use server';
 
 import { getAI } from '@/ai/genkit';
+import { getActiveModel } from '@/ai/models';
 import { z } from 'genkit';
 import pRetry from 'p-retry';
 import { VertexAI } from '@google-cloud/vertexai';
@@ -8,6 +9,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { revalidatePath } from 'next/cache';
 import { getSession } from '@/lib/session';
 import { ScriptBlock } from '@/types';
+import { cookies } from 'next/headers';
 
 // Parse service account for Vertex AI SDK
 const serviceAccountRaw = process.env.SERVICE_ACCOUNT_JSON;
@@ -38,6 +40,21 @@ export async function expandWithAI(
   visionIntent?: { type: string | null; label: string | null }
 ): Promise<{ poetic?: string; direct?: string; nostalgic?: string }> {
   console.log("[AI Weaver] expandWithAI triggered");
+  
+  try {
+    const cookieStore = await cookies();
+    if (cookieStore.get('dev_simulate_script_corruption')?.value === 'true') {
+      console.warn("[AI Weaver] [SIMULATION] Injecting script corruption into cinematic takes!");
+      return {
+        poetic: "ERROR: [CORRUPTED_STREAM] 0xEF4B3908 - Buffer overflow. Memory trace fragmented. Please re-run alignment.",
+        direct: "ERROR: [CORRUPTED_STREAM] 0xEF4B3908 - Buffer overflow. Memory trace fragmented. Please re-run alignment.",
+        nostalgic: "ERROR: [CORRUPTED_STREAM] 0xEF4B3908 - Buffer overflow. Memory trace fragmented. Please re-run alignment.",
+      };
+    }
+  } catch (e) {
+    // Ignore context/cookie reading errors
+  }
+
   const ai = await getAI();
   const key = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
   console.log("[AI Weaver] API Key Signature:", key ? `${key.substring(0, 5)}...${key.substring(key.length - 4)}` : "MISSING");
@@ -457,8 +474,9 @@ export async function generateDirectorsNotepad(memoryId: string, videoUrl: strin
       location: 'us-central1',
     });
 
+    const activeModel = await getActiveModel('vertex');
     const model = vertexAI.getGenerativeModel({
-      model: 'gemini-1.5-pro-002', 
+      model: activeModel, 
       generationConfig: {
         responseMimeType: 'application/json',
       }
@@ -780,6 +798,16 @@ export async function generateDraftOptions(
 }> {
   console.log(`[AI Weaver] generateDraftOptions V6.1 triggered. Scope: ${timeframeScope} (${durationQuantity} ${durationUnit}), Age: ${narratorAgeAtTime}`);
   
+  try {
+    const cookieStore = await cookies();
+    if (cookieStore.get('dev_simulate_script_corruption')?.value === 'true') {
+      console.warn("[AI Weaver] [SIMULATION] Injecting script corruption into draft options!");
+      throw new Error("ERROR: [CORRUPTED_METADATA_STREAM] Failed to synthesize clean script draft options due to token corruption.");
+    }
+  } catch (e: any) {
+    if (e.message?.includes("CORRUPTED_METADATA_STREAM")) throw e;
+  }
+
   const ai = await getAI();
   
   const prompt = `
@@ -853,10 +881,11 @@ export async function generateDraftOptions(
     try {
     const { output } = await pRetry(async () => {
       try {
-        console.log("[AI Weaver] ai.generate starting with model: googleai/gemini-2.5-flash");
+        const activeModel = await getActiveModel('genkit');
+        console.log(`[AI Weaver] ai.generate starting with model: ${activeModel}`);
         return await ai.generate({
           prompt,
-          model: 'googleai/gemini-2.5-flash',
+          model: activeModel,
           output: {
             schema: z.object({
               polishedOriginalHook: z.string(),

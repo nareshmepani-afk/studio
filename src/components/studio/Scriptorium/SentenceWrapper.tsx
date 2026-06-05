@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { detectAnchors } from '@/hooks/studio/useDirectorInk';
 import { Sparkles, Lock } from 'lucide-react';
 import { toast } from 'sonner';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 
 const SHARED_STYLES: React.CSSProperties = {
   fontFamily: '"Courier Prime", monospace',
@@ -305,9 +306,45 @@ const TONAL_PIVOT_MAP: Record<string, PivotSuggestions> = {
   }
 };
 
+const findPivotRoot = (word: string): string | null => {
+  const clean = word.toLowerCase().trim().replace(/[^\w]/g, '');
+  if (!clean) return null;
+  if (TONAL_PIVOT_MAP[clean]) {
+    return clean;
+  }
+  for (const [root, pivots] of Object.entries(TONAL_PIVOT_MAP)) {
+    if (
+      pivots.poetic.some(p => p.toLowerCase().replace(/[^\w]/g, '') === clean) ||
+      pivots.grit.some(p => p.toLowerCase().replace(/[^\w]/g, '') === clean) ||
+      pivots.heritage.some(p => p.toLowerCase().replace(/[^\w]/g, '') === clean)
+    ) {
+      return root;
+    }
+  }
+  return null;
+};
+
+const getActivePivotInfo = (word: string): { root: string; tone: 'poetic' | 'grit' | 'heritage' } | null => {
+  const clean = word.toLowerCase().trim().replace(/[^\w]/g, '');
+  if (!clean) return null;
+  for (const [root, pivots] of Object.entries(TONAL_PIVOT_MAP)) {
+    if (pivots.poetic.some(p => p.toLowerCase().replace(/[^\w]/g, '') === clean)) {
+      return { root, tone: 'poetic' };
+    }
+    if (pivots.grit.some(p => p.toLowerCase().replace(/[^\w]/g, '') === clean)) {
+      return { root, tone: 'grit' };
+    }
+    if (pivots.heritage.some(p => p.toLowerCase().replace(/[^\w]/g, '') === clean)) {
+      return { root, tone: 'heritage' };
+    }
+  }
+  return null;
+};
+
 const getSuggestions = (word: string): PivotSuggestions | null => {
   const clean = word.toLowerCase().trim().replace(/[^\w]/g, '');
-  if (TONAL_PIVOT_MAP[clean]) {
+  const root = findPivotRoot(clean);
+  if (root && TONAL_PIVOT_MAP[root]) {
     const isCapitalized = word[0] === word[0].toUpperCase();
     const isAllUppercase = word === word.toUpperCase() && word.length > 1;
     
@@ -317,7 +354,7 @@ const getSuggestions = (word: string): PivotSuggestions | null => {
       return sug;
     };
 
-    const pivots = TONAL_PIVOT_MAP[clean];
+    const pivots = TONAL_PIVOT_MAP[root];
     return {
       poetic: pivots.poetic.map(applyCasing),
       grit: pivots.grit.map(applyCasing),
@@ -416,7 +453,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
     requestAnimationFrame(() => {
       if (!containerRef.current) return;
       const newRects: Record<string, DOMRect> = {};
-      const spans = containerRef.current.querySelectorAll('.anchor-span');
+      const spans = containerRef.current.querySelectorAll('.anchor-span, .pivot-span');
       
       spans.forEach((span) => {
         const id = span.getAttribute('data-token-id');
@@ -543,28 +580,134 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
       if (!anchor || !rect || rect.width === 0) return null;
 
       return (
-        <motion.button
-          key={tokenId}
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          style={{
-            position: 'fixed',
-            left: rect.left + (rect.width / 2),
-            top: rect.top - 24,
-            pointerEvents: 'auto'
-          }}
-          className="w-6 h-6 -translate-x-1/2 rounded-full bg-slate-950 border border-emerald-400 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.5)] hover:bg-emerald-500 hover:text-slate-950 transition-all cursor-help"
-          onMouseEnter={() => {
-            const xOffset = rect.left + (rect.width / 2) - (window.innerWidth / 2);
-            actions.triggerSynapse(anchor.word, anchor.type, xOffset);
-          }}
-          onMouseLeave={() => actions.triggerSynapse('', 'visual', 0)}
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-        </motion.button>
+        <Tooltip key={tokenId}>
+          <TooltipTrigger asChild>
+            <motion.button
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              style={{
+                position: 'fixed',
+                left: rect.left + (rect.width / 2),
+                top: rect.top - 24,
+                pointerEvents: 'auto'
+              }}
+              className="w-6 h-6 -translate-x-1/2 rounded-full bg-slate-950 border border-emerald-400 flex items-center justify-center text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.5)] hover:bg-emerald-500 hover:text-slate-950 transition-all cursor-pointer"
+              onMouseEnter={() => {
+                const xOffset = rect.left + (rect.width / 2) - (window.innerWidth / 2);
+                actions.triggerSynapse(anchor.word, anchor.type, xOffset);
+              }}
+              onMouseLeave={() => actions.triggerSynapse('', 'visual', 0)}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+            </motion.button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-slate-950/95 border border-white/10 shadow-2xl backdrop-blur-md px-3 py-1.5 rounded-lg z-[10000]">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Sensory Anchor</span>
+              <span className="text-xs font-mono text-white capitalize">{anchor.word} ({anchor.type})</span>
+            </div>
+          </TooltipContent>
+        </Tooltip>
       );
     });
   }, [tokens, anchors, rects, block.id, actions, hideAnchors, readOnly]);
+
+  const pivotPortalContent = useMemo(() => {
+    if (readOnly) return null;
+    return tokens.map((token: string, idx: number) => {
+      const clean = token.toLowerCase().trim().replace(/[^\w]/g, '');
+      const pivotInfo = getActivePivotInfo(clean);
+      if (!pivotInfo || clean === pivotInfo.root) return null;
+
+      const { root, tone } = pivotInfo;
+      const tokenId = `${block.id}-${idx}`;
+      const rect = rects[tokenId];
+      if (!rect || rect.width === 0) return null;
+
+      const toneStyles = {
+        poetic: {
+          border: 'border-sky-400',
+          text: 'text-sky-400',
+          hoverText: 'hover:text-slate-950',
+          hoverBg: 'hover:bg-sky-400',
+          shadow: 'shadow-[0_0_15px_rgba(56,189,248,0.5)]',
+          headerColor: 'text-sky-400',
+        },
+        grit: {
+          border: 'border-amber-400',
+          text: 'text-amber-400',
+          hoverText: 'hover:text-slate-950',
+          hoverBg: 'hover:bg-amber-400',
+          shadow: 'shadow-[0_0_15px_rgba(245,158,11,0.5)]',
+          headerColor: 'text-amber-400',
+        },
+        heritage: {
+          border: 'border-emerald-400',
+          text: 'text-emerald-400',
+          hoverText: 'hover:text-slate-950',
+          hoverBg: 'hover:bg-emerald-400',
+          shadow: 'shadow-[0_0_15px_rgba(16,185,129,0.5)]',
+          headerColor: 'text-emerald-400',
+        },
+      };
+
+      const styleConfig = toneStyles[tone];
+
+      return (
+        <Tooltip key={`pivot-${tokenId}`}>
+          <TooltipTrigger asChild>
+            <motion.button
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              style={{
+                position: 'fixed',
+                left: rect.left + (rect.width / 2),
+                top: rect.top - 24,
+                pointerEvents: 'auto'
+              }}
+              className={cn(
+                "w-6 h-6 -translate-x-1/2 rounded-full bg-slate-950 flex items-center justify-center border transition-all cursor-pointer",
+                styleConfig.border,
+                styleConfig.text,
+                styleConfig.shadow,
+                styleConfig.hoverBg,
+                styleConfig.hoverText
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                let startOffset = 0;
+                for (let i = 0; i < idx; i++) {
+                  startOffset += tokens[i].length;
+                }
+                const endOffset = startOffset + token.length;
+
+                setGhostWordInfo({
+                  word: token,
+                  start: startOffset,
+                  end: endOffset,
+                  tokenIndex: idx,
+                  rect: rect
+                });
+                setSuggestionsOpen(true);
+              }}
+            >
+              <Sparkles className="w-3 h-3" />
+            </motion.button>
+          </TooltipTrigger>
+          <TooltipContent className="bg-slate-950/95 border border-white/10 shadow-2xl backdrop-blur-md px-3 py-1.5 rounded-lg z-[10000]">
+            <div className="flex flex-col gap-0.5">
+              <span className={cn("text-[10px] font-black uppercase tracking-widest", styleConfig.headerColor)}>
+                Linguistic Pivot ({tone})
+              </span>
+              <span className="text-xs font-mono text-white">
+                "{token}" (pivoted from "{root}")
+              </span>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      );
+    });
+  }, [tokens, rects, block.id, readOnly]);
 
   // Selection ghosting trigger button floating above the highlighted word
   const sparkleTriggerPortal = useMemo(() => {
@@ -734,18 +877,21 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
       <div className="relative w-full grid">
         {/* APEX PORTAL: document.body level */}
         {isMounted && createPortal(
-          <div className="fixed inset-0 pointer-events-none z-[9999]">
-            {portalContent}
-            <AnimatePresence>
-              {sparkleTriggerPortal}
-            </AnimatePresence>
-            <AnimatePresence>
-              {suggestionsPortal}
-            </AnimatePresence>
-            <AnimatePresence>
-              {lockedTooltipPortal}
-            </AnimatePresence>
-          </div>,
+          <TooltipProvider delayDuration={300}>
+            <div className="fixed inset-0 pointer-events-none z-[9999]">
+              {portalContent}
+              {pivotPortalContent}
+              <AnimatePresence>
+                {sparkleTriggerPortal}
+              </AnimatePresence>
+              <AnimatePresence>
+                {suggestionsPortal}
+              </AnimatePresence>
+              <AnimatePresence>
+                {lockedTooltipPortal}
+              </AnimatePresence>
+            </div>
+          </TooltipProvider>,
           document.body
         )}
 
@@ -795,6 +941,12 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
           {tokens.map((token: string, idx: number) => {
             const clean = token.toLowerCase();
             const isAnchor = !hideAnchors && anchors.some(a => a.word.toLowerCase() === clean);
+            
+            const cleanCleaned = clean.trim().replace(/[^\w]/g, '');
+            const pivotInfo = getActivePivotInfo(cleanCleaned);
+            const isPivoted = pivotInfo !== null && cleanCleaned !== pivotInfo.root;
+            const pivotTone = pivotInfo?.tone;
+
             const tokenId = `${block.id}-${idx}`;
             const isGhosted = ghostWordInfo?.tokenIndex === idx;
 
@@ -804,6 +956,10 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
                 data-token-id={tokenId}
                 className={cn(
                   isAnchor && "anchor-span border-b-2 border-emerald-500/50 bg-emerald-500/5",
+                  isPivoted && "pivot-span border-b-2",
+                  isPivoted && pivotTone === 'poetic' && "border-sky-500/50 bg-sky-500/5 text-sky-200",
+                  isPivoted && pivotTone === 'grit' && "border-amber-500/50 bg-amber-500/5 text-amber-200",
+                  isPivoted && pivotTone === 'heritage' && "border-emerald-500/50 bg-emerald-500/5 text-emerald-200",
                   isGhosted && "bg-emerald-400/20 border-b border-emerald-400 animate-pulse rounded-md px-0.5"
                 )}
               >

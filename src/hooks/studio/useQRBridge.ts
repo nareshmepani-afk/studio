@@ -10,6 +10,7 @@ export function useQRBridge(memoryId: string | null) {
   const { actions } = useStudioState();
 
   const [isOpticsMuted, setIsOpticsMuted] = useState(false);
+  const [isP2PDisabled, setIsP2PDisabled] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -23,7 +24,22 @@ export function useQRBridge(memoryId: string | null) {
   }, []);
 
   useEffect(() => {
-    if (!memoryId || typeof window === 'undefined' || isOpticsMuted) {
+    if (typeof window === 'undefined') return;
+    setIsP2PDisabled(localStorage.getItem('dev_simulate_webrtc_disconnect') === 'true');
+
+    const handleSimulateChange = () => {
+      setIsP2PDisabled(localStorage.getItem('dev_simulate_webrtc_disconnect') === 'true');
+    };
+    window.addEventListener('dev-p2p-simulation-changed', handleSimulateChange);
+    window.addEventListener('storage', handleSimulateChange);
+    return () => {
+      window.removeEventListener('dev-p2p-simulation-changed', handleSimulateChange);
+      window.removeEventListener('storage', handleSimulateChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!memoryId || typeof window === 'undefined' || isOpticsMuted || isP2PDisabled) {
       setPeerState('idle');
       return;
     }
@@ -118,7 +134,7 @@ export function useQRBridge(memoryId: string | null) {
         peerInstance.destroy();
       }
     };
-  }, [memoryId, actions, isOpticsMuted]);
+  }, [memoryId, actions, isOpticsMuted, isP2PDisabled]);
 
   return { peerState };
 }

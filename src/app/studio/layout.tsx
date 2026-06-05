@@ -26,6 +26,16 @@ export default function StudioLayout({
     );
   }
 
+  if (pathname === "/studio/teleprompter-popout") {
+    return (
+      <StudioProviders>
+        <div className="relative min-h-screen bg-black text-white selection:bg-primary/30">
+          {children}
+        </div>
+      </StudioProviders>
+    );
+  }
+
   return (
     <StudioProviders>
       <div className="relative min-h-screen bg-neutral-950 text-white selection:bg-primary/30">

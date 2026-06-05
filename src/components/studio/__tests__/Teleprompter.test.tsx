@@ -32,7 +32,8 @@ vi.mock('lucide-react', () => ({
   Play: () => <div data-testid="play-icon" />,
   Pause: () => <div data-testid="pause-icon" />,
   ChevronUp: () => <div data-testid="chevron-up-icon" />,
-  ChevronDown: () => <div data-testid="chevron-down-icon" />
+  ChevronDown: () => <div data-testid="chevron-down-icon" />,
+  ExternalLink: () => <div data-testid="external-link-icon" />
 }));
 
 describe('Teleprompter Component', () => {

@@ -310,7 +310,17 @@ export function useMemoryPersistence({
           status: 'draft' as const // status is usually managed elsewhere but we keep it safe
         };
 
+        console.log("[useMemoryPersistence] Manual Flush Delta package ready:", {
+          id: currentData?.id,
+          proseLength: delta.prose?.length,
+          proseSnippet: delta.prose ? delta.prose.substring(0, 60) + "..." : null,
+          scriptBlocksCount: delta.scriptBlocks?.length,
+          isProductionLocked: delta.isProductionLocked,
+          productionStage: delta.productionStage
+        });
+
         const result = await updateRef.current(delta);
+        console.log("[useMemoryPersistence] Firestore update success:", result);
         return { success: true, result, description: s.description, latestState: s };
       } catch (err) {
         console.error("[useMemoryPersistence] Flush failed:", err);
