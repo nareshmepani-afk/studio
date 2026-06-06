@@ -2,7 +2,7 @@
 
 import { adminStorage } from '@/lib/firebase-admin';
 import pRetry, { AbortError } from 'p-retry';
-import { getActiveModel } from '@/ai/models';
+import { getActiveModel } from '@/ai/models.server';
 
 const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 // Safe ambient fallback to prevent stalling the Recording Floor

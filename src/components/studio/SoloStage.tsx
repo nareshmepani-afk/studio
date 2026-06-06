@@ -95,11 +95,24 @@ export default function SoloStage({
   onboardingJustClosed, isUntouched, onActivity, formRef
 }: RoomProps) {
   const [mounted, setMounted] = useState(false);
-  const { user } = useAuth();
+  const { user, syncStatus } = useAuth();
   const userId = data?.userId || user?.uid;
   const { isReviewing, isProductionLocked, selectedTake, fontSize, captureModality, actions: globalActions } = useStudioState();
+  const [isOnline, setIsOnline] = useState(true);
+
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine);
+      const handleOnline = () => setIsOnline(true);
+      const handleOffline = () => setIsOnline(false);
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
   }, []);
 
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -191,7 +204,7 @@ export default function SoloStage({
   const dragControls = useDragControls();
   
   // QR Mobile Remote Bridge
-  const { peerState } = useQRBridge(data?.id);
+  const { peerState, bridgeStatus } = useQRBridge(data?.id);
   
   // Interview Modality Modeler
   const {
@@ -2385,6 +2398,20 @@ export default function SoloStage({
  
                     {/* Sleek Metadata Tag & Replay Tour aligned side-by-side with Status Label */}
                     <div className="flex items-center gap-2">
+                      {(!isOnline || bridgeStatus === 'disconnected') && (
+                        <div className="flex items-center gap-2 px-4 py-1.5 bg-rose-500/20 border border-rose-500/50 text-rose-300 rounded-full text-[9px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(244,63,94,0.15)] animate-pulse backdrop-blur-md h-[30px]">
+                          <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                          <span>OFFLINE MODE // SECURE BROWSER SANDBOX ACTIVE</span>
+                        </div>
+                      )}
+
+                      {isOnline && bridgeStatus !== 'disconnected' && (bridgeStatus === 'reconnecting' || syncStatus === 'local_cache') && (
+                        <div className="flex items-center gap-2 px-4 py-1.5 bg-amber-500/20 border border-amber-500/50 text-amber-300 rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse backdrop-blur-md h-[30px]">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                          <span>HANDSHAKE OUT OF SYNC // LOCAL CACHE ENGAGED</span>
+                        </div>
+                      )}
+
                       <div className="flex items-center gap-2 px-4 py-1.5 bg-black/60 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white/70 backdrop-blur-md h-[30px]">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                         <span>

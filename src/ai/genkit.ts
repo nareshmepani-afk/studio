@@ -1,7 +1,8 @@
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 import { GoogleAuth } from 'google-auth-library';
-import { GENKIT_MODELS, getActiveModel } from '@/ai/models';
+import { GENKIT_MODELS } from '@/ai/models';
+import { getActiveModel } from '@/ai/models.server';
 
 /**
  * Chronicle Cinema "Dynamic Token Bridge"

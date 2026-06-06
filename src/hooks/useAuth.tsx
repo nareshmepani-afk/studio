@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type { User, Director, UserAccount } from '@/types'; 
 import { createSessionAction, deleteSessionAction } from '@/actions/createSessionAction';
+import localforage from 'localforage';
 
 type CombinedUser = FirebaseUser & Partial<UserAccount & Director>;
 
@@ -21,6 +22,7 @@ interface AuthContextType {
   updateUserProfileInFirestore: (data: Partial<User>) => Promise<void>;
   isAuthenticated: boolean;
   getIdToken: () => Promise<string | null>;
+  syncStatus: 'synced' | 'local_cache' | 'error';
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +30,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<CombinedUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'local_cache' | 'error'>('synced');
   const router = useRouter();
 
   useEffect(() => {
@@ -42,10 +45,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (firebaseUser) {
         // ... (existing firebase logic)
+        const syncSessionWithAction = async (token: string) => {
+          try {
+            if (typeof window !== 'undefined' && sessionStorage.getItem('dev_simulate_action_mismatch') === 'true') {
+              throw new Error("UnrecognizedActionError: Simulated Next.js server action hash mismatch.");
+            }
+
+            await createSessionAction(token);
+            setSyncStatus('synced');
+
+            const cachedToken = await localforage.getItem<string>('cached_session_sync_token');
+            if (cachedToken) {
+              console.log("[useAuth] Cached session token found. Clearing vault.");
+              await localforage.removeItem('cached_session_sync_token');
+            }
+          } catch (err: any) {
+            const errMsg = err.message || '';
+            const isMismatch = errMsg.includes("UnrecognizedActionError") || errMsg.includes("failed to find server action");
+
+            if (isMismatch) {
+              console.warn("[useAuth] Stale server action hash detected. Diverting payload to IndexedDB vault.");
+              setSyncStatus('local_cache');
+              await localforage.setItem('cached_session_sync_token', token);
+              toast.warning("Handshake Out of Sync", {
+                description: "Local cache engaged. Secure background backup active."
+              });
+            } else {
+              console.error("[useAuth] Background session sync failed:", err);
+              setSyncStatus('error');
+            }
+          }
+        };
+
         firebaseUser.getIdToken().then(idToken => {
-          createSessionAction(idToken).catch(err => 
-            console.error("[useAuth] Background session sync failed:", err)
-          );
+          syncSessionWithAction(idToken);
         });
 
         const userProfileRef = doc(db, 'users', firebaseUser.uid);
@@ -156,7 +189,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateUserProfileInFirestore,
     isAuthenticated: !!user,
     getIdToken,
-  }), [user, loading, login, register, logout, updateUserProfileInFirestore, getIdToken]);
+    syncStatus,
+  }), [user, loading, login, register, logout, updateUserProfileInFirestore, getIdToken, syncStatus]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -45,6 +45,7 @@ export default function DevHUD() {
   const [dbKeysCount, setDbKeysCount] = useState<number>(0);
   const [storageUsage, setStorageUsage] = useState<{ used: number; quota: number }>({ used: 0, quota: 0 });
   const [p2pSimulatedDrop, setP2pSimulatedDrop] = useState<boolean>(false);
+  const [actionMismatchSimulated, setActionMismatchSimulated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Load active overrides and local storage states
@@ -55,6 +56,7 @@ export default function DevHUD() {
 
       if (typeof window !== 'undefined') {
         setP2pSimulatedDrop(localStorage.getItem('dev_simulate_webrtc_disconnect') === 'true');
+        setActionMismatchSimulated(sessionStorage.getItem('dev_simulate_action_mismatch') === 'true');
         
         // Sync local storage for client-side transcoder simulation check
         if (activeOverrides.simulateTranscoderError) {
@@ -158,6 +160,19 @@ export default function DevHUD() {
     toast.success(`P2P/WebRTC Disconnect simulation ${checked ? 'activated' : 'deactivated'}`);
   };
 
+  // Toggle Action Mismatch simulation
+  const toggleActionMismatch = (checked: boolean) => {
+    if (typeof window === 'undefined') return;
+    if (checked) {
+      sessionStorage.setItem('dev_simulate_action_mismatch', 'true');
+    } else {
+      sessionStorage.removeItem('dev_simulate_action_mismatch');
+    }
+    setActionMismatchSimulated(checked);
+    window.dispatchEvent(new CustomEvent('dev-action-mismatch-simulation-changed'));
+    toast.success(`Action Mismatch simulation ${checked ? 'activated' : 'deactivated'}`);
+  };
+
   // Reset registry
   const handleResetRegistry = async () => {
     try {
@@ -166,9 +181,12 @@ export default function DevHUD() {
         localStorage.removeItem('dev_simulate_webrtc_disconnect');
         localStorage.removeItem('dev_simulate_transcoder_error');
         localStorage.removeItem('dev_simulate_script_corruption');
+        sessionStorage.removeItem('dev_simulate_action_mismatch');
       }
       setP2pSimulatedDrop(false);
+      setActionMismatchSimulated(false);
       window.dispatchEvent(new CustomEvent('dev-p2p-simulation-changed'));
+      window.dispatchEvent(new CustomEvent('dev-action-mismatch-simulation-changed'));
       toast.success('Restored default AI model registry and cleared edge cases');
       refreshConfig();
     } catch (e: any) {
@@ -453,6 +471,20 @@ export default function DevHUD() {
               <Switch
                 checked={overrides.simulateTranscoderError}
                 onCheckedChange={(val) => handleSimulationToggle('transcoder_error', val)}
+              />
+            </div>
+
+            {/* Action Mismatch */}
+            <div className="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-neutral-950/20">
+              <div className="space-y-0.5 pr-2">
+                <div className="text-xs font-bold text-neutral-200">Simulate Next.js Action Mismatch</div>
+                <div className="text-[10px] text-neutral-500">
+                  Throw an UnrecognizedActionError on next session token sync.
+                </div>
+              </div>
+              <Switch
+                checked={actionMismatchSimulated}
+                onCheckedChange={toggleActionMismatch}
               />
             </div>
 

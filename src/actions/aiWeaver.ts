@@ -1,7 +1,7 @@
 'use server';
 
 import { getAI } from '@/ai/genkit';
-import { getActiveModel } from '@/ai/models';
+import { getActiveModel } from '@/ai/models.server';
 import { z } from 'genkit';
 import pRetry from 'p-retry';
 import { VertexAI } from '@google-cloud/vertexai';
