@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const PopoutTeleprompter: React.FC = () => {
   const {
@@ -17,17 +18,27 @@ export const PopoutTeleprompter: React.FC = () => {
       setScrolling,
       setScrollSpeed,
       setFontSize,
-      toggleMirror
+      toggleMirror,
+      setSelectedTake
     }
   } = useStudioState();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isInternalScroll = useRef(false);
   const [showAnchor, setShowAnchor] = useState(true);
+  const [showHelper, setShowHelper] = useState(true);
+
+  // Auto-hide helper guide after 6 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowHelper(false);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Setup BroadcastChannel for sub-millisecond local scroll/state sync
   useEffect(() => {
-    if (!sessionId || sessionId === 'default') return;
+    if (!sessionId) return;
 
     const channelName = `teleprompter_sync_${sessionId}`;
     const channel = new BroadcastChannel(channelName);
@@ -58,6 +69,9 @@ export const PopoutTeleprompter: React.FC = () => {
             toggleMirror();
           }
         }
+        if (payload.selectedTake !== undefined && payload.selectedTake !== selectedTake) {
+          setSelectedTake(payload.selectedTake);
+        }
       }
     };
 
@@ -70,11 +84,11 @@ export const PopoutTeleprompter: React.FC = () => {
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
-  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, setScrolling, setScrollSpeed, setFontSize, toggleMirror]);
+  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake, setScrolling, setScrollSpeed, setFontSize, toggleMirror, setSelectedTake]);
 
   // Handle local scroll event in popout and broadcast to main window
   const handleScroll = () => {
-    if (isInternalScroll.current || !containerRef.current || !sessionId || sessionId === 'default') return;
+    if (isInternalScroll.current || !containerRef.current || !sessionId) return;
 
     const container = containerRef.current;
     const maxScroll = container.scrollHeight - container.clientHeight;
@@ -98,7 +112,7 @@ export const PopoutTeleprompter: React.FC = () => {
       if (e.code === 'Space') {
         e.preventDefault();
         toggleScrolling();
-        if (sessionId && sessionId !== 'default') {
+        if (sessionId) {
           const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
           channel.postMessage({
             type: 'state',
@@ -110,7 +124,7 @@ export const PopoutTeleprompter: React.FC = () => {
       } else if (e.code === 'ArrowUp') {
         e.preventDefault();
         setFontSize(fontSize + 2);
-        if (sessionId && sessionId !== 'default') {
+        if (sessionId) {
           const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
           channel.postMessage({
             type: 'state',
@@ -123,7 +137,7 @@ export const PopoutTeleprompter: React.FC = () => {
         e.preventDefault();
         const newSize = Math.max(12, fontSize - 2);
         setFontSize(newSize);
-        if (sessionId && sessionId !== 'default') {
+        if (sessionId) {
           const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
           channel.postMessage({
             type: 'state',
@@ -135,7 +149,7 @@ export const PopoutTeleprompter: React.FC = () => {
       } else if (e.code === 'KeyM') {
         e.preventDefault();
         toggleMirror();
-        if (sessionId && sessionId !== 'default') {
+        if (sessionId) {
           const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
           channel.postMessage({
             type: 'state',
@@ -169,7 +183,7 @@ export const PopoutTeleprompter: React.FC = () => {
         const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
         if (scrollTop >= scrollHeight - clientHeight - 2) {
           setScrolling(false);
-          if (sessionId && sessionId !== 'default') {
+          if (sessionId) {
             const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
             channel.postMessage({ type: 'state', isScrolling: false, sender: 'popout' });
             channel.close();
@@ -202,23 +216,80 @@ export const PopoutTeleprompter: React.FC = () => {
         </div>
       )}
 
+      {/* Sleek, auto-fading Keyboard Shortcuts Guide */}
+      <AnimatePresence>
+        {showHelper && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -20, x: '-50%' }}
+            transition={{ duration: 0.3 }}
+            className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 bg-zinc-950/95 border border-white/10 rounded-2xl px-5 py-3 text-xs font-mono text-zinc-300 shadow-2xl backdrop-blur-md pointer-events-auto"
+          >
+            <div className="flex items-center gap-3.5">
+              <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400">Shortcuts Guide</span>
+              <span className="text-zinc-700">|</span>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-white text-[10px] font-bold shadow-sm">Space</kbd>
+                <span>Play/Pause</span>
+              </div>
+              <span className="text-zinc-800">•</span>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-white text-[10px] font-bold shadow-sm">↑/↓</kbd>
+                <span>Font Size</span>
+              </div>
+              <span className="text-zinc-800">•</span>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-white text-[10px] font-bold shadow-sm">M</kbd>
+                <span>Mirror</span>
+              </div>
+              <span className="text-zinc-800">•</span>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-white text-[10px] font-bold shadow-sm">A</kbd>
+                <span>Anchor</span>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowHelper(false)}
+              className="text-zinc-500 hover:text-white transition-colors border-0 bg-transparent cursor-pointer font-bold pl-2 text-xs"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Floating telemetry HUD indicators */}
       <div className="absolute top-2 left-2 z-30 flex items-center gap-1.5 bg-zinc-950/80 border border-white/5 rounded-lg px-2 py-0.5 text-[8px] font-mono text-zinc-500">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
         <span>SYNC ACTIVE</span>
       </div>
 
-      {/* Tiny controls popover or floating label */}
-      <div className="absolute bottom-2 right-2 z-30 flex items-center gap-2 bg-zinc-950/80 border border-white/5 rounded-lg px-2 py-1 text-[8px] font-mono text-zinc-500 pointer-events-auto">
-        <span>Space: Play/Pause</span>
-        <span>•</span>
-        <span>Arrows: FontSize</span>
-        <span>•</span>
-        <span>A: Anchor</span>
-        <span>•</span>
+      {/* Premium control bar with keycaps */}
+      <div className="absolute bottom-2 right-2 z-30 flex items-center gap-3 bg-zinc-950/85 border border-white/10 rounded-xl px-3 py-1.5 text-[10px] font-mono text-zinc-400 pointer-events-auto backdrop-blur-md shadow-lg">
+        <div className="flex items-center gap-1">
+          <kbd className="px-1 rounded bg-white/5 border border-white/10 text-white text-[9px] font-bold">Space</kbd>
+          <span>Play/Pause</span>
+        </div>
+        <span className="text-white/10">•</span>
+        <div className="flex items-center gap-1">
+          <kbd className="px-1 rounded bg-white/5 border border-white/10 text-white text-[9px] font-bold">↑/↓</kbd>
+          <span>Size</span>
+        </div>
+        <span className="text-white/10">•</span>
+        <div className="flex items-center gap-1">
+          <kbd className="px-1 rounded bg-white/5 border border-white/10 text-white text-[9px] font-bold">M</kbd>
+          <span>Mirror</span>
+        </div>
+        <span className="text-white/10">•</span>
+        <div className="flex items-center gap-1">
+          <kbd className="px-1 rounded bg-white/5 border border-white/10 text-white text-[9px] font-bold">A</kbd>
+          <span>Anchor</span>
+        </div>
+        <span className="text-white/10">|</span>
         <button 
           onClick={() => setShowAnchor(p => !p)} 
-          className="text-cyan-400 hover:text-cyan-300 font-bold bg-transparent border-0 outline-none cursor-pointer"
+          className="text-cyan-400 hover:text-cyan-300 font-bold bg-transparent border-0 outline-none cursor-pointer text-[10px]"
         >
           {showAnchor ? 'Hide Line' : 'Show Line'}
         </button>

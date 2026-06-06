@@ -100,7 +100,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
   // Setup BroadcastChannel for popout synchronization
   useEffect(() => {
-    if (!sessionId || sessionId === 'default') return;
+    if (!sessionId) return;
 
     const channelName = `teleprompter_sync_${sessionId}`;
     const channel = new BroadcastChannel(channelName);
@@ -139,6 +139,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
             scrollSpeed,
             fontSize,
             isMirrored,
+            selectedTake,
             sender: 'main'
           });
           channel.postMessage({
@@ -156,11 +157,11 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
-  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, setScrolling, setFontSize, toggleMirror]);
+  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake, setScrolling, setFontSize, toggleMirror]);
 
   // Synchronize state changes dynamically to popout window
   useEffect(() => {
-    if (!sessionId || sessionId === 'default') return;
+    if (!sessionId) return;
     const channelName = `teleprompter_sync_${sessionId}`;
     const channel = new BroadcastChannel(channelName);
     channel.postMessage({
@@ -169,13 +170,14 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       scrollSpeed,
       fontSize,
       isMirrored,
+      selectedTake,
       sender: 'main'
     });
     channel.close();
-  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored]);
+  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake]);
 
   const handlePopout = () => {
-    if (!sessionId || sessionId === 'default') return;
+    if (!sessionId) return;
     const width = 800;
     const height = 360;
     const left = (window.screen.width - width) / 2;
@@ -409,7 +411,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     const container = containerRef.current;
 
     // Broadcast scroll progress if it's a user/auto scroll and not an incoming message sync
-    if (!isInternalScroll.current && sessionId && sessionId !== 'default') {
+    if (!isInternalScroll.current && sessionId) {
       const maxScroll = container.scrollHeight - container.clientHeight;
       if (maxScroll > 0) {
         const progress = container.scrollTop / maxScroll;
@@ -549,10 +551,16 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                       <span className="text-[9px] font-black uppercase tracking-widest">Pop Out</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-neutral-950 border-white/5 max-w-[200px] p-3 text-xs leading-relaxed text-zinc-300">
-                    <div className="space-y-1">
+                  <TooltipContent side="bottom" className="bg-neutral-950 border-white/5 max-w-[220px] p-3 text-xs leading-relaxed text-zinc-300">
+                    <div className="space-y-1.5">
                       <p className="font-bold text-[9px] uppercase tracking-widest text-cyan-400">Pop Out Teleprompter</p>
                       <p className="text-[10px] text-zinc-400 leading-normal">Opens a standalone, borderless prompter window to place directly under your camera bezel.</p>
+                      <div className="pt-1.5 border-t border-white/5 text-[9px] text-zinc-500 font-mono space-y-0.5">
+                        <p><strong className="text-zinc-300">Space:</strong> Play / Pause</p>
+                        <p><strong className="text-zinc-300">↑/↓:</strong> Adjust Font Size</p>
+                        <p><strong className="text-zinc-300">M:</strong> Mirror Mode</p>
+                        <p><strong className="text-zinc-300">A:</strong> Toggle Guide Line</p>
+                      </div>
                     </div>
                   </TooltipContent>
                 </Tooltip>
@@ -740,10 +748,16 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                         <span className="text-[9px] font-black uppercase tracking-widest">Pop Out</span>
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="left" className="bg-neutral-950 border-white/5 max-w-[200px] p-3 text-xs leading-relaxed text-zinc-300">
+                    <TooltipContent side="left" className="bg-neutral-950 border-white/5 max-w-[220px] p-3 text-xs leading-relaxed text-zinc-300">
                       <div className="space-y-1.5">
                         <p className="font-bold text-[9px] uppercase tracking-widest text-cyan-400">Pop Out Prompter</p>
                         <p className="text-[10px] text-zinc-400 leading-normal">Open a standalone, bezel-less overlay window aligned right below the camera lens.</p>
+                        <div className="pt-1.5 border-t border-white/5 text-[9px] text-zinc-500 font-mono space-y-0.5">
+                          <p><strong className="text-zinc-300">Space:</strong> Play / Pause</p>
+                          <p><strong className="text-zinc-300">↑/↓:</strong> Adjust Font Size</p>
+                          <p><strong className="text-zinc-300">M:</strong> Mirror Mode</p>
+                          <p><strong className="text-zinc-300">A:</strong> Toggle Guide Line</p>
+                        </div>
                       </div>
                     </TooltipContent>
                   </Tooltip>

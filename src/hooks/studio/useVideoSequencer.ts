@@ -23,18 +23,28 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
   const [cumulativeTime, setCumulativeTime] = useState(0);
 
   const stateRef = useRef({
-    isPlaying: false,
     currentSegmentIndex: 0,
     edl,
   });
 
   const prevOffsetsRef = useRef<{ [key: string]: { startOffset: number; endOffset: number } }>({});
+  const prevActiveSegmentIdRef = useRef<string | null>(null);
+  const prevEdlRef = useRef<EDLTrackSegment[] | null>(null);
 
   const getPlayers = useCallback(() => {
     const active = activeBuffer === 'A' ? videoARef.current : videoBRef.current;
     const standby = activeBuffer === 'A' ? videoBRef.current : videoARef.current;
     return { active, standby };
   }, [activeBuffer]);
+
+  // Clamp segment index if EDL changes and index is out of bounds
+  useEffect(() => {
+    if (edl.length > 0 && currentSegmentIndex >= edl.length) {
+      const nextIndex = edl.length - 1;
+      setCurrentSegmentIndex(nextIndex);
+      stateRef.current.currentSegmentIndex = nextIndex;
+    }
+  }, [edl, currentSegmentIndex]);
 
   // Sync segment changes to internal ref and active player currentTime
   useEffect(() => {
@@ -44,9 +54,15 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
 
     const activeVideo = activeBuffer === 'A' ? videoARef.current : videoBRef.current;
     const currentSeg = edl[currentSegmentIndex];
-    const prevSegOffsets = currentSeg ? prevOffsetsRef.current[currentSeg.segmentId] : null;
+    if (!currentSeg) return;
 
-    if (activeVideo && currentSeg) {
+    const prevSegOffsets = prevOffsetsRef.current[currentSeg.segmentId] || null;
+    const oldActiveId = prevActiveSegmentIdRef.current;
+    const edlChanged = prevEdlRef.current !== edl;
+    const activeSegIdChanged = oldActiveId && currentSeg.segmentId !== oldActiveId;
+    const isSplit = oldActiveId && (currentSeg.segmentId.startsWith(oldActiveId) || oldActiveId.startsWith(currentSeg.segmentId));
+
+    if (activeVideo) {
       // Prime the active player with the first segment's source on initial load
       if (!activeVideo.src) {
         activeVideo.src = currentSeg.blobUrl;
@@ -59,6 +75,15 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
         activeVideo.currentTime = currentSeg.startOffset;
         activeVideo.load();
         activeVideo.removeAttribute('data-primed');
+      } else if (edlChanged && activeSegIdChanged && !isSplit) {
+        // EDL changed and the segment at the active index changed (e.g. deletion shift)
+        console.log(`[Sequencer] Segment shifted/changed from ${oldActiveId} to ${currentSeg.segmentId}. Force syncing playhead to startOffset: ${currentSeg.startOffset}`);
+        activeVideo.currentTime = currentSeg.startOffset;
+        let leadTime = 0;
+        for (let i = 0; i < currentSegmentIndex; i++) {
+          leadTime += edl[i].duration;
+        }
+        setCumulativeTime(leadTime);
       } else if (prevSegOffsets) {
         // If the same URL but crop boundaries changed, sync playhead to the boundary
         if (currentSeg.startOffset !== prevSegOffsets.startOffset) {
@@ -90,8 +115,54 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
       };
     });
     prevOffsetsRef.current = newOffsets;
+    prevActiveSegmentIdRef.current = currentSeg.segmentId;
+    prevEdlRef.current = edl;
 
   }, [edl, currentSegmentIndex, activeBuffer]);
+
+  // Smooth playhead & boundary monitoring loop
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    let animFrameId: number;
+
+    const checkBoundary = () => {
+      const { active, standby } = getPlayers();
+      if (active) {
+        const currentSeg = stateRef.current.edl[stateRef.current.currentSegmentIndex];
+        if (currentSeg) {
+          const relativeTime = active.currentTime;
+
+          // Clamping/Hot-swap boundary check
+          if (relativeTime >= currentSeg.endOffset) {
+            const nextIndex = stateRef.current.currentSegmentIndex + 1;
+            const nextSeg = stateRef.current.edl[nextIndex];
+
+            if (nextSeg) {
+              if (standby) {
+                active.pause();
+                standby.play()
+                  .then(() => {
+                    setActiveBuffer((prev) => prev === 'A' ? 'B' : 'A');
+                    stateRef.current.currentSegmentIndex = nextIndex;
+                    setCurrentSegmentIndex(nextIndex);
+                  })
+                  .catch((err) => console.error('[Sequencer] Hot-swap execution failed:', err));
+              }
+            } else {
+              active.pause();
+              active.currentTime = currentSeg.endOffset;
+              setIsPlaying(false);
+            }
+          }
+        }
+      }
+      animFrameId = requestAnimationFrame(checkBoundary);
+    };
+
+    animFrameId = requestAnimationFrame(checkBoundary);
+    return () => cancelAnimationFrame(animFrameId);
+  }, [isPlaying, activeBuffer, getPlayers]);
 
   const totalDuration = edl.reduce((acc, seg) => acc + seg.duration, 0);
 
@@ -124,7 +195,7 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
         active.load();
       }
 
-      if (stateRef.current.isPlaying) {
+      if (isPlaying) {
         active.play().catch(() => {});
       }
     }
@@ -133,7 +204,7 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
       standby.pause();
       standby.removeAttribute('data-primed');
     }
-  }, [edl, getPlayers]);
+  }, [edl, getPlayers, isPlaying]);
 
   const togglePlay = useCallback(() => {
     const { active } = getPlayers();
@@ -142,7 +213,6 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
     if (isPlaying) {
       active.pause();
       setIsPlaying(false);
-      stateRef.current.isPlaying = false;
     } else {
       // Auto-rewind if the user clicks play at the very end of the entire timeline
       const currentSeg = stateRef.current.edl[stateRef.current.currentSegmentIndex];
@@ -159,12 +229,10 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
       active.play()
         .then(() => {
           setIsPlaying(true);
-          stateRef.current.isPlaying = true;
         })
         .catch((err) => {
           console.warn('[Sequencer] Play blocked:', err);
           setIsPlaying(false);
-          stateRef.current.isPlaying = false;
         });
     }
   }, [isPlaying, getPlayers, seekTo]);
@@ -173,7 +241,7 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
     if (bufferChanged !== activeBuffer) return;
 
     const { active, standby } = getPlayers();
-    if (!active || !standby || !stateRef.current.isPlaying) return;
+    if (!active || !standby || !isPlaying) return;
 
     const currentSeg = stateRef.current.edl[stateRef.current.currentSegmentIndex];
     if (!currentSeg) return;
@@ -211,11 +279,12 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
           })
           .catch((err) => console.error('[Sequencer] Hot-swap execution failed:', err));
       } else {
+        active.pause();
+        active.currentTime = currentSeg.endOffset;
         setIsPlaying(false);
-        stateRef.current.isPlaying = false;
       }
     }
-  }, [activeBuffer, getPlayers, onTimeUpdate]);
+  }, [activeBuffer, getPlayers, onTimeUpdate, isPlaying]);
 
   return {
     videoARef,

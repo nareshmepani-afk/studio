@@ -51,6 +51,7 @@ const mockActions = {
   setScrollSpeed: vi.fn(),
   setFontSize: vi.fn(),
   toggleMirror: vi.fn(),
+  setSelectedTake: vi.fn(),
 };
 
 const mockUseStudioState = vi.fn(() => ({
@@ -137,5 +138,25 @@ describe('PopoutTeleprompter Component', () => {
     render(<PopoutTeleprompter />);
     fireEvent.keyDown(window, { code: 'KeyM' });
     expect(mockActions.toggleMirror).toHaveBeenCalled();
+  });
+
+  it('updates selectedTake when state message is received', () => {
+    render(<PopoutTeleprompter />);
+    
+    // Find the BroadcastChannel instance for this session
+    const channelInstance = MockBroadcastChannel.instances.find(i => i.name === 'teleprompter_sync_test-session');
+    expect(channelInstance).toBeDefined();
+
+    if (channelInstance && channelInstance.onmessage) {
+      channelInstance.onmessage({
+        data: {
+          type: 'state',
+          selectedTake: 'Newly synchronized take content from main window.',
+          sender: 'main',
+        }
+      } as MessageEvent);
+      
+      expect(mockActions.setSelectedTake).toHaveBeenCalledWith('Newly synchronized take content from main window.');
+    }
   });
 });

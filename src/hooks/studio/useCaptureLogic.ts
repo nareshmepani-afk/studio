@@ -8,6 +8,22 @@ interface UseCaptureLogicOptions {
   isRecording: boolean;
 }
 
+const speakCount = (count: number) => {
+  if (typeof window !== 'undefined' && window.speechSynthesis && typeof SpeechSynthesisUtterance !== 'undefined') {
+    window.speechSynthesis.cancel();
+    const text = count === 0 ? 'Action' : count.toString();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.3; // Speed up slightly for responsive timing
+    utterance.volume = 1.0;
+    const voices = window.speechSynthesis.getVoices();
+    const englishVoice = voices.find(v => v.lang.startsWith('en-'));
+    if (englishVoice) {
+      utterance.voice = englishVoice;
+    }
+    window.speechSynthesis.speak(utterance);
+  }
+};
+
 export function useCaptureLogic({
   stream,
   startRecording,
@@ -28,6 +44,7 @@ export function useCaptureLogic({
     setIsCountingIn(true);
     setCountIn(5);
     setStatusLabel('Initialising Capture');
+    speakCount(5);
 
     // Ensure teleprompter scrolling is locked during count-in
     if (typeof setScrolling === 'function') {
@@ -39,6 +56,9 @@ export function useCaptureLogic({
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
+    }
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
     }
     setIsCountingIn(false);
     setCountIn(null);
@@ -58,6 +78,7 @@ export function useCaptureLogic({
       timerRef.current = setTimeout(() => {
         const nextCount = countIn - 1;
         setCountIn(nextCount);
+        speakCount(nextCount);
 
         // UK English Labels:
         // 5s and 4s: "Initialising Capture"
