@@ -61,6 +61,20 @@ const highlightSensoryAnchors = (text: string): string => {
     return `<span class="px-0.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 shadow-[0_0_12px_rgba(168,85,247,0.25)] font-bold transition-all hover:bg-purple-500/20" title="Visual/Texture Anchor">${word}</span>`;
   });
 
+  // Double Slashes (//) with pulsing dot under it
+  const doubleSlashRegex = new RegExp(`(<[^>]*>)|(\\s+//|//)`, 'g');
+  processed = processed.replace(doubleSlashRegex, (match, tag) => {
+     if (tag) return tag;
+    return ` <span class="relative inline-flex flex-col items-center justify-center mx-1.5 group select-none"><span class="text-sky-400 font-bold select-none cursor-help hover:text-sky-300 leading-none">//</span><span class="absolute -bottom-2.5 flex gap-1 items-center justify-center"><span class="relative flex items-center justify-center"><span class="absolute w-2 h-2 rounded-full bg-sky-400/80 animate-ping" style="animation-duration: 1.5s;"></span><span class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span></span><span class="relative flex items-center justify-center"><span class="absolute w-2 h-2 rounded-full bg-sky-400/80 animate-ping" style="animation-duration: 1.5s; animation-delay: 0.3s;"></span><span class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span></span></span></span>`;
+  });
+
+  // Single Slashes (/) with pulsing dot under it
+  const singleSlashRegex = new RegExp(`(<[^>]*>)|(\\s+/(?!/)|(?<!/)/(?!/))`, 'g');
+  processed = processed.replace(singleSlashRegex, (match, tag) => {
+    if (tag) return tag;
+    return ` <span class="relative inline-flex flex-col items-center justify-center mx-1 group select-none"><span class="text-emerald-400 font-bold select-none cursor-help hover:text-emerald-300 leading-none">/</span><span class="absolute -bottom-2.5 flex items-center justify-center"><span class="absolute w-2 h-2 rounded-full bg-emerald-400/80 animate-ping" style="animation-duration: 1.5s;"></span><span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span></span></span>`;
+  });
+
   return processed;
 };
 
@@ -158,6 +172,8 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   const enablePunctuationBrakingRef = useRef(enablePunctuationBraking);
   const activeSentenceIndexRef = useRef(activeSentenceIndex);
   const formattedParagraphsRef = useRef<any[]>([]);
+  const scrollAccumulatorRef = useRef(0);
+  const lastProgrammaticScrollTop = useRef(-1);
 
   useEffect(() => {
     scrollSpeedRef.current = scrollSpeed;
@@ -194,9 +210,10 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       if (type === 'scroll' && containerRef.current) {
         const container = containerRef.current;
         const maxScroll = container.scrollHeight - container.clientHeight;
-        isInternalScroll.current = true;
-        container.scrollTop = progress * maxScroll;
-        setTimeout(() => { isInternalScroll.current = false; }, 20);
+        const targetScroll = progress * maxScroll;
+        scrollAccumulatorRef.current = targetScroll;
+        lastProgrammaticScrollTop.current = targetScroll;
+        container.scrollTop = targetScroll;
       } else if (type === 'state') {
         if (payload.isScrolling !== undefined && payload.isScrolling !== isScrolling) {
           setScrolling(payload.isScrolling);
@@ -221,6 +238,13 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         if (payload.isolateSentenceHighlight !== undefined && payload.isolateSentenceHighlight !== isolateSentenceHighlight) {
           setIsolateSentenceHighlight(payload.isolateSentenceHighlight);
         }
+        if (payload.activeSentenceIndex !== undefined && payload.activeSentenceIndex !== activeSentenceIndexRef.current) {
+          setActiveSentenceIndex(payload.activeSentenceIndex);
+        }
+      } else if (type === 'activeSentence') {
+        if (payload.index !== undefined && payload.index !== activeSentenceIndexRef.current) {
+          setActiveSentenceIndex(payload.index);
+        }
       } else if (type === 'join') {
         // Popout just opened! Send current states immediately to popout for instant alignment
         channel.postMessage({
@@ -233,6 +257,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           showBreathingMarks,
           enablePunctuationBraking,
           isolateSentenceHighlight,
+          activeSentenceIndex,
           sender: 'main'
         });
 
@@ -255,7 +280,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
-  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, setScrolling, setFontSize, toggleMirror, setShowBreathingMarks, setEnablePunctuationBraking, setIsolateSentenceHighlight]);
+  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, activeSentenceIndex, setScrolling, setFontSize, toggleMirror, setShowBreathingMarks, setEnablePunctuationBraking, setIsolateSentenceHighlight]);
 
   // Synchronize state changes dynamically to popout window
   useEffect(() => {
@@ -272,10 +297,11 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       showBreathingMarks,
       enablePunctuationBraking,
       isolateSentenceHighlight,
+      activeSentenceIndex,
       sender: 'main'
     });
     channel.close();
-  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight]);
+  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, activeSentenceIndex]);
 
   const handlePopout = () => {
     if (!sessionId) return;
@@ -392,7 +418,10 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     if (!isScrolling || modalityMode === 'interview' || isMini) return;
     
     let animationId: number;
-    const scrollPosRef = { current: containerRef.current ? containerRef.current.scrollTop : 0 };
+    
+    if (containerRef.current) {
+      scrollAccumulatorRef.current = containerRef.current.scrollTop;
+    }
     
     const scroll = () => {
       if (containerRef.current) {
@@ -411,6 +440,15 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
             currentActiveIdx = match.index;
             if (match.index !== activeSentenceIndexRef.current) {
               setActiveSentenceIndex(match.index);
+              if (sessionId) {
+                const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+                channel.postMessage({
+                  type: 'activeSentence',
+                  index: match.index,
+                  sender: 'main'
+                });
+                channel.close();
+              }
             }
           }
         }
@@ -436,8 +474,11 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         }
 
         const brakeMultiplier = isBraking.current ? 0 : 1.0;
-        scrollPosRef.current += activeSpeed * 0.4 * currentMultiplier * brakeMultiplier;
-        container.scrollTop = Math.floor(scrollPosRef.current);
+        scrollAccumulatorRef.current += activeSpeed * 0.4 * currentMultiplier * brakeMultiplier;
+        
+        const targetScroll = Math.floor(scrollAccumulatorRef.current);
+        lastProgrammaticScrollTop.current = targetScroll;
+        container.scrollTop = targetScroll;
         
         const { scrollTop, scrollHeight, clientHeight } = container;
         if (scrollTop >= scrollHeight - clientHeight - 2) {
@@ -475,7 +516,10 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
             damping: 18,
             mass: 0.8,
             onUpdate: (value) => {
-              if (container) container.scrollTop = value;
+              if (container) {
+                lastProgrammaticScrollTop.current = value;
+                container.scrollTop = value;
+              }
             }
           });
         }).catch(() => {
@@ -524,7 +568,10 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
             damping: 18,
             mass: 0.8,
             onUpdate: (value) => {
-              if (container) container.scrollTop = value;
+              if (container) {
+                lastProgrammaticScrollTop.current = value;
+                container.scrollTop = value;
+              }
             }
           });
         }).catch(() => {
@@ -550,6 +597,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   useEffect(() => {
     const handleRestartTake = () => {
       if (containerRef.current) {
+        lastProgrammaticScrollTop.current = 0;
         containerRef.current.scrollTop = 0;
       }
       if (onActiveBeatChange) {
@@ -564,35 +612,87 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     return () => window.removeEventListener('studio-restart-take', handleRestartTake);
   }, [onActiveBeatChange]);
 
-  // Track scrolling to sync active beat back to BeatSheet
-  const handleScrollTelemetry = () => {
+  const handleSentenceClick = (index: number) => {
     if (!containerRef.current) return;
     const container = containerRef.current;
+    const span = container.querySelector(`span[data-sentence-index="${index}"]`) as HTMLElement;
+    if (span) {
+      const targetScrollTop = span.offsetTop - container.clientHeight * 0.3;
+      const finalScroll = Math.max(0, Math.min(container.scrollHeight - container.clientHeight, targetScrollTop));
+      
+      setActiveSentenceIndex(index);
+      scrollAccumulatorRef.current = finalScroll;
+      lastProgrammaticScrollTop.current = finalScroll;
+      container.scrollTop = finalScroll;
 
-    // Identify active sentence passing eye-line anchor (30% height of viewport)
-    if (sentenceCoordinates.current.length > 0) {
-      const anchorY = container.scrollTop + container.clientHeight * 0.3;
-      const match = sentenceCoordinates.current.find(
-        coord => anchorY >= coord.startY && anchorY <= coord.endY
-      );
-      if (match && match.index !== activeSentenceIndex) {
-        setActiveSentenceIndex(match.index);
-      }
-    }
-
-    // Broadcast scroll progress if it's a user/auto scroll and not an incoming message sync
-    if (!isInternalScroll.current && sessionId) {
-      const maxScroll = container.scrollHeight - container.clientHeight;
-      if (maxScroll > 0) {
-        const progress = container.scrollTop / maxScroll;
+      if (sessionId) {
+        const maxScroll = container.scrollHeight - container.clientHeight;
+        const progress = maxScroll > 0 ? finalScroll / maxScroll : 0;
+        
         const channelName = `teleprompter_sync_${sessionId}`;
         const channel = new BroadcastChannel(channelName);
+        
+        channel.postMessage({
+          type: 'activeSentence',
+          index,
+          sender: 'main'
+        });
+        
         channel.postMessage({
           type: 'scroll',
           progress,
           sender: 'main'
         });
+        
         channel.close();
+      }
+    }
+  };
+
+  // Track scrolling to sync active beat back to BeatSheet
+  const handleScrollTelemetry = () => {
+    if (!containerRef.current) return;
+    const container = containerRef.current;
+
+    const isProgrammatic = lastProgrammaticScrollTop.current !== -1 && Math.abs(container.scrollTop - lastProgrammaticScrollTop.current) < 2;
+    if (!isProgrammatic) {
+      lastProgrammaticScrollTop.current = -1;
+
+      // Identify active sentence passing eye-line anchor (30% height of viewport)
+      if (sentenceCoordinates.current.length > 0) {
+        const anchorY = container.scrollTop + container.clientHeight * 0.3;
+        const match = sentenceCoordinates.current.find(
+          coord => anchorY >= coord.startY && anchorY <= coord.endY
+        );
+        if (match && match.index !== activeSentenceIndex) {
+          setActiveSentenceIndex(match.index);
+          const channelName = `teleprompter_sync_${sessionId}`;
+          const channel = new BroadcastChannel(channelName);
+          channel.postMessage({
+            type: 'activeSentence',
+            index: match.index,
+            sender: 'main'
+          });
+          channel.close();
+        }
+      }
+
+      // Broadcast scroll progress if it's a user/auto scroll and not an incoming message sync
+      scrollAccumulatorRef.current = container.scrollTop;
+
+      if (sessionId) {
+        const maxScroll = container.scrollHeight - container.clientHeight;
+        if (maxScroll > 0) {
+          const progress = container.scrollTop / maxScroll;
+          const channelName = `teleprompter_sync_${sessionId}`;
+          const channel = new BroadcastChannel(channelName);
+          channel.postMessage({
+            type: 'scroll',
+            progress,
+            sender: 'main'
+          });
+          channel.close();
+        }
       }
     }
 
@@ -859,7 +959,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           style={{ fontSize: isMini ? '16px' : isTableReadActive ? '64px' : `${fontSize}px` }}
           className={cn(
             "flex-grow overflow-y-auto pr-2 custom-scrollbar leading-relaxed italic font-serif select-none relative transition-all duration-700",
-            isTableReadActive ? "text-center px-6 max-w-5xl mx-auto py-16 scroll-smooth" : "",
+            isTableReadActive ? "text-center px-6 max-w-5xl mx-auto py-16" : "",
             isMirrored && "transform -scale-x-100"
           )}
         >
@@ -884,8 +984,9 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                     <span
                       key={sent.index}
                       data-sentence-index={sent.index}
+                      onClick={() => handleSentenceClick(sent.index)}
                       className={cn(
-                        "transition-all duration-300",
+                        "transition-all duration-300 cursor-pointer hover:text-white",
                         isolateSentenceHighlight
                           ? sent.index === activeSentenceIndex
                             ? "text-white font-medium drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]"
@@ -1020,37 +1121,35 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
               </div>
             )}
 
-            {/* Pop Out Option (Hide during active Table Read) */}
-            {!isTableReadActive && (
-              <div className="flex flex-col shrink-0">
-                <TooltipProvider delayDuration={300}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={handlePopout}
-                        title="Pop Out Teleprompter"
-                        className="w-full py-2 rounded-xl border border-white/10 bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        <span className="text-[9px] font-black uppercase tracking-widest">Pop Out</span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="bg-neutral-950 border-white/5 max-w-[220px] p-3 text-xs leading-relaxed text-zinc-300">
-                      <div className="space-y-1.5">
-                        <p className="font-bold text-[9px] uppercase tracking-widest text-cyan-400">Pop Out Prompter</p>
-                        <p className="text-[10px] text-zinc-400 leading-normal">Open a standalone, bezel-less overlay window aligned right below the camera lens.</p>
-                        <div className="pt-1.5 border-t border-white/5 text-[9px] text-zinc-500 font-mono space-y-0.5">
-                          <p><strong className="text-zinc-300">Space:</strong> Play / Pause</p>
-                          <p><strong className="text-zinc-300">↑/↓:</strong> Adjust Font Size</p>
-                          <p><strong className="text-zinc-300">M:</strong> Mirror Mode</p>
-                          <p><strong className="text-zinc-300">A:</strong> Toggle Guide Line</p>
-                        </div>
+            {/* Pop Out Option */}
+            <div className="flex flex-col shrink-0">
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handlePopout}
+                      title="Pop Out Teleprompter"
+                      className="w-full py-2 rounded-xl border border-white/10 bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span className="text-[9px] font-black uppercase tracking-widest">Pop Out</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="bg-neutral-950 border-white/5 max-w-[220px] p-3 text-xs leading-relaxed text-zinc-300">
+                    <div className="space-y-1.5">
+                      <p className="font-bold text-[9px] uppercase tracking-widest text-cyan-400">Pop Out Prompter</p>
+                      <p className="text-[10px] text-zinc-400 leading-normal">Open a standalone, bezel-less overlay window aligned right below the camera lens.</p>
+                      <div className="pt-1.5 border-t border-white/5 text-[9px] text-zinc-500 font-mono space-y-0.5">
+                        <p><strong className="text-zinc-300">Space:</strong> Play / Pause</p>
+                        <p><strong className="text-zinc-300">↑/↓:</strong> Adjust Font Size</p>
+                        <p><strong className="text-zinc-300">M:</strong> Mirror Mode</p>
+                        <p><strong className="text-zinc-300">A:</strong> Toggle Guide Line</p>
                       </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
 
             {/* Layout Mode (Overlay vs Center) Option (Hide during active Table Read) */}
             {!isTableReadActive && onPrompterLayoutToggle && (

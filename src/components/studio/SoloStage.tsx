@@ -2399,10 +2399,24 @@ export default function SoloStage({
                     {/* Sleek Metadata Tag & Replay Tour aligned side-by-side with Status Label */}
                     <div className="flex items-center gap-2">
                       {(!isOnline || bridgeStatus === 'disconnected') && (
-                        <div className="flex items-center gap-2 px-4 py-1.5 bg-rose-500/20 border border-rose-500/50 text-rose-300 rounded-full text-[9px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(244,63,94,0.15)] animate-pulse backdrop-blur-md h-[30px]">
-                          <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
-                          <span>OFFLINE MODE // SECURE BROWSER SANDBOX ACTIVE</span>
-                        </div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-2 px-4 py-1.5 bg-rose-500/20 border border-rose-500/50 text-rose-300 rounded-full text-[9px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(244,63,94,0.15)] animate-pulse backdrop-blur-md h-[30px] cursor-help pointer-events-auto">
+                                <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                                <span>OFFLINE MODE // SECURE BROWSER SANDBOX ACTIVE</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="bg-slate-900 border-white/10 text-[10px] py-2 px-3 shadow-2xl z-[10002] max-w-[280px]">
+                              <div className="flex flex-col gap-1 text-left">
+                                <span className="text-rose-400 font-bold uppercase tracking-widest text-[9px]">Offline & Sandbox Shield Engaged</span>
+                                <span className="text-[10px] text-zinc-300 leading-normal normal-case font-normal">
+                                  Your network connection or remote camera bridge is disconnected. Recording and media processing are executing 100% locally in your secure browser sandbox, and no data is being sent over the network.
+                                </span>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
 
                       {isOnline && bridgeStatus !== 'disconnected' && (bridgeStatus === 'reconnecting' || syncStatus === 'local_cache') && (

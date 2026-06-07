@@ -41,6 +41,20 @@ const highlightSensoryAnchors = (text: string): string => {
     return `<span class="px-0.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 shadow-[0_0_12px_rgba(168,85,247,0.25)] font-bold transition-all hover:bg-purple-500/20" title="Visual/Texture Anchor">${word}</span>`;
   });
 
+  // Double Slashes (//) with pulsing dot under it
+  const doubleSlashRegex = new RegExp(`(<[^>]*>)|(\\s+//|//)`, 'g');
+  processed = processed.replace(doubleSlashRegex, (match, tag) => {
+    if (tag) return tag;
+    return ` <span class="relative inline-flex flex-col items-center justify-center mx-1.5 group select-none"><span class="text-sky-400 font-bold select-none cursor-help hover:text-sky-300 leading-none">//</span><span class="absolute -bottom-2.5 flex gap-1 items-center justify-center"><span class="relative flex items-center justify-center"><span class="absolute w-2 h-2 rounded-full bg-sky-400/80 animate-ping" style="animation-duration: 1.5s;"></span><span class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span></span><span class="relative flex items-center justify-center"><span class="absolute w-2 h-2 rounded-full bg-sky-400/80 animate-ping" style="animation-duration: 1.5s; animation-delay: 0.3s;"></span><span class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span></span></span></span>`;
+  });
+
+  // Single Slashes (/) with pulsing dot under it
+  const singleSlashRegex = new RegExp(`(<[^>]*>)|(\\s+/(?!/)|(?<!/)/(?!/))`, 'g');
+  processed = processed.replace(singleSlashRegex, (match, tag) => {
+    if (tag) return tag;
+    return ` <span class="relative inline-flex flex-col items-center justify-center mx-1 group select-none"><span class="text-emerald-400 font-bold select-none cursor-help hover:text-emerald-300 leading-none">/</span><span class="absolute -bottom-2.5 flex items-center justify-center"><span class="absolute w-2 h-2 rounded-full bg-emerald-400/80 animate-ping" style="animation-duration: 1.5s;"></span><span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span></span></span>`;
+  });
+
   return processed;
 };
 
@@ -105,6 +119,8 @@ export const PopoutTeleprompter: React.FC = () => {
   const enablePunctuationBrakingRef = useRef(enablePunctuationBraking);
   const activeSentenceIndexRef = useRef(activeSentenceIndex);
   const formattedParagraphsRef = useRef<any[]>([]);
+  const scrollAccumulatorRef = useRef(0);
+  const lastProgrammaticScrollTop = useRef(-1);
 
   useEffect(() => {
     scrollSpeedRef.current = scrollSpeed;
@@ -184,10 +200,10 @@ export const PopoutTeleprompter: React.FC = () => {
       if (type === 'scroll' && containerRef.current) {
         const container = containerRef.current;
         const maxScroll = container.scrollHeight - container.clientHeight;
-        isInternalScroll.current = true;
-        container.scrollTop = progress * maxScroll;
-        // Reset scroll guard
-        setTimeout(() => { isInternalScroll.current = false; }, 20);
+        const targetScroll = progress * maxScroll;
+        scrollAccumulatorRef.current = targetScroll;
+        lastProgrammaticScrollTop.current = targetScroll;
+        container.scrollTop = targetScroll;
       } else if (type === 'state') {
         if (payload.isScrolling !== undefined && payload.isScrolling !== isScrolling) {
           setScrolling(payload.isScrolling);
@@ -215,6 +231,13 @@ export const PopoutTeleprompter: React.FC = () => {
         if (payload.isolateSentenceHighlight !== undefined && payload.isolateSentenceHighlight !== isolateSentenceHighlight) {
           setIsolateSentenceHighlight(payload.isolateSentenceHighlight);
         }
+        if (payload.activeSentenceIndex !== undefined && payload.activeSentenceIndex !== activeSentenceIndexRef.current) {
+          setActiveSentenceIndex(payload.activeSentenceIndex);
+        }
+      } else if (type === 'activeSentence') {
+        if (payload.index !== undefined && payload.index !== activeSentenceIndexRef.current) {
+          setActiveSentenceIndex(payload.index);
+        }
       }
     };
 
@@ -229,11 +252,53 @@ export const PopoutTeleprompter: React.FC = () => {
     };
   }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, setScrolling, setScrollSpeed, setFontSize, toggleMirror, setSelectedTake, setShowBreathingMarks, setEnablePunctuationBraking, setIsolateSentenceHighlight]);
 
+  const handleSentenceClick = (index: number) => {
+    if (!containerRef.current) return;
+    const container = containerRef.current;
+    const span = container.querySelector(`span[data-sentence-index="${index}"]`) as HTMLElement;
+    if (span) {
+      const targetScrollTop = span.offsetTop - container.clientHeight * 0.3;
+      const finalScroll = Math.max(0, Math.min(container.scrollHeight - container.clientHeight, targetScrollTop));
+      
+      setActiveSentenceIndex(index);
+      scrollAccumulatorRef.current = finalScroll;
+      lastProgrammaticScrollTop.current = finalScroll;
+      container.scrollTop = finalScroll;
+
+      if (sessionId) {
+        const maxScroll = container.scrollHeight - container.clientHeight;
+        const progress = maxScroll > 0 ? finalScroll / maxScroll : 0;
+        
+        const channelName = `teleprompter_sync_${sessionId}`;
+        const channel = new BroadcastChannel(channelName);
+        
+        channel.postMessage({
+          type: 'activeSentence',
+          index,
+          sender: 'popout'
+        });
+        
+        channel.postMessage({
+          type: 'scroll',
+          progress,
+          sender: 'popout'
+        });
+        
+        channel.close();
+      }
+    }
+  };
+
   // Handle local scroll event in popout and broadcast to main window
   const handleScroll = () => {
     if (!containerRef.current || !sessionId) return;
 
     const container = containerRef.current;
+
+    const isProgrammatic = lastProgrammaticScrollTop.current !== -1 && Math.abs(container.scrollTop - lastProgrammaticScrollTop.current) < 2;
+    if (isProgrammatic) return;
+
+    lastProgrammaticScrollTop.current = -1;
 
     // Identify active sentence passing eye-line anchor (30% height of viewport)
     if (sentenceCoordinates.current.length > 0) {
@@ -243,10 +308,19 @@ export const PopoutTeleprompter: React.FC = () => {
       );
       if (match && match.index !== activeSentenceIndex) {
         setActiveSentenceIndex(match.index);
+        const channelName = `teleprompter_sync_${sessionId}`;
+        const channel = new BroadcastChannel(channelName);
+        channel.postMessage({
+          type: 'activeSentence',
+          index: match.index,
+          sender: 'popout'
+        });
+        channel.close();
       }
     }
 
-    if (isInternalScroll.current) return;
+    // Sync accumulator ref if scrolled manually by user
+    scrollAccumulatorRef.current = container.scrollTop;
 
     const maxScroll = container.scrollHeight - container.clientHeight;
     if (maxScroll <= 0) return;
@@ -358,7 +432,10 @@ export const PopoutTeleprompter: React.FC = () => {
     if (!isScrolling) return;
 
     let animationId: number;
-    const scrollPosRef = { current: containerRef.current ? containerRef.current.scrollTop : 0 };
+    
+    if (containerRef.current) {
+      scrollAccumulatorRef.current = containerRef.current.scrollTop;
+    }
 
     const scroll = () => {
       if (containerRef.current) {
@@ -376,6 +453,15 @@ export const PopoutTeleprompter: React.FC = () => {
             currentActiveIdx = match.index;
             if (match.index !== activeSentenceIndexRef.current) {
               setActiveSentenceIndex(match.index);
+              if (sessionId) {
+                const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+                channel.postMessage({
+                  type: 'activeSentence',
+                  index: match.index,
+                  sender: 'popout'
+                });
+                channel.close();
+              }
             }
           }
         }
@@ -401,8 +487,11 @@ export const PopoutTeleprompter: React.FC = () => {
         }
 
         const brakeMultiplier = isBraking.current ? 0 : 1.0;
-        scrollPosRef.current += scrollSpeedRef.current * 0.4 * currentMultiplier * brakeMultiplier;
-        container.scrollTop = Math.floor(scrollPosRef.current);
+        scrollAccumulatorRef.current += scrollSpeedRef.current * 0.4 * currentMultiplier * brakeMultiplier;
+        
+        const targetScroll = Math.floor(scrollAccumulatorRef.current);
+        lastProgrammaticScrollTop.current = targetScroll;
+        container.scrollTop = targetScroll;
 
         const { scrollTop, scrollHeight, clientHeight } = container;
         if (scrollTop >= scrollHeight - clientHeight - 2) {
@@ -525,7 +614,7 @@ export const PopoutTeleprompter: React.FC = () => {
         }}
         style={{ fontSize: `${fontSize}px` }}
         className={cn(
-          "flex-grow overflow-y-auto w-full px-8 pt-[30vh] pb-[60vh] leading-relaxed italic text-zinc-100 scroll-smooth",
+          "flex-grow overflow-y-auto w-full px-8 pt-[30vh] pb-[60vh] leading-relaxed italic text-zinc-100",
           isMirrored && "transform -scale-x-100"
         )}
       >
@@ -536,8 +625,9 @@ export const PopoutTeleprompter: React.FC = () => {
                 <span
                   key={sent.index}
                   data-sentence-index={sent.index}
+                  onClick={() => handleSentenceClick(sent.index)}
                   className={cn(
-                    "transition-all duration-300",
+                    "transition-all duration-300 cursor-pointer hover:text-white",
                     isolateSentenceHighlight
                       ? sent.index === activeSentenceIndex
                         ? "text-white font-medium drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]"

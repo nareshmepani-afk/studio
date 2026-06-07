@@ -249,9 +249,18 @@ describe('PopoutTeleprompter Component', () => {
     });
 
     render(<PopoutTeleprompter />);
-    // Comma replaced by ' /', Period replaced by ' //'
-    expect(screen.getByText(/Hello \/ world \/\//)).toBeInTheDocument();
-    expect(screen.getByText(/How are you \/\//)).toBeInTheDocument();
+    
+    const sentence0 = screen.getByText((content, node) => node?.getAttribute('data-sentence-index') === '0');
+    expect(sentence0.textContent).toContain('Hello');
+    expect(sentence0.textContent).toContain('/');
+    expect(sentence0.textContent).toContain('world');
+    expect(sentence0.textContent).toContain('//');
+
+    const sentence1 = screen.getByText((content, node) => node?.getAttribute('data-sentence-index') === '1');
+    expect(sentence1.textContent).toContain('How');
+    expect(sentence1.textContent).toContain('are');
+    expect(sentence1.textContent).toContain('you');
+    expect(sentence1.textContent).toContain('//');
   });
 
   it('isolates the active sentence highlighting when isolateSentenceHighlight is active', () => {
