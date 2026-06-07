@@ -5,6 +5,7 @@ import { useStudioState } from '@/hooks/studio/useStudioState';
 import { FlipHorizontal, Play, Pause, ChevronUp, ChevronDown, Layout, Music, Volume2, Sparkles, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { synthesizeStudioSpeech } from '@/actions/studio-vocal';
+import { applyTheatricalSlashes, tokenizeSentences } from '@/utils/scriptFormatter';
 import {
   Tooltip,
   TooltipContent,
@@ -43,24 +44,38 @@ const highlightSensoryAnchors = (text: string): string => {
   const soundRegex = new RegExp(`(<[^>]*>)|\\b(${soundPattern})\\b`, 'gi');
   processed = processed.replace(soundRegex, (match, tag, word) => {
     if (tag) return tag;
-    return `<span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.25)] font-bold transition-all hover:bg-emerald-500/20" title="Sound Anchor">${word}</span>`;
+    return `<span class="px-0.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.25)] font-bold transition-all hover:bg-emerald-500/20" title="Sound Anchor">${word}</span>`;
   });
 
   // Aroma Anchors (Exclude matching inside HTML tags/attributes)
   const aromaRegex = new RegExp(`(<[^>]*>)|\\b(${aromaPattern})\\b`, 'gi');
   processed = processed.replace(aromaRegex, (match, tag, word) => {
     if (tag) return tag;
-    return `<span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.25)] font-bold transition-all hover:bg-amber-500/20" title="Scent Anchor">${word}</span>`;
+    return `<span class="px-0.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.25)] font-bold transition-all hover:bg-amber-500/20" title="Scent Anchor">${word}</span>`;
   });
 
-  // Visual Anchors (Exclude matching inside HTML tags/attributes)
+  // Visual/Texture Anchors (Exclude matching inside HTML tags/attributes)
   const visualRegex = new RegExp(`(<[^>]*>)|\\b(${visualPattern})\\b`, 'gi');
   processed = processed.replace(visualRegex, (match, tag, word) => {
     if (tag) return tag;
-    return `<span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 shadow-[0_0_12px_rgba(168,85,247,0.25)] font-bold transition-all hover:bg-purple-500/20" title="Visual/Texture Anchor">${word}</span>`;
+    return `<span class="px-0.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 shadow-[0_0_12px_rgba(168,85,247,0.25)] font-bold transition-all hover:bg-purple-500/20" title="Visual/Texture Anchor">${word}</span>`;
   });
 
   return processed;
+};
+
+const getBrakeDuration = (text: string): number => {
+  const clean = text.trim();
+  if (clean.endsWith('//') || clean.endsWith('.') || clean.endsWith('!') || clean.endsWith('?')) {
+    return 500;
+  }
+  if (clean.endsWith('/') || clean.endsWith(',')) {
+    return 200;
+  }
+  if (clean.endsWith(':') || clean.endsWith('-') || clean.endsWith(';')) {
+    return 300;
+  }
+  return 0;
 };
 
 export const Teleprompter: React.FC<TeleprompterProps> = ({
@@ -103,6 +118,67 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
   const [isRehearsingAudio, setIsRehearsingAudio] = useState(false);
   const isInternalScroll = useRef(false);
+
+  // Vocal coaching states and coordinate cache refs (MW-61)
+  const [activeSentenceIndex, setActiveSentenceIndex] = useState(0);
+  const sentenceCoordinates = useRef<{ startY: number; endY: number; index: number }[]>([]);
+
+  // Cache coordinates on load, resize, or typography changes to prevent layout thrashing
+  const recacheCoordinates = () => {
+    if (!containerRef.current) return;
+    const spans = containerRef.current.querySelectorAll('span[data-sentence-index]');
+    const coords: { startY: number; endY: number; index: number }[] = [];
+    
+    spans.forEach((span: any) => {
+      const idx = parseInt(span.getAttribute('data-sentence-index') || '0', 10);
+      const startY = span.offsetTop;
+      const endY = startY + span.offsetHeight;
+      coords.push({ startY, endY, index: idx });
+    });
+    
+    sentenceCoordinates.current = coords;
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(recacheCoordinates, 150);
+    window.addEventListener('resize', recacheCoordinates);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', recacheCoordinates);
+    };
+  }, [selectedTake, showBreathingMarks, fontSize]);
+
+  // Punctuation braking refs (MW-61)
+  const brakeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isBraking = useRef(false);
+  const lastBrakedIndex = useRef(-1);
+
+  // Sync refs to prevent scroll loop re-instantiation
+  const scrollSpeedRef = useRef(scrollSpeed);
+  const enablePunctuationBrakingRef = useRef(enablePunctuationBraking);
+  const activeSentenceIndexRef = useRef(activeSentenceIndex);
+  const formattedParagraphsRef = useRef<any[]>([]);
+
+  useEffect(() => {
+    scrollSpeedRef.current = scrollSpeed;
+  }, [scrollSpeed]);
+
+  useEffect(() => {
+    enablePunctuationBrakingRef.current = enablePunctuationBraking;
+  }, [enablePunctuationBraking]);
+
+  useEffect(() => {
+    activeSentenceIndexRef.current = activeSentenceIndex;
+  }, [activeSentenceIndex]);
+
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => {
+      if (brakeTimeoutRef.current) {
+        clearTimeout(brakeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Setup BroadcastChannel for popout synchronization
   useEffect(() => {
@@ -281,13 +357,32 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     };
   }, []);
 
-  const textToPrompt = selectedTake 
-    ? selectedTake 
+  const cleanText = useMemo(() => {
+    if (!selectedTake) return '';
+    return selectedTake.replace(/\s+([.,!?;:])/g, '$1');
+  }, [selectedTake]);
+
+  const textToPrompt = cleanText 
+    ? cleanText 
     : "Please select an authorised take in the Architect's Drawer.";
 
   const paragraphs = useMemo(() => {
     return textToPrompt.split(/\n\s*\n/).filter(Boolean);
   }, [textToPrompt]);
+
+  const formattedParagraphs = useMemo(() => {
+    let sentenceCounter = 0;
+    const res = paragraphs.map((para) => {
+      const paraText = showBreathingMarks ? applyTheatricalSlashes(para) : para;
+      const sentences = tokenizeSentences(paraText);
+      return sentences.map(text => ({
+        text,
+        index: sentenceCounter++
+      }));
+    });
+    formattedParagraphsRef.current = res;
+    return res;
+  }, [paragraphs, showBreathingMarks]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const lastActiveIndexRef = useRef<number>(-1);
@@ -301,11 +396,50 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     
     const scroll = () => {
       if (containerRef.current) {
-        const activeSpeed = isTableReadActive && rehearsalSpeed !== undefined ? rehearsalSpeed : scrollSpeed;
-        scrollPosRef.current += activeSpeed * 0.4;
-        containerRef.current.scrollTop = Math.floor(scrollPosRef.current);
+        const container = containerRef.current;
+        const activeSpeed = isTableReadActive && rehearsalSpeed !== undefined ? rehearsalSpeed : scrollSpeedRef.current;
+        const currentMultiplier = 1.0;
+
+        // Check active sentence index at 30% eye-line anchor
+        let currentActiveIdx = activeSentenceIndexRef.current;
+        if (sentenceCoordinates.current.length > 0) {
+          const anchorY = container.scrollTop + container.clientHeight * 0.3;
+          const match = sentenceCoordinates.current.find(
+            coord => anchorY >= coord.startY && anchorY <= coord.endY
+          );
+          if (match) {
+            currentActiveIdx = match.index;
+            if (match.index !== activeSentenceIndexRef.current) {
+              setActiveSentenceIndex(match.index);
+            }
+          }
+        }
+
+        // Punctuation Braking logic
+        if (enablePunctuationBrakingRef.current && currentActiveIdx !== lastBrakedIndex.current) {
+          const allSentences = formattedParagraphsRef.current.flat();
+          const activeSent = allSentences.find(s => s.index === currentActiveIdx);
+          if (activeSent) {
+            const duration = getBrakeDuration(activeSent.text);
+            if (duration > 0) {
+              isBraking.current = true;
+              lastBrakedIndex.current = currentActiveIdx;
+              
+              if (brakeTimeoutRef.current) {
+                clearTimeout(brakeTimeoutRef.current);
+              }
+              brakeTimeoutRef.current = setTimeout(() => {
+                isBraking.current = false;
+              }, duration);
+            }
+          }
+        }
+
+        const brakeMultiplier = isBraking.current ? 0 : 1.0;
+        scrollPosRef.current += activeSpeed * 0.4 * currentMultiplier * brakeMultiplier;
+        container.scrollTop = Math.floor(scrollPosRef.current);
         
-        const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+        const { scrollTop, scrollHeight, clientHeight } = container;
         if (scrollTop >= scrollHeight - clientHeight - 2) {
           toggleScrolling();
           if (isTableReadActive) {
@@ -318,7 +452,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
     animationId = requestAnimationFrame(scroll);
     return () => cancelAnimationFrame(animationId);
-  }, [isScrolling, scrollSpeed, rehearsalSpeed, toggleScrolling, modalityMode, isMini, isTableReadActive]);
+  }, [isScrolling, rehearsalSpeed, toggleScrolling, modalityMode, isMini, isTableReadActive]);
 
   // Listener to scroll programmatically to a specific beat index
   useEffect(() => {
@@ -434,6 +568,17 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   const handleScrollTelemetry = () => {
     if (!containerRef.current) return;
     const container = containerRef.current;
+
+    // Identify active sentence passing eye-line anchor (30% height of viewport)
+    if (sentenceCoordinates.current.length > 0) {
+      const anchorY = container.scrollTop + container.clientHeight * 0.3;
+      const match = sentenceCoordinates.current.find(
+        coord => anchorY >= coord.startY && anchorY <= coord.endY
+      );
+      if (match && match.index !== activeSentenceIndex) {
+        setActiveSentenceIndex(match.index);
+      }
+    }
 
     // Broadcast scroll progress if it's a user/auto scroll and not an incoming message sync
     if (!isInternalScroll.current && sessionId) {
@@ -719,24 +864,38 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           )}
         >
           <div className={cn("prose-invert opacity-90 select-none", isMini ? "pb-[150px] space-y-4" : "pb-[400px] space-y-8")}>
-            {paragraphs.map((para, idx) => {
-              const html = highlightSensoryAnchors(para);
-              const isActive = idx === activeBeatIndex;
+            {formattedParagraphs.map((sentences, paraIdx) => {
+              const isActive = paraIdx === activeBeatIndex;
               return (
                 <p
-                  key={idx}
+                  key={paraIdx}
                   className={cn(
                     "prose-block transition-all duration-700",
                     modalityMode === 'interview'
                       ? isActive
                         ? 'opacity-100 scale-100 text-emerald-300 font-bold shadow-teal-500/10'
-                        : idx < activeBeatIndex
+                        : paraIdx < activeBeatIndex
                         ? 'opacity-10 scale-95 duration-100'
                         : 'opacity-30 scale-95'
                       : 'opacity-90'
                   )}
-                  dangerouslySetInnerHTML={{ __html: html }}
-                />
+                >
+                  {sentences.map((sent) => (
+                    <span
+                      key={sent.index}
+                      data-sentence-index={sent.index}
+                      className={cn(
+                        "transition-all duration-300",
+                        isolateSentenceHighlight
+                          ? sent.index === activeSentenceIndex
+                            ? "text-white font-medium drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]"
+                            : "text-zinc-600/40"
+                          : "text-zinc-100"
+                      )}
+                      dangerouslySetInnerHTML={{ __html: `${highlightSensoryAnchors(sent.text)} ` }}
+                    />
+                  ))}
+                </p>
               );
             })}
           </div>
@@ -947,6 +1106,107 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           </div>
         )}
       </div>
+      {/* Compact/Mini mode controls bar */}
+      {isMini && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/5 pt-2 mt-2 shrink-0 px-2 pb-1 bg-black/40 backdrop-blur-md rounded-xl">
+          <div className="flex items-center gap-1.5">
+            <button 
+              onClick={toggleScrolling}
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer",
+                isScrolling ? "bg-emerald-500 text-slate-900 shadow-[0_0_10px_rgba(16,185,129,0.3)]" : "bg-white/5 border border-white/10 text-white hover:bg-white/10"
+              )}
+            >
+              {isScrolling ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+              {isScrolling ? 'Scrolling' : 'Scroll'}
+            </button>
+            <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg px-1.5 py-0.5">
+              <button 
+                onClick={() => {
+                  const newSpeed = Math.max(0.5, scrollSpeed - 0.5);
+                  setScrollSpeed(newSpeed);
+                  console.log("LOCAL PACING OVERRIDE EMITTED // BROADCAST ROUTE SECURE");
+                }}
+                className="p-0.5 rounded hover:bg-white/10 text-white/50 hover:text-white cursor-pointer"
+              >
+                <ChevronDown className="w-2.5 h-2.5" />
+              </button>
+              <span className="text-[9px] font-mono font-bold text-emerald-400 w-5 text-center">{scrollSpeed.toFixed(1)}</span>
+              <button 
+                onClick={() => {
+                  const newSpeed = scrollSpeed + 0.5;
+                  setScrollSpeed(newSpeed);
+                  console.log("LOCAL PACING OVERRIDE EMITTED // BROADCAST ROUTE SECURE");
+                }}
+                className="p-0.5 rounded hover:bg-white/10 text-white/50 hover:text-white cursor-pointer"
+              >
+                <ChevronUp className="w-2.5 h-2.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Vocal Coaching settings */}
+          <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg px-1.5 py-0.5">
+            <button
+              onClick={() => {
+                const nextVal = !showBreathingMarks;
+                setShowBreathingMarks(nextVal);
+              }}
+              title="Slashes"
+              className={cn(
+                "px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer border border-transparent",
+                showBreathingMarks ? "bg-emerald-500/25 text-emerald-300 border-emerald-500/30" : "text-white/60 hover:text-white"
+              )}
+            >
+              Slashes
+            </button>
+            <button
+              onClick={() => {
+                const nextVal = !enablePunctuationBraking;
+                setEnablePunctuationBraking(nextVal);
+              }}
+              title="Brakes"
+              className={cn(
+                "px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer border border-transparent",
+                enablePunctuationBraking ? "bg-sky-500/25 text-sky-300 border-sky-500/30" : "text-white/60 hover:text-white"
+              )}
+            >
+              Brakes
+            </button>
+            <button
+              onClick={() => {
+                const nextVal = !isolateSentenceHighlight;
+                setIsolateSentenceHighlight(nextVal);
+              }}
+              title="Highlight"
+              className={cn(
+                "px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer border border-transparent",
+                isolateSentenceHighlight ? "bg-purple-500/25 text-purple-300 border-purple-500/30" : "text-white/60 hover:text-white"
+              )}
+            >
+              Highlight
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleMirror}
+              className={cn(
+                "p-1 rounded-lg border transition-all cursor-pointer",
+                isMirrored ? "bg-amber-500/10 border-amber-500/30 text-amber-400" : "bg-white/5 border-white/10 text-white/60 hover:text-white"
+              )}
+            >
+              <FlipHorizontal className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handlePopout}
+              className="p-1 rounded-lg border border-white/10 bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

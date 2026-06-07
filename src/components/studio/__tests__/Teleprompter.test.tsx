@@ -9,7 +9,10 @@ const mockActions = {
   setScrollSpeed: vi.fn(),
   toggleMirror: vi.fn(),
   increaseFontSize: vi.fn(),
-  decreaseFontSize: vi.fn()
+  decreaseFontSize: vi.fn(),
+  setShowBreathingMarks: vi.fn(),
+  setEnablePunctuationBraking: vi.fn(),
+  setIsolateSentenceHighlight: vi.fn()
 };
 
 const mockUseStudioState = vi.fn(() => ({
@@ -19,6 +22,9 @@ const mockUseStudioState = vi.fn(() => ({
   scrollSpeed: 2.0,
   fontSize: 16,
   isMirrored: false,
+  showBreathingMarks: false,
+  enablePunctuationBraking: false,
+  isolateSentenceHighlight: false,
   actions: mockActions
 }));
 
@@ -49,6 +55,9 @@ describe('Teleprompter Component', () => {
       scrollSpeed: 2.0,
       fontSize: 16,
       isMirrored: false,
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
       actions: mockActions
     });
 
@@ -64,6 +73,9 @@ describe('Teleprompter Component', () => {
       scrollSpeed: 2.0,
       fontSize: 16,
       isMirrored: false,
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
       actions: mockActions
     });
 
@@ -79,6 +91,9 @@ describe('Teleprompter Component', () => {
       scrollSpeed: 2.0,
       fontSize: 16,
       isMirrored: false,
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
       actions: mockActions
     });
 
@@ -95,6 +110,9 @@ describe('Teleprompter Component', () => {
       scrollSpeed: 2.0,
       fontSize: 16,
       isMirrored: false,
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
       actions: mockActions
     });
 
@@ -112,6 +130,9 @@ describe('Teleprompter Component', () => {
       scrollSpeed: 2.0,
       fontSize: 16,
       isMirrored: false,
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
       actions: mockActions
     });
 
@@ -129,6 +150,9 @@ describe('Teleprompter Component', () => {
       scrollSpeed: 2.0,
       fontSize: 16,
       isMirrored: false,
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
       actions: mockActions
     });
 
@@ -145,6 +169,9 @@ describe('Teleprompter Component', () => {
       scrollSpeed: 2.0,
       fontSize: 16,
       isMirrored: false,
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
       actions: mockActions
     });
 
@@ -170,6 +197,9 @@ describe('Teleprompter Component', () => {
       scrollSpeed: 2.0,
       fontSize: 16,
       isMirrored: false,
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
       actions: mockActions
     });
 
@@ -187,6 +217,9 @@ describe('Teleprompter Component', () => {
       scrollSpeed: 2.0,
       fontSize: 16,
       isMirrored: false,
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
       actions: mockActions
     });
 
@@ -209,6 +242,9 @@ describe('Teleprompter Component', () => {
       scrollSpeed: 2.0,
       fontSize: 16,
       isMirrored: false,
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
       actions: mockActions
     });
 
@@ -226,5 +262,35 @@ describe('Teleprompter Component', () => {
 
     fireEvent.click(expressiveBtn);
     expect(mockActions.setScrollSpeed).toHaveBeenCalledWith(1.2);
+  });
+
+  it('toggles visual cadence vocal coaching settings when clicked', () => {
+    mockUseStudioState.mockReturnValueOnce({
+      selectedTake: 'This is a script text.',
+      script: '',
+      isScrolling: false,
+      scrollSpeed: 2.0,
+      fontSize: 16,
+      isMirrored: false,
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
+      actions: mockActions
+    });
+
+    render(<Teleprompter />);
+
+    const slashesBtn = screen.getByRole('button', { name: 'Slashes' });
+    const brakesBtn = screen.getByRole('button', { name: 'Brakes' });
+    const highlightBtn = screen.getByRole('button', { name: 'Highlight' });
+
+    fireEvent.click(slashesBtn);
+    expect(mockActions.setShowBreathingMarks).toHaveBeenCalledWith(true);
+
+    fireEvent.click(brakesBtn);
+    expect(mockActions.setEnablePunctuationBraking).toHaveBeenCalledWith(true);
+
+    fireEvent.click(highlightBtn);
+    expect(mockActions.setIsolateSentenceHighlight).toHaveBeenCalledWith(true);
   });
 });

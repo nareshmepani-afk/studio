@@ -6,6 +6,58 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { applyTheatricalSlashes, tokenizeSentences } from '@/utils/scriptFormatter';
 
+const highlightSensoryAnchors = (text: string): string => {
+  if (!text) return '';
+  const soundWords = ['train', 'whistle', 'laughter', 'crackle', 'ticking', 'bell', 'chime', 'voice', 'sound', 'hum', 'whisper', 'rustle', 'thud'];
+  const aromaWords = ['ozone', 'jasmine', 'rose', 'books', 'coffee', 'aroma', 'soil', 'scent', 'smell', 'spice', 'earth', 'rain', 'lavender'];
+  const visualWords = ['sun', 'glow', 'light', 'amber', 'dust', 'gold', 'shadow', 'warmth', 'rough', 'damp', 'heat', 'bright', 'dark'];
+
+  const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const soundPattern = soundWords.map(escapeRegExp).join('|');
+  const aromaPattern = aromaWords.map(escapeRegExp).join('|');
+  const visualPattern = visualWords.map(escapeRegExp).join('|');
+
+  let processed = text;
+
+  // Sound Anchors (Exclude matching inside HTML tags/attributes)
+  const soundRegex = new RegExp(`(<[^>]*>)|\\b(${soundPattern})\\b`, 'gi');
+  processed = processed.replace(soundRegex, (match, tag, word) => {
+    if (tag) return tag;
+    return `<span class="px-0.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 shadow-[0_0_12px_rgba(16,185,129,0.25)] font-bold transition-all hover:bg-emerald-500/20" title="Sound Anchor">${word}</span>`;
+  });
+
+  // Aroma Anchors (Exclude matching inside HTML tags/attributes)
+  const aromaRegex = new RegExp(`(<[^>]*>)|\\b(${aromaPattern})\\b`, 'gi');
+  processed = processed.replace(aromaRegex, (match, tag, word) => {
+    if (tag) return tag;
+    return `<span class="px-0.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 shadow-[0_0_12px_rgba(245,158,11,0.25)] font-bold transition-all hover:bg-amber-500/20" title="Scent Anchor">${word}</span>`;
+  });
+
+  // Visual/Texture Anchors (Exclude matching inside HTML tags/attributes)
+  const visualRegex = new RegExp(`(<[^>]*>)|\\b(${visualPattern})\\b`, 'gi');
+  processed = processed.replace(visualRegex, (match, tag, word) => {
+    if (tag) return tag;
+    return `<span class="px-0.5 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 shadow-[0_0_12px_rgba(168,85,247,0.25)] font-bold transition-all hover:bg-purple-500/20" title="Visual/Texture Anchor">${word}</span>`;
+  });
+
+  return processed;
+};
+
+const getBrakeDuration = (text: string): number => {
+  const clean = text.trim();
+  if (clean.endsWith('//') || clean.endsWith('.') || clean.endsWith('!') || clean.endsWith('?')) {
+    return 500;
+  }
+  if (clean.endsWith('/') || clean.endsWith(',')) {
+    return 200;
+  }
+  if (clean.endsWith(':') || clean.endsWith('-') || clean.endsWith(';')) {
+    return 300;
+  }
+  return 0;
+};
+
 export const PopoutTeleprompter: React.FC = () => {
   const {
     sessionId,
@@ -39,18 +91,44 @@ export const PopoutTeleprompter: React.FC = () => {
   const isDamped = useRef(false);
   const dampingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Clean up damping timer on unmount
+  // Vocal coaching states and coordinate cache refs (MW-61)
+  const [activeSentenceIndex, setActiveSentenceIndex] = useState(0);
+  const sentenceCoordinates = useRef<{ startY: number; endY: number; index: number }[]>([]);
+
+  // Punctuation braking refs (MW-61)
+  const brakeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isBraking = useRef(false);
+  const lastBrakedIndex = useRef(-1);
+
+  // Sync refs to prevent scroll loop re-instantiation
+  const scrollSpeedRef = useRef(scrollSpeed);
+  const enablePunctuationBrakingRef = useRef(enablePunctuationBraking);
+  const activeSentenceIndexRef = useRef(activeSentenceIndex);
+  const formattedParagraphsRef = useRef<any[]>([]);
+
+  useEffect(() => {
+    scrollSpeedRef.current = scrollSpeed;
+  }, [scrollSpeed]);
+
+  useEffect(() => {
+    enablePunctuationBrakingRef.current = enablePunctuationBraking;
+  }, [enablePunctuationBraking]);
+
+  useEffect(() => {
+    activeSentenceIndexRef.current = activeSentenceIndex;
+  }, [activeSentenceIndex]);
+
+  // Clean up damping and braking timers on unmount
   useEffect(() => {
     return () => {
       if (dampingTimeoutRef.current) {
         clearTimeout(dampingTimeoutRef.current);
       }
+      if (brakeTimeoutRef.current) {
+        clearTimeout(brakeTimeoutRef.current);
+      }
     };
   }, []);
-
-  // Vocal coaching states and coordinate cache refs (MW-61)
-  const [activeSentenceIndex, setActiveSentenceIndex] = useState(0);
-  const sentenceCoordinates = useRef<{ startY: number; endY: number; index: number }[]>([]);
 
   // Cache coordinates on load, resize, or typography changes to prevent layout thrashing
   const recacheCoordinates = () => {
@@ -284,11 +362,49 @@ export const PopoutTeleprompter: React.FC = () => {
 
     const scroll = () => {
       if (containerRef.current) {
+        const container = containerRef.current;
         const currentMultiplier = isDamped.current ? 0.8 : 1.0;
-        scrollPosRef.current += scrollSpeed * 0.4 * currentMultiplier;
-        containerRef.current.scrollTop = Math.floor(scrollPosRef.current);
 
-        const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+        // Check active sentence index at 30% eye-line anchor
+        let currentActiveIdx = activeSentenceIndexRef.current;
+        if (sentenceCoordinates.current.length > 0) {
+          const anchorY = container.scrollTop + container.clientHeight * 0.3;
+          const match = sentenceCoordinates.current.find(
+            coord => anchorY >= coord.startY && anchorY <= coord.endY
+          );
+          if (match) {
+            currentActiveIdx = match.index;
+            if (match.index !== activeSentenceIndexRef.current) {
+              setActiveSentenceIndex(match.index);
+            }
+          }
+        }
+
+        // Punctuation Braking logic
+        if (enablePunctuationBrakingRef.current && currentActiveIdx !== lastBrakedIndex.current) {
+          const allSentences = formattedParagraphsRef.current.flat();
+          const activeSent = allSentences.find(s => s.index === currentActiveIdx);
+          if (activeSent) {
+            const duration = getBrakeDuration(activeSent.text);
+            if (duration > 0) {
+              isBraking.current = true;
+              lastBrakedIndex.current = currentActiveIdx;
+              
+              if (brakeTimeoutRef.current) {
+                clearTimeout(brakeTimeoutRef.current);
+              }
+              brakeTimeoutRef.current = setTimeout(() => {
+                isBraking.current = false;
+              }, duration);
+            }
+          }
+        }
+
+        const brakeMultiplier = isBraking.current ? 0 : 1.0;
+        scrollPosRef.current += scrollSpeedRef.current * 0.4 * currentMultiplier * brakeMultiplier;
+        container.scrollTop = Math.floor(scrollPosRef.current);
+
+        const { scrollTop, scrollHeight, clientHeight } = container;
         if (scrollTop >= scrollHeight - clientHeight - 2) {
           setScrolling(false);
           if (sessionId) {
@@ -303,10 +419,15 @@ export const PopoutTeleprompter: React.FC = () => {
 
     animationId = requestAnimationFrame(scroll);
     return () => cancelAnimationFrame(animationId);
-  }, [isScrolling, scrollSpeed, setScrolling, sessionId]);
+  }, [isScrolling, setScrolling, sessionId]);
 
-  const textToPrompt = selectedTake 
-    ? selectedTake 
+  const cleanText = useMemo(() => {
+    if (!selectedTake) return '';
+    return selectedTake.replace(/\s+([.,!?;:])/g, '$1');
+  }, [selectedTake]);
+
+  const textToPrompt = cleanText 
+    ? cleanText 
     : "Please load a script take in the Scriptorium drawer first.";
 
   const paragraphs = useMemo(() => {
@@ -315,7 +436,7 @@ export const PopoutTeleprompter: React.FC = () => {
 
   const formattedParagraphs = useMemo(() => {
     let sentenceCounter = 0;
-    return paragraphs.map((para) => {
+    const res = paragraphs.map((para) => {
       const paraText = showBreathingMarks ? applyTheatricalSlashes(para) : para;
       const sentences = tokenizeSentences(paraText);
       return sentences.map(text => ({
@@ -323,6 +444,8 @@ export const PopoutTeleprompter: React.FC = () => {
         index: sentenceCounter++
       }));
     });
+    formattedParagraphsRef.current = res;
+    return res;
   }, [paragraphs, showBreathingMarks]);
 
   return (
@@ -421,9 +544,8 @@ export const PopoutTeleprompter: React.FC = () => {
                         : "text-zinc-600/40"
                       : "text-zinc-100"
                   )}
-                >
-                  {sent.text}{' '}
-                </span>
+                  dangerouslySetInnerHTML={{ __html: `${highlightSensoryAnchors(sent.text)} ` }}
+                />
               ))}
             </p>
           ))}
@@ -465,6 +587,68 @@ export const PopoutTeleprompter: React.FC = () => {
                 className="w-5 h-5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white flex items-center justify-center font-bold text-xs cursor-pointer select-none transition-colors"
               >
                 +
+              </button>
+            </div>
+
+            {/* Vocal Cadence settings group (MW-61) */}
+            <div className="flex items-center gap-2 bg-zinc-950/80 border border-zinc-800 text-xs px-4 py-2 rounded-xl backdrop-blur-md shadow-lg pointer-events-auto">
+              <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 px-1">Vocal Coaching</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const nextVal = !showBreathingMarks;
+                  setShowBreathingMarks(nextVal);
+                  if (sessionId) {
+                    const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+                    channel.postMessage({ type: 'state', showBreathingMarks: nextVal, sender: 'popout' });
+                    channel.close();
+                  }
+                }}
+                title="Show Theatrical Breathing Marks"
+                className={cn(
+                  "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer border",
+                  showBreathingMarks ? "bg-emerald-500/25 text-emerald-300 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]" : "text-white/60 border-transparent hover:text-white hover:bg-white/5"
+                )}
+              >
+                Slashes
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const nextVal = !enablePunctuationBraking;
+                  setEnablePunctuationBraking(nextVal);
+                  if (sessionId) {
+                    const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+                    channel.postMessage({ type: 'state', enablePunctuationBraking: nextVal, sender: 'popout' });
+                    channel.close();
+                  }
+                }}
+                title="Enable Smart Punctuation Braking"
+                className={cn(
+                  "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer border",
+                  enablePunctuationBraking ? "bg-sky-500/25 text-sky-300 border-sky-500/30 shadow-[0_0_10px_rgba(56,189,248,0.2)]" : "text-white/60 border-transparent hover:text-white hover:bg-white/5"
+                )}
+              >
+                Brakes
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const nextVal = !isolateSentenceHighlight;
+                  setIsolateSentenceHighlight(nextVal);
+                  if (sessionId) {
+                    const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+                    channel.postMessage({ type: 'state', isolateSentenceHighlight: nextVal, sender: 'popout' });
+                    channel.close();
+                  }
+                }}
+                title="Isolate Active Sentence Highlight"
+                className={cn(
+                  "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer border",
+                  isolateSentenceHighlight ? "bg-purple-500/25 text-purple-300 border-purple-500/30 shadow-[0_0_10px_rgba(168,85,247,0.2)]" : "text-white/60 border-transparent hover:text-white hover:bg-white/5"
+                )}
+              >
+                Highlight
               </button>
             </div>
 
