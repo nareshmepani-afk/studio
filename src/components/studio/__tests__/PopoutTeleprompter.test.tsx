@@ -52,6 +52,9 @@ const mockActions = {
   setFontSize: vi.fn(),
   toggleMirror: vi.fn(),
   setSelectedTake: vi.fn(),
+  setShowBreathingMarks: vi.fn(),
+  setEnablePunctuationBraking: vi.fn(),
+  setIsolateSentenceHighlight: vi.fn(),
 };
 
 const mockUseStudioState = vi.fn(() => ({
@@ -61,6 +64,9 @@ const mockUseStudioState = vi.fn(() => ({
   isMirrored: false,
   scrollSpeed: 2.0,
   isScrolling: false,
+  showBreathingMarks: false,
+  enablePunctuationBraking: false,
+  isolateSentenceHighlight: false,
   actions: mockActions,
 }));
 
@@ -87,6 +93,9 @@ describe('PopoutTeleprompter Component', () => {
       isMirrored: false,
       scrollSpeed: 2.0,
       isScrolling: false,
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
       actions: mockActions,
     });
 
@@ -158,5 +167,115 @@ describe('PopoutTeleprompter Component', () => {
       
       expect(mockActions.setSelectedTake).toHaveBeenCalledWith('Newly synchronized take content from main window.');
     }
+  });
+
+  it('adjusts scroll speed via BracketRight/BracketLeft and Equal/Minus keys', () => {
+    render(<PopoutTeleprompter />);
+    
+    // Equal key / plus action
+    fireEvent.keyDown(window, { code: 'Equal' });
+    expect(mockActions.setScrollSpeed).toHaveBeenCalledWith(2.2);
+
+    // BracketRight key
+    fireEvent.keyDown(window, { code: 'BracketRight' });
+    expect(mockActions.setScrollSpeed).toHaveBeenCalledWith(2.2);
+
+    // Minus key / minus action
+    fireEvent.keyDown(window, { code: 'Minus' });
+    expect(mockActions.setScrollSpeed).toHaveBeenCalledWith(1.8);
+
+    // BracketLeft key
+    fireEvent.keyDown(window, { code: 'BracketLeft' });
+    expect(mockActions.setScrollSpeed).toHaveBeenCalledWith(1.8);
+  });
+
+  it('contains a speed multiplier hover toolbar and triggers speed actions on button clicks', () => {
+    render(<PopoutTeleprompter />);
+    
+    // Should render the label in the document
+    expect(screen.getByText('SPEED MULTIPLIER')).toBeInTheDocument();
+    
+    // Buttons for + and - speed adjustments
+    const speedDownButton = screen.getByRole('button', { name: '-' });
+    const speedUpButton = screen.getByRole('button', { name: '+' });
+
+    fireEvent.click(speedDownButton);
+    expect(mockActions.setScrollSpeed).toHaveBeenCalledWith(1.8);
+
+    fireEvent.click(speedUpButton);
+    expect(mockActions.setScrollSpeed).toHaveBeenCalledWith(2.2);
+  });
+
+  it('damps auto-scrolling speed when user scrolls up (deltaY < 0)', () => {
+    mockUseStudioState.mockReturnValueOnce({
+      sessionId: 'test-session',
+      selectedTake: 'Script block text',
+      fontSize: 24,
+      isMirrored: false,
+      scrollSpeed: 2.0,
+      isScrolling: true, // Auto scrolling active
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
+      actions: mockActions,
+    });
+
+    render(<PopoutTeleprompter />);
+    
+    const scrollContainer = screen.getByText('Script block text').closest('div');
+    expect(scrollContainer).toBeDefined();
+
+    if (scrollContainer) {
+      // Trigger scroll up event
+      fireEvent.wheel(scrollContainer, { deltaY: -100 });
+      // The scroll speed damping runs inside the requestAnimationFrame loop which is a mutable ref.
+      // Damping will be cleared after 1.5s.
+      vi.advanceTimersByTime(1500);
+    }
+  });
+
+  it('transforms script with theatrical slashes when showBreathingMarks is active', () => {
+    mockUseStudioState.mockReturnValueOnce({
+      sessionId: 'test-session',
+      selectedTake: 'Hello, world. How are you?',
+      fontSize: 24,
+      isMirrored: false,
+      scrollSpeed: 2.0,
+      isScrolling: false,
+      showBreathingMarks: true, // Breathing marks active!
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
+      actions: mockActions,
+    });
+
+    render(<PopoutTeleprompter />);
+    // Comma replaced by ' /', Period replaced by ' //'
+    expect(screen.getByText(/Hello \/ world \/\//)).toBeInTheDocument();
+    expect(screen.getByText(/How are you \/\//)).toBeInTheDocument();
+  });
+
+  it('isolates the active sentence highlighting when isolateSentenceHighlight is active', () => {
+    mockUseStudioState.mockReturnValueOnce({
+      sessionId: 'test-session',
+      selectedTake: 'First sentence. Second sentence.',
+      fontSize: 24,
+      isMirrored: false,
+      scrollSpeed: 2.0,
+      isScrolling: false,
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: true, // Focus shield active!
+      actions: mockActions,
+    });
+
+    render(<PopoutTeleprompter />);
+    
+    // First sentence should have index 0 (active initially) -> check highlight style class text-white
+    const firstSent = screen.getByText('First sentence.');
+    expect(firstSent).toHaveClass('text-white');
+
+    // Second sentence should have index 1 (inactive initially) -> check dim style class text-zinc-600/40
+    const secondSent = screen.getByText('Second sentence.');
+    expect(secondSent).toHaveClass('text-zinc-600/40');
   });
 });

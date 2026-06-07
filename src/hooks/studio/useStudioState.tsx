@@ -57,6 +57,9 @@ interface StudioState {
   durationUnit: 'days' | 'months' | 'years';
   narratorAgeAtTime: number;
   selectedTake: string | null;
+  showBreathingMarks: boolean;
+  enablePunctuationBraking: boolean;
+  isolateSentenceHighlight: boolean;
   dispatcher?: {
     addCatalyst?: (blockId: string, type: CatalystType, value?: string) => { collisionDetected: boolean };
   };
@@ -104,6 +107,9 @@ interface StudioActions {
   setDurationUnit: (unit: 'days' | 'months' | 'years') => void;
   setNarratorAgeAtTime: (age: number) => void;
   setSelectedTake: (take: string | null) => void;
+  setShowBreathingMarks: (val: boolean) => void;
+  setEnablePunctuationBraking: (val: boolean) => void;
+  setIsolateSentenceHighlight: (val: boolean) => void;
 }
 
 // 3. Context Shape
@@ -190,6 +196,9 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     durationUnit: 'years',
     narratorAgeAtTime: 25,
     selectedTake: null,
+    showBreathingMarks: false,
+    enablePunctuationBraking: false,
+    isolateSentenceHighlight: false,
     dispatcher: undefined,
     ...(initialState || {}),
   });
@@ -455,6 +464,9 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     setDurationUnit,
     setNarratorAgeAtTime,
     setSelectedTake: (take) => setState(s => ({ ...s, selectedTake: take })),
+    setShowBreathingMarks: (val) => setState(s => ({ ...s, showBreathingMarks: val })),
+    setEnablePunctuationBraking: (val) => setState(s => ({ ...s, enablePunctuationBraking: val })),
+    setIsolateSentenceHighlight: (val) => setState(s => ({ ...s, isolateSentenceHighlight: val })),
   }), []);
 
   return (

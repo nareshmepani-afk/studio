@@ -99,7 +99,8 @@ describe('Teleprompter Component', () => {
     });
 
     render(<Teleprompter />);
-    expect(screen.getByText('Synchronised Speed')).toBeInTheDocument();
+    expect(screen.getByText('SPEED MULTIPLIER')).toBeInTheDocument();
+    expect(screen.getByText('PACING CALIBRATION ACTIVE')).toBeInTheDocument();
     expect(screen.getByText('Optimised Layout')).toBeInTheDocument();
   });
 
@@ -198,5 +199,32 @@ describe('Teleprompter Component', () => {
 
     fireEvent.click(increaseBtn);
     expect(mockActions.increaseFontSize).toHaveBeenCalledTimes(1);
+  });
+
+  it('sets correct speed multipliers when pacing profile preset buttons are clicked', () => {
+    mockUseStudioState.mockReturnValueOnce({
+      selectedTake: null,
+      script: '',
+      isScrolling: false,
+      scrollSpeed: 2.0,
+      fontSize: 16,
+      isMirrored: false,
+      actions: mockActions
+    });
+
+    render(<Teleprompter />);
+
+    const dramaticBtn = screen.getByRole('button', { name: 'Dramatic' });
+    const conversationalBtn = screen.getByRole('button', { name: 'Conversational' });
+    const expressiveBtn = screen.getByRole('button', { name: 'Expressive' });
+
+    fireEvent.click(dramaticBtn);
+    expect(mockActions.setScrollSpeed).toHaveBeenCalledWith(0.8);
+
+    fireEvent.click(conversationalBtn);
+    expect(mockActions.setScrollSpeed).toHaveBeenCalledWith(1.0);
+
+    fireEvent.click(expressiveBtn);
+    expect(mockActions.setScrollSpeed).toHaveBeenCalledWith(1.2);
   });
 });

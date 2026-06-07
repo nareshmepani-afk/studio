@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { applyTheatricalSlashes, tokenizeSentences } from '@/utils/scriptFormatter';
 
 export const PopoutTeleprompter: React.FC = () => {
   const {
@@ -13,13 +14,19 @@ export const PopoutTeleprompter: React.FC = () => {
     isMirrored,
     scrollSpeed,
     isScrolling,
+    showBreathingMarks,
+    enablePunctuationBraking,
+    isolateSentenceHighlight,
     actions: {
       toggleScrolling,
       setScrolling,
       setScrollSpeed,
       setFontSize,
       toggleMirror,
-      setSelectedTake
+      setSelectedTake,
+      setShowBreathingMarks,
+      setEnablePunctuationBraking,
+      setIsolateSentenceHighlight
     }
   } = useStudioState();
 
@@ -27,6 +34,55 @@ export const PopoutTeleprompter: React.FC = () => {
   const isInternalScroll = useRef(false);
   const [showAnchor, setShowAnchor] = useState(true);
   const [showHelper, setShowHelper] = useState(true);
+
+  // Gesture damping tracking (MW-60)
+  const isDamped = useRef(false);
+  const dampingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Clean up damping timer on unmount
+  useEffect(() => {
+    return () => {
+      if (dampingTimeoutRef.current) {
+        clearTimeout(dampingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Vocal coaching states and coordinate cache refs (MW-61)
+  const [activeSentenceIndex, setActiveSentenceIndex] = useState(0);
+  const sentenceCoordinates = useRef<{ startY: number; endY: number; index: number }[]>([]);
+
+  // Cache coordinates on load, resize, or typography changes to prevent layout thrashing
+  const recacheCoordinates = () => {
+    if (!containerRef.current) return;
+    const spans = containerRef.current.querySelectorAll('span[data-sentence-index]');
+    const coords: { startY: number; endY: number; index: number }[] = [];
+    
+    spans.forEach((span: any) => {
+      const idx = parseInt(span.getAttribute('data-sentence-index') || '0', 10);
+      const startY = span.offsetTop;
+      const endY = startY + span.offsetHeight;
+      coords.push({ startY, endY, index: idx });
+    });
+    
+    sentenceCoordinates.current = coords;
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(recacheCoordinates, 150);
+    window.addEventListener('resize', recacheCoordinates);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', recacheCoordinates);
+    };
+  }, [selectedTake, showBreathingMarks, fontSize]);
+
+  // Auto-focus the popout window immediately on mount so keyboard shortcuts work right away
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.focus();
+    }
+  }, []);
 
   // Auto-hide helper guide after 6 seconds
   useEffect(() => {
@@ -72,6 +128,15 @@ export const PopoutTeleprompter: React.FC = () => {
         if (payload.selectedTake !== undefined && payload.selectedTake !== selectedTake) {
           setSelectedTake(payload.selectedTake);
         }
+        if (payload.showBreathingMarks !== undefined && payload.showBreathingMarks !== showBreathingMarks) {
+          setShowBreathingMarks(payload.showBreathingMarks);
+        }
+        if (payload.enablePunctuationBraking !== undefined && payload.enablePunctuationBraking !== enablePunctuationBraking) {
+          setEnablePunctuationBraking(payload.enablePunctuationBraking);
+        }
+        if (payload.isolateSentenceHighlight !== undefined && payload.isolateSentenceHighlight !== isolateSentenceHighlight) {
+          setIsolateSentenceHighlight(payload.isolateSentenceHighlight);
+        }
       }
     };
 
@@ -84,13 +149,27 @@ export const PopoutTeleprompter: React.FC = () => {
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
-  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake, setScrolling, setScrollSpeed, setFontSize, toggleMirror, setSelectedTake]);
+  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, setScrolling, setScrollSpeed, setFontSize, toggleMirror, setSelectedTake, setShowBreathingMarks, setEnablePunctuationBraking, setIsolateSentenceHighlight]);
 
   // Handle local scroll event in popout and broadcast to main window
   const handleScroll = () => {
-    if (isInternalScroll.current || !containerRef.current || !sessionId) return;
+    if (!containerRef.current || !sessionId) return;
 
     const container = containerRef.current;
+
+    // Identify active sentence passing eye-line anchor (30% height of viewport)
+    if (sentenceCoordinates.current.length > 0) {
+      const anchorY = container.scrollTop + container.clientHeight * 0.3;
+      const match = sentenceCoordinates.current.find(
+        coord => anchorY >= coord.startY && anchorY <= coord.endY
+      );
+      if (match && match.index !== activeSentenceIndex) {
+        setActiveSentenceIndex(match.index);
+      }
+    }
+
+    if (isInternalScroll.current) return;
+
     const maxScroll = container.scrollHeight - container.clientHeight;
     if (maxScroll <= 0) return;
 
@@ -146,6 +225,34 @@ export const PopoutTeleprompter: React.FC = () => {
           });
           channel.close();
         }
+      } else if (e.code === 'BracketRight' || e.code === 'Equal') {
+        e.preventDefault();
+        const newSpeed = scrollSpeed + 0.2;
+        setScrollSpeed(newSpeed);
+        console.log("LOCAL PACING OVERRIDE EMITTED // BROADCAST ROUTE SECURE");
+        if (sessionId) {
+          const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+          channel.postMessage({
+            type: 'state',
+            scrollSpeed: newSpeed,
+            sender: 'popout'
+          });
+          channel.close();
+        }
+      } else if (e.code === 'BracketLeft' || e.code === 'Minus') {
+        e.preventDefault();
+        const newSpeed = Math.max(0.2, scrollSpeed - 0.2);
+        setScrollSpeed(newSpeed);
+        console.log("LOCAL PACING OVERRIDE EMITTED // BROADCAST ROUTE SECURE");
+        if (sessionId) {
+          const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+          channel.postMessage({
+            type: 'state',
+            scrollSpeed: newSpeed,
+            sender: 'popout'
+          });
+          channel.close();
+        }
       } else if (e.code === 'KeyM') {
         e.preventDefault();
         toggleMirror();
@@ -166,7 +273,7 @@ export const PopoutTeleprompter: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleScrolling, setFontSize, fontSize, toggleMirror, isScrolling, isMirrored, sessionId]);
+  }, [toggleScrolling, setFontSize, fontSize, toggleMirror, isScrolling, isMirrored, sessionId, scrollSpeed, setScrollSpeed]);
 
   // Automatic scrolling loop inside popout
   useEffect(() => {
@@ -177,7 +284,8 @@ export const PopoutTeleprompter: React.FC = () => {
 
     const scroll = () => {
       if (containerRef.current) {
-        scrollPosRef.current += scrollSpeed * 0.4;
+        const currentMultiplier = isDamped.current ? 0.8 : 1.0;
+        scrollPosRef.current += scrollSpeed * 0.4 * currentMultiplier;
         containerRef.current.scrollTop = Math.floor(scrollPosRef.current);
 
         const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
@@ -204,6 +312,18 @@ export const PopoutTeleprompter: React.FC = () => {
   const paragraphs = useMemo(() => {
     return textToPrompt.split(/\n\s*\n/).filter(Boolean);
   }, [textToPrompt]);
+
+  const formattedParagraphs = useMemo(() => {
+    let sentenceCounter = 0;
+    return paragraphs.map((para) => {
+      const paraText = showBreathingMarks ? applyTheatricalSlashes(para) : para;
+      const sentences = tokenizeSentences(paraText);
+      return sentences.map(text => ({
+        text,
+        index: sentenceCounter++
+      }));
+    });
+  }, [paragraphs, showBreathingMarks]);
 
   return (
     <div className="fixed inset-0 w-full h-full bg-black text-white flex flex-col font-serif select-none overflow-hidden">
@@ -265,52 +385,119 @@ export const PopoutTeleprompter: React.FC = () => {
         <span>SYNC ACTIVE</span>
       </div>
 
-      {/* Premium control bar with keycaps */}
-      <div className="absolute bottom-2 right-2 z-30 flex items-center gap-3 bg-zinc-950/85 border border-white/10 rounded-xl px-3 py-1.5 text-[10px] font-mono text-zinc-400 pointer-events-auto backdrop-blur-md shadow-lg">
-        <div className="flex items-center gap-1">
-          <kbd className="px-1 rounded bg-white/5 border border-white/10 text-white text-[9px] font-bold">Space</kbd>
-          <span>Play/Pause</span>
-        </div>
-        <span className="text-white/10">•</span>
-        <div className="flex items-center gap-1">
-          <kbd className="px-1 rounded bg-white/5 border border-white/10 text-white text-[9px] font-bold">↑/↓</kbd>
-          <span>Size</span>
-        </div>
-        <span className="text-white/10">•</span>
-        <div className="flex items-center gap-1">
-          <kbd className="px-1 rounded bg-white/5 border border-white/10 text-white text-[9px] font-bold">M</kbd>
-          <span>Mirror</span>
-        </div>
-        <span className="text-white/10">•</span>
-        <div className="flex items-center gap-1">
-          <kbd className="px-1 rounded bg-white/5 border border-white/10 text-white text-[9px] font-bold">A</kbd>
-          <span>Anchor</span>
-        </div>
-        <span className="text-white/10">|</span>
-        <button 
-          onClick={() => setShowAnchor(p => !p)} 
-          className="text-cyan-400 hover:text-cyan-300 font-bold bg-transparent border-0 outline-none cursor-pointer text-[10px]"
-        >
-          {showAnchor ? 'Hide Line' : 'Show Line'}
-        </button>
-      </div>
-
       {/* Main script scrolling container - absolutely zero margin/padding at the top */}
       <div 
         ref={containerRef}
         onScroll={handleScroll}
+        onWheel={(e) => {
+          if (isScrolling && e.deltaY < 0) {
+            isDamped.current = true;
+            if (dampingTimeoutRef.current) {
+              clearTimeout(dampingTimeoutRef.current);
+            }
+            dampingTimeoutRef.current = setTimeout(() => {
+              isDamped.current = false;
+            }, 1500);
+          }
+        }}
         style={{ fontSize: `${fontSize}px` }}
         className={cn(
           "flex-grow overflow-y-auto w-full px-8 pt-[30vh] pb-[60vh] leading-relaxed italic text-zinc-100 scroll-smooth",
           isMirrored && "transform -scale-x-100"
         )}
       >
-        <div className="space-y-6 max-w-4xl mx-auto">
-          {paragraphs.map((para, idx) => (
-            <p key={idx} className="opacity-95 text-justify">
-              {para}
+        <div className="space-y-6 max-w-4xl mx-auto relative">
+          {formattedParagraphs.map((sentences, paraIdx) => (
+            <p key={paraIdx} className="opacity-95 text-justify">
+              {sentences.map((sent) => (
+                <span
+                  key={sent.index}
+                  data-sentence-index={sent.index}
+                  className={cn(
+                    "transition-all duration-300",
+                    isolateSentenceHighlight
+                      ? sent.index === activeSentenceIndex
+                        ? "text-white font-medium drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]"
+                        : "text-zinc-600/40"
+                      : "text-zinc-100"
+                  )}
+                >
+                  {sent.text}{' '}
+                </span>
+              ))}
             </p>
           ))}
+
+          {/* Integrated Control and Speed HUD - Positioned right after the last word (MW-60) */}
+          <div className="pt-10 mt-10 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 not-italic font-sans">
+            {/* Speed Multiplier Toolbar */}
+            <div className="flex items-center gap-4 bg-zinc-950/80 border border-zinc-800 text-xs px-4 py-2 rounded-xl backdrop-blur-md shadow-lg pointer-events-auto">
+              <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">SPEED MULTIPLIER</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const newSpeed = Math.max(0.2, scrollSpeed - 0.2);
+                  setScrollSpeed(newSpeed);
+                  console.log("LOCAL PACING OVERRIDE EMITTED // BROADCAST ROUTE SECURE");
+                  if (sessionId) {
+                    const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+                    channel.postMessage({ type: 'state', scrollSpeed: newSpeed, sender: 'popout' });
+                    channel.close();
+                  }
+                }}
+                className="w-5 h-5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white flex items-center justify-center font-bold text-xs cursor-pointer select-none transition-colors"
+              >
+                -
+              </button>
+              <span className="text-[11px] font-mono font-bold text-emerald-400 w-8 text-center">{scrollSpeed.toFixed(1)}x</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const newSpeed = scrollSpeed + 0.2;
+                  setScrollSpeed(newSpeed);
+                  console.log("LOCAL PACING OVERRIDE EMITTED // BROADCAST ROUTE SECURE");
+                  if (sessionId) {
+                    const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+                    channel.postMessage({ type: 'state', scrollSpeed: newSpeed, sender: 'popout' });
+                    channel.close();
+                  }
+                }}
+                className="w-5 h-5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white flex items-center justify-center font-bold text-xs cursor-pointer select-none transition-colors"
+              >
+                +
+              </button>
+            </div>
+
+            {/* Keyboard Shortcuts HUD */}
+            <div className="flex items-center gap-3 bg-zinc-950/85 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-mono text-zinc-400 pointer-events-auto backdrop-blur-md shadow-lg">
+              <div className="flex items-center gap-1">
+                <kbd className="px-1 rounded bg-white/5 border border-white/10 text-white text-[9px] font-bold">Space</kbd>
+                <span>Play/Pause</span>
+              </div>
+              <span className="text-white/10">•</span>
+              <div className="flex items-center gap-1">
+                <kbd className="px-1 rounded bg-white/5 border border-white/10 text-white text-[9px] font-bold">↑/↓</kbd>
+                <span>Size</span>
+              </div>
+              <span className="text-white/10">•</span>
+              <div className="flex items-center gap-1">
+                <kbd className="px-1 rounded bg-white/5 border border-white/10 text-white text-[9px] font-bold">M</kbd>
+                <span>Mirror</span>
+              </div>
+              <span className="text-white/10">•</span>
+              <div className="flex items-center gap-1">
+                <kbd className="px-1 rounded bg-white/5 border border-white/10 text-white text-[9px] font-bold">A</kbd>
+                <span>Anchor</span>
+              </div>
+              <span className="text-white/10">|</span>
+              <button 
+                onClick={() => setShowAnchor(p => !p)} 
+                className="text-cyan-400 hover:text-cyan-300 font-bold bg-transparent border-0 outline-none cursor-pointer text-[10px]"
+              >
+                {showAnchor ? 'Hide Line' : 'Show Line'}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

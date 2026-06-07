@@ -82,6 +82,9 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     scrollSpeed,
     fontSize,
     isMirrored,
+    showBreathingMarks,
+    enablePunctuationBraking,
+    isolateSentenceHighlight,
     actions: {
       toggleScrolling,
       setScrolling,
@@ -89,7 +92,10 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       setFontSize,
       toggleMirror,
       increaseFontSize,
-      decreaseFontSize
+      decreaseFontSize,
+      setShowBreathingMarks,
+      setEnablePunctuationBraking,
+      setIsolateSentenceHighlight
     }
   } = useStudioState();
 
@@ -119,6 +125,9 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         if (payload.isScrolling !== undefined && payload.isScrolling !== isScrolling) {
           setScrolling(payload.isScrolling);
         }
+        if (payload.scrollSpeed !== undefined && payload.scrollSpeed !== scrollSpeed) {
+          setScrollSpeed(payload.scrollSpeed);
+        }
         if (payload.fontSize !== undefined && payload.fontSize !== fontSize) {
           setFontSize(payload.fontSize);
         }
@@ -127,21 +136,34 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
             toggleMirror();
           }
         }
+        if (payload.showBreathingMarks !== undefined && payload.showBreathingMarks !== showBreathingMarks) {
+          setShowBreathingMarks(payload.showBreathingMarks);
+        }
+        if (payload.enablePunctuationBraking !== undefined && payload.enablePunctuationBraking !== enablePunctuationBraking) {
+          setEnablePunctuationBraking(payload.enablePunctuationBraking);
+        }
+        if (payload.isolateSentenceHighlight !== undefined && payload.isolateSentenceHighlight !== isolateSentenceHighlight) {
+          setIsolateSentenceHighlight(payload.isolateSentenceHighlight);
+        }
       } else if (type === 'join') {
         // Popout just opened! Send current states immediately to popout for instant alignment
+        channel.postMessage({
+          type: 'state',
+          isScrolling,
+          scrollSpeed,
+          fontSize,
+          isMirrored,
+          selectedTake,
+          showBreathingMarks,
+          enablePunctuationBraking,
+          isolateSentenceHighlight,
+          sender: 'main'
+        });
+
         if (containerRef.current) {
           const container = containerRef.current;
           const maxScroll = container.scrollHeight - container.clientHeight;
           const currentProgress = maxScroll > 0 ? container.scrollTop / maxScroll : 0;
-          channel.postMessage({
-            type: 'state',
-            isScrolling,
-            scrollSpeed,
-            fontSize,
-            isMirrored,
-            selectedTake,
-            sender: 'main'
-          });
           channel.postMessage({
             type: 'scroll',
             progress: currentProgress,
@@ -157,7 +179,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
-  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake, setScrolling, setFontSize, toggleMirror]);
+  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, setScrolling, setFontSize, toggleMirror, setShowBreathingMarks, setEnablePunctuationBraking, setIsolateSentenceHighlight]);
 
   // Synchronize state changes dynamically to popout window
   useEffect(() => {
@@ -171,10 +193,13 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       fontSize,
       isMirrored,
       selectedTake,
+      showBreathingMarks,
+      enablePunctuationBraking,
+      isolateSentenceHighlight,
       sender: 'main'
     });
     channel.close();
-  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake]);
+  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight]);
 
   const handlePopout = () => {
     if (!sessionId) return;
@@ -483,22 +508,78 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
             )}
             
             {modalityMode !== 'interview' && (
-              <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
-                <span className="text-[9px] font-black uppercase tracking-widest text-white/40 whitespace-nowrap">Synchronised Speed</span>
-                <button 
-                  onClick={() => setScrollSpeed(Math.max(0.5, scrollSpeed - 0.5))}
-                  className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white cursor-pointer"
-                >
-                  <ChevronDown className="w-3 h-3" />
-                </button>
-                <span className="text-[10px] font-mono font-bold text-emerald-400 w-6 text-center">{scrollSpeed.toFixed(1)}x</span>
-                <button 
-                  onClick={() => setScrollSpeed(scrollSpeed + 0.5)}
-                  className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white cursor-pointer"
-                >
-                  <ChevronUp className="w-3 h-3" />
-                </button>
-              </div>
+              <>
+                <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-white/40 whitespace-nowrap">SPEED MULTIPLIER</span>
+                  <button 
+                    onClick={() => {
+                      const newSpeed = Math.max(0.5, scrollSpeed - 0.5);
+                      setScrollSpeed(newSpeed);
+                      console.log("LOCAL PACING OVERRIDE EMITTED // BROADCAST ROUTE SECURE");
+                    }}
+                    className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white cursor-pointer"
+                  >
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                  <span className="text-[10px] font-mono font-bold text-emerald-400 w-6 text-center">{scrollSpeed.toFixed(1)}x</span>
+                  <button 
+                    onClick={() => {
+                      const newSpeed = scrollSpeed + 0.5;
+                      setScrollSpeed(newSpeed);
+                      console.log("LOCAL PACING OVERRIDE EMITTED // BROADCAST ROUTE SECURE");
+                    }}
+                    className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white cursor-pointer"
+                  >
+                    <ChevronUp className="w-3 h-3" />
+                  </button>
+                </div>
+
+                {/* PACING CALIBRATION ACTIVE / Presets */}
+                <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-white/40 whitespace-nowrap">PACING CALIBRATION ACTIVE</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        setScrollSpeed(0.8);
+                        console.log("LOCAL PACING OVERRIDE EMITTED // BROADCAST ROUTE SECURE");
+                      }}
+                      title="Dramatic Read (~110 WPM)"
+                      className={cn(
+                        "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                        Math.abs(scrollSpeed - 0.8) < 0.01 ? "bg-amber-500/25 text-amber-300 border border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]" : "text-white/60 hover:text-white hover:bg-white/5"
+                      )}
+                    >
+                      Dramatic
+                    </button>
+                    <button
+                      onClick={() => {
+                        setScrollSpeed(1.0);
+                        console.log("LOCAL PACING OVERRIDE EMITTED // BROADCAST ROUTE SECURE");
+                      }}
+                      title="Conversational (~140 WPM)"
+                      className={cn(
+                        "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                        Math.abs(scrollSpeed - 1.0) < 0.01 ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]" : "text-white/60 hover:text-white hover:bg-white/5"
+                      )}
+                    >
+                      Conversational
+                    </button>
+                    <button
+                      onClick={() => {
+                        setScrollSpeed(1.2);
+                        console.log("LOCAL PACING OVERRIDE EMITTED // BROADCAST ROUTE SECURE");
+                      }}
+                      title="Expressive Delivery (~170 WPM)"
+                      className={cn(
+                        "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                        Math.abs(scrollSpeed - 1.2) < 0.01 ? "bg-sky-500/25 text-sky-300 border border-sky-500/30 shadow-[0_0_10px_rgba(56,189,248,0.2)]" : "text-white/60 hover:text-white hover:bg-white/5"
+                      )}
+                    >
+                      Expressive
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </div>
 
@@ -571,6 +652,53 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                 <button onClick={decreaseFontSize} className="p-1 hover:bg-white/10 text-white/50 hover:text-white font-black text-xs px-2 cursor-pointer">-</button>
                 <span className="text-[10px] font-mono font-bold text-white/70 w-8 text-center">{fontSize}px</span>
                 <button onClick={increaseFontSize} className="p-1 hover:bg-white/10 text-white/50 hover:text-white font-black text-xs px-2 cursor-pointer">+</button>
+              </div>
+
+              {/* Vocal Cadence settings group (MW-61) */}
+              <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl px-2 py-1">
+                <span className="text-[8px] font-black uppercase tracking-widest text-white/30 px-1">Vocal Coaching</span>
+                <button
+                  onClick={() => {
+                    const nextVal = !showBreathingMarks;
+                    setShowBreathingMarks(nextVal);
+                    console.log("LOCAL PACING OVERRIDE EMITTED // BROADCAST ROUTE SECURE");
+                  }}
+                  title="Show Theatrical Breathing Marks"
+                  className={cn(
+                    "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                    showBreathingMarks ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]" : "text-white/60 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  Slashes
+                </button>
+                <button
+                  onClick={() => {
+                    const nextVal = !enablePunctuationBraking;
+                    setEnablePunctuationBraking(nextVal);
+                    console.log("LOCAL PACING OVERRIDE EMITTED // BROADCAST ROUTE SECURE");
+                  }}
+                  title="Enable Smart Punctuation Braking"
+                  className={cn(
+                    "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                    enablePunctuationBraking ? "bg-sky-500/25 text-sky-300 border border-sky-500/30 shadow-[0_0_10px_rgba(56,189,248,0.2)]" : "text-white/60 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  Brakes
+                </button>
+                <button
+                  onClick={() => {
+                    const nextVal = !isolateSentenceHighlight;
+                    setIsolateSentenceHighlight(nextVal);
+                    console.log("LOCAL PACING OVERRIDE EMITTED // BROADCAST ROUTE SECURE");
+                  }}
+                  title="Isolate Active Sentence Highlight"
+                  className={cn(
+                    "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer",
+                    isolateSentenceHighlight ? "bg-purple-500/25 text-purple-300 border border-purple-500/30 shadow-[0_0_10px_rgba(168,85,247,0.2)]" : "text-white/60 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  Highlight
+                </button>
               </div>
             </div>
           )}
