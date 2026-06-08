@@ -23,6 +23,11 @@ export const useMediaRecorder = (stream: MediaStream | null) => {
   // Segmented multi-blob recording states
   const [recordedSegments, setRecordedSegments] = useState<EDLTrackSegment[]>([]);
   const segmentStartTimeRef = useRef(0);
+  const recordingTimeRef = useRef(recordingTime);
+
+  useEffect(() => {
+    recordingTimeRef.current = recordingTime;
+  }, [recordingTime]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -79,23 +84,19 @@ export const useMediaRecorder = (stream: MediaStream | null) => {
         return;
       }
 
-      // Calculate final active duration for this segment
-      setRecordingTime((currentTotalTime) => {
-        const duration = currentTotalTime - segmentStartTimeRef.current;
-        if (duration > 0) {
-          const newSegment: EDLTrackSegment = {
-            segmentId: `seg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-            blob,
-            blobUrl: URL.createObjectURL(blob),
-            startOffset: 0,
-            endOffset: duration,
-            duration: duration
-          };
-          setRecordedSegments((prev) => [...prev, newSegment]);
-          console.log(`[MediaRecorder] Added new segment: ${newSegment.segmentId} (duration: ${duration}s)`);
-        }
-        return currentTotalTime;
-      });
+      const duration = recordingTimeRef.current - segmentStartTimeRef.current;
+      if (duration > 0) {
+        const newSegment: EDLTrackSegment = {
+          segmentId: `seg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          blob,
+          blobUrl: URL.createObjectURL(blob),
+          startOffset: 0,
+          endOffset: duration,
+          duration: duration
+        };
+        setRecordedSegments((prev) => [...prev, newSegment]);
+        console.log(`[MediaRecorder] Added new segment: ${newSegment.segmentId} (duration: ${duration}s)`);
+      }
     };
 
     console.log(`[MediaRecorder] Initiating recording with mimeType: ${mimeType}, high-bitrate target (8Mbps)`);

@@ -105,6 +105,20 @@ export const PopoutTeleprompter: React.FC = () => {
   const isDamped = useRef(false);
   const dampingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Track direct user interaction to distinguish manual scrolls from layout-induced reflows
+  const isUserInteractingRef = useRef(false);
+  const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const recordUserInteraction = () => {
+    isUserInteractingRef.current = true;
+    if (interactionTimeoutRef.current) {
+      clearTimeout(interactionTimeoutRef.current);
+    }
+    interactionTimeoutRef.current = setTimeout(() => {
+      isUserInteractingRef.current = false;
+    }, 1000);
+  };
+
   // Vocal coaching states and coordinate cache refs (MW-61)
   const [activeSentenceIndex, setActiveSentenceIndex] = useState(0);
   const sentenceCoordinates = useRef<{ startY: number; endY: number; index: number }[]>([]);
@@ -134,7 +148,7 @@ export const PopoutTeleprompter: React.FC = () => {
     activeSentenceIndexRef.current = activeSentenceIndex;
   }, [activeSentenceIndex]);
 
-  // Clean up damping and braking timers on unmount
+  // Clean up damping, braking, and interaction timers on unmount
   useEffect(() => {
     return () => {
       if (dampingTimeoutRef.current) {
@@ -143,6 +157,29 @@ export const PopoutTeleprompter: React.FC = () => {
       if (brakeTimeoutRef.current) {
         clearTimeout(brakeTimeoutRef.current);
       }
+      if (interactionTimeoutRef.current) {
+        clearTimeout(interactionTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Track user interaction on scroll container
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const passiveEvents = ['wheel', 'touchmove', 'pointerdown'];
+    passiveEvents.forEach(event => {
+      container.addEventListener(event, recordUserInteraction, { passive: true });
+    });
+    
+    container.addEventListener('keydown', recordUserInteraction);
+
+    return () => {
+      passiveEvents.forEach(event => {
+        container.removeEventListener(event, recordUserInteraction);
+      });
+      container.removeEventListener('keydown', recordUserInteraction);
     };
   }, []);
 
@@ -294,11 +331,20 @@ export const PopoutTeleprompter: React.FC = () => {
     if (!containerRef.current || !sessionId) return;
 
     const container = containerRef.current;
+    const maxScroll = container.scrollHeight - container.clientHeight;
 
-    const isProgrammatic = lastProgrammaticScrollTop.current !== -1 && Math.abs(container.scrollTop - lastProgrammaticScrollTop.current) < 2;
+    // Capped programmatic scroll check to handle browser-enforced boundaries
+    const expectedScroll = lastProgrammaticScrollTop.current !== -1 
+      ? Math.min(Math.max(0, maxScroll), lastProgrammaticScrollTop.current) 
+      : -1;
+    const isProgrammatic = lastProgrammaticScrollTop.current !== -1 && Math.abs(container.scrollTop - expectedScroll) < 2;
+
     if (isProgrammatic) return;
 
     lastProgrammaticScrollTop.current = -1;
+
+    // Only broadcast scroll and sentence changes if triggered by direct user interaction
+    if (!isUserInteractingRef.current) return;
 
     // Identify active sentence passing eye-line anchor (30% height of viewport)
     if (sentenceCoordinates.current.length > 0) {
@@ -322,7 +368,6 @@ export const PopoutTeleprompter: React.FC = () => {
     // Sync accumulator ref if scrolled manually by user
     scrollAccumulatorRef.current = container.scrollTop;
 
-    const maxScroll = container.scrollHeight - container.clientHeight;
     if (maxScroll <= 0) return;
 
     const progress = container.scrollTop / maxScroll;
@@ -501,6 +546,7 @@ export const PopoutTeleprompter: React.FC = () => {
             channel.postMessage({ type: 'state', isScrolling: false, sender: 'popout' });
             channel.close();
           }
+          return;
         }
       }
       animationId = requestAnimationFrame(scroll);

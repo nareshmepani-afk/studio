@@ -20,7 +20,8 @@ import {
   UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, 
   Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
   Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
-  Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater, Trash2
+  Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater, Trash2,
+  ExternalLink, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -97,7 +98,19 @@ export default function SoloStage({
   const [mounted, setMounted] = useState(false);
   const { user, syncStatus } = useAuth();
   const userId = data?.userId || user?.uid;
-  const { isReviewing, isProductionLocked, selectedTake, fontSize, captureModality, actions: globalActions } = useStudioState();
+  const { 
+    isReviewing, 
+    isProductionLocked, 
+    selectedTake, 
+    fontSize, 
+    captureModality, 
+    isScrolling,
+    showBreathingMarks,
+    enablePunctuationBraking,
+    isolateSentenceHighlight,
+    sessionId,
+    actions: globalActions 
+  } = useStudioState();
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
@@ -2196,7 +2209,9 @@ export default function SoloStage({
               <div className="flex items-center gap-3">
                 <div className={`w-2 h-2 rounded-full ${isRecording ? 'bg-rose-500 animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.6)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]'}`} />
                 {prompterSize !== 'mini' && (
-                  <span className="text-[10px] font-black text-emerald-400/90 uppercase tracking-[0.25em] animate-pulse whitespace-nowrap">BLUEPRINT: SELECTED TAKE (ACT II)</span>
+                  <span className="text-[10px] font-black text-emerald-400/90 uppercase tracking-[0.25em] animate-pulse whitespace-nowrap">
+                    {isTableReadActive ? 'BLUEPRINT' : 'BLUEPRINT: SELECTED TAKE (ACT II)'}
+                  </span>
                 )}
                 {prompterSize === 'mini' && (
                   <span className="text-[9px] font-black text-emerald-400/90 uppercase tracking-widest animate-pulse">BLUEPRINT</span>
@@ -2221,7 +2236,7 @@ export default function SoloStage({
             </div>
 
             {/* Header Second Row: Action Buttons */}
-            {prompterSize !== 'mini' && (
+            {prompterSize !== 'mini' && !isTableReadActive && (
               <div className="flex items-center justify-between gap-4 border-b border-white/5 pb-3 mb-4 shrink-0">
                 <div className="flex items-center gap-2" data-tour="remote-bridge">
                   {/* QR Remote Controller Pair Trigger */}
@@ -2628,63 +2643,137 @@ export default function SoloStage({
                        <span className={cn("text-[10px] font-mono font-bold w-8 text-right transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")}>{volume}%</span>
                      </div>
                    ) : (
-                     <button onClick={() => setIsInterviewMode(!isInterviewMode)} className={`px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest border transition-all ${isInterviewMode ? 'bg-sky-500/20 border-sky-500 text-sky-400' : 'bg-black/40 border-white/10 text-white/40'}`}>
-                        {isInterviewMode ? 'Interviewer Active' : 'Start Interview'}
-                     </button>
-                   )}
-
-                   {/* Center: Record button */}
-                   {isCountingIn ? (
-                     <div className="relative flex flex-col items-center">
-                       <div className="absolute -top-12 px-4 py-1.5 bg-emerald-600 border border-emerald-500 text-white text-[8px] font-black uppercase tracking-[0.25em] rounded-full animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.6)] shrink-0 select-none pointer-events-none whitespace-nowrap flex items-center gap-1.5 z-40">
-                         <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
-                         Rolling in {countIn}...
-                       </div>
-                       <button onClick={cancelCapture} className="w-20 h-20 rounded-full bg-emerald-500/10 border-4 border-emerald-500 hover:bg-emerald-500/30 transition-all flex items-center justify-center animate-pulse group relative">
-                         <Square className="w-6 h-6 text-emerald-400 fill-current opacity-20 group-hover:opacity-100 transition-opacity" />
-                         <span className="absolute inset-0 flex items-center justify-center font-mono text-lg font-black text-emerald-400 select-none pointer-events-none">
-                           {countIn}
-                         </span>
-                       </button>
-                     </div>
-                   ) : !isRecording ? (
-                     <div className="relative flex flex-col items-center">
-                       {!isRecording && !isCountingIn && techAlignmentConfirmed && (
-                         <div className="absolute -top-12 px-4 py-1.5 bg-rose-600 border border-rose-500 text-white text-[8px] font-black uppercase tracking-[0.25em] rounded-full animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.6)] shrink-0 select-none pointer-events-none whitespace-nowrap flex items-center gap-1.5 z-40">
-                           <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
-                           Start Performance
+                     isTableReadActive ? (
+                       <div className={cn(
+                         "flex flex-col gap-2 p-3 rounded-2xl border transition-all pointer-events-auto backdrop-blur-md",
+                         isInterviewMode ? "bg-sky-500/10 border-sky-500/30 text-sky-400" : "bg-black/40 border-white/10 text-white/60"
+                       )}>
+                         {/* Row 1: SCROLL controls */}
+                         <div className="flex items-center gap-3 border-b border-white/10 pb-2 mb-1">
+                           <button
+                             onClick={() => globalActions.toggleScrolling()}
+                             className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer"
+                           >
+                             {isScrolling ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                             <span className="text-[10px] font-black uppercase tracking-wider">SCROLL</span>
+                           </button>
+                           <div className="flex items-center gap-1">
+                             <button
+                               onClick={() => setRehearsalSpeed(Math.max(0.5, rehearsalSpeed - 0.1))}
+                               className="p-1 hover:bg-white/10 rounded text-white/50 hover:text-white cursor-pointer"
+                             >
+                               <ChevronDown className="w-3.5 h-3.5" />
+                             </button>
+                             <span className="text-[10px] font-mono font-bold text-sky-400 w-6 text-center">{rehearsalSpeed.toFixed(1)}</span>
+                             <button
+                               onClick={() => setRehearsalSpeed(rehearsalSpeed + 0.1)}
+                               className="p-1 hover:bg-white/10 rounded text-white/50 hover:text-white cursor-pointer"
+                             >
+                               <ChevronUp className="w-3.5 h-3.5" />
+                             </button>
+                           </div>
                          </div>
-                       )}
-                       <button 
-                         onClick={handleStartCapture} 
-                         aria-label="Start Performance"
-                         disabled={!stream || uploading || isAlchemySaving || !techAlignmentConfirmed} 
-                         className="w-20 h-20 rounded-full bg-white/10 border-4 border-white/40 hover:border-rose-500 hover:bg-rose-500/20 transition-all flex items-center justify-center group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-white/40 disabled:hover:bg-white/10 relative"
-                         title={!stream ? "Hardware access muted or blocked. Re-enable camera and mic access to record." : !techAlignmentConfirmed ? "Please confirm technical alignment before starting performance." : undefined}
-                       >
-                         <div className="w-6 h-6 rounded-full bg-rose-500 group-hover:scale-125 group-disabled:group-hover:scale-100 transition-all" />
+                         {/* Row 2: Interview Mode Toggle */}
+                         <button
+                           onClick={() => setIsInterviewMode(!isInterviewMode)}
+                           className="text-left text-[9px] font-black uppercase tracking-widest hover:text-white transition-colors cursor-pointer"
+                         >
+                           {isInterviewMode ? 'Interviewer Active' : 'Start Interview'}
+                         </button>
+                       </div>
+                     ) : (
+                       <button onClick={() => setIsInterviewMode(!isInterviewMode)} className={`px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest border transition-all ${isInterviewMode ? 'bg-sky-500/20 border-sky-500 text-sky-400' : 'bg-black/40 border-white/10 text-white/40'}`}>
+                          {isInterviewMode ? 'Interviewer Active' : 'Start Interview'}
                        </button>
-                     </div>
-                   ) : (
-                      <div className="relative flex items-center gap-4">
-                        
-                        {/* Dedicated Recording Timer Next to the Recording Button */}
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-950/60 border border-rose-500/30 text-rose-400 text-xs font-mono font-bold tracking-widest rounded-full shadow-[0_0_15px_rgba(244,63,94,0.2)] select-none pointer-events-auto transition-all animate-pulse">
-                          <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-ping" />
-                          <span>{formatTime(recordingTime)}</span>
-                        </div>
-
-                        <button 
-                          onClick={() => { stopRecording(); setIsCameraActive(false); }} 
-                          className="w-20 h-20 rounded-full bg-rose-500/20 border-4 border-rose-500 hover:bg-rose-500 transition-all flex items-center justify-center cursor-pointer active:scale-95 z-50 pointer-events-auto"
-                          aria-label="Stop Recording"
-                        >
-                          <Square className="w-6 h-6 text-white fill-current" />
-                        </button>
-                      </div>
+                     )
                    )}
 
-                   {/* Right: Spacer or original Volume visualizer */}
+                   {/* Center: Record button & Vocal Coaching Controls if rehearsal active */}
+                   <div className="flex items-center gap-6 pointer-events-auto">
+                     {isCountingIn ? (
+                       <div className="relative flex flex-col items-center">
+                         <div className="absolute -top-12 px-4 py-1.5 bg-emerald-600 border border-emerald-500 text-white text-[8px] font-black uppercase tracking-[0.25em] rounded-full animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.6)] shrink-0 select-none pointer-events-none whitespace-nowrap flex items-center gap-1.5 z-40">
+                           <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+                           Rolling in {countIn}...
+                         </div>
+                         <button onClick={cancelCapture} className="w-20 h-20 rounded-full bg-emerald-500/10 border-4 border-emerald-500 hover:bg-emerald-500/30 transition-all flex items-center justify-center animate-pulse group relative">
+                           <Square className="w-6 h-6 text-emerald-400 fill-current opacity-20 group-hover:opacity-100 transition-opacity" />
+                           <span className="absolute inset-0 flex items-center justify-center font-mono text-lg font-black text-emerald-400 select-none pointer-events-none">
+                             {countIn}
+                           </span>
+                         </button>
+                       </div>
+                     ) : !isRecording ? (
+                       <div className="relative flex flex-col items-center">
+                         {!isRecording && !isCountingIn && techAlignmentConfirmed && (
+                           <div className="absolute -top-12 px-4 py-1.5 bg-rose-600 border border-rose-500 text-white text-[8px] font-black uppercase tracking-[0.25em] rounded-full animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.6)] shrink-0 select-none pointer-events-none whitespace-nowrap flex items-center gap-1.5 z-40">
+                             <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+                             Start Performance
+                           </div>
+                         )}
+                         <button 
+                           onClick={handleStartCapture} 
+                           aria-label="Start Performance"
+                           disabled={!stream || uploading || isAlchemySaving || !techAlignmentConfirmed} 
+                           className="w-20 h-20 rounded-full bg-white/10 border-4 border-white/40 hover:border-rose-500 hover:bg-rose-500/20 transition-all flex items-center justify-center group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-white/40 disabled:hover:bg-white/10 relative"
+                           title={!stream ? "Hardware access muted or blocked. Re-enable camera and mic access to record." : !techAlignmentConfirmed ? "Please confirm technical alignment before starting performance." : undefined}
+                         >
+                           <div className="w-6 h-6 rounded-full bg-rose-500 group-hover:scale-125 group-disabled:group-hover:scale-100 transition-all" />
+                         </button>
+                       </div>
+                     ) : (
+                       <div className="relative flex items-center gap-4">
+                         {/* Dedicated Recording Timer Next to the Recording Button */}
+                         <div className="flex items-center gap-2 px-3 py-1.5 bg-rose-950/60 border border-rose-500/30 text-rose-400 text-xs font-mono font-bold tracking-widest rounded-full shadow-[0_0_15px_rgba(244,63,94,0.2)] select-none pointer-events-auto transition-all animate-pulse">
+                           <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-ping" />
+                           <span>{formatTime(recordingTime)}</span>
+                         </div>
+
+                         <button 
+                           onClick={() => { stopRecording(); setIsCameraActive(false); }} 
+                           className="w-20 h-20 rounded-full bg-rose-500/20 border-4 border-rose-500 hover:bg-rose-500 transition-all flex items-center justify-center cursor-pointer active:scale-95 z-50 pointer-events-auto"
+                           aria-label="Stop Recording"
+                         >
+                           <Square className="w-6 h-6 text-white fill-current" />
+                         </button>
+                       </div>
+                     )}
+
+                     {/* Vocal Coaching Controls (Slashes, Brakes, Highlight) shown during active Table Read */}
+                     {isTableReadActive && (
+                       <div className="flex items-center gap-2.5 bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+                         <button
+                           onClick={() => globalActions.setShowBreathingMarks(!showBreathingMarks)}
+                           className={cn(
+                             "px-2.5 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer border border-transparent",
+                             showBreathingMarks ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400 font-bold shadow-[0_0_10px_rgba(16,185,129,0.15)]" : "text-white/40 hover:text-white/80"
+                           )}
+                         >
+                           Slashes
+                         </button>
+                         <button
+                           onClick={() => globalActions.setEnablePunctuationBraking(!enablePunctuationBraking)}
+                           className={cn(
+                             "px-2.5 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer border border-transparent",
+                             enablePunctuationBraking ? "bg-sky-500/20 border-sky-500/30 text-sky-400 font-bold shadow-[0_0_10px_rgba(56,189,248,0.15)]" : "text-white/40 hover:text-white/80"
+                           )}
+                         >
+                           Brakes
+                         </button>
+                         <button
+                           onClick={() => globalActions.setIsolateSentenceHighlight(!isolateSentenceHighlight)}
+                           className={cn(
+                             "px-2.5 py-1 rounded text-[8px] font-black uppercase tracking-wider transition-all cursor-pointer border border-transparent",
+                             isolateSentenceHighlight ? "bg-purple-500/20 border-purple-500/30 text-purple-400 font-bold shadow-[0_0_10px_rgba(168,85,247,0.15)]" : "text-white/40 hover:text-white/80"
+                           )}
+                         >
+                           Highlight
+                         </button>
+                       </div>
+                     )}
+                   </div>
+
+                   {/* Right: Spacer or original Volume visualizer with layout/popout tools */}
                    {captureModality === 'raw' ? (
                      <div className="w-[180px]" /> /* Spacer to balance the mic visualizer width on the left */
                    ) : (
@@ -2708,6 +2797,35 @@ export default function SoloStage({
                          </div>
                          <span className={cn("text-[10px] font-mono font-bold w-8 text-right transition-colors", isRecording ? "text-rose-400" : "text-emerald-400")}>{volume}%</span>
                        </div>
+
+                       {isTableReadActive && (
+                         <div className="flex items-center gap-2 pointer-events-auto">
+                           <button
+                             onClick={() => setPrompterLayout(prev => prev === 'side' ? 'center' : 'side')}
+                             className="p-2.5 bg-black/40 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white/60 hover:text-white rounded-full transition-all cursor-pointer flex items-center justify-center w-9 h-9"
+                             title="Toggle Prompter Layout Mode"
+                           >
+                             <Layout className="w-4 h-4" />
+                           </button>
+                           <button
+                             onClick={() => {
+                               const width = 800;
+                               const height = 360;
+                               const left = (window.screen.width - width) / 2;
+                               const top = 0;
+                               window.open(
+                                 `/studio/teleprompter-popout?sessionId=${sessionId}`,
+                                 `TeleprompterPopout_${sessionId}`,
+                                 `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no,resizable=yes`
+                               );
+                             }}
+                             className="p-2.5 bg-black/40 backdrop-blur-md border border-white/10 hover:bg-white/10 text-white/60 hover:text-white rounded-full transition-all cursor-pointer flex items-center justify-center w-9 h-9"
+                             title="Pop Out Teleprompter"
+                           >
+                             <ExternalLink className="w-4 h-4" />
+                           </button>
+                         </div>
+                       )}
                      </div>
                    )}
                 </div>

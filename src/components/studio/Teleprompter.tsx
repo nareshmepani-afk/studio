@@ -133,6 +133,20 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   const [isRehearsingAudio, setIsRehearsingAudio] = useState(false);
   const isInternalScroll = useRef(false);
 
+  // Track direct user interaction to distinguish manual scrolls from layout-induced reflows
+  const isUserInteractingRef = useRef(false);
+  const interactionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const recordUserInteraction = () => {
+    isUserInteractingRef.current = true;
+    if (interactionTimeoutRef.current) {
+      clearTimeout(interactionTimeoutRef.current);
+    }
+    interactionTimeoutRef.current = setTimeout(() => {
+      isUserInteractingRef.current = false;
+    }, 1000);
+  };
+
   // Vocal coaching states and coordinate cache refs (MW-61)
   const [activeSentenceIndex, setActiveSentenceIndex] = useState(0);
   const sentenceCoordinates = useRef<{ startY: number; endY: number; index: number }[]>([]);
@@ -193,6 +207,29 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       if (brakeTimeoutRef.current) {
         clearTimeout(brakeTimeoutRef.current);
       }
+      if (interactionTimeoutRef.current) {
+        clearTimeout(interactionTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Track user interaction on scroll container
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const passiveEvents = ['wheel', 'touchmove', 'pointerdown'];
+    passiveEvents.forEach(event => {
+      container.addEventListener(event, recordUserInteraction, { passive: true });
+    });
+    
+    container.addEventListener('keydown', recordUserInteraction);
+
+    return () => {
+      passiveEvents.forEach(event => {
+        container.removeEventListener(event, recordUserInteraction);
+      });
+      container.removeEventListener('keydown', recordUserInteraction);
     };
   }, []);
 
@@ -486,6 +523,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           if (isTableReadActive) {
             window.dispatchEvent(new Event('studio-table-read-ended'));
           }
+          return;
         }
       }
       animationId = requestAnimationFrame(scroll);
@@ -653,36 +691,42 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   const handleScrollTelemetry = () => {
     if (!containerRef.current) return;
     const container = containerRef.current;
+    const maxScroll = container.scrollHeight - container.clientHeight;
 
-    const isProgrammatic = lastProgrammaticScrollTop.current !== -1 && Math.abs(container.scrollTop - lastProgrammaticScrollTop.current) < 2;
+    // Capped programmatic scroll check to handle browser-enforced boundaries
+    const expectedScroll = lastProgrammaticScrollTop.current !== -1 
+      ? Math.min(Math.max(0, maxScroll), lastProgrammaticScrollTop.current) 
+      : -1;
+    const isProgrammatic = lastProgrammaticScrollTop.current !== -1 && Math.abs(container.scrollTop - expectedScroll) < 2;
+
     if (!isProgrammatic) {
       lastProgrammaticScrollTop.current = -1;
 
-      // Identify active sentence passing eye-line anchor (30% height of viewport)
-      if (sentenceCoordinates.current.length > 0) {
-        const anchorY = container.scrollTop + container.clientHeight * 0.3;
-        const match = sentenceCoordinates.current.find(
-          coord => anchorY >= coord.startY && anchorY <= coord.endY
-        );
-        if (match && match.index !== activeSentenceIndex) {
-          setActiveSentenceIndex(match.index);
-          const channelName = `teleprompter_sync_${sessionId}`;
-          const channel = new BroadcastChannel(channelName);
-          channel.postMessage({
-            type: 'activeSentence',
-            index: match.index,
-            sender: 'main'
-          });
-          channel.close();
+      // Only broadcast scroll and sentence changes if triggered by direct user interaction
+      if (isUserInteractingRef.current) {
+        // Identify active sentence passing eye-line anchor (30% height of viewport)
+        if (sentenceCoordinates.current.length > 0) {
+          const anchorY = container.scrollTop + container.clientHeight * 0.3;
+          const match = sentenceCoordinates.current.find(
+            coord => anchorY >= coord.startY && anchorY <= coord.endY
+          );
+          if (match && match.index !== activeSentenceIndex) {
+            setActiveSentenceIndex(match.index);
+            const channelName = `teleprompter_sync_${sessionId}`;
+            const channel = new BroadcastChannel(channelName);
+            channel.postMessage({
+              type: 'activeSentence',
+              index: match.index,
+              sender: 'main'
+            });
+            channel.close();
+          }
         }
-      }
 
-      // Broadcast scroll progress if it's a user/auto scroll and not an incoming message sync
-      scrollAccumulatorRef.current = container.scrollTop;
+        // Broadcast scroll progress if it's a user/auto scroll and not an incoming message sync
+        scrollAccumulatorRef.current = container.scrollTop;
 
-      if (sessionId) {
-        const maxScroll = container.scrollHeight - container.clientHeight;
-        if (maxScroll > 0) {
+        if (sessionId && maxScroll > 0) {
           const progress = container.scrollTop / maxScroll;
           const channelName = `teleprompter_sync_${sessionId}`;
           const channel = new BroadcastChannel(channelName);
@@ -727,7 +771,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   return (
     <div className="flex flex-col h-full w-full select-none">
       {/* Control Header: UK English Labels */}
-      {!isMini && (
+      {!isMini && !isTableReadActive && (
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4 mb-4 shrink-0">
           <div className="flex items-center gap-2">
             {modalityMode !== 'interview' && (
@@ -956,10 +1000,10 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         <div 
           ref={containerRef}
           onScroll={handleScrollTelemetry}
-          style={{ fontSize: isMini ? '16px' : isTableReadActive ? '64px' : `${fontSize}px` }}
+          style={{ fontSize: isMini ? '16px' : `${fontSize}px` }}
           className={cn(
             "flex-grow overflow-y-auto pr-2 custom-scrollbar leading-relaxed italic font-serif select-none relative transition-all duration-700",
-            isTableReadActive ? "text-center px-6 max-w-5xl mx-auto py-16" : "",
+            isTableReadActive ? "text-left px-6 max-w-5xl mx-auto py-16" : "",
             isMirrored && "transform -scale-x-100"
           )}
         >

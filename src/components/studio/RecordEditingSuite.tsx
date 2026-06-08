@@ -24,6 +24,18 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
   const [isStitching, setIsStitching] = useState(false);
   const [isTrimmingAI, setIsTrimmingAI] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+
+  // Exit preview mode on Escape keypress
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isPreviewMode) {
+        setIsPreviewMode(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPreviewMode]);
 
   // Sync segment changes to internal EDL state
   useEffect(() => {
@@ -208,6 +220,14 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
             VIRTUAL EDL ACTIVE
           </span>
           <button
+            onClick={() => setIsPreviewMode(true)}
+            className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-400 hover:bg-emerald-500/20 text-emerald-400 font-mono text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
+            title="Open Cinematic Preview"
+          >
+            <Film className="w-3.5 h-3.5" />
+            <span>Director's Preview</span>
+          </button>
+          <button
             onClick={() => setIsMaximized(!isMaximized)}
             className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:border-emerald-400 hover:bg-emerald-500/10 text-white hover:text-emerald-400 transition-all cursor-pointer flex items-center justify-center"
             title={isMaximized ? "Restore down" : "Maximize view"}
@@ -225,10 +245,15 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
           
           {/* Video Preview Canvas Layer */}
           <div 
-            className={`relative w-full rounded-3xl overflow-hidden bg-black border border-white/5 shadow-2xl group/video flex items-center justify-center shrink-0 ${
-              isMaximized ? "lg:flex-grow lg:min-h-0 lg:h-0" : "aspect-video"
+            className={`relative w-full overflow-hidden bg-black border border-white/5 shadow-2xl group/video flex items-center justify-center transition-all duration-300 ${
+              isPreviewMode
+                ? "absolute inset-0 z-50 p-6 flex flex-col justify-between rounded-[2.5rem]"
+                : isMaximized 
+                  ? "lg:flex-grow lg:min-h-0 lg:h-0 rounded-3xl shrink-0" 
+                  : "aspect-video rounded-3xl shrink-0"
             }`}
-            style={isMaximized ? {} : { aspectRatio: '16 / 9' }}
+            style={(!isMaximized && !isPreviewMode) ? { aspectRatio: '16 / 9' } : {}}
+            onDoubleClick={() => setIsPreviewMode(!isPreviewMode)}
           >
             {isStitching ? (
               <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center gap-4">
@@ -269,23 +294,96 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
             {/* Dual buffer overlay controller */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20 z-20 pointer-events-none" />
 
+            {/* Director's Preview Top Bar */}
+            {isPreviewMode && (
+              <div className="absolute top-6 left-6 right-6 z-40 flex items-center justify-between border-b border-white/5 pb-3 bg-black/40 backdrop-blur-md px-4 py-2 rounded-xl opacity-0 group-hover/video:opacity-100 transition-opacity duration-300">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-pulse shadow-[0_0_8px_#06b6d4]" />
+                  <span className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.2em] font-mono">
+                    DIRECTOR'S PREVIEW MODE
+                  </span>
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setIsPreviewMode(false); }}
+                  className="px-3 py-1.5 text-[9px] font-mono text-white/60 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Minimize2 className="w-3.5 h-3.5" />
+                  Close Preview
+                </button>
+              </div>
+            )}
+
             {/* Play/Pause Button overlay */}
-            <div className={`absolute inset-0 flex items-center justify-center z-30 transition-opacity pointer-events-auto ${
-              isPlaying ? 'opacity-0 group-hover/video:opacity-100 bg-black/30' : 'opacity-100 bg-black/40'
-            }`}>
-              <button
-                onClick={togglePlay}
-                data-testid="play-pause-overlay-btn"
-                className="w-16 h-16 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/10 hover:border-emerald-400 hover:text-emerald-400 text-white flex items-center justify-center transition-all cursor-pointer shadow-2xl active:scale-95"
+            {!isPreviewMode && (
+              <div className={`absolute inset-0 flex items-center justify-center z-30 transition-opacity pointer-events-auto ${
+                isPlaying ? 'opacity-0 group-hover/video:opacity-100 bg-black/30' : 'opacity-100 bg-black/40'
+              }`}>
+                <button
+                  onClick={togglePlay}
+                  data-testid="play-pause-overlay-btn"
+                  className="w-16 h-16 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/10 hover:border-emerald-400 hover:text-emerald-400 text-white flex items-center justify-center transition-all cursor-pointer shadow-2xl active:scale-95"
+                >
+                  {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current translate-x-0.5" />}
+                </button>
+              </div>
+            )}
+
+            {/* Director's Preview Bottom Bar (Auto-hiding HUD controls) */}
+            {isPreviewMode && (
+              <div 
+                onClick={(e) => e.stopPropagation()}
+                className="absolute bottom-6 left-6 right-6 z-40 flex flex-col gap-3 bg-zinc-950/90 border border-white/10 rounded-2xl p-4 backdrop-blur-md shadow-2xl opacity-0 group-hover/video:opacity-100 transition-opacity duration-300"
               >
-                {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current translate-x-0.5" />}
-              </button>
-            </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                      className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-white hover:text-cyan-400 border border-white/10 hover:border-cyan-500/30 flex items-center justify-center transition-all cursor-pointer"
+                    >
+                      {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 translate-x-0.5" />}
+                    </button>
+                    <span className="text-[10px] font-mono text-white/60">
+                      {Math.floor(cumulativeTime / 60)}:{(Math.floor(cumulativeTime) % 60).toString().padStart(2, '0')} / {Math.floor(totalDuration / 60)}:{(Math.floor(totalDuration) % 60).toString().padStart(2, '0')}
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-mono text-cyan-400 uppercase tracking-widest bg-cyan-950/40 border border-cyan-500/20 px-2.5 py-0.5 rounded-full">
+                    CINEMATIC PREVIEW ACTIVE
+                  </span>
+                </div>
+                
+                {/* Embedded preview timeline scrubber */}
+                <div
+                  onClick={(e) => { e.stopPropagation(); handleTimelineClick(e); }}
+                  className="relative h-2 w-full bg-slate-900 border border-white/5 rounded-full overflow-hidden cursor-pointer p-0 hover:border-white/10 transition-colors"
+                >
+                  {edl.map((seg, idx) => {
+                    const widthPercentage = (seg.duration / totalDuration) * 100;
+                    return (
+                      <div
+                        key={seg.segmentId}
+                        className={`h-full relative transition-all ${
+                          idx === currentSegmentIndex
+                            ? 'bg-cyan-500/20'
+                            : 'bg-white/5'
+                        }`}
+                        style={{ width: `${widthPercentage}%` }}
+                      />
+                    );
+                  })}
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-cyan-400 shadow-[0_0_8px_#06b6d4] z-30 pointer-events-none"
+                    style={{ left: `${(cumulativeTime / totalDuration) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Live timing HUD */}
-            <div className="absolute bottom-4 right-6 z-30 font-mono text-[10px] text-white/60 bg-black/60 px-3 py-1 rounded-full border border-white/10 backdrop-blur-sm">
-              {Math.floor(cumulativeTime / 60)}:{(Math.floor(cumulativeTime) % 60).toString().padStart(2, '0')} / {Math.floor(totalDuration / 60)}:{(Math.floor(totalDuration) % 60).toString().padStart(2, '0')}
-            </div>
+            {!isPreviewMode && (
+              <div className="absolute bottom-4 right-6 z-30 font-mono text-[10px] text-white/60 bg-black/60 px-3 py-1 rounded-full border border-white/10 backdrop-blur-sm">
+                {Math.floor(cumulativeTime / 60)}:{(Math.floor(cumulativeTime) % 60).toString().padStart(2, '0')} / {Math.floor(totalDuration / 60)}:{(Math.floor(totalDuration) % 60).toString().padStart(2, '0')}
+              </div>
+            )}
           </div>
 
           {/* Custom Scrubber Timeline */}
