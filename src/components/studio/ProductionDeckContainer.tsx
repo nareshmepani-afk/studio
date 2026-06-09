@@ -159,6 +159,10 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
           createdAt: new Date().toISOString()
         });
         setSelectedProductionData((prev: any) => ({ ...prev, id: newDoc.id }));
+        
+        // Dynamically update the browser URL to point to the newly created document ID
+        // to ensure page refreshes (F5) reload this exact document instead of spawning a new draft.
+        router.replace(`/studio/production/${newDoc.id}`);
         return;
       }
 

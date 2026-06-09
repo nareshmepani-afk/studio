@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SoloStage from '../SoloStage';
 import React from 'react';
 import { Memory } from '@/types';
+import localforage from 'localforage';
 
 // Mock all heavy dependencies and lucide-react icons
 vi.mock('framer-motion', () => {
@@ -494,5 +495,50 @@ describe('Documentary Raw Capture Modality', () => {
     expect(screen.getByText('VIRTUAL EDL ACTIVE')).toBeDefined();
     expect(screen.getByText('Split Segment')).toBeDefined();
     expect(screen.getByText('AI Auto-Trim (Silence Cut)')).toBeDefined();
+  });
+});
+
+describe('Recovery Shield (Session Resilience)', () => {
+  const mockUpdate = vi.fn();
+  const initialMemory: Memory = {
+    id: 'test-secure-id',
+    title: 'Historic Journey',
+    description: 'Initial script description',
+    location: 'Nairobi',
+    country: 'Kenya',
+    tags: ['family', '1964'],
+    status: 'draft',
+    lastEdited: Date.now(),
+    dateComponents: { day: '12', month: 'May', year: '1964' },
+    scriptBlocks: []
+  } as any;
+
+  it('detects a cached take in localforage on mount and prompts to restore it', async () => {
+    const testBlob = new Blob(['restored-content'], { type: 'video/webm' });
+    const getItemSpy = vi.spyOn(localforage, 'getItem').mockResolvedValue(testBlob);
+
+    const { findByText } = render(
+      <SoloStage 
+        data={initialMemory} 
+        update={mockUpdate} 
+        currentStage={2}
+      />
+    );
+
+    const recoveryBannerText = await findByText('PERSISTENCE SHIELD // UNSTITCHED TAKE');
+    expect(recoveryBannerText).toBeDefined();
+
+    const restoreBtn = await findByText('Restore Take');
+    expect(restoreBtn).toBeDefined();
+
+    await act(async () => {
+      restoreBtn.click();
+    });
+
+    // Verify it restores the segments and opens the Editing Suite
+    expect(mockSetRecordedSegments).toHaveBeenCalled();
+    expect(await findByText('EDITING SUITE')).toBeDefined();
+
+    getItemSpy.mockRestore();
   });
 });

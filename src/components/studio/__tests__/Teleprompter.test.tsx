@@ -39,7 +39,8 @@ vi.mock('lucide-react', () => ({
   Pause: () => <div data-testid="pause-icon" />,
   ChevronUp: () => <div data-testid="chevron-up-icon" />,
   ChevronDown: () => <div data-testid="chevron-down-icon" />,
-  ExternalLink: () => <div data-testid="external-link-icon" />
+  ExternalLink: () => <div data-testid="external-link-icon" />,
+  Sparkles: () => <div data-testid="sparkles-icon" />
 }));
 
 describe('Teleprompter Component', () => {
@@ -62,7 +63,8 @@ describe('Teleprompter Component', () => {
     });
 
     render(<Teleprompter />);
-    expect(screen.getByText("Please select an authorised take in the Architect's Drawer.")).toBeInTheDocument();
+    expect(screen.getByText(/Please select an authorised take/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: "Architect's Drawer" })).toBeInTheDocument();
   });
 
   it('strictly enforces selectedTake over any background state and prompts if missing', () => {
@@ -80,7 +82,8 @@ describe('Teleprompter Component', () => {
     });
 
     render(<Teleprompter />);
-    expect(screen.getByText("Please select an authorised take in the Architect's Drawer.")).toBeInTheDocument();
+    expect(screen.getByText(/Please select an authorised take/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: "Architect's Drawer" })).toBeInTheDocument();
   });
 
   it('prioritises selectedTake over script', () => {

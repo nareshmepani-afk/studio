@@ -64,6 +64,7 @@ const mockUseStudioState = vi.fn(() => ({
   isMirrored: false,
   scrollSpeed: 2.0,
   isScrolling: false,
+  isRecording: false,
   showBreathingMarks: false,
   enablePunctuationBraking: false,
   isolateSentenceHighlight: false,
@@ -75,10 +76,25 @@ vi.mock('@/hooks/studio/useStudioState', () => ({
 }));
 
 describe('PopoutTeleprompter Component', () => {
+  const mockTracks = [{ stop: vi.fn() }];
+  const mockStream = {
+    getTracks: () => mockTracks
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     MockBroadcastChannel.instances = [];
     vi.useFakeTimers();
+
+    if (typeof navigator !== 'undefined') {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        writable: true,
+        configurable: true,
+        value: {
+          getUserMedia: vi.fn().mockResolvedValue(mockStream)
+        }
+      });
+    }
   });
 
   afterEach(() => {
@@ -93,6 +109,7 @@ describe('PopoutTeleprompter Component', () => {
       isMirrored: false,
       scrollSpeed: 2.0,
       isScrolling: false,
+      isRecording: false,
       showBreathingMarks: false,
       enablePunctuationBraking: false,
       isolateSentenceHighlight: false,
@@ -214,6 +231,7 @@ describe('PopoutTeleprompter Component', () => {
       isMirrored: false,
       scrollSpeed: 2.0,
       isScrolling: true, // Auto scrolling active
+      isRecording: false,
       showBreathingMarks: false,
       enablePunctuationBraking: false,
       isolateSentenceHighlight: false,
@@ -242,6 +260,7 @@ describe('PopoutTeleprompter Component', () => {
       isMirrored: false,
       scrollSpeed: 2.0,
       isScrolling: false,
+      isRecording: false,
       showBreathingMarks: true, // Breathing marks active!
       enablePunctuationBraking: false,
       isolateSentenceHighlight: false,
@@ -271,6 +290,7 @@ describe('PopoutTeleprompter Component', () => {
       isMirrored: false,
       scrollSpeed: 2.0,
       isScrolling: false,
+      isRecording: false,
       showBreathingMarks: false,
       enablePunctuationBraking: false,
       isolateSentenceHighlight: true, // Focus shield active!
@@ -286,5 +306,101 @@ describe('PopoutTeleprompter Component', () => {
     // Second sentence should have index 1 (inactive initially) -> check dim style class text-zinc-600/40
     const secondSent = screen.getByText('Second sentence.');
     expect(secondSent).toHaveClass('text-zinc-600/40');
+  });
+
+  it('calls window.close when close message is received', () => {
+    const closeSpy = vi.spyOn(window, 'close').mockImplementation(() => {});
+    render(<PopoutTeleprompter />);
+    
+    const channelInstance = MockBroadcastChannel.instances.find(i => i.name === 'teleprompter_sync_test-session');
+    expect(channelInstance).toBeDefined();
+
+    if (channelInstance && channelInstance.onmessage) {
+      channelInstance.onmessage({
+        data: {
+          type: 'close',
+          sender: 'main',
+        }
+      } as MessageEvent);
+      
+      expect(closeSpy).toHaveBeenCalled();
+    }
+    closeSpy.mockRestore();
+  });
+
+  it('toggles selfie camera preview on pressing KeyS or click', async () => {
+    render(<PopoutTeleprompter />);
+    
+    // Selfie badge is visible by default
+    expect(screen.getByText('SELFIE')).toBeInTheDocument();
+    
+    // Toggle off with KeyS
+    fireEvent.keyDown(window, { code: 'KeyS' });
+    expect(screen.queryByText('SELFIE')).not.toBeInTheDocument();
+
+    // Toggle on with button click
+    const toggleBtn = screen.getByRole('button', { name: /show selfie/i });
+    fireEvent.click(toggleBtn);
+    expect(screen.getByText('SELFIE')).toBeInTheDocument();
+  });
+
+  it('triggers startPerformance BroadcastChannel message when START PERFORMANCE is clicked', () => {
+    const createdInstances: any[] = [];
+    const originalPush = MockBroadcastChannel.instances.push;
+    MockBroadcastChannel.instances.push = function(instance: any) {
+      createdInstances.push(instance);
+      return originalPush.call(MockBroadcastChannel.instances, instance);
+    };
+
+    render(<PopoutTeleprompter />);
+    const startBtn = screen.getByRole('button', { name: /START PERFORMANCE/i });
+    expect(startBtn).toBeInTheDocument();
+    
+    fireEvent.click(startBtn);
+    
+    expect(createdInstances.length).toBe(2);
+    expect(createdInstances[1].postMessage).toHaveBeenCalledWith({
+      type: 'startPerformance',
+      sender: 'popout'
+    });
+
+    MockBroadcastChannel.instances.push = originalPush;
+  });
+
+  it('renders STOP PERFORMANCE button when isRecording is true and triggers stopPerformance BroadcastChannel message on click', () => {
+    mockUseStudioState.mockReturnValueOnce({
+      sessionId: 'test-session',
+      selectedTake: 'This is the selected take text.\n\nSecond paragraph content.',
+      fontSize: 24,
+      isMirrored: false,
+      scrollSpeed: 2.0,
+      isScrolling: false,
+      isRecording: true,
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
+      actions: mockActions,
+    });
+
+    const createdInstances: any[] = [];
+    const originalPush = MockBroadcastChannel.instances.push;
+    MockBroadcastChannel.instances.push = function(instance: any) {
+      createdInstances.push(instance);
+      return originalPush.call(MockBroadcastChannel.instances, instance);
+    };
+
+    render(<PopoutTeleprompter />);
+    const stopBtn = screen.getByRole('button', { name: /STOP PERFORMANCE/i });
+    expect(stopBtn).toBeInTheDocument();
+    
+    fireEvent.click(stopBtn);
+    
+    expect(createdInstances.length).toBe(2);
+    expect(createdInstances[1].postMessage).toHaveBeenCalledWith({
+      type: 'stopPerformance',
+      sender: 'popout'
+    });
+
+    MockBroadcastChannel.instances.push = originalPush;
   });
 });

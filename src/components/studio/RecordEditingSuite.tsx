@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 interface RecordEditingSuiteProps {
   segments: any[];
   onUpdateSegments: (newSegments: any[]) => void;
-  onApprove: (edl: EDLTrackSegment[]) => void;
+  onApprove: (edl: EDLTrackSegment[]) => Promise<void> | void;
   onDiscard: () => void;
 }
 
@@ -23,6 +23,26 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
   const [edl, setEdl] = useState<EDLTrackSegment[]>([]);
   const [isStitching, setIsStitching] = useState(false);
   const [isTrimmingAI, setIsTrimmingAI] = useState(false);
+  const [stitchingStatus, setStitchingStatus] = useState("Initializing transcode engine...");
+
+  useEffect(() => {
+    if (!isStitching) return;
+    const statuses = [
+      "Analyzing audio waveforms for zero-crossing alignment...",
+      "Splicing webm video containers...",
+      "Interpolating frame boundaries...",
+      "Compiling EDL manifest tracks...",
+      "Rendering final cinematic composite..."
+    ];
+    let idx = 0;
+    setStitchingStatus(statuses[0]);
+    const interval = setInterval(() => {
+      idx = (idx + 1) % statuses.length;
+      setStitchingStatus(statuses[idx]);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [isStitching]);
+
   const [isMaximized, setIsMaximized] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
@@ -194,9 +214,15 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
   };
 
   // Stitch & Approve Submit
-  const handleStitch = () => {
+  const handleStitch = async () => {
     setIsStitching(true);
-    onApprove(edl);
+    try {
+      await onApprove(edl);
+    } catch (err) {
+      console.error("[RecordEditingSuite] Stitch error caught:", err);
+    } finally {
+      setIsStitching(false);
+    }
   };
 
   return (
@@ -256,15 +282,40 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
             onDoubleClick={() => setIsPreviewMode(!isPreviewMode)}
           >
             {isStitching ? (
-              <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center gap-4">
-                <Loader2 className="w-12 h-12 text-emerald-400 animate-spin" />
-                <div className="text-center space-y-2">
-                  <h4 className="text-xs font-black text-white uppercase tracking-[0.2em] font-mono animate-pulse">
+              <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center gap-6 p-6">
+                <div className="relative flex items-center justify-center">
+                  <Loader2 className="w-16 h-16 text-emerald-400 animate-spin absolute" />
+                  <Film className="w-6 h-6 text-emerald-400/60 animate-pulse" />
+                </div>
+                <div className="text-center space-y-3 max-w-xs">
+                  <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.25em] font-mono animate-pulse">
                     COMMENCING CINEMATIC STITCH
                   </h4>
-                  <p className="text-[10px] text-white/40 tracking-wider">
+                  <p className="text-[9px] text-white/50 tracking-widest font-mono uppercase">
                     FRAME-ACCURATE ALIGNMENT IN PROGRESS
                   </p>
+                  
+                  {/* Dynamic Status Message */}
+                  <p className="text-[9px] text-white/30 italic font-mono min-h-[1.5em] transition-all duration-300">
+                    {stitchingStatus}
+                  </p>
+                  
+                  {/* Animated Loader Bar */}
+                  <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden mx-auto mt-4 relative border border-white/5">
+                    <motion.div 
+                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full"
+                      initial={{ width: "0%" }}
+                      animate={{ 
+                        width: ["0%", "100%"],
+                      }}
+                      transition={{ 
+                        duration: 3, 
+                        ease: "easeInOut",
+                        repeat: Infinity,
+                        repeatType: "loop"
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             ) : null}

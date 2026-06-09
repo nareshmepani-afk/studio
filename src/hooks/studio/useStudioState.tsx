@@ -79,6 +79,7 @@ interface StudioActions {
   setScript: (script: string) => void;
   setMode: (mode: 'solo' | 'director' | 'guest_director' | 'guest') => void;
   toggleRecording: () => void;
+  setRecording: (val: boolean) => void;
   setDrafting: (isDrafting: boolean) => void;
   setDetectedAnchors: (anchors: DetectedAnchor[]) => void;
   setActiveAnchorTypes: (types: CatalystType[]) => void;
@@ -162,8 +163,8 @@ function URLStateSync({
 export const StudioProvider = ({ children, initialState }: { children: ReactNode, initialState?: Partial<StudioState> }) => {
   const [state, setState] = useState<StudioState>({
     isScrolling: false,
-    scrollSpeed: 1,
-    fontSize: 24,
+    scrollSpeed: 0.4,
+    fontSize: 32,
     isMirrored: false,
     script: 'Loading your script...',
     mode: 'solo',
@@ -196,8 +197,8 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     durationUnit: 'years',
     narratorAgeAtTime: 25,
     selectedTake: null,
-    showBreathingMarks: false,
-    enablePunctuationBraking: false,
+    showBreathingMarks: true,
+    enablePunctuationBraking: true,
     isolateSentenceHighlight: false,
     dispatcher: undefined,
     ...(initialState || {}),
@@ -396,6 +397,7 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     setScript: (script) => setState(s => ({ ...s, script })), // Local only
     setMode: (mode) => setState(s => ({ ...s, mode })),
     toggleRecording: () => setState(s => ({ ...s, isRecording: !s.isRecording })),
+    setRecording: (val) => setState(s => ({ ...s, isRecording: val })),
     setDrafting: (isDrafting) => setState(s => ({ ...s, isDrafting })),
     setDetectedAnchors: (anchors) => setState(s => {
       if (JSON.stringify(s.detectedAnchors) === JSON.stringify(anchors)) {

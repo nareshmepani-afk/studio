@@ -29,7 +29,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { generateInterviewQuestion, analyzeFraming } from '@/actions/aiWeaver';
 import { synthesizeStudioSpeech } from '@/actions/studio-vocal';
 import { useCamera } from '@/hooks/useCamera';
-import { useMediaRecorder } from '@/hooks/use-media-recorder';
+import { useMediaRecorder, type EDLTrackSegment } from '@/hooks/use-media-recorder';
 import { useAudioLevel } from '@/hooks/use-audio-level';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { Slider } from '@/components/ui/slider';
@@ -55,9 +55,10 @@ import { useTableRead } from '@/hooks/studio/useTableRead';
 import { TableReadPanel } from './TableReadPanel';
 import { StudioBriefing } from './StudioBriefing';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import { app, storage } from '@/lib/firebase';
+import { app, storage, db } from '@/lib/firebase';
 import { ref, uploadBytesResumable } from 'firebase/storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { doc, setDoc } from 'firebase/firestore';
 import localforage from 'localforage';
 import { RecordEditingSuite } from './RecordEditingSuite';
 
@@ -127,6 +128,17 @@ export default function SoloStage({
       };
     }
   }, []);
+
+  // Safety guard: If selectedTake is null/empty but the user has saved prose or description in data, initialize it.
+  useEffect(() => {
+    if ((data?.prose || data?.description) && !selectedTake) {
+      const fallbackText = data.prose || data.description;
+      console.log("[SoloStage] Auto-syncing selectedTake fallback from data:", fallbackText.substring(0, 40) + "...");
+      if (typeof globalActions?.setSelectedTake === 'function') {
+        globalActions.setSelectedTake(fallbackText);
+      }
+    }
+  }, [data?.prose, data?.description, selectedTake, globalActions]);
 
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -299,6 +311,8 @@ export default function SoloStage({
   const [reviewDuration, setReviewDuration] = useState(0);
   const [reviewMuted, setReviewMuted] = useState(false);
   const [isStitching, setIsStitching] = useState(false);
+  const [showStitchFallbackModal, setShowStitchFallbackModal] = useState(false);
+  const [stuckEdl, setStuckEdl] = useState<any[]>([]);
 
   // Automatically close the Wireless Lens Bridge modal once linked
   useEffect(() => {
@@ -329,6 +343,84 @@ export default function SoloStage({
     uploadProgress, 
     uploadResult 
   } = useMediaRecorder(stream);
+
+  // Synchronise useMediaRecorder's isRecording state to global studio state context
+  useEffect(() => {
+    if (typeof globalActions?.setRecording === 'function') {
+      globalActions.setRecording(isRecording);
+    }
+  }, [isRecording, globalActions]);
+
+  // Resiliency Shield: Unsaved take detection & recovery
+  const [showRestorePrompt, setShowRestorePrompt] = useState(false);
+  const [cachedTakeBlob, setCachedTakeBlob] = useState<Blob | null>(null);
+
+  useEffect(() => {
+    if (!data?.id) {
+      console.log("[SoloStage] Resiliency Shield: No active memory ID to perform local storage backup scan.");
+      return;
+    }
+    const cacheKey = `backup_take_${data.id}`;
+    console.log(`[SoloStage] Resiliency Shield: Scanning local storage (IndexedDB) for key "${cacheKey}"...`);
+    
+    localforage.getItem<Blob>(cacheKey)
+      .then((cachedBlob) => {
+        if (cachedBlob && cachedBlob.size > 0) {
+          console.log(`[SoloStage] Resiliency Shield: SUCCESS! Unsaved take detected in IndexedDB (${cachedBlob.size} bytes)`);
+          setCachedTakeBlob(cachedBlob);
+          setShowRestorePrompt(true);
+        } else {
+          console.log(`[SoloStage] Resiliency Shield: Scan complete. No unsaved take found for key "${cacheKey}" (result: ${cachedBlob ? 'empty blob' : 'null'}).`);
+        }
+      })
+      .catch((err) => {
+        console.warn("[SoloStage] Resiliency Shield: Error scanning IndexedDB:", err);
+      });
+  }, [data?.id]);
+
+  const handleRestoreTake = () => {
+    if (!cachedTakeBlob) return;
+    
+    console.log("[SoloStage] Restoring unsaved take from IndexedDB...");
+    const restoredSegment: EDLTrackSegment = {
+      segmentId: `seg_restored_${Date.now()}`,
+      blob: cachedTakeBlob,
+      blobUrl: URL.createObjectURL(cachedTakeBlob),
+      startOffset: 0,
+      endOffset: 15,
+      duration: 15
+    };
+    
+    setRecordedSegments([restoredSegment]);
+    setReviewTake(true); // Open review overlay immediately
+    setShowRestorePrompt(false);
+    
+    toast.success("Take Restored", {
+      description: "Your previous recording session has been successfully recovered!"
+    });
+  };
+
+  // Trigger vocal director feedback on stop recording ("Cut!" or "That's a wrap!")
+  const wasRecordingRef = useRef(false);
+  useEffect(() => {
+    if (wasRecordingRef.current && !isRecording) {
+      const duration = recordingTime;
+      const phrase = duration >= 15 ? "That's a wrap!" : "Cut!";
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(phrase);
+        utterance.rate = 1.15;
+        utterance.volume = 1.0;
+        const voices = window.speechSynthesis.getVoices();
+        const englishVoice = voices.find(v => v.lang.startsWith('en-'));
+        if (englishVoice) {
+          utterance.voice = englishVoice;
+        }
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+    wasRecordingRef.current = isRecording;
+  }, [isRecording, recordingTime]);
 
   // Bind Cinematic Capture & Sealing Hooks
   const {
@@ -378,6 +470,31 @@ export default function SoloStage({
     window.addEventListener('studio-restart-take', handleRestartTake);
     return () => window.removeEventListener('studio-restart-take', handleRestartTake);
   }, [cancelCapture, setActiveBeatIndex]);
+
+  // Listen to remote start performance event from Pop-out
+  useEffect(() => {
+    const handleStartPerformance = () => {
+      console.log('[SoloStage] Received remote studio-start-performance custom event. Initiating capture...');
+      if (!isRecording && !isCountingIn && techAlignmentConfirmed) {
+        handleStartCapture();
+      } else {
+        console.warn('[SoloStage] Cannot start capture: ', { isRecording, isCountingIn, techAlignmentConfirmed });
+      }
+    };
+    window.addEventListener('studio-start-performance', handleStartPerformance);
+    return () => window.removeEventListener('studio-start-performance', handleStartPerformance);
+  }, [isRecording, isCountingIn, techAlignmentConfirmed, handleStartCapture]);
+
+  // Listen to remote stop performance event from Pop-out
+  useEffect(() => {
+    const handleStopPerformance = () => {
+      console.log('[SoloStage] Received remote studio-stop-performance custom event. Stopping recording...');
+      stopRecording();
+      setIsCameraActive(false);
+    };
+    window.addEventListener('studio-stop-performance', handleStopPerformance);
+    return () => window.removeEventListener('studio-stop-performance', handleStopPerformance);
+  }, [stopRecording]);
 
   // MOD-15: Auto-minimise calibration panels and auto-start interviewer mode when recording starts
   useEffect(() => {
@@ -605,11 +722,41 @@ export default function SoloStage({
       });
 
       const simulateError = typeof window !== 'undefined' && localStorage.getItem('dev_simulate_transcoder_error') === 'true';
-      const res = await stitchPerformanceReel({ 
-        memoryId: data?.id,
-        simulateError: simulateError
-      });
-      const resultData = res.data as { success: boolean; videoUrl: string };
+      const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      let resultData: { success: boolean; videoUrl: string };
+
+      try {
+        const res = await stitchPerformanceReel({ 
+          memoryId: data?.id,
+          simulateError: simulateError
+        });
+        resultData = res.data as { success: boolean; videoUrl: string };
+      } catch (err: any) {
+        if (isLocalhost) {
+          console.warn("[SoloStage] Firebase Cloud Function failed/missing locally. Simulating transcode on localhost...", err);
+          
+          // Fallback: update Firestore document directly since Cloud Function isn't running locally
+          const docRef = doc(db, 'users', userId || user?.uid || 'unknown', 'memories', data?.id || 'unknown');
+          const localVideoUrl = edl[0]?.blobUrl || '';
+          
+          await setDoc(docRef, { 
+            videoUrl: localVideoUrl,
+            isProductionLocked: true,
+            productionStage: 3 // Set to Stage 3 (Act IV - Cut)
+          }, { merge: true });
+
+          resultData = { success: true, videoUrl: localVideoUrl };
+          
+          toast.warning("STITCH SIMULATED (LOCALHOST)", {
+            description: "Using local video stream fallback. Firestore advanced."
+          });
+        } else {
+          console.error("[SoloStage] Production transcode failed. Launching user recovery fallback dialog...", err);
+          setStuckEdl(edl);
+          setShowStitchFallbackModal(true);
+          return;
+        }
+      }
 
       if (resultData.success) {
         toast.success("STITCH COMPLETE", {
@@ -659,7 +806,25 @@ export default function SoloStage({
     setIsCameraActive(true);
     setReviewPlaying(true);
     setReviewEnded(false);
+    
+    // Clear IndexedDB cache immediately on discard
+    if (data?.id) {
+      const cacheKey = `backup_take_${data.id}`;
+      localforage.removeItem(cacheKey).catch(() => {});
+    }
   };
+
+  // Persistence Shield: Auto-cache recorded takes in IndexedDB as soon as recording completes
+  useEffect(() => {
+    if (!data?.id) return;
+    const cacheKey = `backup_take_${data.id}`;
+    
+    if (recordedBlob && recordedBlob.size > 0) {
+      console.log(`[SoloStage] Resiliency Shield: Auto-caching recorded Blob (${recordedBlob.size} bytes) to IndexedDB: ${cacheKey}...`);
+      localforage.setItem(cacheKey, recordedBlob)
+        .catch((err) => console.warn("[SoloStage] Error auto-caching recordedBlob:", err));
+    }
+  }, [recordedBlob, data?.id]);
 
   const micLevel = useAudioLevel(stream);
   
@@ -3503,6 +3668,106 @@ export default function SoloStage({
             hostIP={hostIP}
             setHostIP={setHostIP}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Stitch Fallback Recovery Dialog */}
+      <Dialog open={showStitchFallbackModal} onOpenChange={setShowStitchFallbackModal}>
+        <DialogContent className="sm:max-w-md bg-zinc-950 border border-white/10 text-white font-mono rounded-[2rem] p-6 shadow-2xl">
+          <DialogHeader className="space-y-3">
+            <div className="flex items-center gap-2.5 text-rose-500">
+              <AlertTriangle className="w-5 h-5 animate-pulse" />
+              <DialogTitle className="font-mono text-xs uppercase tracking-[0.25em] font-black text-rose-400">
+                TRANSCODER TIMEOUT
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-zinc-400 text-[10px] leading-relaxed font-sans normal-case">
+              Your memory segments have been safely uploaded to storage, but the high-definition cloud stitching service is temporarily busy or unreachable. 
+              <br/><br/>
+              To avoid re-recording, you can bypass the transcode queue and proceed immediately using the raw recording.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-4">
+            <Button
+              onClick={async () => {
+                setShowStitchFallbackModal(false);
+                await handleStitchAndApprove(stuckEdl);
+              }}
+              className="w-full py-4 bg-zinc-900 border border-white/10 text-[9px] font-black uppercase tracking-widest text-zinc-300 hover:text-white rounded-xl transition-all cursor-pointer"
+            >
+              Retry Cloud Stitch
+            </Button>
+            <Button
+              onClick={async () => {
+                setShowStitchFallbackModal(false);
+                setIsStitching(true);
+                try {
+                  console.log("[SoloStage] User forced local fallback bypass. Saving raw segment directly...");
+                  const docRef = doc(db, 'users', userId || user?.uid || 'unknown', 'memories', data?.id || 'unknown');
+                  const localVideoUrl = stuckEdl[0]?.blobUrl || '';
+                  
+                  await setDoc(docRef, { 
+                    videoUrl: localVideoUrl,
+                    isProductionLocked: true,
+                    productionStage: 3 // Set to Stage 3 (Act IV - Cut)
+                  }, { merge: true });
+
+                  toast.success("TRANSCODE SKIPPED", {
+                    description: "Proceeding with raw take segments. Firestore advanced."
+                  });
+                  setReviewTake(false);
+                } catch (e: any) {
+                  console.error("[SoloStage] Local transcode bypass save failed:", e);
+                  toast.error("Bypass failed", { description: e.message });
+                } finally {
+                  setIsStitching(false);
+                }
+              }}
+              className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-[0_0_15px_rgba(16,185,129,0.25)] border-0"
+            >
+              Use Raw Take (No Re-Recording)
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Resiliency Shield: Restore Take Banner */}
+      <AnimatePresence>
+        {showRestorePrompt && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-24 right-6 md:right-10 z-[999] w-[calc(100%-3rem)] max-w-sm bg-zinc-950/95 backdrop-blur-3xl border border-emerald-500/30 p-5 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.8),0_0_30px_rgba(16,185,129,0.15)] flex flex-col gap-3.5"
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+              <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.25em]">PERSISTENCE SHIELD // UNSTITCHED TAKE</span>
+            </div>
+            
+            <p className="text-[10px] text-zinc-300 leading-relaxed font-sans">
+              We detected a recorded take for <strong className="text-white">"{data?.title || 'this memory'}"</strong> from your previous session that was not compiled or approved. Would you like to recover it?
+            </p>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setShowRestorePrompt(false);
+                  const cacheKey = `backup_take_${data?.id}`;
+                  localforage.removeItem(cacheKey).catch(() => {});
+                }}
+                className="flex-1 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all cursor-pointer border border-white/5"
+              >
+                Discard
+              </button>
+              <button
+                onClick={handleRestoreTake}
+                className="flex-grow-[2] py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-md border-0"
+              >
+                Restore Take
+              </button>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </>

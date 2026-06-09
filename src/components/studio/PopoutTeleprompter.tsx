@@ -80,6 +80,7 @@ export const PopoutTeleprompter: React.FC = () => {
     isMirrored,
     scrollSpeed,
     isScrolling,
+    isRecording,
     showBreathingMarks,
     enablePunctuationBraking,
     isolateSentenceHighlight,
@@ -92,7 +93,8 @@ export const PopoutTeleprompter: React.FC = () => {
       setSelectedTake,
       setShowBreathingMarks,
       setEnablePunctuationBraking,
-      setIsolateSentenceHighlight
+      setIsolateSentenceHighlight,
+      toggleRecording
     }
   } = useStudioState();
 
@@ -100,6 +102,42 @@ export const PopoutTeleprompter: React.FC = () => {
   const isInternalScroll = useRef(false);
   const [showAnchor, setShowAnchor] = useState(true);
   const [showHelper, setShowHelper] = useState(true);
+  const [showSelfie, setShowSelfie] = useState(true);
+  const [selfieStream, setSelfieStream] = useState<MediaStream | null>(null);
+  const selfieVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Dynamic Camera Stream Access for Selfie Preview
+  useEffect(() => {
+    if (!showSelfie) {
+      if (selfieStream) {
+        selfieStream.getTracks().forEach(track => track.stop());
+        setSelfieStream(null);
+      }
+      return;
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
+      navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+        .then(stream => {
+          setSelfieStream(stream);
+        })
+        .catch(err => {
+          console.warn("Could not access camera for pop-out selfie preview:", err);
+        });
+    }
+
+    return () => {
+      if (selfieStream) {
+        selfieStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [showSelfie]);
+
+  useEffect(() => {
+    if (selfieVideoRef.current && selfieStream) {
+      selfieVideoRef.current.srcObject = selfieStream;
+    }
+  }, [selfieStream]);
 
   // Gesture damping tracking (MW-60)
   const isDamped = useRef(false);
@@ -215,6 +253,24 @@ export const PopoutTeleprompter: React.FC = () => {
     }
   }, []);
 
+  const handleStartPerformance = () => {
+    console.log('[Popout] handleStartPerformance clicked, broadcasting startPerformance');
+    if (sessionId) {
+      const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+      channel.postMessage({ type: 'startPerformance', sender: 'popout' });
+      channel.close();
+    }
+  };
+
+  const handleStopPerformance = () => {
+    console.log('[Popout] handleStopPerformance clicked, broadcasting stopPerformance');
+    if (sessionId) {
+      const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+      channel.postMessage({ type: 'stopPerformance', sender: 'popout' });
+      channel.close();
+    }
+  };
+
   // Auto-hide helper guide after 6 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -234,7 +290,9 @@ export const PopoutTeleprompter: React.FC = () => {
       const { type, progress, sender, ...payload } = event.data;
       if (sender === 'popout') return; // Ignore own echoes
 
-      if (type === 'scroll' && containerRef.current) {
+      if (type === 'close') {
+        window.close();
+      } else if (type === 'scroll' && containerRef.current) {
         const container = containerRef.current;
         const maxScroll = container.scrollHeight - container.clientHeight;
         const targetScroll = progress * maxScroll;
@@ -271,6 +329,9 @@ export const PopoutTeleprompter: React.FC = () => {
         if (payload.activeSentenceIndex !== undefined && payload.activeSentenceIndex !== activeSentenceIndexRef.current) {
           setActiveSentenceIndex(payload.activeSentenceIndex);
         }
+        if (payload.isRecording !== undefined && payload.isRecording !== isRecording) {
+          toggleRecording();
+        }
       } else if (type === 'activeSentence') {
         if (payload.index !== undefined && payload.index !== activeSentenceIndexRef.current) {
           setActiveSentenceIndex(payload.index);
@@ -287,7 +348,7 @@ export const PopoutTeleprompter: React.FC = () => {
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
-  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, setScrolling, setScrollSpeed, setFontSize, toggleMirror, setSelectedTake, setShowBreathingMarks, setEnablePunctuationBraking, setIsolateSentenceHighlight]);
+  }, [sessionId, isScrolling, isRecording, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, setScrolling, setScrollSpeed, setFontSize, toggleMirror, setSelectedTake, setShowBreathingMarks, setEnablePunctuationBraking, setIsolateSentenceHighlight, toggleRecording]);
 
   const handleSentenceClick = (index: number) => {
     if (!containerRef.current) return;
@@ -462,6 +523,9 @@ export const PopoutTeleprompter: React.FC = () => {
           });
           channel.close();
         }
+      } else if (e.code === 'KeyS') {
+        e.preventDefault();
+        setShowSelfie(prev => !prev);
       } else if (e.code === 'KeyA') {
         e.preventDefault();
         setShowAnchor(prev => !prev);
@@ -470,7 +534,7 @@ export const PopoutTeleprompter: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleScrolling, setFontSize, fontSize, toggleMirror, isScrolling, isMirrored, sessionId, scrollSpeed, setScrollSpeed]);
+  }, [toggleScrolling, setFontSize, fontSize, toggleMirror, isScrolling, isMirrored, sessionId, scrollSpeed, setScrollSpeed, showSelfie]);
 
   // Automatic scrolling loop inside popout
   useEffect(() => {
@@ -585,6 +649,42 @@ export const PopoutTeleprompter: React.FC = () => {
 
   return (
     <div className="fixed inset-0 w-full h-full bg-black text-white flex flex-col font-serif select-none overflow-hidden">
+      {/* Floating START/STOP PERFORMANCE Button */}
+      {!isRecording ? (
+        <button
+          onClick={handleStartPerformance}
+          className="fixed bottom-24 left-8 z-45 px-4 py-1.5 bg-rose-600 border border-rose-500 text-white text-[8px] font-black uppercase tracking-[0.25em] rounded-full animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.6)] flex items-center gap-1.5 transition-colors hover:bg-rose-500 cursor-pointer"
+        >
+          <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+          START PERFORMANCE
+        </button>
+      ) : (
+        <button
+          onClick={handleStopPerformance}
+          className="fixed bottom-24 left-8 z-45 px-4 py-1.5 bg-zinc-900 border border-rose-500/50 text-rose-400 text-[8px] font-black uppercase tracking-[0.25em] rounded-full animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.3)] flex items-center gap-1.5 transition-colors hover:bg-rose-950/40 cursor-pointer"
+        >
+          <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-ping" />
+          STOP PERFORMANCE
+        </button>
+      )}
+
+      {/* Dynamic Webcam Selfie Preview (Top Center) */}
+      {showSelfie && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 w-40 h-28 bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 opacity-40 hover:opacity-100">
+          <video
+            ref={selfieVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover transform -scale-x-100"
+          />
+          <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-zinc-950/80 border border-white/10 text-[8px] font-black uppercase tracking-widest text-zinc-300 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>SELFIE</span>
+          </div>
+        </div>
+      )}
+
       {/* Eye-Line Visual Anchor Guide */}
       {showAnchor && (
         <div className="absolute top-[30%] left-0 right-0 h-[32px] pointer-events-none z-25 flex items-center justify-between px-3 -translate-y-1/2">
@@ -602,7 +702,10 @@ export const PopoutTeleprompter: React.FC = () => {
             animate={{ opacity: 1, y: 0, x: '-50%' }}
             exit={{ opacity: 0, y: -20, x: '-50%' }}
             transition={{ duration: 0.3 }}
-            className="absolute top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 bg-zinc-950/95 border border-white/10 rounded-2xl px-5 py-3 text-xs font-mono text-zinc-300 shadow-2xl backdrop-blur-md pointer-events-auto"
+            className={cn(
+              "absolute left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 bg-zinc-950/95 border border-white/10 rounded-2xl px-5 py-3 text-xs font-mono text-zinc-300 shadow-2xl backdrop-blur-md pointer-events-auto transition-all duration-300",
+              showSelfie ? "top-52" : "top-20"
+            )}
           >
             <div className="flex items-center gap-3.5">
               <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400">Shortcuts Guide</span>
@@ -614,7 +717,7 @@ export const PopoutTeleprompter: React.FC = () => {
               <span className="text-zinc-800">•</span>
               <div className="flex items-center gap-1.5">
                 <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-white text-[10px] font-bold shadow-sm">↑/↓</kbd>
-                <span>Font Size</span>
+                <span>Size</span>
               </div>
               <span className="text-zinc-800">•</span>
               <div className="flex items-center gap-1.5">
@@ -625,6 +728,11 @@ export const PopoutTeleprompter: React.FC = () => {
               <div className="flex items-center gap-1.5">
                 <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-white text-[10px] font-bold shadow-sm">A</kbd>
                 <span>Anchor</span>
+              </div>
+              <span className="text-zinc-800">•</span>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-white text-[10px] font-bold shadow-sm">S</kbd>
+                <span>Selfie</span>
               </div>
             </div>
             <button 
@@ -809,12 +917,24 @@ export const PopoutTeleprompter: React.FC = () => {
                 <kbd className="px-1 rounded bg-white/5 border border-white/10 text-white text-[9px] font-bold">A</kbd>
                 <span>Anchor</span>
               </div>
+              <span className="text-white/10">•</span>
+              <div className="flex items-center gap-1">
+                <kbd className="px-1 rounded bg-white/5 border border-white/10 text-white text-[9px] font-bold">S</kbd>
+                <span>Selfie</span>
+              </div>
               <span className="text-white/10">|</span>
               <button 
                 onClick={() => setShowAnchor(p => !p)} 
                 className="text-cyan-400 hover:text-cyan-300 font-bold bg-transparent border-0 outline-none cursor-pointer text-[10px]"
               >
                 {showAnchor ? 'Hide Line' : 'Show Line'}
+              </button>
+              <span className="text-white/10">|</span>
+              <button 
+                onClick={() => setShowSelfie(p => !p)} 
+                className="text-emerald-400 hover:text-emerald-300 font-bold bg-transparent border-0 outline-none cursor-pointer text-[10px]"
+              >
+                {showSelfie ? 'Hide Selfie' : 'Show Selfie'}
               </button>
             </div>
           </div>

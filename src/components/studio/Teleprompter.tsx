@@ -108,6 +108,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     sessionId,
     selectedTake, 
     isScrolling,
+    isRecording,
     scrollSpeed,
     fontSize,
     isMirrored,
@@ -124,7 +125,9 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       decreaseFontSize,
       setShowBreathingMarks,
       setEnablePunctuationBraking,
-      setIsolateSentenceHighlight
+      setIsolateSentenceHighlight,
+      setActiveDrawer,
+      toggleRecording
     }
   } = useStudioState();
 
@@ -278,10 +281,19 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         if (payload.activeSentenceIndex !== undefined && payload.activeSentenceIndex !== activeSentenceIndexRef.current) {
           setActiveSentenceIndex(payload.activeSentenceIndex);
         }
+        if (payload.isRecording !== undefined && payload.isRecording !== isRecording) {
+          toggleRecording();
+        }
       } else if (type === 'activeSentence') {
         if (payload.index !== undefined && payload.index !== activeSentenceIndexRef.current) {
           setActiveSentenceIndex(payload.index);
         }
+      } else if (type === 'startPerformance') {
+        console.log('[Teleprompter] BroadcastChannel received startPerformance, dispatching studio-start-performance');
+        window.dispatchEvent(new CustomEvent('studio-start-performance'));
+      } else if (type === 'stopPerformance') {
+        console.log('[Teleprompter] BroadcastChannel received stopPerformance, dispatching studio-stop-performance');
+        window.dispatchEvent(new CustomEvent('studio-stop-performance'));
       } else if (type === 'join') {
         // Popout just opened! Send current states immediately to popout for instant alignment
         channel.postMessage({
@@ -295,6 +307,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           enablePunctuationBraking,
           isolateSentenceHighlight,
           activeSentenceIndex,
+          isRecording,
           sender: 'main'
         });
 
@@ -317,7 +330,30 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
-  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, activeSentenceIndex, setScrolling, setFontSize, toggleMirror, setShowBreathingMarks, setEnablePunctuationBraking, setIsolateSentenceHighlight]);
+  }, [sessionId, isScrolling, isRecording, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, activeSentenceIndex, setScrolling, setFontSize, toggleMirror, setShowBreathingMarks, setEnablePunctuationBraking, setIsolateSentenceHighlight, toggleRecording]);
+
+  // Send close signal strictly when Teleprompter unmounts (navigating away from active stage)
+  useEffect(() => {
+    return () => {
+      if (sessionId) {
+        const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+        channel.postMessage({ type: 'close', sender: 'main' });
+        channel.close();
+      }
+    };
+  }, [sessionId]);
+
+  // Handle page refresh / tab close to notify popout
+  useEffect(() => {
+    if (!sessionId) return;
+    const handleUnload = () => {
+      const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+      channel.postMessage({ type: 'close', sender: 'main' });
+      channel.close();
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, [sessionId]);
 
   // Synchronize state changes dynamically to popout window
   useEffect(() => {
@@ -335,10 +371,11 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       enablePunctuationBraking,
       isolateSentenceHighlight,
       activeSentenceIndex,
+      isRecording,
       sender: 'main'
     });
     channel.close();
-  }, [sessionId, isScrolling, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, activeSentenceIndex]);
+  }, [sessionId, isScrolling, isRecording, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, activeSentenceIndex]);
 
   const handlePopout = () => {
     if (!sessionId) return;
@@ -1008,41 +1045,69 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           )}
         >
           <div className={cn("prose-invert opacity-90 select-none", isMini ? "pb-[150px] space-y-4" : "pb-[400px] space-y-8")}>
-            {formattedParagraphs.map((sentences, paraIdx) => {
-              const isActive = paraIdx === activeBeatIndex;
-              return (
-                <p
-                  key={paraIdx}
-                  className={cn(
-                    "prose-block transition-all duration-700",
-                    modalityMode === 'interview'
-                      ? isActive
-                        ? 'opacity-100 scale-100 text-emerald-300 font-bold shadow-teal-500/10'
-                        : paraIdx < activeBeatIndex
-                        ? 'opacity-10 scale-95 duration-100'
-                        : 'opacity-30 scale-95'
-                      : 'opacity-90'
-                  )}
-                >
-                  {sentences.map((sent) => (
-                    <span
-                      key={sent.index}
-                      data-sentence-index={sent.index}
-                      onClick={() => handleSentenceClick(sent.index)}
-                      className={cn(
-                        "transition-all duration-300 cursor-pointer hover:text-white",
-                        isolateSentenceHighlight
-                          ? sent.index === activeSentenceIndex
-                            ? "text-white font-medium drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]"
-                            : "text-zinc-600/40"
-                          : "text-zinc-100"
-                      )}
-                      dangerouslySetInnerHTML={{ __html: `${highlightSensoryAnchors(sent.text)} ` }}
-                    />
-                  ))}
+            {!selectedTake ? (
+              <div className="flex flex-col items-center justify-center text-center p-8 border border-white/5 bg-zinc-950/40 rounded-3xl backdrop-blur-sm max-w-lg mx-auto mt-12 space-y-4 shadow-xl">
+                <div className="p-3.5 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.15)] animate-pulse">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <h4 className="text-sm font-black uppercase tracking-widest text-zinc-300">No Script Take Selected</h4>
+                <p className="text-xs text-zinc-400 leading-relaxed max-w-sm">
+                  Please select an authorised take in the{' '}
+                  <TooltipProvider>
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => setActiveDrawer('architect')}
+                          className="text-cyan-400 hover:text-cyan-300 font-bold underline transition-colors cursor-pointer bg-transparent border-0 p-0 outline-none"
+                        >
+                          Architect's Drawer
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-slate-900 border-white/10 text-[10px] font-black uppercase tracking-widest text-zinc-200 py-2 px-3">
+                        Click to open the Scriptorium drawer & select your script take
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  .
                 </p>
-              );
-            })}
+              </div>
+            ) : (
+              formattedParagraphs.map((sentences, paraIdx) => {
+                const isActive = paraIdx === activeBeatIndex;
+                return (
+                  <p
+                    key={paraIdx}
+                    className={cn(
+                      "prose-block transition-all duration-700",
+                      modalityMode === 'interview'
+                        ? isActive
+                          ? 'opacity-100 scale-100 text-emerald-300 font-bold shadow-teal-500/10'
+                          : paraIdx < activeBeatIndex
+                          ? 'opacity-10 scale-95 duration-100'
+                          : 'opacity-30 scale-95'
+                        : 'opacity-90'
+                    )}
+                  >
+                    {sentences.map((sent) => (
+                      <span
+                        key={sent.index}
+                        data-sentence-index={sent.index}
+                        onClick={() => handleSentenceClick(sent.index)}
+                        className={cn(
+                          "transition-all duration-300 cursor-pointer hover:text-white",
+                          isolateSentenceHighlight
+                            ? sent.index === activeSentenceIndex
+                              ? "text-white font-medium drop-shadow-[0_0_8px_rgba(255,255,255,0.15)]"
+                              : "text-zinc-600/40"
+                            : "text-zinc-100"
+                        )}
+                        dangerouslySetInnerHTML={{ __html: `${highlightSensoryAnchors(sent.text)} ` }}
+                      />
+                    ))}
+                  </p>
+                );
+              })
+            )}
           </div>
         </div>
 
