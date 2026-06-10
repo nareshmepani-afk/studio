@@ -53,7 +53,7 @@ export default function StudioLayout({
           {children}
           <AnimatePresence mode="wait">
             {modal && (
-              <div key={pathname}>
+              <div key={pathname?.includes('/production/') ? '/studio/production' : pathname}>
                 {modal}
               </div>
             )}

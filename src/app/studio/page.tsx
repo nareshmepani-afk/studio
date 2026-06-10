@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useStudioData } from '@/hooks/studio/useStudioData';
 import { useStudioState } from '@/hooks/studio/useStudioState';
@@ -14,6 +14,41 @@ export default function StudioProductionPage() {
   const { chapters, memories, requests, stats, isLoading: studioLoading } = useStudioData(user?.uid || 'guest');
   const [directorPassStatus, setDirectorPassStatus] = useState('inactive');
   const [initialFlaggedPromptIds, setInitialFlaggedPromptIds] = useState<Set<string>>(new Set());
+  const pathname = usePathname();
+  const previousPathnameRef = useRef(pathname);
+
+  // Scroll Restoration Override: When navigating back from production modal, force scroll to top
+  useEffect(() => {
+    if (pathname === '/studio' && previousPathnameRef.current && previousPathnameRef.current.includes('/production/')) {
+      console.log("[StudioProductionPage] Transition back to dashboard detected. Enforcing scroll override...");
+      if (typeof window !== 'undefined') {
+        try {
+          window.history.scrollRestoration = 'manual';
+          console.log("[StudioProductionPage] scrollRestoration set to manual");
+        } catch (e) {
+          console.warn("[StudioProductionPage] Failed to set scrollRestoration to manual:", e);
+        }
+        
+        const forceScroll = () => {
+          const docHeight = document.documentElement.scrollHeight || document.body.scrollHeight;
+          const currentY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+          console.log(`[StudioProductionPage] Scroll Sync Check: pageHeight=${docHeight}px, scrollY=${currentY}px`);
+          
+          window.scrollTo(0, 0);
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+        };
+        
+        forceScroll();
+        setTimeout(forceScroll, 50);
+        setTimeout(forceScroll, 150);
+        setTimeout(forceScroll, 350);
+        setTimeout(forceScroll, 600);
+        setTimeout(forceScroll, 1000);
+      }
+    }
+    previousPathnameRef.current = pathname;
+  }, [pathname]);
 
   useEffect(() => {
     if (user?.directorPassStatus) {

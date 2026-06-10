@@ -99,15 +99,27 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         }
     } = useGlobalStudioState();
 
+    const [hasNavigatedBack, setHasNavigatedBack] = useState(false);
+    const prevStageRef = useRef<number>(0);
+
+    useEffect(() => {
+        if (prevStageRef.current >= 1 && currentStage === 0) {
+            console.log("[ProductionDeck] Navigated back from Act II+ to Act I. Setting hasNavigatedBack to true.");
+            setHasNavigatedBack(true);
+        }
+        prevStageRef.current = currentStage;
+    }, [currentStage]);
+
     const lastLoadedIdRef = useRef<string | null>(null);
     const isNewMemoryRef = useRef<boolean>(!memoryData?.id);
 
     useEffect(() => {
-        if (!memoryData?.id) return;
+        const currentRefId = memoryData?.id || memoryData?.promptId;
+        if (!currentRefId) return;
         
         // If it was a brand new memory that just got its ID assigned, 
         // transition it to an existing memory but do not overwrite current active state.
-        if (isNewMemoryRef.current) {
+        if (isNewMemoryRef.current && memoryData?.id) {
             console.log("[ProductionDeck] New memory ID assigned:", memoryData.id, ". Avoiding rehydration overwrite.");
             lastLoadedIdRef.current = memoryData.id;
             isNewMemoryRef.current = false;
@@ -115,30 +127,33 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         }
 
         // Only run sync when a different memory is loaded
-        if (memoryData.id === lastLoadedIdRef.current) return;
+        if (currentRefId === lastLoadedIdRef.current) return;
         
-        const targetStage = memoryData.productionStage || 0;
-        console.log("[ProductionDeck] Syncing/Rehydrating global state from Firestore memory data:", memoryData.id, "stage:", targetStage);
+        setHasNavigatedBack(false);
+        prevStageRef.current = 0;
+        
+        const targetStage = memoryData?.productionStage || 0;
+        console.log("[ProductionDeck] Syncing/Rehydrating global state from Firestore memory data:", currentRefId, "stage:", targetStage);
         
         // 1. Sync stage - Entry Rule: Every session MUST mount at Act I (The Scriptorium)
         setStage(0);
         
         // 2. Sync modality
-        if (memoryData.modality) {
+        if (hasNavigatedBack && memoryData?.modality) {
             setModality(memoryData.modality);
         } else {
             setModality(null);
         }
         
         // 3. Sync original hook
-        if (memoryData.originalHook) {
+        if (memoryData?.originalHook) {
             setPolishedOriginalHook(memoryData.originalHook);
         } else {
             setPolishedOriginalHook(null);
         }
         
         // 4. Sync selected vision
-        if (memoryData.activeVision) {
+        if (memoryData?.activeVision) {
             const type = (memoryData.activeVision === 'soul' || memoryData.activeVision === 'poetic') ? 'soul' :
                          (memoryData.activeVision === 'sensory' || memoryData.activeVision === 'direct') ? 'sensory' :
                          (memoryData.activeVision === 'cinematic' || memoryData.activeVision === 'nostalgic') ? 'cinematic' : null;
@@ -148,7 +163,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         }
         
         // 5. Sync review drafts
-        if (targetStage === 0 && memoryData.productionTakes && memoryData.productionTakes.length > 0) {
+        if (targetStage === 0 && memoryData?.productionTakes && memoryData.productionTakes.length > 0) {
             setReviewDrafts(memoryData.productionTakes);
             setIsReviewing(memoryData.isReviewing !== false);
         } else {
@@ -157,17 +172,17 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         }
         
         // 6. Sync temporal parameters
-        if (memoryData.timeframeScope) setTimeframeScope(memoryData.timeframeScope);
-        if (memoryData.durationQuantity) setDurationQuantity(memoryData.durationQuantity);
-        if (memoryData.durationUnit) setDurationUnit(memoryData.durationUnit);
-        if (memoryData.narratorAgeAtTime !== undefined) setNarratorAgeAtTime(memoryData.narratorAgeAtTime);
+        if (memoryData?.timeframeScope) setTimeframeScope(memoryData.timeframeScope);
+        if (memoryData?.durationQuantity) setDurationQuantity(memoryData.durationQuantity);
+        if (memoryData?.durationUnit) setDurationUnit(memoryData.durationUnit);
+        if (memoryData?.narratorAgeAtTime !== undefined) setNarratorAgeAtTime(memoryData.narratorAgeAtTime);
         
         // 6.5. Sync production lock
-        const isLocked = !!(memoryData.isProductionLocked || targetStage >= 1);
+        const isLocked = !!(memoryData?.isProductionLocked || targetStage >= 1);
         setIsProductionLocked(isLocked);
         if (isLocked) {
             if (typeof setSelectedTake === 'function') {
-                setSelectedTake(memoryData.prose || memoryData.description || null);
+                setSelectedTake(memoryData?.prose || memoryData?.description || null);
             }
         } else {
             if (typeof setSelectedTake === 'function') {
@@ -180,10 +195,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         setSynthesisError(null);
         
         // Set the ref so we don't sync again for the same memory ID
-        lastLoadedIdRef.current = memoryData.id;
+        lastLoadedIdRef.current = currentRefId;
         
     }, [
         memoryData?.id,
+        memoryData?.promptId,
         memoryData?.productionStage,
         memoryData?.modality,
         memoryData?.originalHook,
@@ -208,6 +224,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         setIsProductionLocked,
         setIsGeneratingDrafts,
         setSelectedTake,
+        hasNavigatedBack,
     ]);
 
     // Sync production lock state dynamically whenever it changes in memoryData,

@@ -39,17 +39,38 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   const lastLocalUpdateRef = useRef<number>(0);
   const deckRef = useRef<any>(null);
 
+  // Scroll to top on modal exit/unmount to prevent Next.js layout shift clamping bugs
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined') {
+        // We use a small timeout to let the modal transition close and Next.js router navigate
+        // before smoothly scrolling the main viewport back to the top dashboard view.
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 50);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (studioLoading || !chapters.length) return;
 
-    // GUARD: Only initialize data once per promptId to prevent "Split-Brain" resets 
+    const chapterPrompts = chapters.flatMap(c => c.prompts);
+
+    // Resolve cp from template ID or dynamically matched memory ID
+    let cp = chapterPrompts.find(p => p.id === promptId);
+    if (!cp) {
+      const memories = chapters.flatMap(c => c.prompts.map(p => p.memory).filter(Boolean));
+      const matchedMemory = memories.find(m => m?.id === promptId);
+      if (matchedMemory) {
+        console.log(`[ProductionDeckContainer] Mapping dynamic URL document ID "${promptId}" to prompt template ID "${matchedMemory.promptId}"`);
+        cp = chapterPrompts.find(p => p.id === matchedMemory.promptId);
+      }
+    }
+
+    // GUARD: Only initialize data once per resolved prompt to prevent "Split-Brain" resets
     // when background Firestore snapshots fire.
     if (lastLoadedId.current === promptId && isReady) {
-       // Supplemental Sync: Keep selectedProductionData in sync with background Firestore updates
-       // (e.g. Mentor adding content, or ID assignment)
-       const chapterPrompts = chapters.flatMap(c => c.prompts);
-       const cp = chapterPrompts.find(p => p.id === promptId);
-       
       if (cp?.memory) {
          // SHIELD: If we recently updated locally, ignore background snapshots for 2 seconds
          // to allow Firestore to catch up and prevent "text regression" flickers.
@@ -63,23 +84,27 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
                                (cp.memory.narratorAgeAtTime !== undefined && cp.memory.narratorAgeAtTime !== selectedProductionData?.narratorAgeAtTime);
 
          if (hasIdTransition || hasDataUpdate) {
+            console.log(`[ProductionDeckContainer] Firestore update synced to local state. Stage: ${cp.memory.productionStage}`);
             setSelectedProductionData((prev: any) => ({
               ...prev,
               ...cp.memory,
             }));
          }
       }
-       return;
+      return;
     }
 
-    // Logic replicated from StudioDashboard handleStartChapter
-    const chapterPrompts = chapters.flatMap(c => c.prompts);
-    const cp = chapterPrompts.find(p => p.id === promptId);
-    
     let memoryToEdit = null;
 
     if (cp?.memory) {
-        // Rehydrate memory data for the deck
+        console.log(`[ProductionDeckContainer] Loading existing memory document "${cp.memory.id}" (stage: ${cp.memory.productionStage}) for template "${cp.id}"`);
+        
+        // Sync browser URL bar to point to the actual document ID if we loaded via template ID
+        if (promptId === cp.id && typeof window !== 'undefined') {
+          console.log(`[ProductionDeckContainer] Syncing browser URL bar template path "/production/${cp.id}" to document ID "/production/${cp.memory.id}"`);
+          window.history.replaceState(null, '', `/studio/production/${cp.memory.id}`);
+        }
+
         const pid = cp.memory.promptId;
         const script = pid ? storyScripts[pid] : '';
         const formattedProse = script ? `<p>${script.split('\\n').join('</p><p>')}</p>` : '';
@@ -96,13 +121,17 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     } else {
         // New Production Draft
         const template = cp;
-        const script = promptId ? storyScripts[promptId] : '';
+        // Check if promptId matches a known script, otherwise check if resolved template ID matches
+        const templateId = cp?.id || promptId;
+        console.log(`[ProductionDeckContainer] Initializing new production draft for template "${templateId}"`);
+        
+        const script = templateId ? storyScripts[templateId] : '';
         const formattedProse = script ? `<p>${script.split('\\n').join('</p><p>')}</p>` : '';
 
         memoryToEdit = {
           title: template?.title || '',
           description: template?.description || '',
-          promptId: promptId,
+          promptId: templateId,
           status: 'draft',
           prose: formattedProse,
           sensoryConfig: [], // Default empty
@@ -162,12 +191,11 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         
         // Dynamically update the browser URL to point to the newly created document ID
         // to ensure page refreshes (F5) reload this exact document instead of spawning a new draft.
-        // We use both window.history.replaceState (for instant address bar update in intercepted modals)
-        // and Next.js router.replace (for routing context sync).
+        // We use window.history.replaceState directly to update the address bar silently
+        // and prevent Next.js from unmounting/remounting the active component.
         if (typeof window !== 'undefined') {
           window.history.replaceState(null, '', `/studio/production/${newDoc.id}`);
         }
-        router.replace(`/studio/production/${newDoc.id}`);
         return;
       }
 
