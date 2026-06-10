@@ -162,6 +162,11 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         
         // Dynamically update the browser URL to point to the newly created document ID
         // to ensure page refreshes (F5) reload this exact document instead of spawning a new draft.
+        // We use both window.history.replaceState (for instant address bar update in intercepted modals)
+        // and Next.js router.replace (for routing context sync).
+        if (typeof window !== 'undefined') {
+          window.history.replaceState(null, '', `/studio/production/${newDoc.id}`);
+        }
         router.replace(`/studio/production/${newDoc.id}`);
         return;
       }

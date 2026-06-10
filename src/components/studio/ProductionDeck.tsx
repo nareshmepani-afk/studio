@@ -875,12 +875,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                             {/* Back Navigation */}
                             <button
                                 onClick={async () => {
-                                    if (formRef.current?.flush) {
-                                        toast.info("Securing Draft...", { duration: 1000 });
-                                        await formRef.current.flush();
-                                    }
+                                    toast.info("Securing Draft...", { duration: 1500 });
+                                    await handleExit();
                                     toast.success("Draft Saved", { description: "Your progress is secure." });
-                                    router.push('/studio');
                                 }}
                                 className="flex items-center gap-3 tracking-wide text-[var(--room-accent)] hover:brightness-125 transition-all p-2 pr-4 rounded-xl hover:bg-white/5 group"
                             >
@@ -1106,7 +1103,10 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             <AnimatePresence>
                 {modality === null && !searchParams.get('modality') && (
                     <InstrumentSelection
-                        onSelect={setModality}
+                        onSelect={(selectedModality) => {
+                            setModality(selectedModality);
+                            handleUpdate({ modality: selectedModality });
+                        }}
                         onHoverChange={setHoveredInstrument}
                     />
                 )}
