@@ -96,6 +96,7 @@ vi.mock('localforage', () => ({
     removeItem: vi.fn().mockResolvedValue(undefined),
     setItem: vi.fn().mockResolvedValue(undefined),
     getItem: vi.fn().mockResolvedValue(null),
+    keys: vi.fn().mockResolvedValue([]),
   }
 }));
 
@@ -516,6 +517,7 @@ describe('Recovery Shield (Session Resilience)', () => {
   it('detects a cached take in localforage on mount and prompts to restore it', async () => {
     const testBlob = new Blob(['restored-content'], { type: 'video/webm' });
     const getItemSpy = vi.spyOn(localforage, 'getItem').mockResolvedValue(testBlob);
+    const keysSpy = vi.spyOn(localforage, 'keys').mockResolvedValue(['backup_take_test-secure-id']);
 
     const { findByText } = render(
       <SoloStage 
@@ -540,5 +542,6 @@ describe('Recovery Shield (Session Resilience)', () => {
     expect(await findByText('EDITING SUITE')).toBeDefined();
 
     getItemSpy.mockRestore();
+    keysSpy.mockRestore();
   });
 });

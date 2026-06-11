@@ -46,17 +46,6 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
   const [isMaximized, setIsMaximized] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
-  // Exit preview mode on Escape keypress
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isPreviewMode) {
-        setIsPreviewMode(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPreviewMode]);
-
   // Sync segment changes to internal EDL state
   useEffect(() => {
     const formatted = segments.map((seg) => ({
@@ -83,6 +72,31 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
     handleTimeUpdate,
     handleTimeUpdateB,
   } = useVideoSequencer({ edl });
+
+  // Keyboard scrubbing & escape controls
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept arrow keys if user is typing in a text field or slider
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.hasAttribute('contenteditable'))) {
+        return;
+      }
+
+      if (e.key === 'Escape' && isPreviewMode) {
+        setIsPreviewMode(false);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const step = e.shiftKey ? 1.0 : 0.1;
+        seekTo(Math.max(0, cumulativeTime - step));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        const step = e.shiftKey ? 1.0 : 0.1;
+        seekTo(Math.min(totalDuration, cumulativeTime + step));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPreviewMode, cumulativeTime, totalDuration, seekTo]);
 
   // Handle timeline scrubbing click
   const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {

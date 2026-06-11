@@ -99,7 +99,10 @@ describe('useAlchemy Persistence Shield & Handshake', () => {
     });
 
     // 1. Persistence Shield: should write to localforage first
-    expect(localforage.setItem).toHaveBeenCalledWith('backup_take_mem-456', mockBlob);
+    expect(localforage.setItem).toHaveBeenCalledWith('backup_take_mem-456', expect.objectContaining({
+      blob: mockBlob,
+      memoryId: 'mem-456'
+    }));
 
     // 2. Resumable storage upload: should trigger uploadBytesResumable
     expect(uploadBytesResumable).toHaveBeenCalledOnce();

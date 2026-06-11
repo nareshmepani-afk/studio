@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 interface UseAlchemyOptions {
   userId: string | undefined;
   memoryId: string | undefined;
+  promptId?: string | undefined;
   selectedTake: string | null;
   wordCount: number;
   onComplete?: (downloadUrl: string) => void;
@@ -17,6 +18,7 @@ interface UseAlchemyOptions {
 export function useAlchemy({
   userId,
   memoryId,
+  promptId,
   selectedTake,
   wordCount,
   onComplete
@@ -140,7 +142,13 @@ export function useAlchemy({
     // 1. PERSISTENCE SHIELD: Cache in IndexedDB via localforage before commencing upload
     try {
       console.log(`[useAlchemy] PERSISTENCE SHIELD: Caching raw video Blob in IndexedDB: ${cacheKey}...`);
-      await localforage.setItem(cacheKey, blob);
+      const cacheData = {
+        blob,
+        memoryId,
+        promptId: promptId || null,
+        timestamp: Date.now()
+      };
+      await localforage.setItem(cacheKey, cacheData);
     } catch (e) {
       console.warn("[useAlchemy] Persistence Shield cache write bypassed:", e);
     }
@@ -154,6 +162,10 @@ export function useAlchemy({
         try {
           console.log(`[useAlchemy] PERSISTENCE SHIELD: Clearing temporary IndexedDB backup: ${cacheKey}`);
           await localforage.removeItem(cacheKey);
+          if (promptId) {
+            console.log(`[useAlchemy] PERSISTENCE SHIELD: Clearing temporary IndexedDB backup for prompt: backup_take_${promptId}`);
+            await localforage.removeItem(`backup_take_${promptId}`);
+          }
         } catch (e) {
           console.warn("[useAlchemy] Persistence Shield cache cleanup warning:", e);
         }

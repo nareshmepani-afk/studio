@@ -453,7 +453,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
     requestAnimationFrame(() => {
       if (!containerRef.current) return;
       const newRects: Record<string, DOMRect> = {};
-      const spans = containerRef.current.querySelectorAll('.anchor-span, .pivot-span');
+      const spans = containerRef.current.querySelectorAll('.anchor-span, .pivot-span, .directive-span');
       
       spans.forEach((span) => {
         const id = span.getAttribute('data-token-id');
@@ -843,6 +843,69 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
     );
   }, [ghostWordInfo, readOnly]);
 
+  const directiveRanges = useMemo(() => {
+    if (!block.text) return [];
+    const regex = /\[(?:archive|visual|b-roll|cue):?\s*([^\]]+)\]/gi;
+    const ranges: { start: number; end: number; content: string }[] = [];
+    let match;
+    while ((match = regex.exec(block.text)) !== null) {
+      ranges.push({
+        start: match.index,
+        end: regex.lastIndex,
+        content: match[1]
+      });
+    }
+    return ranges;
+  }, [block.text]);
+
+  const directivePortals = useMemo(() => {
+    if (readOnly) return null;
+    let charOffset = 0;
+    return tokens.map((token: string, idx: number) => {
+      const tokenId = `${block.id}-${idx}`;
+      const rect = rects[tokenId];
+      const tokenLength = token.length;
+      
+      const overlap = directiveRanges.find(r => 
+        (charOffset >= r.start && charOffset < r.end) || 
+        (charOffset + tokenLength > r.start && charOffset + tokenLength <= r.end)
+      );
+      
+      const isDirectiveStart = overlap && charOffset === overlap.start;
+      charOffset += tokenLength;
+      
+      if (!isDirectiveStart || !rect || rect.width === 0) return null;
+      
+      return (
+        <Tooltip key={`dir-badge-${tokenId}`}>
+          <TooltipTrigger asChild>
+            <div
+              style={{
+                position: 'fixed',
+                left: rect.left,
+                top: rect.top - 20,
+                pointerEvents: 'auto',
+                zIndex: 9999,
+                cursor: 'help'
+              }}
+              className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500 text-slate-950 text-[8px] font-black uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.3)] select-none animate-fade-in"
+            >
+              <span>🎬 Visual Cutaway</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent className="bg-slate-950/95 border border-emerald-500/30 shadow-2xl backdrop-blur-md px-3 py-2 rounded-xl z-[10000] max-w-xs leading-relaxed">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Directorial Video Cue</span>
+              <p className="text-[9px] text-zinc-300 font-sans">
+                This is a suggestion for a visual cutaway (B-roll footage) during your memory. It will be filtered out of your spoken prompter during recording.
+              </p>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      );
+    });
+  }, [tokens, directiveRanges, rects, block.id, readOnly]);
+
   const { setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
 
   const style = {
@@ -881,6 +944,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
             <div className="fixed inset-0 pointer-events-none z-[9999]">
               {portalContent}
               {pivotPortalContent}
+              {directivePortals}
               <AnimatePresence>
                 {sparkleTriggerPortal}
               </AnimatePresence>
@@ -938,35 +1002,47 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
           }}
           className="z-10 pointer-events-none text-slate-200 w-full"
         >
-          {tokens.map((token: string, idx: number) => {
-            const clean = token.toLowerCase();
-            const isAnchor = !hideAnchors && anchors.some(a => a.word.toLowerCase() === clean);
-            
-            const cleanCleaned = clean.trim().replace(/[^\w]/g, '');
-            const pivotInfo = getActivePivotInfo(cleanCleaned);
-            const isPivoted = pivotInfo !== null && cleanCleaned !== pivotInfo.root;
-            const pivotTone = pivotInfo?.tone;
+          {(() => {
+            let charOffset = 0;
+            return tokens.map((token: string, idx: number) => {
+              const clean = token.toLowerCase();
+              const isAnchor = !hideAnchors && anchors.some(a => a.word.toLowerCase() === clean);
+              
+              const cleanCleaned = clean.trim().replace(/[^\w]/g, '');
+              const pivotInfo = getActivePivotInfo(cleanCleaned);
+              const isPivoted = pivotInfo !== null && cleanCleaned !== pivotInfo.root;
+              const pivotTone = pivotInfo?.tone;
 
-            const tokenId = `${block.id}-${idx}`;
-            const isGhosted = ghostWordInfo?.tokenIndex === idx;
+              const tokenId = `${block.id}-${idx}`;
+              const isGhosted = ghostWordInfo?.tokenIndex === idx;
 
-            return (
-              <span 
-                key={tokenId}
-                data-token-id={tokenId}
-                className={cn(
-                  isAnchor && "anchor-span border-b-2 border-emerald-500/50 bg-emerald-500/5",
-                  isPivoted && "pivot-span border-b-2",
-                  isPivoted && pivotTone === 'poetic' && "border-sky-500/50 bg-sky-500/5 text-sky-200",
-                  isPivoted && pivotTone === 'grit' && "border-amber-500/50 bg-amber-500/5 text-amber-200",
-                  isPivoted && pivotTone === 'heritage' && "border-emerald-500/50 bg-emerald-500/5 text-emerald-200",
-                  isGhosted && "bg-emerald-400/20 border-b border-emerald-400 animate-pulse rounded-md px-0.5"
-                )}
-              >
-                {token}
-              </span>
-            );
-          })}
+              const tokenLength = token.length;
+              const overlap = directiveRanges.find(r => 
+                (charOffset >= r.start && charOffset < r.end) || 
+                (charOffset + tokenLength > r.start && charOffset + tokenLength <= r.end)
+              );
+              const isDirective = !!overlap;
+              charOffset += tokenLength;
+
+              return (
+                <span 
+                  key={tokenId}
+                  data-token-id={tokenId}
+                  className={cn(
+                    isAnchor && "anchor-span border-b-2 border-emerald-500/50 bg-emerald-500/5",
+                    isPivoted && "pivot-span border-b-2",
+                    isPivoted && pivotTone === 'poetic' && "border-sky-500/50 bg-sky-500/5 text-sky-200",
+                    isPivoted && pivotTone === 'grit' && "border-amber-500/50 bg-amber-500/5 text-amber-200",
+                    isPivoted && pivotTone === 'heritage' && "border-emerald-500/50 bg-emerald-500/5 text-emerald-200",
+                    isGhosted && "bg-emerald-400/20 border-b border-emerald-400 animate-pulse rounded-md px-0.5",
+                    isDirective && "directive-span text-emerald-400/40 bg-emerald-500/5 italic font-mono decoration-dotted border-b border-emerald-500/20"
+                  )}
+                >
+                  {token}
+                </span>
+              );
+            });
+          })()}
         </div>
       </div>
     </motion.div>

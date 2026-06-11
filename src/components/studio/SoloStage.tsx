@@ -354,41 +354,208 @@ export default function SoloStage({
   // Resiliency Shield: Unsaved take detection & recovery
   const [showRestorePrompt, setShowRestorePrompt] = useState(false);
   const [cachedTakeBlob, setCachedTakeBlob] = useState<Blob | null>(null);
+  const recoveredKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (productionStage !== 2) {
+      setShowRestorePrompt(false);
+      return;
+    }
     if (!data?.id) {
       console.log("[SoloStage] Resiliency Shield: No active memory ID to perform local storage backup scan.");
       return;
     }
-    const cacheKey = `backup_take_${data.id}`;
-    console.log(`[SoloStage] Resiliency Shield: Scanning local storage (IndexedDB) for key "${cacheKey}"...`);
-    
-    localforage.getItem<Blob>(cacheKey)
-      .then((cachedBlob) => {
-        if (cachedBlob && cachedBlob.size > 0) {
-          console.log(`[SoloStage] Resiliency Shield: SUCCESS! Unsaved take detected in IndexedDB (${cachedBlob.size} bytes)`);
-          setCachedTakeBlob(cachedBlob);
+
+    console.log("[SoloStage] Resiliency Shield: Initiating multi-key scan in IndexedDB...");
+
+    localforage.keys()
+      .then(async (keys) => {
+        const backupKeys = keys.filter(k => k.startsWith('backup_take_'));
+        
+        let matchedBlob: Blob | null = null;
+        let matchedKey: string | null = null;
+
+        // 1. Try to find an exact match first (by ID or promptId)
+        for (const key of backupKeys) {
+          try {
+            const item = await localforage.getItem<any>(key);
+            if (!item) continue;
+
+            let matches = false;
+            let blob: Blob | null = null;
+
+            if (item instanceof Blob) {
+              // Legacy raw blob matching
+              const keyId = key.replace('backup_take_', '');
+              if (keyId === data.id || (data.promptId && keyId === data.promptId)) {
+                matches = true;
+                blob = item;
+              }
+            } else if (item && typeof item === 'object' && item.blob) {
+              // Structured object matching
+              if (item.memoryId === data.id || 
+                  (data.promptId && item.promptId === data.promptId) ||
+                  (item.promptId && item.promptId === data.id)) {
+                matches = true;
+                blob = item.blob;
+              }
+            }
+
+            if (matches && blob && blob.size > 0) {
+              console.log(`[SoloStage] Resiliency Shield: Match found for key "${key}" (${blob.size} bytes)`);
+              matchedBlob = blob;
+              matchedKey = key;
+              break;
+            }
+          } catch (e) {
+            console.warn(`[SoloStage] Error scanning key ${key}:`, e);
+          }
+        }
+
+        // 2. Global Fallback: If no exact match, restore the most recent unsaved backup in IndexedDB
+        if (!matchedBlob && backupKeys.length > 0) {
+          console.log("[SoloStage] Resiliency Shield: No exact match found. Engaging global recovery fallback...");
+          // Grab the first available backup key
+          const bestKey = backupKeys[0];
+          try {
+            const item = await localforage.getItem<any>(bestKey);
+            if (item) {
+              let blob: Blob | null = null;
+              if (item instanceof Blob) {
+                blob = item;
+              } else if (item && typeof item === 'object' && item.blob) {
+                blob = item.blob;
+              }
+
+              if (blob && blob.size > 0) {
+                console.log(`[SoloStage] Resiliency Shield: Global fallback match SUCCESS! Key: "${bestKey}" (${blob.size} bytes)`);
+                matchedBlob = blob;
+                matchedKey = bestKey;
+              }
+            }
+          } catch (e) {
+            console.warn(`[SoloStage] Error retrieving global fallback key ${bestKey}:`, e);
+          }
+        }
+
+        if (matchedBlob && matchedBlob.size > 0) {
+          setCachedTakeBlob(matchedBlob);
+          recoveredKeyRef.current = matchedKey;
           setShowRestorePrompt(true);
         } else {
-          console.log(`[SoloStage] Resiliency Shield: Scan complete. No unsaved take found for key "${cacheKey}" (result: ${cachedBlob ? 'empty blob' : 'null'}).`);
+          console.log("[SoloStage] Resiliency Shield: Scan complete. No unsaved take found.");
         }
       })
       .catch((err) => {
-        console.warn("[SoloStage] Resiliency Shield: Error scanning IndexedDB:", err);
+        console.warn("[SoloStage] Resiliency Shield: Error listing IndexedDB keys:", err);
       });
-  }, [data?.id]);
+  }, [data?.id, data?.promptId, productionStage]);
 
-  const handleRestoreTake = () => {
+  const handleRestoreTake = async () => {
     if (!cachedTakeBlob) return;
     
     console.log("[SoloStage] Restoring unsaved take from IndexedDB...");
+    
+    // Sniff the true duration of the video blob to prevent playback lockup
+    let duration = 15; // default fallback
+    const isTest = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+    
+    if (!isTest && typeof window !== 'undefined' && typeof document !== 'undefined') {
+      try {
+        duration = await new Promise<number>((resolve) => {
+          const video = document.createElement('video');
+          video.preload = 'auto'; // Ensure full local blob is loaded for seeking
+          video.muted = true;
+          video.playsInline = true;
+          
+          // Hide it off-screen and append to DOM to prevent Chrome from throttling media operations
+          video.style.position = 'fixed';
+          video.style.top = '-9999px';
+          video.style.left = '-9999px';
+          video.style.width = '1px';
+          video.style.height = '1px';
+          video.style.opacity = '0';
+          video.style.pointerEvents = 'none';
+          document.body.appendChild(video);
+          
+          const tempUrl = URL.createObjectURL(cachedTakeBlob);
+          let resolved = false;
+
+          console.log(`[SoloStage:Sniffer] Created object URL: ${tempUrl}. Size: ${cachedTakeBlob.size} bytes`);
+
+          const cleanup = () => {
+            if (resolved) return;
+            resolved = true;
+            try {
+              URL.revokeObjectURL(tempUrl);
+            } catch (e) {}
+            try {
+              video.remove(); // Remove from DOM
+            } catch (e) {}
+            video.onloadedmetadata = null;
+            video.onerror = null;
+            video.onseeked = null;
+          };
+
+          video.onloadedmetadata = () => {
+            const dur = video.duration;
+            console.log(`[SoloStage:Sniffer] onloadedmetadata. duration = ${dur}`);
+            if (dur === Infinity || isNaN(dur)) {
+              console.log("[SoloStage:Sniffer] WebM/MediaRecorder live stream dynamic seeking workaround triggered.");
+              video.currentTime = 1e9; // Seek to end
+              video.onseeked = () => {
+                const finalDur = (video.duration === Infinity || isNaN(video.duration)) ? video.currentTime : video.duration;
+                console.log(`[SoloStage:Sniffer] onseeked. finalDur = ${finalDur}, video.duration = ${video.duration}, video.currentTime = ${video.currentTime}`);
+                cleanup();
+                if (typeof finalDur === 'number' && isFinite(finalDur) && finalDur > 0) {
+                  resolve(finalDur);
+                } else {
+                  console.warn("[SoloStage:Sniffer] finalDur is not valid number, using 15 fallback");
+                  resolve(15);
+                }
+              };
+            } else {
+              cleanup();
+              if (typeof dur === 'number' && isFinite(dur) && dur > 0) {
+                resolve(dur);
+              } else {
+                console.warn("[SoloStage:Sniffer] dur is not valid number, using 15 fallback");
+                resolve(15);
+              }
+            }
+          };
+
+          video.onerror = (e) => {
+            console.error("[SoloStage:Sniffer] video.onerror triggered:", video.error);
+            cleanup();
+            resolve(15);
+          };
+
+          // Safe 10-second guard to prevent hanging if decoder loops on corrupted stream
+          setTimeout(() => {
+            if (!resolved) {
+              console.warn("[SoloStage:Sniffer] Sniffing video duration timed out (10s limit), using fallback.");
+              cleanup();
+              resolve(15);
+            }
+          }, 10000);
+
+          video.src = tempUrl;
+        });
+      } catch (e) {
+        console.warn("[SoloStage] Sniffing video duration encountered an error, using fallback:", e);
+      }
+    }
+
+    console.log(`[SoloStage] Sniffed restored take duration: ${duration}s`);
+
     const restoredSegment: EDLTrackSegment = {
       segmentId: `seg_restored_${Date.now()}`,
       blob: cachedTakeBlob,
       blobUrl: URL.createObjectURL(cachedTakeBlob),
       startOffset: 0,
-      endOffset: 15,
-      duration: 15
+      endOffset: duration,
+      duration: duration
     };
     
     setRecordedSegments([restoredSegment]);
@@ -581,6 +748,7 @@ export default function SoloStage({
   } = useAlchemy({
     userId: data?.userId,
     memoryId: data?.id,
+    promptId: data?.promptId,
     selectedTake: selectedTake || data?.prose || data?.description || null,
     wordCount: wordCount || 0,
     onComplete: () => {
@@ -812,6 +980,12 @@ export default function SoloStage({
       const cacheKey = `backup_take_${data.id}`;
       localforage.removeItem(cacheKey).catch(() => {});
     }
+    if (recoveredKeyRef.current) {
+      localforage.removeItem(recoveredKeyRef.current).catch(() => {});
+    }
+    if (data?.promptId) {
+      localforage.removeItem(`backup_take_${data.promptId}`).catch(() => {});
+    }
   };
 
   // Persistence Shield: Auto-cache recorded takes in IndexedDB as soon as recording completes
@@ -821,10 +995,16 @@ export default function SoloStage({
     
     if (recordedBlob && recordedBlob.size > 0) {
       console.log(`[SoloStage] Resiliency Shield: Auto-caching recorded Blob (${recordedBlob.size} bytes) to IndexedDB: ${cacheKey}...`);
-      localforage.setItem(cacheKey, recordedBlob)
+      const cacheData = {
+        blob: recordedBlob,
+        memoryId: data.id,
+        promptId: data.promptId || null,
+        timestamp: Date.now()
+      };
+      localforage.setItem(cacheKey, cacheData)
         .catch((err) => console.warn("[SoloStage] Error auto-caching recordedBlob:", err));
     }
-  }, [recordedBlob, data?.id]);
+  }, [recordedBlob, data?.id, data?.promptId]);
 
   const micLevel = useAudioLevel(stream);
   
@@ -3738,7 +3918,7 @@ export default function SoloStage({
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-6 md:right-10 z-[999] w-[calc(100%-3rem)] max-w-sm bg-zinc-950/95 backdrop-blur-3xl border border-emerald-500/30 p-5 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.8),0_0_30px_rgba(16,185,129,0.15)] flex flex-col gap-3.5"
+            className="fixed bottom-24 right-6 md:right-10 z-[999] w-[calc(100%-3rem)] max-w-sm bg-slate-950 border border-emerald-500/50 p-5 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.95),0_0_30px_rgba(16,185,129,0.2)] flex flex-col gap-3.5"
           >
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />

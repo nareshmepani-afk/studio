@@ -622,7 +622,15 @@ export const PopoutTeleprompter: React.FC = () => {
 
   const cleanText = useMemo(() => {
     if (!selectedTake) return '';
-    return selectedTake.replace(/\s+([.,!?;:])/g, '$1');
+    // Strip bracketed directorial directions
+    let text = selectedTake.replace(/\[[^\]]*\]/g, '');
+    // Clean up spaces before punctuation
+    text = text.replace(/\s+([.,!?;:])/g, '$1');
+    // Clean up duplicate periods that might occur if punctuation existed both inside/outside or adjacent
+    text = text.replace(/\.{2,}/g, '.');
+    // Collapse multiple spaces
+    text = text.replace(/\s+/g, ' ').trim();
+    return text;
   }, [selectedTake]);
 
   const textToPrompt = cleanText 
