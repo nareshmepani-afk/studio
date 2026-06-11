@@ -30,5 +30,7 @@ describe('Business Manifest Operational Shield', () => {
     expect(BUSINESS_MANIFEST.userLifecycles.paid_host_pass_expired.allowDataVisibility).toBe(true);
     expect(BUSINESS_MANIFEST.userLifecycles.paid_host_pass_expired.blockWriteActions).toBe(true);
     expect(BUSINESS_MANIFEST.userLifecycles.paid_host_pass_expired.ctaMapping.primary).toBe('Renew / Upgrade Pass');
+    expect(BUSINESS_MANIFEST.userLifecycles.paid_host_pass_expired.blockedVectors).toContain('CREATE_NEW_CHAPTER');
+    expect(BUSINESS_MANIFEST.userLifecycles.paid_host_pass_expired.blockedVectors).toContain('ENTER_RECORDING_PIPELINE');
   });
 });

@@ -29,7 +29,9 @@ export const BUSINESS_MANIFEST = {
         "SAVE_MEMORY_UPLOAD",
         "STITCH_AND_APPROVE",
         "SNAPSHOT_POSTER_FRAME",
-        "UPLOAD_CUSTOM_ARTWORK"
+        "UPLOAD_CUSTOM_ARTWORK",
+        "CREATE_NEW_CHAPTER",
+        "ENTER_RECORDING_PIPELINE"
       ],
       ctaMapping: {
         primary: "Renew / Upgrade Pass",

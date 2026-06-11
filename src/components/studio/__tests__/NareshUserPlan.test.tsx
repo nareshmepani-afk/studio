@@ -52,13 +52,15 @@ vi.mock('../overlays/DirectorialUpsellDialog', () => ({
   }
 }));
 
-// Mock useAuth specifically with 'inactive' status for nareshmepani@yahoo.com
+let mockPassStatus = 'inactive';
+
+// Mock useAuth specifically with dynamic pass status for nareshmepani@yahoo.com
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
     user: {
       uid: 'pZHGqC5xKXhRTIqVyAJCckYqlMA2',
       email: 'nareshmepani@yahoo.com',
-      directorPassStatus: 'inactive' // Free Preview
+      directorPassStatus: mockPassStatus
     },
     loading: false
   }),
@@ -126,7 +128,7 @@ vi.mock('@/hooks/studio/useStudioState', () => ({
   }),
 }));
 
-describe('User Plan Permissions (nareshmepani@yahoo.com - INACTIVE)', () => {
+describe('User Plan Permissions (nareshmepani@yahoo.com)', () => {
   const mockUpdate = vi.fn();
   const memoryData: Memory = {
     id: 'mem-naresh-1',
@@ -135,7 +137,13 @@ describe('User Plan Permissions (nareshmepani@yahoo.com - INACTIVE)', () => {
     status: 'draft',
   } as any;
 
-  it('allows reading memory draft info in the UI, but blocks stitching and triggers the upgrade block dialog', async () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('CASE 1: Inactive / Free Tier - Allows reading, blocks stitching, triggers upgrade block dialog', async () => {
+    mockPassStatus = 'inactive';
+
     render(
       <SoloStage 
         data={memoryData} 
@@ -144,24 +152,68 @@ describe('User Plan Permissions (nareshmepani@yahoo.com - INACTIVE)', () => {
       />
     );
 
-    // 1. Verify that read visibility is working (we can see the Editing Suite timeline)
     expect(screen.getByText('EDITING SUITE')).toBeDefined();
 
-    // 2. Locate the action button that triggers stitching (a cloud action)
     const stitchButton = screen.getByText('Stitch & Approve');
-    expect(stitchButton).toBeDefined();
-
-    // 3. Click the Stitch & Approve button
     await act(async () => {
       stitchButton.click();
     });
 
-    // 4. Assert that the write pipeline is BLOCKED and the cloud function is NOT called
     expect(mockUploadBytesResumable).not.toHaveBeenCalled();
     expect(mockHttpsCallable).not.toHaveBeenCalled();
 
-    // 5. Assert that the premium "Vault Unlock" upsell dialog is visible on screen
     expect(screen.getByText('Unlock the Memory Vault')).toBeDefined();
     expect(screen.getByText(/Your Director Pass is currently inactive or expired/i)).toBeDefined();
+  });
+
+  it('CASE 2: Expired Director Pass - Allows reading, blocks stitching, triggers upgrade/renew block dialog', async () => {
+    mockPassStatus = 'free_host_pass_expired';
+
+    render(
+      <SoloStage 
+        data={memoryData} 
+        update={mockUpdate} 
+        currentStage={2}
+      />
+    );
+
+    expect(screen.getByText('EDITING SUITE')).toBeDefined();
+
+    const stitchButton = screen.getByText('Stitch & Approve');
+    await act(async () => {
+      stitchButton.click();
+    });
+
+    expect(mockUploadBytesResumable).not.toHaveBeenCalled();
+    expect(mockHttpsCallable).not.toHaveBeenCalled();
+
+    expect(screen.getByText('Unlock the Memory Vault')).toBeDefined();
+    expect(screen.getByText(/Your Director Pass is currently inactive or expired/i)).toBeDefined();
+  });
+
+  it('CASE 3: Active Director Pass - Bypasses guest block and runs stitching upload ceremony successfully', async () => {
+    mockPassStatus = 'free_host_pass_active';
+
+    render(
+      <SoloStage 
+        data={memoryData} 
+        update={mockUpdate} 
+        currentStage={2}
+      />
+    );
+
+    expect(screen.getByText('EDITING SUITE')).toBeDefined();
+
+    const stitchButton = screen.getByText('Stitch & Approve');
+    await act(async () => {
+      stitchButton.click();
+    });
+
+    await waitFor(() => {
+      expect(mockUploadBytesResumable).toHaveBeenCalled();
+      expect(mockHttpsCallable).toHaveBeenCalled();
+    });
+
+    expect(screen.queryByTestId('upsell-dialog')).toBeNull();
   });
 });

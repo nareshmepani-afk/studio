@@ -30,6 +30,8 @@ import { detectAnchors } from '@/hooks/studio/useDirectorInk';
 import { generateDraftOptions, generateDirectorialBrief } from '@/actions/aiWeaver';
 import { generateSoundtrack } from '@/actions/audioWeaver';
 import { StudioBlueprint } from './StudioBlueprint';
+import { useAuth } from '@/hooks/useAuth';
+import { DirectorialUpsellDialog } from './overlays/DirectorialUpsellDialog';
 
 
 const DEFAULT_SIDEBAR_WIDTH = 280;
@@ -66,6 +68,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     );
     const [isRailRetracted, setIsRailRetracted] = useState(false);
     const [hasUnsavedTake, setHasUnsavedTake] = useState(false);
+
+    // Auth & Upsell State
+    const { user } = useAuth();
+    const [isUpsellOpen, setIsUpsellOpen] = useState(false);
+    const [upsellFeature, setUpsellFeature] = useState("recording new takes");
 
     const checkUnsavedTake = useCallback(() => {
         localforage.keys()
@@ -779,6 +786,14 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
         if ((isActComplete || isLowClarity || showPreFlight) && currentStage < 4) {
             const next = currentStage + 1;
+            if (next === 2) {
+                const hasActivePass = user?.directorPassStatus === 'free_host_pass_active' || user?.directorPassStatus === 'paid_host_pass_active';
+                if (!user || !hasActivePass) {
+                    setUpsellFeature("recording new takes");
+                    setIsUpsellOpen(true);
+                    return;
+                }
+            }
             setStage(next);
             setShowPreFlight(false); // Reset pre-flight
             if ((memoryData?.productionStage || 0) < next) {
@@ -788,7 +803,8 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     }, [
         currentStage, isReviewing, memoryData?.description, memoryData?.productionStage, isProductionLocked,
         selectedVision, isLowClarity, showPreFlight, isActComplete, handleUpdate,
-        timeframeScope, durationQuantity, durationUnit, narratorAgeAtTime, memoryData?.dateComponents?.year
+        timeframeScope, durationQuantity, durationUnit, narratorAgeAtTime, memoryData?.dateComponents?.year,
+        user, setIsUpsellOpen
     ]);
 
     const handleExit = useCallback(async () => {
@@ -1149,6 +1165,12 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             <OnboardingOverlay 
                 isOpen={showOnboarding}
                 onClose={handleOnboardingClose}
+            />
+
+            <DirectorialUpsellDialog 
+                isOpen={isUpsellOpen}
+                onClose={() => setIsUpsellOpen(false)}
+                requiredFeature={upsellFeature}
             />
         </div>
     );

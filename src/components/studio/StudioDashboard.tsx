@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from '@/components/ui/badge';
 import ProductionDeck from './ProductionDeck';
+import { DirectorialUpsellDialog } from './overlays/DirectorialUpsellDialog';
 
 // Icons
 import { 
@@ -69,6 +70,10 @@ export function StudioDashboard({
   
   const [flaggedPromptIds, setFlaggedPromptIds] = useState(initialFlaggedPromptIds);
   const [isCleaning, setIsCleaning] = useState(false);
+
+  // Guest Upsell State
+  const [isUpsellOpen, setIsUpsellOpen] = useState(false);
+  const [upsellFeature, setUpsellFeature] = useState("creating new scenes");
 
   // THE INVISIBLE GUIDE: Identify the next logical action for the director
   const recommendedPromptId = React.useMemo(() => {
@@ -344,6 +349,12 @@ export function StudioDashboard({
                         <TooltipTrigger asChild>
                           <div 
                             onClick={() => {
+                              const hasActivePass = directorPassStatus === 'free_host_pass_active' || directorPassStatus === 'paid_host_pass_active';
+                              if (!hasActivePass) {
+                                setUpsellFeature("creating new scenes");
+                                setIsUpsellOpen(true);
+                                return;
+                              }
                               if (canAccessGroup) {
                                 router.push(`/add-memory?custom=true&groupId=${chapter.id}`);
                               } else {
@@ -405,6 +416,11 @@ export function StudioDashboard({
         </div>
       </div>
 
+      <DirectorialUpsellDialog 
+        isOpen={isUpsellOpen}
+        onClose={() => setIsUpsellOpen(false)}
+        requiredFeature={upsellFeature}
+      />
     </div>
   );
 }
