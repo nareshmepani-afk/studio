@@ -45,8 +45,8 @@ export default function PerspectiveWrapper({ activeRoom, children, dominantType 
   };
 
   return (
-    <CinematicBackground theme={cinematicTheme} className={themeClass} minFullHeight={false}>
-      <div className="transition-colors duration-700 ease-in-out min-h-full w-full text-[var(--room-text)]">
+    <CinematicBackground theme={cinematicTheme} className={`${themeClass} h-full flex flex-col overflow-hidden`} minFullHeight={false}>
+      <div className="transition-colors duration-700 ease-in-out h-full w-full text-[var(--room-text)] flex flex-col overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeRoom}
@@ -55,7 +55,7 @@ export default function PerspectiveWrapper({ activeRoom, children, dominantType 
             animate="animate"
             exit="exit"
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }} // very cinematic cubic-bezier
-            className="w-full h-full"
+            className="w-full h-full flex flex-col overflow-hidden"
           >
             {children}
           </motion.div>

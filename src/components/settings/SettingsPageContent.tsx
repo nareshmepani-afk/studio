@@ -8,8 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { activateFreeDirectorPass } from '@/actions/userActions';
-import { Loader2, CheckCircle, XCircle, User, Mail, ShieldCheck, Ticket, Zap } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, User, Mail, ShieldCheck, Ticket, Zap, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 
 export function SettingsPageContent({ initialDirectorPassStatus, userEmail, userName }: { initialDirectorPassStatus: string, userEmail: string, userName: string }) {
   const [directorPassStatus, setDirectorPassStatus] = useState(initialDirectorPassStatus);
@@ -120,8 +121,22 @@ export function SettingsPageContent({ initialDirectorPassStatus, userEmail, user
                     <Ticket className="h-5 w-5 text-amber-400" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-white tracking-wide font-headline">Director Licensing</h2>
-                    <p className="text-xs text-white/30 uppercase tracking-widest">Manage production access passes</p>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-bold text-white tracking-wide font-headline">Membership & Licensing</h2>
+                      <TooltipProvider>
+                        <Tooltip delayDuration={100}>
+                          <TooltipTrigger asChild>
+                            <button className="text-white/30 hover:text-white/60 transition-colors p-0.5 rounded-full cursor-help">
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-slate-900 border border-white/10 text-white p-3 rounded-xl max-w-xs shadow-xl text-xs leading-relaxed">
+                            <strong>Licensing Passes</strong> unlock premium studio functionality such as interactive script writing guides, remote camera control, multi-track recording, and custom high-fidelity cinematic video stitching.
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <p className="text-xs text-white/30 uppercase tracking-widest">Manage your active subscription plan and licensing passes</p>
                   </div>
                 </div>
                 <PassStatusIndicator />
@@ -129,6 +144,28 @@ export function SettingsPageContent({ initialDirectorPassStatus, userEmail, user
             </div>
 
             <div className="p-8">
+               {/* Current Plan Specification Box */}
+               <div className="mb-6 p-5 rounded-2xl bg-white/[0.02] border border-white/5 flex items-start gap-4">
+                 <div className="p-2.5 bg-white/5 rounded-xl border border-white/5 text-amber-400 shrink-0">
+                   <ShieldCheck className="h-5 w-5" />
+                 </div>
+                 <div>
+                   <span className="text-[9px] uppercase font-black tracking-widest text-white/30">Active Membership Status</span>
+                   <h3 className="text-sm font-bold text-white mt-1">
+                     {directorPassStatus === 'free_host_pass_active' 
+                       ? 'Complimentary 6-Month Director Pass' 
+                       : directorPassStatus === 'paid_host_pass_active'
+                       ? 'Premium Studio Lifetime Pass'
+                       : 'Free Tier (Guest Preview Sandbox)'}
+                   </h3>
+                   <p className="text-xs text-white/40 mt-1 leading-relaxed">
+                     {directorPassStatus === 'inactive' && 'Your account is on the Free Preview. Activate a complimentary pass to save memory takes to the cloud, use remote mobile cameras, and stitch full reels.'}
+                     {directorPassStatus === 'free_host_pass_active' && 'Enjoy full complimentary access to all templates, analysis engines, mobile cameras, and sequential video stitching.'}
+                     {directorPassStatus === 'paid_host_pass_active' && 'Verified Premium. You have permanent unrestricted access to the complete production engine and hosting tools.'}
+                   </p>
+                 </div>
+               </div>
+
                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-6 relative overflow-hidden">
                   {directorPassStatus === 'inactive' ? (
                      <div className="flex flex-col md:flex-row items-center justify-between gap-6">

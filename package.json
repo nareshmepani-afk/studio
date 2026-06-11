@@ -8,7 +8,7 @@
     "dev": "next dev -H 0.0.0.0 --experimental-https",
     "dev:https": "next dev --experimental-https",
     "dev:mobile": "npm run dev",
-    "build": "next build",
+    "build": "node scripts/generateLivingDocs.js && next build",
     "start": "next start",
     "lint": "next lint --quiet",
     "type-check": "tsc --noEmit",

@@ -64,7 +64,7 @@ vi.mock('@/hooks/use-dictionary', () => ({
 }));
 
 vi.mock('@/hooks/useAuth', () => ({
-  useAuth: () => ({ user: { uid: 'test-user-id' }, loading: false }),
+  useAuth: () => ({ user: { uid: 'test-user-id', directorPassStatus: 'free_host_pass_active' }, loading: false }),
 }));
 
 // Mock firebase storage, functions and localforage for RecordEditingSuite integration
@@ -514,6 +514,11 @@ describe('Recovery Shield (Session Resilience)', () => {
     scriptBlocks: []
   } as any;
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRecordedSegments = [];
+  });
+
   it('detects a cached take in localforage on mount and prompts to restore it', async () => {
     const testBlob = new Blob(['restored-content'], { type: 'video/webm' });
     const getItemSpy = vi.spyOn(localforage, 'getItem').mockResolvedValue(testBlob);
@@ -540,6 +545,33 @@ describe('Recovery Shield (Session Resilience)', () => {
     // Verify it restores the segments and opens the Editing Suite
     expect(mockSetRecordedSegments).toHaveBeenCalled();
     expect(await findByText('EDITING SUITE')).toBeDefined();
+
+    getItemSpy.mockRestore();
+    keysSpy.mockRestore();
+  });
+
+  it('happy path: restoring a take updates local state, triggers stage jump, and persists stage update to Firestore', async () => {
+    const testBlob = new Blob(['restored-content'], { type: 'video/webm' });
+    const getItemSpy = vi.spyOn(localforage, 'getItem').mockResolvedValue(testBlob);
+    const keysSpy = vi.spyOn(localforage, 'keys').mockResolvedValue(['backup_take_test-secure-id']);
+
+    const { findByText } = render(
+      <SoloStage 
+        data={initialMemory} 
+        update={mockUpdate} 
+        currentStage={2}
+      />
+    );
+
+    const restoreBtn = await findByText('Restore Take');
+    expect(restoreBtn).toBeDefined();
+
+    await act(async () => {
+      restoreBtn.click();
+    });
+
+    // Verify it updates Firestore stage
+    expect(mockUpdate).toHaveBeenCalledWith({ productionStage: 2 });
 
     getItemSpy.mockRestore();
     keysSpy.mockRestore();

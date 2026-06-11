@@ -21,7 +21,7 @@ interface ProductionDeckContainerProps {
 export function ProductionDeckContainer({ promptId, isModal = false }: ProductionDeckContainerProps) {
   const router = useRouter();
   const { user } = useAuth();
-  const { chapters, isLoading: studioLoading } = useStudioData(user?.uid || 'guest');
+  const { chapters, memories, isLoading: studioLoading } = useStudioData(user?.uid || 'guest');
   const pathname = usePathname();
   
   // THE INVISIBLE DISMISSAL: If we are in modal mode but navigated away from production, 
@@ -56,16 +56,41 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     if (studioLoading || !chapters.length) return;
 
     const chapterPrompts = chapters.flatMap(c => c.prompts);
+    const isTemplateId = chapterPrompts.some(p => p.id === promptId);
 
     // Resolve cp from template ID or dynamically matched memory ID
     let cp = chapterPrompts.find(p => p.id === promptId);
-    if (!cp) {
-      const memories = chapters.flatMap(c => c.prompts.map(p => p.memory).filter(Boolean));
-      const matchedMemory = memories.find(m => m?.id === promptId);
+    if (cp) {
+      cp = { ...cp };
+    } else if (memories) {
+      const matchedMemory = memories.find(m => m.id === promptId);
       if (matchedMemory) {
-        console.log(`[ProductionDeckContainer] Mapping dynamic URL document ID "${promptId}" to prompt template ID "${matchedMemory.promptId}"`);
-        cp = chapterPrompts.find(p => p.id === matchedMemory.promptId);
+        // Trace backward: Follow the chain of memory promptIds recursively until we find a match in static templates
+        let currentPromptId = matchedMemory.promptId;
+        let template = chapterPrompts.find(p => p.id === currentPromptId);
+        const visitedIds = new Set<string>([matchedMemory.id]);
+        
+        while (!template && currentPromptId && !visitedIds.has(currentPromptId)) {
+          visitedIds.add(currentPromptId);
+          const parentMemory = memories.find(m => m.id === currentPromptId);
+          if (parentMemory) {
+            currentPromptId = parentMemory.promptId;
+            template = chapterPrompts.find(p => p.id === currentPromptId);
+          } else {
+            break;
+          }
+        }
+        
+        if (template) {
+          cp = { ...template, memory: matchedMemory };
+        }
       }
+    }
+
+    // If it is not a template ID, and we haven't resolved cp (the memory), we must wait for it to sync
+    if (!isTemplateId && !cp) {
+      console.log(`[ProductionDeckContainer] URL ID "${promptId}" is an existing document, but not yet loaded in memories. Waiting for sync...`);
+      return;
     }
 
     // GUARD: Only initialize data once per resolved prompt to prevent "Split-Brain" resets
@@ -88,6 +113,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
             setSelectedProductionData((prev: any) => ({
               ...prev,
               ...cp.memory,
+              promptId: cp.id, // Enforce clean root prompt ID in local state update
             }));
          }
       }
@@ -105,7 +131,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
           window.history.replaceState(null, '', `/studio/production/${cp.memory.id}`);
         }
 
-        const pid = cp.memory.promptId;
+        const pid = cp.id; // Enforce resolved root template ID
         const script = pid ? storyScripts[pid] : '';
         const formattedProse = script ? `<p>${script.split('\\n').join('</p><p>')}</p>` : '';
         
@@ -116,6 +142,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
 
         memoryToEdit = {
             ...cp.memory,
+            promptId: cp.id, // Enforce resolved root template ID to break the chain at client-side source
             prose: loadedProse
         };
     } else {
@@ -143,7 +170,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         setIsReady(true);
         lastLoadedId.current = promptId;
     }
-  }, [chapters, studioLoading, promptId, isReady, selectedProductionData?.id]);
+  }, [chapters, memories, studioLoading, promptId, isReady, selectedProductionData?.id]);
 
   const handleUpdateProduction = useCallback(async (updatedDataOrFn: any) => {
     if (!user) return;

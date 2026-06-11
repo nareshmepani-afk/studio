@@ -874,6 +874,42 @@ export const mockPromptGroups: PromptGroup[] = [
       },
     ],
   },
+  {
+    id: 'historical-showcase',
+    title: {
+      en: 'Historical Experiments (Demo)',
+      gu: 'Historical Experiments (Demo)',
+    },
+    prompts: [
+      {
+        id: 'p_einstein',
+        title: 'Einsteinian Space-Time',
+        description: 'Explore the relativity of time and the bounds of imagination.',
+        text: {
+          en: 'Einsteinian Space-Time - Time, relativity, and imagination',
+          gu: 'Einsteinian Space-Time - Time, relativity, and imagination',
+        },
+        sensoryPrompts: [
+          {
+            id: 'sense1',
+            label: 'Scent of old paper and chalk dust',
+            placeholder: 'e.g. Dusty chalkboards, library books...'
+          },
+          {
+            id: 'sense2',
+            label: 'Sound of a ticking watch',
+            placeholder: 'e.g. Rhythm of clockwork, deep silence...'
+          },
+          {
+            id: 'sense3',
+            label: 'Feeling of a magnetic compass',
+            placeholder: 'e.g. Cold brass, a needle pointing north...'
+          }
+        ],
+        isFlaggedForReuse: false,
+      }
+    ],
+  }
 ];
 
 export const mockPrompts: Prompt[] = mockPromptGroups.flatMap(group => 

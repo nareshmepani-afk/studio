@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import * as jose from 'jose';
 import { SESSION_COOKIE_NAME } from './lib/constants';
+import { serverLog } from './utils/telemetry/serverLogger';
 
 // This secret is still needed for guest passes.
 const GUEST_SECRET = new TextEncoder().encode(process.env.GUEST_SESSION_SECRET || '');
@@ -18,73 +19,95 @@ const PROTECTED_ROUTES = [
   '/review'
 ];
 
-// Routes for unauthenticated users (e.g., login, register).
-const PUBLIC_ONLY_ROUTES = ['/login', '/register', '/forgot-password', '/auth/reset-password'];
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  
+  // Extract incoming x-trace-id header or generate if missing
+  const requestHeaders = new Headers(request.headers);
+  let traceId = requestHeaders.get('x-trace-id');
+  if (!traceId) {
+    traceId = `trc_${crypto.randomUUID().replace(/-/g, '')}`;
+    requestHeaders.set('x-trace-id', traceId);
+  }
+
+  // Telemetry log for trace interception
+  serverLog({
+    message: 'DISTRIBUTED CORRELATION TRACE INTERCEPTED // INGESTION POOL SECURE',
+    severity: 'INFO',
+    loggingContext: { traceId },
+  });
+
   const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   const guestPass = request.cookies.get('guest_pass')?.value;
+
+  let response: NextResponse;
 
   // Legacy Redirect: /prompts -> /studio
   if (pathname.startsWith('/prompts')) {
     const newPath = pathname.replace('/prompts', '/studio');
-    return NextResponse.redirect(new URL(newPath, request.url));
+    response = NextResponse.redirect(new URL(newPath, request.url));
   }
-
   // 1. Allow storyteller and guest director routes to pass through with sessionId
-  if (pathname.startsWith('/remote/') || 
+  else if (pathname.startsWith('/remote/') || 
       (pathname.startsWith('/director') && request.nextUrl.searchParams.has('sessionId')) ||
       (pathname.startsWith('/studio/remote-camera') && request.nextUrl.searchParams.has('sessionId')) ||
       (pathname.startsWith('/studio') && request.nextUrl.searchParams.has('sessionId') && request.nextUrl.searchParams.get('mode') === 'guest')) {
-    return NextResponse.next();
+    response = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
-
   // 2. Handle guest pass access for the archive.
-  if (pathname.startsWith('/archive')) {
+  else if (pathname.startsWith('/archive')) {
     if (!guestPass) {
-      // If no guest pass, redirect them. A page that explains guest passes might be better in the future.
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-    try {
-      // Verify the guest pass JWT.
-      await jose.jwtVerify(guestPass, GUEST_SECRET);
-      // If valid, allow access.
-      return NextResponse.next();
-    } catch (error) {
-      // If invalid, redirect and clear the bad cookie.
-      const response = NextResponse.redirect(new URL('/login', request.url));
-      response.cookies.delete('guest_pass');
-      return response;
+      response = NextResponse.redirect(new URL('/login', request.url));
+    } else {
+      try {
+        await jose.jwtVerify(guestPass, GUEST_SECRET);
+        response = NextResponse.next({
+          request: {
+            headers: requestHeaders,
+          },
+        });
+      } catch (error) {
+        response = NextResponse.redirect(new URL('/login', request.url));
+        response.cookies.delete('guest_pass');
+      }
     }
   }
-
-  // 3. REMOVED PUBLIC_ONLY_REDIRECT: Allow users to reach login/register even if they have a cookie.
-  // This prevents the loop where a stale cookie forces them to /studio which then fails.
-
   // 4. If user is NOT logged in and trying to access a protected route, redirect to login.
-  if (!sessionCookie && PROTECTED_ROUTES.some(route => pathname.startsWith(route))) {
+  else if (!sessionCookie && PROTECTED_ROUTES.some(route => pathname.startsWith(route))) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('from', pathname);
     loginUrl.searchParams.set('reason', 'unauthenticated');
-    return NextResponse.redirect(loginUrl);
+    response = NextResponse.redirect(loginUrl);
+  }
+  // 5. If none of the above, proceed as normal.
+  else {
+    response = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
 
-  // 5. If none of the above, proceed as normal.
-  return NextResponse.next();
+  // Force-set Trace ID into outbound response headers
+  response.headers.set('x-trace-id', traceId);
+
+  return response;
 }
 
-// Use the more robust "deny-by-default" matcher from the old root middleware.
+// Global edge middleware matching client requests and api routes
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - remote (already handled, but good to keep here)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|remote).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };
+

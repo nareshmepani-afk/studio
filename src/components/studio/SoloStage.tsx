@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { MemoryForm } from './MemoryForm';
 import { 
@@ -61,6 +62,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { doc, setDoc } from 'firebase/firestore';
 import localforage from 'localforage';
 import { RecordEditingSuite } from './RecordEditingSuite';
+import { DirectorialUpsellDialog } from './overlays/DirectorialUpsellDialog';
 
 interface RoomProps {
     data: Memory;
@@ -82,6 +84,7 @@ interface RoomProps {
     isUntouched?: boolean;
     onActivity?: () => void;
     formRef?: React.RefObject<any>;
+    onClearBackup?: () => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -94,7 +97,7 @@ export default function SoloStage({
   data, update, modality, setModality, onWordCountChange, 
   currentStage, mentorActive, onToggleMentor, onClarityChange,
   onNext, onPrev, isComplete, charge, wordCount, highlightClarity,
-  onboardingJustClosed, isUntouched, onActivity, formRef
+  onboardingJustClosed, isUntouched, onActivity, formRef, onClearBackup
 }: RoomProps) {
   const [mounted, setMounted] = useState(false);
   const { user, syncStatus } = useAuth();
@@ -145,6 +148,29 @@ export default function SoloStage({
   const [trimRange, setTrimRange] = useState<[number, number]>([0, 100]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSlowMo, setIsSlowMo] = useState(false);
+
+  // Guest Upsell State
+  const [isUpsellOpen, setIsUpsellOpen] = useState(false);
+  const [upsellFeature, setUpsellFeature] = useState("saving your memory");
+
+  const checkGuestAndUpsell = (feature: string) => {
+    const hasActivePass = user?.directorPassStatus === 'free_host_pass_active' || user?.directorPassStatus === 'paid_host_pass_active';
+    if (!user || !hasActivePass) {
+      setUpsellFeature(feature);
+      setIsUpsellOpen(true);
+      return true; // Is guest or expired, block action
+    }
+    return false; // Not guest, proceed
+  };
+
+  // Rehydrate trimRange when Firestore data or videoDuration loads
+  useEffect(() => {
+    if (data?.trimStart !== undefined || data?.trimEnd !== undefined) {
+      const start = data?.trimStart ?? 0;
+      const end = data?.trimEnd ?? (videoDuration || 100);
+      setTrimRange([start, end]);
+    }
+  }, [data?.trimStart, data?.trimEnd, videoDuration]);
 
   // Cinematic Pipeline State (Shared via Firestore)
   // BUGFIX: Prioritize global stage from prop, but allow local data fallback ONLY if prop is undefined.
@@ -357,7 +383,7 @@ export default function SoloStage({
   const recoveredKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (productionStage !== 2) {
+    if (productionStage > 2 || (recordedSegments && recordedSegments.length > 0)) {
       setShowRestorePrompt(false);
       return;
     }
@@ -442,6 +468,12 @@ export default function SoloStage({
           setCachedTakeBlob(matchedBlob);
           recoveredKeyRef.current = matchedKey;
           setShowRestorePrompt(true);
+          
+          toast.info("Unstitched Take Detected", {
+            description: "We found an unsaved recording from your previous session. Use the recovery banner to restore or discard it.",
+            id: `unsaved-take-${data?.id}`,
+            duration: 8000
+          });
         } else {
           console.log("[SoloStage] Resiliency Shield: Scan complete. No unsaved take found.");
         }
@@ -449,7 +481,7 @@ export default function SoloStage({
       .catch((err) => {
         console.warn("[SoloStage] Resiliency Shield: Error listing IndexedDB keys:", err);
       });
-  }, [data?.id, data?.promptId, productionStage]);
+  }, [data?.id, data?.promptId, productionStage, recordedSegments?.length]);
 
   const handleRestoreTake = async () => {
     if (!cachedTakeBlob) return;
@@ -561,6 +593,23 @@ export default function SoloStage({
     setRecordedSegments([restoredSegment]);
     setReviewTake(true); // Open review overlay immediately
     setShowRestorePrompt(false);
+    
+    // Clear the source IndexedDB backups so they don't get re-matched
+    if (recoveredKeyRef.current) {
+      localforage.removeItem(recoveredKeyRef.current).catch(() => {});
+    }
+    if (data?.id) {
+      localforage.removeItem(`backup_take_${data.id}`).catch(() => {});
+    }
+    if (data?.promptId) {
+      localforage.removeItem(`backup_take_${data.promptId}`).catch(() => {});
+    }
+    
+    // Automatically advance to Act III (Capture) if not already there
+    if (typeof globalActions?.setStage === 'function') {
+      globalActions.setStage(2);
+    }
+    update({ productionStage: 2 });
     
     toast.success("Take Restored", {
       description: "Your previous recording session has been successfully recovered!"
@@ -853,6 +902,7 @@ export default function SoloStage({
   };
 
   const handleStitchAndApprove = async (edl: any[]) => {
+    if (checkGuestAndUpsell("video stitching & cinema publishing")) return;
     if (edl.length === 0) return;
     setIsStitching(true);
 
@@ -936,12 +986,21 @@ export default function SoloStage({
         try {
           await localforage.removeItem(cacheKey);
           console.log(`[SoloStage] PERSISTENCE SHIELD: Successfully cleared IndexedDB backup: ${cacheKey}`);
+          onClearBackup?.();
         } catch (e) {
           console.warn("[SoloStage] Persistence Shield cache cleanup warning:", e);
         }
 
         // Advance view / update stage
         setReviewTake(false);
+        update({ 
+          productionStage: 3, 
+          isProductionLocked: true, 
+          videoUrl: resultData.videoUrl 
+        });
+        if (typeof globalActions?.setStage === 'function') {
+          globalActions.setStage(3);
+        }
       } else {
         throw new Error("Stitching failed on the server.");
       }
@@ -986,6 +1045,7 @@ export default function SoloStage({
     if (data?.promptId) {
       localforage.removeItem(`backup_take_${data.promptId}`).catch(() => {});
     }
+    onClearBackup?.();
   };
 
   // Persistence Shield: Auto-cache recorded takes in IndexedDB as soon as recording completes
@@ -1037,12 +1097,18 @@ export default function SoloStage({
 
   // NEW: Manage camera activation based on active Production Stage (Stage 1/Weave & Stage 2/Recording)
   useEffect(() => {
+    if (showRestorePrompt) {
+      if (isCameraActive) {
+        setIsCameraActive(false);
+      }
+      return;
+    }
     if ((productionStage === 1 || productionStage === 2) && !isCameraActive && !recordedBlob) {
       setIsCameraActive(true);
     } else if (productionStage !== 1 && productionStage !== 2 && isCameraActive) {
       setIsCameraActive(false);
     }
-  }, [productionStage, isCameraActive, recordedBlob]);
+  }, [productionStage, isCameraActive, recordedBlob, showRestorePrompt]);
 
   const handleReattemptAccess = useCallback(() => {
     setIsCameraActive(false);
@@ -1066,6 +1132,7 @@ export default function SoloStage({
   };
 
   const handleSaveMemory = async () => {
+    if (checkGuestAndUpsell("saving your memory")) return;
     if (recordedBlob && data?.id) {
       // "Soft-Clip": Inject raw numeric timestamps into Firebase payload!
       update({
@@ -1100,6 +1167,7 @@ export default function SoloStage({
 
   // SNAPSHOT: Capture current frame as thumbnail
   const handleCaptureThumbnail = async () => {
+    if (checkGuestAndUpsell("capturing cinematic poster frames")) return;
     if (!previewVideoRef.current || !data?.id) return;
     
     setIsCapturingThumbnail(true);
@@ -1207,6 +1275,7 @@ export default function SoloStage({
   }, [playAudio]);
 
   useEffect(() => {
+    if (showRestorePrompt) return;
     if (productionStage === 2 && !isBriefingOpen && hasSeenTour && !hasPlayedMentorCue.current) {
       hasPlayedMentorCue.current = true;
       console.log("[SoloStage] tech-scout ceremony entered. Synthesizing Stage Manager whisper...");
@@ -1223,7 +1292,7 @@ export default function SoloStage({
       };
       playMentorCue();
     }
-  }, [productionStage, isBriefingOpen, hasSeenTour, playAudio]);
+  }, [productionStage, isBriefingOpen, hasSeenTour, playAudio, showRestorePrompt]);
 
   const triggerNextQuestion = async () => {
     if (isSynthesizing) return;
@@ -1393,6 +1462,7 @@ export default function SoloStage({
 
   // UPLOAD: Select file from computer as poster
   const handleUploadPoster = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (checkGuestAndUpsell("uploading customized posters")) return;
     const file = e.target.files?.[0];
     if (!file || !data?.id) return;
 
@@ -3579,6 +3649,7 @@ export default function SoloStage({
                        <Slider 
                           value={trimRange} 
                           onValueChange={(val) => setTrimRange(val as [number, number])}
+                          onValueCommit={(val) => update({ trimStart: val[0], trimEnd: val[1] })}
                           min={0}
                           max={videoDuration || 100}
                           step={0.1}
@@ -3896,6 +3967,14 @@ export default function SoloStage({
                     description: "Proceeding with raw take segments. Firestore advanced."
                   });
                   setReviewTake(false);
+                  update({ 
+                    productionStage: 3, 
+                    isProductionLocked: true, 
+                    videoUrl: localVideoUrl 
+                  });
+                  if (typeof globalActions?.setStage === 'function') {
+                    globalActions.setStage(3);
+                  }
                 } catch (e: any) {
                   console.error("[SoloStage] Local transcode bypass save failed:", e);
                   toast.error("Bypass failed", { description: e.message });
@@ -3912,44 +3991,61 @@ export default function SoloStage({
       </Dialog>
 
       {/* Resiliency Shield: Restore Take Banner */}
-      <AnimatePresence>
-        {showRestorePrompt && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-6 md:right-10 z-[999] w-[calc(100%-3rem)] max-w-sm bg-slate-950 border border-emerald-500/50 p-5 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.95),0_0_30px_rgba(16,185,129,0.2)] flex flex-col gap-3.5"
-          >
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-              <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.25em]">PERSISTENCE SHIELD // UNSTITCHED TAKE</span>
-            </div>
-            
-            <p className="text-[10px] text-zinc-300 leading-relaxed font-sans">
-              We detected a recorded take for <strong className="text-white">"{data?.title || 'this memory'}"</strong> from your previous session that was not compiled or approved. Would you like to recover it?
-            </p>
+      {mounted && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {showRestorePrompt && (
+            <motion.div
+              key="resiliency-shield-banner"
+              initial={{ opacity: 0, y: 50, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              className="fixed bottom-8 right-6 md:right-10 z-[99999] w-[calc(100%-3rem)] max-w-sm bg-slate-950 border border-emerald-500/50 p-5 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.95),0_0_30px_rgba(16,185,129,0.2)] flex flex-col gap-3.5 pointer-events-auto"
+            >
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.25em]">PERSISTENCE SHIELD // UNSTITCHED TAKE</span>
+              </div>
+              
+              <p className="text-[10px] text-zinc-300 leading-relaxed font-sans">
+                We detected a recorded take for <strong className="text-white">"{data?.title || 'this memory'}"</strong> from your previous session that was not compiled or approved. Would you like to recover it?
+              </p>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setShowRestorePrompt(false);
-                  const cacheKey = `backup_take_${data?.id}`;
-                  localforage.removeItem(cacheKey).catch(() => {});
-                }}
-                className="flex-1 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all cursor-pointer border border-white/5"
-              >
-                Discard
-              </button>
-              <button
-                onClick={handleRestoreTake}
-                className="flex-grow-[2] py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-md border-0"
-              >
-                Restore Take
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowRestorePrompt(false);
+                    const cacheKey = `backup_take_${data?.id}`;
+                    localforage.removeItem(cacheKey).catch(() => {});
+                    if (recoveredKeyRef.current) {
+                      localforage.removeItem(recoveredKeyRef.current).catch(() => {});
+                    }
+                    if (data?.promptId) {
+                      localforage.removeItem(`backup_take_${data.promptId}`).catch(() => {});
+                    }
+                    onClearBackup?.();
+                  }}
+                  className="flex-1 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all cursor-pointer border border-white/5"
+                >
+                  Discard
+                </button>
+                <button
+                  onClick={handleRestoreTake}
+                  className="flex-grow-[2] py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[9px] uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-md border-0"
+                >
+                  Restore Take
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      <DirectorialUpsellDialog
+        isOpen={isUpsellOpen}
+        onClose={() => setIsUpsellOpen(false)}
+        requiredFeature={upsellFeature}
+      />
     </>
   );
 }

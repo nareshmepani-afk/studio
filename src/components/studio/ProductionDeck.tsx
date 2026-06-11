@@ -38,6 +38,7 @@ import { useRecaptcha } from '@/hooks/useRecaptcha';
 import { firebaseConfig } from '@/lib/config-schema';
 import { OnboardingOverlay } from './overlays/OnboardingOverlay';
 const SNAP_THRESHOLD = 20; // Magnetic snap range
+import localforage from 'localforage';
 
 // Define a placeholder for the memory data type
 type MemoryData = any;
@@ -64,6 +65,20 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             urlMode === 'collaborative' ? 'collaborative' : 'solo'
     );
     const [isRailRetracted, setIsRailRetracted] = useState(false);
+    const [hasUnsavedTake, setHasUnsavedTake] = useState(false);
+
+    const checkUnsavedTake = useCallback(() => {
+        localforage.keys()
+            .then((keys) => {
+                const hasBackup = keys.some(k => k.startsWith('backup_take_'));
+                setHasUnsavedTake(hasBackup);
+            })
+            .catch(() => {});
+    }, []);
+
+    useEffect(() => {
+        checkUnsavedTake();
+    }, [memoryData?.id, checkUnsavedTake]);
 
     // 1. Unified Global State
     const { 
@@ -613,6 +628,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                         onboardingJustClosed={onboardingJustClosed}
                         isUntouched={isUntouched}
                         onActivity={resetIdleTimer}
+                        onClearBackup={checkUnsavedTake}
                     />
                 );
             case 'collaborative':
@@ -1038,7 +1054,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                              "relative flex-1 min-h-[calc(100vh-80px)] overflow-y-auto flex flex-col transition-all duration-1000 ease-in-out bg-gradient-to-b from-slate-900 via-[#030303] to-black",
                              modality === null && (hoveredInstrument ? "blur-md brightness-50" : "blur-xl brightness-50 pointer-events-none")
                          )} data-blueprint="StageArea">
-                             {currentStage === 2 && !lobbyConfirmed ? (
+                             {currentStage === 2 && !lobbyConfirmed && !hasUnsavedTake ? (
                                  <StudioLobby
                                      onConfirm={(mode) => {
                                          setLobbyConfirmed(true);

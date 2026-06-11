@@ -106,7 +106,22 @@ export function useStudioData(userId: string | undefined) {
   const chapters = useMemo(() => {
     return mockPromptGroups.map((group): UnifiedChapter => {
       const correlatedPrompts = group.prompts.map((p): CorrelatedPrompt => {
-        const memory = memories.find(m => m.promptId === p.id);
+        // Trace forward: Follow the chain of memory pointer documents to find the latest leaf memory
+        let memory: Memory | undefined = memories.find(m => m.promptId === p.id);
+        if (memory) {
+          const visited = new Set<string>();
+          while (memory) {
+            const current: Memory = memory as Memory;
+            if (visited.has(current.id)) break;
+            visited.add(current.id);
+            const nextMemory = memories.find(m => m.promptId === current.id);
+            if (nextMemory) {
+              memory = nextMemory;
+            } else {
+              break;
+            }
+          }
+        }
         const promptRequests = requests.filter(r => r.promptId === p.id);
         
         return {
