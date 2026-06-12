@@ -58,6 +58,7 @@ export default async function SettingsPage() {
     <AuthenticatedPageWrapper>
       <SettingsPageContent 
         initialDirectorPassStatus={userData?.directorPassStatus || 'inactive'} 
+        initialDirectorPassActivationDate={userData?.directorPassActivationDate} 
         userEmail={session.email || ''}
         userName={session.displayName || ''}
       />

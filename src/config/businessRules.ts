@@ -47,6 +47,25 @@ export const BUSINESS_MANIFEST = {
         "Direct user to execute the account creation flow inside the Radix container.",
         "Pipeline will automatically migrate localforage cache to active Firestore collection post-auth."
       ]
+    },
+    MW_69_DIAGNOSTIC_SHORTCUT: {
+      context: "User requires rapid remote debug tracing assistance or encounters studio glitches. Outbound delivery is dispatched via Resend. Inbound support mail is managed by Cloudflare Email Routing on memoryweaver.studio forwarding to the active destination inbox, which is connected to Plane.so for automated ticket ingestion.",
+      resolutionSteps: [
+        "Verify Resend is configured with a valid RESEND_API_KEY and verified domain sender addresses (support@ and studio@).",
+        "Verify Cloudflare Email Routing is enabled with support@ forwarding rule active.",
+        "Ensure the destination inbox (or direct alias) is configured to ingest incoming tickets into the Plane.so project backlog.",
+        "Instruct user to press Ctrl + / (or Cmd + / on Mac) anywhere in the workspace to trigger the bug report overlay.",
+        "Extract the 'traceId' parameter string from the received Plane.so issue ticket description and query BigQuery to view the historical event timeline."
+      ]
+    },
+    MW_70_COMPLIMENTARY_PASS: {
+      context: "User complimentary 6-month pass claiming and expiration flow handling.",
+      resolutionSteps: [
+        "A user is only allowed to claim the complimentary 6-month Director Pass once in their lifetime.",
+        "Verify double-claim prevention by checking if 'directorPassActivationDate' is populated in the user's Firestore document.",
+        "Calculate active vs expired status dynamically using a 6-month date delta offset from the activation date.",
+        "In case of expiration, block features and show the upgrade prompt rather than allowing a re-claim."
+      ]
     }
   }
 } as const;

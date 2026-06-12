@@ -13,8 +13,7 @@ export async function sendPasswordResetEmail(email: string, link: string): Promi
   
   try {
     await resend.emails.send({
-      // This now uses our verified domain to ensure deliverability.
-      from: 'noreply@memoryweaver.studio',
+      from: 'studio@memoryweaver.studio',
       to: email,
       subject: 'Reset Your Memory Weaver Password',
       html: `<p>Click the link to reset your password: <a href="${link}">Reset Password</a></p>`,

@@ -22,7 +22,11 @@ export async function activateFreeDirectorPass(): Promise<{ success: boolean; me
     const userDoc = await userRef.get();
     const userData = userDoc.data();
 
-    // Prevent misuse: only allow activation if status is 'inactive'
+    // Prevent misuse: only allow activation if status is 'inactive' and no prior activation date is set
+    if (userData?.directorPassActivationDate) {
+        return { success: false, message: "You have already claimed a complimentary pass." };
+    }
+
     if (userData?.directorPassStatus && userData.directorPassStatus !== 'inactive') {
         return { success: false, message: `Your pass is already ${userData.directorPassStatus.replace('_', ' ')}.` };
     }

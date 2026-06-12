@@ -25,6 +25,8 @@ This is the unified backlog and historical log for all **MW-*** ticket definitio
     *   *Status:* **Accepted** (Signed off by Director)
 *   `[x]` **MW-8:** `Act II "Cognitive Bridge" Refactor (Architect Drawer & Auto-Trigger)`
     *   *Status:* **Accepted** (Signed off by Director)
+*   `[x]` **MW-69:** `Diagnostic Support Overlay (Resend Bug Modal + Easter Egg)`
+    *   *Status:* **Accepted** (Signed off by Director)
 
 
 

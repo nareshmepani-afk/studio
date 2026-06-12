@@ -6,13 +6,16 @@ import { LanguageProvider } from "@/hooks/useLanguage";
 import React from "react";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SplashScreen from "@/components/layout/SplashScreen"; // Import the SplashScreen
+import { toast } from 'sonner';
+import { BugReportModal } from "@/components/studio/overlays/BugReportModal";
 
 const queryClient = new QueryClient();
 
 // Create a new component to handle the loading state
 function AppContent({ children }: { children: React.ReactNode }) {
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
   const [mounted, setMounted] = React.useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
@@ -61,11 +64,32 @@ function AppContent({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        setIsReportModalOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   if (!mounted || loading) {
     return <SplashScreen />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <BugReportModal 
+        isOpen={isReportModalOpen} 
+        onClose={() => setIsReportModalOpen(false)} 
+        user={user} 
+      />
+    </>
+  );
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
