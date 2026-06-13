@@ -180,6 +180,7 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
       });
       return;
     }
+    const segmentToBackup = edl[indexToDelete];
     const updated = edl.filter((_, idx) => idx !== indexToDelete);
     setEdl(updated);
     onUpdateSegments(updated);
@@ -187,7 +188,19 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
     // Seek to beginning of the new timeline sequence
     seekTo(0);
     
-    toast.success("Segment removed from timeline.");
+    toast.success("Segment removed from timeline.", {
+      description: `Track segment ${indexToDelete + 1} has been deleted.`,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          const restored = [...updated];
+          restored.splice(indexToDelete, 0, segmentToBackup);
+          setEdl(restored);
+          onUpdateSegments(restored);
+          toast.success("Segment restored.");
+        }
+      }
+    });
   };
 
   // AI Auto-Trim (Silence Cutter)
@@ -455,7 +468,7 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
           <div className="space-y-2 shrink-0">
             <div className="flex items-center justify-between text-[9px] font-mono text-white/40 uppercase tracking-widest">
               <span>Active Tracks: {edl.length}</span>
-              <span>Timeline Position: {cumulativeTime.toFixed(1)}s</span>
+              <span>Timeline Position: {Math.floor(cumulativeTime / 60)}:{(Math.floor(cumulativeTime) % 60).toString().padStart(2, '0')}</span>
             </div>
 
             <div

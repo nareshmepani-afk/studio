@@ -27,6 +27,8 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
     edl,
   });
 
+  const isTransitioningRef = useRef(false);
+
   const prevOffsetsRef = useRef<{ [key: string]: { startOffset: number; endOffset: number } }>({});
   const prevActiveSegmentIdRef = useRef<string | null>(null);
   const prevEdlRef = useRef<EDLTrackSegment[] | null>(null);
@@ -140,14 +142,20 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
 
             if (nextSeg) {
               if (standby) {
+                if (isTransitioningRef.current) return;
+                isTransitioningRef.current = true;
                 active.pause();
                 standby.play()
                   .then(() => {
                     setActiveBuffer((prev) => prev === 'A' ? 'B' : 'A');
                     stateRef.current.currentSegmentIndex = nextIndex;
                     setCurrentSegmentIndex(nextIndex);
+                    isTransitioningRef.current = false;
                   })
-                  .catch((err) => console.error('[Sequencer] Hot-swap execution failed:', err));
+                  .catch((err) => {
+                    console.error('[Sequencer] Hot-swap execution failed:', err);
+                    isTransitioningRef.current = false;
+                  });
               }
             } else {
               active.pause();
@@ -167,6 +175,7 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
   const totalDuration = edl.reduce((acc, seg) => acc + seg.duration, 0);
 
   const seekTo = useCallback((targetTime: number) => {
+    isTransitioningRef.current = false;
     let accumulated = 0;
     let targetSegmentIndex = 0;
     let targetOffset = 0;
@@ -207,6 +216,7 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
   }, [edl, getPlayers, isPlaying]);
 
   const togglePlay = useCallback(() => {
+    isTransitioningRef.current = false;
     const { active } = getPlayers();
     if (!active) return;
 
@@ -270,14 +280,20 @@ export const useVideoSequencer = ({ edl, onTimeUpdate }: UseVideoSequencerProps)
 
     if (relativeTime >= currentSeg.endOffset) {
       if (nextSeg) {
+        if (isTransitioningRef.current) return;
+        isTransitioningRef.current = true;
         active.pause();
         standby.play()
           .then(() => {
             setActiveBuffer(activeBuffer === 'A' ? 'B' : 'A');
             stateRef.current.currentSegmentIndex = nextIndex;
             setCurrentSegmentIndex(nextIndex);
+            isTransitioningRef.current = false;
           })
-          .catch((err) => console.error('[Sequencer] Hot-swap execution failed:', err));
+          .catch((err) => {
+            console.error('[Sequencer] Hot-swap execution failed:', err);
+            isTransitioningRef.current = false;
+          });
       } else {
         active.pause();
         active.currentTime = currentSeg.endOffset;
