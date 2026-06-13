@@ -487,8 +487,16 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
     // ONBOARDING: Director's Briefing Logic
     useEffect(() => {
+        // If we are not in Act I, onboarding must not be shown.
+        if (currentStage !== 0) {
+            if (showOnboarding) {
+                setShowOnboarding(false);
+            }
+            return;
+        }
+
         // Only trigger briefing in Act I when not reviewing the synthesized drafts
-        if (currentStage !== 0 || isReviewing) return;
+        if (isReviewing) return;
 
         // PER-MEMORY TRACKING: We want a briefing for every new production
         const onboardingKey = `onboarding_completed_${memoryData?.id || 'global'}`;
@@ -521,7 +529,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             // to prevent UI competition
             if (isOverlayOpen) closeOverlay();
         }
-    }, [modality, memoryData?.id, memoryData?.description, currentStage, mentorModeActive, currentGroup, searchParams, isReviewing]);
+    }, [modality, memoryData?.id, memoryData?.description, currentStage, mentorModeActive, currentGroup, searchParams, isReviewing, showOnboarding]);
 
     const [onboardingJustClosed, setOnboardingJustClosed] = useState(false);
 
