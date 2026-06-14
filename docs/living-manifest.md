@@ -29,3 +29,26 @@
 2. Direct user to execute the account creation flow inside the Radix container.
 3. Pipeline will automatically migrate localforage cache to active Firestore collection post-auth.
 
+### Playbook: MW_69_DIAGNOSTIC_SHORTCUT
+
+**Context:**
+> User requires rapid remote debug tracing assistance or encounters studio glitches. Outbound delivery is dispatched via Resend. Inbound support mail is managed by Cloudflare Email Routing on memoryweaver.studio forwarding to the active destination inbox, which is connected to Plane.so for automated ticket ingestion.
+
+**Resolution Steps:**
+1. Verify Resend is configured with a valid RESEND_API_KEY and verified domain sender addresses (support@ and studio@).
+2. Verify Cloudflare Email Routing is enabled with support@ forwarding rule active.
+3. Ensure the destination inbox (or direct alias) is configured to ingest incoming tickets into the Plane.so project backlog.
+4. Instruct user to press Ctrl + / (or Cmd + / on Mac) anywhere in the workspace to trigger the bug report overlay.
+5. Extract the 'traceId' parameter string from the received Plane.so issue ticket description and query BigQuery to view the historical event timeline.
+
+### Playbook: MW_70_COMPLIMENTARY_PASS
+
+**Context:**
+> User complimentary 6-month pass claiming and expiration flow handling.
+
+**Resolution Steps:**
+1. A user is only allowed to claim the complimentary 6-month Director Pass once in their lifetime.
+2. Verify double-claim prevention by checking if 'directorPassActivationDate' is populated in the user's Firestore document.
+3. Calculate active vs expired status dynamically using a 6-month date delta offset from the activation date.
+4. In case of expiration, block features and show the upgrade prompt rather than allowing a re-claim.
+
