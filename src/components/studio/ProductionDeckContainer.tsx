@@ -142,6 +142,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
 
         memoryToEdit = {
             ...cp.memory,
+            title: cp.memory.title || cp.title || '',
             promptId: cp.id, // Enforce resolved root template ID to break the chain at client-side source
             prose: loadedProse
         };

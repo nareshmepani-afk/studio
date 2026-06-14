@@ -57,7 +57,7 @@ import { TableReadPanel } from './TableReadPanel';
 import { StudioBriefing } from './StudioBriefing';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { app, storage, db } from '@/lib/firebase';
-import { ref, uploadBytesResumable } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { doc, setDoc } from 'firebase/firestore';
 import localforage from 'localforage';
@@ -955,18 +955,26 @@ export default function SoloStage({
           
           // Fallback: update Firestore document directly since Cloud Function isn't running locally
           const docRef = doc(db, 'users', userId || user?.uid || 'unknown', 'memories', data?.id || 'unknown');
-          const localVideoUrl = edl[0]?.blobUrl || '';
+          const firstSegmentPath = `users/${userId || user?.uid || 'unknown'}/memories/${data?.id || 'unknown'}/segments/${edl[0].segmentId}.webm`;
+          const firstSegmentRef = ref(storage, firstSegmentPath);
+          let fallbackVideoUrl = edl[0]?.blobUrl || '';
+          try {
+            fallbackVideoUrl = await getDownloadURL(firstSegmentRef);
+            console.log("[SoloStage] Resolved real storage fallback download URL:", fallbackVideoUrl);
+          } catch (storageErr) {
+            console.warn("[SoloStage] Failed to get segment download URL, using local blob fallback:", storageErr);
+          }
           
           await setDoc(docRef, { 
-            videoUrl: localVideoUrl,
+            videoUrl: fallbackVideoUrl,
             isProductionLocked: true,
             productionStage: 3 // Set to Stage 3 (Act IV - Cut)
           }, { merge: true });
 
-          resultData = { success: true, videoUrl: localVideoUrl };
+          resultData = { success: true, videoUrl: fallbackVideoUrl };
           
           toast.warning("STITCH SIMULATED (LOCALHOST)", {
-            description: "Using local video stream fallback. Firestore advanced."
+            description: "Using storage video stream fallback. Firestore advanced."
           });
         } else {
           console.error("[SoloStage] Production transcode failed. Launching user recovery fallback dialog...", err);

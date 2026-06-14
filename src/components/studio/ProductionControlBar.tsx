@@ -246,7 +246,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   return (
     <div className={cn(
       "z-[9999] w-full max-w-4xl px-6 pointer-events-none transition-all duration-500 ease-in-out",
-      isDocked ? "relative mx-auto -mt-12 pb-2" : "fixed bottom-12 left-1/2 -translate-x-1/2",
+      isDocked ? "fixed bottom-6 left-1/2 -translate-x-1/2" : "fixed bottom-12 left-1/2 -translate-x-1/2",
       (isReviewing || isDirectorOpen) && "opacity-0 invisible blur-xl grayscale scale-95 select-none pointer-events-none"
     )}>
       <motion.div 
