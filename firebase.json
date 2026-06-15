@@ -27,7 +27,7 @@
         {
           "source": "**",
           "run": {
-            "serviceId": "studio-production-server",
+            "serviceId": "studio",
             "region": "us-central1"
           }
         }
