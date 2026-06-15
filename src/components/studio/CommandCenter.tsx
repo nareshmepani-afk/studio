@@ -110,6 +110,7 @@ const CommandCenter = () => {
     if (type === 'TOGGLE_SCROLL') actions.toggleScrolling();
     if (type === 'SET_SPEED') actions.setScrollSpeed(payload);
     if (type === 'SET_FONT') actions.setFontSize(payload);
+    if (type === 'SET_SCRIPT') actions.setScript(payload);
 
     // 2. Relay to Host if connected
     if (connRef.current && connRef.current.open) {

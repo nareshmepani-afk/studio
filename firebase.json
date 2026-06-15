@@ -18,6 +18,19 @@
       }
     ]
   },
+  "hosting": [
+    {
+      "target": "production-app",
+      "public": ".next",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    }
+  ],
   "storage": {
     "rules": "storage.rules"
   },

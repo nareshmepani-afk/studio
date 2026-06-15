@@ -32,16 +32,34 @@ export async function middleware(request: NextRequest) {
 
   // Intercept admin subdomain requests
   const hostname = request.headers.get('host') || '';
-  if (hostname.startsWith('admin.') && !pathname.startsWith('/admin')) {
-    const adminUrl = request.nextUrl.clone();
-    adminUrl.pathname = `/admin${pathname === '/' ? '' : pathname}`;
-    const response = NextResponse.rewrite(adminUrl, {
-      request: {
-        headers: requestHeaders,
+  if (hostname.startsWith('admin.')) {
+    // Allow the secure login route and core assets to bypass the check
+    if (pathname.startsWith('/admin/login') || pathname.startsWith('/_next') || pathname.includes('.')) {
+      // Format internal path mapping safely if needed
+      if (!pathname.startsWith('/admin')) {
+        const adminUrl = request.nextUrl.clone();
+        adminUrl.pathname = `/admin${pathname === '/' ? '' : pathname}`;
+        return NextResponse.rewrite(adminUrl, { request: { headers: requestHeaders } });
       }
-    });
-    response.headers.set('x-trace-id', traceId);
-    return response;
+      return NextResponse.next({ request: { headers: requestHeaders } });
+    }
+
+    // Intercept dashboard requests if the session cookie is missing
+    const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+    if (!sessionCookie) {
+      const loginRedirectUrl = new URL('/admin/login', request.url);
+      loginRedirectUrl.searchParams.set('reason', 'unauthenticated');
+      return NextResponse.redirect(loginRedirectUrl);
+    }
+
+    // If authenticated, allow the clean rewrite into the admin app folder
+    if (!pathname.startsWith('/admin')) {
+      const adminUrl = request.nextUrl.clone();
+      adminUrl.pathname = `/admin${pathname === '/' ? '' : pathname}`;
+      const response = NextResponse.rewrite(adminUrl, { request: { headers: requestHeaders } });
+      response.headers.set('x-trace-id', traceId);
+      return response;
+    }
   }
 
   // Telemetry log for trace interception

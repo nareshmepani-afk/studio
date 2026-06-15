@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { adminAuth } from '@/lib/firebase-admin';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 
 // This function is now centralized and exported.
 export async function getAuthenticatedUser(sessionCookie: string) {
@@ -64,3 +64,36 @@ export async function deleteSession() {
   const cookieStore = await cookies();
   cookieStore.set("firebase-session", "", { expires: new Date(0) });
 }
+
+export async function verifyAdminWhitelist(email: string): Promise<{ isValid: boolean; mfaSetupComplete: boolean; mfaSecret: string | null }> {
+  console.log(`SECURITY: Checking whitelist status for email: ${email}`);
+  if (!adminDb) {
+    console.error("SECURITY: verifyAdminWhitelist: Firebase Admin Firestore (adminDb) is not initialized.");
+    return { isValid: false, mfaSetupComplete: false, mfaSecret: null };
+  }
+  try {
+    const docRef = adminDb.collection('admin_users').doc(email.toLowerCase());
+    const docSnap = await docRef.get();
+    
+    if (!docSnap.exists) {
+      console.warn(`SECURITY: Access Denied. Email ${email} not found in admin_users whitelist.`);
+      return { isValid: false, mfaSetupComplete: false, mfaSecret: null };
+    }
+    
+    const data = docSnap.data();
+    if (!data || data.isActive !== true) {
+      console.warn(`SECURITY: Access Denied. Admin account ${email} is explicitly disabled or malformed.`);
+      return { isValid: false, mfaSetupComplete: false, mfaSecret: null };
+    }
+    
+    return {
+      isValid: true,
+      mfaSetupComplete: !!data.mfaSetupComplete,
+      mfaSecret: data.mfaSecret || null
+    };
+  } catch (error) {
+    console.error("SECURITY: Critical error while verifying admin whitelist:", error);
+    return { isValid: false, mfaSetupComplete: false, mfaSecret: null };
+  }
+}
+

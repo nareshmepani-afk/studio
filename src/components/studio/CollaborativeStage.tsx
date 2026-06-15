@@ -180,7 +180,7 @@ export default function CollaborativeStage({ data, update, mode = 'standard', mo
           peer.on('call', (call: any) => {
             console.log('[GuestDirector] Incoming video call from Director');
             setIsDirectorConnecting(true);
-            call.answer(); // Answer with no stream back (or send localStream if we want)
+            call.answer(localMediaStream || undefined); // Answer with local stream back
             call.on('stream', (remoteStream: MediaStream) => {
               if (!isMounted) return;
               setRemoteDirectorStream(remoteStream);
