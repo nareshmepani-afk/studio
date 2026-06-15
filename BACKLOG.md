@@ -27,6 +27,8 @@ This is the unified backlog and historical log for all **MW-*** ticket definitio
     *   *Status:* **Accepted** (Signed off by Director)
 *   `[x]` **MW-69:** `Diagnostic Support Overlay (Resend Bug Modal + Easter Egg)`
     *   *Status:* **Accepted** (Signed off by Director)
+*   `[x]` **MW-70:** `Firebase App Hosting Environment Setup & Cloudflare Domain Routing`
+    *   *Status:* **Accepted** (Signed off by Director)
 
 
 
@@ -42,6 +44,17 @@ This is the unified backlog and historical log for all **MW-*** ticket definitio
     *   *Status:* **Todo** (Refactored from `STU-55`)
     *   *Description:* Avoid strict ad-blocker triggers by using initial data fetch prior to dynamic client scripts.
 
+### Sprint 4.5: Automated E2E & Multi-Tenant Routing Gateway
+*   `[x]` **MW-17:** `Relocate Client-Side FFmpeg Binaries to Local Public Directory`
+    *   *Status:* **Done**
+    *   *Description:* Removes unpkg.com CDN network dependencies from src/lib/ffmpeg-loader.ts for isolated build testing.
+*   `[x]` **MW-18:** `Configure Playwright Media and Auth Bypasses`
+    *   *Status:* **Done**
+    *   *Description:* Refactor test-playwright-run.js to inject '--use-fake-device-for-media-stream' and leverage 'mode=guest' configurations across headless browser contexts.
+*   `[x]` **MW-19:** `Build Out Admin Subdomain Edge Middleware & Base Layout`
+    *   *Status:* **Done**
+    *   *Description:* Establish subfolder routing rules at src/middleware.ts to intercept admin.memoryweaver.studio requests.
+
 ### Sprint 5: Role-Specific Production Suites (Epic: MW-11)
 *   `[ ]` **MW-11:** `[EPIC] Implement Role-Specific Production Suites`
     *   *Status:* **Todo** (Refactored from `UX-EPIC-01`)
@@ -55,6 +68,15 @@ This is the unified backlog and historical log for all **MW-*** ticket definitio
     *   *Status:* **Todo** (Refactored from `STU-63`)
 *   `[ ]` **MW-16:** `Implement Real-time State Synchronization Between All Studio UIs`
     *   *Status:* **Todo** (Refactored from `STU-64`)
+*   `[ ]` **MW-20:** `Port Root Command Center UI into Role-Specific Subfolder`
+    *   *Status:* **Todo**
+    *   *Description:* Migrate the full dashboard codebase from components/studio/CommandCenter.tsx into components/studio/roles/CommandCenter.tsx.
+*   `[ ]` **MW-21:** `Resolve WebRTC Live Monitor Feed Asymmetry`
+    *   *Status:* **Todo**
+    *   *Description:* Refactor CollaborativeStage.tsx line 183 to pass 'localStream' into the call.answer() function, enabling downstream video mirroring.
+*   `[ ]` **MW-22:** `Wire SET_SCRIPT Event to Global Action Loop`
+    *   *Status:* **Todo**
+    *   *Description:* Update the sendSyncEvent helper inside CommandCenter.tsx to properly process and broadcast script textarea mutations to the shared Firestore state machine.
 
 ---
 

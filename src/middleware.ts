@@ -30,6 +30,20 @@ export async function middleware(request: NextRequest) {
     requestHeaders.set('x-trace-id', traceId);
   }
 
+  // Intercept admin subdomain requests
+  const hostname = request.headers.get('host') || '';
+  if (hostname.startsWith('admin.') && !pathname.startsWith('/admin')) {
+    const adminUrl = request.nextUrl.clone();
+    adminUrl.pathname = `/admin${pathname === '/' ? '' : pathname}`;
+    const response = NextResponse.rewrite(adminUrl, {
+      request: {
+        headers: requestHeaders,
+      }
+    });
+    response.headers.set('x-trace-id', traceId);
+    return response;
+  }
+
   // Telemetry log for trace interception
   serverLog({
     message: 'DISTRIBUTED CORRELATION TRACE INTERCEPTED // INGESTION POOL SECURE',
