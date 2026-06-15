@@ -21,12 +21,15 @@
   "hosting": [
     {
       "target": "production-app",
-      "public": ".next",
-      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "public": "public",
+      "cleanUrls": true,
       "rewrites": [
         {
           "source": "**",
-          "destination": "/index.html"
+          "run": {
+            "serviceId": "studio-production-server",
+            "region": "us-central1"
+          }
         }
       ]
     }

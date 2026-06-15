@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+import { SESSION_COOKIE_NAME } from './lib/constants';
+
 // 1. Define which routes are protected and which are "auth" routes
 const protectedRoutes = ['/dashboard', '/studio', '/profile'];
 const authRoutes = ['/login', '/signup'];
 
 export function proxy(request: NextRequest) {
   // 2. Get the session cookie (Middleware uses a different API than Server Actions)
-  const session = request.cookies.get('firebase-session')?.value;
+  const session = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   
   const { pathname } = request.nextUrl;
 

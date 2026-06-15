@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { SESSION_COOKIE_NAME } from "@/lib/constants";
 
 // This function is now centralized and exported.
 export async function getAuthenticatedUser(sessionCookie: string) {
@@ -25,14 +26,14 @@ export async function getSession() {
   const allCookies = cookieStore.getAll();
   console.log("TESTIMONY: getSession: All received cookies:", allCookies);
 
-  const sessionCookie = cookieStore.get("firebase-session")?.value;
+  const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
   if (!sessionCookie) {
-    console.log("TESTIMONY: getSession: 'firebase-session' cookie not found.");
+    console.log(`TESTIMONY: getSession: '${SESSION_COOKIE_NAME}' cookie not found.`);
     return null;
   }
 
-  console.log("TESTIMONY: getSession: 'firebase-session' cookie found. Proceeding to verification.");
+  console.log(`TESTIMONY: getSession: '${SESSION_COOKIE_NAME}' cookie found. Proceeding to verification.`);
 
   try {
     const decodedToken = await getAuthenticatedUser(sessionCookie);
@@ -42,8 +43,8 @@ export async function getSession() {
     console.error("TESTIMONY: getSession: Session verification failed with error:", error);
     // If Firebase says the token is expired or invalid, clear the cookie
     if (error.code === 'auth/id-token-expired' || error.code === 'auth/session-cookie-expired') {
-      console.log("TESTIMONY: getSession: Session cookie is expired. Deleting cookie.");
-      cookieStore.delete("firebase-session");
+      console.log(`TESTIMONY: getSession: Session cookie is expired. Deleting cookie.`);
+      cookieStore.delete(SESSION_COOKIE_NAME);
     }
     return null;
   }
@@ -51,7 +52,7 @@ export async function getSession() {
 
 export async function setSessionCookie(sessionCookie: string, expiresIn: number) {
   const cookieStore = await cookies();
-  cookieStore.set("firebase-session", sessionCookie, {
+  cookieStore.set(SESSION_COOKIE_NAME, sessionCookie, {
     maxAge: expiresIn,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -62,7 +63,7 @@ export async function setSessionCookie(sessionCookie: string, expiresIn: number)
 
 export async function deleteSession() {
   const cookieStore = await cookies();
-  cookieStore.set("firebase-session", "", { expires: new Date(0) });
+  cookieStore.set(SESSION_COOKIE_NAME, "", { expires: new Date(0) });
 }
 
 export async function verifyAdminWhitelist(email: string): Promise<{ isValid: boolean; mfaSetupComplete: boolean; mfaSecret: string | null }> {
