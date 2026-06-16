@@ -15,6 +15,11 @@ env:
     value: '67296998103'
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
     value: '1:67296998103:web:f48699405c37bcf4567692'
+  - variable: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
+    value: "1"
+  - variable: HUSKY
+    value: "0"
+
 
   # Secret variables are securely stored in Secret Manager and exposed to the server at runtime.
   # Ensure these secrets are created in the Firebase Console under App Hosting > Secrets.
