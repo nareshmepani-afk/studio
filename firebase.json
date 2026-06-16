@@ -1,7 +1,7 @@
 
 {
   "apphosting": {
-    "backend": "studio",
+    "backendId": "studio",
     "headers": [
       {
         "source": "/**",
