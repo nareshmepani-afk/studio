@@ -118,7 +118,7 @@ export default function AdminLoginPage() {
             <Shield className="w-8 h-8 text-white animate-pulse" />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-            Memory Weaver Studio
+            Memory Weaver Admin Control Center
           </h1>
           <p className="text-indigo-400/80 text-xs font-semibold uppercase tracking-[0.2em]">Security Gateway Authorization</p>
         </div>

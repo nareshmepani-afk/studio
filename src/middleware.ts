@@ -31,17 +31,28 @@ export async function middleware(request: NextRequest) {
   }
 
   // Intercept admin subdomain requests
-  const hostname = request.headers.get('host') || '';
+  const forwardHost = request.headers.get("x-forwarded-host");
+  const standardHost = request.headers.get("host") || "";
+  const hostname = forwardHost ? forwardHost.split(',')[0].trim() : standardHost;
+
   if (hostname.startsWith('admin.')) {
-    // Allow the secure login route and core assets to bypass the check
-    if (pathname.startsWith('/admin/login') || pathname.startsWith('/_next') || pathname.includes('.')) {
-      // Format internal path mapping safely if needed
-      if (!pathname.startsWith('/admin')) {
-        const adminUrl = request.nextUrl.clone();
-        adminUrl.pathname = `/admin${pathname === '/' ? '' : pathname}`;
-        return NextResponse.rewrite(adminUrl, { request: { headers: requestHeaders } });
-      }
-      return NextResponse.next({ request: { headers: requestHeaders } });
+    // If the path is exactly '/' or '/login' or '/admin/login'
+    if (pathname === '/' || pathname === '/login' || pathname === '/admin/login') {
+      const adminUrl = request.nextUrl.clone();
+      adminUrl.pathname = '/admin/login';
+      const response = NextResponse.rewrite(adminUrl, { request: { headers: requestHeaders } });
+      response.headers.set('x-debug-detected-host', hostname);
+      response.headers.set('x-debug-rewritten-path', '/admin/login');
+      response.headers.set('x-trace-id', traceId);
+      return response;
+    }
+
+    // Allow core assets or requests with dots to pass through
+    if (pathname.startsWith('/_next') || pathname.includes('.')) {
+      const response = NextResponse.next({ request: { headers: requestHeaders } });
+      response.headers.set('x-debug-detected-host', hostname);
+      response.headers.set('x-debug-rewritten-path', pathname);
+      return response;
     }
 
     // Intercept dashboard requests if the session cookie is missing
@@ -49,7 +60,10 @@ export async function middleware(request: NextRequest) {
     if (!sessionCookie) {
       const loginRedirectUrl = new URL('/admin/login', request.url);
       loginRedirectUrl.searchParams.set('reason', 'unauthenticated');
-      return NextResponse.redirect(loginRedirectUrl);
+      const response = NextResponse.redirect(loginRedirectUrl);
+      response.headers.set('x-debug-detected-host', hostname);
+      response.headers.set('x-debug-rewritten-path', '/admin/login');
+      return response;
     }
 
     // If authenticated, allow the clean rewrite into the admin app folder
@@ -57,6 +71,8 @@ export async function middleware(request: NextRequest) {
       const adminUrl = request.nextUrl.clone();
       adminUrl.pathname = `/admin${pathname === '/' ? '' : pathname}`;
       const response = NextResponse.rewrite(adminUrl, { request: { headers: requestHeaders } });
+      response.headers.set('x-debug-detected-host', hostname);
+      response.headers.set('x-debug-rewritten-path', adminUrl.pathname);
       response.headers.set('x-trace-id', traceId);
       return response;
     }
