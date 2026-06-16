@@ -1,1 +1,1 @@
-re_RgMajonZ_3pFuQgeiHcXYeZsX6LwFryRT
+process.env.RESEND_API_KEY
