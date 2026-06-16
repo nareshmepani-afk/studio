@@ -32,4 +32,5 @@ tmp/
 !jest.config.js
 !*.rules
 !*.json
+!scripts/generateLivingDocs.js
 scratch/
