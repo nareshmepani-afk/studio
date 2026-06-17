@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { headers } from "next/headers";
 import { Providers } from "@/components/layout/Providers";
 import { Navbar } from "@/components/layout/Navbar";
 import BuildIdLogger from "@/components/layout/BuildIdLogger";
@@ -14,11 +15,14 @@ export const metadata: Metadata = {
   description: "Record and share your life's most precious moments.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const host = headersList.get('x-original-host') || headersList.get('x-forwarded-host') || headersList.get('host') || '';
+  const isAdmin = host.startsWith('admin.');
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -28,7 +32,7 @@ export default function RootLayout({
       <body className={`${inter.className} bg-background text-foreground`} suppressHydrationWarning>
         <Providers>
           <BuildIdLogger />
-          <Navbar />
+          {!isAdmin && <Navbar />}
           {children}
         </Providers>
         <SonnerToaster />
