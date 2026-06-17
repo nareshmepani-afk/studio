@@ -32,8 +32,13 @@ export async function middleware(request: NextRequest) {
 
   // Intercept admin subdomain requests
   const forwardHost = request.headers.get("x-forwarded-host");
+  const originalHost = request.headers.get("x-original-host") || "";
   const standardHost = request.headers.get("host") || "";
-  const hostname = forwardHost ? forwardHost.split(',')[0].trim() : standardHost;
+  const hostname = originalHost || (forwardHost ? forwardHost.split(',')[0].trim() : standardHost);
+
+  // Normalize target domain for redirects
+  const targetProto = (request.headers.get("x-forwarded-proto") || request.nextUrl.protocol || "https").replace(':', '');
+  const targetDomain = hostname ? `${targetProto}://${hostname}` : request.url;
 
   if (hostname.startsWith('admin.')) {
     // If the path is exactly '/' or '/login' or '/admin/login'
@@ -58,7 +63,7 @@ export async function middleware(request: NextRequest) {
     // Intercept dashboard requests if the session cookie is missing
     const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
     if (!sessionCookie) {
-      const loginRedirectUrl = new URL('/admin/login', request.url);
+      const loginRedirectUrl = new URL('/admin/login', targetDomain);
       loginRedirectUrl.searchParams.set('reason', 'unauthenticated');
       const response = NextResponse.redirect(loginRedirectUrl);
       response.headers.set('x-debug-detected-host', hostname);
@@ -109,7 +114,7 @@ export async function middleware(request: NextRequest) {
   // 2. Handle guest pass access for the archive.
   else if (pathname.startsWith('/archive')) {
     if (!guestPass) {
-      response = NextResponse.redirect(new URL('/login', request.url));
+      response = NextResponse.redirect(new URL('/login', targetDomain));
     } else {
       try {
         await jose.jwtVerify(guestPass, GUEST_SECRET);
@@ -119,14 +124,14 @@ export async function middleware(request: NextRequest) {
           },
         });
       } catch (error) {
-        response = NextResponse.redirect(new URL('/login', request.url));
+        response = NextResponse.redirect(new URL('/login', targetDomain));
         response.cookies.delete('guest_pass');
       }
     }
   }
   // 4. If user is NOT logged in and trying to access a protected route, redirect to login.
   else if (!sessionCookie && PROTECTED_ROUTES.some(route => pathname.startsWith(route))) {
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = new URL('/login', targetDomain);
     loginUrl.searchParams.set('from', pathname);
     loginUrl.searchParams.set('reason', 'unauthenticated');
     response = NextResponse.redirect(loginUrl);
