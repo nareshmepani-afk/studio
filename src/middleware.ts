@@ -30,6 +30,13 @@ export async function middleware(request: NextRequest) {
     requestHeaders.set('x-trace-id', traceId);
   }
 
+  // DEBUG HEADERS FOR FORENSIC INVESTIGATION
+  const headersObject: Record<string, string> = {};
+  request.headers.forEach((value, key) => {
+    headersObject[key] = value;
+  });
+  console.log("DEBUG_HEADERS_INGESTION:", JSON.stringify(headersObject));
+
   // Intercept admin subdomain requests
   const forwardHost = request.headers.get("x-forwarded-host");
   const originalHost = request.headers.get("x-original-host") || "";
