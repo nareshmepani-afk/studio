@@ -3,6 +3,8 @@ import { Suspense } from 'react';
 import LoginContent from './LoginContent';
 import AdminLoginPage from '../admin/login/page';
 
+export const dynamic = 'force-dynamic';
+
 export default async function LoginPage() {
   const headersList = await headers();
   const host = headersList.get('x-original-host') || headersList.get('x-forwarded-host') || headersList.get('host') || '';
