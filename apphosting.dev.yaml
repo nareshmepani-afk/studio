@@ -1,8 +1,8 @@
 # Firebase App Hosting development configuration override
 env:
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    value: 'memory-weaver-dev-8rk9t'
+    value: 'memory-weaver-8rk9t'
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: 'memory-weaver-dev-8rk9t.firebaseapp.com'
+    value: 'memory-weaver-8rk9t.firebaseapp.com'
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    value: 'memory-weaver-dev-8rk9t.appspot.com'
+    value: 'memory-weaver-8rk9t.appspot.com'
