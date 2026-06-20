@@ -3,6 +3,8 @@
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { verifyAdminWhitelist, getSession } from '@/lib/session';
 import { verifyTotp, generateBase32Secret } from '@/utils/totp';
+import { cookies } from 'next/headers';
+import { SESSION_COOKIE_NAME } from '@/lib/constants';
 
 export async function verifyAdminCredentials(googleIdToken: string, totpToken?: string) {
   try {
@@ -33,6 +35,15 @@ export async function verifyAdminCredentials(googleIdToken: string, totpToken?: 
         return { success: false, reason: 'INVALID_MFA', message: 'Invalid Google Authenticator code.' };
       }
     }
+    
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE_NAME, googleIdToken, {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7 // 7 days
+    });
     
     return { success: true, requiresMfa: false, uid: decodedToken.uid, email };
   } catch (error) {
