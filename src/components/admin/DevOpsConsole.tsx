@@ -9,6 +9,7 @@ import {
   Terminal, 
   RefreshCw 
 } from 'lucide-react';
+import { TerminalLogs } from './TerminalLogs';
 
 export function DevOpsConsole() {
   return (
@@ -71,12 +72,7 @@ export function DevOpsConsole() {
             <RefreshCw className="h-3.5 w-3.5" />
           </button>
         </div>
-        <div className="p-5 font-mono text-xs text-indigo-300/90 space-y-2 max-h-60 overflow-y-auto bg-black/40">
-          <p className="text-slate-500">[2026-06-15T08:20:00Z] INITIALIZING SECURITY CONTEXT GATEWAY...</p>
-          <p>INFO: DISTRIBUTED CORRELATION TRACE INTERCEPTED // INGESTION POOL SECURE</p>
-          <p className="text-emerald-400">SUCCESS: Host admin.memoryweaver.studio rewritten cleanly to internal /admin app workspace.</p>
-          <p className="text-indigo-400/70">DEBUG: Global optics interception shield status - Active (Optics unmuted)</p>
-        </div>
+        <TerminalLogs />
       </section>
     </div>
   );

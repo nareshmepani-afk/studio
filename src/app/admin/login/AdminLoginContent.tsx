@@ -59,7 +59,7 @@ export default function AdminLoginContent() {
         toast.success('Access Granted', {
           description: `Logged in as ${result.email}`
         });
-        router.push('/admin');
+        window.location.href = '/admin';
       }
     } catch (error: any) {
       console.error('[AdminLogin] Authentication transaction error:', error);
@@ -88,7 +88,7 @@ export default function AdminLoginContent() {
         toast.success('Access Granted', {
           description: `MFA validation complete for ${result.email}`
         });
-        router.push('/admin');
+        window.location.href = '/admin';
       } else {
         toast.error('MFA Failed', {
           description: result.message || 'Invalid passcode.'
