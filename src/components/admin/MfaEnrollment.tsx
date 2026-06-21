@@ -107,13 +107,13 @@ export default function MfaEnrollment() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans">
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4 font-sans text-slate-100 relative overflow-hidden">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-30 pointer-events-none" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-red-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="w-full max-w-md relative z-10 space-y-8">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl space-y-6 relative z-10">
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-red-600 to-amber-600 shadow-xl shadow-red-500/20 border border-red-400/20 mb-2">
+          <div className="mx-auto inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-tr from-red-600 to-amber-600 shadow-xl shadow-red-500/20 border border-red-400/20 mb-2">
             <Key className="w-8 h-8 text-white animate-pulse" />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
@@ -122,56 +122,60 @@ export default function MfaEnrollment() {
           <p className="text-red-400/80 text-xs font-semibold uppercase tracking-[0.2em]">Secure Staff Key Activation</p>
         </div>
 
-        <div className="bg-slate-900/40 border border-red-500/20 rounded-3xl p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden space-y-6">
-          <div className="text-center space-y-2">
-            <p className="text-xs text-slate-400">
-              Enrolling Multi-Factor Authentication for <strong className="text-red-300">{email}</strong>.
-            </p>
-          </div>
-
-          <div className="flex flex-col items-center justify-center bg-slate-950/80 border border-slate-800/80 rounded-2xl p-6 space-y-4">
-            {otpauthUri && (
-              <div className="p-3 bg-white rounded-xl shadow-inner">
-                <QRCodeCanvas value={otpauthUri} size={180} level="H" />
-              </div>
-            )}
-            <div className="text-center space-y-1">
-              <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Manual Entry Secret Key</span>
-              <code className="block text-sm font-mono text-amber-400 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 select-all">{secret}</code>
-            </div>
-          </div>
-
-          <form onSubmit={handleVerify} className="space-y-4">
-            <div className="relative group/input">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within/input:text-red-400 transition-colors" />
-              <input
-                type="text"
-                maxLength={6}
-                required
-                placeholder="000000"
-                value={token}
-                onChange={(e) => setToken(e.target.value.replace(/\D/g, ''))}
-                disabled={verifying}
-                className="w-full bg-slate-950 border border-red-500/20 rounded-xl pl-10 h-12 text-center text-lg font-bold tracking-[0.4em] focus:ring-2 focus:ring-red-500/20 focus:border-red-500/50 text-white placeholder:text-slate-800 transition-all outline-none"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={verifying}
-              className="w-full flex items-center justify-center gap-2 h-12 bg-red-600 hover:bg-red-500 text-white font-bold text-sm rounded-xl transition duration-200 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] shadow-lg shadow-red-600/10"
-            >
-              {verifying ? (
-                <RefreshCw className="h-4 w-4 animate-spin text-white" />
-              ) : (
-                <>
-                  Verify and Activate
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
+        <div className="text-center space-y-2">
+          <p className="text-xs text-slate-400">
+            Enrolling Multi-Factor Authentication for <strong className="text-red-300">{email}</strong>.
+          </p>
         </div>
+
+        <div className="flex flex-col items-center justify-center bg-slate-950/80 border border-slate-850 rounded-2xl p-6 space-y-5">
+          {otpauthUri && (
+            <div 
+              className="inline-block bg-white p-4 rounded-xl shadow-inner border border-slate-200"
+              style={{ backgroundColor: '#ffffff', padding: '16px', borderRadius: '12px', display: 'inline-block' }}
+            >
+              <QRCodeCanvas value={otpauthUri} size={180} level="H" />
+            </div>
+          )}
+          
+          <div className="text-center space-y-2 w-full">
+            <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">Manual Entry Secret Key</span>
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col gap-1 select-all hover:border-slate-700 transition duration-200">
+              <code className="text-sm font-mono text-amber-400 tracking-wider text-center select-all">{secret}</code>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleVerify} className="space-y-4">
+          <div className="relative group/input">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within/input:text-red-400 transition-colors" />
+            <input
+              type="text"
+              maxLength={6}
+              required
+              placeholder="000000"
+              value={token}
+              onChange={(e) => setToken(e.target.value.replace(/\D/g, ''))}
+              disabled={verifying}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 h-12 text-center text-lg font-bold tracking-[0.4em] focus:ring-2 focus:ring-red-500/20 focus:border-red-500/50 text-white placeholder:text-slate-800 transition-all outline-none"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={verifying}
+            className="w-full flex items-center justify-center gap-2 h-12 bg-red-600 hover:bg-red-500 text-white font-bold text-sm rounded-xl transition duration-200 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98] shadow-lg shadow-red-600/10"
+          >
+            {verifying ? (
+              <RefreshCw className="h-4 w-4 animate-spin text-white" />
+            ) : (
+              <>
+                Verify and Activate
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+        </form>
       </div>
     </div>
   );

@@ -17,8 +17,14 @@
 
 ## Master Project Backlog
 
-- `[ ]` **[MW-101]** Finalize Phase 1 Edge Auth Validation testing post-cookie patch.
-- `[ ]` **[MW-102]** Build UI Component for Phase 1.2 TOTP MFA Enrollment.
-- `[ ]` **[MW-103]** Build Data Layout for Phase 2.1 Access & Support Whitelist CRUD Table.
-- `[ ]` **[MW-104]** Implement Real-Time Firestore Listener Streams for Phase 3.1 Terminal Log Console.
-- `[ ]` **[MW-105]** Structure SVG Math Sparkline Paths for Phase 3.2 Business & Analytics Dashboard.
+- `[x]` **[MW-100]** Sync manifest baseline and fix server action cookie race condition.
+- `[x]` **[MW-101]** Finalize Phase 1 Edge Auth Validation testing post-cookie patch.
+- `[x]` **[MW-102]** Build UI Component for Phase 1.2 TOTP MFA Enrollment.
+- `[x]` **[MW-103]** Build Data Layout for Phase 2.1 Access & Support Whitelist CRUD Table.
+- `[x]` **[MW-104]** Implement Real-Time Firestore Listener Streams for Phase 3.1 Terminal Log Console.
+- `[x]` **[MW-105]** Structure SVG Math Sparkline Paths for Phase 3.2 Business & Analytics Dashboard.
+- `[/]` **[MW-106]** IN-PROGRESS: Debugging post-MFA redirect handshake failure.
+
+## System Quality Directives
+
+> **UI QUALITY DIRECTIVE**: All dashboard, authentication, and internal support layout elements must feature absolute center alignment, proper padding envelopes, typography hierarchies, and strict functional device compliance (e.g., QR quiet zone buffers). Internal tooling mirrors public production fidelity.
