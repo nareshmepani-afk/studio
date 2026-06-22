@@ -5,6 +5,7 @@ const path = require('path');
 const manifestPath = path.resolve(__dirname, '../src/config/businessRules.ts');
 const docsDir = path.resolve(__dirname, '../docs');
 const outputPath = path.join(docsDir, 'living-manifest.md');
+const jsonOutputPath = path.join(__dirname, '../src/app/admin/living-manifest.json');
 
 try {
   // Read businessRules.ts
@@ -93,6 +94,36 @@ try {
 
   // Write markdown to file
   fs.writeFileSync(outputPath, markdown, 'utf8');
+
+  const searchIndex = [];
+  // Process Tiers
+  Object.entries(manifest.tiers).forEach(([key, t]) => {
+    searchIndex.push({
+      id: `tier-${key}`,
+      category: "Subscription Tiers",
+      title: `${t.name} Tier Profile`,
+      content: `Pricing: £${t.priceMonthlyGbp} / $${t.priceMonthlyUsd}. Locked features: ${t.featuresLocked?.join(', ') || 'None'}. Demo script path: ${t.demoScript || 'N/A'}.`
+    });
+  });
+  // Process Lifecycles
+  Object.entries(manifest.userLifecycles || {}).forEach(([key, c]) => {
+    searchIndex.push({
+      id: `lifecycle-${key}`,
+      category: "User Lifecycle Matrix",
+      title: `Lifecycle Access State: ${key}`,
+      content: `Data visibility: ${c.allowDataVisibility ? 'Allowed' : 'Blocked'}. Write protection: ${c.blockWriteActions ? 'Blocked' : 'Active'}. Primary CTA: ${c.ctaMapping?.primary || 'Default'}.`
+    });
+  });
+  // Process Support Playbooks
+  Object.entries(manifest.supportPlaybooks).forEach(([key, p]) => {
+    searchIndex.push({
+      id: `playbook-${key}`,
+      category: "Support Playbooks",
+      title: `Operational Resolution Playbook: ${key}`,
+      content: `Context background: ${p.context}. Action instructions: ${p.resolutionSteps.join(' ')}`
+    });
+  });
+  fs.writeFileSync(jsonOutputPath, JSON.stringify(searchIndex, null, 2), 'utf8');
 
   // Alignment requirement console log
   console.log("LIVING MANIFEST COMPILED SUCCESSFULLY // OPERATIONAL SHIELD VERIFIED GREEN");

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "tier-sandbox",
+    "category": "Subscription Tiers",
+    "title": "Sandbox Preview Tier Profile",
+    "content": "Pricing: £0 / $0. Locked features: CLOUD_STORAGE, FIREBASE_WRITE, CLOUD_STITCHING. Demo script path: p_einstein."
+  },
+  {
+    "id": "tier-director",
+    "category": "Subscription Tiers",
+    "title": "Director Pass Tier Profile",
+    "content": "Pricing: £12.99 / $14.99. Locked features: None. Demo script path: N/A."
+  },
+  {
+    "id": "lifecycle-paid_host_pass_expired",
+    "category": "User Lifecycle Matrix",
+    "title": "Lifecycle Access State: paid_host_pass_expired",
+    "content": "Data visibility: Allowed. Write protection: Blocked. Primary CTA: Renew / Upgrade Pass."
+  },
+  {
+    "id": "playbook-MW_66_GUEST_INTERCEPT",
+    "category": "Support Playbooks",
+    "title": "Operational Resolution Playbook: MW_66_GUEST_INTERCEPT",
+    "content": "Context background: Guest encounters DirectorialUpsellDialog.tsx due to database write blocks.. Action instructions: Instruct user to keep current browser tab open to preserve local WebM Blobs in IndexedDB. Direct user to execute the account creation flow inside the Radix container. Pipeline will automatically migrate localforage cache to active Firestore collection post-auth."
+  },
+  {
+    "id": "playbook-MW_69_DIAGNOSTIC_SHORTCUT",
+    "category": "Support Playbooks",
+    "title": "Operational Resolution Playbook: MW_69_DIAGNOSTIC_SHORTCUT",
+    "content": "Context background: User requires rapid remote debug tracing assistance or encounters studio glitches. Outbound delivery is dispatched via Resend. Inbound support mail is managed by Cloudflare Email Routing on memoryweaver.studio forwarding to the active destination inbox, which is connected to Plane.so for automated ticket ingestion.. Action instructions: Verify Resend is configured with a valid RESEND_API_KEY and verified domain sender addresses (support@ and studio@). Verify Cloudflare Email Routing is enabled with support@ forwarding rule active. Ensure the destination inbox (or direct alias) is configured to ingest incoming tickets into the Plane.so project backlog. Instruct user to press Ctrl + / (or Cmd + / on Mac) anywhere in the workspace to trigger the bug report overlay. Extract the 'traceId' parameter string from the received Plane.so issue ticket description and query BigQuery to view the historical event timeline."
+  },
+  {
+    "id": "playbook-MW_70_COMPLIMENTARY_PASS",
+    "category": "Support Playbooks",
+    "title": "Operational Resolution Playbook: MW_70_COMPLIMENTARY_PASS",
+    "content": "Context background: User complimentary 6-month pass claiming and expiration flow handling.. Action instructions: A user is only allowed to claim the complimentary 6-month Director Pass once in their lifetime. Verify double-claim prevention by checking if 'directorPassActivationDate' is populated in the user's Firestore document. Calculate active vs expired status dynamically using a 6-month date delta offset from the activation date. In case of expiration, block features and show the upgrade prompt rather than allowing a re-claim."
+  },
+  {
+    "id": "playbook-MW_18_HEADLESS_TESTING_BYPASS",
+    "category": "Support Playbooks",
+    "title": "Operational Resolution Playbook: MW_18_HEADLESS_TESTING_BYPASS",
+    "content": "Context background: Headless browser tests fail to initialize media devices or fail on Firebase authentication CAPTCHAs.. Action instructions: Launch Chromium in Playwright (test-playwright-run.js) with flags '--use-fake-ui-for-media-stream' and '--use-fake-device-for-media-stream' to bypass webcam/mic permission dialogs. Use URL query parameters '?mode=guest&sessionId=TEST_E2E_SESSION' to bypass Firebase authentication and ReCAPTCHA challenges. Locate static assets locally under public/ffmpeg/ instead of relying on external unpkg.com CDN paths to support fully-offline headless execution."
+  },
+  {
+    "id": "playbook-MW_19_ADMIN_ROUTING",
+    "category": "Support Playbooks",
+    "title": "Operational Resolution Playbook: MW_19_ADMIN_ROUTING",
+    "content": "Context background: Accessing the Admin Portal (admin.memoryweaver.studio) redirects or rewrites to the secure /admin app layout without exposing administrative routes on the primary studio subdomain.. Action instructions: Ensure Next.js edge middleware (src/middleware.ts) intercepts requests with host starting with admin. Ensure infinite loop guard is active: only rewrite if pathname does not start with /admin. Ensure session cookies ('session' and 'x-trace-id' header) are preserved during rewriting to maintain authentication context. To verify locally, use host header spoofing or local hosts file mapping to route admin.localhost to local port."
+  }
+]
