@@ -9,6 +9,7 @@
     "dev:https": "next dev --experimental-https",
     "dev:mobile": "npm run dev",
     "build": "node scripts/generateLivingDocs.js && next build",
+    "build:check": "next build && powershell -Command \"if ((Get-ChildItem .next/static/css/*.css | Measure-Object -Property Length -Sum).Sum -lt 20480) { Write-Error 'CRITICAL: Compiled CSS bundle is too small (~11kB). Tailwind configuration or layout classes have been dropped!' } else { Write-Host 'SUCCESS: CSS layout bundles validated successfully.' }\"",
     "start": "next start",
     "lint": "next lint --quiet",
     "type-check": "tsc --noEmit",

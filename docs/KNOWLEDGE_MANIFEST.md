@@ -14,6 +14,11 @@
   - `mfaSetupComplete`: Boolean verifying registration of TOTP MFA key.
   - `mfaSecret`: Encrypted/Base32 security key used to evaluate second factor authentication.
 - **Server Action**: [actions.ts](file:///C:/Users/home/studio/src/app/admin/actions.ts) (`verifyAdminCredentials` writes the `__session` HTTP-only cookie).
+- **Navigation Sync**: Uses hard window redirects (`window.location.href`) in authentication handlers to force browser cookie writes before middleware evaluation.
+
+### Build-Time CSS Compilation & Tracking
+- **Config Tracking**: Explicitly white-listed `tailwind.config.js` and `postcss.config.js` from the general `*.js` ignore rules in `.gitignore` to prevent styling/layout compile-time drops on remote Cloud builds.
+- **Pre-Flight Validation**: Implemented a local package script (`npm run build:check`) that runs Next.js build compilation and validates CSS layout bundle size budgets (preventing <20kB layout-stripped deployments).
 
 ## Master Project Backlog
 
@@ -23,7 +28,7 @@
 - `[x]` **[MW-103]** Build Data Layout for Phase 2.1 Access & Support Whitelist CRUD Table.
 - `[x]` **[MW-104]** Implement Real-Time Firestore Listener Streams for Phase 3.1 Terminal Log Console.
 - `[x]` **[MW-105]** Structure SVG Math Sparkline Paths for Phase 3.2 Business & Analytics Dashboard.
-- `[x]` **[MW-106]** SUCCESS: End-to-end user verification complete. MFA authentication and dashboard routing successfully cleared.
+- `[x]` **[MW-106]** SUCCESS: Force configuration files tracking, resolve router navigation race conditions, register pre-flight build check, and verify clean production deployments.
 
 ## System Quality Directives
 
