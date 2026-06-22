@@ -6,6 +6,10 @@ import { serverLog } from './utils/telemetry/serverLogger';
 
 const GUEST_SECRET = new TextEncoder().encode(process.env.GUEST_SESSION_SECRET || '');
 
+const JWKS = jose.createRemoteJWKSet(
+  new URL('https://www.googleapis.com/identitytoolkit/v3/relyingparty/publicKeys')
+);
+
 const PROTECTED_ROUTES = [
   '/dashboard', 
   '/add-memory', 
@@ -107,9 +111,19 @@ export async function middleware(request: NextRequest) {
       }
 
       try {
-        const decoded = jose.decodeJwt(sessionCookie);
-        const email = decoded.email as string | undefined;
-        console.log("[EDGE DEBUG] decoded email from token:", email);
+        const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'memory-weaver-8rk9t';
+        
+        // Cryptographically verify signature and claims of Firebase Session Cookie
+        const { payload } = await jose.jwtVerify(sessionCookie, JWKS, {
+          audience: projectId,
+          issuer: `https://session.firebase.google.com/${projectId}`,
+        });
+
+        const email = payload.email as string | undefined;
+        const isAdmin = payload.isAdmin === true;
+        const mfaVerified = payload.mfaVerified === true;
+
+        console.log("[EDGE DEBUG] JWT verified - email:", email, "isAdmin:", isAdmin, "mfaVerified:", mfaVerified);
         
         if (!email || (!email.endsWith('@gmail.com') && !email.endsWith('@googlemail.com'))) {
           console.log("[EDGE DEBUG] invalid email or domain format rejected");
@@ -118,52 +132,20 @@ export async function middleware(request: NextRequest) {
           return NextResponse.redirect(loginRedirectUrl);
         }
 
-        const accessToken = await getGoogleAccessToken();
-        if (!accessToken) {
-          throw new Error("Unable to obtain Google OAuth access token.");
-        }
-
-        const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'memory-weaver-8rk9t';
-        const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/admin_users/${encodeURIComponent(email.toLowerCase())}`;
-        console.log("[EDGE DEBUG] fetching whitelist status from:", url);
-        const res = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-
-        console.log("[EDGE DEBUG] Firestore response status:", res.status);
-        if (res.status === 404) {
-          console.log("[EDGE DEBUG] user email not whitelisted in firestore (404)");
+        if (!isAdmin) {
+          console.log("[EDGE DEBUG] unauthorized user access denied (missing isAdmin claim)");
           const loginRedirectUrl = new URL(isAdminSubdomain ? '/login' : '/admin/login', targetDomain);
           loginRedirectUrl.searchParams.set('reason', 'unauthorized');
           return NextResponse.redirect(loginRedirectUrl);
         }
 
-        if (!res.ok) {
-          throw new Error(`Firestore REST API returned status: ${res.status}`);
-        }
-
-        const data = await res.json();
-        const isActive = data.fields?.isActive?.booleanValue ?? false;
-        const mfaSetupComplete = data.fields?.mfaSetupComplete?.booleanValue ?? false;
-        console.log("[EDGE DEBUG] Whitelist data - isActive:", isActive, "mfaSetupComplete:", mfaSetupComplete);
-
-        if (!isActive) {
-          console.log("[EDGE DEBUG] user is whitelisted but inactive");
-          const loginRedirectUrl = new URL(isAdminSubdomain ? '/login' : '/admin/login', targetDomain);
-          loginRedirectUrl.searchParams.set('reason', 'unauthorized');
-          return NextResponse.redirect(loginRedirectUrl);
-        }
-
-        if (!mfaSetupComplete) {
-          console.log("[EDGE DEBUG] user active but requires MFA setup");
+        if (!mfaVerified) {
+          console.log("[EDGE DEBUG] user authorized but requires MFA setup validation");
           const mfaRedirectUrl = new URL(isAdminSubdomain ? '/mfa-setup' : '/admin/mfa-setup', targetDomain);
           return NextResponse.redirect(mfaRedirectUrl);
         }
       } catch (error) {
-        console.error("[EDGE DEBUG] error verifying whitelist:", error);
-        console.error("MIDDLEWARE MFA/WHITELIST ERROR:", error);
+        console.error("[EDGE DEBUG] cryptographical validation failed:", error);
         const loginRedirectUrl = new URL(isAdminSubdomain ? '/login' : '/admin/login', targetDomain);
         loginRedirectUrl.searchParams.set('reason', 'unauthorized');
         return NextResponse.redirect(loginRedirectUrl);

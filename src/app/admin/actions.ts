@@ -25,6 +25,7 @@ export async function verifyAdminCredentials(googleIdToken: string, totpToken?: 
       return { success: false, reason: 'NOT_AUTHORIZED', message: 'Access Denied. Identity not whitelisted.' };
     }
     
+    let mfaVerified = false;
     if (whitelistStatus.mfaSecret) {
       if (!totpToken) {
         return { success: true, requiresMfa: true, mfaSetupRequired: !whitelistStatus.mfaSetupComplete, email };
@@ -34,15 +35,27 @@ export async function verifyAdminCredentials(googleIdToken: string, totpToken?: 
       if (!isValidTotp) {
         return { success: false, reason: 'INVALID_MFA', message: 'Invalid Google Authenticator code.' };
       }
+      mfaVerified = true;
+    } else {
+      mfaVerified = false; // No MFA secret set up yet, user needs to enroll
     }
     
+    // Set custom user claims in Firebase Auth database
+    await adminAuth.setCustomUserClaims(decodedToken.uid, {
+      isAdmin: true,
+      mfaVerified
+    });
+
+    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days in milliseconds
+    const sessionCookie = await adminAuth.createSessionCookie(googleIdToken, { expiresIn });
+    
     const cookieStore = await cookies();
-    cookieStore.set(SESSION_COOKIE_NAME, googleIdToken, {
+    cookieStore.set(SESSION_COOKIE_NAME, sessionCookie, {
       path: '/',
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7 // 7 days
+      maxAge: 60 * 60 * 24 * 5 // 5 days
     });
     
     return { success: true, requiresMfa: false, uid: decodedToken.uid, email };
@@ -73,7 +86,7 @@ export async function generateMfaSetupDetails() {
 export async function verifyAndEnrollMfa(secret: string, token: string) {
   try {
     const session = await getSession();
-    if (!session || !session.email) {
+    if (!session || !session.email || !session.uid) {
       return { success: false, message: 'Unauthorized session.' };
     }
 
@@ -84,9 +97,15 @@ export async function verifyAndEnrollMfa(secret: string, token: string) {
       return { success: false, message: 'Invalid 6-digit verification code.' };
     }
 
-    if (!adminDb) {
+    if (!adminDb || !adminAuth) {
       return { success: false, message: 'Database services offline.' };
     }
+
+    // Set updated claims on user record in auth database
+    await adminAuth.setCustomUserClaims(session.uid, {
+      isAdmin: true,
+      mfaVerified: true
+    });
 
     await adminDb.collection('admin_users').doc(email.toLowerCase()).update({
       mfaSecret: secret,
@@ -97,6 +116,45 @@ export async function verifyAndEnrollMfa(secret: string, token: string) {
   } catch (error: any) {
     console.error('SECURITY: MFA enrollment transaction failed:', error);
     return { success: false, message: error.message || 'MFA validation transaction failure.' };
+  }
+}
+
+export async function refreshAdminSessionCookie(googleIdToken: string) {
+  try {
+    if (!adminAuth) {
+      return { success: false, message: 'Admin Auth offline.' };
+    }
+    const decodedToken = await adminAuth.verifyIdToken(googleIdToken);
+    const email = decodedToken.email;
+    if (!email) {
+      return { success: false, message: 'No email found in token.' };
+    }
+    const whitelistStatus = await verifyAdminWhitelist(email);
+    if (!whitelistStatus.isValid) {
+      return { success: false, message: 'Not authorized on whitelist.' };
+    }
+    
+    await adminAuth.setCustomUserClaims(decodedToken.uid, {
+      isAdmin: true,
+      mfaVerified: whitelistStatus.mfaSetupComplete
+    });
+
+    const expiresIn = 60 * 60 * 24 * 5 * 1000;
+    const sessionCookie = await adminAuth.createSessionCookie(googleIdToken, { expiresIn });
+
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE_NAME, sessionCookie, {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 5
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('SECURITY: Failed to refresh session cookie:', error);
+    return { success: false, message: 'Failed to refresh secure cookie context.' };
   }
 }
 

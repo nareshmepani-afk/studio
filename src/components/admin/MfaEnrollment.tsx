@@ -59,7 +59,20 @@ export default function MfaEnrollment() {
         toast.success('MFA Setup Complete', {
           description: 'Your security key has been successfully registered.'
         });
-        router.push('/admin');
+        
+        try {
+          const { auth } = await import('@/lib/firebase');
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            const idToken = await currentUser.getIdToken(true);
+            const { refreshAdminSessionCookie } = await import('@/app/admin/actions');
+            await refreshAdminSessionCookie(idToken);
+          }
+        } catch (authErr) {
+          console.error('[MFASETUP] Error refreshing token claims:', authErr);
+        }
+        
+        window.location.href = '/admin';
       } else {
         toast.error('Verification Failed', {
           description: res.message || 'The entered code was incorrect.'
