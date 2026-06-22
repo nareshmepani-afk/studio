@@ -39,5 +39,12 @@ service cloud.firestore {
       allow read, write: if request.auth.uid == userId;
       allow create: if true;
     }
+
+    // System Logs read access for authorized admin domains
+    match /system_logs/{logId} {
+      allow read: if request.auth != null && 
+        (request.auth.token.email.matches('.*@gmail\\.com$') || 
+         request.auth.token.email.matches('.*@googlemail\\.com$'));
+    }
   }
 }

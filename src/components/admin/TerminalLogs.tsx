@@ -79,17 +79,20 @@ export function TerminalLogs() {
     }
   };
 
+  const systemLogs = logs;
+  const logsArray = systemLogs || [];
+
   return (
     <div 
       ref={containerRef}
       className="p-5 font-mono text-xs space-y-2 max-h-60 overflow-y-auto bg-black/95 select-text scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent"
     >
-      {loading && logs.length === 0 ? (
+      {loading && logsArray.length === 0 ? (
         <div className="text-slate-500 animate-pulse">CONNECTING TO SECURITY CONTEXT GATEWAY...</div>
-      ) : logs.length === 0 ? (
+      ) : logsArray.length === 0 ? (
         <div className="text-slate-500">NO LOG ENTRIES FOUND. INGESTION POOL SECURE.</div>
       ) : (
-        logs.map((log) => (
+        logsArray.map((log) => (
           <div 
             key={log.id} 
             className={`leading-relaxed break-all ${getSeverityColor(log.severity)}`}
