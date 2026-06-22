@@ -33,4 +33,6 @@ tmp/
 !*.rules
 !*.json
 !scripts/generateLivingDocs.js
-scratch/
+scratch/
+!tailwind.config.js
+!postcss.config.js
