@@ -53,7 +53,7 @@ export async function verifyAdminCredentials(googleIdToken: string, totpToken?: 
     cookieStore.set(SESSION_COOKIE_NAME, sessionCookie, {
       path: '/',
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 5 // 5 days
     });
@@ -146,7 +146,7 @@ export async function refreshAdminSessionCookie(googleIdToken: string) {
     cookieStore.set(SESSION_COOKIE_NAME, sessionCookie, {
       path: '/',
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 5
     });

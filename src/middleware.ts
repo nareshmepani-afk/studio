@@ -7,7 +7,7 @@ import { serverLog } from './utils/telemetry/serverLogger';
 const GUEST_SECRET = new TextEncoder().encode(process.env.GUEST_SESSION_SECRET || '');
 
 const JWKS = jose.createRemoteJWKSet(
-  new URL('https://www.googleapis.com/identitytoolkit/v3/relyingparty/publicKeys')
+  new URL('https://www.googleapis.com/identitytoolkit/v3/relyingparty/publicKeys/jwk')
 );
 
 const PROTECTED_ROUTES = [
