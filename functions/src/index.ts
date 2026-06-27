@@ -1,6 +1,7 @@
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import { videoStitchTrigger } from "./videoStitchTrigger";
 import * as path from "path";
 import * as os from "os";
 import * as fs from "fs";
@@ -199,3 +200,5 @@ exports.stitchPerformanceReel = functions.https.onCall(async (data, context) => 
     throw new functions.https.HttpsError("internal", err.message || "Failed to stitch video segments.");
   }
 });
+
+exports.videoStitchTrigger = videoStitchTrigger;

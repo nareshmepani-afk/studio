@@ -6,9 +6,28 @@ import { serverLog } from './utils/telemetry/serverLogger';
 
 const GUEST_SECRET = new TextEncoder().encode(process.env.GUEST_SESSION_SECRET || '');
 
-const JWKS = jose.createRemoteJWKSet(
-  new URL('https://www.googleapis.com/identitytoolkit/v3/relyingparty/publicKeys/jwk')
-);
+let cachedKeys: Record<string, string> | null = null;
+let cachedKeysExpiry = 0;
+
+async function getPublicKey(kid: string): Promise<any> {
+  const now = Date.now();
+  if (!cachedKeys || now > cachedKeysExpiry) {
+    const res = await fetch('https://www.googleapis.com/identitytoolkit/v3/relyingparty/publicKeys');
+    if (!res.ok) {
+      throw new Error('Failed to fetch public keys');
+    }
+    cachedKeys = await res.json() as Record<string, string>;
+    const cacheControl = res.headers.get('cache-control') || '';
+    const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
+    const maxAgeSeconds = maxAgeMatch ? parseInt(maxAgeMatch[1], 10) : 21600; // 6 hours default
+    cachedKeysExpiry = now + maxAgeSeconds * 1000;
+  }
+  const cert = cachedKeys?.[kid];
+  if (!cert) {
+    throw new Error(`Certificate not found for kid: ${kid}`);
+  }
+  return await jose.importX509(cert, 'RS256');
+}
 
 const PROTECTED_ROUTES = [
   '/dashboard', 
@@ -114,7 +133,12 @@ export async function middleware(request: NextRequest) {
         const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'memory-weaver-8rk9t';
         
         // Cryptographically verify signature and claims of Firebase Session Cookie
-        const { payload } = await jose.jwtVerify(sessionCookie, JWKS, {
+        const header = jose.decodeProtectedHeader(sessionCookie);
+        if (!header.kid) {
+          throw new Error('Missing kid in session cookie header');
+        }
+        const publicKey = await getPublicKey(header.kid);
+        const { payload } = await jose.jwtVerify(sessionCookie, publicKey, {
           audience: projectId,
           issuer: `https://session.firebase.google.com/${projectId}`,
         });
