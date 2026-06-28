@@ -16,7 +16,15 @@ import { validateAuthAttempt } from '@/actions/authActions';
 
 const LoginForm = () => {
   const { login } = useAuth();
-  const { executeAction } = useRecaptcha(firebaseConfig.recaptchaSiteKey);
+  
+  const isStagingBypassAllowed = 
+    process.env.NEXT_PUBLIC_BYPASS_CAPTCHA === 'true' && 
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID !== 'memory-weaver-8rk9t';
+
+  const { executeAction } = useRecaptcha(
+    isStagingBypassAllowed ? undefined : firebaseConfig.recaptchaSiteKey
+  );
+
   const [email, setEmail] = useState('test@example.com');
   const [password, setPassword] = useState('password');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,13 +36,18 @@ const LoginForm = () => {
     setIsSubmitting(true);
 
     try {
-      // Execute reCAPTCHA Action
-      const token = await executeAction('LOGIN');
-      console.log("[LoginForm] reCAPTCHA token generated:", !!token);
-      
-      if (!token) {
-        throw new Error("Failed to generate security token. Please check your internet connection.");
+      let token: string | null = null;
+
+      if (isStagingBypassAllowed) {
+        token = 'BYPASS_STAGE_RECAPTCHA';
+      } else {
+        token = await executeAction('LOGIN');
+        if (!token) {
+          throw new Error("Failed to generate security token. Please check your internet connection.");
+        }
       }
+
+      console.log("[LoginForm] reCAPTCHA token resolved:", !!token);
       
       // Verify token on the server before proceeding
       await validateAuthAttempt(token, 'LOGIN', email);

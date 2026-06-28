@@ -1,10 +1,20 @@
 {
-  "projects": {},
+  "projects": {
+    "production": "memory-weaver-8rk9t",
+    "staging": "memory-weaver-dev"
+  },
   "targets": {
     "memory-weaver-8rk9t": {
       "hosting": {
         "production-app": [
           "memory-weaver-8rk9t"
+        ]
+      }
+    },
+    "memory-weaver-dev": {
+      "hosting": {
+        "staging-app": [
+          "memory-weaver-dev"
         ]
       }
     }
