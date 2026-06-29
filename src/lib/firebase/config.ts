@@ -3,7 +3,7 @@ import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 
-export const firebaseConfig = {
+const productionConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -11,6 +11,27 @@ export const firebaseConfig = {
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
+
+const stagingConfig = {
+  apiKey: "AIzaSyDvnkb8tt3m_Fn9i74GOsQncdkAd0dwS98",
+  authDomain: "memory-weaver-dev.firebaseapp.com",
+  projectId: "memory-weaver-dev",
+  storageBucket: "memory-weaver-dev.firebasestorage.app",
+  messagingSenderId: "98973313245",
+  appId: "1:98973313245:web:bbe45fb78d08d0563c1334",
+};
+
+const isStaging = (typeof window !== 'undefined' && (
+  window.location.hostname === 'dev.memoryweaver.studio' ||
+  window.location.hostname.includes('memory-weaver-dev') ||
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1'
+)) || (
+  process.env.NEXT_PUBLIC_BYPASS_CAPTCHA === 'true' ||
+  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === 'memory-weaver-dev'
+);
+
+export const firebaseConfig = isStaging ? stagingConfig : productionConfig;
 
 let internalApp: FirebaseApp;
 let internalAuth: Auth;
