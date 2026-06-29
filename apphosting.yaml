@@ -21,6 +21,8 @@ env:
     value: "0"
   - variable: NEXT_PUBLIC_CACHE_BUST
     value: "2026-06-21-DASHBOARD-012"
+  - variable: NEXT_PUBLIC_BYPASS_CAPTCHA
+    value: "true"
 
 
   # Secret variables are securely stored in Secret Manager and exposed to the server at runtime.
