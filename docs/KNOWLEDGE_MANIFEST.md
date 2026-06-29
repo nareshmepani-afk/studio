@@ -37,6 +37,8 @@
 - `[x]` **[MW-123]** Create telemetry API route handler supporting transactional WriteBatches on Node.js runtime.
 - `[x]` **[MW-125]** Extend client-side reCAPTCHA script loading and execution bypass constraints to the Registration route.
 - `[x]` **[MW-126]** Automate dev user initialization & staging integration pass runbook.
+- `[x]` **[MW-127]** Define App Hosting environment variables configuration and inject build-time flags.
+- `[x]` **[MW-128]** Fix App Hosting dynamic client-side configuration selector and resolve Authorized Domains referer issues.
 
 ## System Quality Directives
 
