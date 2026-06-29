@@ -11,8 +11,10 @@
 
 ### [DEV-APP] (Local Development & Testing)
 - **Local Sandbox**: Evaluates code at `localhost` with fully-offline fallbacks.
+- **Staging / Dev Target**: Deployed to `memory-weaver-dev` alias servicing `https://dev.memoryweaver.studio/`.
 - **Headless & E2E Testing**: Utilizes Playwright runner (`test-playwright-run.js`) with fake UI flags (`--use-fake-ui-for-media-stream`) and local webm blob assets (`public/ffmpeg/`) to run media device tests.
-- **Security & CAPTCHA Bypass**: Employs URL parameter authentication bypasses (`?mode=guest&sessionId=TEST_E2E_SESSION`) to test workflow stages without triggering Firebase Auth/ReCAPTCHA.
+- **Security & CAPTCHA Bypass**: Employs client-side and server-side compile-time fenced gates. If `NEXT_PUBLIC_BYPASS_CAPTCHA === 'true'` and the project is not production (`memory-weaver-8rk9t`), the application skips loading/executing reCAPTCHA Enterprise and verifies via the `BYPASS_STAGE_RECAPTCHA` token.
+- **Telemetry Processing**: Ingests debounced event arrays securely through `/api/telemetry/flush`, running on the standard Node.js serverless runtime to execute atomic `WriteBatch` operations via `adminDb` safely.
 - **Operational Shield**: Runs Vitest test suite ([businessRules.test.ts](file:///C:/Users/home/studio/src/config/__tests__/businessRules.test.ts)) freezing tier prices, sandbox settings, and support playbook step counts.
 
 ### [LIVE-PRODUCTION] (Public Deployments)
@@ -31,6 +33,10 @@
 - `[x]` **[MW-104]** Implement Real-Time Firestore Listener Streams for Phase 3.1 Terminal Log Console.
 - `[x]` **[MW-105]** Structure SVG Math Sparkline Paths for Phase 3.2 Business & Analytics Dashboard.
 - `[x]` **[MW-106]** SUCCESS: Force configuration files tracking, resolve router navigation race conditions, register pre-flight build check, and verify clean production deployments.
+- `[x]` **[MW-121]** Implement compile-time fenced reCAPTCHA bypass logic in authentication server actions.
+- `[x]` **[MW-123]** Create telemetry API route handler supporting transactional WriteBatches on Node.js runtime.
+- `[x]` **[MW-125]** Extend client-side reCAPTCHA script loading and execution bypass constraints to the Registration route.
+- `[x]` **[MW-126]** Automate dev user initialization & staging integration pass runbook.
 
 ## System Quality Directives
 

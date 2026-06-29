@@ -2,12 +2,19 @@
 
 import { verifyRecaptchaToken } from '@/lib/fraud-defense';
 
+import { headers } from 'next/headers';
+
 export async function validateAuthAttempt(token: string, action: 'LOGIN' | 'REGISTER', email?: string) {
   console.log(`[AuthAction] Validating ${action} attempt for ${email || 'anonymous'}`);
   
+  const headersList = await headers();
+  const host = headersList.get('x-original-host') || headersList.get('x-forwarded-host') || headersList.get('host') || '';
+  
   const isStagingBypassAllowed = 
-    process.env.NEXT_PUBLIC_BYPASS_CAPTCHA === 'true' && 
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID !== 'memory-weaver-8rk9t';
+    host.includes('dev.memoryweaver.studio') || 
+    host.includes('memory-weaver-dev') || 
+    host.includes('localhost') || 
+    host.includes('127.0.0.1');
 
   if (isStagingBypassAllowed && token === 'BYPASS_STAGE_RECAPTCHA') {
     console.log(`[AuthAction] Bypassing reCAPTCHA verification on staging.`);

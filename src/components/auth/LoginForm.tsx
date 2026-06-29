@@ -17,9 +17,12 @@ import { validateAuthAttempt } from '@/actions/authActions';
 const LoginForm = () => {
   const { login } = useAuth();
   
-  const isStagingBypassAllowed = 
-    process.env.NEXT_PUBLIC_BYPASS_CAPTCHA === 'true' && 
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID !== 'memory-weaver-8rk9t';
+  const isStagingBypassAllowed = typeof window !== 'undefined' && (
+    window.location.hostname === 'dev.memoryweaver.studio' ||
+    window.location.hostname.includes('memory-weaver-dev') ||
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  );
 
   const { executeAction } = useRecaptcha(
     isStagingBypassAllowed ? undefined : firebaseConfig.recaptchaSiteKey

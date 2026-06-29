@@ -26,7 +26,18 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const { register, loading: authLoading } = useAuth();
-  const { executeAction } = useRecaptcha(firebaseConfig.recaptchaSiteKey);
+
+  const isStagingBypassAllowed = typeof window !== 'undefined' && (
+    window.location.hostname === 'dev.memoryweaver.studio' ||
+    window.location.hostname.includes('memory-weaver-dev') ||
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  );
+
+  const { executeAction } = useRecaptcha(
+    isStagingBypassAllowed ? undefined : firebaseConfig.recaptchaSiteKey
+  );
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   
@@ -54,13 +65,18 @@ export default function RegisterPage() {
 
     setIsSubmitting(true);
     try {
-      // Execute reCAPTCHA Action
-      const token = await executeAction('REGISTER');
-      console.log("[RegisterPage] reCAPTCHA token generated:", !!token);
-      
-      if (!token) {
-        throw new Error("Failed to generate security token. Please check your internet connection.");
+      let token: string | null = null;
+
+      if (isStagingBypassAllowed) {
+        token = 'BYPASS_STAGE_RECAPTCHA';
+      } else {
+        token = await executeAction('REGISTER');
+        if (!token) {
+          throw new Error("Failed to generate security token. Please check your internet connection.");
+        }
       }
+
+      console.log("[RegisterPage] reCAPTCHA token generated:", !!token);
       
       // Verify token on the server before proceeding
       await validateAuthAttempt(token, 'REGISTER', email);
