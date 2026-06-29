@@ -32,6 +32,20 @@
           }
         }
       ]
+    },
+    {
+      "target": "staging-app",
+      "public": "public",
+      "cleanUrls": true,
+      "rewrites": [
+        {
+          "source": "**",
+          "run": {
+            "serviceId": "studio",
+            "region": "us-east4"
+          }
+        }
+      ]
     }
   ],
   "storage": {
