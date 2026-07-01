@@ -1,0 +1,31 @@
+{
+  "templateId": "p_einstein",
+  "isTemplate": true,
+  "isPublic": true,
+  "authorId": "system_seed",
+  "title": "Albert Einstein: Spacetime & Imagination",
+  "description": "Reconstruct early foundations and creative milestones from Albert Einstein's historical timeline.",
+  "prose": "Let's explore the space-time of your memory. Think about a moment when time seemed to stand still, or when your imagination took flight beyond the bounds of everyday knowledge. We'll examine the thoughts that sparked your curiosity and the theories of life you've developed along the way. When you're ready, tell us about the relativity of your own journey.",
+  "sensoryConfig": [
+    { "type": "visual", "anchor": "Compass Needle" },
+    { "type": "auditory", "anchor": "Classroom Clock Ticking" }
+  ],
+  "acts": {
+    "act1": {
+      "title": "Act I: Ulm Birthplace & Foundations (1879)",
+      "prompt": "Let's begin with the concept of time. Can you describe a specific moment where time seemed to slow down or stand still for you?",
+      "milestoneAnchor": "The pocket compass at age five"
+    },
+    "act2": {
+      "title": "Act II: Aarau Imagination & Light Speed Experiment (1895)",
+      "prompt": "And thinking about imagination, when was a time your mind wandered beyond the limits of what was known, sparking a new direction or creative break?",
+      "milestoneAnchor": "Chasing a light beam through spacetime"
+    },
+    "act3": {
+      "title": "Act III: Bern Patent Office Sensory Anchors (1905)",
+      "prompt": "What was the sensory anchor of that realization—perhaps the physical feel of an object in your hand, or the atmosphere of the room where the idea struck?",
+      "milestoneAnchor": "Physical touch of patent papers and ticking walls"
+    }
+  },
+  "createdAt": "2026-06-29T19:53:00.000Z"
+}

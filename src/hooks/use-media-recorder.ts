@@ -13,7 +13,17 @@ export interface EDLTrackSegment {
   duration: number;    // Resulting active duration (seconds)
 }
 
-export const useMediaRecorder = (stream: MediaStream | null) => {
+export interface MediaRecorderOptions {
+  videoBitsPerSecond?: number;
+  audioBitsPerSecond?: number;
+}
+
+export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecorderOptions = {}) => {
+  const {
+    videoBitsPerSecond = 2500000, // Default 2.5 Mbps optimized footprint target
+    audioBitsPerSecond = 128000   // Default 128 kbps audio
+  } = options;
+
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -60,11 +70,11 @@ export const useMediaRecorder = (stream: MediaStream | null) => {
     chunksRef.current = [];
     const mimeType = ['video/webm;codecs=vp9', 'video/webm'].find(MediaRecorder.isTypeSupported) || 'video/webm';
     
-    // PREMIUM: Set a high bitrate (8Mbps) to ensure UHD/HD footage is crisp.
+    console.log(`[MediaRecorder] Attempting construction: target videoBps=${videoBitsPerSecond}, audioBps=${audioBitsPerSecond}`);
     const recorder = new MediaRecorder(stream, { 
       mimeType,
-      videoBitsPerSecond: 8000000, 
-      audioBitsPerSecond: 128000
+      videoBitsPerSecond, 
+      audioBitsPerSecond
     });
     
     recorder.ondataavailable = (e) => {
@@ -99,7 +109,14 @@ export const useMediaRecorder = (stream: MediaStream | null) => {
       }
     };
 
-    console.log(`[MediaRecorder] Initiating recording with mimeType: ${mimeType}, high-bitrate target (8Mbps)`);
+    // Constraint Check: Track device compliance to the target video bitrate constraint
+    const actualVideoBps = recorder.videoBitsPerSecond;
+    if (actualVideoBps > videoBitsPerSecond * 1.5) {
+      console.warn(`[MediaRecorder] Hardware mismatch: device ignored 2.5Mbps bitrate target and allocated ${actualVideoBps}bps. Adaptive resolution degradation recommended if performance drops.`);
+    } else {
+      console.log(`[MediaRecorder] Hardware check successful: bitrate constraints conform to ${actualVideoBps}bps.`);
+    }
+
     recorder.start(1000);
     mediaRecorderRef.current = recorder;
     setIsRecording(true);
@@ -122,7 +139,7 @@ export const useMediaRecorder = (stream: MediaStream | null) => {
     }
 
     setUploadResult(null);
-  }, [stream, recordedSegments]);
+  }, [stream, recordedSegments, videoBitsPerSecond, audioBitsPerSecond]);
 
   // Live Tape-Style Punch In
   const punchIn = useCallback((timestamp: number) => {

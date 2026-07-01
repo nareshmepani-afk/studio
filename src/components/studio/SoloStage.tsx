@@ -59,7 +59,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { app, storage, db } from '@/lib/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, addDoc } from 'firebase/firestore';
 import localforage from 'localforage';
 import { RecordEditingSuite } from './RecordEditingSuite';
 import { DirectorialUpsellDialog } from './overlays/DirectorialUpsellDialog';
@@ -904,14 +904,51 @@ export default function SoloStage({
   const handleStitchAndApprove = async (edl: any[]) => {
     if (checkGuestAndUpsell("video stitching & cinema publishing")) return;
     if (edl.length === 0) return;
+    
     setIsStitching(true);
 
+    let activeMemoryId = data?.id;
+
     try {
+      // IMMUTABILITY GATES SHIELD: Auto-clone the template document to a unique private user session
+      if (activeMemoryId === 'p_einstein') {
+        console.log("[SoloStage] Auto-cloning public template document 'p_einstein' into private user session...");
+        
+        if (!user?.uid) {
+          throw new Error("User authentication is required to save progress.");
+        }
+        
+        const memoriesRef = collection(db, 'users', user.uid, 'memories');
+        const cleanEinsteinTemplate = {
+          title: "Albert Einstein: Spacetime & Imagination",
+          description: "Reconstruct early foundations and creative milestones from Albert Einstein's historical timeline.",
+          promptId: "p_einstein",
+          status: "draft",
+          prose: data?.prose || "",
+          sensoryConfig: data?.sensoryConfig || [],
+          productionStage: 1, // Advance to recording stage
+          createdAt: new Date().toISOString()
+        };
+
+        const newDocRef = await addDoc(memoriesRef, cleanEinsteinTemplate);
+        activeMemoryId = newDocRef.id;
+        
+        console.log(`[SoloStage] Auto-cloned 'p_einstein' successfully. Private memory document target: ${activeMemoryId}`);
+        
+        // Push the update to parent state to align context
+        update({ id: activeMemoryId });
+        
+        // Dynamically update the browser address bar silently without triggering remounting
+        if (typeof window !== 'undefined') {
+          window.history.replaceState(null, '', `/studio/production/${activeMemoryId}`);
+        }
+      }
+
       console.log("[SoloStage] Uploading segments sequentially to Storage...");
       // Upload each segment blob
       for (let i = 0; i < edl.length; i++) {
         const seg = edl[i];
-        const storagePath = `users/${userId || user?.uid}/memories/${data?.id}/segments/${seg.segmentId}.webm`;
+        const storagePath = `users/${userId || user?.uid}/memories/${activeMemoryId}/segments/${seg.segmentId}.webm`;
         const storageRef = ref(storage, storagePath);
         console.log(`[SoloStage] Uploading segment ${seg.segmentId} (${seg.blob.size} bytes)...`);
         await uploadBytesResumable(storageRef, seg.blob);
@@ -925,7 +962,7 @@ export default function SoloStage({
         duration: seg.duration
       }));
       const edlBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-      const edlPath = `users/${userId || user?.uid}/memories/${data?.id}/edl.json`;
+      const edlPath = `users/${userId || user?.uid}/memories/${activeMemoryId}/edl.json`;
       const edlRef = ref(storage, edlPath);
       console.log("[SoloStage] Uploading EDL manifest...");
       await uploadBytesResumable(edlRef, edlBlob);
@@ -945,7 +982,7 @@ export default function SoloStage({
 
       try {
         const res = await stitchPerformanceReel({ 
-          memoryId: data?.id,
+          memoryId: activeMemoryId,
           simulateError: simulateError
         });
         resultData = res.data as { success: boolean; videoUrl: string };

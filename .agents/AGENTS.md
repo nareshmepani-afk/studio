@@ -18,3 +18,6 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 ## 3. Verify Every Assumption Programmatically
 - Write local scratch scripts to parse JSON configurations, environment flags, and active API tokens rather than predicting behaviour.
 - Validate that the staging and production contexts are completely isolated from one another before deploying changes.
+
+# Deployment Milestones
+- **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)

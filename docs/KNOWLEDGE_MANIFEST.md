@@ -19,7 +19,8 @@
 
 ### [LIVE-PRODUCTION] (Public Deployments)
 - **Production URL**: Primary live instance at `memoryweaver.studio`.
-- **Infrastructure Integrations**: Employs Cloudflare Email Routing for destination address mapping and Resend API key setup for outbound user delivery.
+- **Infrastructure Integrations**: Employs Cloudflare Email Routing for destination address mapping.
+- **Secret & Key Security**: Configures dynamic secret resolution via Google Secret Manager inside [apphosting.yaml](file:///C:/Users/home/studio/apphosting.yaml#L28-L36). All production API keys (e.g., `RESEND_API_KEY`, `SERVICE_ACCOUNT_JSON`) must NEVER be written to the codebase in plaintext or committed as part of local env parameters; they must be managed directly in the Google Cloud/Firebase Secret Console and exposed dynamically to the server runtime.
 - **Telemetry & Exceptions**: Structured server-side logging with distributed trace correlation IDs and BigQuery analytics tracking.
 - **Pre-Flight Pipeline Guard**: Integrates `node scripts/generateLivingDocs.js` and `npm run build:check` in the build process to verify living manifest markdown updates and validate CSS bundle size budgets (>20kB check) before deployments.
 
@@ -43,3 +44,13 @@
 ## System Quality Directives
 
 > **UI QUALITY DIRECTIVE**: All dashboard, authentication, and internal support layout elements must feature absolute center alignment, proper padding envelopes, typography hierarchies, and strict functional device compliance (e.g., QR quiet zone buffers). Internal tooling mirrors public production fidelity.
+
+## Operational & Diagnostic Lessons
+
+### 1. Subdomain Routing Collision
+- **Issue**: Registering the same subdomain (e.g., `dev.memoryweaver.studio`) across multiple Firebase Hosting sites/projects creates a Google Frontend (GFE) routing conflict.
+- **Solution**: The domain must be deleted from the conflicting console. Simply updating DNS records is insufficient.
+
+### 2. GFE Cloud Run Ingress IAM Blocks
+- **Issue**: Firebase Hosting rewrites to Cloud Run services fail with `403 Forbidden` if the Firebase Hosting service agent or target audience lacks invocation permissions.
+- **Solution**: Check IAM bindings on the target Cloud Run service. To resolve permission blocks on staging, bind the `roles/run.invoker` role to `allUsers` on the service.

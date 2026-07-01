@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import SoloStage from '../SoloStage';
 import React from 'react';
 import { Memory } from '@/types';
+import einsteinTestData from '../../../fixtures/einstein.json';
 
 // Mock framer-motion and nav router
 vi.mock('framer-motion', () => {
@@ -215,5 +216,41 @@ describe('User Plan Permissions (nareshmepani@yahoo.com)', () => {
     });
 
     expect(screen.queryByTestId('upsell-dialog')).toBeNull();
+  });
+});
+
+describe('Albert Einstein Schema Guardrail Tests', () => {
+  it('should validate the structural integrity of the static einstein.json fixture', () => {
+    const einsteinData = einsteinTestData;
+    
+    // Core parameters
+    expect(einsteinData.templateId).toBe('p_einstein');
+    expect(einsteinData.isTemplate).toBe(true);
+    expect(einsteinData.isPublic).toBe(true);
+    expect(typeof einsteinData.title).toBe('string');
+    expect(typeof einsteinData.description).toBe('string');
+    expect(typeof einsteinData.prose).toBe('string');
+    
+    // Sensory anchors structure
+    expect(Array.isArray(einsteinData.sensoryConfig)).toBe(true);
+    expect(einsteinData.sensoryConfig.length).toBeGreaterThanOrEqual(1);
+    einsteinData.sensoryConfig.forEach((sensor: any) => {
+      expect(typeof sensor.type).toBe('string');
+      expect(typeof sensor.anchor).toBe('string');
+    });
+
+    // 3-Act structural mapping
+    expect(einsteinData.acts).toBeDefined();
+    expect(typeof einsteinData.acts.act1.title).toBe('string');
+    expect(typeof einsteinData.acts.act1.prompt).toBe('string');
+    expect(typeof einsteinData.acts.act1.milestoneAnchor).toBe('string');
+
+    expect(typeof einsteinData.acts.act2.title).toBe('string');
+    expect(typeof einsteinData.acts.act2.prompt).toBe('string');
+    expect(typeof einsteinData.acts.act2.milestoneAnchor).toBe('string');
+
+    expect(typeof einsteinData.acts.act3.title).toBe('string');
+    expect(typeof einsteinData.acts.act3.prompt).toBe('string');
+    expect(typeof einsteinData.acts.act3.milestoneAnchor).toBe('string');
   });
 });

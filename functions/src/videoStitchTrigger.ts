@@ -12,7 +12,11 @@ if (admin.apps.length === 0) {
 const db = admin.firestore();
 const storage = admin.storage();
 
-export const videoStitchTrigger = onDocumentUpdated('video_jobs/{jobId}', async (event) => {
+export const videoStitchTrigger = onDocumentUpdated({
+  document: 'video_jobs/{jobId}',
+  cpu: 4,
+  memory: '4GiB'
+}, async (event) => {
   const change = event.data;
   if (!change) return;
 
@@ -71,16 +75,26 @@ export const videoStitchTrigger = onDocumentUpdated('video_jobs/{jobId}', async 
 
       // Run FFmpeg to regenerate timestamps and fix WebM header
       const indexCmd = `ffmpeg -y -i "${inputPath}" -c copy -fflags +genpts "${outputPath}"`;
-      await new Promise<void>((resolve, reject) => {
+      
+      const success = await new Promise<boolean>((resolve) => {
         exec(indexCmd, (error, stdout, stderr) => {
           if (error) {
-            reject(new Error(`Failed to index segment ${i}: ${error.message}. Stderr: ${stderr}`));
+            console.warn(`[FFMPEG]: Indexing failed for segment ${i} (corrupt metadata or broken end cues): ${error.message}`);
+            resolve(false);
           } else {
-            resolve();
+            resolve(true);
           }
         });
       });
-      indexedPaths.push(outputPath);
+
+      if (success) {
+        indexedPaths.push(outputPath);
+      } else {
+        await docRef.update({
+          logs: admin.firestore.FieldValue.arrayUnion(`[WARNING]: Segment ${i} has corrupt cues. Falling back to raw file.`)
+        });
+        indexedPaths.push(inputPath); // Fallback: Use raw source segment directly
+      }
     }
 
     // 4. Pass 2: Generate input text list file
@@ -95,15 +109,53 @@ export const videoStitchTrigger = onDocumentUpdated('video_jobs/{jobId}', async 
     const finalPath = path.join(jobDir, `${jobId}-output.webm`);
     const concatCmd = `ffmpeg -y -f concat -safe 0 -i "${listFilePath}" -c copy "${finalPath}"`;
 
-    await new Promise<void>((resolve, reject) => {
-      exec(concatCmd, (error, stdout, stderr) => {
-        if (error) {
-          reject(new Error(`FFmpeg concat failed: ${error.message}. Stderr: ${stderr}`));
-        } else {
-          resolve();
-        }
+    let concatSuccess = await new Promise<boolean>((resolve) => {
+      exec(concatCmd, (error) => {
+        resolve(!error);
       });
     });
+
+    // VFR to CFR TIMELINE ALIGNMENT FALLBACK: If demuxer copy fails due to variable track mismatches,
+    // re-encode all segments into a unified 30fps constant stream using a filter graph.
+    if (!concatSuccess) {
+      await docRef.update({
+        logs: admin.firestore.FieldValue.arrayUnion('[FFMPEG]: Demuxer copy failed due to track configuration mismatch. Commencing VFR-to-CFR timeline alignment fallback...')
+      });
+
+      // Construct a filter complex that scales and interpolates each input to 30fps
+      const inputArgs = indexedPaths.map(p => `-i "${p}"`).join(' ');
+      const filterInputs = indexedPaths.map((_, idx) => `[${idx}:v]fps=fps=30,scale=1280:720,setsar=1[v${idx}]; [${idx}:a]aresample=async=1[a${idx}]`).join('; ');
+      const filterMap = indexedPaths.map((_, idx) => `[v${idx}][a${idx}]`).join('');
+      const filterComplex = `-filter_complex "${filterInputs}; ${filterMap}concat=n=${indexedPaths.length}:v=1:a=1[outv][outa]" -map "[outv]" -map "[outa]"`;
+      
+      const interpolationCmd = `ffmpeg -y ${inputArgs} ${filterComplex} -c:v libvpx-vp9 -threads 4 -cpu-used 4 -b:v 1M -c:a libopus "${finalPath}"`;
+
+      const startTime = Date.now();
+
+      concatSuccess = await new Promise<boolean>((resolve) => {
+        exec(interpolationCmd, (error, stdout, stderr) => {
+          const durationMs = Date.now() - startTime;
+          if (error) {
+            console.error(`[FFMPEG]: Interpolation compilation failed in ${durationMs}ms: ${error.message}. Stderr: ${stderr}`);
+            resolve(false);
+          } else {
+            console.log(`[FFMPEG]: Interpolation compilation successful in ${durationMs}ms.`);
+            docRef.update({
+              logs: admin.firestore.FieldValue.arrayUnion(`[FFMPEG]: Transcoding completed successfully in ${durationMs}ms.`)
+            }).catch(e => console.error("[Telemetry]: Log update error:", e));
+            resolve(true);
+          }
+        });
+      });
+      
+      if (!concatSuccess) {
+        throw new Error("Transcode engine failed standard concat and interpolation fallbacks.");
+      }
+
+      await docRef.update({
+        logs: admin.firestore.FieldValue.arrayUnion('[SYSTEM]: Timeline successfully aligned to 30fps CFR using filter graph.')
+      });
+    }
 
     // 5. Upload assembled output back to GCS bucket destination
     const destPath = `users-reels/${inviteId}/${jobId}-complete.webm`;

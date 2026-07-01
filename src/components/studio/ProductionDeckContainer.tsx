@@ -12,6 +12,7 @@ import { Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { resolveTemplateFixtureAsync } from '@/utils/templateResolver';
 
 interface ProductionDeckContainerProps {
   promptId: string;
@@ -29,6 +30,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   const isProductionRoute = pathname?.includes('/production/');
   
   const [selectedProductionData, setSelectedProductionData] = useState<any>(null);
+  const [resolvedAsyncTemplate, setResolvedAsyncTemplate] = useState<any>(null);
   const [isReady, setIsReady] = useState(false);
   
   // To avoid circular layout state, we just keep it simple. If it's modal, we use takeover.
@@ -51,6 +53,21 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
       }
     };
   }, []);
+
+  // Pre-load dynamic templates asynchronously on mount or ID transitions
+  useEffect(() => {
+    let active = true;
+    async function loadTemplate() {
+      const res = await resolveTemplateFixtureAsync(promptId);
+      if (active) {
+        setResolvedAsyncTemplate(res);
+      }
+    }
+    loadTemplate();
+    return () => {
+      active = false;
+    };
+  }, [promptId]);
 
   useEffect(() => {
     if (studioLoading || !chapters.length) return;
@@ -149,20 +166,30 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     } else {
         // New Production Draft
         const template = cp;
-        // Check if promptId matches a known script, otherwise check if resolved template ID matches
         const templateId = cp?.id || promptId;
         console.log(`[ProductionDeckContainer] Initializing new production draft for template "${templateId}"`);
         
-        const script = templateId ? storyScripts[templateId] : '';
-        const formattedProse = script ? `<p>${script.split('\\n').join('</p><p>')}</p>` : '';
+        const draftScript = templateId ? storyScripts[templateId] : '';
+        const draftFormattedProse = draftScript ? `<p>${draftScript.split('\\n').join('</p><p>')}</p>` : '';
+
+        // Hydrate dynamically using the resolved asynchronous template state
+        const resolvedTemplate = resolvedAsyncTemplate;
+        
+        let initialSensoryConfig: any[] = [];
+        let initialProse = draftFormattedProse;
+        
+        if (resolvedTemplate) {
+          initialSensoryConfig = resolvedTemplate.sensoryConfig || [];
+          initialProse = resolvedTemplate.prose ? `<p>${resolvedTemplate.prose.split('\n').join('</p><p>')}</p>` : draftFormattedProse;
+        }
 
         memoryToEdit = {
-          title: template?.title || '',
-          description: template?.description || '',
+          title: resolvedTemplate ? resolvedTemplate.title : (template?.title || ''),
+          description: resolvedTemplate ? resolvedTemplate.description : (template?.description || ''),
           promptId: templateId,
           status: 'draft',
-          prose: formattedProse,
-          sensoryConfig: [], // Default empty
+          prose: initialProse,
+          sensoryConfig: initialSensoryConfig,
         };
     }
 
