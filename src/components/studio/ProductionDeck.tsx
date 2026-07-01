@@ -345,7 +345,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     memoryData?.dateComponents?.year !== ''
                 );
             case 1: // Act II: Weave
-                return ['poetic', 'direct', 'nostalgic'].includes(memoryData?.activeVision || '');
+                return ['poetic', 'direct', 'nostalgic', 'cinematic'].includes(memoryData?.activeVision || '');
             case 2: // Act III: Capture
                 return !!memoryData?.videoUrl;
             case 3: // Act IV: Director's Cut
@@ -372,7 +372,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             if (memoryData?.description?.trim()?.length < 10) reqs.push("Narrative Hook (> 10 chars)");
             if (hotClarity < 15) reqs.push("Scene Clarity (needs sensory keywords)");
         } else if (currentStage === 1) {
-            const hasWeave = ['poetic', 'direct', 'nostalgic'].includes(memoryData?.activeVision || '');
+            const hasWeave = ['poetic', 'direct', 'nostalgic', 'cinematic'].includes(memoryData?.activeVision || '');
             if (!hasWeave) reqs.push("Sensory Weave Selection");
         } else if (currentStage === 2) {
             if (!memoryData?.videoUrl) reqs.push("Video Recording");

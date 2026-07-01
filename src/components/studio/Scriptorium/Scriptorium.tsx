@@ -470,12 +470,49 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
       </div>
 
       {/* STAGE DECORATION: The "End of Scene" Marker */}
-      <div className="mt-16 flex items-center gap-4 opacity-20">
-        <div className="h-px flex-1 bg-emerald-500/50" />
-        <span className="font-mono text-[10px] tracking-[0.4em] text-emerald-500 uppercase">
-          {isProductionLocked ? "Directorial Blueprint Locked" : "End of Script Blueprint"}
-        </span>
-        <div className="h-px flex-1 bg-emerald-500/50" />
+      <div className="mt-16 flex flex-col gap-8">
+        {isProductionLocked && data.activeVision && (
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-8 rounded-[2rem] bg-emerald-500/5 border border-emerald-500/20 backdrop-blur-md shadow-[0_15px_35px_rgba(16,185,129,0.05)] flex flex-col md:flex-row items-center justify-between gap-6"
+          >
+            <div className="flex items-center gap-4 text-left">
+              <div className="p-3.5 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 text-emerald-400">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-[11px] font-black text-emerald-400 uppercase tracking-[0.25em]">Sensory Blueprint Sealed</h4>
+                <p className="text-[10px] text-white/50 leading-relaxed font-sans max-w-md">
+                  Pacing and script details have been locked to preserve recording fidelity. Proceed to the booth to capture your performance.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                // Dispatch click trigger on global navigation next step
+                const nextBtn = document.querySelector('[data-blueprint="ProductionControlBar"] button.bg-emerald-505, [data-blueprint="ProductionControlBar"] button.bg-emerald-500') as HTMLButtonElement;
+                if (nextBtn) {
+                  nextBtn.click();
+                } else {
+                  console.warn("[Scriptorium] Global navigate next trigger button could not be located in DOM.");
+                }
+              }}
+              className="w-full md:w-auto px-8 py-4 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-[11px] uppercase tracking-[0.2em] rounded-2xl transition-all shadow-[0_10px_25px_rgba(16,185,129,0.3)] hover:shadow-[0_15px_35px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3"
+            >
+              <span>Enter Recording Studio</span>
+              <BookOpen className="w-4 h-4 text-slate-950" />
+            </button>
+          </motion.div>
+        )}
+
+        <div className="flex items-center gap-4 opacity-20">
+          <div className="h-px flex-1 bg-emerald-500/50" />
+          <span className="font-mono text-[10px] tracking-[0.4em] text-emerald-500 uppercase">
+            {isProductionLocked ? "Directorial Blueprint Locked" : "End of Script Blueprint"}
+          </span>
+          <div className="h-px flex-1 bg-emerald-500/50" />
+        </div>
       </div>
 
       {/* Custom Alert Dialog for Unlocking Production */}

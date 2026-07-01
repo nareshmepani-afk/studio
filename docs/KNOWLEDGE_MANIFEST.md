@@ -53,4 +53,11 @@
 
 ### 2. GFE Cloud Run Ingress IAM Blocks
 - **Issue**: Firebase Hosting rewrites to Cloud Run services fail with `403 Forbidden` if the Firebase Hosting service agent or target audience lacks invocation permissions.
-- **Solution**: Check IAM bindings on the target Cloud Run service. To resolve permission blocks on staging, bind the `roles/run.invoker` role to `allUsers` on the service.
+### 3. Google Cloud Logging & CLI Tooling Constraints
+- **Constraint**: `gcloud` and `firebase` global CLI binaries are not guaranteed to be installed in the developer's terminal environment.
+- **Rule**: Never execute shell-based CLI diagnostics without verifying path access first. Instead, parse local credentials files (`~/.config/configstore/firebase-tools.json`) and call REST API endpoints using native `https` node modules (avoiding `fetch` on Windows Node runtimes which triggers asynchronous handle crashes like `UV_HANDLE_CLOSING`).
+
+### 4. Firestore Document Scriptorium Architecture (Empty Array Validation)
+- **Constraint**: The `Scriptorium` editor workspace maps over elements inside `scriptBlocks`. If this field is empty or initialized as an empty map (`arrayValue: {}`), the editor component will crash silently on load, causing the screen to go blank.
+- **Rule**: When committing or selecting AI-generated script visions, never write an empty array value. If a vision is applied, ensure `scriptBlocks` contains at least one default block object containing the selected text, a valid ID (`crypto.randomUUID()`), and a type declaration (`beat`).
+
