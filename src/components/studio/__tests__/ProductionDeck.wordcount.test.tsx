@@ -188,4 +188,30 @@ describe('ProductionDeck Word Count Bypass tests', () => {
     // isComplete should be true since a valid weave has been selected
     expect(capturedSoloStageProps.isComplete).toBe(true);
   });
+
+  it('allows progression in Act II when the cinematic sensory weave has been selected', () => {
+    mockCurrentStage = 1;
+    mockIsProductionLocked = true;
+    capturedSoloStageProps = null;
+
+    const cinematicMemoryData = {
+      ...mockMemoryData,
+      activeVision: 'cinematic',
+      activeVisionLabel: 'The Cinematic Cut'
+    };
+
+    render(
+      <ProductionDeck 
+        memoryData={cinematicMemoryData} 
+        onUpdate={mockUpdate} 
+        layoutMode="takeover" 
+        onToggleLayout={vi.fn()} 
+      />
+    );
+
+    expect(capturedSoloStageProps).not.toBeNull();
+    // isComplete should be true since 'cinematic' is in the allowed vision list
+    expect(capturedSoloStageProps.isComplete).toBe(true);
+  });
 });
+
