@@ -148,7 +148,11 @@ vi.mock('@/hooks/use-media-recorder', () => {
         uploadMediaBlob: vi.fn(),
         uploading: false,
         uploadProgress: 0,
-        uploadResult: null
+        uploadResult: null,
+        isInitializing: false,
+        actualVideoBitrate: 2500000,
+        activeResolution: { width: 1920, height: 1080 },
+        hasHardwareMismatch: false
       };
     }
   };

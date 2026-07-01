@@ -16,12 +16,16 @@ export interface EDLTrackSegment {
 export interface MediaRecorderOptions {
   videoBitsPerSecond?: number;
   audioBitsPerSecond?: number;
+  initialWidth?: number;
+  initialHeight?: number;
 }
 
 export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecorderOptions = {}) => {
   const {
     videoBitsPerSecond = 2500000, // Default 2.5 Mbps optimized footprint target
-    audioBitsPerSecond = 128000   // Default 128 kbps audio
+    audioBitsPerSecond = 128000,  // Default 128 kbps audio
+    initialWidth = 1920,
+    initialHeight = 1080
   } = options;
 
   const [isRecording, setIsRecording] = useState(false);
@@ -34,6 +38,16 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
   const [recordedSegments, setRecordedSegments] = useState<EDLTrackSegment[]>([]);
   const segmentStartTimeRef = useRef(0);
   const recordingTimeRef = useRef(recordingTime);
+
+  // --- NEW: Adaptive Fallback & Telemetry States ---
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [actualVideoBitrate, setActualVideoBitrate] = useState<number | null>(null);
+  const [hasHardwareMismatch, setHasHardwareMismatch] = useState<boolean>(false);
+  const [activeResolution, setActiveResolution] = useState<{ width: number; height: number } | null>({
+    width: initialWidth,
+    height: initialHeight
+  });
+  const isInitializingRef = useRef(false);
 
   useEffect(() => {
     recordingTimeRef.current = recordingTime;
@@ -64,82 +78,126 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
     }
   }, []);
 
-  const startRecording = useCallback((isPunch: boolean = false) => {
+  const startRecording = useCallback(async (isPunch: boolean = false) => {
     if (!stream) return;
-
-    chunksRef.current = [];
-    const mimeType = ['video/webm;codecs=vp9', 'video/webm'].find(MediaRecorder.isTypeSupported) || 'video/webm';
     
-    console.log(`[MediaRecorder] Attempting construction: target videoBps=${videoBitsPerSecond}, audioBps=${audioBitsPerSecond}`);
-    const recorder = new MediaRecorder(stream, { 
-      mimeType,
-      videoBitsPerSecond, 
-      audioBitsPerSecond
-    });
-    
-    recorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) {
-        chunksRef.current.push(e.data);
-      }
-    };
+    // Asynchronous Setup Guard Lock
+    if (isInitializingRef.current || isRecording) {
+      console.warn('[MediaRecorder] Blocked double-start request during active initialization.');
+      return;
+    }
+    isInitializingRef.current = true;
 
-    recorder.onstop = () => {
-      console.log(`[MediaRecorder] Segment stop event fired. Commencing compilation of ${chunksRef.current.length} chunks...`);
-      const blob = new Blob(chunksRef.current, { type: mimeType });
-      console.log(`[MediaRecorder] Compiled Segment Blob Info - Size: ${blob.size} bytes, Type: ${mimeType}`);
-      setIsRecording(false);
+    try {
+      chunksRef.current = [];
+      const mimeType = ['video/webm;codecs=vp9', 'video/webm'].find(MediaRecorder.isTypeSupported) || 'video/webm';
       
-      if (blob.size === 0) {
-        console.error("[MediaRecorder] CRITICAL: Segment blob is empty. Trashing recording segment.");
-        return;
+      console.log(`[MediaRecorder] Attempting construction: target videoBps=${videoBitsPerSecond}, audioBps=${audioBitsPerSecond}`);
+      
+      // 1. Initialize first instance
+      let recorder = new MediaRecorder(stream, { 
+        mimeType,
+        videoBitsPerSecond, 
+        audioBitsPerSecond
+      });
+
+      const actualVideoBps = recorder.videoBitsPerSecond;
+      setActualVideoBitrate(actualVideoBps);
+
+      // 2. Hardware mismatch check
+      if (actualVideoBps > videoBitsPerSecond * 1.5) {
+        console.warn(`[MediaRecorder] Hardware mismatch: device allocated ${actualVideoBps}bps. Dropping resolution in-place...`);
+        setHasHardwareMismatch(true);
+
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack && typeof videoTrack.applyConstraints === 'function') {
+          try {
+            await videoTrack.applyConstraints({
+              width: { ideal: 1280, max: 1280 },
+              height: { ideal: 720, max: 720 }
+            });
+            
+            // Allow hardware encoder pipeline to settle
+            await new Promise((r) => setTimeout(r, 100));
+            setActiveResolution({ width: 1280, height: 720 });
+
+            // Re-instantiate recorder with same settings against downscaled stream
+            recorder = new MediaRecorder(stream, {
+              mimeType,
+              videoBitsPerSecond,
+              audioBitsPerSecond
+            });
+            console.log('[MediaRecorder] In-place degradation applied successfully.');
+          } catch (constraintErr) {
+            console.warn('[MediaRecorder] applyConstraints fallback failed, using original bitrate stream.', constraintErr);
+          }
+        }
+      } else {
+        setHasHardwareMismatch(false);
+        setActiveResolution({ width: initialWidth, height: initialHeight });
       }
 
-      const duration = recordingTimeRef.current - segmentStartTimeRef.current;
-      if (duration > 0) {
-        const newSegment: EDLTrackSegment = {
-          segmentId: `seg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-          blob,
-          blobUrl: URL.createObjectURL(blob),
-          startOffset: 0,
-          endOffset: duration,
-          duration: duration
-        };
-        setRecordedSegments((prev) => [...prev, newSegment]);
-        console.log(`[MediaRecorder] Added new segment: ${newSegment.segmentId} (duration: ${duration}s)`);
+      // 3. Bind event listeners
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        console.log(`[MediaRecorder] Segment stop event fired. Commencing compilation of ${chunksRef.current.length} chunks...`);
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        console.log(`[MediaRecorder] Compiled Segment Blob Info - Size: ${blob.size} bytes, Type: ${mimeType}`);
+        setIsRecording(false);
+        
+        if (blob.size === 0) {
+          console.error("[MediaRecorder] CRITICAL: Segment blob is empty. Trashing recording segment.");
+          return;
+        }
+
+        const duration = recordingTimeRef.current - segmentStartTimeRef.current;
+        if (duration > 0) {
+          const newSegment: EDLTrackSegment = {
+            segmentId: `seg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            blob,
+            blobUrl: URL.createObjectURL(blob),
+            startOffset: 0,
+            endOffset: duration,
+            duration: duration
+          };
+          setRecordedSegments((prev) => [...prev, newSegment]);
+          console.log(`[MediaRecorder] Added new segment: ${newSegment.segmentId} (duration: ${duration}s)`);
+        }
+      };
+
+      // 4. Start recording execution
+      recorder.start(1000);
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+
+      if (!isPunch) {
+        setRecordingTime(0);
+        segmentStartTimeRef.current = 0;
+        recordedSegments.forEach(s => {
+          if (s.blobUrl) URL.revokeObjectURL(s.blobUrl);
+        });
+        setRecordedSegments([]);
+        setRecordedBlob(null);
+      } else {
+        setRecordingTime((time) => {
+          segmentStartTimeRef.current = time;
+          return time;
+        });
       }
-    };
 
-    // Constraint Check: Track device compliance to the target video bitrate constraint
-    const actualVideoBps = recorder.videoBitsPerSecond;
-    if (actualVideoBps > videoBitsPerSecond * 1.5) {
-      console.warn(`[MediaRecorder] Hardware mismatch: device ignored 2.5Mbps bitrate target and allocated ${actualVideoBps}bps. Adaptive resolution degradation recommended if performance drops.`);
-    } else {
-      console.log(`[MediaRecorder] Hardware check successful: bitrate constraints conform to ${actualVideoBps}bps.`);
+      setUploadResult(null);
+    } catch (err) {
+      console.error('[MediaRecorder] Critical initialization error:', err);
+    } finally {
+      // Release initialization lock
+      isInitializingRef.current = false;
     }
-
-    recorder.start(1000);
-    mediaRecorderRef.current = recorder;
-    setIsRecording(true);
-
-    if (!isPunch) {
-      setRecordingTime(0);
-      segmentStartTimeRef.current = 0;
-      // Revoke any existing URLs before clearing
-      recordedSegments.forEach(s => {
-        if (s.blobUrl) URL.revokeObjectURL(s.blobUrl);
-      });
-      setRecordedSegments([]);
-      setRecordedBlob(null);
-    } else {
-      // Record relative to current punched playhead
-      setRecordingTime((time) => {
-        segmentStartTimeRef.current = time;
-        return time;
-      });
-    }
-
-    setUploadResult(null);
-  }, [stream, recordedSegments, videoBitsPerSecond, audioBitsPerSecond]);
+  }, [stream, recordedSegments, videoBitsPerSecond, audioBitsPerSecond, initialWidth, initialHeight, isRecording]);
 
   // Live Tape-Style Punch In
   const punchIn = useCallback((timestamp: number) => {
@@ -283,7 +341,6 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
     setUploadResult(null);
     setRecordingTime(0);
   }, [recordedSegments]);
-
   return { 
     isRecording, 
     startRecording, 
@@ -299,6 +356,10 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
     uploadMediaBlob: uploadVideo,
     uploading, 
     uploadProgress, 
-    uploadResult 
+    uploadResult,
+    isInitializing,
+    actualVideoBitrate,
+    hasHardwareMismatch,
+    activeResolution
   };
 };
