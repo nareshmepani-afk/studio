@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithRedirect, getRedirectResult, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { verifyAdminCredentials } from '@/app/admin/actions';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,49 +26,67 @@ export default function AdminLoginContent() {
   const [adminEmail, setAdminEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Handle redirect result extraction on mount
+  useEffect(() => {
+    let active = true;
+    
+    setLoading(true);
+    getRedirectResult(auth)
+      .then(async (userCredential) => {
+        if (!active) return;
+        if (!userCredential) {
+          setLoading(false);
+          return;
+        }
+
+        const idToken = await userCredential.user.getIdToken(true);
+        const result = await verifyAdminCredentials(idToken);
+        
+        if (!result.success) {
+          setErrorMessage(result.message || 'Access Denied.');
+          setStep('denied');
+          toast.error('Admin Access Denied', { description: result.message });
+          setLoading(false);
+          return;
+        }
+        
+        setAdminEmail(result.email || '');
+        
+        if (result.requiresMfa) {
+          setTempGoogleToken(idToken);
+          setStep('mfa');
+          toast.info('Multi-Factor Authentication Required', { description: 'Please enter your 6-digit TOTP key.' });
+        } else {
+          toast.success('Access Granted', { description: `Logged in as ${result.email}` });
+          window.location.href = '/admin';
+        }
+        setLoading(false);
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error('[AdminLogin:RedirectResult] Error:', error);
+        setErrorMessage(error?.message || 'Redirect authentication failed.');
+        setStep('denied');
+        setLoading(false);
+      });
+
+    return () => { active = false; };
+  }, []);
+
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setErrorMessage('');
     try {
       const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(auth, provider);
-      const idToken = await userCredential.user.getIdToken(true);
-      
-      // Send token to server action for whitelist evaluation
-      const result = await verifyAdminCredentials(idToken);
-      
-      if (!result.success) {
-        setErrorMessage(result.message || 'Access Denied.');
-        setStep('denied');
-        toast.error('Admin Access Denied', {
-          description: result.message
-        });
-        return;
-      }
-      
-      setAdminEmail(result.email || '');
-      
-      if (result.requiresMfa) {
-        setTempGoogleToken(idToken);
-        setStep('mfa');
-        toast.info('Multi-Factor Authentication Required', {
-          description: 'Please enter your 6-digit TOTP key.'
-        });
-      } else {
-        // Authenticated fully (no MFA whitelisted)
-        toast.success('Access Granted', {
-          description: `Logged in as ${result.email}`
-        });
-        window.location.href = '/admin';
-      }
+      // Use signInWithRedirect instead of signInWithPopup to bypass COOP constraints
+      await signInWithRedirect(auth, provider);
     } catch (error: any) {
-      console.error('[AdminLogin] Authentication transaction error:', error);
-      setErrorMessage(error?.message || 'Identity verification failed.');
+      console.error('[AdminLogin] Redirection initiation error:', error);
+      setErrorMessage(error?.message || 'Failed to initiate redirect sign-in.');
       setStep('denied');
       toast.error('Authentication Error', {
-        description: error?.message || 'Internal security gateway transaction failure.'
+        description: error?.message || 'Failed to initiate redirect.'
       });
-    } finally {
       setLoading(false);
     }
   };
