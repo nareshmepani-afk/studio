@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Shield, 
   Terminal, 
@@ -8,15 +8,34 @@ import {
   Users, 
   TrendingUp, 
   Cpu,
-  ShieldCheck
+  ShieldCheck,
+  Server
 } from 'lucide-react';
 import { DevOpsConsole } from '@/components/admin/DevOpsConsole';
 import { BusinessConsole } from '@/components/admin/BusinessConsole';
 import { AccessConsole } from '@/components/admin/AccessConsole';
 import KnowledgeHub from '@/components/admin/KnowledgeHub';
+import { getBackendEnvironmentDetails } from './actions';
 
 export default function AdminDashboardContent() {
   const [activeSuite, setActiveSuite] = useState<'devops' | 'business' | 'access' | 'knowledge'>('devops');
+  const [envInfo, setEnvInfo] = useState<{ projectId: string; isProduction: boolean; label: string } | null>(null);
+
+  useEffect(() => {
+    getBackendEnvironmentDetails()
+      .then((res) => {
+        if (res.success && res.projectId) {
+          setEnvInfo({
+            projectId: res.projectId,
+            isProduction: !!res.isProduction,
+            label: res.label || 'STAGING'
+          });
+        }
+      })
+      .catch(() => {
+        setEnvInfo({ projectId: 'memory-weaver-dev', isProduction: false, label: 'STAGING / DEVELOPMENT' });
+      });
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500/30">
@@ -36,6 +55,16 @@ export default function AdminDashboardContent() {
           </div>
           
           <div className="flex items-center gap-4">
+            {envInfo && (
+              <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border ${
+                envInfo.isProduction 
+                  ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' 
+                  : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+              }`}>
+                <Server className="h-3.5 w-3.5" />
+                {envInfo.label} ({envInfo.projectId})
+              </span>
+            )}
             <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
               SYSTEM SECURE

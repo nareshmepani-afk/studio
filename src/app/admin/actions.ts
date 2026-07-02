@@ -266,3 +266,21 @@ export async function inviteAdminUser(newEmail: string) {
     return { success: false, message: error.message || 'MFA invite transaction failure.' };
   }
 }
+
+export async function getBackendEnvironmentDetails() {
+  try {
+    const adminApp = (await import('@/lib/firebase-admin')).adminApp;
+    const projectId = adminApp?.options?.projectId || process.env.GCLOUD_PROJECT || 'memory-weaver-dev';
+    const isProduction = projectId === 'memory-weaver-8rk9t';
+    
+    return {
+      success: true,
+      projectId,
+      isProduction,
+      label: isProduction ? 'PRODUCTION' : 'STAGING / DEVELOPMENT'
+    };
+  } catch (error: any) {
+    console.error('SECURITY: Failed to query backend environment ID:', error);
+    return { success: false, message: 'Failed to retrieve environment context.' };
+  }
+}
