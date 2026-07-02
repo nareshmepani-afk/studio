@@ -61,3 +61,12 @@
 - **Constraint**: The `Scriptorium` editor workspace maps over elements inside `scriptBlocks`. If this field is empty or initialized as an empty map (`arrayValue: {}`), the editor component will crash silently on load, causing the screen to go blank.
 - **Rule**: When committing or selecting AI-generated script visions, never write an empty array value. If a vision is applied, ensure `scriptBlocks` contains at least one default block object containing the selected text, a valid ID (`crypto.randomUUID()`), and a type declaration (`beat`).
 
+### 5. Staging-First Public Testing Protocol
+- **Constraint**: Because backend dependencies (like Google Cloud APIs, Secret Manager, App Hosting runtimes) are context-bound, final validation testing must be verified using the public staging environment (`dev.memoryweaver.studio`).
+- **Rule**: When changes are completed, commit and push to the `dev` branch to trigger the App Hosting staging rebuild pipeline. Notify the user that build propagation takes 2–3 minutes, and instruct them to test changes directly on `dev.memoryweaver.studio`.
+
+### 6. Telemetry & Analytics Versioning
+- **Constraint**: Tracking event logs and debugging issues across releases requires clear context isolation.
+- **Rule**: Every client-side telemetry event payload dispatched must include the application version parameter (e.g. `version: "1.0.0-MW-69"`). Always check that this version string is logged during trace analysis to map events to specific deployment milestones.
+
+

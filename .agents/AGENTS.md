@@ -24,6 +24,16 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - When querying remote platform status, inspect active config directories (`~/.config/configstore/firebase-tools.json`) programmatically.
 - Avoid calling Node `fetch` on Windows development runtimes for token or log requests to prevent network engine crashes (`UV_HANDLE_CLOSING`). Instead, construct clean payload requests using Node's native `https` module.
 
+## 5. Staging-First Public Testing Protocol
+- Because of backend dependencies, all validation testing must be verified using the public staging environment (`dev.memoryweaver.studio`).
+- When changes are made, run validation locally first, commit and push to `dev` branch, and monitor the build pipeline progress.
+- Explicitly notify the user when the App Hosting staging build starts, clarify that build propagation takes 2–3 minutes, and instruct them to refresh `dev.memoryweaver.studio` to test the live updates.
+
+## 6. Telemetry & Analytics Versioning Rule
+- Every client event payload dispatched must include the application version parameter (e.g. `version: "1.0.0-MW-69"`).
+- When validating logs or tracing user events programmatically, always ensure telemetry payloads explicitly log the version string to allow tracking dynamic changes across deployment milestones.
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
+
 
