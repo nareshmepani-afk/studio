@@ -78,6 +78,12 @@ export default function AdminLoginContent() {
     setErrorMessage('');
     try {
       const provider = new GoogleAuthProvider();
+      // Custom parameters to enforce whitelisted staff selection parameters
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+
+      console.log("[AdminAuth] Triggering strict Single-Frame Identity Redirect Handshake...");
       // Use signInWithRedirect instead of signInWithPopup to bypass COOP constraints
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
