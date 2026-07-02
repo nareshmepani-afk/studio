@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Lock, ShieldCheck, Sparkles, ArrowRight, Zap, CheckCircle2 } from 'lucide-react';
 import { getHostPassPriceAction } from '@/actions/getHostPassPriceAction';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 
 interface DirectorialUpsellDialogProps {
@@ -23,6 +23,8 @@ interface DirectorialUpsellDialogProps {
 
 export function DirectorialUpsellDialog({ isOpen, onClose, requiredFeature = "saving your memory" }: DirectorialUpsellDialogProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [priceInfo, setPriceInfo] = useState<{ passPrice: number; currency: string } | null>(null);
 
@@ -44,7 +46,9 @@ export function DirectorialUpsellDialog({ isOpen, onClose, requiredFeature = "sa
   const handleUpgrade = () => {
     toast.info("Navigating to Licensing Hub...");
     onClose();
-    router.push('/settings');
+    const query = searchParams.toString();
+    const fullPath = pathname + (query ? `?${query}` : '');
+    router.push(`/settings?returnTo=${encodeURIComponent(fullPath)}`);
   };
 
   const handleLogin = () => {

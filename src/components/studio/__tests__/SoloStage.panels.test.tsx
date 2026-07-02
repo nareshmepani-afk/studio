@@ -52,6 +52,11 @@ vi.mock('lucide-react', async (importOriginal) => {
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => '/studio/production/test-id',
+  useSearchParams: () => ({
+    get: (key: string) => null,
+    toString: () => ''
+  })
 }));
 
 vi.mock('sonner', () => ({

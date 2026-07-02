@@ -11,6 +11,7 @@ import { activateFreeDirectorPass } from '@/actions/userActions';
 import { Loader2, CheckCircle, XCircle, User, Mail, ShieldCheck, Ticket, Zap, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export function SettingsPageContent({ 
   initialDirectorPassStatus, 
@@ -23,6 +24,10 @@ export function SettingsPageContent({
   userEmail: string, 
   userName: string 
 }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
+  
   const [directorPassStatus, setDirectorPassStatus] = useState(initialDirectorPassStatus);
   const [activationDateStr, setActivationDateStr] = useState(initialDirectorPassActivationDate);
   const [isPending, startTransition] = useTransition();
@@ -74,6 +79,9 @@ export function SettingsPageContent({
             description: "Your Free Director Pass is now active.",
             icon: <CheckCircle className="h-4 w-4 text-emerald-400" />
           });
+          if (returnTo) {
+            router.push(returnTo);
+          }
         } else {
           toast.error("Activation Failed", { description: result.message });
         }
