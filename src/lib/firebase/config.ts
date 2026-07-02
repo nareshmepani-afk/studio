@@ -3,9 +3,16 @@ import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 
+const getDynamicAuthDomain = (defaultDomain: string) => {
+  if (typeof window !== 'undefined' && window.location.hostname.endsWith('memoryweaver.studio')) {
+    return window.location.hostname;
+  }
+  return defaultDomain;
+};
+
 const productionConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  authDomain: getDynamicAuthDomain(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'memory-weaver-8rk9t.firebaseapp.com'),
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
@@ -14,7 +21,7 @@ const productionConfig = {
 
 const stagingConfig = {
   apiKey: "AIzaSyDvnkb8tt3m_Fn9i74GOsQncdkAd0dwS98",
-  authDomain: "memory-weaver-dev.firebaseapp.com",
+  authDomain: getDynamicAuthDomain("memory-weaver-dev.firebaseapp.com"),
   projectId: "memory-weaver-dev",
   storageBucket: "memory-weaver-dev.firebasestorage.app",
   messagingSenderId: "98973313245",
