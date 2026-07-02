@@ -21,7 +21,7 @@
   "hosting": [
     {
       "target": "production-app",
-      "public": "public",
+      "public": ".empty",
       "cleanUrls": true,
       "rewrites": [
         {
@@ -35,7 +35,7 @@
     },
     {
       "target": "staging-app",
-      "public": "public",
+      "public": ".empty",
       "cleanUrls": true,
       "rewrites": [
         {
