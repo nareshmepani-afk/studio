@@ -38,7 +38,18 @@ const isStaging = (typeof window !== 'undefined' && (
   process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === 'memory-weaver-dev'
 );
 
-export const firebaseConfig = isStaging ? stagingConfig : productionConfig;
+// Function to resolve the dynamic Firebase configuration at runtime
+export const getClientFirebaseConfig = () => {
+  const baseConfig = isStaging ? stagingConfig : productionConfig;
+  
+  if (typeof window !== 'undefined' && window.location.hostname.endsWith('memoryweaver.studio')) {
+    return {
+      ...baseConfig,
+      authDomain: window.location.hostname
+    };
+  }
+  return baseConfig;
+};
 
 let internalApp: FirebaseApp;
 let internalAuth: Auth;
@@ -46,7 +57,8 @@ let internalDb: Firestore;
 let internalStorage: FirebaseStorage;
 
 try {
-  internalApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  const activeConfig = getClientFirebaseConfig();
+  internalApp = getApps().length ? getApp() : initializeApp(activeConfig);
   internalAuth = getAuth(internalApp);
   internalDb = getFirestore(internalApp);
   internalStorage = getStorage(internalApp);
