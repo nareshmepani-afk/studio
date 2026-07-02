@@ -4,17 +4,17 @@
 env:
   # Public variables made available to the Next.js build process and client-side code.
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: "AIzaSyANRmF5M5guN3PJ-IDw-3a8W3WaIvk-NJE"
+    value: "AIzaSyDvnkb8tt3m_Fn9i74GOsQncdkAd0dwS98"
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    value: 'memory-weaver-8rk9t'
+    value: 'memory-weaver-dev'
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: 'memory-weaver-8rk9t.firebaseapp.com'
+    value: 'memory-weaver-dev.firebaseapp.com'
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    value: 'memory-weaver-8rk9t.appspot.com'
+    value: 'memory-weaver-dev.firebasestorage.app'
   - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-    value: '67296998103'
+    value: '98973313245'
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
-    value: '1:67296998103:web:f48699405c37bcf4567692'
+    value: '1:98973313245:web:bbe45fb78d08d0563c1334'
   - variable: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
     value: "1"
   - variable: HUSKY
