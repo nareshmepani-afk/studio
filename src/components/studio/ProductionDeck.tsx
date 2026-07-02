@@ -157,8 +157,8 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         const targetStage = memoryData?.productionStage || 0;
         console.log("[ProductionDeck] Syncing/Rehydrating global state from Firestore memory data:", currentRefId, "stage:", targetStage);
         
-        // 1. Sync stage - Entry Rule: Every session MUST mount at Act I (The Scriptorium)
-        setStage(0);
+        // 1. Sync stage - Restore from saved database state
+        setStage(targetStage);
         
         // 2. Sync modality
         if (hasNavigatedBack && memoryData?.modality) {
