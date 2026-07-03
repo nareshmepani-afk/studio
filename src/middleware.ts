@@ -114,6 +114,7 @@ export async function middleware(request: NextRequest) {
   if (isAdminRoute) {
     const isExemptPath = 
       pathname.startsWith('/_next') || 
+      pathname.startsWith('/__/auth') ||
       pathname.includes('.') ||
       pathname === '/' ||
       pathname === '/login' || 
