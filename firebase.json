@@ -25,7 +25,7 @@
       "cleanUrls": true,
       "rewrites": [
         {
-          "source": "**",
+          "source": "^/((?!__/auth/).*)$",
           "run": {
             "serviceId": "studio",
             "region": "us-central1"
@@ -39,7 +39,7 @@
       "cleanUrls": true,
       "rewrites": [
         {
-          "source": "**",
+          "source": "^/((?!__/auth/).*)$",
           "run": {
             "serviceId": "studio",
             "region": "us-east4"
