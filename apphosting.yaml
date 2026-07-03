@@ -8,7 +8,7 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
     value: 'memory-weaver-dev'
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: 'memory-weaver-dev.firebaseapp.com'
+    value: 'admin.memoryweaver.studio'
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
     value: 'memory-weaver-dev.firebasestorage.app'
   - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
