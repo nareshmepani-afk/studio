@@ -30,15 +30,19 @@ export default function AdminLoginContent() {
   useEffect(() => {
     let active = true;
     
-    setLoading(true);
-    getRedirectResult(auth)
-      .then(async (userCredential) => {
+    const checkRedirectData = async () => {
+      setLoading(true);
+      try {
+        console.log("[AdminAuth] Checking for returning identity redirect payload...");
+        const userCredential = await getRedirectResult(auth);
+        
         if (!active) return;
         if (!userCredential) {
           setLoading(false);
           return;
         }
 
+        console.log("[AdminAuth] Identity successfully verified at client level:", userCredential.user.email);
         const idToken = await userCredential.user.getIdToken(true);
         const result = await verifyAdminCredentials(idToken);
         
@@ -57,21 +61,22 @@ export default function AdminLoginContent() {
           setStep('mfa');
           toast.info('Multi-Factor Authentication Required', { description: 'Please enter your 6-digit TOTP key.' });
         } else {
-          toast.success('Access Granted', { description: `Logged in as ${result.email}` });
+          toast.success('Identity Verified. Accessing Admin Control Center...', { description: `Logged in as ${result.email}` });
           window.location.href = '/admin';
         }
-        setLoading(false);
-      })
-      .catch((error) => {
+      } catch (error: any) {
         if (!active) return;
-        console.error('[AdminLogin:RedirectResult] Error:', error);
+        console.error("[AdminAuth] Redirect handshake resolution failure:", error);
         setErrorMessage(error?.message || 'Redirect authentication failed.');
         setStep('denied');
-        setLoading(false);
-      });
+        toast.error("Internal security gateway transaction failure.");
+      }
+      setLoading(false);
+    };
 
+    checkRedirectData();
     return () => { active = false; };
-  }, []);
+  }, [router]);
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
