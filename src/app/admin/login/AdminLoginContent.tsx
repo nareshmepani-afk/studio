@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithRedirect, getRedirectResult, GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, getClientFirebaseConfig } from '@/lib/firebase';
 import { verifyAdminCredentials } from '@/app/admin/actions';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -26,78 +26,76 @@ export default function AdminLoginContent() {
   const [adminEmail, setAdminEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Handle redirect result extraction on mount
   useEffect(() => {
-    let active = true;
+    console.log("================= AUTH DIAGNOSTICS LAUNCHED =================");
+    console.log("[DIAGNOSTIC] Current Window Location:", typeof window !== 'undefined' ? window.location.href : "SERVER-SIDE");
     
-    const checkRedirectData = async () => {
+    // Safety check dynamic evaluation trace
+    const activeConfig = getClientFirebaseConfig();
+    console.log("[DIAGNOSTIC] Firebase Auth Active Config:", {
+      apiKey: activeConfig?.apiKey ? "PRESENT" : "MISSING",
+      authDomain: activeConfig?.authDomain,
+      projectId: activeConfig?.projectId
+    });
+
+    const checkRedirect = async () => {
       setLoading(true);
       try {
-        console.log("[AdminAuth] Checking for returning identity redirect payload...");
-        const userCredential = await getRedirectResult(auth);
+        console.log("[DIAGNOSTIC] Executing getRedirectResult()...");
+        const result = await getRedirectResult(auth);
         
-        if (!active) return;
-        if (!userCredential) {
-          setLoading(false);
-          return;
-        }
-
-        console.log("[AdminAuth] Identity successfully verified at client level:", userCredential.user.email);
-        const idToken = await userCredential.user.getIdToken(true);
-        const result = await verifyAdminCredentials(idToken);
-        
-        if (!result.success) {
-          setErrorMessage(result.message || 'Access Denied.');
-          setStep('denied');
-          toast.error('Admin Access Denied', { description: result.message });
-          setLoading(false);
-          return;
-        }
-        
-        setAdminEmail(result.email || '');
-        
-        if (result.requiresMfa) {
-          setTempGoogleToken(idToken);
-          setStep('mfa');
-          toast.info('Multi-Factor Authentication Required', { description: 'Please enter your 6-digit TOTP key.' });
+        if (result?.user) {
+          console.log("[DIAGNOSTIC] Redirect Result caught successfully!", {
+            email: result.user?.email,
+            uid: result.user?.uid
+          });
+          const idToken = await result.user.getIdToken(true);
+          const verification = await verifyAdminCredentials(idToken);
+          
+          if (verification.success) {
+            console.log("[DIAGNOSTIC] Whitelist check passed, updating layout state to MFA.");
+            setTempGoogleToken(idToken);
+            setAdminEmail(result.user.email || 'Admin');
+            setStep('mfa');
+            toast.success("Identity Verified. Accessing Admin Control Center...");
+          } else {
+            console.warn("[DIAGNOSTIC] Whitelist check rejected:", verification.message);
+            setErrorMessage(verification.message || 'Access Denied.');
+            setStep('denied');
+            toast.error('Admin Access Denied', { description: verification.message });
+          }
         } else {
-          toast.success('Identity Verified. Accessing Admin Control Center...', { description: `Logged in as ${result.email}` });
-          window.location.href = '/admin';
+          console.log("[DIAGNOSTIC] getRedirectResult() resolved with NULL (No active redirect landing detected).");
         }
       } catch (error: any) {
-        if (!active) return;
-        console.error("[AdminAuth] Redirect handshake resolution failure:", error);
-        setErrorMessage(error?.message || 'Redirect authentication failed.');
+        console.error("============= REDIRECT ENGINE CRASH =============");
+        console.error("[DIAGNOSTIC] Code:", error.code);
+        console.error("[DIAGNOSTIC] Message:", error.message);
+        console.error("[DIAGNOSTIC] Full Error Object:", error);
+        setErrorMessage(error?.message || 'Redirect handshake failed.');
         setStep('denied');
         toast.error("Internal security gateway transaction failure.");
       }
       setLoading(false);
     };
 
-    checkRedirectData();
-    return () => { active = false; };
+    checkRedirect();
   }, [router]);
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setErrorMessage('');
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    
+    console.log("============= INTERACTION TRIGGERED =============");
+    console.log("[DIAGNOSTIC] Click detected on Google Identity Pass.");
+    console.log("[DIAGNOSTIC] Forcing explicit signInWithRedirect flow...");
+    
     try {
-      const provider = new GoogleAuthProvider();
-      // Custom parameters to enforce whitelisted staff selection parameters
-      provider.setCustomParameters({
-        prompt: 'select_account'
-      });
-
-      console.log("[AdminAuth] Triggering strict Single-Frame Identity Redirect Handshake...");
-      // Use signInWithRedirect instead of signInWithPopup to bypass COOP constraints
       await signInWithRedirect(auth, provider);
-    } catch (error: any) {
-      console.error('[AdminLogin] Redirection initiation error:', error);
-      setErrorMessage(error?.message || 'Failed to initiate redirect sign-in.');
-      setStep('denied');
-      toast.error('Authentication Error', {
-        description: error?.message || 'Failed to initiate redirect.'
-      });
+    } catch (err) {
+      console.error("[DIAGNOSTIC] Immediate execution failure during signInWithRedirect:", err);
       setLoading(false);
     }
   };

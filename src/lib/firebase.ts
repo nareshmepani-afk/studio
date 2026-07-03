@@ -1,2 +1,2 @@
 // lib/firebase.ts
-export { app, auth, db, storage } from "./firebase/config";
+export { app, auth, db, storage, getClientFirebaseConfig } from "./firebase/config";
