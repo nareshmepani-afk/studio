@@ -178,7 +178,16 @@ export async function middleware(request: NextRequest) {
     }
 
     if (isAdminSubdomain) {
-      if (pathname === '/' || pathname === '/login' || pathname === '/admin/login') {
+      if (pathname === '/' || pathname === '/admin') {
+        const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+        if (!sessionCookie) {
+          const loginRedirectUrl = new URL('/login', targetDomain);
+          loginRedirectUrl.searchParams.set('reason', 'unauthenticated');
+          return NextResponse.redirect(loginRedirectUrl);
+        }
+      }
+
+      if (pathname === '/login' || pathname === '/admin/login') {
         const adminUrl = request.nextUrl.clone();
         adminUrl.pathname = '/admin/login';
         const response = NextResponse.rewrite(adminUrl, { request: { headers: requestHeaders } });
