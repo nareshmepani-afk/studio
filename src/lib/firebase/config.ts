@@ -12,7 +12,7 @@ const getDynamicAuthDomain = (defaultDomain: string) => {
 
 const productionConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: getDynamicAuthDomain(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'memory-weaver-8rk9t.firebaseapp.com'),
+  authDomain: 'app.memoryweaver.studio',
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
@@ -21,7 +21,7 @@ const productionConfig = {
 
 const stagingConfig = {
   apiKey: "AIzaSyDvnkb8tt3m_Fn9i74GOsQncdkAd0dwS98",
-  authDomain: getDynamicAuthDomain("memory-weaver-dev.firebaseapp.com"),
+  authDomain: 'admin.memoryweaver.studio',
   projectId: "memory-weaver-dev",
   storageBucket: "memory-weaver-dev.firebasestorage.app",
   messagingSenderId: "98973313245",
