@@ -115,6 +115,7 @@ export async function middleware(request: NextRequest) {
     const isExemptPath = 
       pathname.startsWith('/_next') || 
       pathname.includes('.') ||
+      pathname === '/' ||
       pathname === '/login' || 
       pathname === '/admin/login' || 
       pathname === '/mfa-setup' || 
