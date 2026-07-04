@@ -26,7 +26,7 @@ export default function MfaEnrollment() {
 
   useEffect(() => {
     console.log("================= MFA DIAGNOSTICS LAUNCHED =================");
-    console.log("[VERSION] App Release: 1.1.0-beta-MW-69");
+    console.log("[VERSION] App Release: 1.1.0-beta-MW-70");
     console.log("[DIAGNOSTIC] Current Window Location:", typeof window !== 'undefined' ? window.location.href : "SERVER-SIDE");
 
     async function loadMfaDetails() {
