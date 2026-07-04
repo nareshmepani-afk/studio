@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithRedirect, getRedirectResult, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithRedirect, signInWithPopup, getRedirectResult, GoogleAuthProvider } from 'firebase/auth';
 import { auth, getClientFirebaseConfig } from '@/lib/firebase';
 import { verifyAdminCredentials } from '@/app/admin/actions';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -91,13 +91,41 @@ export default function AdminLoginContent() {
     
     console.log("============= INTERACTION TRIGGERED =============");
     console.log("[DIAGNOSTIC] Click detected on Google Identity Pass.");
-    console.log("[DIAGNOSTIC] Forcing explicit signInWithRedirect flow...");
+    console.log("[DIAGNOSTIC] Attempting signInWithPopup...");
     
     try {
-      await signInWithRedirect(auth, provider);
-    } catch (err) {
-      console.error("[DIAGNOSTIC] Immediate execution failure during signInWithRedirect:", err);
-      setLoading(false);
+      const result = await signInWithPopup(auth, provider);
+      if (result?.user) {
+        console.log("[DIAGNOSTIC] Popup Result caught successfully!", {
+          email: result.user?.email,
+          uid: result.user?.uid
+        });
+        const idToken = await result.user.getIdToken(true);
+        const verification = await verifyAdminCredentials(idToken);
+        
+        if (verification.success) {
+          console.log("[DIAGNOSTIC] Whitelist check passed, updating layout state to MFA.");
+          setTempGoogleToken(idToken);
+          setAdminEmail(result.user.email || 'Admin');
+          setStep('mfa');
+          toast.success("Identity Verified. Accessing Admin Control Center...");
+        } else {
+          console.warn("[DIAGNOSTIC] Whitelist check rejected:", verification.message);
+          setErrorMessage(verification.message || 'Access Denied.');
+          setStep('denied');
+          toast.error('Admin Access Denied', { description: verification.message });
+        }
+      }
+    } catch (err: any) {
+      console.warn("[DIAGNOSTIC] signInWithPopup blocked or failed, falling back to signInWithRedirect. Error:", err);
+      try {
+        await signInWithRedirect(auth, provider);
+      } catch (redirectErr) {
+        console.error("[DIAGNOSTIC] Fallback signInWithRedirect failure:", redirectErr);
+        setErrorMessage('Authentication gateway execution failure.');
+        setStep('denied');
+        setLoading(false);
+      }
     }
   };
 
