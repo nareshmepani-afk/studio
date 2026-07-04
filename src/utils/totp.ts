@@ -41,7 +41,7 @@ export function generateTotp(secret: string, timeStepOffset = 0): string {
   return code.padStart(6, '0');
 }
 
-export function verifyTotp(secret: string, token: string, window = 1): boolean {
+export function verifyTotp(secret: string, token: string, window = 2): boolean {
   for (let i = -window; i <= window; i++) {
     if (generateTotp(secret, i) === token) {
       return true;

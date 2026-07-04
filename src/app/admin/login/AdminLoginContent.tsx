@@ -145,6 +145,19 @@ export default function AdminLoginContent() {
         toast.success('Access Granted', {
           description: `MFA validation complete for ${result.email}`
         });
+        
+        try {
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            console.log("[DIAGNOSTIC] Refreshing user custom claims client-side post-MFA...");
+            const freshToken = await currentUser.getIdToken(true);
+            const { refreshAdminSessionCookie } = await import('@/app/admin/actions');
+            await refreshAdminSessionCookie(freshToken);
+          }
+        } catch (refreshErr) {
+          console.error("[DIAGNOSTIC] Failed to refresh claims/session cookie client-side:", refreshErr);
+        }
+        
         window.location.href = '/admin';
       } else {
         toast.error('MFA Failed', {
