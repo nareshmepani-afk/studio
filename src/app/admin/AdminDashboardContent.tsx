@@ -19,21 +19,37 @@ import { getBackendEnvironmentDetails } from './actions';
 
 export default function AdminDashboardContent() {
   const [activeSuite, setActiveSuite] = useState<'devops' | 'business' | 'access' | 'knowledge'>('devops');
-  const [envInfo, setEnvInfo] = useState<{ projectId: string; isProduction: boolean; label: string } | null>(null);
+  const [envInfo, setEnvInfo] = useState<{ projectId: string; envContext: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV'; label: string } | null>(null);
 
   useEffect(() => {
+    let activeEnv: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV' = 'DEV-APP';
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      if (hostname === 'admin.memoryweaver.studio' || hostname === 'memoryweaver.studio') {
+        activeEnv = 'LIVE-PRODUCTION';
+      } else if (hostname === 'dev.memoryweaver.studio') {
+        activeEnv = 'DEV-APP';
+      } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        activeEnv = 'LOCAL-DEV';
+      }
+    }
+
     getBackendEnvironmentDetails()
       .then((res) => {
         if (res.success && res.projectId) {
           setEnvInfo({
             projectId: res.projectId,
-            isProduction: !!res.isProduction,
-            label: res.label || 'STAGING'
+            envContext: (res.envContext as any) || activeEnv,
+            label: res.label || activeEnv
           });
         }
       })
       .catch(() => {
-        setEnvInfo({ projectId: 'memory-weaver-dev', isProduction: false, label: 'STAGING / DEVELOPMENT' });
+        setEnvInfo({
+          projectId: 'memory-weaver-dev',
+          envContext: activeEnv,
+          label: activeEnv
+        });
       });
   }, []);
 
@@ -55,14 +71,25 @@ export default function AdminDashboardContent() {
           </div>
           
           <div className="flex items-center gap-4">
-            {envInfo && (
-              <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border ${
-                envInfo.isProduction 
-                  ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' 
-                  : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+            {envInfo ? (
+              <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border transition-all duration-300 ${
+                envInfo.envContext === 'LIVE-PRODUCTION' 
+                  ? 'bg-rose-500/10 border-rose-500/20 text-rose-400 animate-pulse' 
+                  : envInfo.envContext === 'DEV-APP'
+                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                  : 'bg-sky-500/10 border-sky-500/20 text-sky-400 font-mono'
               }`}>
-                <Server className="h-3.5 w-3.5" />
+                {envInfo.envContext === 'LIVE-PRODUCTION' ? (
+                  <span className="h-2 w-2 rounded-full bg-rose-500 inline-block animate-ping" />
+                ) : (
+                  <Server className="h-3.5 w-3.5" />
+                )}
                 {envInfo.label} ({envInfo.projectId})
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border bg-slate-900 border-slate-800 text-slate-500 animate-pulse">
+                <span className="h-2 w-2 rounded-full bg-slate-700 animate-pulse" />
+                EVALUATING ENVIRONMENT...
               </span>
             )}
             <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
@@ -134,14 +161,29 @@ export default function AdminDashboardContent() {
             </div>
 
             {/* Quick Stats/Info */}
-            <div className="bg-slate-900/20 border border-slate-800/50 rounded-2xl p-5 space-y-3 hidden lg:block">
-              <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold uppercase tracking-wider">
-                <ShieldCheck className="h-4 w-4 text-indigo-400" />
-                Security Gateway
+            <div className="bg-slate-900/20 border border-slate-800/50 rounded-2xl p-5 space-y-4 hidden lg:block">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                  <ShieldCheck className="h-4 w-4 text-indigo-400" />
+                  Security Gateway
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Edge interception maps subdomain traffic to specific environments. All actions are traced under session correlation rules.
+                </p>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Edge interception maps subdomain traffic to specific environments. All actions are traced under session correlation rules.
-              </p>
+
+              <div className="pt-3 border-t border-slate-900/60 space-y-2">
+                <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-slate-500 block">Routing Scope</span>
+                <div className="flex items-center gap-2">
+                  <span className={`h-2 w-2 rounded-full ${
+                    envInfo?.envContext === 'LIVE-PRODUCTION' ? 'bg-rose-500 animate-ping' :
+                    envInfo?.envContext === 'DEV-APP' ? 'bg-amber-500 animate-pulse' : 'bg-sky-500'
+                  }`} />
+                  <span className="text-xs font-mono font-bold text-slate-300">
+                    {envInfo?.envContext || 'RESOLVING...'}
+                  </span>
+                </div>
+              </div>
             </div>
           </aside>
 

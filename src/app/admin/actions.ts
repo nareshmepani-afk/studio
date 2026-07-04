@@ -3,7 +3,7 @@
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { verifyAdminWhitelist, getSession } from '@/lib/session';
 import { verifyTotp, generateBase32Secret } from '@/utils/totp';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { SESSION_COOKIE_NAME } from '@/lib/constants';
 
 export async function verifyAdminCredentials(googleIdToken: string, totpToken?: string) {
@@ -272,13 +272,32 @@ export async function getBackendEnvironmentDetails() {
   try {
     const adminApp = (await import('@/lib/firebase-admin')).adminApp;
     const projectId = adminApp?.options?.projectId || process.env.GCLOUD_PROJECT || 'memory-weaver-dev';
-    const isProduction = projectId === 'memory-weaver-8rk9t';
     
+    const headersList = await headers();
+    const rawHost = headersList.get('x-original-host') || 
+                    headersList.get('x-forwarded-host') || 
+                    headersList.get('host') || 
+                    '';
+
+    let envContext: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV' = 'DEV-APP';
+
+    if (rawHost.includes('localhost') || rawHost.includes('127.0.0.1')) {
+      envContext = 'LOCAL-DEV';
+    } else if (rawHost.startsWith('admin.memoryweaver.studio')) {
+      envContext = 'LIVE-PRODUCTION';
+    } else if (rawHost.startsWith('dev.memoryweaver.studio')) {
+      envContext = 'DEV-APP';
+    } else {
+      // If hostname doesn't match perfectly but runs in prod project, fallback safely
+      envContext = projectId === 'memory-weaver-8rk9t' ? 'LIVE-PRODUCTION' : 'DEV-APP';
+    }
+
     return {
       success: true,
       projectId,
-      isProduction,
-      label: isProduction ? 'PRODUCTION' : 'STAGING / DEVELOPMENT'
+      envContext,
+      host: rawHost,
+      label: envContext
     };
   } catch (error: any) {
     console.error('SECURITY: Failed to query backend environment ID:', error);
