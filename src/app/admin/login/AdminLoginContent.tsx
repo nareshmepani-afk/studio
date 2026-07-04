@@ -116,6 +116,7 @@ export default function AdminLoginContent() {
           toast.error('Admin Access Denied', { description: verification.message });
         }
       }
+      setLoading(false);
     } catch (err: any) {
       console.warn("[DIAGNOSTIC] signInWithPopup blocked or failed, falling back to signInWithRedirect. Error:", err);
       try {
