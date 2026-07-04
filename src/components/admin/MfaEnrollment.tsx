@@ -148,6 +148,11 @@ export default function MfaEnrollment() {
           <p className="text-xs text-slate-400">
             Enrolling Multi-Factor Authentication for <strong className="text-red-300">{email}</strong>.
           </p>
+          <div className="bg-slate-900/50 border border-slate-800/60 rounded-xl p-4 text-left text-xs text-slate-400 space-y-2 leading-relaxed">
+            <p>1. Open your authenticator app (e.g., <strong>Google Authenticator</strong>).</p>
+            <p>2. Scan this QR code or enter the manual key below.</p>
+            <p className="text-[10px] text-slate-500 italic mt-1">Note: Ensure your device's system clock is synced to automatic time to prevent code validation mismatches.</p>
+          </div>
         </div>
 
         <div className="flex flex-col items-center justify-center bg-slate-950/80 border border-slate-850 rounded-2xl p-6 space-y-5">
