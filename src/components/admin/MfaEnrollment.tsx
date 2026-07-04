@@ -25,6 +25,10 @@ export default function MfaEnrollment() {
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
+    console.log("================= MFA DIAGNOSTICS LAUNCHED =================");
+    console.log("[VERSION] App Release: 1.1.0-beta-MW-69");
+    console.log("[DIAGNOSTIC] Current Window Location:", typeof window !== 'undefined' ? window.location.href : "SERVER-SIDE");
+
     async function loadMfaDetails() {
       try {
         const res = await generateMfaSetupDetails();
@@ -32,6 +36,11 @@ export default function MfaEnrollment() {
           setSecret(res.secret);
           setOtpauthUri(res.otpauthUri);
           setEmail(res.email);
+          console.log("[DIAGNOSTIC] Successfully loaded MFA parameters:", {
+            email: res.email,
+            otpauthUri: res.otpauthUri,
+            secretLength: res.secret.length
+          });
         } else {
           setErrorMsg(res.message || 'MFA initialization failure.');
         }
