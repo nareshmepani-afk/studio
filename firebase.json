@@ -3,7 +3,7 @@
     "backendId": "studio",
     "headers": [
       {
-        "source": "/**",
+        "source": "/studio/**",
         "headers": [
           {
             "key": "Cross-Origin-Opener-Policy",
