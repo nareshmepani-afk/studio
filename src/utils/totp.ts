@@ -53,7 +53,7 @@ export function verifyTotp(secret: string, token: string, window = 1): boolean {
 export function generateBase32Secret(): string {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
   let secret = '';
-  const randomBytes = crypto.randomBytes(10);
+  const randomBytes = crypto.randomBytes(16);
   for (let i = 0; i < randomBytes.length; i++) {
     secret += alphabet.charAt(randomBytes[i] % 32);
   }

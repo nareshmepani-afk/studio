@@ -74,7 +74,8 @@ export async function generateMfaSetupDetails() {
 
     const email = session.email;
     const secret = generateBase32Secret();
-    const otpauthUri = `otpauth://totp/MemoryWeaver:${email}?secret=${secret}&issuer=MemoryWeaver`;
+    const label = encodeURIComponent(`MemoryWeaver:${email}`);
+    const otpauthUri = `otpauth://totp/${label}?secret=${secret}&issuer=${encodeURIComponent('MemoryWeaver')}`;
 
     return { success: true, secret, otpauthUri, email };
   } catch (error) {
