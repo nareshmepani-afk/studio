@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverLog } from '@/utils/telemetry/serverLogger';
+import { logToDb } from '@/utils/telemetry/dbLogger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,6 +32,14 @@ export async function POST(request: NextRequest) {
       structPayload,
     });
 
+    // Also write client telemetry events to Firestore system_logs
+    const mappedSeverity = 
+      severity === 'WARNING' ? 'WARNING' :
+      severity === 'ERROR' ? 'ERROR' :
+      severity === 'CRITICAL' ? 'CRITICAL' : 'INFO';
+      
+    await logToDb(`[ClientTelemetry] ${message}`, mappedSeverity);
+
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {
     // In case of parsing error or other exceptions
@@ -38,6 +47,8 @@ export async function POST(request: NextRequest) {
       message: `Failed to process client telemetry event: ${error?.message || 'Unknown error'}`,
       severity: 'ERROR',
     });
+    
+    await logToDb(`Failed to process client telemetry event: ${error?.message || 'Unknown error'}`, 'ERROR');
 
     return NextResponse.json(
       { error: 'Failed to process telemetry' },
