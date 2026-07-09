@@ -16,10 +16,20 @@ import { BusinessConsole } from '@/components/admin/BusinessConsole';
 import { AccessConsole } from '@/components/admin/AccessConsole';
 import KnowledgeHub from '@/components/admin/KnowledgeHub';
 import { getBackendEnvironmentDetails } from './actions';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 export default function AdminDashboardContent() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [activeSuite, setActiveSuite] = useState<'devops' | 'business' | 'access' | 'knowledge'>('devops');
   const [envInfo, setEnvInfo] = useState<{ projectId: string; envContext: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV'; label: string } | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/admin/login?reason=unauthenticated');
+    }
+  }, [user, authLoading, router]);
 
   useEffect(() => {
     let activeEnv: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV' = 'DEV-APP';
@@ -52,6 +62,14 @@ export default function AdminDashboardContent() {
         });
       });
   }, []);
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-slate-400 font-mono text-sm">
+        <div className="animate-pulse tracking-widest text-indigo-400/80 font-black">VERIFYING ADMINISTRATIVE ACCESS CONTEXT...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500/30">
