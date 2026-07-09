@@ -6,6 +6,17 @@ import { serverLog } from './utils/telemetry/serverLogger';
 
 const GUEST_SECRET = new TextEncoder().encode(process.env.GUEST_SESSION_SECRET || '');
 
+const getProjectId = () => {
+  try {
+    const sa = process.env.SERVICE_ACCOUNT_JSON;
+    if (sa) {
+      const parsed = JSON.parse(sa);
+      if (parsed.project_id) return parsed.project_id;
+    }
+  } catch (e) {}
+  return process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'memory-weaver-8rk9t';
+};
+
 let cachedKeys: Record<string, string> | null = null;
 let cachedKeysExpiry = 0;
 
@@ -130,9 +141,8 @@ export async function middleware(request: NextRequest) {
         loginRedirectUrl.searchParams.set('reason', 'unauthenticated');
         return NextResponse.redirect(loginRedirectUrl);
       }
-
       try {
-        const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'memory-weaver-8rk9t';
+        const projectId = getProjectId();
         
         // Cryptographically verify signature and claims of Firebase Session Cookie
         const header = jose.decodeProtectedHeader(sessionCookie);

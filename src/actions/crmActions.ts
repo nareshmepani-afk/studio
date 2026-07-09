@@ -1,6 +1,6 @@
 'use server';
 
-import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import { adminDb, adminAuth, adminApp } from '@/lib/firebase-admin';
 import { UserJourneySnapshot } from '@/types/adminCrm';
 import { cookies } from 'next/headers';
 import * as jose from 'jose';
@@ -36,8 +36,7 @@ async function verifyAdminAuth(): Promise<boolean> {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('session')?.value;
     if (!sessionCookie) return false;
-
-    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'memory-weaver-8rk9t';
+    const projectId = adminApp?.options?.projectId || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'memory-weaver-8rk9t';
     const header = jose.decodeProtectedHeader(sessionCookie);
     if (!header.kid) return false;
 

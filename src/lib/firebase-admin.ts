@@ -53,6 +53,7 @@ if (getApps().length === 0) {
     try {
       app = initializeApp({
         credential: cert(serviceAccount),
+        projectId: serviceAccount.project_id,
         storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
       });
       console.log(`TESTIMONY: Firebase Admin SDK initialized for project: ${serviceAccount.project_id}`);

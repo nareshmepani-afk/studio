@@ -22,9 +22,10 @@ async function getPublicKey(kid: string): Promise<any> {
   }
   return await jose.importX509(cert, 'RS256');
 }
+import { adminDb, adminApp } from '@/lib/firebase-admin';
 
 export async function verifyAuthToken(token: string) {
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'memory-weaver-8rk9t';
+  const projectId = adminApp?.options?.projectId || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'memory-weaver-8rk9t';
   const header = jose.decodeProtectedHeader(token);
   if (!header.kid) {
     throw new Error('Missing kid in token header');

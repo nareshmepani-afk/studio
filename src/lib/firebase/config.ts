@@ -4,12 +4,12 @@ import { getFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 const productionConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  apiKey: "AIzaSyANRmF5M5guN3PJ-IDw-3a8W3WaIvk-NJE",
   authDomain: 'memory-weaver-8rk9t.firebaseapp.com',
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  projectId: 'memory-weaver-8rk9t',
+  storageBucket: 'memory-weaver-8rk9t.appspot.com',
+  messagingSenderId: '67296998103',
+  appId: '1:67296998103:web:f48699405c37bcf4567692',
 };
 
 const stagingConfig = {
@@ -21,15 +21,28 @@ const stagingConfig = {
   appId: "1:98973313245:web:bbe45fb78d08d0563c1334",
 };
 
+const getServerProjectId = () => {
+  const sa = process.env.SERVICE_ACCOUNT_JSON;
+  if (!sa) return null;
+  try {
+    const config = JSON.parse(sa);
+    return config.project_id;
+  } catch (e) {
+    return null;
+  }
+};
+
 const isStaging = (typeof window !== 'undefined' && (
   window.location.hostname === 'dev.memoryweaver.studio' ||
   window.location.hostname.includes('memory-weaver-dev') ||
   window.location.hostname === 'localhost' ||
   window.location.hostname === '127.0.0.1'
-)) || (
-  process.env.NEXT_PUBLIC_BYPASS_CAPTCHA === 'true' ||
-  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === 'memory-weaver-dev'
-);
+)) || (typeof window === 'undefined' && (
+  process.env.SERVICE_ACCOUNT_JSON 
+    ? getServerProjectId() === 'memory-weaver-dev'
+    : (process.env.NEXT_PUBLIC_BYPASS_CAPTCHA === 'true' ||
+       process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === 'memory-weaver-dev')
+));
 
 // Function to resolve the dynamic Firebase configuration at runtime
 export const getClientFirebaseConfig = () => {

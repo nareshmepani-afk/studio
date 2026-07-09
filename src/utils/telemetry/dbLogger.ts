@@ -1,4 +1,4 @@
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, adminApp } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 
 export async function logToDb(
@@ -7,11 +7,8 @@ export async function logToDb(
 ) {
   if (!adminDb) return;
   
-  // Dynamically attach the host scope context
-  const currentEnv = process.env.NEXT_PUBLIC_BYPASS_CAPTCHA === 'true' && 
-                     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID !== 'memory-weaver-8rk9t' 
-                     ? 'DEV-APP' 
-                     : 'LIVE-PRODUCTION';
+  // Dynamically resolve environment based on the admin App project ID
+  const currentEnv = adminApp?.options?.projectId === 'memory-weaver-dev' ? 'DEV-APP' : 'LIVE-PRODUCTION';
 
   try {
     await adminDb.collection('system_logs').add({
