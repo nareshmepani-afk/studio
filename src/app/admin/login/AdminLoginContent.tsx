@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithRedirect, signInWithPopup, getRedirectResult, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithRedirect, signInWithPopup, getRedirectResult, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { auth, getClientFirebaseConfig } from '@/lib/firebase';
 import { verifyAdminCredentials } from '@/app/admin/actions';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -61,6 +61,7 @@ export default function AdminLoginContent() {
             toast.success("Identity Verified. Accessing Admin Control Center...");
           } else {
             console.warn("[DIAGNOSTIC] Whitelist check rejected:", verification.message);
+            try { await signOut(auth); } catch (e) {}
             setErrorMessage(verification.message || 'Access Denied.');
             setStep('denied');
             toast.error('Admin Access Denied', { description: verification.message });
@@ -111,6 +112,7 @@ export default function AdminLoginContent() {
           toast.success("Identity Verified. Accessing Admin Control Center...");
         } else {
           console.warn("[DIAGNOSTIC] Whitelist check rejected:", verification.message);
+          try { await signOut(auth); } catch (e) {}
           setErrorMessage(verification.message || 'Access Denied.');
           setStep('denied');
           toast.error('Admin Access Denied', { description: verification.message });
@@ -319,7 +321,10 @@ export default function AdminLoginContent() {
                 </div>
 
                 <button
-                  onClick={() => setStep('google')}
+                  onClick={async () => {
+                    try { await signOut(auth); } catch (e) {}
+                    setStep('google');
+                  }}
                   className="w-full h-11 border border-slate-800 hover:bg-slate-800/50 text-slate-300 font-bold text-xs uppercase tracking-wider rounded-xl transition duration-200"
                 >
                   Return to Gateway
