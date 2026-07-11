@@ -70,6 +70,15 @@ export default function AdminLoginContent() {
           console.log("[DIAGNOSTIC] getRedirectResult() resolved with NULL (No active redirect landing detected).");
         }
       } catch (error: any) {
+        const errMsg = error?.message || '';
+        if (errMsg.includes("UnrecognizedActionError") || errMsg.includes("failed to find server action")) {
+          console.warn("[DIAGNOSTIC] Stale server action hash detected in redirect. Forcing hard page reload...");
+          toast.error("Stale session detected. Reloading page...");
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+          return;
+        }
         console.error("============= REDIRECT ENGINE CRASH =============");
         console.error("[DIAGNOSTIC] Code:", error.code);
         console.error("[DIAGNOSTIC] Message:", error.message);
@@ -120,6 +129,15 @@ export default function AdminLoginContent() {
       }
       setLoading(false);
     } catch (err: any) {
+      const errMsg = err.message || '';
+      if (errMsg.includes("UnrecognizedActionError") || errMsg.includes("failed to find server action")) {
+        console.warn("[DIAGNOSTIC] Stale server action hash detected. Forcing hard page reload...");
+        toast.error("Stale session detected. Reloading page...");
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+        return;
+      }
       console.warn("[DIAGNOSTIC] signInWithPopup blocked or failed, falling back to signInWithRedirect. Error:", err);
       try {
         await signInWithRedirect(auth, provider);
