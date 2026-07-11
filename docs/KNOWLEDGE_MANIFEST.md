@@ -69,4 +69,7 @@
 - **Constraint**: Tracking event logs and debugging issues across releases requires clear context isolation.
 - **Rule**: Every client-side telemetry event payload dispatched must include the application version parameter (e.g. `version: "1.0.0-MW-69"`). Always check that this version string is logged during trace analysis to map events to specific deployment milestones.
 
-
+### 7. Next.js Build-Time Environment Baking & Decoupling
+- **Issue**: Firebase App Hosting compiles Next.js client-side variables (`process.env.NEXT_PUBLIC_*`) at build time. Because staging and production use the same root build configuration defaults, compile-time variable baking leaks staging coordinates into the production bundle.
+- **Solution**: Avoid using compile-time environment flags for project selection. Hardcode both staging and production configurations inside the codebase and resolve the environment dynamically at runtime (using `window.location.hostname` in the browser and parsing `SERVICE_ACCOUNT_JSON` on the server).
+- **Mismatched Service Accounts**: If the server action returns `Internal security gateway transaction failure` on production, verify that the production project's Secret Manager has not been configured with the staging service account credentials key (which causes token verification and audience mismatches).
