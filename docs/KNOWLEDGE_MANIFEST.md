@@ -40,6 +40,7 @@
 - `[x]` **[MW-126]** Automate dev user initialization & staging integration pass runbook.
 - `[x]` **[MW-127]** Define App Hosting environment variables configuration and inject build-time flags.
 - `[x]` **[MW-128]** Fix App Hosting dynamic client-side configuration selector and resolve Authorized Domains referer issues.
+- `[x]` **[MW-129]** Implement client-side signOut trigger on authentication rejection and return to gateway to prevent session lockout.
 
 ## System Quality Directives
 
