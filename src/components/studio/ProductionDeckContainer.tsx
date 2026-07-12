@@ -21,7 +21,7 @@ interface ProductionDeckContainerProps {
 
 export function ProductionDeckContainer({ promptId, isModal = false }: ProductionDeckContainerProps) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { chapters, memories, isLoading: studioLoading } = useStudioData(user?.uid || 'guest');
   const pathname = usePathname();
   
@@ -78,7 +78,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   }, [promptId]);
 
   useEffect(() => {
-    if (studioLoading || !chapters.length) return;
+    if (studioLoading || authLoading || !chapters.length) return;
 
     const chapterPrompts = chapters.flatMap(c => c.prompts);
     const isTemplateId = chapterPrompts.some(p => p.id === promptId);
@@ -114,6 +114,11 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
 
     // If it is not a template ID, and we haven't resolved cp (the memory), we must wait for it to sync
     if (!isTemplateId && !cp) {
+      if (!user && !authLoading) {
+        console.log(`[ProductionDeckContainer] Guest user attempted to access document URL "${promptId}". Redirecting to gateway...`);
+        router.push(`/login?reason=unauthenticated&redirect=/studio/production/${promptId}`);
+        return;
+      }
       console.log(`[ProductionDeckContainer] URL ID "${promptId}" is an existing document, but not yet loaded in memories. Waiting for sync...`);
       return;
     }
@@ -206,7 +211,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         setIsReady(true);
         lastLoadedId.current = promptId;
     }
-  }, [chapters, memories, studioLoading, promptId, isReady, selectedProductionData?.id]);
+  }, [promptId, chapters, memories, studioLoading, authLoading, isReady, resolvedAsyncTemplate, user, router, selectedProductionData?.id]);
 
   const handleUpdateProduction = useCallback(async (updatedDataOrFn: any) => {
     if (!user) return;
