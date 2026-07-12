@@ -74,3 +74,8 @@
 - **Issue**: Firebase App Hosting compiles Next.js client-side variables (`process.env.NEXT_PUBLIC_*`) at build time. Because staging and production use the same root build configuration defaults, compile-time variable baking leaks staging coordinates into the production bundle.
 - **Solution**: Avoid using compile-time environment flags for project selection. Hardcode both staging and production configurations inside the codebase and resolve the environment dynamically at runtime (using `window.location.hostname` in the browser and parsing `SERVICE_ACCOUNT_JSON` on the server).
 - **Mismatched Service Accounts**: If the server action returns `Internal security gateway transaction failure` on production, verify that the production project's Secret Manager has not been configured with the staging service account credentials key (which causes token verification and audience mismatches).
+
+### 8. ACME DNS Challenge Formatting
+- **Issue**: SSL provisioning fails or hangs on custom subdomains when setting up DNS records under proxy managers like Cloudflare.
+- **Rule**: Firebase App Hosting generates ACME challenge TXT records with a strict single-underscore format (`_acme-challenge_domain`), whereas some automatic setups or historical conventions default to double-underscores (`_acme-challenge__domain`). Verify character-for-character, matching underscore counts and checking for truncation in Cloudflare DNS before verifying.
+

@@ -44,3 +44,13 @@ This document codifies the critical lessons learned from our development Sprints
 1. I will immediately analyze the root cause and write a highly specific, isolated regression test targeting the exact failure state.
 2. I will not consider a bug "Resolved" or complete my turn until the regression test is written, integrated into the test runner, and verified as passing.
 3. Every lesson learned from a bug must be codified as an automated gatekeeper. This turns temporary corrections into permanent platform intelligence.
+
+---
+
+### Lesson 5: On ACME Challenge Formatting and DNS Validation
+
+**Verdict:** The Sealed Ceremony
+**Root Cause:** Spent excessive debugging time trying to resolve SSL handshake failures due to character mismatches in ACME challenge TXT records. Firebase App Hosting's automatic certificate provisioning uses a strict single-underscore separator (`_acme-challenge_domain`), whereas standard historical conventions sometimes lean toward a double-underscore split (`_acme-challenge__domain`). Truncation or character count mismatch on DNS proxy providers (like Cloudflare) will block certificate issuance.
+
+**The Protocol:** When setting up SSL certificates or custom subdomains under Cloudflare, audit every challenge record character-for-character. Specifically check for exact underscore counts and verify that GFE/Firebase App Hosting's single-underscore layout is preserved without truncation.
+
