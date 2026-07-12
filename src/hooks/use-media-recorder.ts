@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useJourneyLogger } from '@/hooks/telemetry/useJourneyLogger';
 
 // This tuple contains the generated memory ID and final download URL.
 type UploadResult = [string, string];
@@ -167,6 +168,13 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
           };
           setRecordedSegments((prev) => [...prev, newSegment]);
           console.log(`[MediaRecorder] Added new segment: ${newSegment.segmentId} (duration: ${duration}s)`);
+          
+          logEvent("MediaRecorder: Compiled segment", {
+            segmentId: newSegment.segmentId,
+            size: blob.size,
+            duration,
+            type: mimeType
+          });
         }
       };
 
@@ -174,6 +182,16 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
       recorder.start(1000);
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
+
+      logEvent("MediaRecorder: Start recording", {
+        videoBitsPerSecond,
+        audioBitsPerSecond,
+        actualVideoBitrate: actualVideoBps,
+        width: activeResolution?.width || initialWidth,
+        height: activeResolution?.height || initialHeight,
+        hasHardwareMismatch: actualVideoBps > videoBitsPerSecond * 1.5,
+        isPunch
+      });
 
       if (!isPunch) {
         setRecordingTime(0);
@@ -293,6 +311,7 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
   const isWarningLimit = recordingTime >= WARNING_LIMIT;
 
   const { user } = useAuth();
+  const { logEvent } = useJourneyLogger(user?.uid || null);
   
   const uploadVideo = async (blob: Blob, memoryId: string, overrideUid?: string): Promise<string> => {
     setUploading(true);
@@ -322,6 +341,13 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
       setUploadProgress(100);
       setUploadResult([memoryId, url]);
       setUploading(false);
+
+      logEvent("MediaRecorder: Upload complete", {
+        memoryId,
+        size: blob.size,
+        url
+      });
+
       return url;
     } catch (error) {
       setUploading(false);
