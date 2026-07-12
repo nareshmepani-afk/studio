@@ -54,3 +54,13 @@ This document codifies the critical lessons learned from our development Sprints
 
 **The Protocol:** When setting up SSL certificates or custom subdomains under Cloudflare, audit every challenge record character-for-character. Specifically check for exact underscore counts and verify that GFE/Firebase App Hosting's single-underscore layout is preserved without truncation.
 
+---
+
+### Lesson 6: On Strict Environment Segregation During Testing
+
+**Verdict:** The Mosh Pit
+**Root Cause:** Confused environment boundaries by instructing the user to observe telemetry logs on the production Admin Hub (`admin.memoryweaver.studio`) while recording test videos on the staging client (`dev.memoryweaver.studio`). Testing loops must always be fully contained within a single isolated environment to prevent cross-contamination and auth loop errors.
+
+**The Protocol:** Never cross environment coordinates during manual validation runs. If the test is actor-side staging (`dev.memoryweaver.studio`), the observer-side dashboard must also be staging (`dev.memoryweaver.studio/admin`). Keep staging and production testing contexts 100% isolated.
+
+

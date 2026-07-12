@@ -79,3 +79,8 @@
 - **Issue**: SSL provisioning fails or hangs on custom subdomains when setting up DNS records under proxy managers like Cloudflare.
 - **Rule**: Firebase App Hosting generates ACME challenge TXT records with a strict single-underscore format (`_acme-challenge_domain`), whereas some automatic setups or historical conventions default to double-underscores (`_acme-challenge__domain`). Verify character-for-character, matching underscore counts and checking for truncation in Cloudflare DNS before verifying.
 
+### 9. Environment-Isolated Testing
+- **Issue**: Mixing staging test clients (e.g. `dev.memoryweaver.studio`) with production admin portals (e.g. `admin.memoryweaver.studio/admin`) causes cross-contamination of analytics/database states and authentication failures.
+- **Rule**: Keep manual verification loops 100% isolated. If testing user-facing code on Staging, only observe logs via the staging admin portal (`dev.memoryweaver.studio/admin`). If testing on Production, only observe logs via the production admin portal (`admin.memoryweaver.studio/admin`).
+
+
