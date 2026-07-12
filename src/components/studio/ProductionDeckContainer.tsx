@@ -41,6 +41,14 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   const lastLocalUpdateRef = useRef<number>(0);
   const deckRef = useRef<any>(null);
 
+  // Reset container state when user session changes to prevent cross-login cache leaks
+  useEffect(() => {
+    console.log("[ProductionDeckContainer] Auth user state changed. Clearing local rehydration guards...");
+    lastLoadedId.current = null;
+    setIsReady(false);
+    setSelectedProductionData(null);
+  }, [user?.uid]);
+
   // Scroll to top on modal exit/unmount to prevent Next.js layout shift clamping bugs
   useEffect(() => {
     return () => {

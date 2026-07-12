@@ -46,6 +46,8 @@ export function useStudioData(userId: string | undefined) {
     if (loading) return;
 
     if (!userId || userId === 'guest') {
+      setMemories([]);
+      setRequests([]);
       if (!hasSkippedRef.current) {
         hasSkippedRef.current = true;
         setIsLoading(false);
