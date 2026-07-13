@@ -9,7 +9,9 @@ import { exec } from "child_process";
 import { User } from "./types";
 import { STANDARD_HOST_STORAGE_QUOTA_BYTES } from "./constants";
 
-admin.initializeApp();
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
 
 exports.createUserProfile = functions.auth.user().onCreate(async (user) => {
   const userProfile: User = {
@@ -202,3 +204,43 @@ exports.stitchPerformanceReel = functions.https.onCall(async (data, context) => 
 });
 
 exports.videoStitchTrigger = videoStitchTrigger;
+
+exports.purgeExpiredLogs = functions.pubsub.schedule("every 24 hours").onRun(async (context) => {
+  const RETENTION_DAYS = 7;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - RETENTION_DAYS);
+  
+  console.log(`[PurgeLogs] Initiating log cleanup. Deleting system_logs older than: ${cutoff.toISOString()}`);
+  
+  const db = admin.firestore();
+  const logsRef = db.collection("system_logs");
+  
+  let deletedCount = 0;
+  let hasMore = true;
+  
+  while (hasMore) {
+    const snapshot = await logsRef
+      .where("timestamp", "<", cutoff)
+      .limit(400)
+      .get();
+      
+    if (snapshot.empty) {
+      hasMore = false;
+      break;
+    }
+    
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    
+    await batch.commit();
+    deletedCount += snapshot.size;
+    console.log(`[PurgeLogs] Batched deleted ${snapshot.size} logs. Total deleted: ${deletedCount}`);
+    
+    // Pause briefly to avoid hitting rate limits
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  
+  console.log(`[PurgeLogs] Log cleanup ceremony completed. Total system_logs deleted: ${deletedCount}`);
+});
