@@ -19,6 +19,7 @@ export interface MediaRecorderOptions {
   audioBitsPerSecond?: number;
   initialWidth?: number;
   initialHeight?: number;
+  compressionProfile?: 'high' | 'balanced' | 'compact' | 'auto';
 }
 
 export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecorderOptions = {}) => {
@@ -26,7 +27,8 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
     videoBitsPerSecond = 2500000, // Default 2.5 Mbps optimized footprint target
     audioBitsPerSecond = 128000,  // Default 128 kbps audio
     initialWidth = 1920,
-    initialHeight = 1080
+    initialHeight = 1080,
+    compressionProfile = 'auto'
   } = options;
 
   const [isRecording, setIsRecording] = useState(false);
@@ -93,12 +95,54 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
       chunksRef.current = [];
       const mimeType = ['video/webm;codecs=vp9', 'video/webm'].find(MediaRecorder.isTypeSupported) || 'video/webm';
       
-      console.log(`[MediaRecorder] Attempting construction: target videoBps=${videoBitsPerSecond}, audioBps=${audioBitsPerSecond}`);
+      // Resolve dynamic compression profile
+      let resolvedProfile = compressionProfile || 'auto';
+      if (resolvedProfile === 'auto') {
+        const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone/i.test(navigator.userAgent);
+        const connection = typeof navigator !== 'undefined' ? (navigator as any).connection : null;
+        const isConstrained = connection && (connection.saveData || ['2g', '3g'].includes(connection.effectiveType));
+        resolvedProfile = (isMobile || isConstrained) ? 'compact' : 'high';
+      }
+
+      let targetVideoBps = videoBitsPerSecond;
+      let targetWidth = initialWidth;
+      let targetHeight = initialHeight;
+
+      if (resolvedProfile === 'balanced') {
+        targetVideoBps = 1500000;
+        targetWidth = 1280;
+        targetHeight = 720;
+      } else if (resolvedProfile === 'compact') {
+        targetVideoBps = 800000;
+        targetWidth = 1280;
+        targetHeight = 720;
+      } else {
+        targetVideoBps = 2500000;
+        targetWidth = 1920;
+        targetHeight = 1080;
+      }
+
+      // Pre-encoding spatial resolution downscaling
+      const initialVideoTrack = stream.getVideoTracks()[0];
+      if (initialVideoTrack && typeof initialVideoTrack.applyConstraints === 'function') {
+        try {
+          console.log(`[MediaRecorder] Setting video track resolution constraints to ${targetWidth}x${targetHeight}`);
+          await initialVideoTrack.applyConstraints({
+            width: { ideal: targetWidth, max: targetWidth },
+            height: { ideal: targetHeight, max: targetHeight }
+          });
+          await new Promise((r) => setTimeout(r, 100));
+        } catch (constraintErr) {
+          console.warn('[MediaRecorder] Initial applyConstraints failed:', constraintErr);
+        }
+      }
+
+      console.log(`[MediaRecorder] Attempting construction with profile "${resolvedProfile}": target videoBps=${targetVideoBps}, audioBps=${audioBitsPerSecond}`);
       
       // 1. Initialize first instance
       let recorder = new MediaRecorder(stream, { 
         mimeType,
-        videoBitsPerSecond, 
+        videoBitsPerSecond: targetVideoBps, 
         audioBitsPerSecond
       });
 
@@ -106,7 +150,7 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
       setActualVideoBitrate(actualVideoBps);
 
       // 2. Hardware mismatch check
-      if (actualVideoBps > videoBitsPerSecond * 1.5) {
+      if (actualVideoBps > targetVideoBps * 1.5) {
         console.warn(`[MediaRecorder] Hardware mismatch: device allocated ${actualVideoBps}bps. Dropping resolution in-place...`);
         setHasHardwareMismatch(true);
 
@@ -125,7 +169,7 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
             // Re-instantiate recorder with same settings against downscaled stream
             recorder = new MediaRecorder(stream, {
               mimeType,
-              videoBitsPerSecond,
+              videoBitsPerSecond: targetVideoBps,
               audioBitsPerSecond
             });
             console.log('[MediaRecorder] In-place degradation applied successfully.');
@@ -135,7 +179,7 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
         }
       } else {
         setHasHardwareMismatch(false);
-        setActiveResolution({ width: initialWidth, height: initialHeight });
+        setActiveResolution({ width: targetWidth, height: targetHeight });
       }
 
       // 3. Bind event listeners
@@ -178,19 +222,24 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
         }
       };
 
+      const finalHasHardwareMismatch = actualVideoBps > targetVideoBps * 1.5;
+      const finalWidth = finalHasHardwareMismatch ? 1280 : targetWidth;
+      const finalHeight = finalHasHardwareMismatch ? 720 : targetHeight;
+
       // 4. Start recording execution
       recorder.start(1000);
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
 
       logEvent("MediaRecorder: Start recording", {
-        videoBitsPerSecond,
+        videoBitsPerSecond: targetVideoBps,
         audioBitsPerSecond,
         actualVideoBitrate: actualVideoBps,
-        width: activeResolution?.width || initialWidth,
-        height: activeResolution?.height || initialHeight,
-        hasHardwareMismatch: actualVideoBps > videoBitsPerSecond * 1.5,
-        isPunch
+        width: finalWidth,
+        height: finalHeight,
+        hasHardwareMismatch: finalHasHardwareMismatch,
+        isPunch,
+        compressionProfile: resolvedProfile
       });
 
       if (!isPunch) {
@@ -215,7 +264,7 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
       // Release initialization lock
       isInitializingRef.current = false;
     }
-  }, [stream, recordedSegments, videoBitsPerSecond, audioBitsPerSecond, initialWidth, initialHeight, isRecording]);
+  }, [stream, recordedSegments, videoBitsPerSecond, audioBitsPerSecond, initialWidth, initialHeight, isRecording, compressionProfile]);
 
   // Live Tape-Style Punch In
   const punchIn = useCallback((timestamp: number) => {
