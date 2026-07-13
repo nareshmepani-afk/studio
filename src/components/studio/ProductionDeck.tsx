@@ -62,9 +62,12 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 }, ref) => {
     const searchParams = useSearchParams();
     const urlMode = searchParams.get('mode');
+    const urlRoom = searchParams.get('room');
     const [activeRoom, setActiveRoom] = useState<'solo' | 'collaborative' | 'guest'>(
-        urlMode === 'guest' ? 'guest' :
-            urlMode === 'collaborative' ? 'collaborative' : 'solo'
+        urlRoom === 'solo' ? 'solo' :
+            urlRoom === 'collaborative' ? 'collaborative' :
+                urlMode === 'guest' ? 'guest' :
+                    urlMode === 'collaborative' ? 'collaborative' : 'solo'
     );
     const [isRailRetracted, setIsRailRetracted] = useState(false);
     const [hasUnsavedTake, setHasUnsavedTake] = useState(false);
