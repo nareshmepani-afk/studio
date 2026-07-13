@@ -112,6 +112,7 @@ export function DirectorialUpsellDialog({ isOpen, onClose, requiredFeature = "sa
             </div>
           </div>
 
+
           {/* Pricing Box */}
           <div className="mt-6 p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center justify-between gap-4">
             <div>
@@ -123,11 +124,19 @@ export function DirectorialUpsellDialog({ isOpen, onClose, requiredFeature = "sa
                 <span className="text-[10px] text-zinc-400">/ month</span>
               </div>
             </div>
-            <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full shrink-0">
-              <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1">
-                <Zap className="w-3 h-3 fill-current" /> Free Trial Available
-              </span>
-            </div>
+            {user?.directorPassStatus?.includes('expired') ? (
+              <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full shrink-0">
+                <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest flex items-center gap-1">
+                  <Zap className="w-3 h-3 fill-current" /> Instant Reactivation
+                </span>
+              </div>
+            ) : (
+              <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full shrink-0">
+                <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                  <Zap className="w-3 h-3 fill-current" /> Free Trial Available
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -154,7 +163,11 @@ export function DirectorialUpsellDialog({ isOpen, onClose, requiredFeature = "sa
             onClick={handleUpgrade}
             className="flex-grow-[2] h-12 bg-amber-500 hover:bg-amber-600 text-black font-extrabold uppercase text-[10px] tracking-widest rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.2)] flex items-center justify-center gap-2"
           >
-            {user ? "Renew / Upgrade Pass" : "Claim Free Pass"} <ArrowRight className="w-4 h-4" />
+            {user ? (
+              user.directorPassStatus?.includes('expired') ? "Renew Pass" : "Start Free Trial"
+            ) : (
+              "Claim Free Pass"
+            )} <ArrowRight className="w-4 h-4" />
           </Button>
         </div>
       </DialogContent>
