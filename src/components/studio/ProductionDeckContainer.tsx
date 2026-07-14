@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useStudioData } from '@/hooks/studio/useStudioData';
 import { storyScripts } from '@/lib/storyScripts';
@@ -21,6 +21,7 @@ interface ProductionDeckContainerProps {
 
 export function ProductionDeckContainer({ promptId, isModal = false }: ProductionDeckContainerProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { chapters, memories, isLoading: studioLoading } = useStudioData(user?.uid || 'guest');
   const pathname = usePathname();
@@ -203,6 +204,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
           status: 'draft',
           prose: initialProse,
           sensoryConfig: initialSensoryConfig,
+          modality: searchParams.get('modality') === 'vocal' ? 'voice' : (searchParams.get('modality') === 'scribe' ? 'pen' : null)
         };
     }
 

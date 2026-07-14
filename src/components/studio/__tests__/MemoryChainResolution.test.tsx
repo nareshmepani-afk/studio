@@ -24,6 +24,9 @@ vi.mock('next/navigation', () => ({
     back: vi.fn(),
   }),
   usePathname: () => '/studio/production',
+  useSearchParams: () => ({
+    get: (key: string) => null,
+  }),
 }));
 
 // Mock the child components for ProductionDeckContainer

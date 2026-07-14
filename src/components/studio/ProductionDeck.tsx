@@ -164,7 +164,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         setStage(targetStage);
         
         // 2. Sync modality
-        if (hasNavigatedBack && memoryData?.modality) {
+        if (memoryData?.modality) {
             setModality(memoryData.modality);
         } else {
             setModality(null);
