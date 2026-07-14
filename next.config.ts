@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/studio/:path*',
+        source: '/studio/editor/:path*',
         headers: [
           {
             key: 'Cross-Origin-Opener-Policy',
