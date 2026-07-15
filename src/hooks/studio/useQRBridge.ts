@@ -144,6 +144,7 @@ export function useQRBridge(memoryId: string | null) {
         });
 
         peer.on('error', (err: any) => {
+          if (!isMounted || peer !== peerRef.current) return;
           console.error('[useQRBridge] PeerJS Error:', err);
           if (err.type === 'peer-unavailable' || err.type === 'network' || err.type === 'socket-error' || err.type === 'socket-closed') {
             setBridgeStatus('reconnecting');
@@ -152,6 +153,7 @@ export function useQRBridge(memoryId: string | null) {
         });
 
         peer.on('disconnected', () => {
+          if (!isMounted || peer !== peerRef.current) return;
           console.log('[useQRBridge] Host Peer disconnected from signaling server.');
           setBridgeStatus('reconnecting');
           triggerReconnect();
@@ -193,6 +195,8 @@ export function useQRBridge(memoryId: string | null) {
     };
 
     const triggerReconnect = () => {
+      if (!isMounted || peerInstance !== peerRef.current) return;
+
       if (reconnectAttemptsRef.current >= 5) {
         console.log('[useQRBridge] Max reconnect attempts (5) reached. Giving up.');
         setBridgeStatus('disconnected');
@@ -204,7 +208,7 @@ export function useQRBridge(memoryId: string | null) {
       console.log(`[useQRBridge] Scheduling reconnect attempt ${reconnectAttemptsRef.current + 1} in ${delay}ms`);
 
       reconnectTimerRef.current = setTimeout(() => {
-        if (!isMounted) return;
+        if (!isMounted || peerInstance !== peerRef.current) return;
         reconnectAttemptsRef.current++;
         
         if (peerInstance && !peerInstance.destroyed) {
@@ -212,9 +216,7 @@ export function useQRBridge(memoryId: string | null) {
             console.log('[useQRBridge] Reconnecting peer to signaling server...');
             peerInstance.reconnect();
           } else {
-            console.log('[useQRBridge] Peer is connected but data connection dropped. Resetting peer...');
-            peerInstance.destroy();
-            initPeer();
+            console.log('[useQRBridge] Peer is successfully connected to signaling server. Ready.');
           }
         } else {
           console.log('[useQRBridge] Re-instantiating destroyed peer...');
