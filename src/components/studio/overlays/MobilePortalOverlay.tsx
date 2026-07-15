@@ -31,13 +31,13 @@ export const MobilePortalOverlay: React.FC<MobilePortalOverlayProps> = ({
             onClick={onActivateRemoteLens}
             className="w-full rounded-lg bg-indigo-600 py-3 px-4 text-sm font-semibold text-white shadow hover:bg-indigo-500 active:bg-indigo-700 transition"
           >
-            ?? Set Up Mobile Lens Mode
+            Set Up Mobile Lens Mode
           </button>
           <button
             onClick={onExit}
             className="w-full rounded-lg bg-slate-900 border border-slate-800 py-3 px-4 text-sm font-medium text-slate-300 hover:bg-slate-800 transition"
           >
-            ?? Go Back to My Memories
+            Go Back to My Memories
           </button>
         </div>
       </div>
