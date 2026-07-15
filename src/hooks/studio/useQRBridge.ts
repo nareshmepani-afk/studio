@@ -41,6 +41,7 @@ export function useQRBridge(memoryId: string | null) {
   const [bridgeStatus, setBridgeStatus] = useState<'connected' | 'reconnecting' | 'disconnected'>('disconnected');
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!memoryId || typeof window === 'undefined' || isOpticsMuted || isP2PDisabled) {
@@ -156,6 +157,36 @@ export function useQRBridge(memoryId: string | null) {
           triggerReconnect();
         });
 
+        const setupHeartbeat = (peerInstance: any) => {
+          if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
+
+          heartbeatIntervalRef.current = setInterval(() => {
+            if (peerInstance.destroyed) {
+              if (heartbeatIntervalRef.current) {
+                clearInterval(heartbeatIntervalRef.current);
+                heartbeatIntervalRef.current = null;
+              }
+              return;
+            }
+
+            if (peerInstance.disconnected) {
+              console.warn('[QRBridge] Peer disconnected. Attempting automatic signaling reconnection...');
+              peerInstance.reconnect();
+            } else {
+              // Send a silent ping connection check through active connections
+              Object.values(peerInstance.connections).forEach((connArray: any) => {
+                connArray.forEach((conn: any) => {
+                  if (conn.open) {
+                    conn.send({ type: 'HEARTBEAT', timestamp: Date.now() });
+                  }
+                });
+              });
+            }
+          }, 5000); // 5-second heartbeats
+        };
+
+        setupHeartbeat(peer);
+
         peerRef.current = peer;
         peerInstance = peer;
       });
@@ -197,6 +228,10 @@ export function useQRBridge(memoryId: string | null) {
     return () => {
       isMounted = false;
       cleanupReconnectTimer();
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+        heartbeatIntervalRef.current = null;
+      }
       if (peerInstance) {
         peerInstance.destroy();
       }

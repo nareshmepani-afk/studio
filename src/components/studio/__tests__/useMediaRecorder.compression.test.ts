@@ -111,14 +111,14 @@ describe('useMediaRecorder Compression & Adaptive Downscaling', () => {
     expect(activeRecorder).toBeDefined();
     expect(activeRecorder.options.videoBitsPerSecond).toBe(800000);
     expect(mockTrack.applyConstraints).toHaveBeenCalledWith({
-      width: { ideal: 1280, max: 1280 },
-      height: { ideal: 720, max: 720 },
+      width: { ideal: 960, max: 960 },
+      height: { ideal: 540, max: 540 },
     });
 
     expect(mockLogEvent).toHaveBeenCalledWith('MediaRecorder: Start recording', expect.objectContaining({
       videoBitsPerSecond: 800000,
-      width: 1280,
-      height: 720,
+      width: 960,
+      height: 540,
       compressionProfile: 'compact'
     }));
   });
@@ -166,14 +166,14 @@ describe('useMediaRecorder Compression & Adaptive Downscaling', () => {
     expect(activeRecorder).toBeDefined();
     expect(activeRecorder.options.videoBitsPerSecond).toBe(800000);
     expect(mockTrack.applyConstraints).toHaveBeenCalledWith({
-      width: { ideal: 1280, max: 1280 },
-      height: { ideal: 720, max: 720 },
+      width: { ideal: 960, max: 960 },
+      height: { ideal: 540, max: 540 },
     });
 
     expect(mockLogEvent).toHaveBeenCalledWith('MediaRecorder: Start recording', expect.objectContaining({
       videoBitsPerSecond: 800000,
-      width: 1280,
-      height: 720,
+      width: 960,
+      height: 540,
       compressionProfile: 'compact'
     }));
   });

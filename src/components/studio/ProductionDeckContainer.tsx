@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { resolveTemplateFixtureAsync } from '@/utils/templateResolver';
+import { MobilePortalOverlay } from './overlays/MobilePortalOverlay';
 
 interface ProductionDeckContainerProps {
   promptId: string;
@@ -29,6 +30,19 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   // THE INVISIBLE DISMISSAL: If we are in modal mode but navigated away from production, 
   // we must return null to ensure the "layering" doesn't block the dashboard.
   const isProductionRoute = pathname?.includes('/production/');
+
+  const [windowWidth, setWindowWidth] = useState<number | null>(null);
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setWindowWidth(window.innerWidth);
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isRemoteLens = searchParams.get('room') === 'solo' || searchParams.get('mode') === 'remote-lens';
+  const showMobileGuard = windowWidth !== null && windowWidth < 768 && !isRemoteLens;
   
   const [selectedProductionData, setSelectedProductionData] = useState<any>(null);
   const [resolvedAsyncTemplate, setResolvedAsyncTemplate] = useState<any>(null);
@@ -298,6 +312,19 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     const next = layoutMode === 'takeover' ? 'drawer' : 'takeover';
     setLayoutMode(next);
   };
+
+  if (showMobileGuard) {
+    return (
+      <MobilePortalOverlay
+        onActivateRemoteLens={() => {
+          router.push(`${pathname}?room=solo`);
+        }}
+        onExit={() => {
+          router.push('/studio');
+        }}
+      />
+    );
+  }
 
   if (!isReady || !selectedProductionData) {
     return (

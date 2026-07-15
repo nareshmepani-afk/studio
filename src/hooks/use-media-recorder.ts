@@ -114,8 +114,8 @@ export const useMediaRecorder = (stream: MediaStream | null, options: MediaRecor
         targetHeight = 720;
       } else if (resolvedProfile === 'compact') {
         targetVideoBps = 800000;
-        targetWidth = 1280;
-        targetHeight = 720;
+        targetWidth = 960;
+        targetHeight = 540;
       } else {
         targetVideoBps = 2500000;
         targetWidth = 1920;
