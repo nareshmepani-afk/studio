@@ -658,23 +658,43 @@ export const PopoutTeleprompter: React.FC = () => {
   return (
     <div className="fixed inset-0 w-full h-full bg-black text-white flex flex-col font-serif select-none overflow-hidden">
       {/* Floating START/STOP PERFORMANCE Button */}
-      {!isRecording ? (
-        <button
-          onClick={handleStartPerformance}
-          className="fixed bottom-24 left-8 z-45 px-4 py-1.5 bg-rose-600 border border-rose-500 text-white text-[8px] font-black uppercase tracking-[0.25em] rounded-full animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.6)] flex items-center gap-1.5 transition-colors hover:bg-rose-500 cursor-pointer"
-        >
-          <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
-          START PERFORMANCE
-        </button>
-      ) : (
-        <button
-          onClick={handleStopPerformance}
-          className="fixed bottom-24 left-8 z-45 px-4 py-1.5 bg-zinc-900 border border-rose-500/50 text-rose-400 text-[8px] font-black uppercase tracking-[0.25em] rounded-full animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.3)] flex items-center gap-1.5 transition-colors hover:bg-rose-950/40 cursor-pointer"
-        >
-          <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-ping" />
-          STOP PERFORMANCE
-        </button>
-      )}
+      {/* Floating PERFORMANCE Controls (Start / Stop / Pause) */}
+      <div className="fixed bottom-24 left-8 z-45 flex flex-col gap-2.5">
+        {!isRecording ? (
+          <button
+            onClick={handleStartPerformance}
+            className="px-4 py-1.5 bg-rose-600 border border-rose-500 text-white text-[8px] font-black uppercase tracking-[0.25em] rounded-full animate-pulse shadow-[0_0_20px_rgba(244,63,94,0.6)] flex items-center gap-1.5 transition-colors hover:bg-rose-500 cursor-pointer"
+          >
+            <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+            START PERFORMANCE
+          </button>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={handleStopPerformance}
+              className="px-4 py-1.5 bg-rose-600 border border-rose-500 text-white text-[8px] font-black uppercase tracking-[0.25em] rounded-full shadow-[0_0_20px_rgba(244,63,94,0.3)] flex items-center gap-1.5 transition-colors hover:bg-rose-500 cursor-pointer"
+            >
+              <span className="w-1.5 h-1.5 bg-white rounded-full" />
+              STOP PERFORMANCE
+            </button>
+            <button
+              onClick={() => {
+                const nextVal = !isScrolling;
+                setScrolling(nextVal);
+                if (sessionId) {
+                  const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+                  channel.postMessage({ type: 'state', isScrolling: nextVal, sender: 'popout' });
+                  channel.close();
+                }
+              }}
+              className="px-4 py-1.5 bg-zinc-950 border border-amber-500/50 text-amber-400 text-[8px] font-black uppercase tracking-[0.25em] rounded-full flex items-center gap-1.5 transition-colors hover:bg-zinc-900 cursor-pointer shadow-lg"
+            >
+              <span className={cn("w-1.5 h-1.5 rounded-full", isScrolling ? "bg-amber-400 animate-pulse" : "bg-zinc-500")} />
+              {isScrolling ? 'PAUSE SCROLL' : 'RESUME SCROLL'}
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Dynamic Webcam Selfie Preview (Top Center) */}
       {showSelfie && (
@@ -757,6 +777,42 @@ export const PopoutTeleprompter: React.FC = () => {
       <div className="absolute top-2 left-2 z-30 flex items-center gap-1.5 bg-zinc-950/80 border border-white/5 rounded-lg px-2 py-0.5 text-[8px] font-mono text-zinc-500">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
         <span>SYNC ACTIVE</span>
+      </div>
+
+      {/* Floating top Speed Multiplier Toolbar */}
+      <div className="absolute top-2 right-2 z-30 flex items-center gap-4 bg-zinc-950/80 border border-white/5 text-xs px-3.5 py-1 rounded-xl backdrop-blur-md shadow-lg pointer-events-auto not-italic font-sans">
+        <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500">SPEED MULTIPLIER</span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const newSpeed = Math.max(0.2, scrollSpeed - 0.2);
+            setScrollSpeed(newSpeed);
+            if (sessionId) {
+              const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+              channel.postMessage({ type: 'state', scrollSpeed: newSpeed, sender: 'popout' });
+              channel.close();
+            }
+          }}
+          className="w-4 h-4 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white flex items-center justify-center font-bold text-[10px] cursor-pointer select-none transition-colors"
+        >
+          -
+        </button>
+        <span className="text-[10px] font-mono font-bold text-emerald-400 w-8 text-center">{scrollSpeed.toFixed(1)}x</span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const newSpeed = scrollSpeed + 0.2;
+            setScrollSpeed(newSpeed);
+            if (sessionId) {
+              const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+              channel.postMessage({ type: 'state', scrollSpeed: newSpeed, sender: 'popout' });
+              channel.close();
+            }
+          }}
+          className="w-4 h-4 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white flex items-center justify-center font-bold text-[10px] cursor-pointer select-none transition-colors"
+        >
+          +
+        </button>
       </div>
 
       {/* Main script scrolling container - absolutely zero margin/padding at the top */}

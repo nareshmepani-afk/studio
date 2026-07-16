@@ -210,11 +210,11 @@ describe('PopoutTeleprompter Component', () => {
     render(<PopoutTeleprompter />);
     
     // Should render the label in the document
-    expect(screen.getByText('SPEED MULTIPLIER')).toBeInTheDocument();
+    expect(screen.getAllByText('SPEED MULTIPLIER')[0]).toBeInTheDocument();
     
     // Buttons for + and - speed adjustments
-    const speedDownButton = screen.getByRole('button', { name: '-' });
-    const speedUpButton = screen.getByRole('button', { name: '+' });
+    const speedDownButton = screen.getAllByRole('button', { name: '-' })[0];
+    const speedUpButton = screen.getAllByRole('button', { name: '+' })[0];
 
     fireEvent.click(speedDownButton);
     expect(mockActions.setScrollSpeed).toHaveBeenCalledWith(1.8);
