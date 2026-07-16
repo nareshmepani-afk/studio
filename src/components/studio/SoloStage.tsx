@@ -2707,6 +2707,14 @@ export default function SoloStage({
               </div>
               <div className="flex items-center gap-2">
                 <button 
+                  onClick={() => setIsTheaterExpanded(prev => !prev)}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-[0_0_12px_rgba(16,185,129,0.2)] active:scale-95"
+                  title="Toggle Theater Mode (Full Screen Takeover)"
+                >
+                  <ExternalLink className="w-3 h-3 text-emerald-400" />
+                  <span className="text-[9px] font-black uppercase tracking-wider">{isTheaterExpanded ? 'Exit Theater' : 'Theater View'}</span>
+                </button>
+                <button 
                   onClick={() => setPrompterSize(prev => prev === 'mini' ? 'sm' : prev === 'sm' ? 'md' : prev === 'md' ? 'lg' : 'mini')}
                   className="p-1 rounded bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center w-6 h-6 shrink-0"
                   title="Toggle Teleprompter Size"
@@ -2937,6 +2945,16 @@ export default function SoloStage({
                           INPUT: {activeInput === 'wireless' ? 'REMOTE WIRELESS LENS (1080p)' : 'STUDIO WEBCAM (720p)'}
                         </span>
                       </div>
+
+                      {/* Persistent Theater Mode Fullscreen Trigger */}
+                      <button
+                        onClick={() => setIsTheaterExpanded(prev => !prev)}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-md h-[30px] shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all cursor-pointer pointer-events-auto active:scale-95"
+                        title="Toggle Fullscreen Teleprompter Theater Mode"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>{isTheaterExpanded ? 'EXIT THEATER' : 'THEATER VIEW'}</span>
+                      </button>
  
                       {/* Replay Planning Tour Button */}
                       <TooltipProvider>
