@@ -24,6 +24,8 @@ interface TeleprompterProps {
   isTableReadActive?: boolean;
   onTableReadToggle?: () => void;
   rehearsalSpeed?: number;
+  isTheaterExpanded?: boolean;
+  onTheaterExpandToggle?: () => void;
 }
 
 const highlightSensoryAnchors = (text: string): string => {
@@ -102,7 +104,9 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   onPrompterLayoutToggle,
   isTableReadActive = false,
   onTableReadToggle,
-  rehearsalSpeed = 1.5
+  rehearsalSpeed = 1.5,
+  isTheaterExpanded = false,
+  onTheaterExpandToggle
 }) => {
   const { 
     sessionId,
@@ -130,6 +134,19 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       toggleRecording
     }
   } = useStudioState();
+
+  const handleIncreaseFontSize = () => {
+    const maxAllowed = isTheaterExpanded ? 48 : 36;
+    if (fontSize < maxAllowed) {
+      increaseFontSize();
+    }
+  };
+
+  const handleDecreaseFontSize = () => {
+    if (fontSize > 12) {
+      decreaseFontSize();
+    }
+  };
 
   const isLayoutLocked = modalityMode === 'interview' || isScrolling;
 
@@ -958,24 +975,24 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={handlePopout}
-                      title="Pop Out Teleprompter"
+                      onClick={onTheaterExpandToggle || handlePopout}
+                      title={onTheaterExpandToggle ? "Expand Teleprompter" : "Pop Out Teleprompter"}
                       className="p-2 rounded-xl border border-white/10 bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5"
                     >
                       <ExternalLink className="w-4 h-4" />
-                      <span className="text-[9px] font-black uppercase tracking-widest">Pop Out</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest">{onTheaterExpandToggle ? "Expand" : "Pop Out"}</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-neutral-950 border-white/5 max-w-[220px] p-3 text-xs leading-relaxed text-zinc-300">
+                  <TooltipContent side="bottom" className="bg-neutral-950 border-white/5 max-w-[280px] p-3 text-xs leading-relaxed text-zinc-300">
                     <div className="space-y-1.5">
-                      <p className="font-bold text-[9px] uppercase tracking-widest text-cyan-400">Pop Out Teleprompter</p>
-                      <p className="text-[10px] text-zinc-400 leading-normal">Opens a standalone, borderless prompter window to place directly under your camera bezel.</p>
-                      <div className="pt-1.5 border-t border-white/5 text-[9px] text-zinc-500 font-mono space-y-0.5">
-                        <p><strong className="text-zinc-300">Space:</strong> Play / Pause</p>
-                        <p><strong className="text-zinc-300">↑/↓:</strong> Adjust Font Size</p>
-                        <p><strong className="text-zinc-300">M:</strong> Mirror Mode</p>
-                        <p><strong className="text-zinc-300">A:</strong> Toggle Guide Line</p>
-                      </div>
+                      <p className="font-bold text-[9px] uppercase tracking-widest text-cyan-400">
+                        {onTheaterExpandToggle ? "Expand Teleprompter" : "Pop Out Teleprompter"}
+                      </p>
+                      <p className="text-[11px] text-zinc-400">
+                        {onTheaterExpandToggle 
+                          ? "Expand the teleprompter inline to take over the studio screen for maximum readability."
+                          : "Open a standalone, bezel-less window aligned right below the camera lens."}
+                      </p>
                     </div>
                   </TooltipContent>
                 </Tooltip>
@@ -983,9 +1000,9 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
               <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl px-2 py-1">
                 <span className="text-[8px] font-black uppercase tracking-widest text-white/30 px-1">Optimised Layout</span>
-                <button onClick={decreaseFontSize} className="p-1 hover:bg-white/10 text-white/50 hover:text-white font-black text-xs px-2 cursor-pointer">-</button>
+                <button onClick={handleDecreaseFontSize} className="p-1 hover:bg-white/10 text-white/50 hover:text-white font-black text-xs px-2 cursor-pointer">-</button>
                 <span className="text-[10px] font-mono font-bold text-white/70 w-8 text-center">{fontSize}px</span>
-                <button onClick={increaseFontSize} className="p-1 hover:bg-white/10 text-white/50 hover:text-white font-black text-xs px-2 cursor-pointer">+</button>
+                <button onClick={handleIncreaseFontSize} className="p-1 hover:bg-white/10 text-white/50 hover:text-white font-black text-xs px-2 cursor-pointer">+</button>
               </div>
 
               {/* Vocal Cadence settings group (MW-61) */}
@@ -1313,9 +1330,9 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
               <div className="flex flex-col gap-1.5 bg-white/5 border border-white/10 rounded-2xl p-2 items-center shrink-0">
                 <span className="text-[8px] font-black uppercase tracking-widest text-white/30 text-center w-full block">Optimised Layout</span>
                 <div className="flex items-center justify-between w-full mt-1.5">
-                  <button onClick={decreaseFontSize} className="w-6.5 h-6.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-black text-xs cursor-pointer flex items-center justify-center">-</button>
+                  <button onClick={handleDecreaseFontSize} className="w-6.5 h-6.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-black text-xs cursor-pointer flex items-center justify-center">-</button>
                   <span className="text-[10px] font-mono font-bold text-white/90 w-8 text-center">{fontSize}px</span>
-                  <button onClick={increaseFontSize} className="w-6.5 h-6.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-black text-xs cursor-pointer flex items-center justify-center">+</button>
+                  <button onClick={handleIncreaseFontSize} className="w-6.5 h-6.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-black text-xs cursor-pointer flex items-center justify-center">+</button>
                 </div>
               </div>
             )}

@@ -199,6 +199,7 @@ export default function SoloStage({
   const [opticsBrightness, setOpticsBrightness] = useState(100);
   const [opticsContrast, setOpticsContrast] = useState(110);
   const [opticsFilter, setOpticsFilter] = useState<'default' | 'warm' | 'cool' | 'noir'>('default');
+  const [isTheaterExpanded, setIsTheaterExpanded] = useState(false);
 
 
   // Minimise / Restore panel states (pre-flight checks calibration stage)
@@ -275,6 +276,16 @@ export default function SoloStage({
       setIsInterviewMode(false);
     }
   }, [modalityMode]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isTheaterExpanded) {
+        setIsTheaterExpanded(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isTheaterExpanded]);
   
 
   const unmuteOptics = useCallback(() => {
@@ -2645,20 +2656,37 @@ export default function SoloStage({
              transition={{ type: "spring", stiffness: 120, damping: 22 }}
              style={{
                touchAction: 'none',
-               ...(prompterLayout === 'center' ? { x: 0, y: 0 } : {})
+               ...(prompterLayout === 'center' || isTheaterExpanded ? { x: 0, y: 0 } : {})
              }}
              className={cn(
-               "z-30 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col cursor-grab active:cursor-grabbing select-none relative",
-               (prompterSize === 'mini' && !isTableReadActive) ? "p-4 bg-zinc-950/90" : "p-8",
+               "z-30 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col select-none relative",
+               isTheaterExpanded ? "fixed inset-6 z-50 rounded-2xl bg-slate-950/95 border border-slate-800 shadow-2xl transition-all duration-300 ease-in-out cursor-default" : (prompterSize === 'mini' && !isTableReadActive) ? "p-4 bg-zinc-950/90" : "p-8",
+               !isTheaterExpanded && !isTableReadActive ? "cursor-grab active:cursor-grabbing" : "",
                (isMuted || !mounted || !techAlignmentConfirmed) && "hidden",
                isAlchemySaving || reviewTake || captureModality === 'raw' ? "opacity-0 pointer-events-none" : "opacity-100 blur-0",
-               isTableReadActive
+               isTheaterExpanded 
+                 ? "" 
+                 : isTableReadActive
                  ? "absolute bg-[#030303] border-2 border-sky-500/25 shadow-[0_0_50px_rgba(56,189,248,0.15)]"
                  : prompterLayout === 'center'
                  ? "absolute bg-zinc-950/65 backdrop-blur-md border border-white/10"
                  : "absolute bg-zinc-950/85 backdrop-blur-3xl border border-white/10"
              )}
            >
+            {isTheaterExpanded && stream && (
+              <div className="absolute top-4 right-4 w-48 aspect-video rounded-lg border border-slate-700 shadow-md overflow-hidden z-50 bg-black">
+                <video
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover animate-fade-in"
+                  style={{ transform: 'scaleX(-1)' }}
+                  ref={(el) => {
+                    if (el) el.srcObject = stream;
+                  }}
+                />
+              </div>
+            )}
             <div className="absolute top-3 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/10 rounded-full opacity-50" />
             {/* Header Top Line: Title & Size Actions */}
             <div 
@@ -2734,6 +2762,8 @@ export default function SoloStage({
                   isTableReadActive={isTableReadActive}
                   onTableReadToggle={isTableReadActive ? handleEndRehearsal : handleEngageRehearsal}
                   rehearsalSpeed={rehearsalSpeed}
+                  isTheaterExpanded={isTheaterExpanded}
+                  onTheaterExpandToggle={() => setIsTheaterExpanded(prev => !prev)}
                 />
               </div>
 
