@@ -186,22 +186,9 @@
     animation: protocol-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  /* Scriptorium Mask: 15% Sweet Spot for Peripheral Context */
+  /* Scriptorium Mask: Disabled for maximum text legibility across all viewport heights */
   .scriptorium-fade {
-    mask-image: linear-gradient(
-      to bottom,
-      transparent,
-      black 15%,
-      black 85%,
-      transparent
-    );
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent,
-      black 15%,
-      black 85%,
-      transparent
-    );
+    /* mask-image removed to prevent text clipping/fading */
   }
 
   /* Sensory Anchor Bubbles */
