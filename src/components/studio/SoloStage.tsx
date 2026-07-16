@@ -2953,7 +2953,7 @@ export default function SoloStage({
                         title="Toggle Fullscreen Teleprompter Theater Mode"
                       >
                         <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>{isTheaterExpanded ? 'EXIT THEATER' : 'THEATER VIEW'}</span>
+                        <span>{isTheaterExpanded ? 'EXIT FOCUS' : 'PROMPTER FOCUS'}</span>
                       </button>
  
                       {/* Replay Planning Tour Button */}
