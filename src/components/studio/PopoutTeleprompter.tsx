@@ -271,13 +271,8 @@ export const PopoutTeleprompter: React.FC = () => {
     }
   };
 
-  // Auto-hide helper guide after 6 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowHelper(false);
-    }, 6000);
-    return () => clearTimeout(timer);
-  }, []);
+  // The helper guide is managed manually via the close 'x' button.
+  // Auto-hide timer has been removed to prevent unexpected dismissal.
 
   // Setup BroadcastChannel for sub-millisecond local scroll/state sync
   useEffect(() => {
