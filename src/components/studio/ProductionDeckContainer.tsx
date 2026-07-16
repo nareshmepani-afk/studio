@@ -42,7 +42,12 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   }, []);
 
   const isRemoteLens = searchParams.get('room') === 'solo' || searchParams.get('mode') === 'remote-lens';
-  const showMobileGuard = windowWidth !== null && windowWidth < 768 && !isRemoteLens;
+  
+  // Smart Viewport & Foldable Device Detection:
+  // Standard portrait phones have narrow aspect ratios (< 0.85) and width < 768px.
+  // Unfolded foldables (e.g., Z Fold) have width >= 600px and near-square/landscape aspect ratios (>= 0.85).
+  const isFoldableOrTabletCanvas = windowWidth !== null && windowWidth >= 600 && typeof window !== 'undefined' && (window.innerWidth / (window.innerHeight || 1)) >= 0.85;
+  const showMobileGuard = windowWidth !== null && windowWidth < 768 && !isFoldableOrTabletCanvas && !isRemoteLens;
   
   const [selectedProductionData, setSelectedProductionData] = useState<any>(null);
   const [resolvedAsyncTemplate, setResolvedAsyncTemplate] = useState<any>(null);
