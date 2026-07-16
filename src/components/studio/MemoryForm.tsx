@@ -2296,13 +2296,13 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 ) : (
                   /* Centered Editor Content */
                   <div className="flex-1 flex flex-col justify-start space-y-12">
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center gap-6">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
+                      <div className="flex flex-wrap items-center gap-3 md:gap-6">
                         <h2 className="text-4xl font-serif text-white/90 italic flex items-center">
                           Script & Dialogue <RequiredIndicator />
                         </h2>
                         {isProductionLocked && (data?.activeVisionLabel || data?.activeVision) && (
-                          <div className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)] animate-fade-in">
+                          <div className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)] animate-fade-in whitespace-nowrap">
                             <span className="opacity-40">
                               {isSensory ? "🎬 SENSORY WEAVE:" : "🎬 ESTHETIC CUT:"}
                             </span>

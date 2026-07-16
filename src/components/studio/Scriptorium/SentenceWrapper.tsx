@@ -1029,13 +1029,13 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
                   key={tokenId}
                   data-token-id={tokenId}
                   className={cn(
-                    isAnchor && "anchor-span border-b-2 border-emerald-500/50 bg-emerald-500/5",
+                    isAnchor && "anchor-span border-b-2 border-emerald-500/40 bg-emerald-500/10 text-zinc-100 font-medium",
                     isPivoted && "pivot-span border-b-2",
-                    isPivoted && pivotTone === 'poetic' && "border-sky-500/50 bg-sky-500/5 text-sky-200",
-                    isPivoted && pivotTone === 'grit' && "border-amber-500/50 bg-amber-500/5 text-amber-200",
-                    isPivoted && pivotTone === 'heritage' && "border-emerald-500/50 bg-emerald-500/5 text-emerald-200",
+                    isPivoted && pivotTone === 'poetic' && "border-sky-500/40 bg-sky-500/10 text-sky-100 font-semibold shadow-[0_0_12px_rgba(56,189,248,0.15)]",
+                    isPivoted && pivotTone === 'grit' && "border-amber-500/40 bg-amber-500/10 text-amber-100 font-semibold shadow-[0_0_12px_rgba(245,158,11,0.15)]",
+                    isPivoted && pivotTone === 'heritage' && "border-emerald-500/40 bg-emerald-500/10 text-emerald-100 font-semibold shadow-[0_0_12px_rgba(16,185,129,0.15)]",
                     isGhosted && "bg-emerald-400/20 border-b border-emerald-400 animate-pulse rounded-md px-0.5",
-                    isDirective && "directive-span text-emerald-400/40 bg-emerald-500/5 italic font-mono decoration-dotted border-b border-emerald-500/20"
+                    isDirective && "directive-span text-emerald-400/50 bg-emerald-500/5 italic font-mono decoration-dotted border-b border-emerald-500/20"
                   )}
                 >
                   {token}
