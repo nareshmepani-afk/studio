@@ -27,6 +27,11 @@ export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
 
+  // Standalone popout pages should be bezel-less and distraction-free without main app Navbar
+  if (pathname === '/studio/teleprompter-popout' || pathname === '/studio/remote-camera') {
+    return null;
+  }
+
   const handleLogout = async () => {
     try {
       await logout();
