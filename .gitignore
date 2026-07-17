@@ -25,6 +25,7 @@ certificates/
 
 # Development / Temporary Files
 tmp/
+test-results/
 *.js
 !next.config.mjs
 !postcss.config.mjs
