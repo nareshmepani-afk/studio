@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useStudioState } from '@/hooks/studio/useStudioState';
+import { useJourneyLogger } from '@/hooks/telemetry/useJourneyLogger';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { applyTheatricalSlashes, tokenizeSentences } from '@/utils/scriptFormatter';
@@ -97,6 +98,7 @@ export const PopoutTeleprompter: React.FC = () => {
       toggleRecording
     }
   } = useStudioState();
+  const { logEvent } = useJourneyLogger(null, sessionId);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isInternalScroll = useRef(false);
@@ -355,6 +357,7 @@ export const PopoutTeleprompter: React.FC = () => {
         }
         if (payload.isCameraActive !== undefined) {
           setIsCameraActive(payload.isCameraActive);
+          logEvent(`Optics: Camera active state synced (${payload.isCameraActive ? 'ACTIVE' : 'INACTIVE'})`, { version: '1.0.0-MW-69' }, 'INFO');
         }
       } else if (type === 'activeSentence') {
         if (payload.index !== undefined && payload.index !== activeSentenceIndexRef.current) {
@@ -373,7 +376,12 @@ export const PopoutTeleprompter: React.FC = () => {
                 if (event.streams[0]) {
                   console.log('[Popout] Received live video stream track from main stage via WebRTC loopback');
                   setSelfieStream(event.streams[0]);
+                  logEvent('WebRTC: Live video track bound to popout selfie preview', { version: '1.0.0-MW-69' }, 'INFO');
                 }
+              };
+
+              pc.onconnectionstatechange = () => {
+                logEvent(`WebRTC: Peer connection state changed to ${pc.connectionState}`, { version: '1.0.0-MW-69' }, pc.connectionState === 'failed' ? 'ERROR' : 'INFO');
               };
 
               pc.onicecandidate = (event) => {

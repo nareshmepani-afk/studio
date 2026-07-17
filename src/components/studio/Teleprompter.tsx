@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { useStudioState } from '@/hooks/studio/useStudioState';
+import { useJourneyLogger } from '@/hooks/telemetry/useJourneyLogger';
 import { FlipHorizontal, Play, Pause, ChevronUp, ChevronDown, Layout, Music, Volume2, Sparkles, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { synthesizeStudioSpeech } from '@/actions/studio-vocal';
@@ -201,6 +202,8 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   const isBraking = useRef(false);
   const lastBrakedIndex = useRef(-1);
 
+  const { logEvent } = useJourneyLogger(null, sessionId);
+
   // Sync refs to prevent scroll loop re-instantiation
   const scrollSpeedRef = useRef(scrollSpeed);
   const enablePunctuationBrakingRef = useRef(enablePunctuationBraking);
@@ -278,8 +281,10 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       channel.postMessage({ type: 'webrtc-offer', offer, sender: 'main' });
-    } catch (err) {
+      logEvent('WebRTC: Initiated offer stream with STUN configuration', { version: '1.0.0-MW-69' }, 'INFO');
+    } catch (err: any) {
       console.warn('[Teleprompter] WebRTC offer creation failed:', err);
+      logEvent(`WebRTC: Offer creation failed: ${err?.message || err}`, { version: '1.0.0-MW-69' }, 'ERROR');
     }
   }, [stream]);
 
