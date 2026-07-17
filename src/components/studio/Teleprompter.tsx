@@ -364,6 +364,9 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
             console.warn('[Teleprompter] WebRTC popout ICE error:', err);
           });
         }
+      } else if (type === 'toggleCamera') {
+        console.log('[Teleprompter] BroadcastChannel received toggleCamera, dispatching studio-toggle-camera:', payload.active);
+        window.dispatchEvent(new CustomEvent('studio-toggle-camera', { detail: { active: payload.active } }));
       } else if (type === 'join') {
         initiateWebRTCStreamOffer(channel);
         // Popout just opened! Send current states immediately to popout for instant alignment
@@ -379,6 +382,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           isolateSentenceHighlight,
           activeSentenceIndex,
           isRecording,
+          isCameraActive: !!stream && stream.getVideoTracks().some(t => t.readyState === 'live'),
           sender: 'main'
         });
 

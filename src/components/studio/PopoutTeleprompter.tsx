@@ -104,6 +104,7 @@ export const PopoutTeleprompter: React.FC = () => {
   const [showHelper, setShowHelper] = useState(true);
   const [showSelfie, setShowSelfie] = useState(true);
   const [selfieStream, setSelfieStream] = useState<MediaStream | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
   const selfieVideoRef = useRef<HTMLVideoElement>(null);
   const popoutPeerConnectionRef = useRef<RTCPeerConnection | null>(null);
 
@@ -280,6 +281,17 @@ export const PopoutTeleprompter: React.FC = () => {
     }
   };
 
+  const handleToggleCamera = () => {
+    const nextActive = !isCameraActive;
+    console.log('[Popout] handleToggleCamera clicked, broadcasting toggleCamera active:', nextActive);
+    setIsCameraActive(nextActive);
+    if (sessionId) {
+      const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+      channel.postMessage({ type: 'toggleCamera', active: nextActive, sender: 'popout' });
+      channel.close();
+    }
+  };
+
   // The helper guide is managed manually via the close 'x' button.
   // Auto-hide timer has been removed to prevent unexpected dismissal.
 
@@ -335,6 +347,9 @@ export const PopoutTeleprompter: React.FC = () => {
         }
         if (payload.isRecording !== undefined && payload.isRecording !== isRecording) {
           toggleRecording();
+        }
+        if (payload.isCameraActive !== undefined) {
+          setIsCameraActive(payload.isCameraActive);
         }
       } else if (type === 'activeSentence') {
         if (payload.index !== undefined && payload.index !== activeSentenceIndexRef.current) {
@@ -832,9 +847,24 @@ export const PopoutTeleprompter: React.FC = () => {
       </AnimatePresence>
 
       {/* Floating telemetry HUD indicators */}
-      <div className="absolute top-2 left-2 z-30 flex items-center gap-1.5 bg-zinc-950/80 border border-white/5 rounded-lg px-2 py-0.5 text-[8px] font-mono text-zinc-500">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-        <span>SYNC ACTIVE</span>
+      <div className="absolute top-2 left-2 z-30 flex items-center gap-2">
+        <div className="flex items-center gap-1.5 bg-zinc-950/80 border border-white/5 rounded-lg px-2 py-0.5 text-[8px] font-mono text-zinc-500">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span>SYNC ACTIVE</span>
+        </div>
+
+        <button
+          onClick={handleToggleCamera}
+          className={cn(
+            "flex items-center gap-1.5 border px-2 py-0.5 rounded-lg text-[8px] font-mono font-bold tracking-wider cursor-pointer transition-all shadow-md select-none",
+            isCameraActive
+              ? "bg-emerald-950/50 border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/60"
+              : "bg-rose-950/50 border-rose-500/30 text-rose-400 hover:bg-rose-900/60 animate-pulse"
+          )}
+        >
+          <span className={cn("w-1.5 h-1.5 rounded-full", isCameraActive ? "bg-emerald-400" : "bg-rose-400")} />
+          <span>{isCameraActive ? 'OPTICS ACTIVE' : 'OPTICS INACTIVE (CLICK TO WAKE)'}</span>
+        </button>
       </div>
 
       {/* Floating top Speed Multiplier Toolbar */}

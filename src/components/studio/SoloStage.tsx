@@ -702,6 +702,18 @@ export default function SoloStage({
     return () => window.removeEventListener('studio-restart-take', handleRestartTake);
   }, [cancelCapture, setActiveBeatIndex]);
 
+  // Listen to remote toggle camera events from Pop-out
+  useEffect(() => {
+    const handleToggleCamera = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const active = customEvent.detail?.active;
+      console.log('[SoloStage] Received remote studio-toggle-camera custom event. Setting camera state to:', active);
+      setIsCameraActive(active !== undefined ? active : !isCameraActive);
+    };
+    window.addEventListener('studio-toggle-camera', handleToggleCamera);
+    return () => window.removeEventListener('studio-toggle-camera', handleToggleCamera);
+  }, [isCameraActive]);
+
   // Listen to remote start performance event from Pop-out
   useEffect(() => {
     const handleStartPerformance = () => {
