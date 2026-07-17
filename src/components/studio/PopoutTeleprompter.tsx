@@ -693,14 +693,22 @@ export const PopoutTeleprompter: React.FC = () => {
 
       {/* Dynamic Webcam Selfie Preview (Top Center) */}
       {showSelfie && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 w-40 h-28 bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 opacity-40 hover:opacity-100">
-          <video
-            ref={selfieVideoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-cover transform -scale-x-100"
-          />
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 w-40 h-28 bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 opacity-40 hover:opacity-100 flex items-center justify-center">
+          {selfieStream ? (
+            <video
+              ref={selfieVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover transform -scale-x-100"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-zinc-950/90 text-zinc-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping mb-1.5" />
+              <span className="text-[8px] font-black uppercase tracking-widest text-emerald-300">OPTICS ENGAGED</span>
+              <span className="text-[7px] text-zinc-500 mt-0.5 leading-tight">Camera active on Main Studio Deck</span>
+            </div>
+          )}
           <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-zinc-950/80 border border-white/10 text-[8px] font-black uppercase tracking-widest text-zinc-300 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span>SELFIE</span>

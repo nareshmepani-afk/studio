@@ -680,12 +680,16 @@ export default function SoloStage({
 
   // Check if both windows are open and active in interview modality before camera starts rolling
   const handleStartCapture = useCallback(() => {
+    if (!isCameraActive) {
+      console.log('[SoloStage] Activating optics camera hardware prior to capture initiation...');
+      setIsCameraActive(true);
+    }
     if (modalityMode === 'interview' || isInterviewMode) {
       setIsInterviewMode(true);
       setPrompterLayout('center');
     }
     startCapture();
-  }, [modalityMode, isInterviewMode, startCapture]);
+  }, [isCameraActive, modalityMode, isInterviewMode, startCapture]);
 
   // Listen to remote reset / restart take commands safely
   useEffect(() => {
