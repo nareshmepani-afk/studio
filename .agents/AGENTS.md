@@ -33,8 +33,9 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - Every client event payload dispatched must include the application version parameter (e.g. `version: "1.0.0-MW-69"`).
 - When validating logs or tracing user events programmatically, always ensure telemetry payloads explicitly log the version string to allow tracking dynamic changes across deployment milestones.
 
-## 7. Non-Compromise of Core UX & Ready-to-Hand Ergonomics Rule
-- **Never Replace Core Functionality With Placeholder Approximations**: When existing user capabilities (such as live camera video framing) break, degrade, or encounter browser/hardware locks, the agent must NEVER silently downgrade the feature into a static text badge or placeholder UI.
+## 7. Universal Non-Degradation & Explicit Feature Confirmation Rule
+- **Universal Non-Degradation Across All Features**: The agent must NEVER silently alter, downgrade, approximate, or remove ANY existing user-facing feature, control, visual feedback loop, or functional capability under any circumstances.
+- **Explicit User Intent Confirmation Requirement**: If a proposed architectural change, technical refactoring, hardware constraint, or layout adjustment carries ANY risk of altering, degrading, or disabling any existing user capability, the agent MUST explicitly consult the user, detail the trade-offs, and obtain direct confirmation before proceeding.
 - **Heideggerian First-Principles Probing**: Interfaces for physical performers (standing back from screens framing themselves) must maintain seamless *Zuhandenheit* (ready-to-hand immersion). Always engineer genuine underlying technical bridges (e.g. WebRTC loopbacks, shared buffers, or hardware multiplexing) rather than compromising the narrator's essential visual feedback loop.
 
 # Deployment Milestones
