@@ -135,8 +135,16 @@ export const PopoutTeleprompter: React.FC = () => {
   }, [showSelfie]);
 
   useEffect(() => {
-    if (selfieVideoRef.current && selfieStream) {
-      selfieVideoRef.current.srcObject = selfieStream;
+    const video = selfieVideoRef.current;
+    if (video && selfieStream) {
+      video.srcObject = selfieStream;
+      video.muted = true;
+      video.playsInline = true;
+      
+      // Force playback state activation to bypass browser autoplay blocks
+      video.play().catch(err => {
+        console.warn("[Popout] Autoplay blocked or interrupted for video stream:", err);
+      });
     }
   }, [selfieStream]);
 
