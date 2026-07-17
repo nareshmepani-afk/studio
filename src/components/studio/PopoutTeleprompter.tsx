@@ -105,6 +105,7 @@ export const PopoutTeleprompter: React.FC = () => {
   const [showSelfie, setShowSelfie] = useState(true);
   const [selfieStream, setSelfieStream] = useState<MediaStream | null>(null);
   const selfieVideoRef = useRef<HTMLVideoElement>(null);
+  const popoutPeerConnectionRef = useRef<RTCPeerConnection | null>(null);
 
   // Dynamic Camera Stream Access for Selfie Preview
   useEffect(() => {
@@ -331,6 +332,44 @@ export const PopoutTeleprompter: React.FC = () => {
         if (payload.index !== undefined && payload.index !== activeSentenceIndexRef.current) {
           setActiveSentenceIndex(payload.index);
         }
+      } else if (type === 'webrtc-offer') {
+        if (payload.offer && typeof window !== 'undefined' && 'RTCPeerConnection' in window && 'RTCSessionDescription' in window) {
+          (async () => {
+            try {
+              if (popoutPeerConnectionRef.current) {
+                popoutPeerConnectionRef.current.close();
+              }
+              const pc = new RTCPeerConnection({ iceServers: [] });
+              popoutPeerConnectionRef.current = pc;
+
+              pc.ontrack = (event) => {
+                if (event.streams[0]) {
+                  console.log('[Popout] Received live video stream track from main stage via WebRTC loopback');
+                  setSelfieStream(event.streams[0]);
+                }
+              };
+
+              pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                  channel.postMessage({ type: 'webrtc-ice-popout', candidate: event.candidate, sender: 'popout' });
+                }
+              };
+
+              await pc.setRemoteDescription(new RTCSessionDescription(payload.offer));
+              const answer = await pc.createAnswer();
+              await pc.setLocalDescription(answer);
+              channel.postMessage({ type: 'webrtc-answer', answer, sender: 'popout' });
+            } catch (err) {
+              console.warn('[Popout] Error accepting WebRTC offer:', err);
+            }
+          })();
+        }
+      } else if (type === 'webrtc-ice-main') {
+        if (popoutPeerConnectionRef.current && payload.candidate && typeof window !== 'undefined' && 'RTCIceCandidate' in window) {
+          popoutPeerConnectionRef.current.addIceCandidate(new RTCIceCandidate(payload.candidate)).catch(err => {
+            console.warn('[Popout] Error adding main stage ICE candidate:', err);
+          });
+        }
       }
     };
 
@@ -344,6 +383,14 @@ export const PopoutTeleprompter: React.FC = () => {
       channel.close();
     };
   }, [sessionId, isScrolling, isRecording, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, setScrolling, setScrollSpeed, setFontSize, toggleMirror, setSelectedTake, setShowBreathingMarks, setEnablePunctuationBraking, setIsolateSentenceHighlight, toggleRecording]);
+
+  useEffect(() => {
+    if (showSelfie && sessionId) {
+      const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+      channel.postMessage({ type: 'webrtc-request-offer', sender: 'popout' });
+      channel.close();
+    }
+  }, [showSelfie, sessionId]);
 
   const handleSentenceClick = (index: number) => {
     if (!containerRef.current) return;

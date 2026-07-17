@@ -14,7 +14,7 @@ class MockBroadcastChannel {
     MockBroadcastChannel.instances.push(this);
   }
 
-  postMessage = vi.fn((data: any) => {
+  postMessage(data: any) {
     // Simulate async dispatch to other instances
     setTimeout(() => {
       MockBroadcastChannel.instances.forEach(instance => {
@@ -23,7 +23,7 @@ class MockBroadcastChannel {
         }
       });
     }, 0);
-  });
+  }
 
   addEventListener(type: string, listener: any) {
     if (type === 'message') {
@@ -345,12 +345,7 @@ describe('PopoutTeleprompter Component', () => {
   });
 
   it('triggers startPerformance BroadcastChannel message when START PERFORMANCE is clicked', () => {
-    const createdInstances: any[] = [];
-    const originalPush = MockBroadcastChannel.instances.push;
-    MockBroadcastChannel.instances.push = function(instance: any) {
-      createdInstances.push(instance);
-      return originalPush.call(MockBroadcastChannel.instances, instance);
-    };
+    const postMessageSpy = vi.spyOn(MockBroadcastChannel.prototype, 'postMessage');
 
     render(<PopoutTeleprompter />);
     const startBtn = screen.getByRole('button', { name: /START PERFORMANCE/i });
@@ -358,13 +353,12 @@ describe('PopoutTeleprompter Component', () => {
     
     fireEvent.click(startBtn);
     
-    expect(createdInstances.length).toBe(2);
-    expect(createdInstances[1].postMessage).toHaveBeenCalledWith({
+    expect(postMessageSpy).toHaveBeenCalledWith({
       type: 'startPerformance',
       sender: 'popout'
     });
 
-    MockBroadcastChannel.instances.push = originalPush;
+    postMessageSpy.mockRestore();
   });
 
   it('renders STOP PERFORMANCE button when isRecording is true and triggers stopPerformance BroadcastChannel message on click', () => {
@@ -382,12 +376,7 @@ describe('PopoutTeleprompter Component', () => {
       actions: mockActions,
     });
 
-    const createdInstances: any[] = [];
-    const originalPush = MockBroadcastChannel.instances.push;
-    MockBroadcastChannel.instances.push = function(instance: any) {
-      createdInstances.push(instance);
-      return originalPush.call(MockBroadcastChannel.instances, instance);
-    };
+    const postMessageSpy = vi.spyOn(MockBroadcastChannel.prototype, 'postMessage');
 
     render(<PopoutTeleprompter />);
     const stopBtn = screen.getByRole('button', { name: /STOP PERFORMANCE/i });
@@ -395,12 +384,11 @@ describe('PopoutTeleprompter Component', () => {
     
     fireEvent.click(stopBtn);
     
-    expect(createdInstances.length).toBe(2);
-    expect(createdInstances[1].postMessage).toHaveBeenCalledWith({
+    expect(postMessageSpy).toHaveBeenCalledWith({
       type: 'stopPerformance',
       sender: 'popout'
     });
 
-    MockBroadcastChannel.instances.push = originalPush;
+    postMessageSpy.mockRestore();
   });
 });

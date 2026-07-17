@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { FlipHorizontal, Play, Pause, ChevronUp, ChevronDown, Layout, Music, Volume2, Sparkles, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -253,6 +253,45 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     };
   }, []);
 
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+
+  const initiateWebRTCStreamOffer = useCallback(async (channel: BroadcastChannel) => {
+    if (!stream || stream.getVideoTracks().length === 0) return;
+    if (typeof window === 'undefined' || !('RTCPeerConnection' in window)) return;
+
+    try {
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+      }
+      const pc = new RTCPeerConnection({ iceServers: [] });
+      peerConnectionRef.current = pc;
+
+      stream.getVideoTracks().forEach((track) => {
+        pc.addTrack(track, stream);
+      });
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          channel.postMessage({ type: 'webrtc-ice-main', candidate: event.candidate, sender: 'main' });
+        }
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      channel.postMessage({ type: 'webrtc-offer', offer, sender: 'main' });
+    } catch (err) {
+      console.warn('[Teleprompter] WebRTC offer creation failed:', err);
+    }
+  }, [stream]);
+
+  useEffect(() => {
+    if (sessionId && stream && stream.getVideoTracks().length > 0) {
+      const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+      initiateWebRTCStreamOffer(channel);
+      return () => channel.close();
+    }
+  }, [sessionId, stream, initiateWebRTCStreamOffer]);
+
   // Setup BroadcastChannel for popout synchronization
   useEffect(() => {
     if (!sessionId) return;
@@ -311,7 +350,22 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       } else if (type === 'stopPerformance') {
         console.log('[Teleprompter] BroadcastChannel received stopPerformance, dispatching studio-stop-performance');
         window.dispatchEvent(new CustomEvent('studio-stop-performance'));
+      } else if (type === 'webrtc-request-offer') {
+        initiateWebRTCStreamOffer(channel);
+      } else if (type === 'webrtc-answer') {
+        if (peerConnectionRef.current && payload.answer && typeof window !== 'undefined' && 'RTCSessionDescription' in window) {
+          peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(payload.answer)).catch(err => {
+            console.warn('[Teleprompter] WebRTC answer error:', err);
+          });
+        }
+      } else if (type === 'webrtc-ice-popout') {
+        if (peerConnectionRef.current && payload.candidate && typeof window !== 'undefined' && 'RTCIceCandidate' in window) {
+          peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(payload.candidate)).catch(err => {
+            console.warn('[Teleprompter] WebRTC popout ICE error:', err);
+          });
+        }
       } else if (type === 'join') {
+        initiateWebRTCStreamOffer(channel);
         // Popout just opened! Send current states immediately to popout for instant alignment
         channel.postMessage({
           type: 'state',
@@ -347,7 +401,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
-  }, [sessionId, isScrolling, isRecording, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, activeSentenceIndex, setScrolling, setFontSize, toggleMirror, setShowBreathingMarks, setEnablePunctuationBraking, setIsolateSentenceHighlight, toggleRecording]);
+  }, [sessionId, isScrolling, isRecording, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, activeSentenceIndex, setScrolling, setFontSize, toggleMirror, setShowBreathingMarks, setEnablePunctuationBraking, setIsolateSentenceHighlight, toggleRecording, initiateWebRTCStreamOffer]);
 
   // Send close signal strictly when Teleprompter unmounts (navigating away from active stage)
   useEffect(() => {
