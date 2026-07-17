@@ -118,6 +118,11 @@ export const PopoutTeleprompter: React.FC = () => {
       return;
     }
 
+    // Skip local getUserMedia in sync mode to prevent physical webcam hardware device locks/conflicts
+    if (sessionId) {
+      return;
+    }
+
     if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
       navigator.mediaDevices.getUserMedia({ video: true, audio: false })
         .then(stream => {
@@ -133,7 +138,7 @@ export const PopoutTeleprompter: React.FC = () => {
         selfieStream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [showSelfie]);
+  }, [showSelfie, sessionId]);
 
   useEffect(() => {
     const video = selfieVideoRef.current;
@@ -359,10 +364,9 @@ export const PopoutTeleprompter: React.FC = () => {
         if (payload.offer && typeof window !== 'undefined' && 'RTCPeerConnection' in window && 'RTCSessionDescription' in window) {
           (async () => {
             try {
-              if (popoutPeerConnectionRef.current) {
-                popoutPeerConnectionRef.current.close();
-              }
-              const pc = new RTCPeerConnection({ iceServers: [] });
+              const pc = new RTCPeerConnection({
+                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+              });
               popoutPeerConnectionRef.current = pc;
 
               pc.ontrack = (event) => {

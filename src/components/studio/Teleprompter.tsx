@@ -260,10 +260,9 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     if (typeof window === 'undefined' || !('RTCPeerConnection' in window)) return;
 
     try {
-      if (peerConnectionRef.current) {
-        peerConnectionRef.current.close();
-      }
-      const pc = new RTCPeerConnection({ iceServers: [] });
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      });
       peerConnectionRef.current = pc;
 
       stream.getVideoTracks().forEach((track) => {
