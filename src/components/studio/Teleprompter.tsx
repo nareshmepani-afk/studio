@@ -274,7 +274,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
-          channel.postMessage({ type: 'webrtc-ice-main', candidate: event.candidate, sender: 'main' });
+          channel.postMessage({ type: 'webrtc-ice-main', candidate: event.candidate.toJSON(), sender: 'main' });
         }
       };
 

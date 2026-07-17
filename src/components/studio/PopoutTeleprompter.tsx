@@ -386,7 +386,7 @@ export const PopoutTeleprompter: React.FC = () => {
 
               pc.onicecandidate = (event) => {
                 if (event.candidate) {
-                  channel.postMessage({ type: 'webrtc-ice-popout', candidate: event.candidate, sender: 'popout' });
+                  channel.postMessage({ type: 'webrtc-ice-popout', candidate: event.candidate.toJSON(), sender: 'popout' });
                 }
               };
 
