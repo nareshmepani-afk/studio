@@ -33,8 +33,13 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - Every client event payload dispatched must include the application version parameter (e.g. `version: "1.0.0-MW-69"`).
 - When validating logs or tracing user events programmatically, always ensure telemetry payloads explicitly log the version string to allow tracking dynamic changes across deployment milestones.
 
+## 7. Non-Compromise of Core UX & Ready-to-Hand Ergonomics Rule
+- **Never Replace Core Functionality With Placeholder Approximations**: When existing user capabilities (such as live camera video framing) break, degrade, or encounter browser/hardware locks, the agent must NEVER silently downgrade the feature into a static text badge or placeholder UI.
+- **Heideggerian First-Principles Probing**: Interfaces for physical performers (standing back from screens framing themselves) must maintain seamless *Zuhandenheit* (ready-to-hand immersion). Always engineer genuine underlying technical bridges (e.g. WebRTC loopbacks, shared buffers, or hardware multiplexing) rather than compromising the narrator's essential visual feedback loop.
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
 - **2026-07-04**: v1.1.0-beta-MW-70. Resolved MFA loader lockout, expanded TOTP key length to 16 characters, corrected QR code URI literal colon separator, and added setup page console diagnostics. (Build Verify: SUCCESS)
+
 
 
