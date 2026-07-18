@@ -2788,6 +2788,9 @@ export default function SoloStage({
                   rehearsalSpeed={rehearsalSpeed}
                   isTheaterExpanded={isTheaterExpanded}
                   onTheaterExpandToggle={() => setIsTheaterExpanded(prev => !prev)}
+                  hasRecordedTake={!!recordedBlob}
+                  isAlchemySaving={isAlchemySaving}
+                  isAlchemyComplete={isAlchemyComplete}
                 />
               </div>
 

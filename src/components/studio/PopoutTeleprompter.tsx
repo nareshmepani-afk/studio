@@ -107,6 +107,7 @@ export const PopoutTeleprompter: React.FC = () => {
   const [showSelfie, setShowSelfie] = useState(true);
   const [selfieStream, setSelfieStream] = useState<MediaStream | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [takeStatus, setTakeStatus] = useState<'recording' | 'saving' | 'compiled' | 'complete' | 'idle'>('idle');
   const selfieVideoRef = useRef<HTMLVideoElement>(null);
   const popoutPeerConnectionRef = useRef<RTCPeerConnection | null>(null);
 
@@ -280,10 +281,12 @@ export const PopoutTeleprompter: React.FC = () => {
   };
 
   const handleStopPerformance = () => {
-    console.log('[Popout] handleStopPerformance clicked, broadcasting stopPerformance');
+    console.log('[Popout] handleStopPerformance clicked, stopping scroll and broadcasting stopPerformance');
+    setScrolling(false);
     if (sessionId) {
       const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
       channel.postMessage({ type: 'stopPerformance', sender: 'popout' });
+      channel.postMessage({ type: 'state', isScrolling: false, sender: 'popout' });
       channel.close();
     }
   };
@@ -354,6 +357,9 @@ export const PopoutTeleprompter: React.FC = () => {
         }
         if (payload.isRecording !== undefined && payload.isRecording !== isRecording) {
           toggleRecording();
+        }
+        if (payload.takeStatus !== undefined) {
+          setTakeStatus(payload.takeStatus);
         }
         if (payload.isCameraActive !== undefined) {
           setIsCameraActive(payload.isCameraActive);
@@ -878,6 +884,31 @@ export const PopoutTeleprompter: React.FC = () => {
           <span>{isCameraActive ? 'OPTICS ACTIVE' : 'OPTICS INACTIVE (CLICK TO WAKE)'}</span>
         </button>
       </div>
+
+      {/* Take Status Notification Banner */}
+      <AnimatePresence>
+        {(takeStatus === 'saving' || takeStatus === 'compiled' || takeStatus === 'complete') && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -20, x: '-50%' }}
+            transition={{ duration: 0.3 }}
+            className="absolute top-3 left-1/2 -translate-x-1/2 z-40 pointer-events-auto"
+          >
+            {takeStatus === 'saving' ? (
+              <div className="flex items-center gap-2 bg-amber-950/90 border border-amber-500/40 rounded-full px-4 py-1.5 text-xs font-mono text-amber-300 shadow-2xl backdrop-blur-md animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                <span className="font-bold">SEALINGS & PERSISTING FOOTAGE TO VAULT...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 bg-emerald-950/90 border border-emerald-500/40 rounded-full px-4 py-1.5 text-xs font-mono text-emerald-300 shadow-2xl backdrop-blur-md">
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                <span className="font-bold">✓ TAKE RECORDED & SECURED IN STUDIO MEMORY</span>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating top Speed Multiplier Toolbar */}
       <div className="absolute top-2 right-2 z-30 flex items-center gap-4 bg-zinc-950/80 border border-white/5 text-xs px-3.5 py-1 rounded-xl backdrop-blur-md shadow-lg pointer-events-auto not-italic font-sans">

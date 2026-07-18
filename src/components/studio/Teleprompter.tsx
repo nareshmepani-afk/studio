@@ -27,6 +27,9 @@ interface TeleprompterProps {
   rehearsalSpeed?: number;
   isTheaterExpanded?: boolean;
   onTheaterExpandToggle?: () => void;
+  hasRecordedTake?: boolean;
+  isAlchemySaving?: boolean;
+  isAlchemyComplete?: boolean;
 }
 
 const highlightSensoryAnchors = (text: string): string => {
@@ -107,7 +110,10 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   onTableReadToggle,
   rehearsalSpeed = 1.5,
   isTheaterExpanded = false,
-  onTheaterExpandToggle
+  onTheaterExpandToggle,
+  hasRecordedTake = false,
+  isAlchemySaving = false,
+  isAlchemyComplete = false
 }) => {
   const { 
     sessionId,
@@ -135,6 +141,16 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       toggleRecording
     }
   } = useStudioState();
+
+  const takeStatus = isRecording 
+    ? 'recording' 
+    : isAlchemySaving 
+    ? 'saving' 
+    : isAlchemyComplete 
+    ? 'complete' 
+    : hasRecordedTake 
+    ? 'compiled' 
+    : 'idle';
 
   const handleIncreaseFontSize = () => {
     const maxAllowed = isTheaterExpanded ? 48 : 36;
@@ -352,7 +368,8 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         console.log('[Teleprompter] BroadcastChannel received startPerformance, dispatching studio-start-performance');
         window.dispatchEvent(new CustomEvent('studio-start-performance'));
       } else if (type === 'stopPerformance') {
-        console.log('[Teleprompter] BroadcastChannel received stopPerformance, dispatching studio-stop-performance');
+        console.log('[Teleprompter] BroadcastChannel received stopPerformance, stopping scroll and dispatching studio-stop-performance');
+        setScrolling(false);
         window.dispatchEvent(new CustomEvent('studio-stop-performance'));
       } else if (type === 'webrtc-request-offer') {
         initiateWebRTCStreamOffer(channel);
@@ -386,6 +403,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           isolateSentenceHighlight,
           activeSentenceIndex,
           isRecording,
+          takeStatus,
           isCameraActive: !!stream && stream.getVideoTracks().some(t => t.readyState === 'live'),
           sender: 'main'
         });
@@ -410,6 +428,15 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       channel.close();
     };
   }, [sessionId, isScrolling, isRecording, scrollSpeed, fontSize, isMirrored, selectedTake, showBreathingMarks, enablePunctuationBraking, isolateSentenceHighlight, activeSentenceIndex, setScrolling, setFontSize, toggleMirror, setShowBreathingMarks, setEnablePunctuationBraking, setIsolateSentenceHighlight, toggleRecording, initiateWebRTCStreamOffer]);
+
+  // Broadcast takeStatus updates to popout window
+  useEffect(() => {
+    if (sessionId) {
+      const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+      channel.postMessage({ type: 'state', takeStatus, sender: 'main' });
+      channel.close();
+    }
+  }, [sessionId, takeStatus]);
 
   // Send close signal strictly when Teleprompter unmounts (navigating away from active stage)
   useEffect(() => {
