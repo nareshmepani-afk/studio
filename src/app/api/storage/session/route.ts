@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { adminStorage } from '@/lib/firebase-admin';
 
+let corsConfigured = false;
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -14,6 +16,25 @@ export async function POST(request: Request) {
     }
 
     const bucket = bucketName ? adminStorage.bucket(bucketName) : adminStorage.bucket();
+
+    // Auto-configure CORS for the GCS bucket once per container lifecycle
+    if (!corsConfigured) {
+      try {
+        await bucket.setCorsConfiguration([
+          {
+            maxAgeSeconds: 3600,
+            method: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
+            origin: ['*'],
+            responseHeader: ['Content-Type', 'Range', 'Content-Range'],
+          }
+        ]);
+        corsConfigured = true;
+        console.log('[GCS:CORS] Configured CORS on bucket successfully.');
+      } catch (corsErr: any) {
+        console.error('[GCS:CORS] Failed to set CORS configuration:', corsErr.message);
+      }
+    }
+
     const file = bucket.file(filePath);
 
     // Request the GCS Native Resumable Session URL
