@@ -991,7 +991,8 @@ export default function SoloStage({
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               filePath: storagePath,
-              contentType: 'video/webm'
+              contentType: 'video/webm',
+              bucketName: storage.app.options.storageBucket
             })
           });
           

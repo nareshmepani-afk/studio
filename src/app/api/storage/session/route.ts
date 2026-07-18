@@ -4,7 +4,7 @@ import { adminStorage } from '@/lib/firebase-admin';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { filePath, contentType } = body;
+    const { filePath, contentType, bucketName } = body;
 
     if (!filePath || !contentType || !adminStorage) {
       return NextResponse.json(
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const bucket = adminStorage.bucket();
+    const bucket = bucketName ? adminStorage.bucket(bucketName) : adminStorage.bucket();
     const file = bucket.file(filePath);
 
     // Request the GCS Native Resumable Session URL
