@@ -324,35 +324,51 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
                   <Loader2 className="w-16 h-16 text-emerald-400 animate-spin absolute" />
                   <Film className="w-6 h-6 text-emerald-400/60 animate-pulse" />
                 </div>
-                <div className="text-center space-y-3 max-w-xs">
-                  <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.25em] font-mono animate-pulse">
+                <div className="text-center space-y-4 max-w-sm">
+                  <h4 className="text-xs font-extrabold text-emerald-400 uppercase tracking-[0.25em] font-mono animate-pulse">
                     COMMENCING CINEMATIC STITCH
                   </h4>
-                  <p className="text-[9px] text-white/50 tracking-widest font-mono uppercase">
+                  <p className="text-[10px] text-white/80 tracking-widest font-mono uppercase font-semibold">
                     FRAME-ACCURATE ALIGNMENT IN PROGRESS
                   </p>
                   
                   {/* Dynamic Status Message */}
-                  <p className="text-[9px] text-white/30 italic font-mono min-h-[1.5em] transition-all duration-300">
-                    {stitchingStatus}
-                  </p>
+                  <div className="bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl shadow-inner min-w-[240px] max-w-[320px] mx-auto mt-3">
+                    <p className="text-[11px] font-bold text-white font-mono leading-relaxed tracking-wide transition-all duration-300">
+                      {stitchingStatus}
+                    </p>
+                  </div>
                   
                   {/* Animated Loader Bar */}
-                  <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden mx-auto mt-4 relative border border-white/5">
-                    <motion.div 
-                      className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full"
-                      initial={{ width: "0%" }}
-                      animate={{ 
-                        width: ["0%", "100%"],
-                      }}
-                      transition={{ 
-                        duration: 3, 
-                        ease: "easeInOut",
-                        repeat: Infinity,
-                        repeatType: "loop"
-                      }}
-                    />
-                  </div>
+                  {(() => {
+                    const percentageMatch = stitchingStatus.match(/(\d+)%/);
+                    const percentage = percentageMatch ? parseInt(percentageMatch[1], 10) : null;
+                    
+                    return (
+                      <div className="w-56 h-2 bg-white/10 rounded-full overflow-hidden mx-auto mt-4 relative border border-white/10">
+                        {percentage !== null ? (
+                          <div 
+                            className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-300 ease-out"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        ) : (
+                          <motion.div 
+                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full"
+                            initial={{ width: "30%" }}
+                            animate={{ 
+                              x: ["-100%", "300%"],
+                            }}
+                            transition={{ 
+                              duration: 2, 
+                              ease: "linear",
+                              repeat: Infinity,
+                              repeatType: "loop"
+                            }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             ) : null}
