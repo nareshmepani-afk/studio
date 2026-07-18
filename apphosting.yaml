@@ -23,6 +23,8 @@ env:
     value: "2026-06-21-DASHBOARD-012"
   - variable: NEXT_PUBLIC_BYPASS_CAPTCHA
     value: "true"
+  - variable: NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+    value: "6Ld_REHEARSAL_ENTERPRISE_KEY_PLACEHOLDER"
 
 
   # Secret variables are securely stored in Secret Manager and exposed to the server at runtime.

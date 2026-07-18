@@ -4,9 +4,11 @@ service firebase.storage {
   match /b/{bucket}/o {
 
     // User-specific files, including media attachments for memories.
-    // Users can only read and write their own files within their own directory.
+    // Public cinema playback handles global read-access safely.
+    // Write and delete enforce strict tenant isolation for authenticated users.
     match /users/{userId}/{allPaths=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write, delete: if request.auth != null && request.auth.uid == userId;
     }
   }
 }

@@ -1,0 +1,16 @@
+[
+  {
+    "origin": [
+      "https://dev.memoryweaver.studio",
+      "https://memoryweaver.studio",
+      "http://localhost:3000",
+      "http://127.0.0.1:3000"
+    ],
+    "method": ["GET", "POST", "PUT", "OPTIONS"],
+    "responseHeader": [
+      "Content-Type",
+      "x-goog-resumable"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]
