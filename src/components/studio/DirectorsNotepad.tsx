@@ -50,11 +50,22 @@ export default function DirectorsNotepad({
       } else {
         setNotepad(null);
         setIsLoading(true);
+
+        // Self-healing check: Trigger the background analysis generator if the document is missing but video is ready
+        const videoUrl = mainData?.videoUrl;
+        if (videoUrl && memoryId) {
+          console.log("[Director's Notepad] Self-healing trigger: Generating missing notepad...");
+          import('@/actions/aiWeaver').then(({ generateDirectorsNotepad }) => {
+            generateDirectorsNotepad(memoryId, videoUrl).catch(err => {
+              console.error("[Director's Notepad] Self-healing analysis failed:", err);
+            });
+          });
+        }
       }
     });
 
     return () => unsub();
-  }, [userId, memoryId]);
+  }, [userId, memoryId, mainData?.videoUrl]);
 
   const formatTime = (seconds: number) => {
     const min = Math.floor(seconds / 60);

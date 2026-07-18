@@ -1122,6 +1122,11 @@ export default function SoloStage({
           isProductionLocked: true, 
           videoUrl: resultData.videoUrl 
         });
+
+        // Trigger the AI Script Supervisor Analysis in the background
+        generateDirectorsNotepad(activeMemoryId, resultData.videoUrl).catch(err => {
+          console.error("[SoloStage] Background Director's Notepad analysis failed:", err);
+        });
         if (typeof globalActions?.setStage === 'function') {
           globalActions.setStage(3);
         }
