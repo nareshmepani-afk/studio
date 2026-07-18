@@ -138,7 +138,9 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       setEnablePunctuationBraking,
       setIsolateSentenceHighlight,
       setActiveDrawer,
-      toggleRecording
+      toggleRecording,
+      setIsRehearsing,
+      setRehearsalSpeed
     }
   } = useStudioState();
 
@@ -374,6 +376,20 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         }
         if (payload.isRecording !== undefined && payload.isRecording !== isRecording) {
           toggleRecording();
+        }
+        if (payload.isRehearsing !== undefined && setIsRehearsing) {
+          setIsRehearsing(payload.isRehearsing);
+        }
+        if (payload.rehearsalSpeed !== undefined && setRehearsalSpeed) {
+          setRehearsalSpeed(payload.rehearsalSpeed);
+        }
+      } else if (type === 'REHEARSAL_TOGGLE') {
+        if (payload.isRehearsing !== undefined && setIsRehearsing) {
+          setIsRehearsing(payload.isRehearsing);
+        }
+      } else if (type === 'REHEARSAL_SPEED') {
+        if (payload.speed !== undefined && setRehearsalSpeed) {
+          setRehearsalSpeed(payload.speed);
         }
       } else if (type === 'activeSentence') {
         if (payload.index !== undefined && payload.index !== activeSentenceIndexRef.current) {

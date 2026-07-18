@@ -60,6 +60,8 @@ interface StudioState {
   showBreathingMarks: boolean;
   enablePunctuationBraking: boolean;
   isolateSentenceHighlight: boolean;
+  isRehearsing: boolean;
+  rehearsalSpeed: number;
   dispatcher?: {
     addCatalyst?: (blockId: string, type: CatalystType, value?: string) => { collisionDetected: boolean };
   };
@@ -111,6 +113,8 @@ interface StudioActions {
   setShowBreathingMarks: (val: boolean) => void;
   setEnablePunctuationBraking: (val: boolean) => void;
   setIsolateSentenceHighlight: (val: boolean) => void;
+  setIsRehearsing: (val: boolean) => void;
+  setRehearsalSpeed: (speed: number) => void;
 }
 
 // 3. Context Shape
@@ -200,6 +204,8 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     showBreathingMarks: true,
     enablePunctuationBraking: true,
     isolateSentenceHighlight: false,
+    isRehearsing: false,
+    rehearsalSpeed: 1.0,
     dispatcher: undefined,
     ...(initialState || {}),
   });
@@ -469,6 +475,8 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     setShowBreathingMarks: (val) => setState(s => ({ ...s, showBreathingMarks: val })),
     setEnablePunctuationBraking: (val) => setState(s => ({ ...s, enablePunctuationBraking: val })),
     setIsolateSentenceHighlight: (val) => setState(s => ({ ...s, isolateSentenceHighlight: val })),
+    setIsRehearsing: (val) => setState(s => ({ ...s, isRehearsing: val })),
+    setRehearsalSpeed: (speed) => setState(s => ({ ...s, rehearsalSpeed: speed })),
   }), []);
 
   return (

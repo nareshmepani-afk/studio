@@ -95,7 +95,9 @@ export const PopoutTeleprompter: React.FC = () => {
       setShowBreathingMarks,
       setEnablePunctuationBraking,
       setIsolateSentenceHighlight,
-      toggleRecording
+      toggleRecording,
+      setIsRehearsing,
+      setRehearsalSpeed
     }
   } = useStudioState();
   const { logEvent } = useJourneyLogger(null, sessionId);
@@ -358,12 +360,25 @@ export const PopoutTeleprompter: React.FC = () => {
         if (payload.isRecording !== undefined && payload.isRecording !== isRecording) {
           toggleRecording();
         }
+        if (payload.isRehearsing !== undefined && setIsRehearsing) {
+          setIsRehearsing(payload.isRehearsing);
+        }
+        if (payload.rehearsalSpeed !== undefined && setRehearsalSpeed) {
+          setRehearsalSpeed(payload.rehearsalSpeed);
+        }
         if (payload.takeStatus !== undefined) {
           setTakeStatus(payload.takeStatus);
         }
         if (payload.isCameraActive !== undefined) {
           setIsCameraActive(payload.isCameraActive);
-          logEvent(`Optics: Camera active state synced (${payload.isCameraActive ? 'ACTIVE' : 'INACTIVE'})`, { version: '1.0.0-MW-69' }, 'INFO');
+        }
+      } else if (type === 'REHEARSAL_TOGGLE') {
+        if (payload.isRehearsing !== undefined && setIsRehearsing) {
+          setIsRehearsing(payload.isRehearsing);
+        }
+      } else if (type === 'REHEARSAL_SPEED') {
+        if (payload.speed !== undefined && setRehearsalSpeed) {
+          setRehearsalSpeed(payload.speed);
         }
       } else if (type === 'activeSentence') {
         if (payload.index !== undefined && payload.index !== activeSentenceIndexRef.current) {

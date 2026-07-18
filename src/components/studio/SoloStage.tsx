@@ -113,6 +113,8 @@ export default function SoloStage({
     showBreathingMarks,
     enablePunctuationBraking,
     isolateSentenceHighlight,
+    isRehearsing,
+    rehearsalSpeed: globalRehearsalSpeed,
     sessionId,
     actions: globalActions 
   } = useStudioState();
@@ -1727,9 +1729,16 @@ export default function SoloStage({
            "w-full max-w-[90vw] xl:max-w-7xl relative overflow-hidden transition-all duration-1000",
            !(isTableReadActive || captureModality === 'raw') ? "aspect-video min-h-[580px] md:min-h-[660px]" : "h-[calc(100vh-240px)] min-h-[480px] max-h-[720px]",
            isRecording ? 'ring-2 ring-rose-500/50 shadow-[0_0_120px_rgba(244,63,94,0.3)] scale-[1.01]' : 'shadow-2xl',
-           (isTableReadActive || captureModality === 'raw') ? "bg-[#030303] border-sky-500/20" : "bg-black border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)]"
+           (isTableReadActive || captureModality === 'raw') ? "bg-[#030303] border-sky-500/20" : "bg-black border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)]",
+           isRehearsing && "ring-2 ring-amber-500/50 border-amber-500/30"
          )}
        >
+          {mounted && isRehearsing && (
+            <div className="absolute top-6 left-8 z-[35] bg-amber-500/10 backdrop-blur-md border border-amber-500/30 px-4 py-1.5 rounded-full font-mono text-[9px] uppercase tracking-[0.2em] text-amber-400 font-bold pointer-events-none select-none flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+              [ REHEARSAL ONLY // NO CAPTURE ]
+            </div>
+          )}
           {mounted && captureModality === 'raw' && (
             <div className="absolute top-6 right-8 z-[35] bg-black/60 backdrop-blur-md border border-white/10 px-4 py-1.5 rounded-full font-mono text-[9px] uppercase tracking-[0.2em] text-white/40 pointer-events-none select-none">
               MODE: UNTETHERED AUDIO-VISUAL CAPTURE

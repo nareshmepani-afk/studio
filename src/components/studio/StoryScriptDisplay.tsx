@@ -5,7 +5,7 @@ import { useStudioState } from '@/hooks/studio/useStudioState';
 import { cn } from '@/lib/utils';
 
 export const StoryScriptDisplay = () => {
-  const { script, isScrolling, scrollSpeed, fontSize, isMirrored } = useStudioState();
+  const { script, isScrolling, scrollSpeed, fontSize, isMirrored, isRehearsing } = useStudioState();
   const displayRef = useRef<HTMLDivElement>(null);
   const animationFrameIdRef = useRef<number | null>(null);
   const speedRef = useRef(0);
@@ -51,10 +51,12 @@ export const StoryScriptDisplay = () => {
     };
   }, [isScrolling, scrollSpeed]);
 
-
   return (
     <div
-      className="bg-studio-black/70 backdrop-blur-md text-studio-text p-6 rounded-lg overflow-hidden h-full border border-studio-border"
+      className={cn(
+        "bg-studio-black/70 backdrop-blur-md text-studio-text p-6 rounded-lg overflow-hidden h-full border border-studio-border transition-all duration-500",
+        isRehearsing && "border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.1)]"
+      )}
     >
       <div 
         ref={displayRef}
@@ -62,8 +64,9 @@ export const StoryScriptDisplay = () => {
       >
         <p
           className={cn(
-            'font-prompter whitespace-pre-wrap leading-relaxed',
-            { 'scale-x-[-1]': isMirrored }
+            'font-prompter whitespace-pre-wrap leading-relaxed transition-all duration-300',
+            { 'scale-x-[-1]': isMirrored },
+            isRehearsing && "text-amber-100 drop-shadow-[0_0_10px_rgba(245,158,11,0.3)]"
           )}
           style={{ 
               transition: 'font-size 0.3s, transform 0.3s',
