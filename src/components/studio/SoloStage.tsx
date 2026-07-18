@@ -348,6 +348,7 @@ export default function SoloStage({
   const [reviewDuration, setReviewDuration] = useState(0);
   const [reviewMuted, setReviewMuted] = useState(false);
   const [isStitching, setIsStitching] = useState(false);
+  const [stitchingStatus, setStitchingStatus] = useState("Initializing transcode engine...");
   const [showStitchFallbackModal, setShowStitchFallbackModal] = useState(false);
   const [stuckEdl, setStuckEdl] = useState<any[]>([]);
 
@@ -972,16 +973,33 @@ export default function SoloStage({
       }
 
       console.log("[SoloStage] Uploading segments sequentially to Storage...");
+      setStitchingStatus("Preparing segment uploads...");
       // Upload each segment blob
       for (let i = 0; i < edl.length; i++) {
         const seg = edl[i];
         const storagePath = `users/${userId || user?.uid}/memories/${activeMemoryId}/segments/${seg.segmentId}.webm`;
         const storageRef = ref(storage, storagePath);
         console.log(`[SoloStage] Uploading segment ${seg.segmentId} (${seg.blob.size} bytes)...`);
-        await uploadBytesResumable(storageRef, seg.blob);
+        
+        const uploadTask = uploadBytesResumable(storageRef, seg.blob);
+        if (uploadTask && typeof (uploadTask as any).on === 'function') {
+          await new Promise<void>((resolve, reject) => {
+            (uploadTask as any).on('state_changed',
+              (snapshot: any) => {
+                const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                setStitchingStatus(`Uploading take segment ${i + 1} of ${edl.length} (${progress}%)...`);
+              },
+              (error: any) => reject(error),
+              () => resolve()
+            );
+          });
+        } else {
+          await uploadTask;
+        }
       }
 
       // Upload edl.json manifest
+      setStitchingStatus("Persisting edit decision list manifest...");
       const manifest = edl.map(seg => ({
         segmentId: seg.segmentId,
         startOffset: seg.startOffset,
@@ -1008,6 +1026,7 @@ export default function SoloStage({
       let resultData: { success: boolean; videoUrl: string };
 
       try {
+        setStitchingStatus("Running cloud transcoding alignment (FFmpeg)...");
         const res = await stitchPerformanceReel({ 
           memoryId: activeMemoryId,
           simulateError: simulateError
@@ -3431,6 +3450,8 @@ export default function SoloStage({
                        onUpdateSegments={setRecordedSegments}
                        onApprove={handleStitchAndApprove}
                        onDiscard={handleDiscardTake}
+                       isStitching={isStitching}
+                       stitchingStatus={stitchingStatus}
                      />
                    </motion.div>
                 )}

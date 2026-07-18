@@ -60,6 +60,8 @@ try {
   internalAuth = getAuth(internalApp);
   internalDb = getFirestore(internalApp);
   internalStorage = getStorage(internalApp);
+  internalStorage.maxUploadRetryTime = 60000; // 60 seconds limit
+  internalStorage.maxOperationRetryTime = 60000; // 60 seconds limit
 } catch (error) {
   console.error("Failed to initialize Firebase services:", error);
   throw new Error("Firebase services could not be initialized.");

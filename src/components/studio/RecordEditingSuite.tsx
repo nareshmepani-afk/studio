@@ -11,6 +11,8 @@ interface RecordEditingSuiteProps {
   onUpdateSegments: (newSegments: any[]) => void;
   onApprove: (edl: EDLTrackSegment[]) => Promise<void> | void;
   onDiscard: () => void;
+  isStitching?: boolean;
+  stitchingStatus?: string;
 }
 
 export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
@@ -18,12 +20,17 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
   onUpdateSegments,
   onApprove,
   onDiscard,
+  isStitching: externalIsStitching,
+  stitchingStatus: externalStitchingStatus,
 }) => {
   // Convert standard segments to EDLTrackSegment objects
   const [edl, setEdl] = useState<EDLTrackSegment[]>([]);
-  const [isStitching, setIsStitching] = useState(false);
+  const [localIsStitching, setLocalIsStitching] = useState(false);
   const [isTrimmingAI, setIsTrimmingAI] = useState(false);
-  const [stitchingStatus, setStitchingStatus] = useState("Initializing transcode engine...");
+  const [localStitchingStatus, setLocalStitchingStatus] = useState("Initializing transcode engine...");
+
+  const isStitching = externalIsStitching !== undefined ? externalIsStitching : localIsStitching;
+  const stitchingStatus = externalStitchingStatus !== undefined ? externalStitchingStatus : localStitchingStatus;
 
   useEffect(() => {
     if (!isStitching) return;
@@ -35,13 +42,16 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
       "Rendering final cinematic composite..."
     ];
     let idx = 0;
-    setStitchingStatus(statuses[0]);
+    if (externalStitchingStatus === undefined) {
+      setLocalStitchingStatus(statuses[0]);
+    }
     const interval = setInterval(() => {
+      if (externalStitchingStatus !== undefined) return;
       idx = (idx + 1) % statuses.length;
-      setStitchingStatus(statuses[idx]);
-    }, 2000);
+      setLocalStitchingStatus(statuses[idx]);
+    }, 4000);
     return () => clearInterval(interval);
-  }, [isStitching]);
+  }, [isStitching, externalStitchingStatus]);
 
   const [isMaximized, setIsMaximized] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -242,13 +252,13 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
 
   // Stitch & Approve Submit
   const handleStitch = async () => {
-    setIsStitching(true);
+    setLocalIsStitching(true);
     try {
       await onApprove(edl);
     } catch (err) {
       console.error("[RecordEditingSuite] Stitch error caught:", err);
     } finally {
-      setIsStitching(false);
+      setLocalIsStitching(false);
     }
   };
 
