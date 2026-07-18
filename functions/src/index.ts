@@ -167,7 +167,7 @@ exports.stitchPerformanceReel = functions.https.onCall(async (data, context) => 
     }
 
     // Update Firestore to complete handshake
-    await admin.firestore().collection("memories").doc(memoryId).update({
+    await admin.firestore().collection("users").doc(uid).collection("memories").doc(memoryId).update({
       videoUrl: finalizedUrl,
       productionStage: 3, // Advance to Act IV
       status: "cinematic-ready",
