@@ -34,6 +34,27 @@ export default function DirectorsNotepad({
   const [activeTab, setActiveTab] = useState<'transcript' | 'beats' | 'notes' | 'fusion'>('transcript');
   const [isOpen, setIsOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(!initialNotepad);
+  const [progress, setProgress] = useState(0);
+
+  // Simulated progress loader for AI processing
+  useEffect(() => {
+    if (!isLoading) {
+      setProgress(100);
+      return;
+    }
+    
+    setProgress(0);
+    const startTime = Date.now();
+    const duration = 75000; // 75 seconds average duration for Vertex AI Multimodal analysis
+    
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const calculated = Math.min(Math.floor((elapsed / duration) * 95), 95);
+      setProgress(calculated);
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
   // Real-time listener for the analysis subdocument
   useEffect(() => {
@@ -156,15 +177,24 @@ export default function DirectorsNotepad({
                 </div>
                 
                 <div className="text-center space-y-2">
-                  <h4 className="text-xs font-black uppercase tracking-[0.3em] text-white">Scanning Negative...</h4>
+                  <h4 className="text-xs font-black uppercase tracking-[0.3em] text-white">Scanning Negative... {progress}%</h4>
                   <p className="text-[9px] text-emerald-400/40 font-mono uppercase tracking-[0.2em]">Extracting Cinematic DNA</p>
                 </div>
 
                 <div className="w-full space-y-4 pt-8">
+                  {/* High contrast progress bar */}
+                  <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                    <motion.div 
+                      className="h-full bg-gradient-to-r from-emerald-500 to-teal-400"
+                      initial={{ width: '0%' }}
+                      animate={{ width: `${progress}%` }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                    />
+                  </div>
                   {[1, 2, 3].map(i => (
                     <div key={i} className="space-y-2 opacity-20">
-                      <div className="h-2 w-1/4 bg-emerald-500/20 rounded-full animate-pulse" />
-                      <div className="h-4 w-full bg-emerald-500/10 rounded-xl animate-pulse" />
+                      <div className="h-2 w-1/4 bg-emerald-500/20 rounded-full" />
+                      <div className="h-4 w-full bg-emerald-500/10 rounded-xl" />
                     </div>
                   ))}
                 </div>
