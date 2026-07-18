@@ -391,15 +391,32 @@ export const PopoutTeleprompter: React.FC = () => {
               };
 
               pc.onicecandidate = (event) => {
-                if (event.candidate) {
-                  channel.postMessage({ type: 'webrtc-ice-popout', candidate: event.candidate.toJSON(), sender: 'popout' });
+                if (event.candidate && sessionId) {
+                  const syncChannel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+                  try {
+                    syncChannel.postMessage({ type: 'webrtc-ice-popout', candidate: event.candidate.toJSON(), sender: 'popout' });
+                  } catch (err) {
+                    console.warn('[Popout] Error posting ICE candidate:', err);
+                  } finally {
+                    syncChannel.close();
+                  }
                 }
               };
 
               await pc.setRemoteDescription(new RTCSessionDescription(payload.offer));
               const answer = await pc.createAnswer();
               await pc.setLocalDescription(answer);
-              channel.postMessage({ type: 'webrtc-answer', answer, sender: 'popout' });
+
+              if (sessionId) {
+                const syncChannel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+                try {
+                  syncChannel.postMessage({ type: 'webrtc-answer', answer, sender: 'popout' });
+                } catch (err) {
+                  console.warn('[Popout] Error posting WebRTC answer:', err);
+                } finally {
+                  syncChannel.close();
+                }
+              }
             } catch (err) {
               console.warn('[Popout] Error accepting WebRTC offer:', err);
             }

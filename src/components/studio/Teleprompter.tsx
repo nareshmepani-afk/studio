@@ -274,7 +274,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
 
-  const initiateWebRTCStreamOffer = useCallback(async (channel: BroadcastChannel) => {
+  const initiateWebRTCStreamOffer = useCallback(async () => {
     if (!stream || stream.getVideoTracks().length === 0) return;
     if (typeof window === 'undefined' || !('RTCPeerConnection' in window)) return;
 
@@ -289,26 +289,41 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       });
 
       pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          channel.postMessage({ type: 'webrtc-ice-main', candidate: event.candidate.toJSON(), sender: 'main' });
+        if (event.candidate && sessionId) {
+          const syncChannel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+          try {
+            syncChannel.postMessage({ type: 'webrtc-ice-main', candidate: event.candidate.toJSON(), sender: 'main' });
+          } catch (err) {
+            console.warn('[Teleprompter] Error posting ICE candidate:', err);
+          } finally {
+            syncChannel.close();
+          }
         }
       };
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      channel.postMessage({ type: 'webrtc-offer', offer, sender: 'main' });
-      logEvent('WebRTC: Initiated offer stream with STUN configuration', { version: '1.0.0-MW-69' }, 'INFO');
+
+      if (sessionId) {
+        const syncChannel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+        try {
+          syncChannel.postMessage({ type: 'webrtc-offer', offer, sender: 'main' });
+          logEvent('WebRTC: Initiated offer stream with STUN configuration', { version: '1.0.0-MW-69' }, 'INFO');
+        } catch (err) {
+          console.warn('[Teleprompter] Error posting offer:', err);
+        } finally {
+          syncChannel.close();
+        }
+      }
     } catch (err: any) {
       console.warn('[Teleprompter] WebRTC offer creation failed:', err);
       logEvent(`WebRTC: Offer creation failed: ${err?.message || err}`, { version: '1.0.0-MW-69' }, 'ERROR');
     }
-  }, [stream]);
+  }, [stream, sessionId]);
 
   useEffect(() => {
     if (sessionId && stream && stream.getVideoTracks().length > 0) {
-      const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
-      initiateWebRTCStreamOffer(channel);
-      return () => channel.close();
+      initiateWebRTCStreamOffer();
     }
   }, [sessionId, stream, initiateWebRTCStreamOffer]);
 
@@ -372,7 +387,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         setScrolling(false);
         window.dispatchEvent(new CustomEvent('studio-stop-performance'));
       } else if (type === 'webrtc-request-offer') {
-        initiateWebRTCStreamOffer(channel);
+        initiateWebRTCStreamOffer();
       } else if (type === 'webrtc-answer') {
         if (peerConnectionRef.current && payload.answer && typeof window !== 'undefined' && 'RTCSessionDescription' in window) {
           peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(payload.answer)).catch(err => {
@@ -389,7 +404,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         console.log('[Teleprompter] BroadcastChannel received toggleCamera, dispatching studio-toggle-camera:', payload.active);
         window.dispatchEvent(new CustomEvent('studio-toggle-camera', { detail: { active: payload.active } }));
       } else if (type === 'join') {
-        initiateWebRTCStreamOffer(channel);
+        initiateWebRTCStreamOffer();
         // Popout just opened! Send current states immediately to popout for instant alignment
         channel.postMessage({
           type: 'state',
