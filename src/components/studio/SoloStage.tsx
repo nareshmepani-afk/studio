@@ -63,6 +63,7 @@ import { doc, setDoc, collection, addDoc } from 'firebase/firestore';
 import localforage from 'localforage';
 import { RecordEditingSuite } from './RecordEditingSuite';
 import { DirectorialUpsellDialog } from './overlays/DirectorialUpsellDialog';
+import { uploadFileInChunks } from '@/utils/storage/resumableUpload';
 
 interface RoomProps {
     data: Memory;
@@ -981,20 +982,51 @@ export default function SoloStage({
         const storageRef = ref(storage, storagePath);
         console.log(`[SoloStage] Uploading segment ${seg.segmentId} (${seg.blob.size} bytes)...`);
         
-        const uploadTask = uploadBytesResumable(storageRef, seg.blob);
-        if (uploadTask && typeof (uploadTask as any).on === 'function') {
-          await new Promise<void>((resolve, reject) => {
-            (uploadTask as any).on('state_changed',
-              (snapshot: any) => {
-                const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-                setStitchingStatus(`Uploading take segment ${i + 1} of ${edl.length} (${progress}%)...`);
-              },
-              (error: any) => reject(error),
-              () => resolve()
-            );
+        let uploadSucceeded = false;
+        
+        try {
+          // 1. Try to generate GCS Resumable Upload Session URL
+          const sessionResponse = await fetch('/api/storage/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              filePath: storagePath,
+              contentType: 'video/webm'
+            })
           });
-        } else {
-          await uploadTask;
+          
+          if (sessionResponse.ok) {
+            const { sessionUrl } = await sessionResponse.json();
+            if (sessionUrl) {
+              console.log("[SoloStage] Using GCS Native Resumable Session URL for segment upload...");
+              await uploadFileInChunks(seg.blob, sessionUrl, 2 * 1024 * 1024, (progress) => {
+                setStitchingStatus(`Uploading take segment ${i + 1} of ${edl.length} (${progress.percentage}%)...`);
+              });
+              uploadSucceeded = true;
+            }
+          }
+        } catch (resumableErr) {
+          console.warn("[SoloStage] GCS Resumable Chunk upload failed or unavailable. Falling back to direct upload...", resumableErr);
+        }
+        
+        // 2. Fallback to standard uploadBytesResumable if chunk upload failed or was skipped
+        if (!uploadSucceeded) {
+          console.log("[SoloStage] Performing standard direct payload upload fallback...");
+          const uploadTask = uploadBytesResumable(storageRef, seg.blob);
+          if (uploadTask && typeof (uploadTask as any).on === 'function') {
+            await new Promise<void>((resolve, reject) => {
+              (uploadTask as any).on('state_changed',
+                (snapshot: any) => {
+                  const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                  setStitchingStatus(`Uploading take segment ${i + 1} of ${edl.length} (${progress}%)...`);
+                },
+                (error: any) => reject(error),
+                () => resolve()
+              );
+            });
+          } else {
+            await uploadTask;
+          }
         }
       }
 
