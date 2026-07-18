@@ -1247,7 +1247,7 @@ export default function SoloStage({
   }, []);
 
   // Phase 3 Preview Local URL
-  const previewUrl = reviewVideoUrl;
+  const previewUrl = reviewVideoUrl || data?.videoUrl;
 
   const togglePreviewPlay = () => {
     if (previewVideoRef.current) {
