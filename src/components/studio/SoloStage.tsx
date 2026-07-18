@@ -1249,6 +1249,20 @@ export default function SoloStage({
   // Phase 3 Preview Local URL
   const previewUrl = reviewVideoUrl || data?.videoUrl;
 
+  const prevTrimRangeRef = useRef<[number, number]>(trimRange);
+  useEffect(() => {
+    if (!previewVideoRef.current) return;
+    const video = previewVideoRef.current;
+    const prev = prevTrimRangeRef.current;
+    
+    if (trimRange[0] !== prev[0]) {
+      video.currentTime = trimRange[0];
+    } else if (trimRange[1] !== prev[1]) {
+      video.currentTime = trimRange[1];
+    }
+    prevTrimRangeRef.current = trimRange;
+  }, [trimRange]);
+
   const togglePreviewPlay = () => {
     if (previewVideoRef.current) {
       if (isPlaying) {
