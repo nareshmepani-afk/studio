@@ -65,6 +65,7 @@ import localforage from 'localforage';
 import { RecordEditingSuite } from './RecordEditingSuite';
 import { DirectorialUpsellDialog } from './overlays/DirectorialUpsellDialog';
 import { uploadFileInChunks } from '@/utils/storage/resumableUpload';
+import { HotspotOverlay } from './HotspotOverlay';
 
 interface RoomProps {
     data: Memory;
@@ -4237,6 +4238,7 @@ export default function SoloStage({
         onClose={() => setIsUpsellOpen(false)}
         requiredFeature={upsellFeature}
       />
+      <HotspotOverlay />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { useJourneyLogger } from '@/hooks/telemetry/useJourneyLogger';
 import { cn } from '@/lib/utils';
+import { HotspotOverlay } from './HotspotOverlay';
 import { motion, AnimatePresence } from 'framer-motion';
 import { applyTheatricalSlashes, tokenizeSentences } from '@/utils/scriptFormatter';
 
@@ -1202,6 +1203,7 @@ export const PopoutTeleprompter: React.FC = () => {
           </div>
         </div>
       </div>
+      <HotspotOverlay />
     </div>
   );
 };
