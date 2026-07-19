@@ -82,6 +82,7 @@ export const PopoutTeleprompter: React.FC = () => {
     scrollSpeed,
     isScrolling,
     isRecording,
+    isRehearsing,
     showBreathingMarks,
     enablePunctuationBraking,
     isolateSentenceHighlight,
@@ -914,6 +915,27 @@ export const PopoutTeleprompter: React.FC = () => {
         >
           <span className={cn("w-1.5 h-1.5 rounded-full", isCameraActive ? "bg-emerald-400" : "bg-rose-400")} />
           <span>{isCameraActive ? 'OPTICS ACTIVE' : 'OPTICS INACTIVE (CLICK TO WAKE)'}</span>
+        </button>
+
+        <button
+          onClick={() => {
+            const nextVal = !isRehearsing;
+            setIsRehearsing(nextVal);
+            if (sessionId) {
+              const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+              channel.postMessage({ type: 'REHEARSAL_TOGGLE', isRehearsing: nextVal, sender: 'popout' });
+              channel.close();
+            }
+          }}
+          className={cn(
+            "flex items-center gap-1.5 border px-2 py-0.5 rounded-lg text-[8px] font-mono font-bold tracking-wider cursor-pointer transition-all shadow-md select-none",
+            isRehearsing
+              ? "bg-amber-950/50 border-amber-500/30 text-amber-400 hover:bg-amber-900/60"
+              : "bg-zinc-950/50 border-white/5 text-zinc-400 hover:bg-zinc-900/60"
+          )}
+        >
+          <span className={cn("w-1.5 h-1.5 rounded-full", isRehearsing ? "bg-amber-400" : "bg-zinc-500")} />
+          <span>{isRehearsing ? 'REHEARSAL ACTIVE' : 'REHEARSAL INACTIVE (START DRY RUN)'}</span>
         </button>
       </div>
 
