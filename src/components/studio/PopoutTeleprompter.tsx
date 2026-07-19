@@ -935,7 +935,7 @@ export const PopoutTeleprompter: React.FC = () => {
           )}
         >
           <span className={cn("w-1.5 h-1.5 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.4)]", isRehearsing ? "bg-amber-400" : "bg-zinc-500")} />
-          <span>{isRehearsing ? 'REHEARSAL ACTIVE' : 'REHEARSAL INACTIVE (START DRY RUN)'}</span>
+          <span>{isRehearsing ? 'REHEARSAL ACTIVE // NO CAPTURE' : 'REHEARSAL INACTIVE (START DRY RUN)'}</span>
         </button>
       </div>
 
