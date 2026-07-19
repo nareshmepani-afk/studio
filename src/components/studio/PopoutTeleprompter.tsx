@@ -899,18 +899,18 @@ export const PopoutTeleprompter: React.FC = () => {
 
       {/* Floating telemetry HUD indicators */}
       <div className="absolute top-2 left-2 z-30 flex items-center gap-2">
-        <div className="flex items-center gap-1.5 bg-zinc-950/80 border border-white/5 rounded-lg px-2 py-0.5 text-[8px] font-mono text-zinc-500">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700/60 rounded-lg px-2.5 py-1 text-[8px] font-mono font-bold text-zinc-200 shadow-md">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
           <span>SYNC ACTIVE</span>
         </div>
 
         <button
           onClick={handleToggleCamera}
           className={cn(
-            "flex items-center gap-1.5 border px-2 py-0.5 rounded-lg text-[8px] font-mono font-bold tracking-wider cursor-pointer transition-all shadow-md select-none",
+            "flex items-center gap-1.5 border px-2.5 py-1 rounded-lg text-[8px] font-mono font-bold tracking-wider cursor-pointer transition-all duration-300 shadow-md select-none transform hover:scale-105 active:scale-95",
             isCameraActive
-              ? "bg-emerald-950/50 border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/60"
-              : "bg-rose-950/50 border-rose-500/30 text-rose-400 hover:bg-rose-900/60 animate-pulse"
+              ? "bg-emerald-950/60 border-emerald-500/40 text-emerald-400 hover:bg-emerald-900/60 hover:border-emerald-400"
+              : "bg-rose-950/60 border-rose-500/40 text-rose-400 hover:bg-rose-900/60 hover:border-rose-400 animate-pulse"
           )}
         >
           <span className={cn("w-1.5 h-1.5 rounded-full", isCameraActive ? "bg-emerald-400" : "bg-rose-400")} />
@@ -928,13 +928,13 @@ export const PopoutTeleprompter: React.FC = () => {
             }
           }}
           className={cn(
-            "flex items-center gap-1.5 border px-2 py-0.5 rounded-lg text-[8px] font-mono font-bold tracking-wider cursor-pointer transition-all shadow-md select-none",
+            "flex items-center gap-1.5 border px-2.5 py-1 rounded-lg text-[8px] font-mono font-bold tracking-wider cursor-pointer transition-all duration-300 shadow-md select-none transform hover:scale-105 active:scale-95",
             isRehearsing
-              ? "bg-amber-950/50 border-amber-500/30 text-amber-400 hover:bg-amber-900/60"
-              : "bg-zinc-950/50 border-white/5 text-zinc-400 hover:bg-zinc-900/60"
+              ? "bg-amber-950/60 border-amber-500/50 text-amber-300 hover:bg-amber-900/60 hover:border-amber-400"
+              : "bg-zinc-900/80 border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 hover:border-zinc-500"
           )}
         >
-          <span className={cn("w-1.5 h-1.5 rounded-full", isRehearsing ? "bg-amber-400" : "bg-zinc-500")} />
+          <span className={cn("w-1.5 h-1.5 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.4)]", isRehearsing ? "bg-amber-400" : "bg-zinc-500")} />
           <span>{isRehearsing ? 'REHEARSAL ACTIVE' : 'REHEARSAL INACTIVE (START DRY RUN)'}</span>
         </button>
       </div>
@@ -965,8 +965,8 @@ export const PopoutTeleprompter: React.FC = () => {
       </AnimatePresence>
 
       {/* Floating top Speed Multiplier Toolbar */}
-      <div className="absolute top-2 right-2 z-30 flex items-center gap-4 bg-zinc-950/80 border border-white/5 text-xs px-3.5 py-1 rounded-xl backdrop-blur-md shadow-lg pointer-events-auto not-italic font-sans">
-        <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500">SPEED MULTIPLIER</span>
+      <div className="absolute top-2 right-2 z-30 flex items-center gap-4 bg-zinc-900/90 border border-zinc-700/60 text-xs px-3.5 py-1.5 rounded-xl backdrop-blur-md shadow-lg pointer-events-auto not-italic font-sans">
+        <span className="text-[9px] font-black uppercase tracking-widest text-zinc-200">SPEED MULTIPLIER</span>
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -978,11 +978,11 @@ export const PopoutTeleprompter: React.FC = () => {
               channel.close();
             }
           }}
-          className="w-4 h-4 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white flex items-center justify-center font-bold text-[10px] cursor-pointer select-none transition-colors"
+          className="w-5 h-5 rounded-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-600/40 text-white flex items-center justify-center font-bold text-[11px] cursor-pointer select-none transition-all hover:scale-105 active:scale-95"
         >
           -
         </button>
-        <span className="text-[10px] font-mono font-bold text-emerald-400 w-8 text-center">{scrollSpeed.toFixed(1)}x</span>
+        <span className="text-[11px] font-mono font-bold text-emerald-400 w-8 text-center">{scrollSpeed.toFixed(1)}x</span>
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -994,7 +994,7 @@ export const PopoutTeleprompter: React.FC = () => {
               channel.close();
             }
           }}
-          className="w-4 h-4 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white flex items-center justify-center font-bold text-[10px] cursor-pointer select-none transition-colors"
+          className="w-5 h-5 rounded-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-600/40 text-white flex items-center justify-center font-bold text-[11px] cursor-pointer select-none transition-all hover:scale-105 active:scale-95"
         >
           +
         </button>
