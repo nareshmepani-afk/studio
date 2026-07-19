@@ -247,12 +247,12 @@ export default function SoloStage({
   }, [restoreLayoutSnapshot, setIsTableReadActive, globalActions]);
 
   const prompterWidth = isInterviewMode 
-    ? (prompterSize === 'mini' ? 280 : prompterSize === 'sm' ? 380 : prompterSize === 'md' ? 520 : 680)
-    : (prompterSize === 'mini' ? 280 : prompterSize === 'sm' ? 380 : prompterSize === 'md' ? 580 : 820);
+    ? (prompterSize === 'mini' ? 280 : prompterSize === 'sm' ? 440 : prompterSize === 'md' ? 620 : 800)
+    : (prompterSize === 'mini' ? 280 : prompterSize === 'sm' ? 480 : prompterSize === 'md' ? 680 : 880);
 
   const prompterHeight = isInterviewMode
-    ? (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 350 : prompterSize === 'md' ? 420 : 580)
-    : (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 350 : prompterSize === 'md' ? 520 : 720);
+    ? (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 360 : prompterSize === 'md' ? 480 : 640)
+    : (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 360 : prompterSize === 'md' ? 560 : 740);
 
   const stageRef = useRef<HTMLDivElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
@@ -2811,9 +2811,9 @@ export default function SoloStage({
                   <span className="text-[9px] font-black uppercase tracking-wider">{isTheaterExpanded ? 'Exit Theater' : 'Theater View'}</span>
                 </button>
                 <button 
-                  onClick={() => setPrompterSize(prev => prev === 'mini' ? 'sm' : prev === 'sm' ? 'md' : prev === 'md' ? 'lg' : 'mini')}
+                  onClick={() => setPrompterSize(prev => prev === 'mini' ? 'sm' : prev === 'sm' ? 'md' : prev === 'md' ? 'lg' : 'sm')}
                   className="p-1 rounded bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center w-6 h-6 shrink-0"
-                  title="Toggle Teleprompter Size"
+                  title="Toggle Teleprompter Size (Sm -> Md -> Lg)"
                 >
                   <Maximize2 className="w-3 h-3" />
                 </button>
@@ -2873,35 +2873,6 @@ export default function SoloStage({
                   isAlchemyComplete={isAlchemyComplete}
                 />
               </div>
-
-              {/* Directorial Sidebar (Conditional) - Restricted to 'lg' size to prevent layout collisions */}
-              {data?.structuredScript && prompterSize === 'lg' && captureModality !== 'raw' && (
-                <div className="w-64 flex-none border-l border-white/5 pl-8 space-y-8 overflow-y-auto custom-scrollbar">
-                  <BeatSheet 
-                    beats={data.structuredScript.beatSheet}
-                    activeBeatIndex={activeBeatIndex}
-                    onBeatClick={(i) => {
-                      window.dispatchEvent(new CustomEvent('studio-scroll-to-beat', { detail: { index: i } }));
-                    }}
-                  />
-
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-emerald-400/60">
-                      <Video className="w-3 h-3" />
-                      <span className="text-[9px] font-black uppercase tracking-widest">Live Cues</span>
-                    </div>
-                    {data.structuredScript.stageDirections.slice(0, 3).map((dir, i) => (
-                      <div key={i} className="p-3 bg-white/5 border border-white/10 rounded-xl space-y-1 hover:bg-white/10 transition-all">
-                        <div className="flex items-center justify-between">
-                           <span className="text-[8px] font-black text-emerald-400/60 uppercase">{dir.type}</span>
-                           <span className="text-[8px] font-mono text-white/20">{dir.timecode}</span>
-                        </div>
-                        <p className="text-[10px] text-white/50 leading-snug">{dir.content}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </motion.div>
 
