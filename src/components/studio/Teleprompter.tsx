@@ -1064,6 +1064,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           <div className="flex items-center gap-2">
             {modalityMode !== 'interview' && (
               <button 
+                data-hotspot-id="HS_PROMPTER_SCROLL_BTN"
                 onClick={toggleScrolling}
                 className={cn(
                   "px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer",
@@ -1077,6 +1078,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
             {modalityMode === 'interview' && (
               <button 
+                data-hotspot-id="HS_PROMPTER_SCROLL_BTN"
                 onClick={() => window.dispatchEvent(new Event('studio-next-cue'))}
                 className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-sky-500 hover:bg-sky-600 text-slate-900 shadow-[0_0_15px_rgba(56,189,248,0.4)] transition-all flex items-center gap-2 cursor-pointer"
               >
@@ -1089,6 +1091,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                 <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5">
                   <span className="text-[9px] font-black uppercase tracking-widest text-white/40 whitespace-nowrap">SPEED MULTIPLIER</span>
                   <button 
+                    data-hotspot-id="HS_PROMPTER_SPEED_DOWN_BTN"
                     onClick={() => {
                       const newSpeed = Math.max(0.5, scrollSpeed - 0.5);
                       setScrollSpeed(newSpeed);
@@ -1100,6 +1103,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                   </button>
                   <span className="text-[10px] font-mono font-bold text-emerald-400 w-6 text-center">{scrollSpeed.toFixed(1)}x</span>
                   <button 
+                    data-hotspot-id="HS_PROMPTER_SPEED_UP_BTN"
                     onClick={() => {
                       const newSpeed = scrollSpeed + 0.5;
                       setScrollSpeed(newSpeed);
@@ -1397,6 +1401,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
+                        data-hotspot-id="HS_STAGE_REHEARSAL_TOGGLE_BTN"
                         onClick={onTableReadToggle}
                         title="Toggle Immersive Table Read Rehearsal Mode"
                         className={cn(
@@ -1428,6 +1433,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
+                        data-hotspot-id="HS_PROMPTER_VOCAL_BTN"
                         onClick={handleToggleRehearsalAudio}
                         title="Start Vocal Shadowing Audio"
                         className={cn(
@@ -1487,6 +1493,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
+                      data-hotspot-id="HS_POPOUT_BTN"
                       onClick={handlePopout}
                       title="Pop Out Teleprompter"
                       className="w-full py-2 rounded-xl border border-white/10 bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"

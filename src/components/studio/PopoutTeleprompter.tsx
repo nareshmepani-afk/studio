@@ -918,6 +918,7 @@ export const PopoutTeleprompter: React.FC = () => {
         </button>
 
         <button
+          data-hotspot-id="HS_POPOUT_REHEARSAL_TOGGLE_BTN"
           onClick={() => {
             const nextVal = !isRehearsing;
             setIsRehearsing(nextVal);
@@ -949,14 +950,21 @@ export const PopoutTeleprompter: React.FC = () => {
             transition={{ duration: 0.3 }}
             className="absolute top-3 left-1/2 -translate-x-1/2 z-40 pointer-events-auto"
           >
-            {takeStatus === 'saving' ? (
-              <div className="flex items-center gap-2 bg-amber-950/90 border border-amber-500/40 rounded-full px-4 py-1.5 text-xs font-mono text-amber-300 shadow-2xl backdrop-blur-md animate-pulse">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-                <span className="font-bold">SEALINGS & PERSISTING FOOTAGE TO VAULT...</span>
+            {takeStatus === 'saving' && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-amber-950/90 border border-amber-500/40 text-amber-400 text-xs font-mono font-bold tracking-wider rounded-xl backdrop-blur-md shadow-lg select-none">
+                <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-ping" />
+                <span className="font-bold">SAVING PREVIOUS TAKE BUFFER... KEEP FOCUS</span>
               </div>
-            ) : (
-              <div className="flex items-center gap-2 bg-emerald-950/90 border border-emerald-500/40 rounded-full px-4 py-1.5 text-xs font-mono text-emerald-300 shadow-2xl backdrop-blur-md">
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            )}
+            {takeStatus === 'compiled' && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-sky-950/90 border border-sky-500/40 text-sky-400 text-xs font-mono font-bold tracking-wider rounded-xl backdrop-blur-md shadow-lg select-none">
+                <span className="w-1.5 h-1.5 bg-sky-500 rounded-full animate-pulse" />
+                <span className="font-bold">RECORDING BUFFER COMPILED // SEALING CEREMONY ACTIVE</span>
+              </div>
+            )}
+            {takeStatus === 'complete' && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-emerald-950/90 border border-emerald-500/40 text-emerald-400 text-xs font-mono font-bold tracking-wider rounded-xl backdrop-blur-md shadow-lg select-none">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" />
                 <span className="font-bold">✓ TAKE RECORDED & SECURED IN STUDIO MEMORY</span>
               </div>
             )}
@@ -968,6 +976,7 @@ export const PopoutTeleprompter: React.FC = () => {
       <div className="absolute top-2 right-2 z-30 flex items-center gap-4 bg-zinc-900/90 border border-zinc-700/60 text-xs px-3.5 py-1.5 rounded-xl backdrop-blur-md shadow-lg pointer-events-auto not-italic font-sans">
         <span className="text-[9px] font-black uppercase tracking-widest text-zinc-200">SPEED MULTIPLIER</span>
         <button
+          data-hotspot-id="HS_POPOUT_SPEED_DOWN_BTN"
           onClick={(e) => {
             e.stopPropagation();
             const newSpeed = Math.max(0.2, scrollSpeed - 0.2);
@@ -984,6 +993,7 @@ export const PopoutTeleprompter: React.FC = () => {
         </button>
         <span className="text-[11px] font-mono font-bold text-emerald-400 w-8 text-center">{scrollSpeed.toFixed(1)}x</span>
         <button
+          data-hotspot-id="HS_POPOUT_SPEED_UP_BTN"
           onClick={(e) => {
             e.stopPropagation();
             const newSpeed = scrollSpeed + 0.2;

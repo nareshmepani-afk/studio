@@ -2823,6 +2823,7 @@ export default function SoloStage({
               </div>
               <div className="flex items-center gap-2">
                 <button 
+                  data-hotspot-id="HS_PROMPTER_THEATER_BTN"
                   onClick={() => setIsTheaterExpanded(prev => !prev)}
                   className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-[0_0_12px_rgba(16,185,129,0.2)] active:scale-95"
                   title="Toggle Theater Mode (Full Screen Takeover)"
@@ -2831,6 +2832,7 @@ export default function SoloStage({
                   <span className="text-[9px] font-black uppercase tracking-wider">{isTheaterExpanded ? 'Exit Theater' : 'Theater View'}</span>
                 </button>
                 <button 
+                  data-hotspot-id="HS_PROMPTER_EXPAND_BTN"
                   onClick={() => setPrompterSize(prev => prev === 'mini' ? 'sm' : prev === 'sm' ? 'md' : prev === 'md' ? 'lg' : 'sm')}
                   className="p-1 rounded bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center w-6 h-6 shrink-0"
                   title="Toggle Teleprompter Size (Sm -> Md -> Lg)"
@@ -3310,6 +3312,7 @@ export default function SoloStage({
                            </div>
                          )}
                          <button 
+                           data-hotspot-id="HS_STAGE_RECORD_BTN"
                            onClick={handleStartCapture} 
                            aria-label="Start Performance"
                            disabled={!stream || uploading || isAlchemySaving || !techAlignmentConfirmed} 
@@ -3328,6 +3331,7 @@ export default function SoloStage({
                          </div>
 
                          <button 
+                           data-hotspot-id="HS_STAGE_RECORD_BTN"
                            onClick={() => { stopRecording(); setIsCameraActive(false); }} 
                            className="w-20 h-20 rounded-full bg-rose-500/20 border-4 border-rose-500 hover:bg-rose-500 transition-all flex items-center justify-center cursor-pointer active:scale-95 z-50 pointer-events-auto"
                            aria-label="Stop Recording"
