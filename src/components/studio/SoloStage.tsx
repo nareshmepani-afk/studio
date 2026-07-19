@@ -2756,7 +2756,7 @@ export default function SoloStage({
              }}
              className={cn(
                "z-30 rounded-[2.5rem] shadow-2xl group/points overflow-hidden flex flex-col select-none relative",
-               isTheaterExpanded ? "fixed inset-6 z-50 rounded-2xl bg-slate-950/95 border border-slate-800 shadow-2xl transition-all duration-300 ease-in-out cursor-default" : (prompterSize === 'mini' && !isTableReadActive) ? "p-4 bg-zinc-950/90" : "p-8",
+               isTheaterExpanded ? "fixed top-[76px] bottom-6 left-6 right-6 z-50 rounded-2xl bg-slate-950/95 border border-slate-800 shadow-2xl transition-all duration-300 ease-in-out cursor-default p-8" : (prompterSize === 'mini' && !isTableReadActive) ? "p-4 bg-zinc-950/90" : "p-8",
                !isTheaterExpanded && !isTableReadActive ? "cursor-grab active:cursor-grabbing" : "",
                (isMuted || !mounted || !techAlignmentConfirmed) && "hidden",
                isAlchemySaving || reviewTake || captureModality === 'raw' ? "opacity-0 pointer-events-none" : "opacity-100 blur-0",
