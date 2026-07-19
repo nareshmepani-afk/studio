@@ -631,6 +631,8 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const lastActiveIndexRef = useRef<number>(-1);
+  const isAiSpeaking = useRef<boolean>(false);
+  const lastSpokenIndexRef = useRef<number>(-1);
 
   // Smooth variable-speed auto-scroll using requestAnimationFrame with sub-pixel accumulator
   useEffect(() => {
@@ -672,10 +674,41 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           }
         }
 
+        const allSentences = formattedParagraphsRef.current.flat();
+        const activeSent = allSentences.find(s => s.index === currentActiveIdx);
+
+        // AI Vocal Partner Handshake in Table Read Mode
+        if (isTableReadActive && activeSent && currentActiveIdx !== lastSpokenIndexRef.current) {
+          const hasCue = /\[INTERVIEWER\]|\[DIRECTOR\]/i.test(activeSent.text);
+          if (hasCue) {
+            lastSpokenIndexRef.current = currentActiveIdx;
+            if (typeof window !== 'undefined' && window.speechSynthesis) {
+              window.speechSynthesis.cancel();
+              const cleanCue = activeSent.text.replace(/\[INTERVIEWER\]|\[DIRECTOR\]/gi, '').replace(/[\/\s]+/g, ' ').trim();
+              if (cleanCue) {
+                const utterance = new SpeechSynthesisUtterance(cleanCue);
+                utterance.rate = 1.05;
+                utterance.volume = 1.0;
+                const voices = window.speechSynthesis.getVoices();
+                const englishVoice = voices.find(v => v.lang.startsWith('en-'));
+                if (englishVoice) {
+                  utterance.voice = englishVoice;
+                }
+                isAiSpeaking.current = true;
+                utterance.onend = () => {
+                  isAiSpeaking.current = false;
+                };
+                utterance.onerror = () => {
+                  isAiSpeaking.current = false;
+                };
+                window.speechSynthesis.speak(utterance);
+              }
+            }
+          }
+        }
+
         // Punctuation Braking logic
         if (enablePunctuationBrakingRef.current && currentActiveIdx !== lastBrakedIndex.current) {
-          const allSentences = formattedParagraphsRef.current.flat();
-          const activeSent = allSentences.find(s => s.index === currentActiveIdx);
           if (activeSent) {
             const duration = getBrakeDuration(activeSent.text);
             if (duration > 0) {
@@ -692,8 +725,9 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           }
         }
 
+        const aiMultiplier = isAiSpeaking.current ? 0 : 1.0;
         const brakeMultiplier = isBraking.current ? 0 : 1.0;
-        scrollAccumulatorRef.current += activeSpeed * 0.4 * currentMultiplier * brakeMultiplier;
+        scrollAccumulatorRef.current += activeSpeed * 0.4 * currentMultiplier * brakeMultiplier * aiMultiplier;
         
         const targetScroll = Math.floor(scrollAccumulatorRef.current);
         lastProgrammaticScrollTop.current = targetScroll;
@@ -712,7 +746,12 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
     };
 
     animationId = requestAnimationFrame(scroll);
-    return () => cancelAnimationFrame(animationId);
+    return () => {
+      cancelAnimationFrame(animationId);
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, [isScrolling, rehearsalSpeed, toggleScrolling, modalityMode, isMini, isTableReadActive]);
 
   // Listener to scroll programmatically to a specific beat index
