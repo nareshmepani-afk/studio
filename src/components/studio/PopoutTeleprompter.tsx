@@ -101,7 +101,7 @@ export const PopoutTeleprompter: React.FC = () => {
       setRehearsalSpeed
     }
   } = useStudioState();
-  const { logEvent } = useJourneyLogger(null, sessionId);
+  const { logEvent, traceInteraction } = useJourneyLogger(null, sessionId);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isInternalScroll = useRef(false);
@@ -772,7 +772,10 @@ export const PopoutTeleprompter: React.FC = () => {
   }, [paragraphs, showBreathingMarks]);
 
   return (
-    <div className="fixed inset-0 w-full h-full bg-black text-white flex flex-col font-serif select-none overflow-hidden">
+    <div 
+      onClick={traceInteraction}
+      className="fixed inset-0 w-full h-full bg-black text-white flex flex-col font-serif select-none overflow-hidden"
+    >
       {/* Floating START/STOP PERFORMANCE Button */}
       {/* Floating PERFORMANCE Controls (Start / Stop / Pause) */}
       <div className="fixed bottom-24 left-8 z-45 flex flex-col gap-2.5">

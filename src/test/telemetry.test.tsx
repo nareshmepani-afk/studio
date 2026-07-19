@@ -158,6 +158,39 @@ describe('Unified Telemetry & Distributed Tracing (MW-64)', () => {
         expect(console.warn).toHaveBeenCalled();
       });
     });
+
+    it('captures clicks via traceInteraction and forwards version 1.0.0-MW-69', async () => {
+      const TestComponent = () => {
+        const { traceInteraction } = useJourneyLogger('test-user', 'test-sess');
+        return (
+          <div onClick={traceInteraction} data-testid="delegation-root">
+            <button data-hotspot-id="HS_TEST_BTN" data-testid="hotspot-btn">
+              <span>Text inside button</span>
+            </button>
+            <button data-testid="non-hotspot-btn">Regular Button</button>
+          </div>
+        );
+      };
+
+      const { getByTestId } = render(<TestComponent />);
+      
+      // Click a regular button (should NOT trigger logger)
+      getByTestId('non-hotspot-btn').click();
+      expect(global.fetch).not.toHaveBeenCalled();
+
+      // Click the hotspot button's inner span to test closest() traversing
+      const innerSpan = getByTestId('hotspot-btn').firstChild as HTMLElement;
+      (innerSpan as any).click();
+
+      await vi.waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+      });
+
+      const body = JSON.parse((global.fetch as any).mock.calls[0][1].body);
+      expect(body.message).toBe('HOTSPOT_INTERACTION_HS_TEST_BTN');
+      expect(body.structPayload.hotspotId).toBe('HS_TEST_BTN');
+      expect(body.structPayload.version).toBe('1.0.0-MW-69');
+    });
   });
 
   describe('4. Global Exception Containment Shield (TelemetryProvider)', () => {

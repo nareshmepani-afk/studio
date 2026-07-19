@@ -45,6 +45,7 @@ import { CinemaMonitor } from './CinemaMonitor';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { useAuth } from '@/hooks/useAuth';
 import { Teleprompter } from './Teleprompter';
+import { useJourneyLogger } from '@/hooks/telemetry/useJourneyLogger';
 import { useAudioMonitor } from '@/hooks/useAudioMonitor';
 import { useCaptureLogic } from '@/hooks/studio/useCaptureLogic';
 import { useAlchemy } from '@/hooks/studio/useAlchemy';
@@ -118,6 +119,7 @@ export default function SoloStage({
     sessionId,
     actions: globalActions 
   } = useStudioState();
+  const { traceInteraction } = useJourneyLogger(userId, sessionId);
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
@@ -4035,7 +4037,7 @@ export default function SoloStage({
   );
 
   return (
-    <>
+    <div onClick={traceInteraction}>
       <CinemaStageSwitch
         currentStage={productionStage}
         onStageChange={setProductionStage}
@@ -4235,6 +4237,6 @@ export default function SoloStage({
         onClose={() => setIsUpsellOpen(false)}
         requiredFeature={upsellFeature}
       />
-    </>
+    </div>
   );
 }

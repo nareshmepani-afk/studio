@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, MouseEvent } from 'react';
 
 export type TelemetrySeverity = 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL';
 
@@ -88,7 +88,24 @@ export function useJourneyLogger(
     [userId, sessionId]
   );
 
-  return { logEvent };
+  const traceInteraction = useCallback(
+    (e: MouseEvent<HTMLElement>) => {
+      const target = (e.target as HTMLElement).closest('[data-hotspot-id]');
+      if (!target) return;
+
+      const hotspotId = target.getAttribute('data-hotspot-id');
+      const targetLabel = target.textContent?.trim() || '';
+
+      logEvent(`HOTSPOT_INTERACTION_${hotspotId}`, {
+        hotspotId,
+        targetLabel,
+        version: '1.0.0-MW-69',
+      });
+    },
+    [logEvent]
+  );
+
+  return { logEvent, traceInteraction };
 }
 export type UseJourneyLoggerReturn = ReturnType<typeof useJourneyLogger>;
 export type LogEventFn = UseJourneyLoggerReturn['logEvent'];
