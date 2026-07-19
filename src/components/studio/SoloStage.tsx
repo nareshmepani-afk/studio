@@ -247,11 +247,11 @@ export default function SoloStage({
   }, [restoreLayoutSnapshot, setIsTableReadActive, globalActions]);
 
   const prompterWidth = isInterviewMode 
-    ? (prompterSize === 'mini' ? 280 : 520)
+    ? (prompterSize === 'mini' ? 280 : prompterSize === 'sm' ? 380 : prompterSize === 'md' ? 520 : 680)
     : (prompterSize === 'mini' ? 280 : prompterSize === 'sm' ? 380 : prompterSize === 'md' ? 580 : 820);
 
   const prompterHeight = isInterviewMode
-    ? (prompterSize === 'mini' ? 180 : 420)
+    ? (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 350 : prompterSize === 'md' ? 420 : 580)
     : (prompterSize === 'mini' ? 180 : prompterSize === 'sm' ? 350 : prompterSize === 'md' ? 520 : 720);
 
   const stageRef = useRef<HTMLDivElement>(null);
