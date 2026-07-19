@@ -545,6 +545,9 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         audioRef.current.pause();
         audioRef.current = null;
       }
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
       setIsRehearsingAudio(false);
       if (isScrolling) {
         toggleScrolling();
@@ -575,12 +578,62 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
           setIsRehearsingAudio(false);
           audioRef.current = null;
         };
+      } else if (typeof window !== 'undefined' && window.speechSynthesis && typeof SpeechSynthesisUtterance !== 'undefined') {
+        window.speechSynthesis.cancel();
+        const cleanCue = sentencesText.replace(/\[[^\]]*\]/g, '').replace(/[\/\s]+/g, ' ').trim();
+        const utterance = new SpeechSynthesisUtterance(cleanCue || sentencesText);
+        utterance.rate = 1.0;
+        utterance.volume = 1.0;
+        const voices = window.speechSynthesis.getVoices();
+        const englishVoice = voices.find(v => v.lang.startsWith('en-'));
+        if (englishVoice) {
+          utterance.voice = englishVoice;
+        }
+
+        if (!isScrolling) {
+          toggleScrolling();
+        }
+
+        utterance.onend = () => {
+          setIsRehearsingAudio(false);
+        };
+        utterance.onerror = () => {
+          setIsRehearsingAudio(false);
+        };
+
+        window.speechSynthesis.speak(utterance);
       } else {
         setIsRehearsingAudio(false);
       }
     } catch (e) {
-      console.warn("TTS Rehearsal failed:", e);
-      setIsRehearsingAudio(false);
+      console.warn("TTS Rehearsal failed, falling back to Web Speech:", e);
+      if (typeof window !== 'undefined' && window.speechSynthesis && typeof SpeechSynthesisUtterance !== 'undefined') {
+        window.speechSynthesis.cancel();
+        const cleanCue = sentencesText.replace(/\[[^\]]*\]/g, '').replace(/[\/\s]+/g, ' ').trim();
+        const utterance = new SpeechSynthesisUtterance(cleanCue || sentencesText);
+        utterance.rate = 1.0;
+        utterance.volume = 1.0;
+        const voices = window.speechSynthesis.getVoices();
+        const englishVoice = voices.find(v => v.lang.startsWith('en-'));
+        if (englishVoice) {
+          utterance.voice = englishVoice;
+        }
+
+        if (!isScrolling) {
+          toggleScrolling();
+        }
+
+        utterance.onend = () => {
+          setIsRehearsingAudio(false);
+        };
+        utterance.onerror = () => {
+          setIsRehearsingAudio(false);
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } else {
+        setIsRehearsingAudio(false);
+      }
     }
   };
 
@@ -591,8 +644,16 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         audioRef.current.pause();
         audioRef.current = null;
       }
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, []);
+
+  const rawParagraphs = useMemo(() => {
+    if (!selectedTake) return [];
+    return selectedTake.split(/\n\s*\n/).filter(Boolean);
+  }, [selectedTake]);
 
   const cleanText = useMemo(() => {
     if (!selectedTake) return '';
@@ -617,17 +678,22 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
   const formattedParagraphs = useMemo(() => {
     let sentenceCounter = 0;
+    const rawSentencesFlat = rawParagraphs.flatMap(p => tokenizeSentences(p));
     const res = paragraphs.map((para) => {
       const paraText = showBreathingMarks ? applyTheatricalSlashes(para) : para;
       const sentences = tokenizeSentences(paraText);
-      return sentences.map(text => ({
-        text,
-        index: sentenceCounter++
-      }));
+      return sentences.map(text => {
+        const rawText = rawSentencesFlat[sentenceCounter] || text;
+        return {
+          text,
+          rawText,
+          index: sentenceCounter++
+        };
+      });
     });
     formattedParagraphsRef.current = res;
     return res;
-  }, [paragraphs, showBreathingMarks]);
+  }, [paragraphs, rawParagraphs, showBreathingMarks]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const lastActiveIndexRef = useRef<number>(-1);
@@ -679,12 +745,13 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
         // AI Vocal Partner Handshake in Table Read Mode
         if (isTableReadActive && activeSent && currentActiveIdx !== lastSpokenIndexRef.current) {
-          const hasCue = /\[INTERVIEWER\]|\[DIRECTOR\]/i.test(activeSent.text);
+          const sentTextToTest = (activeSent as any).rawText || activeSent.text;
+          const hasCue = /\[INTERVIEWER\]|\[DIRECTOR\]|\[CUE\]|\[PROMPT\]|\[STAGE\]|\[NARRATOR\]/i.test(sentTextToTest) || /\[[^\]]+\]/.test(sentTextToTest);
           if (hasCue) {
             lastSpokenIndexRef.current = currentActiveIdx;
             if (typeof window !== 'undefined' && window.speechSynthesis) {
               window.speechSynthesis.cancel();
-              const cleanCue = activeSent.text.replace(/\[INTERVIEWER\]|\[DIRECTOR\]/gi, '').replace(/[\/\s]+/g, ' ').trim();
+              const cleanCue = sentTextToTest.replace(/\[[^\]]*\]/gi, '').replace(/[\/\s]+/g, ' ').trim();
               if (cleanCue) {
                 const utterance = new SpeechSynthesisUtterance(cleanCue);
                 utterance.rate = 1.05;

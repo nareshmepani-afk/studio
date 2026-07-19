@@ -2710,16 +2710,36 @@ export default function SoloStage({
                opacity: 0,
                scale: 0.95,
                x: 800,
-             } : isTableReadActive ? {
-               opacity: 1,
-               scale: 1,
-               left: "3%",
-               top: "40px",
-               x: 0,
-               y: 0,
-               width: "94%",
-               height: "84%",
-             } : prompterLayout === 'center' ? (
+             } : isTableReadActive ? (
+                prompterSize === 'sm' ? {
+                  opacity: 1,
+                  scale: 1,
+                  left: "22.5%",
+                  top: "15%",
+                  x: 0,
+                  y: 0,
+                  width: "55%",
+                  height: "55%",
+                } : prompterSize === 'md' ? {
+                  opacity: 1,
+                  scale: 1,
+                  left: "12.5%",
+                  top: "10%",
+                  x: 0,
+                  y: 0,
+                  width: "75%",
+                  height: "70%",
+                } : {
+                  opacity: 1,
+                  scale: 1,
+                  left: "3%",
+                  top: "40px",
+                  x: 0,
+                  y: 0,
+                  width: "94%",
+                  height: "84%",
+                }
+              ) : prompterLayout === 'center' ? (
                isInterviewMode ? {
                  opacity: 1,
                  scale: 1,
