@@ -2,7 +2,7 @@
 
 ## System Architecture
 
-### [ADMIN-CRM] (Back-Office Portal)
+#### [ADMIN-CRM] (Back-Office Portal)
 - **Host / Domain**: Accessed securely via `admin.*` subdomain.
 - **Edge Middleware Protection**: Intercepts `/admin/:path*` (except login and MFA routes) using `jose` JWT checks and queries Firestore REST API for whitelist validation.
 - **Authentication & MFA**: Implements multi-factor authentication (MFA) redirects (`/admin/mfa-setup`) to register/validate TOTP secrets (`mfaSecret` in `admin_users` collection).
@@ -11,17 +11,18 @@
 
 ### [DEV-APP] (Local Development & Testing)
 - **Local Sandbox**: Evaluates code at `localhost` with fully-offline fallbacks.
-- **Staging / Dev Target**: Deployed to `memory-weaver-dev` alias servicing `https://dev.memoryweaver.studio/`.
 - **Headless & E2E Testing**: Utilizes Playwright runner (`test-playwright-run.js`) with fake UI flags (`--use-fake-ui-for-media-stream`) and local webm blob assets (`public/ffmpeg/`) to run media device tests.
-- **Security & CAPTCHA Bypass**: Employs client-side and server-side compile-time fenced gates. If `NEXT_PUBLIC_BYPASS_CAPTCHA === 'true'` and the project is not production (`memory-weaver-8rk9t`), the application skips loading/executing reCAPTCHA Enterprise and verifies via the `BYPASS_STAGE_RECAPTCHA` token.
-- **Telemetry Processing**: Ingests debounced event arrays securely through `/api/telemetry/flush`, running on the standard Node.js serverless runtime to execute atomic `WriteBatch` operations via `adminDb` safely.
+- **Security & CAPTCHA Bypass**: Employs URL parameter authentication bypasses (`?mode=guest&sessionId=TEST_E2E_SESSION`) to test workflow stages without triggering Firebase Auth/ReCAPTCHA.
 - **Operational Shield**: Runs Vitest test suite ([businessRules.test.ts](file:///C:/Users/home/studio/src/config/__tests__/businessRules.test.ts)) freezing tier prices, sandbox settings, and support playbook step counts.
+- **Vocal/Rehearsal Calibration**: Simulates zero-overhead Web Audio calibration paths and localized audio feedback loops during testing cycles.
 
 ### [LIVE-PRODUCTION] (Public Deployments)
 - **Production URL**: Primary live instance at `memoryweaver.studio`.
-- **Infrastructure Integrations**: Employs Cloudflare Email Routing for destination address mapping.
-- **Secret & Key Security**: Configures dynamic secret resolution via Google Secret Manager inside [apphosting.yaml](file:///C:/Users/home/studio/apphosting.yaml#L28-L36). All production API keys (e.g., `RESEND_API_KEY`, `SERVICE_ACCOUNT_JSON`) must NEVER be written to the codebase in plaintext or committed as part of local env parameters; they must be managed directly in the Google Cloud/Firebase Secret Console and exposed dynamically to the server runtime.
-- **Telemetry & Exceptions**: Structured server-side logging with distributed trace correlation IDs and BigQuery analytics tracking.
+- **Infrastructure Integrations**: Employs Cloudflare Email Routing for destination address mapping and Resend API key setup for outbound user delivery.
+- **Telemetry & Event Ingestion**: Non-blocking background event delegation log queue ([useJourneyLogger.ts](file:///C:/Users/home/studio/src/hooks/telemetry/useJourneyLogger.ts)) routing structured interaction data to GCP logging pools with application version tracking (`1.0.0-MW-69`).
+- **Option B Security Policies**: Implements secure multi-tenant GCS folder isolation, strict CORS transport boundaries, Firestore invoker permissions, and reCAPTCHA Enterprise verification.
+- **Script Reading Rehearsal Mode**: Combines client-side BroadcastChannel state synchronization across open tabs, native `SpeechSynthesisUtterance` vocal partner cues, and dynamic scrolling telemetry.
+- **Interactive Hotspot Overlay**: Features a toggleable Visual HUD HUD Overlay activated by `Ctrl+Shift+H` highlighting `data-hotspot-id` attributes on interactive layout buttons.
 - **Pre-Flight Pipeline Guard**: Integrates `node scripts/generateLivingDocs.js` and `npm run build:check` in the build process to verify living manifest markdown updates and validate CSS bundle size budgets (>20kB check) before deployments.
 
 
@@ -34,6 +35,9 @@
 - `[x]` **[MW-104]** Implement Real-Time Firestore Listener Streams for Phase 3.1 Terminal Log Console.
 - `[x]` **[MW-105]** Structure SVG Math Sparkline Paths for Phase 3.2 Business & Analytics Dashboard.
 - `[x]` **[MW-106]** SUCCESS: Force configuration files tracking, resolve router navigation race conditions, register pre-flight build check, and verify clean production deployments.
+- `[x]` **[MW-107]** Implement Option B Production Security policies (Firestore rules, CORS, GCS multi-tenant isolation, and reCAPTCHA Enterprise).
+- `[x]` **[MW-108]** Develop Script Reading Rehearsal Mode featuring cross-tab BroadcastChannel synchronization, native Web Speech synthesis for partner cues, and zero-overhead audio calibration.
+- `[x]` **[MW-109]** Implement Phase 2/3 Hotspot Visual HUD Overlay toggled via `Ctrl+Shift+H` using `data-hotspot-id` attributes and event delegation logger telemetry with version metadata tracking.
 - `[x]` **[MW-121]** Implement compile-time fenced reCAPTCHA bypass logic in authentication server actions.
 - `[x]` **[MW-123]** Create telemetry API route handler supporting transactional WriteBatches on Node.js runtime.
 - `[x]` **[MW-125]** Extend client-side reCAPTCHA script loading and execution bypass constraints to the Registration route.
@@ -82,5 +86,10 @@
 ### 9. Environment-Isolated Testing
 - **Issue**: Mixing staging test clients (e.g. `dev.memoryweaver.studio`) with production admin portals (e.g. `admin.memoryweaver.studio/admin`) causes cross-contamination of analytics/database states and authentication failures.
 - **Rule**: Keep manual verification loops 100% isolated. If testing user-facing code on Staging, only observe logs via the staging admin portal (`dev.memoryweaver.studio/admin`). If testing on Production, only observe logs via the production admin portal (`admin.memoryweaver.studio/admin`).
+
+### 10. Visual Hotspot Alignment & Event Delegation Telemetry
+- **Issue**: Attaching individual click listeners to all interactive buttons inside a complex stage interface leads to code pollution, component bloating, and potential memory leaks.
+- **Solution**: Inject descriptive `data-hotspot-id` attributes directly into DOM nodes. Manage interaction capture globally at the component root using event delegation via `e.target.closest('[data-hotspot-id]')`. Pipe captured clicks asynchronously to Firestore under the `system_logs` collection alongside active session variables, strictly adhering to telemetry rules (e.g. appending `version: "1.0.0-MW-69"`).
+- **Overlay Rendering**: Render visual layout indicators using a `pointer-events-none` overlay fixed to the viewport. Recalculate target positions dynamically via `getBoundingClientRect()` on window `scroll` (using capturing listeners to trap internal scroll events) and `resize` events.
 
 
