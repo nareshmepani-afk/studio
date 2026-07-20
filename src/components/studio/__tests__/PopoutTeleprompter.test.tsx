@@ -57,7 +57,7 @@ const mockActions = {
   setIsolateSentenceHighlight: vi.fn(),
 };
 
-const mockUseStudioState = vi.fn(() => ({
+const mockUseStudioState = vi.fn<() => any>(() => ({
   sessionId: 'test-session',
   selectedTake: 'This is the selected take text.\n\nSecond paragraph content.' as string | null,
   fontSize: 24,
@@ -68,6 +68,7 @@ const mockUseStudioState = vi.fn(() => ({
   showBreathingMarks: false,
   enablePunctuationBraking: false,
   isolateSentenceHighlight: false,
+  isRehearsing: false,
   actions: mockActions,
 }));
 
@@ -386,6 +387,42 @@ describe('PopoutTeleprompter Component', () => {
     
     expect(postMessageSpy).toHaveBeenCalledWith({
       type: 'stopPerformance',
+      sender: 'popout'
+    });
+
+    postMessageSpy.mockRestore();
+  });
+
+  it('renders HS_POPOUT_VOCAL_BTN when isRehearsing is true and dispatches VOCAL_AUDIO_TOGGLE BroadcastChannel message on click', () => {
+    mockUseStudioState.mockReturnValueOnce({
+      sessionId: 'test-session',
+      selectedTake: 'Sentence one text. Sentence two text. Sentence three text.',
+      fontSize: 24,
+      isMirrored: false,
+      scrollSpeed: 2.0,
+      isScrolling: false,
+      isRecording: false,
+      isRehearsing: true,
+      showBreathingMarks: false,
+      enablePunctuationBraking: false,
+      isolateSentenceHighlight: false,
+      actions: mockActions,
+    });
+
+    const postMessageSpy = vi.spyOn(MockBroadcastChannel.prototype, 'postMessage');
+
+    const { container } = render(<PopoutTeleprompter />);
+    const vocalBtn = container.querySelector('[data-hotspot-id="HS_POPOUT_VOCAL_BTN"]');
+    expect(vocalBtn).toBeInTheDocument();
+    expect(screen.getByText('VOCAL PARTNER')).toBeInTheDocument();
+
+    if (vocalBtn) {
+      fireEvent.click(vocalBtn);
+    }
+
+    expect(postMessageSpy).toHaveBeenCalledWith({
+      type: 'VOCAL_AUDIO_TOGGLE',
+      isRehearsingAudio: true,
       sender: 'popout'
     });
 

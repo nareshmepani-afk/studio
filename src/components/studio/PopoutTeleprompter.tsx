@@ -3,9 +3,11 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { useJourneyLogger } from '@/hooks/telemetry/useJourneyLogger';
+import { synthesizeStudioSpeech } from '@/actions/studio-vocal';
 import { cn } from '@/lib/utils';
 import { HotspotOverlay } from './HotspotOverlay';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Volume2, Music } from 'lucide-react';
 import { applyTheatricalSlashes, tokenizeSentences } from '@/utils/scriptFormatter';
 
 const highlightSensoryAnchors = (text: string): string => {
@@ -114,6 +116,114 @@ export const PopoutTeleprompter: React.FC = () => {
   const [takeStatus, setTakeStatus] = useState<'recording' | 'saving' | 'compiled' | 'complete' | 'idle'>('idle');
   const selfieVideoRef = useRef<HTMLVideoElement>(null);
   const popoutPeerConnectionRef = useRef<RTCPeerConnection | null>(null);
+
+  const [isRehearsingAudio, setIsRehearsingAudio] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const getFirstNSentences = (text: string, n: number) => {
+    if (!text) return '';
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+    return sentences.slice(0, n).join(' ');
+  };
+
+  const handleToggleRehearsalAudio = async () => {
+    const nextState = !isRehearsingAudio;
+
+    if (sessionId) {
+      const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+      channel.postMessage({ type: 'VOCAL_AUDIO_TOGGLE', isRehearsingAudio: nextState, sender: 'popout' });
+      channel.close();
+    }
+
+    if (isRehearsingAudio) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      setIsRehearsingAudio(false);
+      return;
+    }
+
+    const sentencesText = getFirstNSentences(selectedTake || '', 3);
+    if (!sentencesText) return;
+
+    setIsRehearsingAudio(true);
+    try {
+      const base64 = await synthesizeStudioSpeech(sentencesText, 'Achernar');
+      if (base64) {
+        const audio = new Audio(`data:audio/mp3;base64,${base64}`);
+        audioRef.current = audio;
+        audio.play();
+
+        audio.onended = () => {
+          setIsRehearsingAudio(false);
+          audioRef.current = null;
+        };
+      } else if (typeof window !== 'undefined' && window.speechSynthesis && typeof SpeechSynthesisUtterance !== 'undefined') {
+        window.speechSynthesis.cancel();
+        const cleanCue = sentencesText.replace(/\[[^\]]*\]/g, '').replace(/[\/\s]+/g, ' ').trim();
+        const utterance = new SpeechSynthesisUtterance(cleanCue || sentencesText);
+        utterance.rate = 1.0;
+        utterance.volume = 1.0;
+        const voices = window.speechSynthesis.getVoices();
+        const englishVoice = voices.find(v => v.lang.startsWith('en-'));
+        if (englishVoice) {
+          utterance.voice = englishVoice;
+        }
+
+        utterance.onend = () => {
+          setIsRehearsingAudio(false);
+        };
+        utterance.onerror = () => {
+          setIsRehearsingAudio(false);
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } else {
+        setIsRehearsingAudio(false);
+      }
+    } catch (e) {
+      console.warn("TTS Rehearsal failed, falling back to Web Speech:", e);
+      if (typeof window !== 'undefined' && window.speechSynthesis && typeof SpeechSynthesisUtterance !== 'undefined') {
+        window.speechSynthesis.cancel();
+        const cleanCue = sentencesText.replace(/\[[^\]]*\]/g, '').replace(/[\/\s]+/g, ' ').trim();
+        const utterance = new SpeechSynthesisUtterance(cleanCue || sentencesText);
+        utterance.rate = 1.0;
+        utterance.volume = 1.0;
+        const voices = window.speechSynthesis.getVoices();
+        const englishVoice = voices.find(v => v.lang.startsWith('en-'));
+        if (englishVoice) {
+          utterance.voice = englishVoice;
+        }
+
+        utterance.onend = () => {
+          setIsRehearsingAudio(false);
+        };
+        utterance.onerror = () => {
+          setIsRehearsingAudio(false);
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } else {
+        setIsRehearsingAudio(false);
+      }
+    }
+  };
 
   // Dynamic Camera Stream Access for Selfie Preview
   useEffect(() => {
@@ -377,6 +487,10 @@ export const PopoutTeleprompter: React.FC = () => {
       } else if (type === 'REHEARSAL_TOGGLE') {
         if (payload.isRehearsing !== undefined && setIsRehearsing) {
           setIsRehearsing(payload.isRehearsing);
+        }
+      } else if (type === 'VOCAL_AUDIO_TOGGLE') {
+        if (payload.isRehearsingAudio !== undefined) {
+          setIsRehearsingAudio(payload.isRehearsingAudio);
         }
       } else if (type === 'REHEARSAL_SPEED') {
         if (payload.speed !== undefined && setRehearsalSpeed) {
@@ -942,6 +1056,23 @@ export const PopoutTeleprompter: React.FC = () => {
           <span className={cn("w-1.5 h-1.5 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.4)]", isRehearsing ? "bg-amber-400" : "bg-zinc-500")} />
           <span>{isRehearsing ? 'REHEARSAL ACTIVE // NO CAPTURE' : 'REHEARSAL INACTIVE (START DRY RUN)'}</span>
         </button>
+
+        {isRehearsing && (
+          <button
+            data-hotspot-id="HS_POPOUT_VOCAL_BTN"
+            onClick={handleToggleRehearsalAudio}
+            title="Start Vocal Shadowing Lead-In Audio"
+            className={cn(
+              "flex items-center gap-1.5 border px-2.5 py-1 rounded-lg text-[8px] font-mono font-bold tracking-wider cursor-pointer transition-all duration-300 shadow-md select-none transform hover:scale-105 active:scale-95",
+              isRehearsingAudio
+                ? "bg-amber-500 text-slate-900 border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.5)]"
+                : "bg-amber-950/40 border-amber-500/30 text-amber-400 hover:bg-amber-900/40 hover:border-amber-400"
+            )}
+          >
+            {isRehearsingAudio ? <Volume2 className="w-3 h-3 animate-bounce" /> : <Music className="w-3 h-3" />}
+            <span>{isRehearsingAudio ? 'SHADOWING ACTIVE' : 'VOCAL PARTNER'}</span>
+          </button>
+        )}
       </div>
 
       {/* Take Status Notification Banner */}
