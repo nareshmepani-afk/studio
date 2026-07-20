@@ -513,12 +513,12 @@ export const PopoutTeleprompter: React.FC = () => {
                 if (event.streams[0]) {
                   console.log('[Popout] Received live video stream track from main stage via WebRTC loopback');
                   setSelfieStream(event.streams[0]);
-                  logEvent('WebRTC: Live video track bound to popout selfie preview', { version: '1.0.0-MW-69' }, 'INFO');
+                  logEvent('WebRTC: Live video track bound to popout selfie preview', {}, 'INFO');
                 }
               };
 
               pc.onconnectionstatechange = () => {
-                logEvent(`WebRTC: Peer connection state changed to ${pc.connectionState}`, { version: '1.0.0-MW-69' }, pc.connectionState === 'failed' ? 'ERROR' : 'INFO');
+                logEvent(`WebRTC: Peer connection state changed to ${pc.connectionState}`, {}, pc.connectionState === 'failed' ? 'ERROR' : 'INFO');
               };
 
               pc.onicecandidate = (event) => {

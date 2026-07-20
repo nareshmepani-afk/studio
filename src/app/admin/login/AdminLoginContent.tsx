@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminFooter } from '@/app/admin/components/AdminFooter';
+import { APP_VERSION } from '@/config/version';
 
 export default function AdminLoginContent() {
   const router = useRouter();
@@ -28,7 +29,7 @@ export default function AdminLoginContent() {
 
   useEffect(() => {
     console.log("================= AUTH DIAGNOSTICS LAUNCHED =================");
-    console.log("[VERSION] App Release: 1.1.0-beta-MW-70");
+    console.log(`[VERSION] App Release: ${APP_VERSION}`);
     console.log("[DIAGNOSTIC] Current Window Location:", typeof window !== 'undefined' ? window.location.href : "SERVER-SIDE");
     
     // Safety check dynamic evaluation trace

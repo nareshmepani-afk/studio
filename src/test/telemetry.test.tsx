@@ -12,6 +12,8 @@ import { NextRequest, NextResponse } from 'next/server';
 const originalLog = console.log;
 const originalWarn = console.warn;
 
+import { APP_VERSION } from '../config/version';
+
 describe('Unified Telemetry & Distributed Tracing (MW-64)', () => {
   beforeEach(() => {
     console.log = vi.fn();
@@ -159,7 +161,7 @@ describe('Unified Telemetry & Distributed Tracing (MW-64)', () => {
       });
     });
 
-    it('captures clicks via traceInteraction and forwards version 1.0.0-MW-69', async () => {
+    it('captures clicks via traceInteraction and forwards version APP_VERSION', async () => {
       const TestComponent = () => {
         const { traceInteraction } = useJourneyLogger('test-user', 'test-sess');
         return (
@@ -189,7 +191,7 @@ describe('Unified Telemetry & Distributed Tracing (MW-64)', () => {
       const body = JSON.parse((global.fetch as any).mock.calls[0][1].body);
       expect(body.message).toBe('HOTSPOT_INTERACTION_HS_TEST_BTN');
       expect(body.structPayload.hotspotId).toBe('HS_TEST_BTN');
-      expect(body.structPayload.version).toBe('1.0.0-MW-69');
+      expect(body.structPayload.version).toBe(APP_VERSION);
     });
   });
 

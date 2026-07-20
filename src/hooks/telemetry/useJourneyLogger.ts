@@ -1,4 +1,5 @@
 import { useCallback, MouseEvent } from 'react';
+import { APP_VERSION } from '@/config/version';
 
 export type TelemetrySeverity = 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL';
 
@@ -75,7 +76,10 @@ export function useJourneyLogger(
           userId: userId || null,
           sessionId: sessionId || null,
         },
-        structPayload: metadata,
+        structPayload: {
+          ...metadata,
+          version: metadata.version || APP_VERSION,
+        },
       };
 
       telemetryQueue.push(payload);
@@ -99,7 +103,7 @@ export function useJourneyLogger(
       logEvent(`HOTSPOT_INTERACTION_${hotspotId}`, {
         hotspotId,
         targetLabel,
-        version: '1.0.0-MW-69',
+        version: APP_VERSION,
       });
     },
     [logEvent]

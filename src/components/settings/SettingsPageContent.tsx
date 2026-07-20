@@ -13,6 +13,8 @@ import { motion } from 'framer-motion';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+import { APP_VERSION } from '@/config/version';
+
 export function SettingsPageContent({ 
   initialDirectorPassStatus, 
   initialDirectorPassActivationDate, 
@@ -300,7 +302,7 @@ export function SettingsPageContent({
                       userAgent: navigator.userAgent,
                       path: window.location.pathname,
                       timestamp: new Date().toISOString(),
-                      version: '1.0.0-MW-69'
+                      version: APP_VERSION
                     };
                     navigator.clipboard.writeText(JSON.stringify(diagnostics, null, 2))
                       .then(() => toast.success("Copied to clipboard"));
@@ -312,7 +314,7 @@ export function SettingsPageContent({
               <div className="bg-black/60 rounded-xl p-4 border border-white/5 text-xs font-mono text-zinc-400 space-y-2 overflow-x-auto">
                 <p><span className="text-rose-400">traceId:</span> "{telemetryId}"</p>
                 <p><span className="text-rose-400">userEmail:</span> "{userEmail}"</p>
-                <p><span className="text-rose-400">version:</span> "1.0.0-MW-69"</p>
+                <p><span className="text-rose-400">version:</span> "{APP_VERSION}"</p>
                 <p><span className="text-rose-400">userAgent:</span> "{typeof navigator !== 'undefined' ? navigator.userAgent : ''}"</p>
               </div>
             </section>

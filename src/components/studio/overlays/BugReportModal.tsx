@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Bug, ChevronDown, ChevronUp, Loader2, Send } from 'lucide-react';
 import { sendBugReportAction } from '@/actions/sendBugReportAction';
+import { APP_VERSION } from '@/config/version';
 
 interface BugReportModalProps {
   isOpen: boolean;
@@ -24,8 +25,16 @@ export function BugReportModal({ isOpen, onClose, user }: BugReportModalProps) {
   const [description, setDescription] = useState('');
   const [isPending, startTransition] = useTransition();
   const [showDiagnostics, setShowDiagnostics] = useState(false);
-  const [telemetryId, setTelemetryId] = useState('');
-  const [diagnosticsPayload, setDiagnosticsPayload] = useState<any>(null);
+  const [telemetryId, setTelemetryId] = useState<string | null>(null);
+  const [diagnosticsPayload, setDiagnosticsPayload] = useState<{
+    traceId: string;
+    userId: string;
+    userEmail: string;
+    userAgent: string;
+    path: string;
+    timestamp: string;
+    version: string;
+  } | null>(null);
 
   useEffect(() => {
     if (isOpen && typeof window !== 'undefined') {
@@ -43,7 +52,7 @@ export function BugReportModal({ isOpen, onClose, user }: BugReportModalProps) {
         userAgent: navigator.userAgent,
         path: window.location.pathname,
         timestamp: new Date().toISOString(),
-        version: '1.0.0-MW-69'
+        version: APP_VERSION
       });
     }
   }, [isOpen, user]);
@@ -59,7 +68,15 @@ export function BugReportModal({ isOpen, onClose, user }: BugReportModalProps) {
       try {
         const res = await sendBugReportAction({
           description,
-          diagnostics: diagnosticsPayload
+          diagnostics: diagnosticsPayload || {
+            traceId: telemetryId || `mw_telemetry_${Math.random().toString(36).substring(2, 15)}`,
+            userId: user?.uid || 'guest_preview',
+            userEmail: user?.email || 'unauthenticated',
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+            path: typeof window !== 'undefined' ? window.location.pathname : '',
+            timestamp: new Date().toISOString(),
+            version: APP_VERSION
+          }
         });
 
         if (res.success) {

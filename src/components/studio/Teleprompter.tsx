@@ -310,7 +310,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
         const syncChannel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
         try {
           syncChannel.postMessage({ type: 'webrtc-offer', offer, sender: 'main' });
-          logEvent('WebRTC: Initiated offer stream with STUN configuration', { version: '1.0.0-MW-69' }, 'INFO');
+          logEvent('WebRTC: Initiated offer stream with STUN configuration', {}, 'INFO');
         } catch (err) {
           console.warn('[Teleprompter] Error posting offer:', err);
         } finally {
@@ -319,7 +319,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       }
     } catch (err: any) {
       console.warn('[Teleprompter] WebRTC offer creation failed:', err);
-      logEvent(`WebRTC: Offer creation failed: ${err?.message || err}`, { version: '1.0.0-MW-69' }, 'ERROR');
+      logEvent(`WebRTC: Offer creation failed: ${err?.message || err}`, {}, 'ERROR');
     }
   }, [stream, sessionId]);
 

@@ -13,6 +13,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { APP_VERSION } from '@/config/version';
 
 export default function MfaEnrollment() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function MfaEnrollment() {
 
   useEffect(() => {
     console.log("================= MFA DIAGNOSTICS LAUNCHED =================");
-    console.log("[VERSION] App Release: 1.1.0-beta-MW-70");
+    console.log(`[VERSION] App Release: ${APP_VERSION}`);
     console.log("[DIAGNOSTIC] Current Window Location:", typeof window !== 'undefined' ? window.location.href : "SERVER-SIDE");
 
     async function loadMfaDetails() {

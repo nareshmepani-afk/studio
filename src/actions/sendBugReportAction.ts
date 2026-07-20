@@ -1,6 +1,7 @@
 'use server';
 
 import { Resend } from 'resend';
+import { APP_VERSION } from '@/config/version';
 
 interface BugReportPayload {
   description: string;
@@ -116,7 +117,7 @@ export async function sendBugReportAction(payload: BugReportPayload): Promise<{ 
           <!-- Footer -->
           <div style="background-color: rgba(0, 0, 0, 0.3); border-top: 1px solid rgba(255, 255, 255, 0.05); padding: 20px; text-align: center;">
             <p style="font-size: 10px; color: #64748b; margin: 0; text-transform: uppercase; letter-spacing: 0.15em;">
-              Sent via Telemetry Engine MW-69 • Memory Weaver Studio
+              Sent via Telemetry Engine ${APP_VERSION} • Memory Weaver Studio
             </p>
           </div>
         </div>
