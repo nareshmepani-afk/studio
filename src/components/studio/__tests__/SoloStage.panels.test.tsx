@@ -395,6 +395,25 @@ describe('SoloStage Calibration Panels Test', () => {
     // Both windows should be automatically opened/active-synced
     expect(screen.getByText('Interviewer Active')).toBeInTheDocument();
   });
+
+  it('renders CinemaStageSwitch container and resolves active stage child components without structural collapse', () => {
+    const formRef = React.createRef<any>();
+    const { container } = render(
+      <SoloStage 
+        data={initialMemory} 
+        update={mockUpdate} 
+        currentStage={2}
+        mentorActive={true}
+        formRef={formRef}
+      />
+    );
+    // Assert that the CinemaStageSwitch container is present in the DOM
+    const stageSwitch = container.querySelector('.relative.overflow-hidden.flex.flex-col');
+    expect(stageSwitch).toBeInTheDocument();
+    
+    // Assert that it does NOT crash and renders active child elements
+    expect(screen.getByText('Confirm Alignment')).toBeInTheDocument();
+  });
 });
 
 
