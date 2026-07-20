@@ -121,6 +121,19 @@ export default function SoloStage({
     actions: globalActions 
   } = useStudioState();
   const { traceInteraction } = useJourneyLogger(userId, sessionId);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleGlobalClick = (e: any) => {
+        traceInteraction(e);
+      };
+      window.addEventListener('click', handleGlobalClick, { capture: true });
+      return () => {
+        window.removeEventListener('click', handleGlobalClick, { capture: true });
+      };
+    }
+  }, [traceInteraction]);
+
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
@@ -4038,7 +4051,7 @@ export default function SoloStage({
   );
 
   return (
-    <div onClick={traceInteraction}>
+    <>
       <CinemaStageSwitch
         currentStage={productionStage}
         onStageChange={setProductionStage}
@@ -4239,6 +4252,6 @@ export default function SoloStage({
         requiredFeature={upsellFeature}
       />
       <HotspotOverlay />
-    </div>
+    </>
   );
 }
