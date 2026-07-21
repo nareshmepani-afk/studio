@@ -367,45 +367,43 @@ ${bundleText}`;
                   hoveredId === opt.visionType && "backdrop-blur-2xl border-white/30"
                 )}
               >
-                <div className="flex items-center justify-between mb-8">
-                   <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between gap-2 mb-6 flex-wrap">
+                   <div className="flex items-center gap-2 shrink-0">
                       {typeId === 'original' ? (
-                        <motion.div 
-                          className="wax-seal-container p-3 rounded-2xl relative transition-all duration-300 bg-gradient-to-br from-purple-600 to-purple-800 border border-purple-400/40 shadow-[0_4px_12px_rgba(168,85,247,0.4)] scale-105 text-purple-100"
-                          style={{ perspective: 1000, transformStyle: "preserve-3d" }}
-                          whileHover={{ 
-                            scale: 1.15,
-                            rotateY: 15,
-                            rotateX: -10,
+                        <motion.div
+                          whileHover={{ scale: 1.1, rotate: [0, -5, 5, 0] }}
+                          className="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 via-indigo-600 to-purple-800 p-0.5 shadow-[0_10px_25px_rgba(168,85,247,0.3)] flex items-center justify-center cursor-pointer group/seal shrink-0"
+                          style={{
                             z: 50,
                             boxShadow: "0 20px 25px -5px rgba(168,85,247,0.4), 0 10px 10px -5px rgba(168,85,247,0.2)"
                           }}
                           transition={{ type: "spring", stiffness: 200, damping: 15 }}
                         >
                           <div className="absolute inset-1 rounded-xl border border-purple-300/25 pointer-events-none" />
-                          <Award className="w-6 h-6 text-purple-100 relative z-10" />
+                          <Award className="w-5 h-5 text-purple-100 relative z-10" />
                         </motion.div>
                       ) : (
                         <div className={cn(
-                          "p-3 rounded-2xl relative transition-all duration-300 bg-white/5",
+                          "p-2.5 rounded-2xl relative transition-all duration-300 bg-white/5 shrink-0",
                           COLORS[typeId] || 'text-white'
                         )}>
-                          <Icon className="w-6 h-6" />
+                          <Icon className="w-5 h-5" />
                         </div>
                       )}
                       {typeId === 'original' && (
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-purple-500/15 border border-purple-400/30 rounded-full text-[8px] font-black uppercase tracking-widest text-purple-300 shadow-[0_2px_8px_rgba(168,85,247,0.2)] animate-pulse">
-                           <Award className="w-3 h-3 text-purple-400" />
+                        <div className="flex items-center gap-1 px-2.5 py-1 bg-purple-500/15 border border-purple-400/30 rounded-full text-[8px] font-black uppercase tracking-widest text-purple-300 shadow-[0_2px_8px_rgba(168,85,247,0.2)] animate-pulse shrink-0">
+                           <Award className="w-2.5 h-2.5 text-purple-400" />
                            <span>Official Record</span>
                         </div>
                       )}
                    </div>
                     <button 
+                      data-hotspot-id="HS_ACT2_OPEN_REVIEW_BTN"
                       onClick={(e) => { e.stopPropagation(); onPreview(opt); }}
-                      className="group/preview flex items-center gap-3 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all"
+                      className="group/preview flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all shrink-0"
                     >
-                      <Eye className="w-4 h-4 text-emerald-400" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-white/40 group-hover/preview:text-white transition-colors">Open for Review</span>
+                      <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-white/40 group-hover/preview:text-white transition-colors whitespace-nowrap">Open for Review</span>
                     </button>
                 </div>
                 
