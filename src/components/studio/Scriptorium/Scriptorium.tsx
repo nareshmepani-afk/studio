@@ -489,6 +489,7 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
               </div>
             </div>
             <button
+              data-hotspot-id="HS_ENTER_STUDIO_BTN"
               onClick={() => {
                 // Dispatch click trigger on global navigation next step
                 const nextBtn = document.querySelector('[data-blueprint="ProductionControlBar"] button.bg-emerald-505, [data-blueprint="ProductionControlBar"] button.bg-emerald-500') as HTMLButtonElement;

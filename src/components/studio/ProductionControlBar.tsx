@@ -515,6 +515,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                     />
                   )}
                   <motion.button
+                    data-hotspot-id="HS_ENTER_STUDIO_BTN"
                     whileHover={(!isPending && !isGeneratingDrafts && !isSaving) ? { scale: 1.02 } : {}}
                     whileTap={(!isPending && !isGeneratingDrafts && !isSaving) ? { scale: 0.98 } : shakeAnimation}
                     disabled={isPending || isGeneratingDrafts || isSaving}

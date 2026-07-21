@@ -299,6 +299,7 @@ ${bundleText}`;
         <div className="flex items-center gap-4 justify-center flex-wrap">
           {onBackToEditor && (
             <button 
+              data-hotspot-id="HS_ACT2_BACK_BTN"
               onClick={onBackToEditor}
               className="flex items-center gap-3 px-6 py-2.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 rounded-full text-[9px] font-black uppercase tracking-widest text-purple-400 hover:text-purple-300 transition-all group"
             >
@@ -308,6 +309,7 @@ ${bundleText}`;
           )}
           
           <button 
+            data-hotspot-id="HS_ACT2_COPY_BUNDLE_BTN"
             onClick={copyComparisonBundle}
             disabled={isCopyingBundle}
             className="flex items-center gap-3 px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all group"
