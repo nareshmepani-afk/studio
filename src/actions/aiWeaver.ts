@@ -89,16 +89,18 @@ export async function expandWithAI(
       ${sensoryDetailsStr || 'None provided'}
       
       STYLE RULES (THE GOLD STANDARD):
+      - Write strictly in FIRST-PERSON SPOKEN PROSE for a single narrator speaking directly into a teleprompter / camera.
+      - BANNED SCREENPLAY & CAMERA CUES: Do NOT use camera angles, editing commands, or film directions (e.g. NEVER start or include "Cut to," "Wide shot," "Pan to," "Zoom to," "Close-up on," "Hard freeze on," "Fade in"). The text must be 100% spoken human story, not film stage notes.
       - Use high-contrast metaphors (e.g., "not a map, but the soil").
       - Focus on the "Linguistically silent but culturally loud" quality of migration.
       - Avoid AI-speak: BANNED words include "odyssey," "lineage," "tapestry," "vibrant," "testament," "unfolding," "interwoven," "symphony," or "shores" (unless refers to a physical beach).
       - Write for future generations.
       
       Craft three (3) distinct "Takes" in this literary style, but HEAVILY influenced by the [DIRECTOR'S INTENT]. 
-      Each Take must be a single, rhythmic, and meaningful paragraph (100-140 words).
+      Each Take must be a single, rhythmic, and meaningful paragraph (100-140 words) meant to be spoken aloud.
       
-      Take 1 ("poetic"): Internal world focus. Reflective and deeply metaphorical.
-      Take 2 ("direct"): Humanity and persistence focus. Documentary-style but with literary weight.
+      Take 1 ("poetic"): Internal world focus. Reflective and deeply metaphorical spoken monologue.
+      Take 2 ("direct"): Humanity and persistence focus. Documentary-style spoken memory with authentic weight.
       Take 3 ("nostalgic"): Ancestral and generational focus. Passing down values like "Learn. Adapt. Endure."
       
       Return strictly JSON:
