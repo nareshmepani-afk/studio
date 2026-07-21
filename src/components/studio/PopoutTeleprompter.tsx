@@ -1334,7 +1334,6 @@ export const PopoutTeleprompter: React.FC = () => {
           </div>
         </div>
       </div>
-      <HotspotOverlay />
     </div>
   );
 };

@@ -4251,7 +4251,6 @@ export default function SoloStage({
         onClose={() => setIsUpsellOpen(false)}
         requiredFeature={upsellFeature}
       />
-      <HotspotOverlay />
     </>
   );
 }

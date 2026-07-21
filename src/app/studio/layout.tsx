@@ -5,6 +5,7 @@ import { Inter } from "next/font/google";
 import { StudioProviders } from "./StudioProviders";
 import { AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
+import { HotspotOverlay } from "@/components/studio/HotspotOverlay";
 import "../globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -22,6 +23,7 @@ export default function StudioLayout({
     return (
       <div className="relative min-h-screen bg-neutral-950 text-white selection:bg-primary/30">
         {children}
+        <HotspotOverlay />
       </div>
     );
   }
@@ -31,6 +33,7 @@ export default function StudioLayout({
       <StudioProviders>
         <div className="relative min-h-screen bg-black text-white selection:bg-primary/30">
           {children}
+          <HotspotOverlay />
         </div>
       </StudioProviders>
     );
@@ -59,6 +62,7 @@ export default function StudioLayout({
             )}
           </AnimatePresence>
         </div>
+        <HotspotOverlay />
       </div>
     </StudioProviders>
   );
