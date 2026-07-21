@@ -2319,6 +2319,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         </div>
                       ) : (
                         <button 
+                          data-hotspot-id="HS_ACT2_SYNTHESIZE_BTN"
                           onClick={() => {
                             if (aiTakes) {
                               setIsReviewingSensory(true);

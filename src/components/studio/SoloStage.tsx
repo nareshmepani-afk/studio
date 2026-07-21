@@ -2382,6 +2382,7 @@ export default function SoloStage({
 
                     <div className="flex gap-4 w-full">
                       <button 
+                        data-hotspot-id="HS_STAGE_CONFIRM_ALIGNMENT"
                         onClick={() => {
                           globalActions.setCaptureModality('scripted');
                           setTechAlignmentConfirmed(true);
@@ -2848,7 +2849,7 @@ export default function SoloStage({
                   <span className="text-[9px] font-black uppercase tracking-wider">{isTheaterExpanded ? 'Exit Theater' : 'Theater View'}</span>
                 </button>
                 <button 
-                  data-hotspot-id="HS_PROMPTER_EXPAND_BTN"
+                  data-hotspot-id="HS_PROMPTER_SIZE_BTN"
                   onClick={() => setPrompterSize(prev => prev === 'mini' ? 'sm' : prev === 'sm' ? 'md' : prev === 'md' ? 'lg' : 'sm')}
                   className="p-1 rounded bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center w-6 h-6 shrink-0"
                   title="Toggle Teleprompter Size (Sm -> Md -> Lg)"

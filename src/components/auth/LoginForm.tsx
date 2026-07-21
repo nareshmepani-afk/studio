@@ -112,6 +112,7 @@ const LoginForm = () => {
 
           <Button 
             type="submit" 
+            data-hotspot-id="HS_AUTH_LOGIN_BTN"
             className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-xs uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-primary/20 group transition-all" 
             disabled={isSubmitting}
           >

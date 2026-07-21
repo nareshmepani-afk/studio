@@ -250,6 +250,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
               </button>
 
               <button 
+                data-hotspot-id="HS_ACT2_COMMIT_PROSE_BTN"
                 onClick={() => !isSaving && onApply()}
                 disabled={isSaving}
                 className={cn(
