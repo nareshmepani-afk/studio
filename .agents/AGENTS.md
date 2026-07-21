@@ -29,9 +29,9 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - When changes are made, run validation locally first, commit and push to `dev` branch, and monitor the build pipeline progress.
 - Explicitly notify the user when the App Hosting staging build starts, clarify that build propagation takes 2–3 minutes, and instruct them to refresh `dev.memoryweaver.studio` to test the live updates.
 
-## 6. Telemetry & Analytics Versioning Rule
-- Every client event payload dispatched must include the application version parameter (e.g. `version: "1.0.0-MW-69"`).
-- When validating logs or tracing user events programmatically, always ensure telemetry payloads explicitly log the version string to allow tracking dynamic changes across deployment milestones.
+## 6. Telemetry & Analytics Micro-Version Tracing Rule
+- **Dynamic Version & Commit SHA Binding**: Every client event payload dispatched must include the unified application version parameter with micro-build Git SHA tracing (e.g. `v1.1.0-beta-MW-71.85f8572b`).
+- **Code-Level Audit Trails**: Telemetry version strings must dynamically resolve the short Git commit SHA (`git rev-parse --short HEAD` or `NEXT_PUBLIC_COMMIT_SHA`) to transform telemetry logs into pinpoint line-by-line audit trails for instant root-cause correlation.
 
 ## 7. Universal Non-Degradation & Explicit Feature Confirmation Rule
 - **Universal Non-Degradation Across All Features**: The agent must NEVER silently alter, downgrade, approximate, or remove ANY existing user-facing feature, control, visual feedback loop, or functional capability under any circumstances.
