@@ -47,8 +47,9 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Natural Test Instinct**: For every new feature created, bug fixed, or behavior modified, the agent must evaluate: *"Should an automated test be created to prevent future regressions of this behavior?"*
 - **Mandatory Test Generation**: If a fix addresses a layout breakdown, routing edge case, state rehydration failure, or logical bug, a regression test MUST be added to verify that specific boundary condition remains correct and cannot break silently in future code changes.
 
-## 10. Plane.so Backlog Prioritization & Sync Rule
+## 10. Plane.so Backlog Prioritization & User Step-by-Step Instructions Rule
 - **Backlog Prioritization**: Before initiating any work or touching the codebase, verify that a corresponding issue exists in the Plane.so workspace project board.
+- **Mandatory Step-by-Step User Instructions**: Every ticket created or updated on Plane.so MUST include clear, numbered human performer step-by-step testing instructions in its description (including exact actions, Hotspot IDs like `HS_PROMPTER_VOCAL_BTN`, expected results, and DOM element identifiers) to enable zero-ambiguity user sign-off.
 - **Automated Ticket Creation**: If a task has been verbally requested by the user but does not exist, the agent must programmatically create a corresponding issue ticket on the Plane.so board using the local automation bridge (`scripts/plane.js`) prior to code modification.
 
 # Deployment Milestones
