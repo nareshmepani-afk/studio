@@ -186,7 +186,7 @@ describe('Studio Regression Tests', () => {
         />
       );
 
-      const closeButton = screen.getByLabelText(/Close Review/i);
+      const closeButton = screen.getAllByLabelText(/Close Review/i)[0];
       fireEvent.click(closeButton);
       expect(mockOnClose).toHaveBeenCalled();
     });
@@ -207,7 +207,7 @@ describe('Studio Regression Tests', () => {
         />
       );
 
-      const returnButton = screen.getByText(/Return to Selection Deck/i);
+      const returnButton = screen.getAllByText(/Return to Selection Deck/i)[0];
       fireEvent.click(returnButton);
       expect(mockOnClose).toHaveBeenCalled();
     });
