@@ -704,6 +704,45 @@ export async function polishDescription(description: string, options: { sensoryF
     return description; // Fallback to original
   }
 }
+
+/**
+ * Server action to check spelling, grammar, and agreement on user edits
+ * without altering the author's voice or rhythm.
+ */
+export async function checkAndPolishGrammar(text: string): Promise<string> {
+  console.log(`[AI Weaver] checkAndPolishGrammar triggered for length ${text?.length || 0}`);
+  if (!text || text.trim().length < 5) return text || "";
+
+  try {
+    const ai = await getAI();
+    const prompt = `
+      You are an expert Copyeditor and Teleprompter Proofreader.
+      Correct any spelling mistakes, typos, or grammatical agreement errors in the following spoken monologue.
+      
+      [TEXT TO PROOFREAD]
+      ${text}
+      
+      [STRICT RULES]
+      - Fix spelling mistakes, typos, and grammatical errors (e.g., "helpless three child" -> "helpless three children").
+      - Preserve 100% of the author's custom wording, tone, and intended meaning.
+      - Do NOT rephrase sentences unnecessarily.
+      - Do NOT add camera cues or film directions.
+      
+      Return ONLY the corrected spoken text. No preamble, no quotes, no markdown wrappers.
+    `;
+
+    const { text: resultText } = await pRetry(async () => {
+      return await ai.generate(prompt);
+    }, { retries: 2 });
+    
+    const polished = resultText?.trim() || text;
+    console.log(`[AI Weaver] checkAndPolishGrammar completed successfully.`);
+    return polished;
+  } catch (error: any) {
+    console.error("[AI Weaver] checkAndPolishGrammar failure:", error);
+    return text;
+  }
+}
 /**
  * Server action to analyze the script for grammar, spelling, and cinematic clarity.
  */

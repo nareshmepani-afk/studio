@@ -9,6 +9,7 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { StageDirection, BeatSheetItem } from '@/types';
+import { checkAndPolishGrammar } from '@/actions/aiWeaver';
 
 interface ScriptLightBoxProps {
   isOpen: boolean;
@@ -44,6 +45,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
   const [mounted, setMounted] = useState(false);
   const [userScript, setUserScript] = useState(cleanScript);
   const [isEditing, setIsEditing] = useState(false);
+  const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -67,6 +69,31 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
     toast.success("Script Captured", {
       description: "Vision copied to directorial clipboard.",
     });
+  };
+
+  const handleCheckGrammar = async () => {
+    setIsCheckingGrammar(true);
+    toast("Proofreading Script...", {
+      description: "Checking spelling, grammar, and agreement while preserving your voice.",
+      icon: <Sparkles className="w-4 h-4 text-sky-400" />
+    });
+    try {
+      const polished = await checkAndPolishGrammar(userScript);
+      if (polished && polished !== userScript) {
+        setUserScript(polished);
+        toast.success("Spelling & Grammar Polished!", {
+          description: "Typos and agreement errors corrected."
+        });
+      } else {
+        toast.success("Script Clean & Performance Ready", {
+          description: "No spelling or grammar errors detected."
+        });
+      }
+    } catch (e) {
+      toast.error("Grammar Check Skipped", { description: "Unable to run AI proofreader right now." });
+    } finally {
+      setIsCheckingGrammar(false);
+    }
   };
 
   const isEdited = userScript.trim() !== cleanScript.trim();
@@ -214,7 +241,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                 <div className="w-full max-w-4xl px-12 lg:px-24 py-20 space-y-16">
                   {/* Copy & Edit Action Bar */}
                   <div className="flex items-center justify-between gap-4 flex-wrap">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <button 
                         onClick={() => setIsEditing(prev => !prev)}
                         className={cn(
@@ -226,6 +253,21 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                       >
                         {isEditing ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
                         <span>{isEditing ? "Done Editing" : "Fine-Tune Script"}</span>
+                      </button>
+
+                      <button 
+                        onClick={handleCheckGrammar}
+                        disabled={isCheckingGrammar}
+                        className={cn(
+                          "flex items-center gap-2 px-4 py-2.5 rounded-2xl border transition-all text-[9px] font-black uppercase tracking-widest shadow-lg cursor-pointer",
+                          isCheckingGrammar 
+                            ? "bg-sky-500/20 border-sky-500/40 text-sky-300 cursor-wait" 
+                            : "bg-sky-500/10 hover:bg-sky-500/20 border-sky-500/30 text-sky-300"
+                        )}
+                        title="Check spelling and grammar using AI proofreader"
+                      >
+                        {isCheckingGrammar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-sky-400" />}
+                        <span>{isCheckingGrammar ? "Checking..." : "Grammar & Polish"}</span>
                       </button>
 
                       {isEdited && (
@@ -270,12 +312,14 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                         <textarea
                           value={userScript}
                           onChange={(e) => setUserScript(e.target.value)}
+                          spellCheck={true}
+                          autoCorrect="on"
                           className="w-full min-h-[360px] bg-slate-900/90 border border-purple-500/40 focus:border-purple-400 rounded-3xl p-8 text-white font-serif text-[22px] lg:text-[28px] leading-[1.8] focus:outline-none focus:ring-2 focus:ring-purple-500/30 resize-y shadow-2xl transition-all"
                           placeholder="Fine-tune your narrative prose..."
                           autoFocus
                         />
                         <p className="text-[10px] font-mono text-white/30 text-right">
-                          Direct editing mode active • Click "Done Editing" or "Choose This Vision" to apply.
+                          Direct editing mode active • Click "Grammar & Polish" to proofread, or "Choose This Vision" to apply.
                         </p>
                       </div>
                     ) : (
