@@ -2609,11 +2609,11 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       stageDirections={selectedDraftForPreview?.stageDirections || []}
       beatSheet={selectedDraftForPreview?.beatSheet || []}
       generatedSoundtrackUrl={selectedDraftForPreview?.generatedSoundtrackUrl}
-      onApply={async () => {
+      onApply={async (customScript?: string) => {
         if (selectedDraftForPreview) {
           if (productionStage === 1) {
             // ACT II: SENSORY WEAVE COMMITMENT
-            const text = selectedDraftForPreview.cleanScript || '';
+            const text = customScript || selectedDraftForPreview.cleanScript || '';
             const label = selectedDraftForPreview.visionType;
             
             const blocks: ScriptBlock[] = [

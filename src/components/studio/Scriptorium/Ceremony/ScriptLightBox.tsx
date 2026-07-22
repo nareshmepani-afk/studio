@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ClipboardCopy, ClipboardCheck, X, Sparkles, 
   Clock, FileText, ArrowRight, Eye, Video, Volume2, Heart,
-  Loader2
+  Loader2, Pencil, RotateCcw, Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -21,7 +21,7 @@ interface ScriptLightBoxProps {
   stageDirections?: StageDirection[];
   beatSheet?: string[];
   generatedSoundtrackUrl?: string;
-  onApply: () => void;
+  onApply: (customScript?: string) => void;
   isSaving?: boolean;
 }
 
@@ -42,11 +42,18 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
   const [copiedOriginal, setCopiedOriginal] = useState(false);
   const [copiedExpanded, setCopiedExpanded] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [userScript, setUserScript] = useState(cleanScript);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
   }, []);
+
+  useEffect(() => {
+    setUserScript(cleanScript);
+    setIsEditing(false);
+  }, [cleanScript, isOpen]);
 
   const handleCopy = async (text: string, isOriginal: boolean) => {
     await navigator.clipboard.writeText(text);
@@ -62,7 +69,8 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
     });
   };
 
-  const wordCount = cleanScript.trim().split(/\s+/).length;
+  const isEdited = userScript.trim() !== cleanScript.trim();
+  const wordCount = userScript.trim().split(/\s+/).filter(Boolean).length;
   const estDuration = Math.ceil(wordCount / 130); // Approx 130 wpm for dramatic pacing
 
   if (!mounted) return null;
@@ -204,11 +212,46 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
               {/* Right Pane: Clean Script (70%) */}
               <div className="flex-1 bg-[#0f1115] overflow-y-auto custom-scrollbar relative flex flex-col items-center">
                 <div className="w-full max-w-4xl px-12 lg:px-24 py-20 space-y-16">
-                  {/* Copy Facility */}
-                  <div className="flex justify-end">
+                  {/* Copy & Edit Action Bar */}
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={() => setIsEditing(prev => !prev)}
+                        className={cn(
+                          "flex items-center gap-2.5 px-5 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all border shadow-lg cursor-pointer",
+                          isEditing 
+                            ? "bg-purple-500 text-white border-purple-400 shadow-purple-500/20" 
+                            : "bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 text-purple-300"
+                        )}
+                      >
+                        {isEditing ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                        <span>{isEditing ? "Done Editing" : "Fine-Tune Script"}</span>
+                      </button>
+
+                      {isEdited && (
+                        <button 
+                          onClick={() => {
+                            setUserScript(cleanScript);
+                            toast.info("Reverted to Original Take");
+                          }}
+                          className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white border border-white/10 rounded-2xl transition-all text-[9px] font-black uppercase tracking-widest"
+                          title="Reset to AI generated draft"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Reset Draft</span>
+                        </button>
+                      )}
+
+                      {isEdited && (
+                        <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[8px] font-black uppercase tracking-widest rounded-full animate-fade-in">
+                          ✏️ Custom Tuned
+                        </div>
+                      )}
+                    </div>
+
                     <button 
-                      onClick={() => handleCopy(cleanScript, false)}
-                      className="flex items-center gap-3 px-6 py-3 bg-white/5 hover:bg-emerald-500/10 text-white/40 hover:text-emerald-400 border border-white/10 hover:border-emerald-500/30 rounded-2xl transition-all group"
+                      onClick={() => handleCopy(userScript, false)}
+                      className="flex items-center gap-3 px-6 py-2.5 bg-white/5 hover:bg-emerald-500/10 text-white/40 hover:text-emerald-400 border border-white/10 hover:border-emerald-500/30 rounded-2xl transition-all group"
                     >
                       <span className="text-[9px] font-black uppercase tracking-widest">Copy Clean Script</span>
                       {copiedExpanded ? <ClipboardCheck className="w-4 h-4" /> : <ClipboardCopy className="w-4 h-4 opacity-40 group-hover:opacity-100" />}
@@ -222,9 +265,32 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                        <div className="h-px w-24 bg-gradient-to-l from-transparent to-white" />
                     </div>
 
-                    <div className="font-serif text-[26px] lg:text-[34px] text-white/95 leading-[1.8] whitespace-pre-wrap select-text drop-shadow-2xl">
-                      {cleanScript}
-                    </div>
+                    {isEditing ? (
+                      <div className="space-y-3">
+                        <textarea
+                          value={userScript}
+                          onChange={(e) => setUserScript(e.target.value)}
+                          className="w-full min-h-[360px] bg-slate-900/90 border border-purple-500/40 focus:border-purple-400 rounded-3xl p-8 text-white font-serif text-[22px] lg:text-[28px] leading-[1.8] focus:outline-none focus:ring-2 focus:ring-purple-500/30 resize-y shadow-2xl transition-all"
+                          placeholder="Fine-tune your narrative prose..."
+                          autoFocus
+                        />
+                        <p className="text-[10px] font-mono text-white/30 text-right">
+                          Direct editing mode active • Click "Done Editing" or "Choose This Vision" to apply.
+                        </p>
+                      </div>
+                    ) : (
+                      <div 
+                        onClick={() => setIsEditing(true)}
+                        title="Click to edit or fine-tune script text"
+                        className="font-serif text-[26px] lg:text-[34px] text-white/95 leading-[1.8] whitespace-pre-wrap select-text drop-shadow-2xl cursor-pointer hover:text-purple-100 transition-colors group relative rounded-3xl p-4 -m-4 border border-transparent hover:border-purple-500/20 hover:bg-purple-500/5"
+                      >
+                        {userScript}
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 text-[9px] font-mono text-purple-300 bg-purple-950/80 border border-purple-500/30 px-3 py-1 rounded-full pointer-events-none flex items-center gap-1.5 shadow-lg">
+                          <Pencil className="w-3 h-3 text-purple-400" />
+                          <span>Click to Edit Text</span>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="pt-32 text-center opacity-5">
                       <p className="font-mono text-[9px] uppercase tracking-[1em]">[ END OF NORTH STAR SCORE ]</p>
@@ -251,7 +317,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
 
               <button 
                 data-hotspot-id="HS_ACT2_COMMIT_PROSE_BTN"
-                onClick={() => !isSaving && onApply()}
+                onClick={() => !isSaving && onApply(userScript)}
                 disabled={isSaving}
                 className={cn(
                   "flex items-center gap-6 px-12 py-5 text-[11px] font-black uppercase tracking-[0.3em] rounded-2xl transition-all shadow-2xl group overflow-hidden relative",
