@@ -42,14 +42,9 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
 }) => {
   const [copiedOriginal, setCopiedOriginal] = useState(false);
   const [copiedExpanded, setCopiedExpanded] = useState(false);
-  const [mounted, setMounted] = useState(true);
   const [userScript, setUserScript] = useState(cleanScript);
   const [isEditing, setIsEditing] = useState(false);
   const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     setUserScript(cleanScript);
@@ -108,7 +103,6 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
       setIsCheckingGrammar(false);
     }
   };
-
   const isEdited = userScript.trim() !== cleanScript.trim();
   const wordCount = userScript.trim().split(/\s+/).filter(Boolean).length;
   const estDuration = Math.ceil(wordCount / 130); // Approx 130 wpm for dramatic pacing

@@ -7,7 +7,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { render, screen, fireEvent, renderHook } from '@testing-library/react';
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { ScopeToggleGroup } from '@/components/studio/ScopeToggleGroup';
+import { ScriptLightBox } from '@/components/studio/Scriptorium/Ceremony/ScriptLightBox';
 
 vi.mock('framer-motion', () => {
   const cleanProps = ({
@@ -151,10 +153,7 @@ describe('Studio Regression Tests', () => {
   });
 
   describe('ScriptLightBox: Portal & Stacking Context Fix', () => {
-    it('should use createPortal to ensure it escapes local stacking contexts', async () => {
-      const { createPortal } = await import('react-dom');
-      const { ScriptLightBox } = await import('@/components/studio/Scriptorium/Ceremony/ScriptLightBox');
-      
+    it('should use createPortal to ensure it escapes local stacking contexts', () => {
       render(
         <ScriptLightBox 
           isOpen={true} 
@@ -170,8 +169,7 @@ describe('Studio Regression Tests', () => {
       expect(createPortal).toHaveBeenCalled();
     });
 
-    it('should call onClose when the "X" button is clicked', async () => {
-      const { ScriptLightBox } = await import('@/components/studio/Scriptorium/Ceremony/ScriptLightBox');
+    it('should call onClose when the "X" button is clicked', () => {
       const mockOnClose = vi.fn();
       
       render(
@@ -191,8 +189,7 @@ describe('Studio Regression Tests', () => {
       expect(mockOnClose).toHaveBeenCalled();
     });
 
-    it('should call onClose when the "Return to Selection Deck" button is clicked', async () => {
-      const { ScriptLightBox } = await import('@/components/studio/Scriptorium/Ceremony/ScriptLightBox');
+    it('should call onClose when the "Return to Selection Deck" button is clicked', () => {
       const mockOnClose = vi.fn();
       
       render(
