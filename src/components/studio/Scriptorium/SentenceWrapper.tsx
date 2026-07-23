@@ -613,7 +613,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
   }, [tokens, anchors, rects, block.id, actions, hideAnchors, readOnly]);
 
   const pivotPortalContent = useMemo(() => {
-    if (readOnly) return null;
+    if (hideAnchors || readOnly) return null;
     return tokens.map((token: string, idx: number) => {
       const clean = token.toLowerCase().trim().replace(/[^\w]/g, '');
       const pivotInfo = getActivePivotInfo(clean);
@@ -711,7 +711,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
 
   // Selection ghosting trigger button floating above the highlighted word
   const sparkleTriggerPortal = useMemo(() => {
-    if (readOnly || !ghostWordInfo || suggestionsOpen) return null;
+    if (hideAnchors || readOnly || !ghostWordInfo || suggestionsOpen) return null;
     const { word, rect } = ghostWordInfo;
     const hasPivots = getSuggestions(word) !== null;
     if (!hasPivots) return null;
@@ -737,11 +737,11 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
         <Sparkles className="w-3 h-3" />
       </motion.button>
     );
-  }, [ghostWordInfo, suggestionsOpen, readOnly]);
+  }, [ghostWordInfo, suggestionsOpen, readOnly, hideAnchors]);
 
   // Tonal Spectrum suggestions grouped layout
   const suggestionsPortal = useMemo(() => {
-    if (readOnly || !ghostWordInfo || !suggestionsOpen) return null;
+    if (hideAnchors || readOnly || !ghostWordInfo || !suggestionsOpen) return null;
 
     const { word, start, end, rect } = ghostWordInfo;
     const pivots = getSuggestions(word);
@@ -1010,7 +1010,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
               
               const cleanCleaned = clean.trim().replace(/[^\w]/g, '');
               const pivotInfo = getActivePivotInfo(cleanCleaned);
-              const isPivoted = pivotInfo !== null && cleanCleaned !== pivotInfo.root;
+              const isPivoted = !hideAnchors && pivotInfo !== null && cleanCleaned !== pivotInfo.root;
               const pivotTone = pivotInfo?.tone;
 
               const tokenId = `${block.id}-${idx}`;
