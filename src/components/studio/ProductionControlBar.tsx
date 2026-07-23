@@ -495,24 +495,25 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                 <button
                   data-hotspot-id="HS_ACT1_CLEAN_VIEW_BTN"
                   onClick={() => {
+                    const nextCleanView = !isCleanView;
                     actions.toggleCleanView();
-                    toast.info(isCleanView ? "Sensory Overlays Restored" : "Clean Reading View Active", {
-                      description: isCleanView ? "Sensory anchor badges and hotspot pins restored." : "Floating badges and overlays hidden for uncluttered reading."
+                    toast.info(nextCleanView ? "Clean Reading View Active" : "Sensory Overlays Restored", {
+                      description: nextCleanView ? "Floating badges and overlays hidden for uncluttered reading." : "Sensory anchor badges and hotspot pins restored."
                     });
                   }}
                   className={cn(
                     "flex items-center gap-2 px-4 py-3.5 rounded-2xl border text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg",
                     isCleanView 
-                      ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
-                      : "bg-white/5 hover:bg-white/10 border-white/10 text-white/40 hover:text-white"
+                      ? "bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+                      : "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
                   )}
                 >
-                  <Eye className={cn("w-4 h-4", isCleanView ? "text-emerald-400" : "text-white/40")} />
-                  <span>{isCleanView ? "Clean View" : "Sensory View"}</span>
+                  <Eye className={cn("w-4 h-4", isCleanView ? "text-amber-400" : "text-emerald-400")} />
+                  <span>{isCleanView ? "Clean View Active" : "Sensory View On"}</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-[10px] uppercase font-bold tracking-widest px-3 py-2">
-                <span>{isCleanView ? "Click to restore sensory anchor badges" : "Click to hide floating badges for uncluttered reading"}</span>
+                <span>{isCleanView ? "Click to restore sensory anchor badges & underlines" : "Click to hide floating badges for clean reading"}</span>
               </TooltipContent>
             </Tooltip>
           )}
