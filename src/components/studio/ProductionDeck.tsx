@@ -299,6 +299,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     const [hotClarity, setHotClarity] = useState(0);
     const [showPreFlight, setShowPreFlight] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
+    const [hasDismissedOnboarding, setHasDismissedOnboarding] = useState(false);
     const [highlightClarity, setHighlightClarity] = useState(false);
     const [isSavingNext, setIsSavingNext] = useState(false);
     const formRef = useRef<any>(null);
@@ -490,6 +491,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
     // ONBOARDING: Director's Briefing Logic
     useEffect(() => {
+        if (hasDismissedOnboarding) {
+            if (showOnboarding) setShowOnboarding(false);
+            return;
+        }
+
         // If we are not in Act I, onboarding must not be shown.
         if (currentStage !== 0) {
             if (showOnboarding) {
@@ -503,7 +509,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
         // PER-MEMORY TRACKING: We want a briefing for every new production
         const onboardingKey = `onboarding_completed_${memoryData?.id || 'global'}`;
-        const hasSeenOnboarding = localStorage.getItem(onboardingKey);
+        const hasSeenOnboarding = localStorage.getItem(onboardingKey) === 'true' || localStorage.getItem('onboarding_completed_global') === 'true';
         
         // FIND CURRENT PROMPT to check for "Untouched" state
         const currentPrompt = currentGroup?.prompts.find(p => p.id === memoryData?.promptId);
@@ -512,15 +518,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         // If they clear the text, we don't want to re-trigger the onboarding.
         const isFirstProduction = isUntouched;
 
-        // MENTOR OVERRIDE: If URL has mentor=on OR Mentor Button is clicked
-        const mentorRequested = searchParams.get('mentor') === 'on' || mentorModeActive;
-
         // Trigger if:
         // 1. Truly first time (untouched) AND hasn't seen onboarding
-        // 2. OR Mentor button is manually clicked (mentorModeActive) while in Act I
-        //    (This allows re-watching the briefing if they click Mentor again)
-        // TIGHTENED: Only auto-trigger if untouched. 
-        // If seen once, only manual Mentor button can re-trigger it.
+        // 2. OR Mentor button is manually clicked (isManualMentor) while in Act I
         const shouldTrigger = !hasSeenOnboarding 
             ? (isFirstProduction || mentorModeActive)
             : (isManualMentor && mentorModeActive && currentStage === 0);
@@ -532,14 +532,20 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             // to prevent UI competition
             if (isOverlayOpen) closeOverlay();
         }
-    }, [modality, memoryData?.id, memoryData?.description, currentStage, mentorModeActive, currentGroup, searchParams, isReviewing, showOnboarding]);
+    }, [modality, memoryData?.id, memoryData?.description, currentStage, mentorModeActive, currentGroup, searchParams, isReviewing, showOnboarding, hasDismissedOnboarding]);
 
     const [onboardingJustClosed, setOnboardingJustClosed] = useState(false);
 
     const handleOnboardingClose = (quiet: boolean = false) => {
+        setHasDismissedOnboarding(true);
         setShowOnboarding(false);
         const onboardingKey = `onboarding_completed_${memoryData?.id || 'global'}`;
-        localStorage.setItem(onboardingKey, 'true');
+        try {
+            localStorage.setItem(onboardingKey, 'true');
+            localStorage.setItem('onboarding_completed_global', 'true');
+        } catch (e) {
+            // Ignore localStorage errors
+        }
 
         if (!quiet) {
             setHighlightClarity(true);
