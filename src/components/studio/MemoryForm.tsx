@@ -2044,7 +2044,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                              ref={setStoryHookRef}
                              block={{ id: 'story-hook', text: description, type: 'hook' }} 
                              isActive={productionStage === 0}
-                             hideAnchors={isCleanMode || isCleanView}
+                             hideAnchors={isCleanView}
                              onUpdate={(text: string) => {
                                setDescription(text);
                                onActivity?.(); // Reset idle timer
@@ -2070,7 +2070,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       
                       {/* SCRIPT SUPERVISOR HUD (Act I Enhancements) */}
                       <AnimatePresence>
-                        {atmosphericSuggestions.length > 0 && productionStage === 0 && !isCleanMode && !isCleanView && (
+                        {atmosphericSuggestions.length > 0 && productionStage === 0 && !isCleanView && (
                           <motion.div 
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ 
