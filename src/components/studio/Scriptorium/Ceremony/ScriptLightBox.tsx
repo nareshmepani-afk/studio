@@ -42,7 +42,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
 }) => {
   const [copiedOriginal, setCopiedOriginal] = useState(false);
   const [copiedExpanded, setCopiedExpanded] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(typeof window !== 'undefined');
   const [userScript, setUserScript] = useState(cleanScript);
   const [isEditing, setIsEditing] = useState(false);
   const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
@@ -56,6 +56,20 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
     setUserScript(cleanScript);
     setIsEditing(false);
   }, [cleanScript, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const handleCopy = async (text: string, isOriginal: boolean) => {
     await navigator.clipboard.writeText(text);

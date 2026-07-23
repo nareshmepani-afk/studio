@@ -536,22 +536,25 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
     const [onboardingJustClosed, setOnboardingJustClosed] = useState(false);
 
-    const handleOnboardingClose = () => {
+    const handleOnboardingClose = (quiet: boolean = false) => {
         setShowOnboarding(false);
         const onboardingKey = `onboarding_completed_${memoryData?.id || 'global'}`;
         localStorage.setItem(onboardingKey, 'true');
-        setHighlightClarity(true);
-        setOnboardingJustClosed(true);
-        
-        // Reset the closed signal after a short delay so it can be re-triggered if needed
-        setTimeout(() => setOnboardingJustClosed(false), 2000);
-        
-        // Mentor Baton Hand-off
-        triggerWhisper({
-            act: 0,
-            whisper: "The briefing is complete. Act I is your foundation—don't rush it. Focus on the sensory details that make this memory yours.",
-            toolLabel: "Director's Insight"
-        });
+
+        if (!quiet) {
+            setHighlightClarity(true);
+            setOnboardingJustClosed(true);
+            
+            // Reset the closed signal after a short delay so it can be re-triggered if needed
+            setTimeout(() => setOnboardingJustClosed(false), 2000);
+            
+            // Mentor Baton Hand-off
+            triggerWhisper({
+                act: 0,
+                whisper: "The briefing is complete. Act I is your foundation—don't rush it. Focus on the sensory details that make this memory yours.",
+                toolLabel: "Director's Insight"
+            });
+        }
     };
 
     const handleUpdate = useCallback((updatedData: MemoryData) => {

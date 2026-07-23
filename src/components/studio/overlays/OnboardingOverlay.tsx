@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 interface OnboardingOverlayProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (quiet?: boolean) => void;
 }
 
 export function OnboardingOverlay({ isOpen, onClose }: OnboardingOverlayProps) {
@@ -14,10 +14,14 @@ export function OnboardingOverlay({ isOpen, onClose }: OnboardingOverlayProps) {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === 'Escape' || e.key === 'Esc') {
+      if (e.key === 'Escape' || e.key === 'Esc') {
         e.preventDefault();
         e.stopPropagation();
-        onClose();
+        onClose(true); // Quiet Dismiss on ESC
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose(false); // Begin Production on ENTER
       }
     };
 
@@ -100,16 +104,18 @@ export function OnboardingOverlay({ isOpen, onClose }: OnboardingOverlayProps) {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={onClose}
-                  className="group relative px-8 py-4 bg-emerald-500 text-slate-950 rounded-full font-black uppercase tracking-widest text-xs flex items-center gap-3 mx-auto shadow-[0_20px_40px_rgba(16,185,129,0.2)] transition-all hover:shadow-[0_25px_50px_rgba(16,185,129,0.3)]"
+                  onClick={() => onClose(false)}
+                  className="group relative px-8 py-4 bg-emerald-500 text-slate-950 rounded-full font-black uppercase tracking-widest text-xs flex items-center gap-3 mx-auto shadow-[0_20px_40px_rgba(16,185,129,0.2)] transition-all hover:shadow-[0_25px_50px_rgba(16,185,129,0.3)] cursor-pointer"
                 >
                   Begin Production
                   <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </motion.button>
 
-                <p className="text-[9px] text-zinc-600 uppercase tracking-[0.3em] font-black">
-                  Press <span className="text-zinc-400">Enter</span> or <span className="text-zinc-400">Escape</span> to dismiss
-                </p>
+                <div className="flex items-center justify-center gap-4 text-[9px] text-zinc-500 uppercase tracking-[0.25em] font-black">
+                  <span>Press <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono">ENTER</kbd> to Begin</span>
+                  <span className="text-zinc-700">•</span>
+                  <span>Press <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono">ESC</kbd> to Dismiss</span>
+                </div>
               </div>
             </motion.div>
           </div>

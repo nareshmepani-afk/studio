@@ -123,6 +123,29 @@ export const StudioBriefing: React.FC<StudioBriefingProps> = ({
     };
   }, [isOpen, currentStep]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        e.preventDefault();
+        onClose(false);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (currentStep === null) {
+          setCurrentStep(0);
+        } else if (currentStep < steps.length - 1) {
+          setCurrentStep(currentStep + 1);
+        } else {
+          onClose(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, currentStep, onClose, steps.length]);
+
   if (!isOpen) return null;
 
   const handleNext = () => {
