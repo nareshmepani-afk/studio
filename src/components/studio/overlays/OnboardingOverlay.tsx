@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface OnboardingOverlayProps {
@@ -14,11 +14,11 @@ export function OnboardingOverlay({ isOpen, onClose }: OnboardingOverlayProps) {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || e.key === 'Esc') {
+      if (e.key === 'Escape' || e.key === 'Esc' || e.code === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
         onClose(true); // Quiet Dismiss on ESC
-      } else if (e.key === 'Enter') {
+      } else if (e.key === 'Enter' || e.code === 'Enter') {
         e.preventDefault();
         e.stopPropagation();
         onClose(false); // Begin Production on ENTER
@@ -43,11 +43,29 @@ export function OnboardingOverlay({ isOpen, onClose }: OnboardingOverlayProps) {
               ease: "easeInOut" 
             } 
           }}
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/60 backdrop-blur-[40px]"
+          onClick={() => onClose(true)}
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/60 backdrop-blur-[40px] cursor-pointer"
         >
-          <div className="max-w-2xl w-full p-12 relative">
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-2xl w-full p-12 relative cursor-default"
+          >
+            {/* Top-Right Dismiss 'X' Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose(true);
+              }}
+              className="absolute top-4 right-4 text-zinc-400 hover:text-white p-2.5 rounded-full hover:bg-white/10 transition-all cursor-pointer z-20 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+              aria-label="Dismiss Director Briefing"
+              data-hotspot-id="HS_BRIEFING_CLOSE_X_BTN"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
             {/* Cinematic Background Glow */}
-            <div className="absolute inset-0 bg-emerald-500/5 blur-[120px] rounded-full animate-pulse" />
+            <div className="absolute inset-0 bg-emerald-500/5 blur-[120px] rounded-full animate-pulse pointer-events-none" />
             
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -104,7 +122,11 @@ export function OnboardingOverlay({ isOpen, onClose }: OnboardingOverlayProps) {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => onClose(false)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClose(false);
+                  }}
+                  data-hotspot-id="HS_BRIEFING_BEGIN_PRODUCTION_BTN"
                   className="group relative px-8 py-4 bg-emerald-500 text-slate-950 rounded-full font-black uppercase tracking-widest text-xs flex items-center gap-3 mx-auto shadow-[0_20px_40px_rgba(16,185,129,0.2)] transition-all hover:shadow-[0_25px_50px_rgba(16,185,129,0.3)] cursor-pointer"
                 >
                   Begin Production
@@ -112,9 +134,35 @@ export function OnboardingOverlay({ isOpen, onClose }: OnboardingOverlayProps) {
                 </motion.button>
 
                 <div className="flex items-center justify-center gap-4 text-[9px] text-zinc-500 uppercase tracking-[0.25em] font-black">
-                  <span>Press <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono">ENTER</kbd> to Begin</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClose(false);
+                    }}
+                    data-hotspot-id="HS_BRIEFING_ENTER_BEGIN_BTN"
+                    className="hover:text-emerald-400 transition-colors cursor-pointer group flex items-center gap-1.5 focus:outline-none"
+                  >
+                    <span>Press</span>
+                    <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono group-hover:border-emerald-500/50 group-hover:text-emerald-300 transition-colors">ENTER</kbd>
+                    <span>to Begin</span>
+                  </button>
+
                   <span className="text-zinc-700">•</span>
-                  <span>Press <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono">ESC</kbd> to Dismiss</span>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClose(true);
+                    }}
+                    data-hotspot-id="HS_BRIEFING_ESC_DISMISS_BTN"
+                    className="hover:text-zinc-200 transition-colors cursor-pointer group flex items-center gap-1.5 focus:outline-none"
+                  >
+                    <span>Press</span>
+                    <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono group-hover:border-zinc-500 group-hover:text-white transition-colors">ESC</kbd>
+                    <span>to Dismiss</span>
+                  </button>
                 </div>
               </div>
             </motion.div>
