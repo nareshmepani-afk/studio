@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
+import { StudioContext } from '@/hooks/studio/useStudioState';
 
 interface HotspotItem {
   id: string;
@@ -12,6 +13,8 @@ interface HotspotItem {
 }
 
 export function HotspotOverlay() {
+  const studioContext = useContext(StudioContext);
+  const isCleanView = studioContext?.isCleanView ?? false;
   const [isActive, setIsActive] = useState(false);
   const [hotspots, setHotspots] = useState<HotspotItem[]>([]);
 
@@ -80,7 +83,7 @@ export function HotspotOverlay() {
     };
   }, [isActive, updatePositions]);
 
-  if (!isActive) return null;
+  if (isCleanView || !isActive) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] pointer-events-none w-full h-full select-none">

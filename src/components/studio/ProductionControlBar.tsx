@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MentorshipHotspot } from './MentorshipHotspot';
-import { Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, Rocket, Circle, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, Rocket, Circle, ChevronLeft, ChevronRight, AlertCircle, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -101,7 +101,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
     lastDetectedAnchor,
     isReviewing,
     isGeneratingDrafts,
-    isDirectorOpen
+    isDirectorOpen,
+    isCleanView
   } = useStudioState();
   const [lastClickTime, setLastClickTime] = React.useState(0);
   const [isSurging, setIsSurging] = React.useState(false);
@@ -488,6 +489,34 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
         {/* --- NAVIGATION (RIGHT) --- */}
         <div className="flex items-center gap-4">
+          {currentStage === 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  data-hotspot-id="HS_ACT1_CLEAN_VIEW_BTN"
+                  onClick={() => {
+                    actions.toggleCleanView();
+                    toast.info(isCleanView ? "Sensory Overlays Restored" : "Clean Reading View Active", {
+                      description: isCleanView ? "Sensory anchor badges and hotspot pins restored." : "Floating badges and overlays hidden for uncluttered reading."
+                    });
+                  }}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-3.5 rounded-2xl border text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg",
+                    isCleanView 
+                      ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                      : "bg-white/5 hover:bg-white/10 border-white/10 text-white/40 hover:text-white"
+                  )}
+                >
+                  <Eye className={cn("w-4 h-4", isCleanView ? "text-emerald-400" : "text-white/40")} />
+                  <span>{isCleanView ? "Clean View" : "Sensory View"}</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-[10px] uppercase font-bold tracking-widest px-3 py-2">
+                <span>{isCleanView ? "Click to restore sensory anchor badges" : "Click to hide floating badges for uncluttered reading"}</span>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           <AnimatePresence mode="wait">
             {currentStage > 0 && (
               <motion.button

@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useStudioState } from '@/hooks/studio/useStudioState';
 
 interface MentorshipHotspotProps {
   number: number;
@@ -11,6 +12,8 @@ interface MentorshipHotspotProps {
 }
 
 export const MentorshipHotspot: React.FC<MentorshipHotspotProps> = ({ number, label, className }) => {
+  const { isCleanView } = useStudioState();
+  if (isCleanView) return null;
   return (
     <TooltipProvider delayDuration={0}>
       <Tooltip>

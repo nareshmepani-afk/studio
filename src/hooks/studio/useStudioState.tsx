@@ -62,6 +62,7 @@ interface StudioState {
   isolateSentenceHighlight: boolean;
   isRehearsing: boolean;
   rehearsalSpeed: number;
+  isCleanView: boolean;
   dispatcher?: {
     addCatalyst?: (blockId: string, type: CatalystType, value?: string) => { collisionDetected: boolean };
   };
@@ -115,13 +116,15 @@ interface StudioActions {
   setIsolateSentenceHighlight: (val: boolean) => void;
   setIsRehearsing: (val: boolean) => void;
   setRehearsalSpeed: (speed: number) => void;
+  setIsCleanView: (val: boolean | ((prev: boolean) => boolean)) => void;
+  toggleCleanView: () => void;
 }
 
 // 3. Context Shape
 type StudioContextType = StudioState & { actions: StudioActions };
 
 // 4. Create Context
-const StudioContext = createContext<StudioContextType | undefined>(undefined);
+export const StudioContext = createContext<StudioContextType | undefined>(undefined);
 
 // 5. URL Sync Component to isolate Suspense
 function URLStateSync({ 
@@ -206,6 +209,7 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     isolateSentenceHighlight: false,
     isRehearsing: false,
     rehearsalSpeed: 1.0,
+    isCleanView: false,
     dispatcher: undefined,
     ...(initialState || {}),
   });
@@ -477,6 +481,8 @@ export const StudioProvider = ({ children, initialState }: { children: ReactNode
     setIsolateSentenceHighlight: (val) => setState(s => ({ ...s, isolateSentenceHighlight: val })),
     setIsRehearsing: (val) => setState(s => ({ ...s, isRehearsing: val })),
     setRehearsalSpeed: (speed) => setState(s => ({ ...s, rehearsalSpeed: speed })),
+    setIsCleanView: (val) => setState(s => ({ ...s, isCleanView: typeof val === 'function' ? val(s.isCleanView) : val })),
+    toggleCleanView: () => setState(s => ({ ...s, isCleanView: !s.isCleanView })),
   }), []);
 
   return (
