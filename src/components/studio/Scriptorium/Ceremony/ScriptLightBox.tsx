@@ -42,7 +42,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
 }) => {
   const [copiedOriginal, setCopiedOriginal] = useState(false);
   const [copiedExpanded, setCopiedExpanded] = useState(false);
-  const [mounted, setMounted] = useState(typeof window !== 'undefined');
+  const [mounted, setMounted] = useState(true);
   const [userScript, setUserScript] = useState(cleanScript);
   const [isEditing, setIsEditing] = useState(false);
   const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
@@ -114,7 +114,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
   const wordCount = userScript.trim().split(/\s+/).filter(Boolean).length;
   const estDuration = Math.ceil(wordCount / 130); // Approx 130 wpm for dramatic pacing
 
-  if (!mounted) return null;
+  if (typeof window === 'undefined') return null;
 
   return createPortal(
     <AnimatePresence>
