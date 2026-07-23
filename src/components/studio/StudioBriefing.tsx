@@ -165,7 +165,7 @@ export const StudioBriefing: React.FC<StudioBriefingProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden select-none select-none">
+    <div className="fixed inset-0 z-[100000] flex items-center justify-center overflow-hidden select-none">
       {/* Dim Overlay */}
       {(currentStep === null || !spotlightRect) && (
         <motion.div 

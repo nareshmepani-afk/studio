@@ -114,7 +114,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
   const wordCount = userScript.trim().split(/\s+/).filter(Boolean).length;
   const estDuration = Math.ceil(wordCount / 130); // Approx 130 wpm for dramatic pacing
 
-  if (typeof window === 'undefined') return null;
+  if (!mounted) return null;
 
   return createPortal(
     <AnimatePresence>
