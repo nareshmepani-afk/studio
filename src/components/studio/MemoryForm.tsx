@@ -2206,7 +2206,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       {
                         visionType: `Committed: ${data?.activeVisionLabel || selectedVision?.label || 'Act I Script'}`,
                         visionFocus: "Your locked Act I performance blueprint.",
-                        cleanScript: originalHook || description || "",
+                        cleanScript: prose || originalHook || description || "",
                         beatSheet: ["Act I Committal", "Sealed Blueprint"],
                         stageDirections: [],
                         preFlightBrief: {
@@ -2602,7 +2602,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       isOpen={!!selectedDraftForPreview}
       isSaving={isCloudSaving}
       onClose={() => setSelectedDraftForPreview(null)}
-      originalHook={productionStage === 1 ? (originalHook || description) : (polishedOriginalHook || description)}
+      originalHook={productionStage === 1 ? (prose || originalHook || description) : (prose || polishedOriginalHook || description)}
       originalHookLabel={productionStage === 1 ? ("Committed: " + (data?.activeVisionLabel || selectedVision?.label || 'Act I Script')) : "Original Spark"}
       cleanScript={selectedDraftForPreview?.cleanScript || ''}
       visionLabel={selectedDraftForPreview?.visionType || ''}

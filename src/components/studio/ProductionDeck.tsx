@@ -730,11 +730,12 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                 // Map temporalSummary to each vision for consistent display in SelectionDeck if needed
                 const visionsWithSummary = visions.map(v => ({ ...v, temporalSummary }));
                 
-                // NEW: Add the Original Hook as a 4th option
+                // NEW: Add the Original Hook as a 4th option preserving full authentic prose
+                const fullOriginalScript = (latestDescription && latestDescription.trim().length > 0) ? latestDescription : (polishedOriginalHook || '');
                 const originalVision = {
                     visionType: 'Original Polished',
                     visionFocus: 'Your authentic voice, preserved and polished.',
-                    cleanScript: polishedOriginalHook,
+                    cleanScript: fullOriginalScript,
                     stageDirections: [],
                     beatSheet: ['Original Dictation'],
                     preFlightBrief: {
