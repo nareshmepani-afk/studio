@@ -377,5 +377,19 @@ describe('Studio Regression Tests', () => {
       const callArg = mockUpdate.mock.calls[0][0];
       expect(callArg.isProductionLocked).toBe(false);
     });
+
+    it('should return prose in flush result package when prose is populated', async () => {
+      const { useMemoryPersistence } = await import('@/hooks/studio/useMemoryPersistence');
+      const props = {
+        ...baseProps,
+        data: { ...baseProps.data, prose: 'Long synthesized prose text with 367 words' }
+      };
+
+      const { result } = renderHook(() => useMemoryPersistence(props));
+      const flushResult = await result.current.flush({ description: 'Test desc', prose: 'Flushed prose text with 367 words' });
+
+      expect(flushResult.success).toBe(true);
+      expect(flushResult.prose).toBe('Flushed prose text with 367 words');
+    });
   });
 });

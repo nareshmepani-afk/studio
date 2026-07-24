@@ -702,9 +702,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             console.log("[ProductionDeck] Act I detected. Triggering AI Synthesis Ceremony...");
             setIsGeneratingDrafts(true);
             setSynthesisError(null); // RESET: Start fresh
-            synthesisAbortRef.current = false; // Reset abort signal for new generation
             try {
-                const latestDescription = flushedState?.description || memoryData?.description || '';
+                const rawText = flushedState?.prose || memoryData?.prose || flushedState?.description || memoryData?.description || '';
+                const latestDescription = rawText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
                 const latestTimeframeScope = flushedState?.latestState?.timeframeScope || timeframeScope;
                 const latestDurationQuantity = flushedState?.latestState?.durationQuantity || durationQuantity;
                 const latestDurationUnit = flushedState?.latestState?.durationUnit || durationUnit;

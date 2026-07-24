@@ -321,7 +321,7 @@ export function useMemoryPersistence({
 
         const result = await updateRef.current(delta);
         console.log("[useMemoryPersistence] Firestore update success:", result);
-        return { success: true, result, description: s.description, latestState: s };
+        return { success: true, result, description: s.description, prose: s.prose, latestState: s };
       } catch (err) {
         console.error("[useMemoryPersistence] Flush failed:", err);
         return { success: false, error: err };

@@ -154,6 +154,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
          // Only update if there's a meaningful change
          const hasIdTransition = cp.memory.id && !selectedProductionData?.id;
          const hasDataUpdate = cp.memory.description !== selectedProductionData?.description || 
+                               cp.memory.prose !== selectedProductionData?.prose ||
                                cp.memory.productionStage !== selectedProductionData?.productionStage ||
                                cp.memory.id !== selectedProductionData?.id ||
                                (cp.memory.narratorAgeAtTime !== undefined && cp.memory.narratorAgeAtTime !== selectedProductionData?.narratorAgeAtTime);
