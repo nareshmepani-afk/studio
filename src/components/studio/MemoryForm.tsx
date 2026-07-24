@@ -1636,6 +1636,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                         <TooltipTrigger asChild>
                                           <span className="inline-block">
                                             <motion.button
+                                              data-hotspot-id="HS_ACT2_RELEASE_LOCK_BTN"
                                               initial={{ opacity: 0, scale: 0.9 }}
                                               animate={{ opacity: 1, scale: 1 }}
                                               whileHover={{ scale: 1.05 }}

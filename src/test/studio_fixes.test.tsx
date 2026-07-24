@@ -391,5 +391,25 @@ describe('Studio Regression Tests', () => {
       expect(flushResult.success).toBe(true);
       expect(flushResult.prose).toBe('Flushed prose text with 367 words');
     });
+
+    it('HS_ACT1_DRAFT_COMPLETED_BTN INTEGRITY: should lock production state and preserve exact prose upon draft completion', async () => {
+      const { useMemoryPersistence } = await import('@/hooks/studio/useMemoryPersistence');
+      const mockUpdate = vi.fn();
+      const testProse = "The history I carry is a grand odyssey across oceans and generations.";
+      const props = {
+        ...baseProps,
+        data: { ...baseProps.data, prose: testProse, isProductionLocked: false },
+        update: mockUpdate
+      };
+
+      const { result } = renderHook(() => useMemoryPersistence(props));
+
+      await result.current.flush({ isProductionLocked: true, prose: testProse });
+
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+        isProductionLocked: true,
+        prose: testProse
+      }));
+    });
   });
 });

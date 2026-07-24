@@ -755,10 +755,13 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     description: "The Director has prepared three distinct paths for your memory."
                 });
 
-                // Persist the generated drafts and review state immediately to Firestore
+                // Persist the generated drafts, review state, locked draft state, and raw prose immediately to Firestore
+                setIsProductionLocked(true);
                 await handleUpdate({
                     productionTakes: completeDrafts,
-                    isReviewing: true
+                    isReviewing: true,
+                    isProductionLocked: true,
+                    prose: rawText
                 });
 
                 // --- AUTOMATED SOUNDSTACK & BRIEF INTEGRATION ---
