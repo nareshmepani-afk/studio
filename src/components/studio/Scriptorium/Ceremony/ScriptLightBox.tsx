@@ -308,10 +308,10 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                   </div>
 
                   <div className="space-y-12">
-                    <div className="text-center opacity-10 flex items-center justify-center gap-8">
-                       <div className="h-px w-24 bg-gradient-to-r from-transparent to-white" />
-                       <p className="font-mono text-[9px] uppercase tracking-[0.6em] whitespace-nowrap">Scene I: The Vision</p>
-                       <div className="h-px w-24 bg-gradient-to-l from-transparent to-white" />
+                    <div className="text-center flex items-center justify-center gap-8">
+                       <div className="h-px w-28 bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" />
+                       <p className="font-mono text-[10px] font-black uppercase tracking-[0.5em] text-amber-300/90 whitespace-nowrap drop-shadow-[0_0_10px_rgba(245,158,11,0.2)]">Scene I: The Vision</p>
+                       <div className="h-px w-28 bg-gradient-to-l from-transparent via-amber-400/40 to-transparent" />
                     </div>
 
                     {isEditing ? (
@@ -343,8 +343,8 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                       </div>
                     )}
 
-                    <div className="pt-32 text-center opacity-5">
-                      <p className="font-mono text-[9px] uppercase tracking-[1em]">[ END OF NORTH STAR SCORE ]</p>
+                    <div className="pt-24 text-center opacity-30">
+                      <p className="font-mono text-[9px] uppercase tracking-[1em] text-white/60">[ END OF NORTH STAR SCORE ]</p>
                     </div>
                   </div>
                 </div>
