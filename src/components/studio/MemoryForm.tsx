@@ -1645,7 +1645,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                               className="px-4 py-2 bg-amber-500/20 border border-amber-500/50 hover:bg-amber-500/30 text-amber-400 text-[9px] font-black uppercase tracking-widest rounded-full flex items-center gap-3 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all animate-pulse hover:animate-none"
                                             >
                                               <Lock className="w-3 h-3" />
-                                              Release Production Lock
+                                              Release Draft Lock
                                             </motion.button>
                                           </span>
                                         </TooltipTrigger>
@@ -1653,10 +1653,10 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                           <div className="space-y-2">
                                             <p className="flex items-center gap-2">
                                               <AlertCircle className="w-3 h-3 text-amber-400" />
-                                              DIRECTOR'S LOCK ACTIVE
+                                              DRAFT LOCK ACTIVE
                                             </p>
                                             <p className="text-[8px] opacity-70 normal-case font-normal leading-relaxed">
-                                              Metadata is currently locked to preserve the narrative thread. Release this lock to enable manual control over age, coordinates, and timeframe.
+                                              Draft prose is sealed to protect your text during AI synthesis. Release this lock to enable manual text editing.
                                             </p>
                                           </div>
                                         </TooltipContent>
@@ -1671,10 +1671,10 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                           <Lock className="w-6 h-6 text-amber-400" />
                                         </div>
                                         <AlertDialogTitle className="text-2xl font-headline text-white italic">
-                                          Release Narrative Lock?
+                                          Release Draft Lock?
                                         </AlertDialogTitle>
                                         <AlertDialogDescription className="text-white/60 text-sm leading-relaxed">
-                                          Warning: Releasing the lock will allow manual edits but may <span className="text-amber-400 font-bold">de-sync your Act II metadata</span> if you change the narrative structure significantly.
+                                          Warning: Releasing the lock will re-enable manual text editing in the Scriptorium.
                                           <br /><br />
                                           Are you sure you want to proceed with manual control?
                                         </AlertDialogDescription>
@@ -1690,8 +1690,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                             await flush({ isProductionLocked: false });
                                             update({ isProductionLocked: false });
                                             setShowUnlockConfirm(false);
-                                            toast.success("Production Lock Released", {
-                                              description: "Manual control of metadata is now enabled."
+                                            toast.success("Draft Lock Released", {
+                                              description: "Manual text control in the Scriptorium is now enabled."
                                             });
                                           }}
                                           className="bg-amber-500 hover:bg-amber-400 text-black rounded-xl px-8 py-2 h-auto text-[10px] font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:scale-105 active:scale-95"
