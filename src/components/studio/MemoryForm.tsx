@@ -2605,12 +2605,11 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       onClose={(updatedScript?: string) => {
         if (updatedScript && selectedDraftForPreview) {
           console.log("[MemoryForm] Preserving draft edits to Selection Deck for:", selectedDraftForPreview.visionType);
-          const currentTakes = productionTakes || data?.productionTakes || [];
+          const currentTakes = data?.productionTakes || [];
           if (currentTakes.length > 0) {
             const updated = currentTakes.map((d: any) => 
               d.visionType === selectedDraftForPreview.visionType ? { ...d, cleanScript: updatedScript, isCustomTuned: true } : d
             );
-            setProductionTakes(updated);
             update({ productionTakes: updated });
           }
         }

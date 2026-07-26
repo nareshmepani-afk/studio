@@ -130,7 +130,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[10000] flex items-center justify-center p-4 lg:p-12 bg-slate-950/95 backdrop-blur-3xl"
-          onClick={onClose}
+          onClick={() => handleCloseWithSave()}
         >
           <motion.div
             initial={{ y: 50, scale: 0.98, opacity: 0 }}
