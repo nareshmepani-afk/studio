@@ -14,7 +14,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 
 interface ScriptLightBoxProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (updatedScript?: string) => void;
   originalHook: string;
   originalHookLabel?: string;
   cleanScript: string;
@@ -52,19 +52,31 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
     setIsEditing(false);
   }, [cleanScript, isOpen]);
 
+  const handleCloseWithSave = () => {
+    const isEdited = userScript.trim() !== cleanScript.trim();
+    if (isEdited) {
+      toast.success("Draft Edits Preserved", {
+        description: "Your custom script updates have been saved to the Selection Deck."
+      });
+      onClose(userScript);
+    } else {
+      onClose();
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'Esc') {
         e.preventDefault();
-        onClose();
+        handleCloseWithSave();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, userScript, cleanScript]);
 
   const handleCopy = async (text: string, isOriginal: boolean) => {
     await navigator.clipboard.writeText(text);
@@ -132,7 +144,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
               onClick={(e) => {
                 e.stopPropagation();
                 console.log("[ScriptLightBox] X clicked");
-                onClose();
+                handleCloseWithSave();
               }}
               className="absolute top-8 right-8 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-all z-[10050] cursor-pointer pointer-events-auto"
               aria-label="Close Review"
@@ -381,7 +393,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
               <button 
                 onClick={() => {
                   console.log("[ScriptLightBox] Return clicked");
-                  onClose();
+                  handleCloseWithSave();
                 }}
                 className="group flex items-center gap-3 text-[10px] font-black text-white/30 hover:text-white uppercase tracking-[0.2em] transition-all"
               >
