@@ -1241,6 +1241,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                     }}
                     onSelect={async (text, type, label, structured) => {
                       // COMMIT HANDSHAKE (Director's Lock)
+                      globalActions.setIsReviewing(false);
                       setOriginalHook(text || polishedOriginalHook || description);
                       globalActions.setSelectedTake(text || '');
                       
@@ -2275,6 +2276,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       ];
                       setScriptBlocks(blocks);
                       setIsReviewingSensory(false);
+                      globalActions.setIsReviewing(false);
                       
                       // Match Act I: Set selection dynamically in local state
                       globalActions.setSelectedVision(type as any, label);
@@ -2284,7 +2286,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         prose: text,
                         scriptBlocks: blocks,
                         activeVision: type,
-                        activeVisionLabel: label
+                        activeVisionLabel: label,
+                        isReviewing: false
                       });
                       
                       toast.success("Sensory Weave Sealed", {
@@ -2691,6 +2694,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
             ];
             setScriptBlocks(blocks);
             setIsReviewingSensory(false);
+            globalActions.setIsReviewing(false);
             setSelectedDraftForPreview(null);
             
             // Map label to activeVision key
@@ -2706,7 +2710,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
               prose: text,
               scriptBlocks: blocks,
               activeVision: type,
-              activeVisionLabel: label
+              activeVisionLabel: label,
+              isReviewing: false
             });
             
             toast.success("Sensory Weave Sealed", {
