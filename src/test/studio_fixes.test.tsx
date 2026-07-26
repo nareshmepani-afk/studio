@@ -411,5 +411,16 @@ describe('Studio Regression Tests', () => {
         prose: testProse
       }));
     });
+
+    it('SPOKEN WORD RULE SANITIZER: should strip screenplay and camera cues from generated monologues', async () => {
+      const { stripScreenplayCues } = await import('@/actions/aiWeaver');
+      const input = "Cut to a frame of red earth clinging to cracked palms in Kutch, a silent inheritance carried across dark waters. The lens zooms past Nairobi's equatorial blaze.";
+      const cleaned = stripScreenplayCues(input);
+
+      expect(cleaned).not.toContain("Cut to");
+      expect(cleaned).not.toContain("Cut to a frame of");
+      expect(cleaned).not.toContain("The lens zooms");
+      expect(cleaned).toBe("Red earth clinging to cracked palms in Kutch, a silent inheritance carried across dark waters. Nairobi's equatorial blaze.");
+    });
   });
 });

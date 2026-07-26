@@ -30,6 +30,28 @@ if (serviceAccountRaw) {
  * Server action to expand sensory bullets into rich prose.
  * Uses Genkit (Google AI) which is already configured with an API Key.
  */
+/**
+ * Post-processor sanitizer that forcefully strips all screenplay, camera, film editing cues,
+ * and stage notes from generated narrative prose to guarantee 100% spoken human story integrity.
+ */
+export function stripScreenplayCues(text: string): string {
+  if (!text) return "";
+  let cleaned = text
+    // Strip leading camera/scene cut phrases (e.g. "Cut to a frame of ", "Cut to ")
+    .replace(/^(?:Cut to\s*(?:a\s*frame\s*of|a\s*shot\s*of|a|the)?|Wide shot(?:\s*of|\s*:)?|Close-up(?:\s*on|\s*:)?|Pan to|Zoom in on|Zoom to|Hard freeze on|Fade in(?:\s*:)?|Dissolve to)\s*/i, '')
+    // Strip inline camera/lens/stage directives (e.g. "The lens zooms past ", "Cut to ")
+    .replace(/\b(?:Cut to\s*(?:a\s*frame\s*of|a\s*shot\s*of|a|the)?|Wide shot(?:\s*of|\s*:)?|Close-up(?:\s*on|\s*:)?|Pan to|Zoom in on|Zoom to|The lens zooms(?:\s*past|\s*in|\s*to)?|Hard freeze on|Fade in(?:\s*:)?|Dissolve to)\s*/gi, '')
+    // Strip stage directions in brackets or parentheses (e.g. [Fade in], (pause))
+    .replace(/\[(?:Fade in|Fade out|Wide shot|Close up|Cut to|Camera|Interior|Exterior|Dissolve).*?\]/gi, '')
+    .replace(/\((?:pause|camera|wide shot|close up|zoom).*?\)/gi, '')
+    .trim();
+
+  if (cleaned.length > 0) {
+    cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+  return cleaned;
+}
+
 export async function expandWithAI(
   description: string, 
   sensoryConfig: any[], 
@@ -74,7 +96,7 @@ export async function expandWithAI(
       The Director has chosen a specific "Vision" for this story: ${visionIntent?.label || 'General Narrative'} (${visionIntent?.type || 'Standard'}).
       ${visionIntent?.type === 'soul' ? 'Focus on the internal, emotional truth and spiritual resonance.' : 
         visionIntent?.type === 'sensory' ? 'Prioritize vivid physical sensations, scents, and ambient sounds.' :
-        visionIntent?.type === 'cinematic' ? 'Use dramatic pacing, high-contrast metaphors, and filmic descriptions.' : 
+        visionIntent?.type === 'cinematic' ? 'Use dramatic pacing and striking sensory metaphors.' : 
         'Maintain a balanced literary tone.'}
 
       [INCOMING DATA]
@@ -90,7 +112,7 @@ export async function expandWithAI(
       
       STYLE RULES (THE GOLD STANDARD):
       - Write strictly in FIRST-PERSON SPOKEN PROSE for a single narrator speaking directly into a teleprompter / camera.
-      - BANNED SCREENPLAY & CAMERA CUES: Do NOT use camera angles, editing commands, or film directions (e.g. NEVER start or include "Cut to," "Wide shot," "Pan to," "Zoom to," "Close-up on," "Hard freeze on," "Fade in"). The text must be 100% spoken human story, not film stage notes.
+      - ABSOLUTELY NO SCREENPLAY OR CAMERA CUES: You are WRITING SPOKEN MONOLOGUE, NOT A FILM SCRIPT. NEVER include screenplay directives, camera directions, lens movements, or stage cues anywhere in the text (e.g. NEVER write "Cut to...", "Cut to a frame of...", "The lens zooms...", "Wide shot", "Close-up", "Pan to"). Every single word MUST be spoken aloud by the narrator.
       - Use high-contrast metaphors (e.g., "not a map, but the soil").
       - Focus on the "Linguistically silent but culturally loud" quality of migration.
       - Avoid AI-speak: BANNED words include "odyssey," "lineage," "tapestry," "vibrant," "testament," "unfolding," "interwoven," "symphony," or "shores" (unless refers to a physical beach).
@@ -100,7 +122,7 @@ export async function expandWithAI(
       Each Take must be a single, rhythmic, and meaningful paragraph (100-140 words) meant to be spoken aloud.
       
       Take 1 ("poetic"): Internal world focus. Reflective and deeply metaphorical spoken monologue.
-      Take 2 ("direct"): Humanity and persistence focus. Documentary-style spoken memory with authentic weight.
+      Take 2 ("direct"): Humanity and persistence focus. Documentary-style spoken monologue with authentic weight.
       Take 3 ("nostalgic"): Ancestral and generational focus. Passing down values like "Learn. Adapt. Endure."
       
       Return strictly JSON:
@@ -127,7 +149,11 @@ export async function expandWithAI(
 
     if (output) {
       console.log("[AI Weaver] Successfully generated cinematic takes");
-      return output;
+      return {
+        poetic: stripScreenplayCues(output.poetic),
+        direct: stripScreenplayCues(output.direct),
+        nostalgic: stripScreenplayCues(output.nostalgic)
+      };
     }
     
     throw new Error("AI returned empty output");
@@ -685,7 +711,8 @@ export async function polishDescription(description: string, options: { sensoryF
     - Improve the rhythm and sensory weight of the prose.
     - ${sensoryFocus ? `Focus specifically on infusing ${sensoryFocus} details.` : 'Ensure a balanced emotional clarity.'}
     - Keep it concise (under 80 words).
-    - Maintain the user's core intent but make it feel like a professional film treatment.
+    - Maintain the user's core intent as an authentic spoken monologue.
+    - ABSOLUTELY NO SCREENPLAY OR CAMERA CUES: Do NOT use camera directions, cut notes, or lens cues (e.g. NEVER write "Cut to...", "Wide shot", "The lens zooms").
     - BANNED: AI clichés like "tapestry," "odyssey," "whispers," "vibrant," "testament," "unfolding."
     
     Return ONLY the polished text. No quotes, no preamble.
@@ -698,7 +725,7 @@ export async function polishDescription(description: string, options: { sensoryF
     
     const result = text?.trim() || "";
     console.log(`[AI Weaver] polishDescription success. Result length: ${result.length}`);
-    return result || description;
+    return stripScreenplayCues(result) || description;
   } catch (error: any) {
     console.error(`[AI Weaver] polishDescription Failure [${error.name}]:`, error.message || error);
     return description; // Fallback to original
@@ -726,7 +753,7 @@ export async function checkAndPolishGrammar(text: string): Promise<string> {
       - Fix spelling mistakes, typos, and grammatical errors (e.g., "helpless three child" -> "helpless three children").
       - Preserve 100% of the author's custom wording, tone, and intended meaning.
       - Do NOT rephrase sentences unnecessarily.
-      - Do NOT add camera cues or film directions.
+      - ABSOLUTELY NO SCREENPLAY OR CAMERA CUES: Do NOT add camera cues, editing commands, or stage directions.
       
       Return ONLY the corrected spoken text. No preamble, no quotes, no markdown wrappers.
     `;
@@ -737,7 +764,7 @@ export async function checkAndPolishGrammar(text: string): Promise<string> {
     
     const polished = resultText?.trim() || text;
     console.log(`[AI Weaver] checkAndPolishGrammar completed successfully.`);
-    return polished;
+    return stripScreenplayCues(polished);
   } catch (error: any) {
     console.error("[AI Weaver] checkAndPolishGrammar failure:", error);
     return text;
