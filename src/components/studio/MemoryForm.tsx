@@ -2604,20 +2604,76 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       isSaving={isCloudSaving}
       onClose={(updatedScript?: string) => {
         if (updatedScript && selectedDraftForPreview) {
-          console.log("[MemoryForm] Preserving draft edits to Selection Deck for:", selectedDraftForPreview.visionType);
+          const type = selectedDraftForPreview.visionType;
+          console.log("[MemoryForm] Preserving draft edits to Selection Deck for:", type);
+
+          const updatesToPersist: Record<string, any> = {};
+
+          // 1. Committed blueprint card / Act I Script
+          if (type.startsWith("Committed:") || type === "Original Spark" || type === "Original Polished" || type === "Act I Script") {
+            setProse(updatedScript);
+            setDescription(updatedScript);
+            setOriginalHook(updatedScript);
+            updatesToPersist.prose = updatedScript;
+            updatesToPersist.description = updatedScript;
+            updatesToPersist.originalHook = updatedScript;
+          }
+
+          // 2. AI Sensory Weave takes
+          if (type === "The Poetic Weave" || type === "poetic") {
+            const newTakes = { ...(aiTakes || {}), poetic: updatedScript };
+            setAiTakes(newTakes);
+            updatesToPersist.aiTakes = newTakes;
+          } else if (type === "The Direct Weave" || type === "direct") {
+            const newTakes = { ...(aiTakes || {}), direct: updatedScript };
+            setAiTakes(newTakes);
+            updatesToPersist.aiTakes = newTakes;
+          } else if (type === "The Generational Weave" || type === "nostalgic") {
+            const newTakes = { ...(aiTakes || {}), nostalgic: updatedScript };
+            setAiTakes(newTakes);
+            updatesToPersist.aiTakes = newTakes;
+          }
+
+          // 3. Update productionTakes in data if present
           const currentTakes = data?.productionTakes || [];
           if (currentTakes.length > 0) {
             const updated = currentTakes.map((d: any) => 
-              d.visionType === selectedDraftForPreview.visionType ? { ...d, cleanScript: updatedScript, isCustomTuned: true } : d
+              (d.visionType === type || type.includes(d.visionType) || d.visionType.includes(type))
+                ? { ...d, cleanScript: updatedScript, isCustomTuned: true } 
+                : d
             );
-            update({ productionTakes: updated });
+            updatesToPersist.productionTakes = updated;
+          }
+
+          // 4. Update reviewDrafts in data if present
+          const currentReviewDrafts = (data as any)?.reviewDrafts || [];
+          if (currentReviewDrafts.length > 0) {
+            const updatedReview = currentReviewDrafts.map((d: any) =>
+              (d.visionType === type || type.includes(d.visionType) || d.visionType.includes(type))
+                ? { ...d, cleanScript: updatedScript, isCustomTuned: true }
+                : d
+            );
+            (updatesToPersist as any).reviewDrafts = updatedReview;
+          }
+
+          if (Object.keys(updatesToPersist).length > 0) {
+            update(updatesToPersist);
+            toast.success("Draft Edits Preserved", { 
+              description: "Your custom script updates have been saved to the Selection Deck." 
+            });
           }
         }
         setSelectedDraftForPreview(null);
       }}
       originalHook={productionStage === 1 ? (prose || originalHook || description) : (prose || polishedOriginalHook || description)}
       originalHookLabel={productionStage === 1 ? ("Committed: " + (data?.activeVisionLabel || selectedVision?.label || 'Act I Script')) : "Original Spark"}
-      cleanScript={selectedDraftForPreview?.cleanScript || ''}
+      cleanScript={
+        (selectedDraftForPreview?.visionType?.startsWith("Committed:") ? (prose || originalHook || description) : undefined) ||
+        (selectedDraftForPreview?.visionType === "The Poetic Weave" ? aiTakes?.poetic : undefined) ||
+        (selectedDraftForPreview?.visionType === "The Direct Weave" ? aiTakes?.direct : undefined) ||
+        (selectedDraftForPreview?.visionType === "The Generational Weave" ? aiTakes?.nostalgic : undefined) ||
+        selectedDraftForPreview?.cleanScript || ''
+      }
       visionLabel={selectedDraftForPreview?.visionType || ''}
       visionFocus={selectedDraftForPreview?.visionFocus || ''}
       stageDirections={selectedDraftForPreview?.stageDirections || []}
