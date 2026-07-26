@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { StageDirection, BeatSheetItem } from '@/types';
 import { checkAndPolishGrammar } from '@/actions/aiWeaver';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 
 interface ScriptLightBoxProps {
   isOpen: boolean;
@@ -248,55 +249,79 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                 <div className="w-full max-w-4xl px-12 lg:px-24 py-20 space-y-16">
                   {/* Copy & Edit Action Bar */}
                   <div className="flex items-center justify-between gap-4 flex-wrap">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <button 
-                        onClick={() => setIsEditing(prev => !prev)}
-                        className={cn(
-                          "flex items-center gap-2.5 px-5 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all border shadow-lg cursor-pointer",
-                          isEditing 
-                            ? "bg-purple-500 text-white border-purple-400 shadow-purple-500/20" 
-                            : "bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 text-purple-300"
+                    <TooltipProvider>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button 
+                              onClick={() => setIsEditing(prev => !prev)}
+                              title={isEditing ? "Exit direct editing mode" : "Manually edit and fine-tune your prose text"}
+                              className={cn(
+                                "flex items-center gap-2.5 px-5 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all border shadow-lg cursor-pointer",
+                                isEditing 
+                                  ? "bg-purple-500 text-white border-purple-400 shadow-purple-500/20" 
+                                  : "bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 text-purple-300"
+                              )}
+                            >
+                              {isEditing ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                              <span>{isEditing ? "Done Editing" : "Fine-Tune Script"}</span>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-[10px] font-bold uppercase tracking-widest px-3 py-2 text-purple-200">
+                            <span>{isEditing ? "Click to finish and exit text editing mode" : "Click to manually edit and fine-tune your narrative script"}</span>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button 
+                              onClick={handleCheckGrammar}
+                              disabled={isCheckingGrammar}
+                              className={cn(
+                                "flex items-center gap-2 px-4 py-2.5 rounded-2xl border transition-all text-[9px] font-black uppercase tracking-widest shadow-lg cursor-pointer",
+                                isCheckingGrammar 
+                                  ? "bg-sky-500/20 border-sky-500/40 text-sky-300 cursor-wait" 
+                                  : "bg-sky-500/10 hover:bg-sky-500/20 border-sky-500/30 text-sky-300"
+                              )}
+                              title="Check spelling and grammar using AI proofreader"
+                            >
+                              {isCheckingGrammar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-sky-400" />}
+                              <span>{isCheckingGrammar ? "Checking..." : "Grammar & Polish"}</span>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-[10px] font-bold uppercase tracking-widest px-3 py-2 text-sky-200">
+                            <span>Proofread spelling, grammar, and UK English compliance using AI</span>
+                          </TooltipContent>
+                        </Tooltip>
+
+                        {isEdited && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button 
+                                onClick={() => {
+                                  setUserScript(cleanScript);
+                                  toast.info("Reverted to Original Take");
+                                }}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white border border-white/10 rounded-2xl transition-all text-[9px] font-black uppercase tracking-widest"
+                                title="Reset to AI generated draft"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                <span>Reset Draft</span>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-[10px] font-bold uppercase tracking-widest px-3 py-2 text-white/70">
+                              <span>Discard manual edits and restore original AI generated vision</span>
+                            </TooltipContent>
+                          </Tooltip>
                         )}
-                      >
-                        {isEditing ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
-                        <span>{isEditing ? "Done Editing" : "Fine-Tune Script"}</span>
-                      </button>
 
-                      <button 
-                        onClick={handleCheckGrammar}
-                        disabled={isCheckingGrammar}
-                        className={cn(
-                          "flex items-center gap-2 px-4 py-2.5 rounded-2xl border transition-all text-[9px] font-black uppercase tracking-widest shadow-lg cursor-pointer",
-                          isCheckingGrammar 
-                            ? "bg-sky-500/20 border-sky-500/40 text-sky-300 cursor-wait" 
-                            : "bg-sky-500/10 hover:bg-sky-500/20 border-sky-500/30 text-sky-300"
+                        {isEdited && (
+                          <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[8px] font-black uppercase tracking-widest rounded-full animate-fade-in">
+                            ✏️ Custom Tuned
+                          </div>
                         )}
-                        title="Check spelling and grammar using AI proofreader"
-                      >
-                        {isCheckingGrammar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-sky-400" />}
-                        <span>{isCheckingGrammar ? "Checking..." : "Grammar & Polish"}</span>
-                      </button>
-
-                      {isEdited && (
-                        <button 
-                          onClick={() => {
-                            setUserScript(cleanScript);
-                            toast.info("Reverted to Original Take");
-                          }}
-                          className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white border border-white/10 rounded-2xl transition-all text-[9px] font-black uppercase tracking-widest"
-                          title="Reset to AI generated draft"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          <span>Reset Draft</span>
-                        </button>
-                      )}
-
-                      {isEdited && (
-                        <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[8px] font-black uppercase tracking-widest rounded-full animate-fade-in">
-                          ✏️ Custom Tuned
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    </TooltipProvider>
 
                     <button 
                       onClick={() => handleCopy(userScript, false)}
