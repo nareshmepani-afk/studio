@@ -110,8 +110,16 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
           description: "No spelling or grammar errors detected."
         });
       }
-    } catch (e) {
-      toast.error("Grammar Check Skipped", { description: "Unable to run AI proofreader right now." });
+    } catch (e: any) {
+      console.error("[ScriptLightBox] handleCheckGrammar error:", e);
+      const isActionMismatch = e?.message?.includes("Server Action") || e?.message?.includes("deployment") || String(e).includes("Server Action");
+      if (isActionMismatch) {
+        toast.error("New Deployment Active", { 
+          description: "A new deployment was completed. Please refresh your browser tab to sync with the latest build." 
+        });
+      } else {
+        toast.error("Grammar Check Skipped", { description: "Unable to run AI proofreader right now." });
+      }
     } finally {
       setIsCheckingGrammar(false);
     }
