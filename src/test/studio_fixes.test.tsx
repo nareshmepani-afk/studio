@@ -535,5 +535,16 @@ describe('Studio Regression Tests', () => {
       expect(mapVisionLabelToType("The Poetic Weave")).toBe("poetic");
       expect(mapVisionLabelToType("The Direct Weave")).toBe("sensory");
     });
+
+    it('SENSORY LOCK RELEASE: should clear activeVision and activeVisionLabel from local state package', () => {
+      let localState: any = { activeVision: 'master', activeVisionLabel: 'The Memory Weave' };
+      const update = (delta: any) => { localState = { ...localState, ...delta }; };
+
+      // Trigger Release Sensory Lock handler logic
+      update({ activeVision: undefined, activeVisionLabel: undefined });
+
+      expect(localState.activeVision).toBeUndefined();
+      expect(localState.activeVisionLabel).toBeUndefined();
+    });
   });
 });

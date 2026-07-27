@@ -2374,8 +2374,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                           </div>
                           <button 
                             onClick={async () => {
-                              // Release sensory lock
+                              // Release sensory lock with 0ms optimistic local UI flip
                               globalActions.setSelectedVision(null as any, null);
+                              update({
+                                activeVision: undefined,
+                                activeVisionLabel: undefined
+                              });
                               await flush({
                                 activeVision: undefined,
                                 activeVisionLabel: undefined

@@ -83,6 +83,8 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-27**: v1.1.0-beta-MW-88. Implemented 3D Cover Flow Carousel in SelectionDeck with 380px fixed card width, left/right chevrons, keyboard ← / → controls, 5-dot pagination bar, and scale-105 active card focus. (Build Verify: SUCCESS, User Sign-Off: VERIFIED)
 - **2026-07-27**: v1.1.0-beta-MW-89. Rendered [ 01 / 05 ] through [ 05 / 05 ] top-right corner index tags and active counter ◄ VISION 0X OF 05 ► in SelectionDeck (HS_ACT2_CAROUSEL_COUNTER). (Build Verify: SUCCESS, User Sign-Off: VERIFIED)
 - **2026-07-27**: v1.1.0-beta-MW-90. Fixed MemoryForm onApply vision label-to-type mapping for 'The Memory Weave' (master) and 'The Flow' (cinematic); updated isSensory arrays to prevent activeVision key fallback to direct. (Build Verify: SUCCESS, User Sign-Off: VERIFIED)
+- **2026-07-27**: v1.1.0-beta-MW-91. Boosted font contrast and added emerald accent lines for [ END OF NORTH STAR SCORE ] footer in ScriptLightBox and CinemaMonitor. (Build Verify: SUCCESS, User Sign-Off: VERIFIED)
+- **2026-07-27**: v1.1.0-beta-MW-92. Added local update({ activeVision: undefined, activeVisionLabel: undefined }) call on Release Sensory Lock for 0ms optimistic UI unsealing. (Build Verify: SUCCESS, User Sign-Off: VERIFIED)
 
 
 
