@@ -111,7 +111,17 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   // Reset pending state when stage or global loading states change
   React.useEffect(() => {
     setIsPending(false);
-  }, [currentStage, isGeneratingDrafts, isReviewing]);
+  }, [currentStage, isGeneratingDrafts, isReviewing, isSaving]);
+
+  // Safety timeout guard: reset isPending after 5 seconds to prevent toolbar lockout on network delay/error
+  React.useEffect(() => {
+    if (isPending) {
+      const safetyTimer = setTimeout(() => {
+        setIsPending(false);
+      }, 5000);
+      return () => clearTimeout(safetyTimer);
+    }
+  }, [isPending]);
 
   // Sync surge effect with lastDetectedAnchor
   React.useEffect(() => {
