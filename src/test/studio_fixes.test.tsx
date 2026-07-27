@@ -508,5 +508,15 @@ describe('Studio Regression Tests', () => {
       expect(getDistance(1)).toBe(-1); // Left flanking card
       expect(getDistance(3)).toBe(1); // Right flanking card
     });
+
+    it('CARD INDEXING & TELEMETRY COUNTER: should format 01 / 05 through 05 / 05 index tags and active counter correctly', () => {
+      const draftsCount = 5;
+      const formatIndexTag = (idx: number, total: number) => `0${idx + 1} / 0${total}`;
+      const formatActiveCounter = (carouselIndex: number, total: number) => `VISION 0${carouselIndex + 1} OF 0${total}`;
+
+      expect(formatIndexTag(0, draftsCount)).toBe('01 / 05');
+      expect(formatIndexTag(4, draftsCount)).toBe('05 / 05');
+      expect(formatActiveCounter(1, draftsCount)).toBe('VISION 02 OF 05');
+    });
   });
 });

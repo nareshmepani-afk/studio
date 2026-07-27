@@ -545,6 +545,16 @@ ${bundleText}`;
                         {isSelected ? "Selected Score" : (typeId === 'master' ? "Review Master" : "Review Script")}
                       </span>
                     </button>
+
+                    {/* Top-Right Corner Index Tag [ 0X / 05 ] */}
+                    <div className={cn(
+                      "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all shrink-0 ml-auto",
+                      typeId === 'master'
+                        ? "bg-amber-500/15 border-amber-400/30 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]"
+                        : "bg-white/5 border-white/10 text-white/50"
+                    )}>
+                      0{idx + 1} / 0{drafts.length}
+                    </div>
                   </div>
 
                   <h3 className="font-headline italic text-white text-2xl mb-1">{opt.visionType}</h3>
@@ -561,8 +571,30 @@ ${bundleText}`;
           })}
         </div>
 
+        {/* Active Vision Telemetry Counter */}
+        <div 
+          data-hotspot-id="HS_ACT2_CAROUSEL_COUNTER"
+          className="flex items-center gap-3 mt-4 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-[0.25em] text-emerald-400 shadow-sm"
+        >
+          <button 
+            onClick={handlePrev}
+            className="hover:text-white transition-colors cursor-pointer"
+            aria-label="Previous vision counter"
+          >
+            ◄
+          </button>
+          <span>VISION 0{carouselIndex + 1} OF 0{drafts.length}</span>
+          <button 
+            onClick={handleNext}
+            className="hover:text-white transition-colors cursor-pointer"
+            aria-label="Next vision counter"
+          >
+            ►
+          </button>
+        </div>
+
         {/* 5-Step Pagination Bar */}
-        <div className="flex items-center gap-3 mt-4">
+        <div className="flex items-center gap-3 mt-3">
           {drafts.map((d, i) => (
             <button
               key={`dot-bar-${i}`}
