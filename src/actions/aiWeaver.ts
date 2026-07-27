@@ -31,10 +31,9 @@ if (serviceAccountRaw) {
  * Uses Genkit (Google AI) which is already configured with an API Key.
  */
 /**
- * Post-processor sanitizer that forcefully strips all screenplay, camera, film editing cues,
- * and stage notes from generated narrative prose to guarantee 100% spoken human story integrity.
+ * Internal synchronous helper for stripping screenplay cues inside server actions.
  */
-export function stripScreenplayCues(text: string): string {
+export function sanitizeProse(text: string): string {
   if (!text) return "";
   let cleaned = text
     // Strip leading camera/scene cut phrases (e.g. "Cut to a frame of ", "Cut to ")
@@ -50,6 +49,14 @@ export function stripScreenplayCues(text: string): string {
     cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
   }
   return cleaned;
+}
+
+/**
+ * Server action to strip screenplay, camera, film editing cues,
+ * and stage notes from generated narrative prose.
+ */
+export async function stripScreenplayCues(text: string): Promise<string> {
+  return sanitizeProse(text);
 }
 
 export async function expandWithAI(
@@ -150,9 +157,9 @@ export async function expandWithAI(
     if (output) {
       console.log("[AI Weaver] Successfully generated cinematic takes");
       return {
-        poetic: stripScreenplayCues(output.poetic),
-        direct: stripScreenplayCues(output.direct),
-        nostalgic: stripScreenplayCues(output.nostalgic)
+        poetic: sanitizeProse(output.poetic),
+        direct: sanitizeProse(output.direct),
+        nostalgic: sanitizeProse(output.nostalgic)
       };
     }
     
@@ -725,7 +732,7 @@ export async function polishDescription(description: string, options: { sensoryF
     
     const result = text?.trim() || "";
     console.log(`[AI Weaver] polishDescription success. Result length: ${result.length}`);
-    return stripScreenplayCues(result) || description;
+    return sanitizeProse(result) || description;
   } catch (error: any) {
     console.error(`[AI Weaver] polishDescription Failure [${error.name}]:`, error.message || error);
     return description; // Fallback to original
@@ -764,7 +771,7 @@ export async function checkAndPolishGrammar(text: string): Promise<string> {
     
     const polished = resultText?.trim() || text;
     console.log(`[AI Weaver] checkAndPolishGrammar completed successfully.`);
-    return stripScreenplayCues(polished);
+    return sanitizeProse(polished);
   } catch (error: any) {
     console.error("[AI Weaver] checkAndPolishGrammar failure:", error);
     return text;
