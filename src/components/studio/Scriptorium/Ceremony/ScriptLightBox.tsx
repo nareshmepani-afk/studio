@@ -390,8 +390,10 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                       </div>
                     )}
 
-                    <div className="pt-24 text-center opacity-30">
-                      <p className="font-mono text-[9px] uppercase tracking-[1em] text-white/60">[ END OF NORTH STAR SCORE ]</p>
+                    <div className="pt-24 pb-8 text-center flex items-center justify-center gap-4">
+                      <div className="h-px w-12 bg-emerald-500/30" />
+                      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.4em] text-emerald-400/80 drop-shadow-sm">[ END OF NORTH STAR SCORE ]</p>
+                      <div className="h-px w-12 bg-emerald-500/30" />
                     </div>
                   </div>
                 </div>

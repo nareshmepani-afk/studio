@@ -325,7 +325,7 @@ export const CinemaMonitor: React.FC<CinemaMonitorProps> = ({
               </div>
             )}
 
-            <p className="text-[9px] font-mono uppercase tracking-[1em] opacity-10">[ END OF PRODUCTION SCORE ]</p>
+            <p className="text-[10px] font-mono font-bold uppercase tracking-[0.4em] text-emerald-400/80">[ END OF PRODUCTION SCORE ]</p>
           </div>
         </div>
         
