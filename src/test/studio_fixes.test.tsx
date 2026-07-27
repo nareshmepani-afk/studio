@@ -518,5 +518,22 @@ describe('Studio Regression Tests', () => {
       expect(formatIndexTag(4, draftsCount)).toBe('05 / 05');
       expect(formatActiveCounter(1, draftsCount)).toBe('VISION 02 OF 05');
     });
+
+    it('CHOOSE THIS VISION COMMITMENT: should map vision labels to correct activeVision keys', () => {
+      const mapVisionLabelToType = (label: string) => {
+        return (label.includes("Memory Weave") || label.includes("master") || label.includes("Crown") || label.includes("Fusion")) ? "master" :
+               (label.includes("Flow") || label.includes("Cadence") || label.includes("Cinematic") || label.includes("Generational") || label.includes("nostalgic")) ? "cinematic" :
+               (label.includes("Poetic") || label.includes("Soul") || label.includes("poetic")) ? "poetic" :
+               (label.includes("Direct") || label.includes("Atmospheric") || label.includes("Sensory") || label.includes("direct")) ? "sensory" :
+               (label.includes("Committed") || label.includes("Original") || label.includes("original")) ? "original" :
+               "master";
+      };
+
+      expect(mapVisionLabelToType("The Memory Weave")).toBe("master");
+      expect(mapVisionLabelToType("Committed: The Memory Weave")).toBe("master");
+      expect(mapVisionLabelToType("The Flow")).toBe("cinematic");
+      expect(mapVisionLabelToType("The Poetic Weave")).toBe("poetic");
+      expect(mapVisionLabelToType("The Direct Weave")).toBe("sensory");
+    });
   });
 });

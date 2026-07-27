@@ -378,7 +378,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   
   // Local sync for persistence
   const isProductionLocked = data?.isProductionLocked !== false && (data?.isProductionLocked || globalLocked || (data?.productionStage || 0) >= 1);
-  const isSensory = ['poetic', 'direct', 'nostalgic', 'The Poetic Weave', 'The Direct Weave', 'The Generational Weave'].includes(data?.activeVision || data?.activeVisionLabel || '');
+  const isSensory = ['poetic', 'direct', 'nostalgic', 'master', 'sensory', 'cinematic', 'original', 'The Poetic Weave', 'The Direct Weave', 'The Generational Weave', 'The Atmospheric Weave', 'The Flow', 'The Memory Weave'].includes(data?.activeVision || data?.activeVisionLabel || '');
 
   // Initialize Persistence
 
@@ -588,7 +588,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   // Automatically open sensory review if AI takes are already synthesized but no sensory weave is selected yet in Act II
   useEffect(() => {
     if (productionStage === 1 && aiTakes && !isReviewingSensory) {
-      const hasSelectedSensory = ['poetic', 'direct', 'nostalgic', 'The Poetic Weave', 'The Direct Weave', 'The Generational Weave'].includes(data?.activeVision || data?.activeVisionLabel || '');
+      const hasSelectedSensory = ['poetic', 'direct', 'nostalgic', 'master', 'sensory', 'cinematic', 'original', 'The Poetic Weave', 'The Direct Weave', 'The Generational Weave', 'The Atmospheric Weave', 'The Flow', 'The Memory Weave'].includes(data?.activeVision || data?.activeVisionLabel || '');
       if (!hasSelectedSensory) {
         setIsReviewingSensory(true);
       }
@@ -2716,9 +2716,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
             setSelectedDraftForPreview(null);
             
             // Map label to activeVision key
-            const type = label.includes("Poetic") ? "poetic" : 
-                         label.includes("Direct") ? "direct" : 
-                         label.includes("Generational") ? "nostalgic" : "direct";
+            const type = (label.includes("Memory Weave") || label.includes("master") || label.includes("Crown") || label.includes("Fusion")) ? "master" :
+                         (label.includes("Flow") || label.includes("Cadence") || label.includes("Cinematic") || label.includes("Generational") || label.includes("nostalgic")) ? "cinematic" :
+                         (label.includes("Poetic") || label.includes("Soul") || label.includes("poetic")) ? "poetic" :
+                         (label.includes("Direct") || label.includes("Atmospheric") || label.includes("Sensory") || label.includes("direct")) ? "sensory" :
+                         (label.includes("Committed") || label.includes("Original") || label.includes("original")) ? "original" :
+                         "master";
 
             // Sync with global state so navigation knows about the selection
             globalActions.setSelectedVision(type as any, label);
