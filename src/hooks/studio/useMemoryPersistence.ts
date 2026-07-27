@@ -268,7 +268,7 @@ export function useMemoryPersistence({
       try {
         const delta = {
           title: s.title || '',
-          description: s.description || '',
+          description: (s.prose && s.prose.trim().length > 0 && (!s.description || s.description.includes("Your birthplace, family roots") || s.description.includes("Enter the core of your memory"))) ? s.prose : (s.description || ''),
           location: s.location || '',
           country: s.country || '',
           tags: s.tags || [],

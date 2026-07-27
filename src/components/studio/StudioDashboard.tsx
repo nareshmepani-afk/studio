@@ -20,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Badge } from '@/components/ui/badge';
 import ProductionDeck from './ProductionDeck';
 import { DirectorialUpsellDialog } from './overlays/DirectorialUpsellDialog';
+import { stripScreenplayCues } from '@/lib/sanitizer';
 
 // Icons
 import { 
@@ -335,7 +336,17 @@ export function StudioDashboard({
                             onStartChapter={effectiveOnStartChapter}
                             onToggleFlagPrompt={handleToggleFlagPrompt}
                             canAccess={canAccess}
-                            memoryDescription={cp.memory?.description}
+                            memoryDescription={
+                              stripScreenplayCues(
+                                (cp.memory?.prose && !cp.memory.prose.includes("Your birthplace, family roots")) 
+                                  ? cp.memory.prose 
+                                  : (cp.memory?.originalHook && !cp.memory.originalHook.includes("Your birthplace, family roots")) 
+                                  ? cp.memory.originalHook 
+                                  : (cp.memory?.description && !cp.memory.description.includes("Your birthplace, family roots")) 
+                                  ? cp.memory.description 
+                                  : (cp.memory?.prose || cp.memory?.originalHook || cp.memory?.description || '')
+                              )
+                            }
                             status={cp.memory?.status}
                             prompt={{ id: cp.id, title: cp.title, description: cp.description, text: { en: cp.title, gu: '' }, isFlaggedForReuse: false }} // Minimal prompt object for compat
                           />
