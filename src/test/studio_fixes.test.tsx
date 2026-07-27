@@ -422,5 +422,14 @@ describe('Studio Regression Tests', () => {
       expect(cleaned).not.toContain("The lens zooms");
       expect(cleaned).toBe("Red earth clinging to cracked palms in Kutch, a silent inheritance carried across dark waters. Nairobi's equatorial blaze.");
     });
+
+    it('CARD #5 MASTER FUSION: should sanitize and hydrate Card #5 (The Memory Weave) cleanly', async () => {
+      const { stripScreenplayCues } = await import('@/lib/sanitizer');
+      const masterRaw = "Cut to a frame of the master synthesis fusing voice, emotion, and sensory depth.";
+      const cleanedMaster = stripScreenplayCues(masterRaw);
+
+      expect(cleanedMaster).not.toContain("Cut to");
+      expect(cleanedMaster).toBe("The master synthesis fusing voice, emotion, and sensory depth.");
+    });
   });
 });

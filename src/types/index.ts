@@ -107,7 +107,7 @@ export interface Memory {
   modality?: 'pen' | 'voice' | null;
   tags?: string[];
   sensory?: Record<string, string>;
-  aiTakes?: { poetic?: string; direct?: string; nostalgic?: string } | null;
+  aiTakes?: { poetic?: string; direct?: string; nostalgic?: string; master?: string } | null;
   productionStage?: number;
   trimStart?: number;
   trimEnd?: number;

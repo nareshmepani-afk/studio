@@ -67,7 +67,7 @@ export async function expandWithAI(
   currentProse: string,
   isRewriteOfSelection: boolean = false,
   visionIntent?: { type: string | null; label: string | null }
-): Promise<{ poetic?: string; direct?: string; nostalgic?: string }> {
+): Promise<{ poetic?: string; direct?: string; nostalgic?: string; master?: string }> {
   console.log("[AI Weaver] expandWithAI triggered");
   
   try {
@@ -125,18 +125,20 @@ export async function expandWithAI(
       - Avoid AI-speak: BANNED words include "odyssey," "lineage," "tapestry," "vibrant," "testament," "unfolding," "interwoven," "symphony," or "shores" (unless refers to a physical beach).
       - Write for future generations.
       
-      Craft three (3) distinct "Takes" in this literary style, but HEAVILY influenced by the [DIRECTOR'S INTENT]. 
+      Craft four (4) distinct "Takes" in this literary style, but HEAVILY influenced by the [DIRECTOR'S INTENT]. 
       Each Take must be a single, rhythmic, and meaningful paragraph (100-140 words) meant to be spoken aloud.
       
       Take 1 ("poetic"): Internal world focus. Reflective and deeply metaphorical spoken monologue.
       Take 2 ("direct"): Humanity and persistence focus. Documentary-style spoken monologue with authentic weight.
       Take 3 ("nostalgic"): Ancestral and generational focus. Passing down values like "Learn. Adapt. Endure."
+      Take 4 ("master"): THE MEMORY WEAVE (Master Fusion Synthesis). A harmonized monologue that seamlessly fuses authentic personal voice, emotional depth, sensory physical texture, and dynamic rhythm into a single master score.
       
       Return strictly JSON:
       {
          "poetic": "string",
          "direct": "string",
-         "nostalgic": "string"
+         "nostalgic": "string",
+         "master": "string"
       }
     `;
 
@@ -149,17 +151,19 @@ export async function expandWithAI(
             poetic: z.string(),
             direct: z.string(),
             nostalgic: z.string(),
+            master: z.string().optional(),
           }),
         },
       });
     }, { retries: 2, onFailedAttempt: error => console.warn(`[AI Weaver] Attempt ${error.attemptNumber} failed. ${error.retriesLeft} retries left.`) });
 
     if (output) {
-      console.log("[AI Weaver] Successfully generated cinematic takes");
+      console.log("[AI Weaver] Successfully generated cinematic takes (including Master Fusion Take)");
       return {
         poetic: sanitizeProse(output.poetic),
         direct: sanitizeProse(output.direct),
-        nostalgic: sanitizeProse(output.nostalgic)
+        nostalgic: sanitizeProse(output.nostalgic),
+        master: sanitizeProse(output.master || output.poetic)
       };
     }
     
@@ -907,6 +911,7 @@ export async function generateDraftOptions(
     1. THE SOUL-PRINT: ~110 words. Internal resonance. The bedrock of family spirit.
     2. THE ATMOSPHERIC WEAVE: ~120 words. Sensory contrast (Kenyan heat vs. English damp).
     3. THE CINEMATIC CUT: 250-280 words. The Global Odyssey. Generational journey from Kutch to London.
+    4. THE MEMORY WEAVE (Master Fusion): ~160 words. Crown synthesis fusing authentic personal voice, emotional depth, sensory physical texture, and dynamic rhythm into a single master score.
 
     [STRICT FORMATTING MUZZLE]
     - CLEAN SCRIPT: Prose ONLY. No "V.O.", "Narrator:", or technical brackets.
@@ -916,7 +921,7 @@ export async function generateDraftOptions(
     - British spellings ONLY: labour, colour, realise, grey, centre, programme.
 
     [OUTPUT SCHEMA V6.2]
-    Return a JSON object with this exact structure. You MUST provide EXACTLY THREE objects in the "visions" array (The Soul-Print, The Atmospheric Weave, and The Cinematic Cut):
+    Return a JSON object with this exact structure. You MUST provide EXACTLY FOUR objects in the "visions" array (The Soul-Print, The Atmospheric Weave, The Cinematic Cut, and The Memory Weave):
     {
       "polishedOriginalHook": "Refined UK English version of raw input.",
       "temporalSummary": "Rationale for the inherited perspective and specific family framing.",
@@ -944,6 +949,14 @@ export async function generateDraftOptions(
         {
           "visionType": "The Cinematic Cut",
           "visionFocus": "...",
+          "cleanScript": "...",
+          "beatSheet": ["..."],
+          "stageDirections": [{ "timecode": "0:00", "type": "visual|audio", "content": "..." }],
+          "preFlightBrief": { "sensoryAnchors": ["..."], "vocalInstructions": ["..."], "heroMoment": "..." }
+        },
+        {
+          "visionType": "The Memory Weave",
+          "visionFocus": "Master synthesis fusing voice, emotion, atmosphere, and rhythm.",
           "cleanScript": "...",
           "beatSheet": ["..."],
           "stageDirections": [{ "timecode": "0:00", "type": "visual|audio", "content": "..." }],
@@ -980,7 +993,7 @@ export async function generateDraftOptions(
                   vocalInstructions: z.array(z.string()),
                   heroMoment: z.string()
                 })
-              })).length(3)
+              })).min(3).max(4)
             }),
           },
           config: {

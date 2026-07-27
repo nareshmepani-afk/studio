@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Sparkles, Heart, Film, Eye, ArrowRight, ClipboardCopy, AlertTriangle, RotateCcw, History, BookOpen, ArrowLeft, Award, Check
+  Sparkles, Heart, Film, Eye, ArrowRight, ClipboardCopy, AlertTriangle, RotateCcw, History, BookOpen, ArrowLeft, Award, Check, Crown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScriptLightBox } from './ScriptLightBox';
@@ -170,6 +170,7 @@ export const SelectionDeck = ({
   const [isCopyingBundle, setIsCopyingBundle] = React.useState(false);
 
   const getVisionId = (type: string) => {
+    if (type.includes("Memory Weave") || type.includes("Master") || type.includes("Crown") || type.includes("Fusion")) return "master";
     if (type.includes("Original") || type.includes("Committed")) return "original";
     if (type.includes("Soul") || type.includes("Poetic")) return "soul";
     if (type.includes("Atmospheric") || type.includes("Direct")) return "sensory";
@@ -199,7 +200,7 @@ ${bundleText}`;
 
     await navigator.clipboard.writeText(fullBundle);
     toast.success("Comparison Bundle Captured", {
-      description: "All four narrative paths (the polished original and three synthesized visions) have been copied."
+      description: "All narrative paths (the polished original and synthesized visions) have been copied."
     });
     setTimeout(() => setIsCopyingBundle(false), 2000);
   };
@@ -236,21 +237,24 @@ ${bundleText}`;
     original: BookOpen,
     soul: Heart,
     sensory: Sparkles,
-    cinematic: Film
+    cinematic: Film,
+    master: Crown
   };
 
   const AURAS: Record<string, string> = {
     original: 'border-purple-500/30 bg-purple-500/5',
     soul: 'border-amber-500/30 bg-amber-500/5',
     sensory: 'border-sky-500/30 bg-sky-500/5',
-    cinematic: 'border-emerald-500/30 bg-emerald-500/5'
+    cinematic: 'border-emerald-500/30 bg-emerald-500/5',
+    master: 'border-amber-400/50 bg-amber-950/30 shadow-[0_0_50px_rgba(245,158,11,0.25)]'
   };
 
   const COLORS: Record<string, string> = {
     original: 'text-purple-400',
     soul: 'text-amber-400',
     sensory: 'text-sky-400',
-    cinematic: 'text-emerald-400'
+    cinematic: 'text-emerald-400',
+    master: 'text-amber-300'
   };
 
   const isSelectedCard = (opt: any) => {
@@ -355,7 +359,10 @@ ${bundleText}`;
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6"
+        className={cn(
+          "grid grid-cols-1 md:grid-cols-2 gap-6",
+          drafts.length >= 5 ? "xl:grid-cols-5" : "xl:grid-cols-4"
+        )}
       >
         {drafts.map((opt, idx) => {
           const typeId = getVisionId(opt.visionType);
@@ -365,6 +372,7 @@ ${bundleText}`;
           return (
             <div 
               key={opt.visionType || `draft-${idx}`}
+              data-hotspot-id={typeId === 'master' ? "HS_ACT2_CARD_5_BTN" : (typeId === 'original' ? "HS_ACT2_CARD_1_BTN" : undefined)}
               className="relative min-h-[400px]"
               onMouseEnter={() => setHoveredId(opt.visionType)}
               onMouseLeave={() => setHoveredId(null)}
@@ -415,6 +423,12 @@ ${bundleText}`;
                           COLORS[typeId] || 'text-white'
                         )}>
                           <Icon className="w-5 h-5" />
+                        </div>
+                      )}
+                      {typeId === 'master' && (
+                        <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/20 border border-amber-400/50 text-amber-300 text-[8px] font-black uppercase tracking-widest rounded-full shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse shrink-0">
+                           <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+                           <span>CROWN SYNTHESIS</span>
                         </div>
                       )}
                       {typeId === 'original' && (

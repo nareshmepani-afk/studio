@@ -368,7 +368,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const [atmosphericSuggestions, setAtmosphericSuggestions] = useState<string[]>(data?.atmosphericSuggestions || []);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
   const [isSaturated, setIsSaturated] = useState(false);
-  const [aiTakes, setAiTakes] = useState<{ poetic?: string, direct?: string, nostalgic?: string } | null>(null);
+  const [aiTakes, setAiTakes] = useState<{ poetic?: string, direct?: string, nostalgic?: string, master?: string } | null>(null);
   const [structuredScript, setStructuredScript] = useState<StructuredScript | undefined>(data?.structuredScript || undefined);
   const [originalHook, setOriginalHook] = useState<string>(data?.originalHook || '');
   const [scriptHistory, setScriptHistory] = useState<any[]>(data?.scriptHistory || []);
@@ -2255,6 +2255,18 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                           heroMoment: "The bridge of memory across generations."
                         }
                       },
+                      {
+                        visionType: "The Memory Weave",
+                        visionFocus: "Master synthesis fusing voice, emotion, atmosphere, and rhythm.",
+                        cleanScript: stripScreenplayCues(aiTakes.master || aiTakes.poetic || ""),
+                        beatSheet: ["Authentic Voice", "Emotional Depth", "Sensory Texture", "Cinematic Arc"],
+                        stageDirections: [],
+                        preFlightBrief: {
+                          sensoryAnchors: ["Master Fusion"],
+                          vocalInstructions: ["Harmonized rhythm"],
+                          heroMoment: "Definitive master performance."
+                        }
+                      },
                       ...(scriptBlocks.length > 0 && scriptBlocks.some(b => b.text.trim()) && scriptBlocks.map(b => b.text).join('\n\n').trim() !== (originalHook || description).trim() ? [
                         {
                           visionType: "Current Draft",
@@ -2636,6 +2648,10 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
             const newTakes = { ...(aiTakes || {}), nostalgic: updatedScript };
             setAiTakes(newTakes);
             updatesToPersist.aiTakes = newTakes;
+          } else if (type === "The Memory Weave" || type === "master") {
+            const newTakes = { ...(aiTakes || {}), master: updatedScript };
+            setAiTakes(newTakes);
+            updatesToPersist.aiTakes = newTakes;
           }
 
           // 3. Update productionTakes in data if present
@@ -2673,6 +2689,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       originalHookLabel={productionStage === 1 ? ("Committed: " + (data?.activeVisionLabel || selectedVision?.label || 'Act I Script')) : "Original Spark"}
       cleanScript={stripScreenplayCues(
         (selectedDraftForPreview?.visionType?.startsWith("Committed:") ? (prose || originalHook || description) : undefined) ||
+        (selectedDraftForPreview?.visionType === "The Memory Weave" ? aiTakes?.master : undefined) ||
         (selectedDraftForPreview?.visionType === "The Poetic Weave" ? aiTakes?.poetic : undefined) ||
         (selectedDraftForPreview?.visionType === "The Direct Weave" ? aiTakes?.direct : undefined) ||
         (selectedDraftForPreview?.visionType === "The Generational Weave" ? aiTakes?.nostalgic : undefined) ||
