@@ -33,6 +33,7 @@ import {
   SynthesizingOverlay, 
   ScriptLightBox 
 } from './Scriptorium/Ceremony/SelectionDeck';
+import { stripScreenplayCues } from '@/lib/sanitizer';
 import { ArchiveDrawer } from './ArchiveDrawer';
 import { ScopeToggleGroup } from './ScopeToggleGroup';
 import { TimeframeScope } from '@/types';
@@ -2208,7 +2209,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       {
                         visionType: `Committed: ${data?.activeVisionLabel || selectedVision?.label || 'Act I Script'}`,
                         visionFocus: "Your locked Act I performance blueprint.",
-                        cleanScript: prose || originalHook || description || "",
+                        cleanScript: stripScreenplayCues(prose || originalHook || description || ""),
                         beatSheet: ["Act I Committal", "Sealed Blueprint"],
                         stageDirections: [],
                         preFlightBrief: {
@@ -2221,7 +2222,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       {
                         visionType: "The Poetic Weave",
                         visionFocus: "Internal resonance and metaphorical depth.",
-                        cleanScript: aiTakes.poetic || "",
+                        cleanScript: stripScreenplayCues(aiTakes.poetic || ""),
                         beatSheet: ["Sensory Immersion", "Internal Landscapes", "Poetic Nuance"],
                         stageDirections: [],
                         preFlightBrief: {
@@ -2233,7 +2234,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       {
                         visionType: "The Direct Weave",
                         visionFocus: "Documentary-style, authentic human weight.",
-                        cleanScript: aiTakes.direct || "",
+                        cleanScript: stripScreenplayCues(aiTakes.direct || ""),
                         beatSheet: ["Human Persistence", "Documentary Integrity", "Authentic Recall"],
                         stageDirections: [],
                         preFlightBrief: {
@@ -2245,7 +2246,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       {
                         visionType: "The Generational Weave",
                         visionFocus: "Ancestral persistence and legacy values.",
-                        cleanScript: aiTakes.nostalgic || "",
+                        cleanScript: stripScreenplayCues(aiTakes.nostalgic || ""),
                         beatSheet: ["Generational Roots", "Inherited Strengths", "Mantra Reflection"],
                         stageDirections: [],
                         preFlightBrief: {
@@ -2670,13 +2671,13 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       }}
       originalHook={productionStage === 1 ? (prose || originalHook || description) : (prose || polishedOriginalHook || description)}
       originalHookLabel={productionStage === 1 ? ("Committed: " + (data?.activeVisionLabel || selectedVision?.label || 'Act I Script')) : "Original Spark"}
-      cleanScript={
+      cleanScript={stripScreenplayCues(
         (selectedDraftForPreview?.visionType?.startsWith("Committed:") ? (prose || originalHook || description) : undefined) ||
         (selectedDraftForPreview?.visionType === "The Poetic Weave" ? aiTakes?.poetic : undefined) ||
         (selectedDraftForPreview?.visionType === "The Direct Weave" ? aiTakes?.direct : undefined) ||
         (selectedDraftForPreview?.visionType === "The Generational Weave" ? aiTakes?.nostalgic : undefined) ||
         selectedDraftForPreview?.cleanScript || ''
-      }
+      )}
       visionLabel={selectedDraftForPreview?.visionType || ''}
       visionFocus={selectedDraftForPreview?.visionFocus || ''}
       stageDirections={selectedDraftForPreview?.stageDirections || []}

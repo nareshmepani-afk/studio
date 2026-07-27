@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useStudioState } from '@/hooks/studio/useStudioState';
 import { MentorshipHotspot } from '@/components/studio/MentorshipHotspot';
+import { stripScreenplayCues } from '@/lib/sanitizer';
 
 interface SelectionDeckProps {
   drafts: any[];
@@ -463,7 +464,7 @@ ${bundleText}`;
                     "text-white/70 leading-relaxed italic font-serif transition-all duration-500",
                     hoveredId === opt.visionType ? "text-sm" : "text-[11px]"
                   )}>
-                    "{opt.cleanScript}"
+                    "{stripScreenplayCues(opt.cleanScript || '')}"
                   </p>
                 </div>
                 

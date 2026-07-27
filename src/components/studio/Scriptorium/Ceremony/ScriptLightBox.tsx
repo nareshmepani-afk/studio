@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { StageDirection, BeatSheetItem } from '@/types';
 import { checkAndPolishGrammar } from '@/actions/aiWeaver';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { stripScreenplayCues } from '@/lib/sanitizer';
 
 interface ScriptLightBoxProps {
   isOpen: boolean;
@@ -41,14 +42,15 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
   onApply,
   isSaving = false
 }) => {
+  const sanitizedCleanScript = stripScreenplayCues(cleanScript || '');
   const [copiedOriginal, setCopiedOriginal] = useState(false);
   const [copiedExpanded, setCopiedExpanded] = useState(false);
-  const [userScript, setUserScript] = useState(cleanScript);
+  const [userScript, setUserScript] = useState(sanitizedCleanScript);
   const [isEditing, setIsEditing] = useState(false);
   const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
 
   useEffect(() => {
-    setUserScript(cleanScript);
+    setUserScript(stripScreenplayCues(cleanScript || ''));
     setIsEditing(false);
   }, [cleanScript, isOpen]);
 
@@ -380,7 +382,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                         title="Click to edit or fine-tune script text"
                         className="font-serif text-[26px] lg:text-[34px] text-white/95 leading-[1.8] whitespace-pre-wrap select-text drop-shadow-2xl cursor-pointer hover:text-purple-100 transition-colors group relative rounded-3xl p-4 -m-4 border border-transparent hover:border-purple-500/20 hover:bg-purple-500/5"
                       >
-                        {userScript}
+                        {stripScreenplayCues(userScript || '')}
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 text-[9px] font-mono text-purple-300 bg-purple-950/80 border border-purple-500/30 px-3 py-1 rounded-full pointer-events-none flex items-center gap-1.5 shadow-lg">
                           <Pencil className="w-3 h-3 text-purple-400" />
                           <span>Click to Edit Text</span>
