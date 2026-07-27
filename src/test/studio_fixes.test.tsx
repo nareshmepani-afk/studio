@@ -431,5 +431,15 @@ describe('Studio Regression Tests', () => {
       expect(cleanedMaster).not.toContain("Cut to");
       expect(cleanedMaster).toBe("The master synthesis fusing voice, emotion, and sensory depth.");
     });
+
+    it('HTML SANITIZER: should strip HTML paragraph and formatting tags from prose text', async () => {
+      const { stripScreenplayCues } = await import('@/lib/sanitizer');
+      const htmlInput = "<p>Let's begin the story of you. Take a moment to think about where it all started...</p>";
+      const cleaned = stripScreenplayCues(htmlInput);
+
+      expect(cleaned).not.toContain("<p>");
+      expect(cleaned).not.toContain("</p>");
+      expect(cleaned).toBe("Let's begin the story of you. Take a moment to think about where it all started...");
+    });
   });
 });

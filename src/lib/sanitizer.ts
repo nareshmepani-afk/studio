@@ -2,9 +2,17 @@
  * Client and server-safe sanitizer that forcefully strips all screenplay, camera, film editing cues,
  * and stage notes from narrative prose to guarantee 100% spoken human story integrity.
  */
+export function stripHtmlTags(text: string): string {
+  if (!text) return "";
+  return text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
 export function stripScreenplayCues(text: string): string {
   if (!text) return "";
   let cleaned = text
+    // Strip HTML markup tags (e.g. <p>, </p>, <br/>, <span>, etc.)
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
     // Strip leading camera/scene cut phrases (e.g. "Cut to a frame of ", "Cut to ", "Cut to: ")
     .replace(/^(?:Cut to\s*(?:a\s*frame\s*of|a\s*shot\s*of|a|the)?|Wide shot(?:\s*of|\s*:)?|Close-up(?:\s*on|\s*:)?|Pan to|Zoom in on|Zoom to|Hard freeze on|Fade in(?:\s*:)?|Dissolve to)\s*/i, '')
     // Strip inline camera/lens/stage directives (e.g. "The lens zooms past ", "Cut to ")
