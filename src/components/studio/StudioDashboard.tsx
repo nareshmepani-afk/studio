@@ -336,17 +336,21 @@ export function StudioDashboard({
                             onStartChapter={effectiveOnStartChapter}
                             onToggleFlagPrompt={handleToggleFlagPrompt}
                             canAccess={canAccess}
-                            memoryDescription={
-                              stripScreenplayCues(
-                                (cp.memory?.prose && !cp.memory.prose.includes("Your birthplace, family roots")) 
-                                  ? cp.memory.prose 
-                                  : (cp.memory?.originalHook && !cp.memory.originalHook.includes("Your birthplace, family roots")) 
-                                  ? cp.memory.originalHook 
-                                  : (cp.memory?.description && !cp.memory.description.includes("Your birthplace, family roots")) 
-                                  ? cp.memory.description 
-                                  : (cp.memory?.prose || cp.memory?.originalHook || cp.memory?.description || '')
-                              )
-                            }
+                            memoryDescription={(() => {
+                              const isTemplate = (t?: string) => {
+                                if (!t) return true;
+                                const clean = t.replace(/<[^>]*>/g, '').trim();
+                                return (
+                                  clean.includes("Your birthplace, family roots") ||
+                                  clean.includes("Let's begin the story of you") ||
+                                  clean.includes("Enter the core of your memory") ||
+                                  clean.includes("Select a prompt to begin")
+                                );
+                              };
+                              const authenticText = [cp.memory?.prose, cp.memory?.originalHook, cp.memory?.description]
+                                .find(t => t && !isTemplate(t));
+                              return authenticText ? stripScreenplayCues(authenticText) : undefined;
+                            })()}
                             status={cp.memory?.status}
                             prompt={{ id: cp.id, title: cp.title, description: cp.description, text: { en: cp.title, gu: '' }, isFlaggedForReuse: false }} // Minimal prompt object for compat
                           />
