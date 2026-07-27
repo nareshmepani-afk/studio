@@ -33,7 +33,7 @@ if (serviceAccountRaw) {
 /**
  * Internal synchronous helper for stripping screenplay cues inside server actions.
  */
-export function sanitizeProse(text: string): string {
+function sanitizeProse(text: string): string {
   if (!text) return "";
   let cleaned = text
     // Strip leading camera/scene cut phrases (e.g. "Cut to a frame of ", "Cut to ")
