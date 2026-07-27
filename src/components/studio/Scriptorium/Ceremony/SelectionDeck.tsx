@@ -259,10 +259,24 @@ ${bundleText}`;
 
   const isSelectedCard = (opt: any) => {
     const typeId = getVisionId(opt.visionType);
-    if (activeVisionTitle && activeVisionTitle.toLowerCase().trim() === (opt.visionType || '').toLowerCase().trim()) return true;
-    if (activeVisionKey && (activeVisionKey === typeId || activeVisionKey === opt.visionType)) return true;
-    if (activeTakeText && opt.cleanScript && activeTakeText.trim() === opt.cleanScript.trim()) return true;
-    if (selectedText && opt.cleanScript && selectedText.trim() === opt.cleanScript.trim()) return true;
+    const key = (activeVisionKey || '').toLowerCase().trim();
+    
+    // 1. Strict Active Vision Key matching (Highest Priority)
+    if (key) {
+      const matchesKey = 
+        key === typeId ||
+        (key === 'poetic' && typeId === 'soul') ||
+        (key === 'direct' && typeId === 'sensory') ||
+        (key === 'nostalgic' && typeId === 'cinematic') ||
+        key === (opt.visionType || '').toLowerCase().trim();
+      if (matchesKey) return true;
+    }
+    
+    // 2. Exact Title matching
+    if (activeVisionTitle && activeVisionTitle.toLowerCase().trim() === (opt.visionType || '').toLowerCase().trim()) {
+      return true;
+    }
+    
     return false;
   };
 
@@ -425,22 +439,35 @@ ${bundleText}`;
                           <Icon className="w-5 h-5" />
                         </div>
                       )}
-                      {typeId === 'master' && (
-                        <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/20 border border-amber-400/50 text-amber-300 text-[8px] font-black uppercase tracking-widest rounded-full shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse shrink-0">
+                      {isSelected ? (
+                        <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[8px] font-black uppercase tracking-widest rounded-full shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse shrink-0">
+                           <Check className="w-2.5 h-2.5 text-emerald-400" />
+                           <span>SELECTED BLUEPRINT</span>
+                        </div>
+                      ) : typeId === 'master' ? (
+                        <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/20 border border-amber-400/50 text-amber-300 text-[8px] font-black uppercase tracking-widest rounded-full shadow-[0_0_15px_rgba(245,158,11,0.3)] shrink-0">
                            <Sparkles className="w-2.5 h-2.5 text-amber-400" />
                            <span>CROWN SYNTHESIS</span>
                         </div>
-                      )}
-                      {typeId === 'original' && (
-                        <div className="flex items-center gap-1 px-2.5 py-1 bg-purple-500/15 border border-purple-400/30 rounded-full text-[8px] font-black uppercase tracking-widest text-purple-300 shadow-[0_2px_8px_rgba(168,85,247,0.2)] animate-pulse shrink-0">
+                      ) : typeId === 'original' ? (
+                        <div className="flex items-center gap-1 px-2.5 py-1 bg-purple-500/15 border border-purple-400/30 rounded-full text-[8px] font-black uppercase tracking-widest text-purple-300 shadow-[0_2px_8px_rgba(168,85,247,0.2)] shrink-0">
                            <Award className="w-2.5 h-2.5 text-purple-400" />
                            <span>Official Record</span>
                         </div>
-                      )}
-                      {isSelected && (
-                        <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[8px] font-black uppercase tracking-widest rounded-full shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse shrink-0">
-                           <Check className="w-2.5 h-2.5 text-emerald-400" />
-                           <span>ACTIVE BLUEPRINT</span>
+                      ) : typeId === 'soul' ? (
+                        <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 border border-amber-400/20 rounded-full text-[8px] font-black uppercase tracking-widest text-amber-300 shrink-0">
+                           <Heart className="w-2.5 h-2.5 text-amber-400" />
+                           <span>SOUL-PRINT</span>
+                        </div>
+                      ) : typeId === 'sensory' ? (
+                        <div className="flex items-center gap-1 px-2.5 py-1 bg-sky-500/10 border border-sky-400/20 rounded-full text-[8px] font-black uppercase tracking-widest text-sky-300 shrink-0">
+                           <Sparkles className="w-2.5 h-2.5 text-sky-400" />
+                           <span>ATMOSPHERIC</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 border border-emerald-400/20 rounded-full text-[8px] font-black uppercase tracking-widest text-emerald-300 shrink-0">
+                           <Film className="w-2.5 h-2.5 text-emerald-400" />
+                           <span>CINEMATIC CUT</span>
                         </div>
                       )}
                    </div>
@@ -459,7 +486,7 @@ ${bundleText}`;
                         "text-[9px] font-black uppercase tracking-widest whitespace-nowrap",
                         isSelected ? "text-emerald-300" : "text-white/40 group-hover/preview:text-white"
                       )}>
-                        {isSelected ? "Active Blueprint (Review)" : "Open for Review"}
+                        {isSelected ? "Selected Score" : (typeId === 'master' ? "Review Master" : "Review Script")}
                       </span>
                     </button>
                 </div>

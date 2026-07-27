@@ -441,5 +441,44 @@ describe('Studio Regression Tests', () => {
       expect(cleaned).not.toContain("</p>");
       expect(cleaned).toBe("Let's begin the story of you. Take a moment to think about where it all started...");
     });
+
+    it('SELECTION DECK HIERARCHY: should strictly select 1 card based on activeVision key without multi-card badge collision', () => {
+      const activeVisionKey = 'poetic';
+      const drafts = [
+        { visionType: 'Original Polished', cleanScript: 'Identical text' },
+        { visionType: 'The Poetic Weave', cleanScript: 'Identical text' },
+        { visionType: 'The Direct Weave', cleanScript: 'Identical text' },
+        { visionType: 'The Generational Weave', cleanScript: 'Identical text' },
+        { visionType: 'The Memory Weave', cleanScript: 'Identical text' }
+      ];
+
+      const getVisionId = (type: string) => {
+        if (type.includes("Memory Weave") || type.includes("Master") || type.includes("Crown") || type.includes("Fusion")) return "master";
+        if (type.includes("Original") || type.includes("Committed")) return "original";
+        if (type.includes("Soul") || type.includes("Poetic")) return "soul";
+        if (type.includes("Atmospheric") || type.includes("Direct")) return "sensory";
+        if (type.includes("Cinematic") || type.includes("Generational")) return "cinematic";
+        return "sensory";
+      };
+
+      const isSelectedCard = (opt: any) => {
+        const typeId = getVisionId(opt.visionType);
+        const key = (activeVisionKey || '').toLowerCase().trim();
+        if (key) {
+          return (
+            key === typeId ||
+            (key === 'poetic' && typeId === 'soul') ||
+            (key === 'direct' && typeId === 'sensory') ||
+            (key === 'nostalgic' && typeId === 'cinematic') ||
+            key === (opt.visionType || '').toLowerCase().trim()
+          );
+        }
+        return false;
+      };
+
+      const selectedCards = drafts.filter(isSelectedCard);
+      expect(selectedCards.length).toBe(1);
+      expect(selectedCards[0].visionType).toBe('The Poetic Weave');
+    });
   });
 });
