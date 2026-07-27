@@ -558,7 +558,7 @@ ${bundleText}`;
                   </div>
 
                   <h3 className="font-headline italic text-white text-2xl mb-1">{opt.visionType}</h3>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-4">{opt.visionFocus}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-4">{opt.visionFocus}</p>
 
                   <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 -mr-2 [mask-image:linear-gradient(to_bottom,black_85%,transparent)]">
                     <p className="text-white/80 text-xs leading-relaxed italic font-serif">

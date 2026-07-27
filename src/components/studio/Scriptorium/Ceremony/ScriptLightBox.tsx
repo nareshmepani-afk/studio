@@ -175,7 +175,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                   </h2>
                 </div>
                 <div className="h-8 w-px bg-white/10 mx-2" />
-                <p className="text-[11px] text-white/30 italic font-serif mt-1 hidden lg:block">"{visionFocus}"</p>
+                <p className="text-xs text-emerald-300/90 font-medium italic font-serif mt-1 hidden lg:block">"{visionFocus}"</p>
               </div>
 
               <div className="flex items-center gap-8 px-6 py-2 bg-black/40 rounded-2xl border border-white/5">
