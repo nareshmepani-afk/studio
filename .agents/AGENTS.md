@@ -79,6 +79,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-27**: v1.1.0-beta-MW-84. Added 5-second safety reset timer for isPending state in ProductionControlBar to prevent toolbar lockouts on network delays. (Build Verify: SUCCESS)
 - **2026-07-27**: v1.1.0-beta-MW-85. Implemented Card #5 (The Memory Weave - Master Fusion Synthesis) in SelectionDeck and AI Weaver; enforced Rule 14 Story Hook Fallback Hierarchy on Studio Dashboard cards. (Build Verify: SUCCESS)
 - **2026-07-27**: v1.1.0-beta-MW-86. Refactored SelectionDeck isSelectedCard to evaluate strict vision key equality (activeVision === card.type); streamlined top identity badges (OFFICIAL RECORD, SOUL-PRINT, ATMOSPHERIC, CINEMATIC CUT, CROWN SYNTHESIS) and action button overlays to eliminate text collisions. (Build Verify: SUCCESS, User Sign-Off: VERIFIED)
+- **2026-07-27**: v1.1.0-beta-MW-87. Replaced film jargon 'Cinematic Cut' with 'THE FLOW' (Waves icon) across SelectionDeck, aiWeaver synthesis prompts, and unit test suite for everyday oral legacy clarity. (Build Verify: SUCCESS, User Sign-Off: VERIFIED)
 
 
 

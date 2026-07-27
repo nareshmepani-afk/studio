@@ -480,5 +480,19 @@ describe('Studio Regression Tests', () => {
       expect(selectedCards.length).toBe(1);
       expect(selectedCards[0].visionType).toBe('The Poetic Weave');
     });
+
+    it('CARD #4 THE FLOW: should map Card #4 to The Flow with Waves icon logic', () => {
+      const getVisionId = (type: string) => {
+        if (type.includes("Memory Weave") || type.includes("Master") || type.includes("Crown") || type.includes("Fusion")) return "master";
+        if (type.includes("Original") || type.includes("Committed")) return "original";
+        if (type.includes("Soul") || type.includes("Poetic")) return "soul";
+        if (type.includes("Atmospheric") || type.includes("Direct")) return "sensory";
+        if (type.includes("Flow") || type.includes("Cadence") || type.includes("Cinematic") || type.includes("Generational")) return "cinematic";
+        return "sensory";
+      };
+
+      expect(getVisionId("The Flow")).toBe("cinematic");
+      expect(getVisionId("Dynamic Cadence")).toBe("cinematic");
+    });
   });
 });

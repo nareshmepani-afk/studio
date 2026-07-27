@@ -910,7 +910,7 @@ export async function generateDraftOptions(
     [VISION-SPECIFIC SCALE & STYLE]
     1. THE SOUL-PRINT: ~110 words. Internal resonance. The bedrock of family spirit.
     2. THE ATMOSPHERIC WEAVE: ~120 words. Sensory contrast (Kenyan heat vs. English damp).
-    3. THE CINEMATIC CUT: 250-280 words. The Global Odyssey. Generational journey from Kutch to London.
+    3. THE FLOW: 250-280 words. Spoken momentum, natural narrative flow, and effortless teleprompter reading rhythm.
     4. THE MEMORY WEAVE (Master Fusion): ~160 words. Crown synthesis fusing authentic personal voice, emotional depth, sensory physical texture, and dynamic rhythm into a single master score.
 
     [STRICT FORMATTING MUZZLE]
@@ -921,7 +921,7 @@ export async function generateDraftOptions(
     - British spellings ONLY: labour, colour, realise, grey, centre, programme.
 
     [OUTPUT SCHEMA V6.2]
-    Return a JSON object with this exact structure. You MUST provide EXACTLY FOUR objects in the "visions" array (The Soul-Print, The Atmospheric Weave, The Cinematic Cut, and The Memory Weave):
+    Return a JSON object with this exact structure. You MUST provide EXACTLY FOUR objects in the "visions" array (The Soul-Print, The Atmospheric Weave, The Flow, and The Memory Weave):
     {
       "polishedOriginalHook": "Refined UK English version of raw input.",
       "temporalSummary": "Rationale for the inherited perspective and specific family framing.",
@@ -947,7 +947,7 @@ export async function generateDraftOptions(
           "preFlightBrief": { "sensoryAnchors": ["..."], "vocalInstructions": ["..."], "heroMoment": "..." }
         },
         {
-          "visionType": "The Cinematic Cut",
+          "visionType": "The Flow",
           "visionFocus": "...",
           "cleanScript": "...",
           "beatSheet": ["..."],

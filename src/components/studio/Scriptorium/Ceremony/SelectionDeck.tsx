@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Sparkles, Heart, Film, Eye, ArrowRight, ClipboardCopy, AlertTriangle, RotateCcw, History, BookOpen, ArrowLeft, Award, Check, Crown
+  Sparkles, Heart, Film, Eye, ArrowRight, ClipboardCopy, AlertTriangle, RotateCcw, History, BookOpen, ArrowLeft, Award, Check, Crown, Waves
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScriptLightBox } from './ScriptLightBox';
@@ -174,7 +174,7 @@ export const SelectionDeck = ({
     if (type.includes("Original") || type.includes("Committed")) return "original";
     if (type.includes("Soul") || type.includes("Poetic")) return "soul";
     if (type.includes("Atmospheric") || type.includes("Direct")) return "sensory";
-    if (type.includes("Cinematic") || type.includes("Generational")) return "cinematic";
+    if (type.includes("Flow") || type.includes("Cadence") || type.includes("Cinematic") || type.includes("Generational")) return "cinematic";
     return "sensory";
   };
 
@@ -237,7 +237,7 @@ ${bundleText}`;
     original: BookOpen,
     soul: Heart,
     sensory: Sparkles,
-    cinematic: Film,
+    cinematic: Waves,
     master: Crown
   };
 
@@ -466,8 +466,8 @@ ${bundleText}`;
                         </div>
                       ) : (
                         <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 border border-emerald-400/20 rounded-full text-[8px] font-black uppercase tracking-widest text-emerald-300 shrink-0">
-                           <Film className="w-2.5 h-2.5 text-emerald-400" />
-                           <span>CINEMATIC CUT</span>
+                           <Waves className="w-2.5 h-2.5 text-emerald-400" />
+                           <span>THE FLOW</span>
                         </div>
                       )}
                    </div>
