@@ -47,10 +47,19 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Natural Test Instinct**: For every new feature created, bug fixed, or behavior modified, the agent must evaluate: *"Should an automated test be created to prevent future regressions of this behavior?"*
 - **Mandatory Test Generation**: If a fix addresses a layout breakdown, routing edge case, state rehydration failure, or logical bug, a regression test MUST be added to verify that specific boundary condition remains correct and cannot break silently in future code changes.
 
-## 10. Plane.so Backlog Prioritization & User Step-by-Step Instructions Rule
-- **Backlog Prioritization**: Before initiating any work or touching the codebase, verify that a corresponding issue exists in the Plane.so workspace project board.
-- **Mandatory Step-by-Step User Instructions**: Every ticket created or updated on Plane.so MUST include clear, numbered human performer step-by-step testing instructions in its description (including exact actions, Hotspot IDs like `HS_PROMPTER_VOCAL_BTN`, expected results, and DOM element identifiers) to enable zero-ambiguity user sign-off.
-- **Automated Ticket Creation**: If a task has been verbally requested by the user but does not exist, the agent must programmatically create a corresponding issue ticket on the Plane.so board using the local automation bridge (`scripts/plane.js`) prior to code modification.
+## 11. Spoken Monologue Integrity & Mandatory Post-Processing Regex Sanitization
+- **Probabilistic Prompt Guard**: LLM prompts alone are probabilistic and can hallucinate banned screenplay directives (e.g., `"Cut to a frame of..."`, `"The lens zooms..."`, `"Wide shot"`, `[Fade in]`) if prompts mention terms like "filmic" or "treatment".
+- **Mandatory Server-Side Sanitizer**: All narrative text synthesis functions (e.g. `expandWithAI`, `polishDescription`, `checkAndPolishGrammar`) MUST run generated output through a mandatory server-side regex sanitizer (`stripScreenplayCues`) to forcefully strip screenplay notes, camera movements, and stage directions before returning data to client state or UI.
+- **Prompt Tone Compliance**: When prompting models for spoken monologues, strictly instruct "authentic first-person spoken monologue" and "sensory depth" rather than film/cinema terminology.
+
+## 12. Zero-Latency Optimistic UI & Async Handshake Decoupling
+- **No Async UI Blocking**: Never block visual UI transitions (e.g., hiding/revealing toolbars, closing modals, card selections) on asynchronous cloud database network calls (`await flush(...)`).
+- **Synchronous State Flipping**: State flags that govern UI visibility (`setIsReviewing(false)`, `setIsReviewingSensory(false)`, `setIsDirectorOpen(false)`) MUST be flipped synchronously on the user's click event (0ms latency), allowing the UI to react instantly while the network save (`flush()`) proceeds in parallel or background.
+- **Safety Timeout Reset**: Any local pending state flags (`isPending`) in persistent toolbars MUST include a safety reset timer (e.g. 5 seconds) to prevent visual lockouts if a network call stalls or fails.
+
+## 13. Stale Server Action Invalidation & User-Facing Staging Guidance
+- **Build Hash Invalidation**: Next.js App Router binds Server Action IDs at compilation time. When a new deployment completes on App Hosting (`dev.memoryweaver.studio`), open browser tabs holding older build hashes will throw Server Action lookup errors.
+- **Action Mismatch Detection**: Client-side `catch` blocks invoking Server Actions must intercept deployment mismatch errors (`Failed to find Server Action`) and present clear, actionable toast guidance: *"New Deployment Active — Please refresh your browser tab to sync with the latest build."*
 
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
@@ -63,6 +72,11 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-25**: v1.1.0-beta-MW-77. Updated lock badge and tooltip labels from DIRECTOR'S LOCK ACTIVE to DRAFT LOCK ACTIVE and RELEASE DRAFT LOCK for intuitive UX clarity. (Build Verify: SUCCESS)
 - **2026-07-26**: v1.1.0-beta-MW-79. Added interactive Tooltips and native title fallback to FINE-TUNE SCRIPT action button in ScriptLightBox modal. (Build Verify: SUCCESS)
 - **2026-07-26**: v1.1.0-beta-MW-80. Automated draft edit persistence (onClose updatedScript payload) when clicking RETURN TO SELECTION DECK or closing ScriptLightBox, preserving all custom edits across vision cards. (Build Verify: SUCCESS)
+- **2026-07-26**: v1.1.0-beta-MW-81. Synchronized edited prose/aiTakes back to dynamic SelectionDeck card render targets in MemoryForm. (Build Verify: SUCCESS)
+- **2026-07-26**: v1.1.0-beta-MW-82. Enforced stripScreenplayCues sanitizer across all AI generation pipelines to permanently ban camera/screenplay cues (Cut to, The lens zooms). (Build Verify: SUCCESS)
+- **2026-07-26**: v1.1.0-beta-MW-83. Decoupled ProductionControlBar reveal from async flush() network handshake for zero-latency 0ms toolbar response on vision selection. (Build Verify: SUCCESS)
+- **2026-07-27**: v1.1.0-beta-MW-84. Added 5-second safety reset timer for isPending state in ProductionControlBar to prevent toolbar lockouts on network delays. (Build Verify: SUCCESS)
+
 
 
 
