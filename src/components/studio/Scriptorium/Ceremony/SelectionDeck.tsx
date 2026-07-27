@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Sparkles, Heart, Film, Eye, ArrowRight, ClipboardCopy, AlertTriangle, RotateCcw, History, BookOpen, ArrowLeft, Award, Check, Crown, Waves
+  Sparkles, Heart, Film, Eye, ArrowRight, ClipboardCopy, AlertTriangle, RotateCcw, History, BookOpen, ArrowLeft, Award, Check, Crown, Waves, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScriptLightBox } from './ScriptLightBox';
@@ -168,6 +168,32 @@ export const SelectionDeck = ({
 
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const [isCopyingBundle, setIsCopyingBundle] = React.useState(false);
+  const [carouselIndex, setCarouselIndex] = React.useState<number>(0);
+
+  const handleNext = React.useCallback(() => {
+    if (!drafts || drafts.length === 0) return;
+    setCarouselIndex(prev => (prev + 1) % drafts.length);
+  }, [drafts]);
+
+  const handlePrev = React.useCallback(() => {
+    if (!drafts || drafts.length === 0) return;
+    setCarouselIndex(prev => (prev - 1 + drafts.length) % drafts.length);
+  }, [drafts]);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrev();
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleNext();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleNext, handlePrev]);
 
   const getVisionId = (type: string) => {
     if (type.includes("Memory Weave") || type.includes("Master") || type.includes("Crown") || type.includes("Fusion")) return "master";
@@ -369,55 +395,83 @@ ${bundleText}`;
         </div>
       </div>
 
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="show"
-        className={cn(
-          "grid grid-cols-1 md:grid-cols-2 gap-6",
-          drafts.length >= 5 ? "xl:grid-cols-5" : "xl:grid-cols-4"
-        )}
-      >
-        {drafts.map((opt, idx) => {
-          const typeId = getVisionId(opt.visionType);
-          const Icon = ICONS[typeId] || Sparkles;
-          const isSelected = isSelectedCard(opt);
+      {/* 3D Cover Flow Carousel Container */}
+      <div className="relative w-full max-w-7xl mx-auto flex flex-col items-center py-4">
+        {/* Navigation Chevrons */}
+        <button 
+          data-hotspot-id="HS_ACT2_CAROUSEL_PREV_BTN"
+          onClick={handlePrev}
+          className="absolute left-2 md:left-6 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-md transition-all hover:scale-110 shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+          aria-label="Previous Vision"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
 
-          return (
-            <div 
-              key={opt.visionType || `draft-${idx}`}
-              data-hotspot-id={typeId === 'master' ? "HS_ACT2_CARD_5_BTN" : (typeId === 'original' ? "HS_ACT2_CARD_1_BTN" : undefined)}
-              className="relative min-h-[400px]"
-              onMouseEnter={() => setHoveredId(opt.visionType)}
-              onMouseLeave={() => setHoveredId(null)}
-            >
+        <button 
+          data-hotspot-id="HS_ACT2_CAROUSEL_NEXT_BTN"
+          onClick={handleNext}
+          className="absolute right-2 md:right-6 top-1/2 -translate-y-1/2 z-40 p-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-md transition-all hover:scale-110 shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+          aria-label="Next Vision"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
+
+        {/* Carousel Cards Viewport */}
+        <div className="relative w-full min-h-[460px] flex items-center justify-center overflow-hidden py-6">
+          {drafts.map((opt, idx) => {
+            const typeId = getVisionId(opt.visionType);
+            const Icon = ICONS[typeId] || Sparkles;
+            const isSelected = isSelectedCard(opt);
+
+            // Compute relative offset from current carouselIndex
+            const rawOffset = (idx - carouselIndex + drafts.length) % drafts.length;
+            let dist = rawOffset;
+            if (rawOffset > drafts.length / 2) dist = rawOffset - drafts.length;
+
+            const isFocused = dist === 0;
+            const isVisible = Math.abs(dist) <= 2;
+
+            if (!isVisible) return null;
+
+            const xPos = dist * 320; // 320px spacing
+            const scale = isFocused ? 1.05 : 0.88;
+            const opacity = isFocused ? 1.0 : 0.55;
+            const zIndex = 30 - Math.abs(dist) * 10;
+
+            return (
               <motion.div
-                variants={cardVariants}
-                animate={
-                  hoveredId 
-                    ? (hoveredId === opt.visionType ? "hovered" : "dimmed") 
-                    : (isSelected ? "selected" : "show")
-                }
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onPreview(opt)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
+                key={opt.visionType || `carousel-draft-${idx}`}
+                data-hotspot-id={typeId === 'master' ? "HS_ACT2_CARD_5_BTN" : (typeId === 'original' ? "HS_ACT2_CARD_1_BTN" : undefined)}
+                initial={false}
+                animate={{
+                  x: xPos,
+                  scale,
+                  opacity,
+                  zIndex
+                }}
+                transition={{ type: "spring", stiffness: 240, damping: 25 }}
+                onMouseEnter={() => setHoveredId(opt.visionType)}
+                onMouseLeave={() => setHoveredId(null)}
+                onClick={() => {
+                  if (!isFocused) {
+                    setCarouselIndex(idx);
+                  } else {
                     onPreview(opt);
                   }
                 }}
-                className={cn(
-                  "absolute inset-0 group flex flex-col p-8 rounded-[2.5rem] border transition-all text-left cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--room-accent)] overflow-hidden",
-                  isSelected 
-                    ? "ring-2 ring-emerald-400 border-emerald-500/80 bg-emerald-950/40 shadow-[0_0_50px_rgba(16,185,129,0.35)]" 
-                    : (AURAS[typeId] || 'border-white/10 bg-white/5'),
-                  hoveredId === opt.visionType && "backdrop-blur-2xl border-white/30"
-                )}
+                className="absolute w-[360px] sm:w-[380px] h-[440px] cursor-pointer outline-none"
               >
-                <div className="flex items-center justify-between gap-2 mb-6 flex-wrap">
-                   <div className="flex items-center gap-2 shrink-0">
+                <div 
+                  className={cn(
+                    "w-full h-full group flex flex-col p-7 rounded-[2.5rem] border transition-all text-left cursor-pointer outline-none overflow-hidden backdrop-blur-xl",
+                    isSelected 
+                      ? "ring-2 ring-emerald-400 border-emerald-500/80 bg-emerald-950/40 shadow-[0_0_50px_rgba(16,185,129,0.35)]" 
+                      : (AURAS[typeId] || 'border-white/10 bg-white/5'),
+                    hoveredId === opt.visionType && "border-white/30"
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+                    <div className="flex items-center gap-2 shrink-0">
                       {typeId === 'original' ? (
                         <motion.div
                           whileHover={{ scale: 1.1, rotate: [0, -5, 5, 0] }}
@@ -439,6 +493,7 @@ ${bundleText}`;
                           <Icon className="w-5 h-5" />
                         </div>
                       )}
+
                       {isSelected ? (
                         <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[8px] font-black uppercase tracking-widest rounded-full shadow-[0_0_15px_rgba(16,185,129,0.3)] animate-pulse shrink-0">
                            <Check className="w-2.5 h-2.5 text-emerald-400" />
@@ -470,7 +525,8 @@ ${bundleText}`;
                            <span>THE FLOW</span>
                         </div>
                       )}
-                   </div>
+                    </div>
+
                     <button 
                       data-hotspot-id="HS_ACT2_OPEN_REVIEW_BTN"
                       onClick={(e) => { e.stopPropagation(); onPreview(opt); }}
@@ -489,32 +545,38 @@ ${bundleText}`;
                         {isSelected ? "Selected Score" : (typeId === 'master' ? "Review Master" : "Review Script")}
                       </span>
                     </button>
-                </div>
-                
-                <h3 className={cn(
-                  "font-headline italic text-white mb-2 transition-all duration-500",
-                  hoveredId === opt.visionType ? "text-3xl" : "text-xl"
-                )}>{opt.visionType}</h3>
-                
-                <p className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-4 group-hover:text-white/40 transition-colors">
-                  {opt.visionFocus}
-                </p>
+                  </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar mb-6 pr-2 -mr-2 [mask-image:linear-gradient(to_bottom,black_85%,transparent)]">
-                  <p className={cn(
-                    "text-white/70 leading-relaxed italic font-serif transition-all duration-500",
-                    hoveredId === opt.visionType ? "text-sm" : "text-[11px]"
-                  )}>
-                    "{stripScreenplayCues(opt.cleanScript || '')}"
-                  </p>
+                  <h3 className="font-headline italic text-white text-2xl mb-1">{opt.visionType}</h3>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-4">{opt.visionFocus}</p>
+
+                  <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 -mr-2 [mask-image:linear-gradient(to_bottom,black_85%,transparent)]">
+                    <p className="text-white/80 text-xs leading-relaxed italic font-serif">
+                      "{stripScreenplayCues(opt.cleanScript || '')}"
+                    </p>
+                  </div>
                 </div>
-                
-                {/* Removed Apply Vision footer to mandate Directorial Review */}
               </motion.div>
-            </div>
-          );
-        })}
-      </motion.div>
+            );
+          })}
+        </div>
+
+        {/* 5-Step Pagination Bar */}
+        <div className="flex items-center gap-3 mt-4">
+          {drafts.map((d, i) => (
+            <button
+              key={`dot-bar-${i}`}
+              data-hotspot-id="HS_ACT2_CAROUSEL_DOT_BTN"
+              onClick={() => setCarouselIndex(i)}
+              className={cn(
+                "h-2.5 rounded-full transition-all duration-300 outline-none",
+                i === carouselIndex ? "w-8 bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)]" : "w-2.5 bg-white/20 hover:bg-white/40"
+              )}
+              aria-label={`Go to vision ${i + 1}`}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

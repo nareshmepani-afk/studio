@@ -494,5 +494,19 @@ describe('Studio Regression Tests', () => {
       expect(getVisionId("The Flow")).toBe("cinematic");
       expect(getVisionId("Dynamic Cadence")).toBe("cinematic");
     });
+
+    it('COVER FLOW CAROUSEL: should calculate relative distance offsets for 5 cards cleanly', () => {
+      const draftsCount = 5;
+      const carouselIndex = 2; // Card #3 centered
+
+      const getDistance = (idx: number) => {
+        const rawOffset = (idx - carouselIndex + draftsCount) % draftsCount;
+        return rawOffset > draftsCount / 2 ? rawOffset - draftsCount : rawOffset;
+      };
+
+      expect(getDistance(2)).toBe(0); // Centered active card
+      expect(getDistance(1)).toBe(-1); // Left flanking card
+      expect(getDistance(3)).toBe(1); // Right flanking card
+    });
   });
 });
