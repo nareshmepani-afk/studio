@@ -89,6 +89,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-28**: v1.1.0-beta-MW-94. Enforced Rule 14 prose-description dual-sync across Scriptorium onSync and useMemoryPersistence flush; restored authentic story hook for document ey96djU6qR1BrDGnvZwp in Firestore via MCP tool. (Build Verify: SUCCESS, User Sign-Off: VERIFIED)
 - **2026-07-28**: v1.1.0-beta-MW-95. Added !isGeneratingDrafts guard to ProductionControlBar to hide Sensory View toggle during AI synthesis ceremony. (Build Verify: SUCCESS, User Sign-Off: VERIFIED)
 - **2026-07-28**: v1.1.0-beta-MW-96. Implemented Direct Script Stepping inside ScriptLightBox with floating chevrons (‹ / ›), keyboard ← / → shortcuts, top-right index tag [ 0X / 05 ], hotspot tags (HS_ACT2_LIGHTBOX_PREV_BTN, HS_ACT2_LIGHTBOX_NEXT_BTN, HS_ACT2_LIGHTBOX_CHOOSE_BTN), and automated inline edit persistence before stepping. (Build Verify: SUCCESS)
+- **2026-07-28**: v1.1.0-beta-MW-97. Synchronized teleprompter scroll-to-top (scrollTop = 0) on in-modal vision step, mapped data.reviewDrafts dynamically to previewDraftsList, and aligned Card #4 title to 'The Flow'. (Build Verify: SUCCESS)
 
 
 

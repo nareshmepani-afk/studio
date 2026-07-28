@@ -2621,51 +2621,69 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       </LayoutGroup>
 
     {(() => {
-      const previewDraftsList = [
-        {
-          visionType: productionStage === 1 ? `Committed: ${data?.activeVisionLabel || selectedVision?.label || 'Act I Script'}` : "Original Polished",
-          visionFocus: "Your locked Act I performance blueprint.",
-          cleanScript: stripScreenplayCues(prose || originalHook || description || ""),
-          beatSheet: ["Act I Committal", "Sealed Blueprint"],
-          stageDirections: [],
-          preFlightBrief: { sensoryAnchors: ["Directorial Lock"], vocalInstructions: ["Maintain original pacing"], heroMoment: "Committed core vision." }
-        },
-        {
-          visionType: "The Poetic Weave",
-          visionFocus: "Internal resonance and metaphorical depth.",
-          cleanScript: stripScreenplayCues(aiTakes?.poetic || ""),
-          beatSheet: ["Sensory Immersion", "Internal Landscapes", "Poetic Nuance"],
-          stageDirections: [],
-          preFlightBrief: { sensoryAnchors: ["Vivid Physical Details", "Emotional Tone"], vocalInstructions: ["Speak softly", "Take your time"], heroMoment: "A moment of deep internal clarity." }
-        },
-        {
-          visionType: "The Direct Weave",
-          visionFocus: "Documentary-style, authentic human weight.",
-          cleanScript: stripScreenplayCues(aiTakes?.direct || ""),
-          beatSheet: ["Human Persistence", "Documentary Integrity", "Authentic Recall"],
-          stageDirections: [],
-          preFlightBrief: { sensoryAnchors: ["Grounded Truths", "Realist Context"], vocalInstructions: ["Speak clearly", "Assertive delivery"], heroMoment: "Direct connection to your audience." }
-        },
-        {
-          visionType: "The Generational Weave",
-          visionFocus: "Ancestral persistence and legacy values.",
-          cleanScript: stripScreenplayCues(aiTakes?.nostalgic || ""),
-          beatSheet: ["Generational Roots", "Inherited Strengths", "Mantra Reflection"],
-          stageDirections: [],
-          preFlightBrief: { sensoryAnchors: ["Legacy Anchors", "Family History"], vocalInstructions: ["Speak with pride", "Storyteller rhythm"], heroMoment: "The bridge of memory across generations." }
-        },
-        {
-          visionType: "The Memory Weave",
-          visionFocus: "Master synthesis fusing voice, emotion, atmosphere, and rhythm.",
-          cleanScript: stripScreenplayCues(aiTakes?.master || aiTakes?.poetic || ""),
-          beatSheet: ["Authentic Voice", "Emotional Depth", "Sensory Texture", "Cinematic Arc"],
-          stageDirections: [],
-          preFlightBrief: { sensoryAnchors: ["Master Fusion"], vocalInstructions: ["Harmonized rhythm"], heroMoment: "Definitive master performance." }
-        }
-      ];
+      const existingReviewDrafts = (data as any)?.reviewDrafts || (data as any)?.productionTakes;
+      const previewDraftsList = (existingReviewDrafts && existingReviewDrafts.length >= 4)
+        ? existingReviewDrafts.map((d: any) => ({
+            visionType: d.visionType,
+            visionFocus: d.visionFocus || "Sensory narrative interpretation.",
+            cleanScript: stripScreenplayCues(
+              (d.visionType?.startsWith("Committed:") ? (prose || originalHook || description) : undefined) ||
+              (d.visionType === "The Memory Weave" || d.visionType?.includes("Crown") ? (aiTakes?.master || d.cleanScript) : undefined) ||
+              (d.visionType === "The Poetic Weave" || d.visionType?.includes("Soul") ? (aiTakes?.poetic || d.cleanScript) : undefined) ||
+              (d.visionType === "The Direct Weave" || d.visionType?.includes("Atmospheric") ? (aiTakes?.direct || d.cleanScript) : undefined) ||
+              (d.visionType === "The Flow" || d.visionType === "The Generational Weave" ? (aiTakes?.nostalgic || d.cleanScript) : undefined) ||
+              d.cleanScript || ''
+            ),
+            beatSheet: d.beatSheet || ["Sensory Arc"],
+            stageDirections: d.stageDirections || [],
+            preFlightBrief: d.preFlightBrief || { sensoryAnchors: ["Directorial Lock"], vocalInstructions: ["Maintain original pacing"], heroMoment: "Core performance." },
+            generatedSoundtrackUrl: d.generatedSoundtrackUrl
+          }))
+        : [
+            {
+              visionType: productionStage === 1 ? `Committed: ${data?.activeVisionLabel || selectedVision?.label || 'Act I Script'}` : "Original Polished",
+              visionFocus: "Your locked Act I performance blueprint.",
+              cleanScript: stripScreenplayCues(prose || originalHook || description || ""),
+              beatSheet: ["Act I Committal", "Sealed Blueprint"],
+              stageDirections: [],
+              preFlightBrief: { sensoryAnchors: ["Directorial Lock"], vocalInstructions: ["Maintain original pacing"], heroMoment: "Committed core vision." }
+            },
+            {
+              visionType: "The Poetic Weave",
+              visionFocus: "Internal resonance and metaphorical depth.",
+              cleanScript: stripScreenplayCues(aiTakes?.poetic || ""),
+              beatSheet: ["Sensory Immersion", "Internal Landscapes", "Poetic Nuance"],
+              stageDirections: [],
+              preFlightBrief: { sensoryAnchors: ["Vivid Physical Details", "Emotional Tone"], vocalInstructions: ["Speak softly", "Take your time"], heroMoment: "A moment of deep internal clarity." }
+            },
+            {
+              visionType: "The Direct Weave",
+              visionFocus: "Documentary-style, authentic human weight.",
+              cleanScript: stripScreenplayCues(aiTakes?.direct || ""),
+              beatSheet: ["Human Persistence", "Documentary Integrity", "Authentic Recall"],
+              stageDirections: [],
+              preFlightBrief: { sensoryAnchors: ["Grounded Truths", "Realist Context"], vocalInstructions: ["Speak clearly", "Assertive delivery"], heroMoment: "Direct connection to your audience." }
+            },
+            {
+              visionType: "The Flow",
+              visionFocus: "Ancestral persistence and legacy values across oceans and tongues.",
+              cleanScript: stripScreenplayCues(aiTakes?.nostalgic || ""),
+              beatSheet: ["Generational Roots", "Inherited Strengths", "Mantra Reflection"],
+              stageDirections: [],
+              preFlightBrief: { sensoryAnchors: ["Legacy Anchors", "Family History"], vocalInstructions: ["Speak with pride", "Storyteller rhythm"], heroMoment: "The bridge of memory across generations." }
+            },
+            {
+              visionType: "The Memory Weave",
+              visionFocus: "Master synthesis fusing voice, emotion, atmosphere, and rhythm.",
+              cleanScript: stripScreenplayCues(aiTakes?.master || aiTakes?.poetic || ""),
+              beatSheet: ["Authentic Voice", "Emotional Depth", "Sensory Texture", "Cinematic Arc"],
+              stageDirections: [],
+              preFlightBrief: { sensoryAnchors: ["Master Fusion"], vocalInstructions: ["Harmonized rhythm"], heroMoment: "Definitive master performance." }
+            }
+          ];
 
       const currentPreviewIndex = selectedDraftForPreview
-        ? Math.max(0, previewDraftsList.findIndex(d => 
+        ? Math.max(0, previewDraftsList.findIndex((d: any) => 
             d.visionType === selectedDraftForPreview.visionType || 
             (selectedDraftForPreview.visionType?.startsWith("Committed:") && d.visionType?.startsWith("Committed:"))
           ))
@@ -2692,7 +2710,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
           const newTakes = { ...(aiTakes || {}), direct: updatedScript };
           setAiTakes(newTakes);
           updatesToPersist.aiTakes = newTakes;
-        } else if (draftType === "The Generational Weave" || draftType === "nostalgic") {
+        } else if (draftType === "The Generational Weave" || draftType === "The Flow" || draftType === "nostalgic") {
           const newTakes = { ...(aiTakes || {}), nostalgic: updatedScript };
           setAiTakes(newTakes);
           updatesToPersist.aiTakes = newTakes;

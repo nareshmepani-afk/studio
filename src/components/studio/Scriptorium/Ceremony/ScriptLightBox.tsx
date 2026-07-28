@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -54,6 +54,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
   const [userScript, setUserScript] = useState(sanitizedCleanScript);
   const [isEditing, setIsEditing] = useState(false);
   const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
+  const teleprompterRef = useRef<HTMLDivElement>(null);
 
   const totalVisions = allDrafts.length || 5;
   const activeIndex = currentIndex;
@@ -61,7 +62,10 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
   useEffect(() => {
     setUserScript(stripScreenplayCues(cleanScript || ''));
     setIsEditing(false);
-  }, [cleanScript, isOpen]);
+    if (teleprompterRef.current) {
+      teleprompterRef.current.scrollTop = 0;
+    }
+  }, [cleanScript, isOpen, activeIndex]);
 
   const handleCloseWithSave = () => {
     const isEdited = userScript.trim() !== cleanScript.trim();
@@ -381,7 +385,7 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                 </div>
 
                 {/* Teleprompter Text Display */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-10 lg:p-16">
+                <div ref={teleprompterRef} className="flex-1 overflow-y-auto custom-scrollbar p-10 lg:p-16">
                   <div className="max-w-3xl mx-auto space-y-12">
                     <div className="text-[10px] font-mono font-bold text-amber-500/40 uppercase tracking-[0.4em] text-center border-b border-white/5 pb-6">
                       SCENE I : THE VISION
