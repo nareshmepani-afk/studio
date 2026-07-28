@@ -558,5 +558,16 @@ describe('Studio Regression Tests', () => {
       // Default routing without ?act=1 restores saved stage
       expect(resolveTargetStage(1, undefined)).toBe(1);
     });
+
+    it('SYNTHESIS UI SHIELD: should hide Sensory View toggle button during AI synthesis (isGeneratingDrafts === true)', () => {
+      const shouldShowSensoryViewToggle = (currentStage: number, isGeneratingDrafts: boolean) => {
+        return currentStage === 0 && !isGeneratingDrafts;
+      };
+
+      // During AI synthesis, ceremony overlay is open -> toggle should be hidden
+      expect(shouldShowSensoryViewToggle(0, true)).toBe(false);
+      // Normal Scriptorium writing view -> toggle is visible
+      expect(shouldShowSensoryViewToggle(0, false)).toBe(true);
+    });
   });
 });
