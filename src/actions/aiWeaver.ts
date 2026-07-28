@@ -890,16 +890,22 @@ export async function generateDraftOptions(
   const ai = await getAI();
   
   const prompt = `
-    DIRECTIVE: CINEMATIC SYNTHESIS ENGINE V6.3 (TIMELESS TEMPORAL ANCHORING)
+    DIRECTIVE: CINEMATIC SYNTHESIS ENGINE V6.4 (DISTINCT NARRATIVE INGRESS)
 
-    [THE IDENTITY HEADER - GLOBAL OVERRIDE]
+    [THE IDENTITY HEADER & NARRATOR PERSPECTIVE]
     - NARRATOR STATUS: Adult reflecting on ${memory_date !== 'Unknown' ? `the year ${memory_date}` : 'family roots and memory anchors'}.
     - NARRATOR AGE AT ANCHOR DATE: ${narratorAgeAtTime} YEAR OLD.
     - THE SEED PRINCIPLE: ${narratorAgeAtTime < 4 ? 'Because age is < 4, the narrator is the "Seed," not the "Sower." They have ZERO episodic memory. They were carried and shielded.' : 'Narrator is speaking from lived memory and reflective perspective.'}
-    - VANTAGE POINT: Frame history with authentic legacy perspective.
-      - MANDATE: Prioritize the specific family members mentioned in the [DATA ANCHORS]. 
-      - PHRASING: Use: "I was raised on the stories of...", "My parents describe...", "The family tells me...", or "The history I carry is...". 
-      - CRITICAL: Do not default to "My mother" unless explicitly stated; use the inclusive "parents" as per the user's raw input.
+    - VANTAGE POINT: Frame history with authentic legacy perspective. Prioritize specific family members mentioned in [DATA ANCHORS]. Do not default to "My mother" unless explicitly stated; use inclusive "parents" per user raw input.
+
+    [DISTINCT NARRATIVE INGRESS & OPENING HOOK MANDATE - CRITICAL]
+    - ZERO DUPLICATE OPENINGS: NO TWO VISIONS MAY START WITH THE SAME WORDS OR SENTENCE STRUCTURE.
+    - BANNED CANNED TEMPLATES: NEVER start multiple options with repetitive phrases like "The history I carry...", "My parents describe...", "I was raised on the stories of...", or "The family tells me...".
+    - REQUIRED OPENING INGRESS BY SCORE ANGLE:
+      1. THE SOUL-PRINT: Start with an internal reflection or spiritual bedrock values statement (e.g., "Strength was the only currency my family ever traded in...", "We were born of soil, sweat, and unyielding quiet resolve...").
+      2. THE ATMOSPHERIC WEAVE: Start directly with a vivid, visceral sensory or environmental contrast (e.g., "Sun-baked Kenyan earth gave way to the freezing drizzle of London tarmac...", "A wall of grey English mist greeted the plane as it touched down...").
+      3. THE FLOW: Start with spoken momentum, temporal landmark, or direct narrative action (e.g., "In 1964, two suitcases and three young children crossed the Indian Ocean...", "Long before the voyage across dark waters, our ancestors walked the dry fields of Madhapur...").
+      4. THE MEMORY WEAVE (Master Fusion): Start with a grand master thesis fusing heritage and adaptation (e.g., "Across three continents and six decades, our family story remains a single continuous arc of survival...").
 
     [TIMELESS TEMPORAL ANCHORING & ERA GROUNDING MANDATE]
     - ANCHOR DATE / YEAR: ${memory_date !== 'Unknown' ? memory_date : 'Calculated historical year based on narrator age/era'}.
