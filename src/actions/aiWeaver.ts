@@ -890,16 +890,22 @@ export async function generateDraftOptions(
   const ai = await getAI();
   
   const prompt = `
-    DIRECTIVE: CINEMATIC SYNTHESIS ENGINE V6.2 (IDENTITY HEADER)
+    DIRECTIVE: CINEMATIC SYNTHESIS ENGINE V6.3 (TIMELESS TEMPORAL ANCHORING)
 
     [THE IDENTITY HEADER - GLOBAL OVERRIDE]
-    - NARRATOR STATUS: Adult reflecting on the year 1964.
+    - NARRATOR STATUS: Adult reflecting on ${memory_date !== 'Unknown' ? `the year ${memory_date}` : 'family roots and memory anchors'}.
     - NARRATOR AGE AT ANCHOR DATE: ${narratorAgeAtTime} YEAR OLD.
-    - THE SEED PRINCIPLE: Because age is < 4, the narrator is the "Seed," not the "Sower." They have ZERO episodic memory. They were carried and shielded.
-    - VANTAGE POINT: Frame all history as "Inherited Legacy." 
+    - THE SEED PRINCIPLE: ${narratorAgeAtTime < 4 ? 'Because age is < 4, the narrator is the "Seed," not the "Sower." They have ZERO episodic memory. They were carried and shielded.' : 'Narrator is speaking from lived memory and reflective perspective.'}
+    - VANTAGE POINT: Frame history with authentic legacy perspective.
       - MANDATE: Prioritize the specific family members mentioned in the [DATA ANCHORS]. 
       - PHRASING: Use: "I was raised on the stories of...", "My parents describe...", "The family tells me...", or "The history I carry is...". 
       - CRITICAL: Do not default to "My mother" unless explicitly stated; use the inclusive "parents" as per the user's raw input.
+
+    [TIMELESS TEMPORAL ANCHORING & ERA GROUNDING MANDATE]
+    - ANCHOR DATE / YEAR: ${memory_date !== 'Unknown' ? memory_date : 'Calculated historical year based on narrator age/era'}.
+    - BAN AMBIGUOUS RELATIVE TEMPORAL PHRASES: NEVER write floating relative phrases like "Rewind thirty years", "A few decades ago", "Thirty years back", or "Some years ago".
+    - TIMELESS ORAL HISTORY RULE: These monologues are recorded for descendants and preserved for 30–100+ years into the future. All temporal references MUST be explicitly anchored with calendar years, specific decades, or historical eras (e.g. "Rewind to 1996...", "In 1964...", "Stepping back to the mid-1960s...", "Looking back to 1996...").
+    - RELATIVE PHRASE CONVERSION: If user input mentions relative time spans (e.g. "thirty years ago"), calculate and state the specific calendar year (e.g., "In 1996...") to ensure absolute temporal clarity across future generations.
 
     [THE SOIL OF TRUTH - DATA ANCHORS]
     - User Memory: "${description}"
@@ -920,7 +926,7 @@ export async function generateDraftOptions(
     [UK ENGLISH COMPLIANCE]
     - British spellings ONLY: labour, colour, realise, grey, centre, programme.
 
-    [OUTPUT SCHEMA V6.2]
+    [OUTPUT SCHEMA V6.3]
     Return a JSON object with this exact structure. You MUST provide EXACTLY FOUR objects in the "visions" array (The Soul-Print, The Atmospheric Weave, The Flow, and The Memory Weave):
     {
       "polishedOriginalHook": "Refined UK English version of raw input.",
