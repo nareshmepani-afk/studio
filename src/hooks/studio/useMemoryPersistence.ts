@@ -263,12 +263,16 @@ export function useMemoryPersistence({
       setIsSaving(true);
       isSavingRef.current = true;
       lastSavedTimestamp.current = now;
-      previousDescription.current = description;
-      
       try {
+        const resolvedProse = (s.prose && s.prose.trim().length > 0)
+          ? s.prose
+          : (s.scriptBlocks && s.scriptBlocks.length > 0 && s.scriptBlocks[0]?.text)
+            ? s.scriptBlocks.map((b: any) => b.text).join('\n\n')
+            : (currentData?.prose || currentData?.originalHook || s.description || currentData?.description || '');
+
         const delta = {
           title: s.title || '',
-          description: (s.prose && s.prose.trim().length > 0 && (!s.description || s.description.includes("Your birthplace, family roots") || s.description.includes("Enter the core of your memory"))) ? s.prose : (s.description || ''),
+          description: resolvedProse,
           location: s.location || '',
           country: s.country || '',
           tags: s.tags || [],
@@ -293,11 +297,11 @@ export function useMemoryPersistence({
           },
           aiTakes: s.aiTakes || null,
           structuredScript: s.structuredScript || null,
-          originalHook: s.originalHook || currentData?.originalHook || undefined,
+          originalHook: s.originalHook || currentData?.originalHook || resolvedProse,
           scriptHistory: s.scriptHistory || currentData?.scriptHistory || undefined,
           isProductionLocked: s.isProductionLocked !== undefined ? s.isProductionLocked : (currentData?.isProductionLocked ?? undefined),
           productionStage: s.productionStage !== undefined ? s.productionStage : (currentData?.productionStage ?? undefined),
-          prose: s.prose !== undefined ? s.prose : (currentData?.prose ?? undefined),
+          prose: resolvedProse,
           timeframeScope: (s.timeframeScope || currentData?.timeframeScope) as TimeframeScope || undefined,
           narratorAgeAtTime: s.narratorAgeAtTime !== undefined ? s.narratorAgeAtTime : (currentData?.narratorAgeAtTime !== undefined ? currentData.narratorAgeAtTime : undefined),
           durationQuantity: s.durationQuantity !== undefined ? s.durationQuantity : (currentData?.durationQuantity ?? undefined),

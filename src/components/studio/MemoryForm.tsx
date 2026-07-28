@@ -2402,6 +2402,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                           console.log("[MemoryForm:onSync] Syncing blocks to scriptBlocks and prose:", { blocksCount: blocks.length, joinedProseLength: joined.length, snippet: joined.substring(0, 80) + "..." });
                           setScriptBlocks(blocks);
                           setProse(joined);
+                          setDescription(joined); // DUAL-SYNC: Ensure description matches Scriptorium prose!
                         }} 
                         onPolish={handleScriptPolish} 
                         onWordCountChange={handleScriptWordCount}

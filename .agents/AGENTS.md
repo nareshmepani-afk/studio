@@ -86,6 +86,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-27**: v1.1.0-beta-MW-91. Boosted font contrast and added emerald accent lines for [ END OF NORTH STAR SCORE ] footer in ScriptLightBox and CinemaMonitor. (Build Verify: SUCCESS, User Sign-Off: VERIFIED)
 - **2026-07-27**: v1.1.0-beta-MW-92. Added local update({ activeVision: undefined, activeVisionLabel: undefined }) call on Release Sensory Lock for 0ms optimistic UI unsealing. (Build Verify: SUCCESS, User Sign-Off: VERIFIED)
 - **2026-07-28**: v1.1.0-beta-MW-93. Appended ?act=1 searchParam to Edit Scene links and updated ProductionDeck stage rehydration to route performers directly to Act I Scriptorium. (Build Verify: SUCCESS, User Sign-Off: VERIFIED)
+- **2026-07-28**: v1.1.0-beta-MW-94. Enforced Rule 14 prose-description dual-sync across Scriptorium onSync and useMemoryPersistence flush; restored authentic story hook for document ey96djU6qR1BrDGnvZwp in Firestore via MCP tool. (Build Verify: SUCCESS, User Sign-Off: VERIFIED)
 
 
 
