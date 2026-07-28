@@ -2620,94 +2620,152 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
         />
       </LayoutGroup>
 
-    <ScriptLightBox 
-      isOpen={!!selectedDraftForPreview}
-      isSaving={isCloudSaving}
-      onClose={(updatedScript?: string) => {
-        if (updatedScript && selectedDraftForPreview) {
-          const type = selectedDraftForPreview.visionType;
-          console.log("[MemoryForm] Preserving draft edits to Selection Deck for:", type);
-
-          const updatesToPersist: Record<string, any> = {};
-
-          // 1. Committed blueprint card / Act I Script
-          if (type.startsWith("Committed:") || type === "Original Spark" || type === "Original Polished" || type === "Act I Script") {
-            setProse(updatedScript);
-            setDescription(updatedScript);
-            setOriginalHook(updatedScript);
-            updatesToPersist.prose = updatedScript;
-            updatesToPersist.description = updatedScript;
-            updatesToPersist.originalHook = updatedScript;
-          }
-
-          // 2. AI Sensory Weave takes
-          if (type === "The Poetic Weave" || type === "poetic") {
-            const newTakes = { ...(aiTakes || {}), poetic: updatedScript };
-            setAiTakes(newTakes);
-            updatesToPersist.aiTakes = newTakes;
-          } else if (type === "The Direct Weave" || type === "direct") {
-            const newTakes = { ...(aiTakes || {}), direct: updatedScript };
-            setAiTakes(newTakes);
-            updatesToPersist.aiTakes = newTakes;
-          } else if (type === "The Generational Weave" || type === "nostalgic") {
-            const newTakes = { ...(aiTakes || {}), nostalgic: updatedScript };
-            setAiTakes(newTakes);
-            updatesToPersist.aiTakes = newTakes;
-          } else if (type === "The Memory Weave" || type === "master") {
-            const newTakes = { ...(aiTakes || {}), master: updatedScript };
-            setAiTakes(newTakes);
-            updatesToPersist.aiTakes = newTakes;
-          }
-
-          // 3. Update productionTakes in data if present
-          const currentTakes = data?.productionTakes || [];
-          if (currentTakes.length > 0) {
-            const updated = currentTakes.map((d: any) => 
-              (d.visionType === type || type.includes(d.visionType) || d.visionType.includes(type))
-                ? { ...d, cleanScript: updatedScript, isCustomTuned: true } 
-                : d
-            );
-            updatesToPersist.productionTakes = updated;
-          }
-
-          // 4. Update reviewDrafts in data if present
-          const currentReviewDrafts = (data as any)?.reviewDrafts || [];
-          if (currentReviewDrafts.length > 0) {
-            const updatedReview = currentReviewDrafts.map((d: any) =>
-              (d.visionType === type || type.includes(d.visionType) || d.visionType.includes(type))
-                ? { ...d, cleanScript: updatedScript, isCustomTuned: true }
-                : d
-            );
-            (updatesToPersist as any).reviewDrafts = updatedReview;
-          }
-
-          if (Object.keys(updatesToPersist).length > 0) {
-            update(updatesToPersist);
-            toast.success("Draft Edits Preserved", { 
-              description: "Your custom script updates have been saved to the Selection Deck." 
-            });
-          }
+    {(() => {
+      const previewDraftsList = [
+        {
+          visionType: productionStage === 1 ? `Committed: ${data?.activeVisionLabel || selectedVision?.label || 'Act I Script'}` : "Original Polished",
+          visionFocus: "Your locked Act I performance blueprint.",
+          cleanScript: stripScreenplayCues(prose || originalHook || description || ""),
+          beatSheet: ["Act I Committal", "Sealed Blueprint"],
+          stageDirections: [],
+          preFlightBrief: { sensoryAnchors: ["Directorial Lock"], vocalInstructions: ["Maintain original pacing"], heroMoment: "Committed core vision." }
+        },
+        {
+          visionType: "The Poetic Weave",
+          visionFocus: "Internal resonance and metaphorical depth.",
+          cleanScript: stripScreenplayCues(aiTakes?.poetic || ""),
+          beatSheet: ["Sensory Immersion", "Internal Landscapes", "Poetic Nuance"],
+          stageDirections: [],
+          preFlightBrief: { sensoryAnchors: ["Vivid Physical Details", "Emotional Tone"], vocalInstructions: ["Speak softly", "Take your time"], heroMoment: "A moment of deep internal clarity." }
+        },
+        {
+          visionType: "The Direct Weave",
+          visionFocus: "Documentary-style, authentic human weight.",
+          cleanScript: stripScreenplayCues(aiTakes?.direct || ""),
+          beatSheet: ["Human Persistence", "Documentary Integrity", "Authentic Recall"],
+          stageDirections: [],
+          preFlightBrief: { sensoryAnchors: ["Grounded Truths", "Realist Context"], vocalInstructions: ["Speak clearly", "Assertive delivery"], heroMoment: "Direct connection to your audience." }
+        },
+        {
+          visionType: "The Generational Weave",
+          visionFocus: "Ancestral persistence and legacy values.",
+          cleanScript: stripScreenplayCues(aiTakes?.nostalgic || ""),
+          beatSheet: ["Generational Roots", "Inherited Strengths", "Mantra Reflection"],
+          stageDirections: [],
+          preFlightBrief: { sensoryAnchors: ["Legacy Anchors", "Family History"], vocalInstructions: ["Speak with pride", "Storyteller rhythm"], heroMoment: "The bridge of memory across generations." }
+        },
+        {
+          visionType: "The Memory Weave",
+          visionFocus: "Master synthesis fusing voice, emotion, atmosphere, and rhythm.",
+          cleanScript: stripScreenplayCues(aiTakes?.master || aiTakes?.poetic || ""),
+          beatSheet: ["Authentic Voice", "Emotional Depth", "Sensory Texture", "Cinematic Arc"],
+          stageDirections: [],
+          preFlightBrief: { sensoryAnchors: ["Master Fusion"], vocalInstructions: ["Harmonized rhythm"], heroMoment: "Definitive master performance." }
         }
-        setSelectedDraftForPreview(null);
-      }}
-      originalHook={productionStage === 1 ? (prose || originalHook || description) : (prose || polishedOriginalHook || description)}
-      originalHookLabel={productionStage === 1 ? ("Committed: " + (data?.activeVisionLabel || selectedVision?.label || 'Act I Script')) : "Original Spark"}
-      cleanScript={stripScreenplayCues(
-        (selectedDraftForPreview?.visionType?.startsWith("Committed:") ? (prose || originalHook || description) : undefined) ||
-        (selectedDraftForPreview?.visionType === "The Memory Weave" ? aiTakes?.master : undefined) ||
-        (selectedDraftForPreview?.visionType === "The Poetic Weave" ? aiTakes?.poetic : undefined) ||
-        (selectedDraftForPreview?.visionType === "The Direct Weave" ? aiTakes?.direct : undefined) ||
-        (selectedDraftForPreview?.visionType === "The Generational Weave" ? aiTakes?.nostalgic : undefined) ||
-        selectedDraftForPreview?.cleanScript || ''
-      )}
-      visionLabel={selectedDraftForPreview?.visionType || ''}
-      visionFocus={selectedDraftForPreview?.visionFocus || ''}
-      stageDirections={selectedDraftForPreview?.stageDirections || []}
-      beatSheet={selectedDraftForPreview?.beatSheet || []}
-      generatedSoundtrackUrl={selectedDraftForPreview?.generatedSoundtrackUrl}
-      onApply={async (customScript?: string) => {
-        if (selectedDraftForPreview) {
-          if (productionStage === 1) {
+      ];
+
+      const currentPreviewIndex = selectedDraftForPreview
+        ? Math.max(0, previewDraftsList.findIndex(d => 
+            d.visionType === selectedDraftForPreview.visionType || 
+            (selectedDraftForPreview.visionType?.startsWith("Committed:") && d.visionType?.startsWith("Committed:"))
+          ))
+        : 0;
+
+      const saveDraftEdits = (draftType: string, updatedScript: string) => {
+        console.log("[MemoryForm] Preserving draft edits to Selection Deck for:", draftType);
+        const updatesToPersist: Record<string, any> = {};
+
+        if (draftType.startsWith("Committed:") || draftType === "Original Spark" || draftType === "Original Polished" || draftType === "Act I Script") {
+          setProse(updatedScript);
+          setDescription(updatedScript);
+          setOriginalHook(updatedScript);
+          updatesToPersist.prose = updatedScript;
+          updatesToPersist.description = updatedScript;
+          updatesToPersist.originalHook = updatedScript;
+        }
+
+        if (draftType === "The Poetic Weave" || draftType === "poetic") {
+          const newTakes = { ...(aiTakes || {}), poetic: updatedScript };
+          setAiTakes(newTakes);
+          updatesToPersist.aiTakes = newTakes;
+        } else if (draftType === "The Direct Weave" || draftType === "direct") {
+          const newTakes = { ...(aiTakes || {}), direct: updatedScript };
+          setAiTakes(newTakes);
+          updatesToPersist.aiTakes = newTakes;
+        } else if (draftType === "The Generational Weave" || draftType === "nostalgic") {
+          const newTakes = { ...(aiTakes || {}), nostalgic: updatedScript };
+          setAiTakes(newTakes);
+          updatesToPersist.aiTakes = newTakes;
+        } else if (draftType === "The Memory Weave" || draftType === "master") {
+          const newTakes = { ...(aiTakes || {}), master: updatedScript };
+          setAiTakes(newTakes);
+          updatesToPersist.aiTakes = newTakes;
+        }
+
+        const currentTakes = data?.productionTakes || [];
+        if (currentTakes.length > 0) {
+          const updated = currentTakes.map((d: any) => 
+            (d.visionType === draftType || draftType.includes(d.visionType) || d.visionType.includes(draftType))
+              ? { ...d, cleanScript: updatedScript, isCustomTuned: true } 
+              : d
+          );
+          updatesToPersist.productionTakes = updated;
+        }
+
+        const currentReviewDrafts = (data as any)?.reviewDrafts || [];
+        if (currentReviewDrafts.length > 0) {
+          const updatedReview = currentReviewDrafts.map((d: any) =>
+            (d.visionType === draftType || draftType.includes(d.visionType) || d.visionType.includes(draftType))
+              ? { ...d, cleanScript: updatedScript, isCustomTuned: true }
+              : d
+          );
+          (updatesToPersist as any).reviewDrafts = updatedReview;
+        }
+
+        if (Object.keys(updatesToPersist).length > 0) {
+          update(updatesToPersist);
+          toast.success("Draft Edits Preserved", { 
+            description: "Your custom script updates have been saved to the Selection Deck." 
+          });
+        }
+      };
+
+      return (
+        <ScriptLightBox 
+          isOpen={!!selectedDraftForPreview}
+          isSaving={isCloudSaving}
+          allDrafts={previewDraftsList}
+          currentIndex={currentPreviewIndex}
+          onNavigateVision={(newIndex: number, updatedScript?: string) => {
+            if (selectedDraftForPreview && updatedScript) {
+              saveDraftEdits(selectedDraftForPreview.visionType, updatedScript);
+            }
+            setSelectedDraftForPreview(previewDraftsList[newIndex]);
+          }}
+          onClose={(updatedScript?: string) => {
+            if (updatedScript && selectedDraftForPreview) {
+              saveDraftEdits(selectedDraftForPreview.visionType, updatedScript);
+            }
+            setSelectedDraftForPreview(null);
+          }}
+          originalHook={productionStage === 1 ? (prose || originalHook || description) : (prose || polishedOriginalHook || description)}
+          originalHookLabel={productionStage === 1 ? ("Committed: " + (data?.activeVisionLabel || selectedVision?.label || 'Act I Script')) : "Original Spark"}
+          cleanScript={stripScreenplayCues(
+            (selectedDraftForPreview?.visionType?.startsWith("Committed:") ? (prose || originalHook || description) : undefined) ||
+            (selectedDraftForPreview?.visionType === "The Memory Weave" ? aiTakes?.master : undefined) ||
+            (selectedDraftForPreview?.visionType === "The Poetic Weave" ? aiTakes?.poetic : undefined) ||
+            (selectedDraftForPreview?.visionType === "The Direct Weave" ? aiTakes?.direct : undefined) ||
+            (selectedDraftForPreview?.visionType === "The Generational Weave" ? aiTakes?.nostalgic : undefined) ||
+            selectedDraftForPreview?.cleanScript || ''
+          )}
+          visionLabel={selectedDraftForPreview?.visionType || ''}
+          visionFocus={selectedDraftForPreview?.visionFocus || ''}
+          stageDirections={selectedDraftForPreview?.stageDirections || []}
+          beatSheet={selectedDraftForPreview?.beatSheet || []}
+          generatedSoundtrackUrl={selectedDraftForPreview?.generatedSoundtrackUrl}
+          onApply={async (customScript?: string) => {
+            if (selectedDraftForPreview) {
+              if (productionStage === 1) {
             // ACT II: SENSORY WEAVE COMMITMENT
             const text = customScript || selectedDraftForPreview.cleanScript || '';
             const label = selectedDraftForPreview.visionType;
@@ -2805,6 +2863,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
         }
       }}
     />
+  );
+})()}
     </div>
   );
 });

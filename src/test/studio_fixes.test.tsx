@@ -569,5 +569,35 @@ describe('Studio Regression Tests', () => {
       // Normal Scriptorium writing view -> toggle is visible
       expect(shouldShowSensoryViewToggle(0, false)).toBe(true);
     });
+
+    it('LIGHTBOX VISION STEPPING: should update active vision index and preserve uncommitted edits when stepping between cards', () => {
+      let currentIndex = 0;
+      let preservedDraftEdits: Record<string, string> = {};
+
+      const allDrafts = [
+        { visionType: 'Official Record', cleanScript: 'Original text' },
+        { visionType: 'The Poetic Weave', cleanScript: 'Poetic text' },
+        { visionType: 'The Direct Weave', cleanScript: 'Direct text' }
+      ];
+
+      const onNavigateVision = (newIndex: number, updatedScript?: string) => {
+        if (updatedScript) {
+          preservedDraftEdits[allDrafts[currentIndex].visionType] = updatedScript;
+        }
+        currentIndex = newIndex;
+      };
+
+      // Step forward from Index 0 to Index 1 with custom user edits
+      onNavigateVision(1, 'Original text fine-tuned by user');
+
+      expect(currentIndex).toBe(1);
+      expect(preservedDraftEdits['Official Record']).toBe('Original text fine-tuned by user');
+
+      // Step forward from Index 1 to Index 2 without edits
+      onNavigateVision(2, undefined);
+
+      expect(currentIndex).toBe(2);
+      expect(preservedDraftEdits['The Poetic Weave']).toBeUndefined();
+    });
   });
 });
