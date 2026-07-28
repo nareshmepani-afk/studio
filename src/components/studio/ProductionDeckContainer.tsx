@@ -178,8 +178,9 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         
         // Sync browser URL bar to point to the actual document ID if we loaded via template ID
         if (promptId === cp.id && typeof window !== 'undefined') {
-          console.log(`[ProductionDeckContainer] Syncing browser URL bar template path "/production/${cp.id}" to document ID "/production/${cp.memory.id}"`);
-          window.history.replaceState(null, '', `/studio/production/${cp.memory.id}`);
+          const actParam = searchParams.get('act') ? `?act=${searchParams.get('act')}` : '';
+          console.log(`[ProductionDeckContainer] Syncing browser URL bar template path "/production/${cp.id}" to document ID "/production/${cp.memory.id}${actParam}"`);
+          window.history.replaceState(null, '', `/studio/production/${cp.memory.id}${actParam}`);
         }
 
         const pid = cp.id; // Enforce resolved root template ID

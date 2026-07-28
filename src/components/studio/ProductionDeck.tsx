@@ -157,10 +157,18 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         setHasNavigatedBack(false);
         prevStageRef.current = 0;
         
-        const targetStage = memoryData?.productionStage || 0;
-        console.log("[ProductionDeck] Syncing/Rehydrating global state from Firestore memory data:", currentRefId, "stage:", targetStage);
+        const urlAct = searchParams.get('act');
+        const urlStage = searchParams.get('stage');
+
+        let targetStage = memoryData?.productionStage || 0;
+        // Explicit stage override from URL (e.g. ?act=1 or ?stage=0 when user clicks "Edit Scene" on Dashboard)
+        if (urlAct === '1' || urlStage === '0') {
+            targetStage = 0;
+        }
+
+        console.log("[ProductionDeck] Syncing/Rehydrating global state from Firestore memory data:", currentRefId, "target stage:", targetStage, "saved stage:", memoryData?.productionStage);
         
-        // 1. Sync stage - Restore from saved database state
+        // 1. Sync stage - Restore from saved database state or URL override
         setStage(targetStage);
         
         // 2. Sync modality

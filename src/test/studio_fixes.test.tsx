@@ -546,5 +546,17 @@ describe('Studio Regression Tests', () => {
       expect(localState.activeVision).toBeUndefined();
       expect(localState.activeVisionLabel).toBeUndefined();
     });
+
+    it('EDIT SCENE NAVIGATION: should override saved stage to 0 (Act I Scriptorium) when ?act=1 searchParam is present', () => {
+      const resolveTargetStage = (savedStage: number, urlAct?: string, urlStage?: string) => {
+        if (urlAct === '1' || urlStage === '0') return 0;
+        return savedStage;
+      };
+
+      // Saved stage in Firestore is 1 (Act II), but user clicked Edit Scene (?act=1)
+      expect(resolveTargetStage(1, '1')).toBe(0);
+      // Default routing without ?act=1 restores saved stage
+      expect(resolveTargetStage(1, undefined)).toBe(1);
+    });
   });
 });

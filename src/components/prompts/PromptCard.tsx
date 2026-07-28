@@ -170,7 +170,7 @@ export function PromptCard(props: PromptCardProps) {
       <div className={cardClasses}>
         {/* The Link Overlay for Intercepting Routes */}
         <Link 
-          href={`/studio/production/${promptId}`}
+          href={`/studio/production/${promptId}${isCompleted ? '?act=1' : ''}`}
           onClick={handleAction}
           className="absolute inset-0 z-0"
           prefetch={true}

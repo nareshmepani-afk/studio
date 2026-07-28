@@ -118,7 +118,8 @@ export function StudioDashboard({
         // We still route by promptId to let the container rehydrate it.
         targetId = promptId;
     }
-    router.push(`/studio/production/${targetId}`);
+    const actParam = isCompleted ? '?act=1' : '';
+    router.push(`/studio/production/${targetId}${actParam}`);
   }, [chapters, router]);
 
   const handleToggleFlagPrompt = useCallback(async (promptIdToToggle: string) => {
