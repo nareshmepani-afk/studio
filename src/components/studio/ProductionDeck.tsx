@@ -763,10 +763,19 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     description: "The Director has prepared three distinct paths for your memory."
                 });
 
-                // Persist the generated drafts, review state, locked draft state, and raw prose immediately to Firestore
+                // Construct fresh aiTakes map from newly synthesized visions
+                const newAiTakes = {
+                    poetic: visions.find((v: any) => v.visionType === 'The Poetic Weave' || v.visionType?.includes('Poetic'))?.cleanScript || '',
+                    direct: visions.find((v: any) => v.visionType === 'The Direct Weave' || v.visionType?.includes('Direct'))?.cleanScript || '',
+                    nostalgic: visions.find((v: any) => v.visionType === 'The Flow' || v.visionType === 'The Generational Weave' || v.visionType?.includes('Flow'))?.cleanScript || '',
+                    master: visions.find((v: any) => v.visionType === 'The Memory Weave' || v.visionType?.includes('Memory'))?.cleanScript || ''
+                };
+                // Persist the generated drafts, review state, locked draft state, aiTakes, and raw prose immediately to Firestore
                 setIsProductionLocked(true);
                 await handleUpdate({
                     productionTakes: completeDrafts,
+                    reviewDrafts: completeDrafts,
+                    aiTakes: newAiTakes,
                     isReviewing: true,
                     isProductionLocked: true,
                     prose: rawText
