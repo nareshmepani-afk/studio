@@ -161,12 +161,15 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         const urlStage = searchParams.get('stage');
 
         let targetStage = memoryData?.productionStage || 0;
+        let isExplicitScriptEditorRequest = false;
+
         // Explicit stage override from URL (e.g. ?act=1 or ?stage=0 when user clicks "Edit Scene" on Dashboard)
         if (urlAct === '1' || urlStage === '0') {
             targetStage = 0;
+            isExplicitScriptEditorRequest = true;
         }
 
-        console.log("[ProductionDeck] Syncing/Rehydrating global state from Firestore memory data:", currentRefId, "target stage:", targetStage, "saved stage:", memoryData?.productionStage);
+        console.log("[ProductionDeck] Syncing/Rehydrating global state from Firestore memory data:", currentRefId, "target stage:", targetStage, "saved stage:", memoryData?.productionStage, "isExplicitScriptEditorRequest:", isExplicitScriptEditorRequest);
         
         // 1. Sync stage - Restore from saved database state or URL override
         setStage(targetStage);
@@ -198,7 +201,12 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         // 5. Sync review drafts
         if (targetStage === 0 && memoryData?.productionTakes && memoryData.productionTakes.length > 0) {
             setReviewDrafts(memoryData.productionTakes);
-            setIsReviewing(memoryData.isReviewing !== false);
+            if (isExplicitScriptEditorRequest) {
+                console.log("[ProductionDeck] Explicit Edit Scene request detected. Forcing Scriptorium Text Editor (isReviewing: false)");
+                setIsReviewing(false);
+            } else {
+                setIsReviewing(memoryData.isReviewing !== false);
+            }
         } else {
             setReviewDrafts([]);
             setIsReviewing(false);
