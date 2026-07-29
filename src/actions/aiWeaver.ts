@@ -887,19 +887,27 @@ export async function generateDraftOptions(
     if (e.message?.includes("CORRUPTED_METADATA_STREAM")) throw e;
   }
 
-  // Extract explicit 4-digit calendar year from user description text if present (e.g. "in 1965", "in 1964")
-  const explicitYearMatch = description.match(/\b(19\d\d|20\d\d)\b/);
-  const textExtractedYear = explicitYearMatch ? explicitYearMatch[1] : null;
-  const effectiveMemoryDate = textExtractedYear || (memory_date !== 'Unknown' && memory_date !== 'none' ? memory_date : 'Unknown');
+  // Mathematical Temporal Span Calculation Engine
+  const yearMatch = description.match(/\b(19\d\d|20\d\d)\b/);
+  const parsedAnchorYear = (memory_date !== 'Unknown' && memory_date !== 'none' && !isNaN(Number(memory_date))) 
+    ? Number(memory_date) 
+    : (yearMatch ? Number(yearMatch[1]) : null);
+  
+  const endYear = parsedAnchorYear !== null ? parsedAnchorYear + (durationQuantity || 1) : null;
+  const estimatedBirthYear = (parsedAnchorYear !== null && narratorAgeAtTime !== undefined) ? (parsedAnchorYear - narratorAgeAtTime) : null;
+  
+  const anchorYearStr = parsedAnchorYear !== null ? `${parsedAnchorYear}` : (memory_date !== 'Unknown' ? memory_date : 'Historical Era');
+  const temporalSpanStr = (parsedAnchorYear !== null && endYear !== null) ? `${parsedAnchorYear}–${endYear}` : anchorYearStr;
 
   const ai = await getAI();
   
   const prompt = `
-    DIRECTIVE: CINEMATIC SYNTHESIS ENGINE V6.5 (EXACT TEMPORAL FIDELITY & DISTINCT INGRESS)
+    DIRECTIVE: CINEMATIC SYNTHESIS ENGINE V6.6 (MATHEMATICAL TEMPORAL HORIZON & DISTINCT INGRESS)
 
     [THE IDENTITY HEADER & NARRATOR PERSPECTIVE]
-    - NARRATOR STATUS: Adult reflecting on ${effectiveMemoryDate !== 'Unknown' ? `the year ${effectiveMemoryDate}` : 'family roots and memory anchors'}.
+    - NARRATOR STATUS: Adult reflecting on ${anchorYearStr !== 'Historical Era' ? `the era of ${anchorYearStr}` : 'family roots and memory anchors'}.
     - NARRATOR AGE AT ANCHOR DATE: ${narratorAgeAtTime} YEAR OLD.
+    - ESTIMATED BIRTH YEAR: ${estimatedBirthYear !== null ? estimatedBirthYear : 'Calculated from era'}.
     - THE SEED PRINCIPLE: ${narratorAgeAtTime < 4 ? 'Because age is < 4, the narrator is the "Seed," not the "Sower." They have ZERO episodic memory. They were carried and shielded.' : 'Narrator is speaking from lived memory and reflective perspective.'}
     - VANTAGE POINT: Frame history with authentic legacy perspective. Prioritize specific family members mentioned in [DATA ANCHORS]. Do not default to "My mother" unless explicitly stated; use inclusive "parents" per user raw input.
 
@@ -909,15 +917,15 @@ export async function generateDraftOptions(
     - REQUIRED OPENING INGRESS BY SCORE ANGLE:
       1. THE SOUL-PRINT: Start with an internal reflection or spiritual bedrock values statement (e.g., "Strength was the only currency my family ever traded in...", "We were born of soil, sweat, and unyielding quiet resolve...").
       2. THE ATMOSPHERIC WEAVE: Start directly with a vivid, visceral sensory or environmental contrast (e.g., "Sun-baked Kenyan earth gave way to the freezing drizzle of London tarmac...", "A wall of grey English mist greeted the plane as it touched down...").
-      3. THE FLOW: Start with spoken momentum, temporal landmark, or direct narrative action (e.g., "In ${effectiveMemoryDate !== 'Unknown' ? effectiveMemoryDate : '1965'}, a young family stepped onto British soil...", "Long before the voyage across dark waters, our ancestors walked the dry fields of Madhapur...").
+      3. THE FLOW: Start with spoken momentum, temporal landmark, or direct narrative action (e.g., "In ${anchorYearStr}, a young family stepped forward...", "Long before the voyage across dark waters, our ancestors walked the dry fields of Madhapur...").
       4. THE MEMORY WEAVE (Master Fusion): Start with a grand master thesis fusing heritage and adaptation (e.g., "Across three continents and six decades, our family story remains a single continuous arc of survival...").
 
-    [TIMELESS TEMPORAL ANCHORING & EXACT YEAR FIDELITY MANDATE]
-    - ANCHOR DATE / YEAR: ${effectiveMemoryDate !== 'Unknown' ? effectiveMemoryDate : 'Calculated historical year based on narrator age/era'}.
-    - EXACT CALENDAR YEAR LOCK: The anchor year is strictly ${effectiveMemoryDate !== 'Unknown' ? effectiveMemoryDate : 'the year specified in text'}. You MUST use "${effectiveMemoryDate !== 'Unknown' ? effectiveMemoryDate : 'this year'}" in the synthesized script wherever a year is mentioned. DO NOT substitute it with 1964 or any other year.
+    [TIMELESS TEMPORAL CALCULATION HORIZON & ACCURACY MANDATE]
+    - ANCHOR YEAR (MEMORY MARK): ${anchorYearStr} (Narrator age: ${narratorAgeAtTime} year old).
+    - TIMELINE SPAN HORIZON: ${temporalSpanStr} (${durationQuantity} ${durationUnit}).
+    - TEMPORAL FIDELITY RULE: Honor the user's MEMORY MARK anchor year (${anchorYearStr}) as the primary temporal baseline, allowing narrative events to span seamlessly across ${temporalSpanStr}. Both the initial anchor year (${anchorYearStr}) and span completion years (e.g. ${endYear || 'subsequent years'}) are mathematically valid narrative anchors.
     - BAN AMBIGUOUS RELATIVE TEMPORAL PHRASES: NEVER write floating relative phrases like "Rewind thirty years", "A few decades ago", "Thirty years back", or "Some years ago".
-    - TIMELESS ORAL HISTORY RULE: Monologues are preserved for 30–100+ years into the future. All temporal references MUST be explicitly anchored with exact calendar years (e.g. "In ${effectiveMemoryDate !== 'Unknown' ? effectiveMemoryDate : '1965'}...").
-    - RELATIVE PHRASE CONVERSION: If user input mentions relative time spans (e.g. "thirty years ago"), calculate and state the specific calendar year (e.g., "In 1996...") to ensure absolute temporal clarity across future generations.
+    - TIMELESS ORAL HISTORY RULE: Monologues are preserved for 30–100+ years into the future. All temporal references MUST be explicitly anchored with exact calendar years (e.g. "In ${anchorYearStr}...").
 
     [THE SOIL OF TRUTH - DATA ANCHORS]
     - User Memory: "${description}"
