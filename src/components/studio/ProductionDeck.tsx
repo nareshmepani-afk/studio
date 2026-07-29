@@ -167,6 +167,10 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         if (urlAct === '1' || urlStage === '0') {
             targetStage = 0;
             isExplicitScriptEditorRequest = true;
+            // Clean up sticky URL search parameters so future reloads/upgrades honor saved productionStage
+            if (typeof window !== 'undefined' && window.history?.replaceState) {
+                window.history.replaceState({}, '', window.location.pathname);
+            }
         }
 
         console.log("[ProductionDeck] Syncing/Rehydrating global state from Firestore memory data:", currentRefId, "target stage:", targetStage, "saved stage:", memoryData?.productionStage, "isExplicitScriptEditorRequest:", isExplicitScriptEditorRequest);

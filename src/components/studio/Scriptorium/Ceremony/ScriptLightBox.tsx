@@ -203,7 +203,9 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
             onClick: () => {
               persistUserScriptLocally(currentEdit);
               onClose(currentEdit);
-              window.location.reload();
+              if (typeof window !== 'undefined') {
+                window.location.href = window.location.pathname;
+              }
             }
           },
           duration: 10000

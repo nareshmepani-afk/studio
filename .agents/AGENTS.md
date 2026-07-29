@@ -115,6 +115,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-29**: v1.1.0-beta-MW-107. Implemented zero-data-loss localStorage persistence & rehydration in ScriptLightBox.tsx, ensuring custom script edits are auto-saved before server actions, survived across reloads, and rehydrated seamlessly. (Build Verify: SUCCESS)
 - **2026-07-29**: v1.1.0-beta-MW-108. Implemented V6.7 Scale Parity Engine in aiWeaver.ts, calculating target scale from user input and enforcing full-length performance monologue word count parity (~230-280 words) across all 5 vision cards. (Build Verify: SUCCESS)
 - **2026-07-29**: v1.1.0-beta-MW-111. Synchronized onBackToEditor in MemoryForm.tsx to unseal both isReviewingSensory and isReviewing flags to false, ensuring Back to Script Editor immediately restores the Act I Scriptorium text editor. (Build Verify: SUCCESS)
+- **2026-07-29**: v1.1.0-beta-MW-112. Cleaned up sticky URL search parameters (?act=1) upon stage rehydration in ProductionDeck.tsx and ScriptLightBox.tsx, ensuring browser reloads and studio upgrades preserve active stage (Act II) without resetting to Act I. (Build Verify: SUCCESS)
 
 
 
