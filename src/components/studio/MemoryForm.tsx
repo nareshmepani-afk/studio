@@ -2260,7 +2260,14 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       {
                         visionType: "The Memory Weave",
                         visionFocus: "Master synthesis fusing voice, emotion, atmosphere, and rhythm.",
-                        cleanScript: stripScreenplayCues(aiTakes.master || aiTakes.poetic || ""),
+                        cleanScript: stripScreenplayCues(
+                          aiTakes?.master || 
+                          (data as any)?.productionTakes?.find((t: any) => t.visionType === "The Memory Weave" || t.visionType?.includes("Crown") || t.visionType?.includes("Memory"))?.cleanScript || 
+                          aiTakes?.poetic || 
+                          prose || 
+                          description || 
+                          ""
+                        ),
                         beatSheet: ["Authentic Voice", "Emotional Depth", "Sensory Texture", "Cinematic Arc"],
                         stageDirections: [],
                         preFlightBrief: {
@@ -2268,21 +2275,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                           vocalInstructions: ["Harmonized rhythm"],
                           heroMoment: "Definitive master performance."
                         }
-                      },
-                      ...(scriptBlocks.length > 0 && scriptBlocks.some(b => b.text.trim()) && scriptBlocks.map(b => b.text).join('\n\n').trim() !== (originalHook || description).trim() ? [
-                        {
-                          visionType: "Current Draft",
-                          visionFocus: "Your active performance blueprint edits.",
-                          cleanScript: scriptBlocks.map(b => b.text).join('\n\n'),
-                          beatSheet: ["User Edits", "Custom Storyflow"],
-                          stageDirections: [],
-                          preFlightBrief: {
-                            sensoryAnchors: ["Custom Details"],
-                            vocalInstructions: ["Speak naturally"],
-                            heroMoment: "Your tailored sequence."
-                          }
-                        }
-                      ] : [])
+                      }
                     ]} 
                     onBackToEditor={async () => {
                       setIsReviewingSensory(false);
@@ -2636,7 +2629,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
             visionFocus: d.visionFocus || "Sensory narrative interpretation.",
             cleanScript: stripScreenplayCues(
               (d.visionType?.startsWith("Committed:") ? (prose || originalHook || description) : undefined) ||
-              (d.visionType === "The Memory Weave" || d.visionType?.includes("Crown") ? (aiTakes?.master || d.cleanScript) : undefined) ||
+              (d.visionType === "The Memory Weave" || d.visionType?.includes("Crown") || d.visionType?.includes("Memory") ? (aiTakes?.master || d.cleanScript || aiTakes?.poetic || prose || description) : undefined) ||
               (d.visionType === "The Poetic Weave" || d.visionType?.includes("Soul") ? (aiTakes?.poetic || d.cleanScript) : undefined) ||
               (d.visionType === "The Direct Weave" || d.visionType?.includes("Atmospheric") ? (aiTakes?.direct || d.cleanScript) : undefined) ||
               (d.visionType === "The Flow" || d.visionType === "The Generational Weave" ? (aiTakes?.nostalgic || d.cleanScript) : undefined) ||
