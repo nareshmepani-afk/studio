@@ -1236,6 +1236,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                   <SelectionDeck 
                     drafts={reviewDrafts || []} 
                     onBackToEditor={async () => {
+                      setIsReviewingSensory(false);
                       globalActions.setIsReviewing(false);
                       await flush({
                         isReviewing: false
@@ -2283,7 +2284,13 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         }
                       ] : [])
                     ]} 
-                    onBackToEditor={() => setIsReviewingSensory(false)}
+                    onBackToEditor={async () => {
+                      setIsReviewingSensory(false);
+                      globalActions.setIsReviewing(false);
+                      await flush({
+                        isReviewing: false
+                      });
+                    }}
                     onSelect={async (text, type, label, structured) => {
                       const blocks: ScriptBlock[] = [
                         { id: crypto.randomUUID(), text: text, type: 'beat', catalysts: [] }
