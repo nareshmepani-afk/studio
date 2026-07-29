@@ -67,6 +67,15 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Automated Ticket Creation**: Whenever a new architectural roadmap decision, major feature request, or systemic bug fix is finalized, the agent MUST programmatically issue a POST request to `https://api.plane.so/api/v1/workspaces/${slug}/projects/${projectId}/issues/` using native Node `https` module to sync the ticket directly to the user's Plane board.
 - **Zero Friction**: The user must never be forced to copy/paste text or manually open external forms when active workspace API tokens exist in the local environment.
 
+# 16. Mandatory Production-Ready Audit & Retrospective Rule
+- **Mandatory Audit Structure**: Upon completing ANY bug fix, feature modification, or architectural refactoring, the agent MUST include a structured **Production-Ready Audit & Retrospective** in its final response.
+- **Required Retrospective Sections**:
+  1. **Root Cause & Traceability Audit**: Exact failure mechanism, line numbers, state flags, and flawed assumptions.
+  2. **Technical Fix & Architecture Audit**: File-by-file changes, state impact, and layout integrity assertions.
+  3. **Technical Retrospective**: Systemic analysis of why the bug occurred and the preventative guardrail implemented.
+  4. **Automated Regression Shield**: Concrete output from `tsc --noEmit` and `vitest` unit tests.
+  5. **Plane.so Auto-Sync**: Confirmation of ticket creation/update via Rule 15.
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
 - **2026-07-04**: v1.1.0-beta-MW-70. Resolved MFA loader lockout, expanded TOTP key length to 16 characters, corrected QR code URI literal colon separator, and added setup page console diagnostics. (Build Verify: SUCCESS)
