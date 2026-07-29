@@ -176,7 +176,11 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
       const isActionMismatch = e?.message?.includes("Server Action") || e?.message?.includes("deployment") || String(e).includes("Server Action");
       if (isActionMismatch) {
         toast.error("New Deployment Active", { 
-          description: "A new deployment was completed. Please refresh your browser tab to sync with the latest build." 
+          description: "A new deployment was completed. Refresh your browser tab to sync with the latest build.",
+          action: {
+            label: "Refresh Now",
+            onClick: () => window.location.reload()
+          }
         });
       } else {
         toast.error("Grammar Check Skipped", { description: "Unable to run AI proofreader right now." });
