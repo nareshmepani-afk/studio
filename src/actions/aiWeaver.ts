@@ -899,10 +899,15 @@ export async function generateDraftOptions(
   const anchorYearStr = parsedAnchorYear !== null ? `${parsedAnchorYear}` : (memory_date !== 'Unknown' ? memory_date : 'Historical Era');
   const temporalSpanStr = (parsedAnchorYear !== null && endYear !== null) ? `${parsedAnchorYear}–${endYear}` : anchorYearStr;
 
+  const rawWordCount = description.trim().split(/\s+/).filter(Boolean).length;
+  const targetScale = Math.max(rawWordCount, 230);
+  const targetMin = Math.round(targetScale * 0.85);
+  const targetMax = Math.round(targetScale * 1.15);
+
   const ai = await getAI();
   
   const prompt = `
-    DIRECTIVE: CINEMATIC SYNTHESIS ENGINE V6.6 (MATHEMATICAL TEMPORAL HORIZON & DISTINCT INGRESS)
+    DIRECTIVE: CINEMATIC SYNTHESIS ENGINE V6.7 (MATHEMATICAL TEMPORAL HORIZON, DISTINCT INGRESS & WORD-COUNT SCALE PARITY)
 
     [THE IDENTITY HEADER & NARRATOR PERSPECTIVE]
     - NARRATOR STATUS: Adult reflecting on ${anchorYearStr !== 'Historical Era' ? `the era of ${anchorYearStr}` : 'family roots and memory anchors'}.
@@ -933,11 +938,13 @@ export async function generateDraftOptions(
     - Roots: Kutch, Madhapur, soil-to-table vegetarian strength.
     - The Mantra: "Learn, adapt, work hard, keep going."
 
-    [VISION-SPECIFIC SCALE & STYLE]
-    1. THE SOUL-PRINT: ~110 words. Internal resonance. The bedrock of family spirit.
-    2. THE ATMOSPHERIC WEAVE: ~120 words. Sensory contrast (Kenyan heat vs. English damp).
-    3. THE FLOW: 250-280 words. Spoken momentum, natural narrative flow, and effortless teleprompter reading rhythm.
-    4. THE MEMORY WEAVE (Master Fusion): ~160 words. Crown synthesis fusing authentic personal voice, emotional depth, sensory physical texture, and dynamic rhythm into a single master score.
+    [FULL-LENGTH SPOKEN MONOLOGUE WORD-COUNT SCALE PARITY MANDATE - CRITICAL]
+    - TARGET MONOLOGUE LENGTH: ALL FOUR AI VISIONS MUST BE FULL-LENGTH SPOKEN PERFORMANCE MONOLOGUES TARGETING ~${targetScale} WORDS (ALLOWABLE RANGE: ${targetMin} TO ${targetMax} WORDS).
+    - ZERO TRUNCATION RULE: DO NOT GENERATE SHORT 100-140 WORD SNIPPETS FOR ANY VISION CARD. EACH OPTION MUST PROVIDE EQUAL NARRATIVE RICHNESS AND DURATION PARITY (~2:00 TO 2:30 MINUTES PERFORMANCE TIME).
+    - 1. THE SOUL-PRINT: ~${targetScale} words. Internal resonance & deep family values, fully expanded into a complete spoken performance.
+    - 2. THE ATMOSPHERIC WEAVE: ~${targetScale} words. Vivid sensory contrast & physical atmosphere, fully expanded into a complete spoken performance.
+    - 3. THE FLOW: ~${targetScale} words. Spoken momentum, natural narrative flow, and effortless teleprompter reading rhythm.
+    - 4. THE MEMORY WEAVE (Master Fusion): ~${targetScale} words. Crown synthesis fusing authentic personal voice, emotional depth, sensory texture, and dynamic rhythm into a master score.
 
     [STRICT FORMATTING MUZZLE]
     - CLEAN SCRIPT: Prose ONLY. No "V.O.", "Narrator:", or technical brackets.
