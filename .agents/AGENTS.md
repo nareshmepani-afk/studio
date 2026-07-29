@@ -64,8 +64,8 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 
 # 15. Automated Plane.so Board Synchronization Rule
 - **Direct API Synchronization**: The agent MUST automatically verify active `PLANE_API_KEY`, `PLANE_WORKSPACE_SLUG`, and `PLANE_PROJECT_ID` tokens in `.env.local` before asking the user to manually manage backlog tickets.
-- **Automated Ticket Creation**: Whenever a new architectural roadmap decision, major feature request, or systemic bug fix is finalized, the agent MUST programmatically issue a POST request to `https://api.plane.so/api/v1/workspaces/${slug}/projects/${projectId}/issues/` using native Node `https` module to sync the ticket directly to the user's Plane board.
-- **Zero Friction**: The user must never be forced to copy/paste text or manually open external forms when active workspace API tokens exist in the local environment.
+- **Automated Ticket Creation via Permanent CLI Script**: Whenever a new architectural roadmap decision, major feature request, or systemic bug fix is finalized, the agent MUST programmatically invoke `node scripts/plane.js create "Title" "Description"` or execute via the artifact scratch directory (`<appDataDir>\brain\<conversation-id>/scratch/`).
+- **Zero Workspace Root Pollution**: The agent MUST NEVER write temporary `.js` or `.ts` scratch files (e.g. `scratch_create_plane_issue.js`) into the user's project workspace directory (`C:\Users\home\studio`). All transient scripts must strictly reside inside the artifact scratch directory or execute via permanent project scripts (`scripts/plane.js`).
 
 # 16. Mandatory Production-Ready Audit & Retrospective Rule
 - **Mandatory Audit Structure**: Upon completing ANY bug fix, feature modification, or architectural refactoring, the agent MUST include a structured **Production-Ready Audit & Retrospective** in its final response.
