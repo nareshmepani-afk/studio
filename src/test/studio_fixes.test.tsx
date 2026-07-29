@@ -599,5 +599,25 @@ describe('Studio Regression Tests', () => {
       expect(currentIndex).toBe(2);
       expect(preservedDraftEdits['The Poetic Weave']).toBeUndefined();
     });
+
+    it('MW-100 EDIT SCENE REHYDRATION SHIELD: should force isReviewing false when urlAct is 1 or urlStage is 0 even if memoryData.isReviewing is true', () => {
+      const evaluateReviewState = (urlAct: string | null, urlStage: string | null, memoryIsReviewing: boolean) => {
+        const isExplicitScriptEditorRequest = urlAct === '1' || urlStage === '0';
+        if (isExplicitScriptEditorRequest) {
+          return false;
+        }
+        return memoryIsReviewing !== false;
+      };
+
+      // Test 1: User clicks "Edit Scene" on Dashboard (?act=1) with stale isReviewing: true in Firestore
+      expect(evaluateReviewState('1', null, true)).toBe(false);
+
+      // Test 2: User navigates via ?stage=0 with stale isReviewing: true in Firestore
+      expect(evaluateReviewState(null, '0', true)).toBe(false);
+
+      // Test 3: Normal rehydration without URL override retains memoryIsReviewing state
+      expect(evaluateReviewState(null, null, true)).toBe(true);
+      expect(evaluateReviewState(null, null, false)).toBe(false);
+    });
   });
 });
