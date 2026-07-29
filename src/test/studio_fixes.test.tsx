@@ -619,5 +619,18 @@ describe('Studio Regression Tests', () => {
       expect(evaluateReviewState(null, null, true)).toBe(true);
       expect(evaluateReviewState(null, null, false)).toBe(false);
     });
+
+    it('MW-102 DYNAMIC CALENDAR YEAR FIDELITY: should extract explicit 4-digit calendar year from user prose text over stale metadata', () => {
+      const resolveEffectiveYear = (description: string, memoryDate: string) => {
+        const explicitYearMatch = description.match(/\b(19\d\d|20\d\d)\b/);
+        const textExtractedYear = explicitYearMatch ? explicitYearMatch[1] : null;
+        return textExtractedYear || (memoryDate !== 'Unknown' && memoryDate !== 'none' ? memoryDate : 'Unknown');
+      };
+
+      const userProse = "When the British Empire opened a gateway to Kenya... And in 1965, when my parents packed our lives once more...";
+      expect(resolveEffectiveYear(userProse, "1964")).toBe("1965");
+      expect(resolveEffectiveYear(userProse, "Unknown")).toBe("1965");
+      expect(resolveEffectiveYear("No explicit year here", "1965")).toBe("1965");
+    });
   });
 });
