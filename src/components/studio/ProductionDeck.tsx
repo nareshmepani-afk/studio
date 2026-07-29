@@ -791,26 +791,26 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
                 // --- AUTOMATED SOUNDSTACK & BRIEF INTEGRATION ---
                 (async () => {
-                    for (let index = 0; index < visions.length; index++) {
+                    for (let index = 0; index < completeDrafts.length; index++) {
                         if (synthesisAbortRef.current) {
                             console.log("[ProductionDeck] Synthesis aborted by user navigation.");
                             break;
                         }
-                        const vision = visions[index];
+                        const vision = completeDrafts[index];
 
                         // 1. Soundtrack Generation
-                        const audioCue = vision.stageDirections.find((d: any) => d.type === 'audio');
+                        const audioCue = vision.stageDirections?.find((d: any) => d.type === 'audio') || { type: 'audio', content: 'Cinematic ambient warmth' };
                         if (audioCue && memoryData?.id) {
-                            console.log(`[ProductionDeck] Triggering automated soundtrack generation for vision ${index}...`);
+                            console.log(`[ProductionDeck] Triggering automated soundtrack generation for vision ${index + 1} of ${completeDrafts.length} (${vision.visionType})...`);
                             try {
                                 const url = await generateSoundtrack(audioCue.content, memoryData.id, vision.visionType);
                                 if (synthesisAbortRef.current) break; // Check again after await
                                 if (url) {
-                                    console.log(`[ProductionDeck] Soundtrack synthesized for vision ${index}:`, url);
+                                    console.log(`[ProductionDeck] Soundtrack synthesized for vision ${index + 1} of ${completeDrafts.length} (${vision.visionType}):`, url);
                                     setReviewDrafts((prev: any[] | null) => prev?.map((v: any, i: number) => i === index ? { ...v, generatedSoundtrackUrl: url } : v) || null);
                                 }
                             } catch (e) {
-                                console.error(`[ProductionDeck] Soundtrack failure for vision ${index}:`, e);
+                                console.error(`[ProductionDeck] Soundtrack failure for vision ${index + 1}:`, e);
                             }
                         }
                     }

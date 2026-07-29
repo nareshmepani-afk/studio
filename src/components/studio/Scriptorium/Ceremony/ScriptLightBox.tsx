@@ -54,6 +54,8 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
   const [userScript, setUserScript] = useState(sanitizedCleanScript);
   const [isEditing, setIsEditing] = useState(false);
   const [isCheckingGrammar, setIsCheckingGrammar] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const teleprompterRef = useRef<HTMLDivElement>(null);
 
   const totalVisions = allDrafts.length || 5;
@@ -62,10 +64,29 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
   useEffect(() => {
     setUserScript(stripScreenplayCues(cleanScript || ''));
     setIsEditing(false);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setIsPlayingAudio(false);
     if (teleprompterRef.current) {
       teleprompterRef.current.scrollTop = 0;
     }
   }, [cleanScript, isOpen, activeIndex]);
+
+  const toggleAudio = () => {
+    if (!generatedSoundtrackUrl) return;
+    if (!audioRef.current) {
+      audioRef.current = new Audio(generatedSoundtrackUrl);
+      audioRef.current.loop = true;
+    }
+    if (isPlayingAudio) {
+      audioRef.current.pause();
+      setIsPlayingAudio(false);
+    } else {
+      audioRef.current.play().then(() => setIsPlayingAudio(true)).catch((e) => console.error("[ScriptLightBox] Audio playback failed:", e));
+    }
+  };
 
   const handleCloseWithSave = () => {
     const isEdited = userScript.trim() !== cleanScript.trim();
@@ -248,6 +269,23 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[10px] font-mono font-black text-emerald-400 tracking-widest">
                   <span>[ {String(activeIndex + 1).padStart(2, '0')} / {String(totalVisions).padStart(2, '0')} ]</span>
                 </div>
+
+                {generatedSoundtrackUrl && (
+                  <button 
+                    type="button"
+                    onClick={toggleAudio}
+                    title={isPlayingAudio ? "Pause Soundtrack" : "Play Soundtrack Preview"}
+                    className={cn(
+                      "flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-[10px] font-mono font-black tracking-widest transition-all cursor-pointer select-none",
+                      isPlayingAudio 
+                        ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)] animate-pulse" 
+                        : "bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10"
+                    )}
+                  >
+                    <Volume2 className={cn("w-3.5 h-3.5", isPlayingAudio ? "text-emerald-400" : "text-white/40")} />
+                    <span>{isPlayingAudio ? "SOUNDTRACK PLAYING" : "PREVIEW SOUNDTRACK"}</span>
+                  </button>
+                )}
 
                 <div className="flex items-center gap-8 px-6 py-2 bg-black/40 rounded-2xl border border-white/5 mr-12">
                   <div className="flex flex-col">

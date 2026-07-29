@@ -109,6 +109,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-29**: v1.1.0-beta-MW-100. Enforced isReviewing: false override in ProductionDeck.tsx when urlAct is 1 or urlStage is 0, ensuring Edit Scene on Dashboard always lands 100% cleanly in Act I.1 Scriptorium Text Editor. (Build Verify: SUCCESS)
 - **2026-07-29**: v1.1.0-beta-MW-101. Updated Release Sensory Lock in MemoryForm.tsx to pass empty string ("") to update & flush and inspect selectedVision in isSensory calculation, resolving 0ms optimistic UI unsealing. (Build Verify: SUCCESS)
 - **2026-07-29**: v1.1.0-beta-MW-102. Enforced dynamic text prose 4-digit year extraction (/19\d\d|20\d\d/) and Exact Calendar Year Lock mandate in aiWeaver.ts (V6.5), stripping hardcoded 1964 prompt examples and guaranteeing 100% year accuracy. (Build Verify: SUCCESS)
+- **2026-07-29**: v1.1.0-beta-MW-104. Expanded automated soundtrack synthesis loop in ProductionDeck.tsx to iterate over all 5 vision cards (1 of 5 through 5 of 5) and added interactive PREVIEW SOUNDTRACK audio player button in ScriptLightBox header. (Build Verify: SUCCESS)
 
 
 
