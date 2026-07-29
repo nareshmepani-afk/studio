@@ -378,7 +378,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   
   // Local sync for persistence
   const isProductionLocked = data?.isProductionLocked !== false && (data?.isProductionLocked || globalLocked || (data?.productionStage || 0) >= 1);
-  const isSensory = ['poetic', 'direct', 'nostalgic', 'master', 'sensory', 'cinematic', 'original', 'The Poetic Weave', 'The Direct Weave', 'The Generational Weave', 'The Atmospheric Weave', 'The Flow', 'The Memory Weave'].includes(data?.activeVision || data?.activeVisionLabel || '');
+  const activeVisionVal = data?.activeVision || data?.activeVisionLabel || selectedVision?.type || selectedVision?.label;
+  const isSensory = !!activeVisionVal && ['poetic', 'direct', 'nostalgic', 'master', 'sensory', 'cinematic', 'original', 'The Poetic Weave', 'The Direct Weave', 'The Generational Weave', 'The Atmospheric Weave', 'The Flow', 'The Memory Weave'].includes(activeVisionVal);
 
   // Initialize Persistence
 
@@ -2377,12 +2378,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                               // Release sensory lock with 0ms optimistic local UI flip
                               globalActions.setSelectedVision(null as any, null);
                               update({
-                                activeVision: undefined,
-                                activeVisionLabel: undefined
+                                activeVision: "",
+                                activeVisionLabel: ""
                               });
                               await flush({
-                                activeVision: undefined,
-                                activeVisionLabel: undefined
+                                activeVision: "",
+                                activeVisionLabel: ""
                               });
                               toast.success("Sensory Weave Unlocked", {
                                 description: "You can now edit your script or select another sensory weave."
