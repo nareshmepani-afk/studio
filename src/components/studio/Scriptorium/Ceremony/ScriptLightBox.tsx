@@ -61,8 +61,21 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
   const totalVisions = allDrafts.length || 5;
   const activeIndex = currentIndex;
 
+  const persistUserScriptLocally = (scriptText: string) => {
+    if (typeof window === 'undefined') return;
+    const storageKey = `mw_draft_edit_${activeIndex}`;
+    localStorage.setItem(storageKey, scriptText);
+  };
+
   useEffect(() => {
-    setUserScript(stripScreenplayCues(cleanScript || ''));
+    const storageKey = `mw_draft_edit_${activeIndex}`;
+    const savedEdit = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+
+    if (savedEdit && savedEdit.trim().length > 0) {
+      setUserScript(stripScreenplayCues(savedEdit));
+    } else {
+      setUserScript(stripScreenplayCues(cleanScript || ''));
+    }
     setIsEditing(false);
     if (audioRef.current) {
       audioRef.current.pause();
@@ -155,6 +168,9 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
 
   const handleCheckGrammar = async () => {
     setIsCheckingGrammar(true);
+    const currentEdit = userScript;
+    persistUserScriptLocally(currentEdit);
+
     toast("Proofreading Script...", {
       description: "Checking spelling, grammar, and agreement while preserving your voice.",
       icon: <Sparkles className="w-4 h-4 text-sky-400" />
@@ -162,7 +178,9 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
     try {
       const polished = await checkAndPolishGrammar(userScript);
       if (polished && polished !== userScript) {
-        setUserScript(polished);
+        const sanitized = stripScreenplayCues(polished);
+        setUserScript(sanitized);
+        persistUserScriptLocally(sanitized);
         toast.success("Spelling & Grammar Polished!", {
           description: "Typos and agreement errors corrected."
         });
@@ -173,18 +191,25 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
       }
     } catch (e: any) {
       console.error("[ScriptLightBox] handleCheckGrammar error:", e);
+      // Resiliency Shield: Preserve user's custom edit in local state & localStorage!
+      persistUserScriptLocally(currentEdit);
+
       const isActionMismatch = e?.message?.includes("Server Action") || e?.message?.includes("deployment") || String(e).includes("Server Action");
       if (isActionMismatch) {
         toast.info("🚀 Studio Upgrade Available", { 
-          description: "A fresh build of Memory Weaver with performance enhancements is ready. Click below to upgrade your studio session.",
+          description: "A fresh build of Memory Weaver is ready. Your custom script edits are safe and saved. Click below to upgrade.",
           action: {
             label: "Upgrade Studio",
-            onClick: () => window.location.reload()
+            onClick: () => {
+              persistUserScriptLocally(currentEdit);
+              onClose(currentEdit);
+              window.location.reload();
+            }
           },
           duration: 10000
         });
       } else {
-        toast.error("Grammar Check Skipped", { description: "Unable to run AI proofreader right now." });
+        toast.error("Grammar Check Skipped", { description: "Your custom edits are preserved. Unable to run AI proofreader right now." });
       }
     } finally {
       setIsCheckingGrammar(false);

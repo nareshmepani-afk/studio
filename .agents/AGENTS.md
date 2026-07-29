@@ -112,6 +112,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-29**: v1.1.0-beta-MW-104. Expanded automated soundtrack synthesis loop in ProductionDeck.tsx to iterate over all 5 vision cards (1 of 5 through 5 of 5) and added interactive PREVIEW SOUNDTRACK audio player button in ScriptLightBox header. (Build Verify: SUCCESS)
 - **2026-07-29**: v1.1.0-beta-MW-105. Enhanced New Deployment Active toast interceptor in ScriptLightBox.tsx with an interactive 'Refresh Now' action button (window.location.reload()) for seamless 1-click build synchronization. (Build Verify: SUCCESS)
 - **2026-07-29**: v1.1.0-beta-MW-106. Re-themed deployment toast to encouraging '🚀 Studio Upgrade Available' notification banner (toast.info) with 'Upgrade Studio' 1-click action button. (Build Verify: SUCCESS)
+- **2026-07-29**: v1.1.0-beta-MW-107. Implemented zero-data-loss localStorage persistence & rehydration in ScriptLightBox.tsx, ensuring custom script edits are auto-saved before server actions, survived across reloads, and rehydrated seamlessly. (Build Verify: SUCCESS)
 
 
 
