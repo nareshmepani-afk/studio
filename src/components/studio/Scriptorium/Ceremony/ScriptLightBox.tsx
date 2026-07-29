@@ -175,12 +175,13 @@ export const ScriptLightBox: React.FC<ScriptLightBoxProps> = ({
       console.error("[ScriptLightBox] handleCheckGrammar error:", e);
       const isActionMismatch = e?.message?.includes("Server Action") || e?.message?.includes("deployment") || String(e).includes("Server Action");
       if (isActionMismatch) {
-        toast.error("New Deployment Active", { 
-          description: "A new deployment was completed. Refresh your browser tab to sync with the latest build.",
+        toast.info("🚀 Studio Upgrade Available", { 
+          description: "A fresh build of Memory Weaver with performance enhancements is ready. Click below to upgrade your studio session.",
           action: {
-            label: "Refresh Now",
+            label: "Upgrade Studio",
             onClick: () => window.location.reload()
-          }
+          },
+          duration: 10000
         });
       } else {
         toast.error("Grammar Check Skipped", { description: "Unable to run AI proofreader right now." });
