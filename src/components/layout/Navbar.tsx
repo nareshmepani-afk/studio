@@ -20,6 +20,7 @@ import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/comp
 import { ThemeToggle } from './ThemeToggle';
 import { LanguageToggle } from './LanguageToggle';
 import { OpticsPrivacyShield } from './OpticsPrivacyShield';
+import { StudioUpgradeBadge } from './StudioUpgradeBadge';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function Navbar() {
@@ -156,6 +157,7 @@ export function Navbar() {
           )}
 
           <div className="flex items-center ml-auto space-x-2 sm:space-x-4">
+            <StudioUpgradeBadge />
             {isStudio && <OpticsPrivacyShield />}
             <LanguageToggle />
             <ThemeToggle />
