@@ -198,7 +198,7 @@ export function useMemoryPersistence({
     // RIGID GUARDRAIL: Timestamp Validation (Throttle rapid fires)
     const now = Date.now();
     if (now - lastSavedTimestamp.current < 500) {
-      return { success: true, reason: 'throttled', description: s.description, latestState: s };
+      return { success: true, reason: 'throttled', description: s.description, prose: s.prose, latestState: s };
     }
 
     const hasChanged = (() => {
@@ -335,7 +335,7 @@ export function useMemoryPersistence({
       }
     }
 
-    return { success: true, changed: false, description: s.description, latestState: s };
+    return { success: true, changed: false, description: s.description, prose: s.prose, latestState: s };
   }, [
     title, description, location, country, tags, day, month, year,
     sensoryValues, scriptBlocks, chapterTitle, usePoster, 

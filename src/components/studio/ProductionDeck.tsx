@@ -704,26 +704,21 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
         const isAct1 = currentStage === 0;
 
-        // If the scene has an active production lock, skip the AI Synthesis ceremony entirely
-        // and advance the user directly to the weave (Act II)
-        if (isAct1 && isProductionLocked) {
-            console.log("[ProductionDeck] Production is locked. Advancing directly to Act II (The Weave).");
-            const next = 1;
-            setStage(next);
-            setShowPreFlight(false);
-            if ((memoryData?.productionStage || 0) < next) {
-                handleUpdate({ productionStage: next });
-            }
-            return;
-        }
-
         // NEW: "Director's Cut" Ceremony Trigger
-        if (isAct1 && !isReviewing) {
-            console.log("[ProductionDeck] Act I detected. Triggering AI Synthesis Ceremony...");
+        if (isAct1 && (!isReviewing || isProductionLocked)) {
+            console.log("[ProductionDeck] Act I ceremony trigger detected. Unsealing lock and generating fresh 5-card vision spectrum...");
+            setIsProductionLocked(false);
             setIsGeneratingDrafts(true);
             setSynthesisError(null); // RESET: Start fresh
             try {
-                const rawText = flushedState?.prose || memoryData?.prose || flushedState?.description || memoryData?.description || '';
+                const rawText = 
+                    flushedState?.prose || 
+                    flushedState?.latestState?.prose || 
+                    flushedState?.description || 
+                    flushedState?.latestState?.description || 
+                    memoryData?.prose || 
+                    memoryData?.description || 
+                    '';
                 const latestDescription = rawText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
                 const latestTimeframeScope = flushedState?.latestState?.timeframeScope || timeframeScope;
                 const latestDurationQuantity = flushedState?.latestState?.durationQuantity || durationQuantity;
