@@ -821,7 +821,12 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                 })();
             } catch (err: any) {
                 console.error("[ProductionDeck] Synthesis failure:", err);
-                setSynthesisError(err.message || "The AI Weaver encountered a transient knot. Reattempting may clear the thread.");
+                const rawMsg = err?.message || String(err || '');
+                const isServerDigest = rawMsg.includes("Server Components") || rawMsg.includes("digest") || rawMsg.includes("omitted in production");
+                const userFriendlyMsg = isServerDigest 
+                    ? "The AI Weaver encountered a transient knot while synthesizing your performance options. Re-weaving the thread will clear the path."
+                    : rawMsg || "The AI Weaver encountered a transient knot. Reattempting may clear the thread.";
+                setSynthesisError(userFriendlyMsg);
             }
             return;
         }

@@ -74,7 +74,11 @@ export const SynthesizingOverlay = ({ error, onRetry, onCancel, title, subtitle 
         {error ? "Thread Tangled" : (title || "Weaving Narrative Pathways")}
       </h3>
       <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/40 leading-relaxed">
-        {error ? error : (subtitle || "The AI Weaver is interlacing your memories into cinematic script options.")}
+        {error 
+          ? ((error.includes("Server Components") || error.includes("digest") || error.includes("omitted in production"))
+              ? "The AI Weaver encountered a transient knot while synthesizing your performance options. Re-weaving the thread will clear the path."
+              : error)
+          : (subtitle || "The AI Weaver is interlacing your memories into cinematic script options.")}
       </p>
     </div>
     
