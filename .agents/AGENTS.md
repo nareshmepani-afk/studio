@@ -123,6 +123,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-29**: v1.1.0-beta-MW-113. Fixed blank text on Card 5 (The Memory Weave - Crown Synthesis) by fallback-binding d.cleanScript & aiTakes.master in MemoryForm.tsx, unified total vision cards to 5 across 3D Carousel & ScriptLightBox, and aligned [ 01 / 05 ] index tags. (Build Verify: SUCCESS)
 - **2026-07-30**: v1.1.0-beta-MW-114. Implemented Studio Upgrade Top Header Indicator & Deployment Detection (useStudioUpgradeCheck, StudioUpgradeBadge, /api/version, HS_NAV_UPGRADE_BADGE_BTN), providing zero-cost tab-focus deployment detection & zero-data-loss upgrades. (Build Verify: SUCCESS)
 - **2026-07-30**: v1.1.0-beta-MW-115. Sanitized Next.js production error digests in ProductionDeck.tsx and SelectionDeck.tsx, replacing raw production server error strings with warm, human-readable instructions and functional [Re-weave thread] retry buttons. (Build Verify: SUCCESS)
+- **2026-07-30**: v1.1.0-beta-MW-116. Upgraded StudioUpgradeBadge.tsx with high-contrast emerald/amber gradient, glowing border (border-2 border-emerald-400), pulsing live dot, and hover scale-105 for high visibility against dark header. (Build Verify: SUCCESS)
 
 
 
