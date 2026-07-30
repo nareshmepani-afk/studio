@@ -1691,6 +1691,7 @@ export default function SoloStage({
         onboardingJustClosed={onboardingJustClosed}
         isUntouched={isUntouched}
         onActivity={onActivity}
+        onNext={onNext}
       />
     </div>
   );
@@ -1717,6 +1718,7 @@ export default function SoloStage({
           highlightClarity={highlightClarity}
           onActivity={onActivity}
           onSavingChange={setIsPersistenceSaving}
+          onNext={onNext}
         />
       </div>
 

@@ -125,6 +125,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-30**: v1.1.0-beta-MW-115. Sanitized Next.js production error digests in ProductionDeck.tsx and SelectionDeck.tsx, replacing raw production server error strings with warm, human-readable instructions and functional [Re-weave thread] retry buttons. (Build Verify: SUCCESS)
 - **2026-07-30**: v1.1.0-beta-MW-116. Upgraded StudioUpgradeBadge.tsx with high-contrast emerald/amber gradient, glowing border (border-2 border-emerald-400), pulsing live dot, and hover scale-105 for high visibility against dark header. (Build Verify: SUCCESS)
 - **2026-07-30**: v1.1.0-beta-MW-117. Unsealed production lock and multi-layered prose extraction in ProductionDeck.tsx and useMemoryPersistence.ts so clicking 'ENTER THE WEAVE' or 'DRAFT COMPLETED' after text edits re-synthesizes all 5 vision cards with newly flushed prose. (Build Verify: SUCCESS)
+- **2026-07-30**: v1.1.0-beta-MW-118. Passed onNext prop to MemoryForm in SoloStage.tsx to guarantee Re-weave thread button renders on error screens; boosted maxOutputTokens to 8192 and built resilient fallback spectrum in aiWeaver.ts for zero-downtime AI synthesis. (Build Verify: SUCCESS)
 
 
 
