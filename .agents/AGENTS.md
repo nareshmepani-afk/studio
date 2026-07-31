@@ -137,6 +137,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-31**: v1.1.0-beta-MW-123. Passed onNext prop directly to Scriptorium.tsx and updated Enter Recording Studio button click handler to execute callback, resolving stage advance navigation. (Build Verify: SUCCESS)
 - **2026-07-31**: v1.1.0-beta-MW-124. Resolved SelectionDeck double-click stage freeze in ProductionDeck.tsx by committing active vision and advancing to Stage 1 (Act II Teleprompter) when handleNextAct is invoked during active review (isReviewing=true). (Build Verify: SUCCESS)
 - **2026-07-31**: v1.1.0-beta-MW-125. Enforced direct stage advance to Stage 1 (Act II Teleprompter) when Enter Recording Studio is clicked while isProductionLocked is true in ProductionDeck.tsx, resolving AI re-synthesis loop. (Build Verify: SUCCESS)
+- **2026-07-31**: v1.1.0-beta-MW-126. Routed Enter Recording Studio stage advance target to Stage 2 (Recording Teleprompter Studio) in ProductionDeck.tsx, resolving Scriptorium re-mount issue. (Build Verify: SUCCESS)
 
 
 

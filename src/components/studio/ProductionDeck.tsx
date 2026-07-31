@@ -706,12 +706,12 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
         const isAct1 = currentStage === 0;
 
-        // 1. If the production blueprint is sealed (isProductionLocked: true), ENTER RECORDING STUDIO advances directly to Act II Teleprompter (Stage 1)!
+        // 1. If the production blueprint is sealed (isProductionLocked: true), ENTER RECORDING STUDIO advances directly to Recording Studio (Stage 2)!
         if (isAct1 && isProductionLocked && !isReviewing) {
-            console.log("[ProductionDeck] Production lock active. Advancing directly to Act II Teleprompter (Stage 1)...");
-            setStage(1);
+            console.log("[ProductionDeck] Production lock active. Advancing directly to Recording Teleprompter Studio (Stage 2)...");
+            setStage(2);
             handleUpdate({
-                productionStage: 1,
+                productionStage: 2,
                 isProductionLocked: true,
                 isReviewing: false
             });
@@ -839,13 +839,13 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             return;
         }
 
-        // When in Review mode (Selection Deck), clicking next commits the vision and advances to Act II Teleprompter (Stage 1)
+        // When in Review mode (Selection Deck), clicking next commits the vision and advances to Recording Teleprompter Studio (Stage 2)
         if (isAct1 && isReviewing) {
-            console.log("[ProductionDeck] Advancing from SelectionDeck review to Act II Teleprompter (Stage 1)...");
+            console.log("[ProductionDeck] Advancing from SelectionDeck review to Recording Teleprompter Studio (Stage 2)...");
             setIsReviewing(false);
-            setStage(1);
+            setStage(2);
             handleUpdate({
-                productionStage: 1,
+                productionStage: 2,
                 isReviewing: false,
                 isProductionLocked: true
             });

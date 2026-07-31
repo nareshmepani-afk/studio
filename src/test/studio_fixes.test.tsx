@@ -728,7 +728,7 @@ describe('Studio Regression Tests', () => {
       expect(selectedTakeState).toBe(oldNomadicProse);
     });
 
-    it('MW-125 ENTER RECORDING STUDIO STAGE ADVANCE ROUTING: should advance directly to Stage 1 (Act II Teleprompter) when isProductionLocked is true', () => {
+    it('MW-125 ENTER RECORDING STUDIO STAGE ADVANCE ROUTING: should advance directly to Stage 2 (Recording Teleprompter Studio) when isProductionLocked is true', () => {
       let targetStage: number = 0;
       let updatedPayload: any = null;
       let isGeneratingDraftsCalled = false;
@@ -746,11 +746,11 @@ describe('Studio Regression Tests', () => {
       const handleNextAct = (currentStage: number, isProductionLocked: boolean, isReviewing: boolean) => {
         const isAct1 = currentStage === 0;
 
-        // 1. If the production blueprint is sealed (isProductionLocked: true), ENTER RECORDING STUDIO advances directly to Act II Teleprompter (Stage 1)!
+        // 1. If the production blueprint is sealed (isProductionLocked: true), ENTER RECORDING STUDIO advances directly to Recording Studio (Stage 2)!
         if (isAct1 && isProductionLocked && !isReviewing) {
-          setStage(1);
+          setStage(2);
           handleUpdate({
-            productionStage: 1,
+            productionStage: 2,
             isProductionLocked: true,
             isReviewing: false
           });
@@ -767,12 +767,12 @@ describe('Studio Regression Tests', () => {
       // TEST SCENARIO: User is in Scriptorium (currentStage: 0) and clicks "ENTER RECORDING STUDIO" when blueprint is locked (isProductionLocked: true)
       handleNextAct(0 /* currentStage */, true /* isProductionLocked */, false /* isReviewing */);
 
-      // ASSERTION 1: Target stage MUST advance to 1 (Act II Teleprompter)
-      expect(targetStage).toBe(1);
+      // ASSERTION 1: Target stage MUST advance to 2 (Recording Teleprompter Studio)
+      expect(targetStage).toBe(2);
 
-      // ASSERTION 2: Firestore update payload MUST contain productionStage: 1
+      // ASSERTION 2: Firestore update payload MUST contain productionStage: 2
       expect(updatedPayload).toEqual({
-        productionStage: 1,
+        productionStage: 2,
         isProductionLocked: true,
         isReviewing: false
       });
