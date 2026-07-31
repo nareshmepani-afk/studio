@@ -828,8 +828,16 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             return;
         }
 
-        // Wait, if we are in Review mode, do not auto-advance via the standard stage logic!
+        // When in Review mode (Selection Deck), clicking next commits the vision and advances to Act II Teleprompter (Stage 1)
         if (isAct1 && isReviewing) {
+            console.log("[ProductionDeck] Advancing from SelectionDeck review to Act II Teleprompter (Stage 1)...");
+            setIsReviewing(false);
+            setStage(1);
+            handleUpdate({
+                productionStage: 1,
+                isReviewing: false,
+                isProductionLocked: true
+            });
             return;
         }
 
