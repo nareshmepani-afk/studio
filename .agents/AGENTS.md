@@ -80,6 +80,10 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Continuous Pair Programming Collaboration**: The agent MUST proactively suggest creative product features, UX improvements, performance optimizations, and architectural enhancements during pair programming sessions.
 - **Milestone & Context-Driven Brainstorming**: Upon completing key bug fixes, deploy milestones, or feature implementations, the agent will present 2–3 actionable, high-craft suggestions (e.g. Teleprompter pace visualizer, story spark prompt drawers, AI movie poster synthesis) to continuously elevate the user experience.
 
+# 18. Direct Event Prop Binding vs DOM Selector Reliance Rule
+- **Direct Function Passing**: The agent MUST NEVER rely on DOM string queries (e.g., `document.querySelector('button.bg-emerald-500')`) or class-name selector matching to trigger primary workflow actions, modal closures, or stage transitions.
+- **Explicit Prop Contracts**: All child components (e.g. `Scriptorium`, `SelectionDeck`, `ScriptLightBox`) MUST receive direct function props (`onNext`, `onBackToEditor`, `onSelect`) from parent containers. Handlers MUST invoke these function props directly, providing 100% type-safe, DOM-decoupled control flow.
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
 - **2026-07-04**: v1.1.0-beta-MW-70. Resolved MFA loader lockout, expanded TOTP key length to 16 characters, corrected QR code URI literal colon separator, and added setup page console diagnostics. (Build Verify: SUCCESS)
