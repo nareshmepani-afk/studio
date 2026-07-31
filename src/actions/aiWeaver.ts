@@ -932,10 +932,13 @@ export async function generateDraftOptions(
     - BAN AMBIGUOUS RELATIVE TEMPORAL PHRASES: NEVER write floating relative phrases like "Rewind thirty years", "A few decades ago", "Thirty years back", or "Some years ago".
     - TIMELESS ORAL HISTORY RULE: Monologues are preserved for 30–100+ years into the future. All temporal references MUST be explicitly anchored with exact calendar years (e.g. "In ${anchorYearStr}...").
 
+    [STRICT VOCABULARY & FACTUAL FIDELITY MANDATE - CRITICAL]
+    - FACTUAL FIDELITY: Strictly adhere to the exact facts, terminology, and historical details provided in User Memory.
+    - NO CONTRADICTORY SYNONYMS: NEVER re-introduce terms or concepts that contradict or modify the user's authentic prose (e.g. if the user explicitly describes ancestors as "settled agricultural labourers", NEVER write "nomadic labourers" or hallucinate unmentioned labels).
+    - ZERO HISTORICAL HALLUCINATION: Respect all phrasing corrections, deletions, and vocabulary choices in the user's input text.
+
     [THE SOIL OF TRUTH - DATA ANCHORS]
     - User Memory: "${description}"
-    - Key Figures: Parents (migration from Kenya to England), Granddad (Madhapur settlement).
-    - Roots: Kutch, Madhapur, soil-to-table vegetarian strength.
     - The Mantra: "Learn, adapt, work hard, keep going."
 
     [FULL-LENGTH SPOKEN MONOLOGUE WORD-COUNT SCALE PARITY MANDATE - CRITICAL]
