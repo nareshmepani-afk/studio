@@ -2337,8 +2337,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                           setDescription(joined); // DUAL-SYNC: Ensure description matches Scriptorium prose!
                         }} 
                         onPolish={handleScriptPolish} 
-                        onWordCountChange={handleScriptWordCount}
-                        onActivity={onActivity}
+                        onNext={onNext}
                         isProductionLocked={isProductionLocked}
                         onOpenArchive={() => setIsArchiveOpen(true)}
                         onUnlockProduction={async () => {

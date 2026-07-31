@@ -130,6 +130,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-31**: v1.1.0-beta-MW-120. Prevented ProductionDeck:SyncLock effect from overriding selectedTake during active SelectionDeck review (isReviewing=true) and eliminated 70-line deprecated hardcoded aiTakes fallback in MemoryForm.tsx. (Build Verify: SUCCESS)
 - **2026-07-31**: v1.1.0-beta-MW-121. Prioritized s.description and s.prose over s.scriptBlocks in useMemoryPersistence.ts to guarantee user Scriptorium edits persist to prose and pass cleanly to AI synthesis. (Build Verify: SUCCESS)
 - **2026-07-31**: v1.1.0-beta-MW-122. Enforced STRICT VOCABULARY & FACTUAL FIDELITY MANDATE in aiWeaver.ts prompt engine, banning LLM re-introduction of deleted synonyms and unmentioned historical labels. (Build Verify: SUCCESS)
+- **2026-07-31**: v1.1.0-beta-MW-123. Passed onNext prop directly to Scriptorium.tsx and updated Enter Recording Studio button click handler to execute callback, resolving stage advance navigation. (Build Verify: SUCCESS)
 
 
 

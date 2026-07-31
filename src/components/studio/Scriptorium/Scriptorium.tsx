@@ -91,6 +91,7 @@ interface ScriptoriumProps {
   onOpenArchive?: () => void;
   onUnlockProduction?: () => void;
   onLockProduction?: () => void;
+  onNext?: () => void;
 }
 
 export const Scriptorium = forwardRef<any, ScriptoriumProps>(({ 
@@ -102,7 +103,8 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
   isProductionLocked = false,
   onOpenArchive,
   onUnlockProduction,
-  onLockProduction
+  onLockProduction,
+  onNext
 }, ref) => {
   const { actions, detectedAnchors, activeDrawer } = useStudioState();
 
@@ -491,12 +493,17 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
             <button
               data-hotspot-id="HS_ENTER_STUDIO_BTN"
               onClick={() => {
-                // Dispatch click trigger on global navigation next step
-                const nextBtn = document.querySelector('[data-blueprint="ProductionControlBar"] button.bg-emerald-505, [data-blueprint="ProductionControlBar"] button.bg-emerald-500') as HTMLButtonElement;
-                if (nextBtn) {
-                  nextBtn.click();
+                if (typeof onNext === 'function') {
+                  console.log("[Scriptorium] Executing onNext callback directly.");
+                  onNext();
                 } else {
-                  console.warn("[Scriptorium] Global navigate next trigger button could not be located in DOM.");
+                  const nextBtn = document.querySelector('[data-hotspot-id="HS_ENTER_STUDIO_BTN"], [data-hotspot-id="HS_ACT1_DRAFT_COMPLETED_BTN"], [data-blueprint="ProductionControlBar"] button') as HTMLButtonElement;
+                  if (nextBtn) {
+                    console.log("[Scriptorium] Triggering nextBtn via querySelector.");
+                    nextBtn.click();
+                  } else {
+                    console.warn("[Scriptorium] Global navigate next trigger button could not be located in DOM.");
+                  }
                 }
               }}
               className="w-full md:w-auto px-8 py-4 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-[11px] uppercase tracking-[0.2em] rounded-2xl transition-all shadow-[0_10px_25px_rgba(16,185,129,0.3)] hover:shadow-[0_15px_35px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3"
