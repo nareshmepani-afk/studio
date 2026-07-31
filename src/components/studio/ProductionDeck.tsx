@@ -283,16 +283,17 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             productionStage: memoryData.productionStage,
             proseLength: memoryData.prose?.length || 0,
             descriptionLength: memoryData.description?.length || 0,
-            isLocked
+            isLocked,
+            isReviewing
         });
         setIsProductionLocked(isLocked);
-        if (isLocked) {
+        if (isLocked && !isReviewing) {
             if (typeof setSelectedTake === 'function') {
                 const targetTake = memoryData.prose || memoryData.description || null;
                 console.log("[ProductionDeck:SyncLock] Setting selectedTake to:", targetTake ? targetTake.substring(0, 60) + "..." : null);
                 setSelectedTake(targetTake);
             }
-        } else {
+        } else if (!isLocked) {
             if (typeof setSelectedTake === 'function') {
                 console.log("[ProductionDeck:SyncLock] Clearing selectedTake (null)");
                 setSelectedTake(null);
@@ -304,6 +305,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         memoryData?.productionStage,
         memoryData?.prose,
         memoryData?.description,
+        isReviewing,
         setIsProductionLocked,
         setSelectedTake
     ]);

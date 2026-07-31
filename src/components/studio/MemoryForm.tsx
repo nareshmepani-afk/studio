@@ -2205,78 +2205,9 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       }}
                     />
                   </div>
-                ) : isReviewingSensory && aiTakes ? (
+                ) : isReviewingSensory ? (
                   <SelectionDeck 
-                    drafts={[
-                      {
-                        visionType: `Committed: ${data?.activeVisionLabel || selectedVision?.label || 'Act I Script'}`,
-                        visionFocus: "Your locked Act I performance blueprint.",
-                        cleanScript: stripScreenplayCues(prose || originalHook || description || ""),
-                        beatSheet: ["Act I Committal", "Sealed Blueprint"],
-                        stageDirections: [],
-                        preFlightBrief: {
-                          sensoryAnchors: ["Directorial Lock"],
-                          vocalInstructions: ["Maintain original pacing"],
-                          heroMoment: "Committed core vision."
-                        },
-                        temporalSummary: "Sensory layers successfully grafted. The Weaver has synthesised three atmospheric interpretations. Compare these variations against your committed benchmark to define your physical recording blueprint."
-                      },
-                      {
-                        visionType: "The Poetic Weave",
-                        visionFocus: "Internal resonance and metaphorical depth.",
-                        cleanScript: stripScreenplayCues(aiTakes.poetic || ""),
-                        beatSheet: ["Sensory Immersion", "Internal Landscapes", "Poetic Nuance"],
-                        stageDirections: [],
-                        preFlightBrief: {
-                          sensoryAnchors: ["Vivid Physical Details", "Emotional Tone"],
-                          vocalInstructions: ["Speak softly", "Take your time"],
-                          heroMoment: "A moment of deep internal clarity."
-                        }
-                      },
-                      {
-                        visionType: "The Direct Weave",
-                        visionFocus: "Documentary-style, authentic human weight.",
-                        cleanScript: stripScreenplayCues(aiTakes.direct || ""),
-                        beatSheet: ["Human Persistence", "Documentary Integrity", "Authentic Recall"],
-                        stageDirections: [],
-                        preFlightBrief: {
-                          sensoryAnchors: ["Grounded Truths", "Realist Context"],
-                          vocalInstructions: ["Speak clearly", "Assertive delivery"],
-                          heroMoment: "Direct connection to your audience."
-                        }
-                      },
-                      {
-                        visionType: "The Generational Weave",
-                        visionFocus: "Ancestral persistence and legacy values.",
-                        cleanScript: stripScreenplayCues(aiTakes.nostalgic || ""),
-                        beatSheet: ["Generational Roots", "Inherited Strengths", "Mantra Reflection"],
-                        stageDirections: [],
-                        preFlightBrief: {
-                          sensoryAnchors: ["Legacy Anchors", "Family History"],
-                          vocalInstructions: ["Speak with pride", "Storyteller rhythm"],
-                          heroMoment: "The bridge of memory across generations."
-                        }
-                      },
-                      {
-                        visionType: "The Memory Weave",
-                        visionFocus: "Master synthesis fusing voice, emotion, atmosphere, and rhythm.",
-                        cleanScript: stripScreenplayCues(
-                          aiTakes?.master || 
-                          (data as any)?.productionTakes?.find((t: any) => t.visionType === "The Memory Weave" || t.visionType?.includes("Crown") || t.visionType?.includes("Memory"))?.cleanScript || 
-                          aiTakes?.poetic || 
-                          prose || 
-                          description || 
-                          ""
-                        ),
-                        beatSheet: ["Authentic Voice", "Emotional Depth", "Sensory Texture", "Cinematic Arc"],
-                        stageDirections: [],
-                        preFlightBrief: {
-                          sensoryAnchors: ["Master Fusion"],
-                          vocalInstructions: ["Harmonized rhythm"],
-                          heroMoment: "Definitive master performance."
-                        }
-                      }
-                    ]} 
+                    drafts={reviewDrafts || (data as any)?.reviewDrafts || (data as any)?.productionTakes || []} 
                     onBackToEditor={async () => {
                       setIsReviewingSensory(false);
                       globalActions.setIsReviewing(false);

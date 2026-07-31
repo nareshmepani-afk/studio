@@ -127,6 +127,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-30**: v1.1.0-beta-MW-117. Unsealed production lock and multi-layered prose extraction in ProductionDeck.tsx and useMemoryPersistence.ts so clicking 'ENTER THE WEAVE' or 'DRAFT COMPLETED' after text edits re-synthesizes all 5 vision cards with newly flushed prose. (Build Verify: SUCCESS)
 - **2026-07-30**: v1.1.0-beta-MW-118. Passed onNext prop to MemoryForm in SoloStage.tsx to guarantee Re-weave thread button renders on error screens; boosted maxOutputTokens to 8192 and built resilient fallback spectrum in aiWeaver.ts for zero-downtime AI synthesis. (Build Verify: SUCCESS)
 - **2026-07-31**: v1.1.0-beta-MW-119. Synchronized global reviewDrafts state into MemoryForm.tsx existingReviewDrafts evaluation and prioritized d.cleanScript over stale aiTakes fallback values to guarantee 5-card vision spectrum updates immediately upon AI synthesis completion. (Build Verify: SUCCESS)
+- **2026-07-31**: v1.1.0-beta-MW-120. Prevented ProductionDeck:SyncLock effect from overriding selectedTake during active SelectionDeck review (isReviewing=true) and eliminated 70-line deprecated hardcoded aiTakes fallback in MemoryForm.tsx. (Build Verify: SUCCESS)
 
 
 
