@@ -744,10 +744,7 @@ describe('Studio Regression Tests', () => {
       };
 
       const handleNextAct = (currentStage: number, isProductionLocked: boolean, isReviewing: boolean) => {
-        const isAct1 = currentStage === 0;
-
-        // 1. If the production blueprint is sealed (isProductionLocked: true), ENTER RECORDING STUDIO advances directly to Recording Studio (Stage 2)!
-        if (isAct1 && isProductionLocked && !isReviewing) {
+        if (currentStage <= 1 && (isProductionLocked || !isReviewing)) {
           setStage(2);
           handleUpdate({
             productionStage: 2,
@@ -757,20 +754,26 @@ describe('Studio Regression Tests', () => {
           return;
         }
 
-        // 2. Ceremony Trigger: Only run AI synthesis when NOT locked AND NOT reviewing!
-        if (isAct1 && !isReviewing && !isProductionLocked) {
+        if (currentStage === 0 && !isReviewing && !isProductionLocked) {
           setIsGeneratingDrafts(true);
           return;
         }
       };
 
-      // TEST SCENARIO: User is in Scriptorium (currentStage: 0) and clicks "ENTER RECORDING STUDIO" when blueprint is locked (isProductionLocked: true)
+      // TEST SCENARIO 1: User is in Scriptorium (currentStage: 0) and clicks "ENTER RECORDING STUDIO" when blueprint is locked
       handleNextAct(0 /* currentStage */, true /* isProductionLocked */, false /* isReviewing */);
-
-      // ASSERTION 1: Target stage MUST advance to 2 (Recording Teleprompter Studio)
       expect(targetStage).toBe(2);
+      expect(updatedPayload).toEqual({
+        productionStage: 2,
+        isProductionLocked: true,
+        isReviewing: false
+      });
 
-      // ASSERTION 2: Firestore update payload MUST contain productionStage: 2
+      // TEST SCENARIO 2: User is on Stage 1 (currentStage: 1) and clicks "ENTER RECORDING STUDIO"
+      targetStage = 0;
+      updatedPayload = null;
+      handleNextAct(1 /* currentStage */, true /* isProductionLocked */, false /* isReviewing */);
+      expect(targetStage).toBe(2);
       expect(updatedPayload).toEqual({
         productionStage: 2,
         isProductionLocked: true,

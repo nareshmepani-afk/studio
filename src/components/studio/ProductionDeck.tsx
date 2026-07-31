@@ -371,7 +371,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     memoryData?.dateComponents?.year !== ''
                 );
             case 1: // Act II: Weave
-                return ['poetic', 'direct', 'nostalgic', 'cinematic'].includes(memoryData?.activeVision || '');
+                return ['poetic', 'direct', 'nostalgic', 'cinematic', 'master', 'weave'].includes(memoryData?.activeVision || '') || !!isProductionLocked;
             case 2: // Act III: Capture
                 return !!memoryData?.videoUrl;
             case 3: // Act IV: Director's Cut
@@ -706,9 +706,10 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
         const isAct1 = currentStage === 0;
 
-        // 1. If the production blueprint is sealed (isProductionLocked: true), ENTER RECORDING STUDIO advances directly to Recording Studio (Stage 2)!
-        if (isAct1 && isProductionLocked && !isReviewing) {
-            console.log("[ProductionDeck] Production lock active. Advancing directly to Recording Teleprompter Studio (Stage 2)...");
+        // 1. If the production blueprint is sealed (isProductionLocked: true) OR if currentStage <= 1 when ENTER RECORDING STUDIO is clicked:
+        if (currentStage <= 1 && (isProductionLocked || !isReviewing)) {
+            console.log("[ProductionDeck] Advancing directly to Recording Teleprompter Studio (Stage 2)...");
+            setIsReviewing(false);
             setStage(2);
             handleUpdate({
                 productionStage: 2,
