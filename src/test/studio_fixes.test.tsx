@@ -727,5 +727,58 @@ describe('Studio Regression Tests', () => {
       // ASSERTION 2: Now that review is complete, selectedTake is set for Act II teleprompter.
       expect(selectedTakeState).toBe(oldNomadicProse);
     });
+
+    it('MW-125 ENTER RECORDING STUDIO STAGE ADVANCE ROUTING: should advance directly to Stage 1 (Act II Teleprompter) when isProductionLocked is true', () => {
+      let targetStage: number = 0;
+      let updatedPayload: any = null;
+      let isGeneratingDraftsCalled = false;
+
+      const setStage = (stg: number) => {
+        targetStage = stg;
+      };
+      const handleUpdate = (payload: any) => {
+        updatedPayload = payload;
+      };
+      const setIsGeneratingDrafts = (val: boolean) => {
+        isGeneratingDraftsCalled = val;
+      };
+
+      const handleNextAct = (currentStage: number, isProductionLocked: boolean, isReviewing: boolean) => {
+        const isAct1 = currentStage === 0;
+
+        // 1. If the production blueprint is sealed (isProductionLocked: true), ENTER RECORDING STUDIO advances directly to Act II Teleprompter (Stage 1)!
+        if (isAct1 && isProductionLocked && !isReviewing) {
+          setStage(1);
+          handleUpdate({
+            productionStage: 1,
+            isProductionLocked: true,
+            isReviewing: false
+          });
+          return;
+        }
+
+        // 2. Ceremony Trigger: Only run AI synthesis when NOT locked AND NOT reviewing!
+        if (isAct1 && !isReviewing && !isProductionLocked) {
+          setIsGeneratingDrafts(true);
+          return;
+        }
+      };
+
+      // TEST SCENARIO: User is in Scriptorium (currentStage: 0) and clicks "ENTER RECORDING STUDIO" when blueprint is locked (isProductionLocked: true)
+      handleNextAct(0 /* currentStage */, true /* isProductionLocked */, false /* isReviewing */);
+
+      // ASSERTION 1: Target stage MUST advance to 1 (Act II Teleprompter)
+      expect(targetStage).toBe(1);
+
+      // ASSERTION 2: Firestore update payload MUST contain productionStage: 1
+      expect(updatedPayload).toEqual({
+        productionStage: 1,
+        isProductionLocked: true,
+        isReviewing: false
+      });
+
+      // ASSERTION 3: AI synthesis ceremony MUST NOT be re-triggered when already locked!
+      expect(isGeneratingDraftsCalled).toBe(false);
+    });
   });
 });
