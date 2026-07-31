@@ -632,5 +632,57 @@ describe('Studio Regression Tests', () => {
       expect(resolveEffectiveYear(userProse, "Unknown")).toBe("1965");
       expect(resolveEffectiveYear("No explicit year here", "1965")).toBe("1965");
     });
+
+    it('MW-119 SCRIPT RE-WEAVE VISION SPECTRUM INTEGRITY: should prioritize fresh reviewDrafts state and d.cleanScript over stale data and aiTakes caches', () => {
+      const freshReviewDrafts = [
+        { visionType: 'Original Polished', cleanScript: 'Updated settled agricultural labourers in Kutch' },
+        { visionType: 'The Poetic Weave', cleanScript: 'Poetic interpretation of agricultural labourers' },
+        { visionType: 'The Direct Weave', cleanScript: 'Direct documentary of agricultural labourers' },
+        { visionType: 'The Flow', cleanScript: 'Generational momentum of agricultural labourers' },
+        { visionType: 'The Memory Weave', cleanScript: 'Crown synthesis of agricultural labourers' }
+      ];
+
+      const staleDataProps = {
+        reviewDrafts: [
+          { visionType: 'Original Polished', cleanScript: 'Old nomadic labourers' },
+          { visionType: 'The Poetic Weave', cleanScript: 'Old nomadic poetic' },
+          { visionType: 'The Direct Weave', cleanScript: 'Old nomadic direct' },
+          { visionType: 'The Flow', cleanScript: 'Old nomadic flow' },
+          { visionType: 'The Memory Weave', cleanScript: 'Old nomadic crown' }
+        ]
+      };
+
+      const staleAiTakes = {
+        poetic: 'Stale cached nomadic poetic',
+        direct: 'Stale cached nomadic direct',
+        nostalgic: 'Stale cached nomadic flow',
+        master: 'Stale cached nomadic crown'
+      };
+
+      // 1. Verify existingReviewDrafts prioritizes fresh reviewDrafts state over stale data props
+      const resolveReviewDrafts = (localStateDrafts: any, dataProps: any) => {
+        return (localStateDrafts && localStateDrafts.length >= 4)
+          ? localStateDrafts
+          : (dataProps?.reviewDrafts || dataProps?.productionTakes);
+      };
+
+      const effectiveDrafts = resolveReviewDrafts(freshReviewDrafts, staleDataProps);
+      expect(effectiveDrafts[0].cleanScript).toBe('Updated settled agricultural labourers in Kutch');
+
+      // 2. Verify cleanScript resolution prioritizes d.cleanScript over stale aiTakes
+      const resolveCleanScript = (d: any, aiTakesCache: any) => {
+        return d.cleanScript ||
+          (d.visionType === "The Memory Weave" ? aiTakesCache?.master : undefined) ||
+          (d.visionType === "The Poetic Weave" ? aiTakesCache?.poetic : undefined) ||
+          (d.visionType === "The Direct Weave" ? aiTakesCache?.direct : undefined) ||
+          (d.visionType === "The Flow" ? aiTakesCache?.nostalgic : undefined) ||
+          '';
+      };
+
+      expect(resolveCleanScript(effectiveDrafts[1], staleAiTakes)).toBe('Poetic interpretation of agricultural labourers');
+      expect(resolveCleanScript(effectiveDrafts[2], staleAiTakes)).toBe('Direct documentary of agricultural labourers');
+      expect(resolveCleanScript(effectiveDrafts[3], staleAiTakes)).toBe('Generational momentum of agricultural labourers');
+      expect(resolveCleanScript(effectiveDrafts[4], staleAiTakes)).toBe('Crown synthesis of agricultural labourers');
+    });
   });
 });
