@@ -706,10 +706,21 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
         const isAct1 = currentStage === 0;
 
-        // NEW: "Director's Cut" Ceremony Trigger
-        if (isAct1 && (!isReviewing || isProductionLocked)) {
-            console.log("[ProductionDeck] Act I ceremony trigger detected. Unsealing lock and generating fresh 5-card vision spectrum...");
-            setIsProductionLocked(false);
+        // 1. If the production blueprint is sealed (isProductionLocked: true), ENTER RECORDING STUDIO advances directly to Act II Teleprompter (Stage 1)!
+        if (isAct1 && isProductionLocked && !isReviewing) {
+            console.log("[ProductionDeck] Production lock active. Advancing directly to Act II Teleprompter (Stage 1)...");
+            setStage(1);
+            handleUpdate({
+                productionStage: 1,
+                isProductionLocked: true,
+                isReviewing: false
+            });
+            return;
+        }
+
+        // 2. Ceremony Trigger: Only run AI synthesis when NOT locked AND NOT reviewing!
+        if (isAct1 && !isReviewing && !isProductionLocked) {
+            console.log("[ProductionDeck] Act I ceremony trigger detected. Generating fresh 5-card vision spectrum...");
             setIsGeneratingDrafts(true);
             setSynthesisError(null); // RESET: Start fresh
             try {

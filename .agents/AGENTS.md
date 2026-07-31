@@ -136,6 +136,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-31**: v1.1.0-beta-MW-122. Enforced STRICT VOCABULARY & FACTUAL FIDELITY MANDATE in aiWeaver.ts prompt engine, banning LLM re-introduction of deleted synonyms and unmentioned historical labels. (Build Verify: SUCCESS)
 - **2026-07-31**: v1.1.0-beta-MW-123. Passed onNext prop directly to Scriptorium.tsx and updated Enter Recording Studio button click handler to execute callback, resolving stage advance navigation. (Build Verify: SUCCESS)
 - **2026-07-31**: v1.1.0-beta-MW-124. Resolved SelectionDeck double-click stage freeze in ProductionDeck.tsx by committing active vision and advancing to Stage 1 (Act II Teleprompter) when handleNextAct is invoked during active review (isReviewing=true). (Build Verify: SUCCESS)
+- **2026-07-31**: v1.1.0-beta-MW-125. Enforced direct stage advance to Stage 1 (Act II Teleprompter) when Enter Recording Studio is clicked while isProductionLocked is true in ProductionDeck.tsx, resolving AI re-synthesis loop. (Build Verify: SUCCESS)
 
 
 
