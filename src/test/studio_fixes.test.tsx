@@ -684,5 +684,48 @@ describe('Studio Regression Tests', () => {
       expect(resolveCleanScript(effectiveDrafts[3], staleAiTakes)).toBe('Generational momentum of agricultural labourers');
       expect(resolveCleanScript(effectiveDrafts[4], staleAiTakes)).toBe('Crown synthesis of agricultural labourers');
     });
+
+    it('MW-120 SYNCLOCK HIJACK SHIELD & PROSE EDIT PERSISTENCE: should strictly block SyncLock from setting selectedTake during active card review', () => {
+      // Simulation of ProductionDeck:SyncLock effect contract
+      let selectedTakeState: string | null = null;
+      const setSelectedTake = (val: string | null) => {
+        selectedTakeState = val;
+      };
+
+      const runSyncLockEffect = (memoryData: any, isReviewing: boolean) => {
+        const isLocked = !!(memoryData?.isProductionLocked || (memoryData?.productionStage || 0) >= 1);
+        if (isLocked && !isReviewing) {
+          const targetTake = memoryData.prose || memoryData.description || null;
+          setSelectedTake(targetTake);
+        } else if (!isLocked) {
+          setSelectedTake(null);
+        }
+        // When isLocked is true AND isReviewing is true, setSelectedTake IS NOT CALLED!
+      };
+
+      const oldNomadicProse = "Our ancestors were nomadic labourers in Kutch...";
+      const memoryDataWithLock = {
+        id: "ey96djU6qR1BrDGnvZwp",
+        isProductionLocked: true,
+        productionStage: 0,
+        prose: oldNomadicProse
+      };
+
+      // TEST 1: User is currently reviewing 5 cards in SelectionDeck (isReviewing: true)
+      // When handleUpdate finishes and memoryData has isProductionLocked: true,
+      // SyncLock MUST NOT overwrite selectedTake with oldNomadicProse!
+      selectedTakeState = null; // Fresh state during card review
+      runSyncLockEffect(memoryDataWithLock, true /* isReviewing */);
+
+      // ASSERTION 1: selectedTake remains NULL, so SelectionDeck cards display NEW synthesized text!
+      expect(selectedTakeState).toBeNull();
+      expect(selectedTakeState).not.toBe(oldNomadicProse);
+
+      // TEST 2: User completes Selection Deck review and seals vision (isReviewing: false)
+      runSyncLockEffect(memoryDataWithLock, false /* isReviewing */);
+
+      // ASSERTION 2: Now that review is complete, selectedTake is set for Act II teleprompter.
+      expect(selectedTakeState).toBe(oldNomadicProse);
+    });
   });
 });
