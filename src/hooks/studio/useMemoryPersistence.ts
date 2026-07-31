@@ -264,11 +264,17 @@ export function useMemoryPersistence({
       isSavingRef.current = true;
       lastSavedTimestamp.current = now;
       try {
-        const resolvedProse = (s.prose && s.prose.trim().length > 0)
-          ? s.prose
-          : (s.scriptBlocks && s.scriptBlocks.length > 0 && s.scriptBlocks[0]?.text)
-            ? s.scriptBlocks.map((b: any) => b.text).join('\n\n')
-            : (currentData?.prose || currentData?.originalHook || s.description || currentData?.description || '');
+        const resolvedProse = (overrides?.prose && overrides.prose.trim().length > 0)
+          ? overrides.prose.trim()
+          : (overrides?.description && overrides.description.trim().length > 0)
+            ? overrides.description.trim()
+            : (s.description && s.description.trim().length > 0)
+              ? s.description.trim()
+              : (s.prose && s.prose.trim().length > 0)
+                ? s.prose.trim()
+                : (s.scriptBlocks && s.scriptBlocks.length > 0 && s.scriptBlocks[0]?.text)
+                  ? s.scriptBlocks.map((b: any) => b.text).join('\n\n')
+                  : (currentData?.prose || currentData?.originalHook || currentData?.description || '');
 
         const delta = {
           title: s.title || '',
@@ -283,7 +289,7 @@ export function useMemoryPersistence({
              month: s.month === 'none' ? '' : s.month, 
              year: s.year === 'none' ? '' : s.year 
           },
-          scriptBlocks: s.scriptBlocks || [],
+          scriptBlocks: [{ id: s.scriptBlocks?.[0]?.id || 'block-1', text: resolvedProse, type: 'beat' as const, catalysts: [] }],
           sensory: s.sensoryValues || {},
           chapterTitle: s.chapterTitle || '',
           usePoster: s.usePoster ?? true,
