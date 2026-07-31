@@ -2622,18 +2622,19 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       </LayoutGroup>
 
     {(() => {
-      const existingReviewDrafts = (data as any)?.reviewDrafts || (data as any)?.productionTakes;
+      const existingReviewDrafts = (reviewDrafts && reviewDrafts.length >= 4) ? reviewDrafts : ((data as any)?.reviewDrafts || (data as any)?.productionTakes);
       const previewDraftsList = (existingReviewDrafts && existingReviewDrafts.length >= 4)
         ? existingReviewDrafts.map((d: any) => ({
             visionType: d.visionType,
             visionFocus: d.visionFocus || "Sensory narrative interpretation.",
             cleanScript: stripScreenplayCues(
               (d.visionType?.startsWith("Committed:") ? (prose || originalHook || description) : undefined) ||
-              (d.visionType === "The Memory Weave" || d.visionType?.includes("Crown") || d.visionType?.includes("Memory") ? (aiTakes?.master || d.cleanScript || aiTakes?.poetic || prose || description) : undefined) ||
-              (d.visionType === "The Poetic Weave" || d.visionType?.includes("Soul") ? (aiTakes?.poetic || d.cleanScript) : undefined) ||
-              (d.visionType === "The Direct Weave" || d.visionType?.includes("Atmospheric") ? (aiTakes?.direct || d.cleanScript) : undefined) ||
-              (d.visionType === "The Flow" || d.visionType === "The Generational Weave" ? (aiTakes?.nostalgic || d.cleanScript) : undefined) ||
-              d.cleanScript || ''
+              d.cleanScript ||
+              (d.visionType === "The Memory Weave" || d.visionType?.includes("Crown") || d.visionType?.includes("Memory") ? (aiTakes?.master || aiTakes?.poetic || prose || description) : undefined) ||
+              (d.visionType === "The Poetic Weave" || d.visionType?.includes("Soul") ? aiTakes?.poetic : undefined) ||
+              (d.visionType === "The Direct Weave" || d.visionType?.includes("Atmospheric") ? aiTakes?.direct : undefined) ||
+              (d.visionType === "The Flow" || d.visionType === "The Generational Weave" ? aiTakes?.nostalgic : undefined) ||
+              ''
             ),
             beatSheet: d.beatSheet || ["Sensory Arc"],
             stageDirections: d.stageDirections || [],
