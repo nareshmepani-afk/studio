@@ -144,6 +144,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-31**: v1.1.0-beta-MW-125. Enforced direct stage advance to Stage 1 (Act II Teleprompter) when Enter Recording Studio is clicked while isProductionLocked is true in ProductionDeck.tsx, resolving AI re-synthesis loop. (Build Verify: SUCCESS)
 - **2026-07-31**: v1.1.0-beta-MW-126. Routed Enter Recording Studio stage advance target to Stage 2 (Recording Teleprompter Studio) in ProductionDeck.tsx, resolving Scriptorium re-mount issue. (Build Verify: SUCCESS)
 - **2026-07-31**: v1.1.0-beta-MW-127. Expanded handleNextAct stage advance check to currentStage <= 1 in ProductionDeck.tsx, enabling direct Stage 2 Recording Studio advance regardless of whether state rehydrated as stage 0 or 1. (Build Verify: SUCCESS)
+- **2026-07-31**: v1.1.0-beta-MW-128. Added zero-latency AI Director loading skeleton and pulsing cue indicator (Sparkles icon) to SoloStage.tsx, providing 0ms visual feedback during LLM question synthesis. (Build Verify: SUCCESS)
 
 
 

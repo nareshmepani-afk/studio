@@ -3211,9 +3211,16 @@ export default function SoloStage({
                                <div className="w-8 h-[1px] bg-sky-500/30 my-1" />
                             </div>
                             <div className="flex-grow flex items-center justify-center min-h-0 py-2">
-                               <p className="text-xs md:text-sm font-headline text-white leading-relaxed italic max-h-[140px] overflow-y-auto custom-scrollbar px-1">
-                                  "{currentQuestion || 'Ready to start the interview...'}"
-                               </p>
+                               {isSynthesizing ? (
+                                 <div className="flex flex-col items-center gap-2 py-3 text-sky-400 animate-pulse">
+                                   <Sparkles className="w-4 h-4 animate-spin text-sky-400" />
+                                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-300">AI Director Formulating Cue...</span>
+                                 </div>
+                               ) : (
+                                 <p className="text-xs md:text-sm font-headline text-white leading-relaxed italic max-h-[140px] overflow-y-auto custom-scrollbar px-1">
+                                    "{currentQuestion || 'Ready to start the interview...'}"
+                                 </p>
+                               )}
                             </div>
                             <div className="flex items-center gap-3 justify-center pt-2 shrink-0">
                                {currentQuestionIndex > 0 && (
