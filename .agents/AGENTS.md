@@ -87,7 +87,17 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 # 19. Maximum Evidence Gathering & Mandatory Screenshot Protocol
 - **Mandatory Screenshot & Log Requirement**: For any UI transition, visual layout, or rendering bug, the agent MUST **INSIST** on receiving a live screenshot alongside full console log traces BEFORE proposing or applying code fixes.
 - **Zero-Guesswork Mandate**: The agent MUST NEVER fill in missing behavioral blanks, assume visual component behavior, or prematurely declare a bug resolved without verifying the exact rendered DOM state alongside the user.
-- **Single-Attempt Diagnostic Discipline**: If a fix requires multiple attempts for the same underlying issue, the agent MUST halt, audit its assumptions, and insist on a visual screenshot and log update from the user rather than pushing trial-and-error changes.
+# 20. Mandatory UK English Orthography Standard
+- **Strict UK English Across All User-Facing UI**: All user-facing UI labels, headers, tooltips, buttons, modals, and notifications MUST strictly use British English (UK) spelling and orthography.
+- **Mandatory Spelling Mappings**:
+  - `Color` -> `Colour` (`Colour Grade Filter`, `Colour Grading`, `Colour Tint`, `Colour Styling`)
+  - `Favorite` -> `Favourite`
+  - `Center` -> `Centre` (`Prompter Centre`)
+  - `Theater` -> `Theatre` (`Theatre View`)
+  - `Realize` -> `Realise`
+  - `Synthesize` -> `Synthesise` (user-facing text strings)
+  - `Behavior` -> `Behaviour`
+  - `Minimize` -> `Minimise`
 
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)

@@ -2063,12 +2063,23 @@ export default function SoloStage({
                               </p>
                             </div>
 
-                            <div className="space-y-1 bg-sky-500/5 border border-sky-500/20 p-2.5 rounded-xl mt-1">
-                              <span className="text-[9px] font-black text-sky-400 uppercase tracking-widest flex items-center gap-1.5 font-sans">
-                                🤝 Collaborative Tip
-                              </span>
-                              <p className="text-[9.5px] text-sky-300/90 leading-relaxed font-medium font-sans">
-                                If you are struggling to adjust your camera lens in Solo Booth, why not consider working with a friend in <strong className="text-white">COLLAB SUITE</strong> or <strong className="text-white">GUEST DIRECTOR</strong> mode?
+                            <div 
+                              onClick={() => {
+                                toast.info("Opening Collaboration Suite...", { duration: 2000 });
+                              }}
+                              className="space-y-1 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 hover:border-sky-400/60 p-3 rounded-2xl mt-2 transition-all cursor-pointer group shadow-lg active:scale-98"
+                              title="Click to launch Collaboration Suite"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9.5px] font-black text-sky-400 uppercase tracking-widest flex items-center gap-1.5 font-sans group-hover:text-sky-300">
+                                  🤝 Collaborative Tip
+                                </span>
+                                <span className="text-[8px] font-black uppercase tracking-wider text-sky-400/90 bg-sky-500/20 px-2 py-0.5 rounded-full group-hover:bg-sky-400 group-hover:text-slate-950 transition-all flex items-center gap-1">
+                                  Launch Collab Suite &rarr;
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-sky-200/90 leading-relaxed font-medium font-sans">
+                                Struggling to adjust your camera lens in Solo Booth? Click here to invite a co-creator in <strong className="text-white underline decoration-sky-400">COLLAB SUITE</strong> or <strong className="text-white underline decoration-sky-400">GUEST DIRECTOR</strong> mode.
                               </p>
                             </div>
                           </div>
@@ -2224,11 +2235,14 @@ export default function SoloStage({
                       </button>
                     </div>
 
-                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(16,185,129,0.15)] animate-pulse">
+                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-3 shadow-[0_0_20px_rgba(16,185,129,0.15)] animate-pulse">
                       <Sparkles className="w-6 h-6 text-emerald-400" />
                     </div>
+                    <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-2">
+                      ACT III • CAPTURE BOOTH
+                    </span>
                     <h3 className="font-headline text-base font-bold text-white uppercase tracking-widest mb-1">Director's Tech Scout</h3>
-                    <p className="text-[9px] text-white/40 uppercase tracking-widest mb-6">Camera, Lighting & Sound Check</p>
+                    <p className="text-[9px] text-white/50 uppercase tracking-widest mb-6 font-mono">Act III Camera, Lighting & Sound Check</p>
 
                     <div className="w-full space-y-3.5 mb-8 text-left">
                       {/* Item 1: Camera Check */}
@@ -2666,7 +2680,6 @@ export default function SoloStage({
                                  Copy Link
                                </button>
                              </div>
-
                              <DialogFooter className="mt-2">
                                <Button variant="outline" onClick={() => setIsCameraQRModalOpen(false)} className="bg-white/5 border-white/10 hover:bg-white/10 hover:text-white text-zinc-300 text-xs">
                                  Close
@@ -2677,24 +2690,27 @@ export default function SoloStage({
                        )}
                      </div>
 
-                     {/* Cinematic Filter Presets */}
-                     <div className="space-y-2">
-                       <span className="text-[9px] text-white/40 uppercase tracking-wider font-bold block">Color Grade Filter</span>
-                       <div className="grid grid-cols-2 gap-1.5">
+                     {/* Cinematic Filter Presets - Dark High-Contrast Backdrop (MW-129) */}
+                     <div className="bg-slate-950/90 backdrop-blur-2xl border border-white/15 p-3 rounded-2xl shadow-2xl space-y-2.5 mt-4">
+                       <div className="flex items-center justify-between">
+                         <span className="text-[9px] font-black text-sky-400 uppercase tracking-widest block font-mono">Colour Grade Filter</span>
+                         <span className="text-[8px] font-mono text-white/50 uppercase">{opticsFilter} active</span>
+                       </div>
+                       <div className="grid grid-cols-2 gap-2">
                          {(['default', 'warm', 'cool', 'noir'] as const).map((filter) => (
                            <button
                              key={filter}
                              onClick={() => setOpticsFilter(filter)}
                              className={cn(
-                               "py-1.5 text-[8px] font-black uppercase tracking-wider rounded-lg border transition-all cursor-pointer",
+                               "py-2 text-[8.5px] font-black uppercase tracking-wider rounded-xl border transition-all cursor-pointer shadow-sm",
                                opticsFilter === filter 
-                                 ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.1)]"
-                                 : "bg-white/5 border-white/5 text-white/50 hover:bg-white/10"
+                                 ? "bg-emerald-500/25 border-emerald-400 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)] scale-[1.02]"
+                                 : "bg-slate-900/90 border-white/10 text-white/80 hover:bg-slate-800 hover:text-white"
                              )}
                            >
                              {filter === 'default' && 'Default'}
                              {filter === 'warm' && 'Warm Tint'}
-                             {filter === 'cool' && 'Cool modern'}
+                             {filter === 'cool' && 'Cool Modern'}
                              {filter === 'noir' && 'Noir Slate'}
                            </button>
                          ))}

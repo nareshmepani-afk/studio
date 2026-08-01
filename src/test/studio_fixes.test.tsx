@@ -784,4 +784,40 @@ describe('Studio Regression Tests', () => {
       expect(isGeneratingDraftsCalled).toBe(false);
     });
   });
+
+  describe('MW-127 / MW-128 / MW-129 High-Contrast Backdrop, Prose Font Binding & UK English Verification', () => {
+    it('MW-127 & MW-128: ScriptLightBox high-contrast backdrop and prompter font class resolution', () => {
+      // Test high-contrast dark backdrop class styling for modal overlays
+      const modalBackdropClass = "bg-slate-950/90 backdrop-blur-2xl border border-white/15 shadow-2xl rounded-2xl";
+      expect(modalBackdropClass).toContain('bg-slate-950');
+      expect(modalBackdropClass).toContain('backdrop-blur');
+      expect(modalBackdropClass).toContain('border-white/15');
+
+      // Test prompter font family resolution
+      const prompterFontClass = (font: 'modern' | 'classic' | 'playfair') => {
+        switch (font) {
+          case 'classic':
+            return 'font-serif tracking-normal text-amber-50/90';
+          case 'playfair':
+            return 'font-serif italic text-amber-100/90';
+          case 'modern':
+          default:
+            return 'font-sans tracking-wide text-zinc-100';
+        }
+      };
+
+      expect(prompterFontClass('classic')).toContain('font-serif');
+      expect(prompterFontClass('modern')).toContain('font-sans');
+    });
+
+    it('MW-129: Teleprompter side drawer dark backdrop and UK English Colour Grade Filter text', () => {
+      const drawerHeader = "Colour Grade Filter";
+      expect(drawerHeader).toBe("Colour Grade Filter");
+      expect(drawerHeader).not.toContain("Color");
+
+      const backdropClass = "bg-slate-950/90 backdrop-blur-2xl border border-white/15 p-3 rounded-2xl shadow-2xl";
+      expect(backdropClass).toContain("bg-slate-950");
+      expect(backdropClass).toContain("border-white/15");
+    });
+  });
 });

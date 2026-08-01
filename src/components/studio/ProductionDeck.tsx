@@ -1006,7 +1006,12 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                 className="flex items-center gap-3 tracking-wide text-[var(--room-accent)] hover:brightness-125 transition-all p-2 pr-4 rounded-xl hover:bg-white/5 group"
                             >
                                 <span className="text-white/80 group-hover:text-white transition-colors uppercase">&larr;</span>
-                                <span className="text-sm font-headline uppercase tracking-widest">{groupTitle}</span>
+                                <span className="text-sm font-headline uppercase tracking-widest">
+                                    {currentStage === 0 ? `${groupTitle} • ACT I: HOOK` :
+                                     currentStage === 1 ? `${groupTitle} • ACT II: THE WEAVE` :
+                                     currentStage === 2 ? `${groupTitle} • ACT III: CAPTURE` :
+                                     groupTitle}
+                                </span>
                             </button>
 
                             {/* Room Switcher */}
