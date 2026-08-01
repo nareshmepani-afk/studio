@@ -156,10 +156,11 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Placeholder Masking Shield**: Code MUST NEVER render or persist static prompt template placeholders (e.g. *"Your birthplace, family roots..."*, *"Enter the core of your memory"*, *"Select a prompt to begin"*) when `prose` or `originalHook` contain authentic user-written text.
 - **Automatic Persistence Dual-Sync**: During `flush()` and `update()` operations, whenever a user edits `prose` in the Scriptorium, persistence hooks MUST automatically synchronize `description` to match `prose`, permanently preventing stale prompt placeholders from surviving in Firestore queries.
 
-# 15. Automated Plane.so Board Synchronization Rule
+# 15. Automated Plane.so Board Synchronization & Chat Ticket Lifecycle Rule
 - **Direct API Synchronization**: The agent MUST automatically verify active `PLANE_API_KEY`, `PLANE_WORKSPACE_SLUG`, and `PLANE_PROJECT_ID` tokens in `.env.local` before asking the user to manually manage backlog tickets.
-- **Automated Ticket Creation via Permanent CLI Script**: Whenever a new architectural roadmap decision, major feature request, or systemic bug fix is finalized, the agent MUST programmatically invoke `node scripts/plane.js create "Title" "Description"` or execute via the artifact scratch directory (`<appDataDir>\brain\<conversation-id>/scratch/`).
-- **Zero Workspace Root Pollution**: The agent MUST NEVER write temporary `.js` or `.ts` scratch files (e.g. `scratch_create_plane_issue.js`) into the user's project workspace directory (`C:\Users\home\studio`). All transient scripts must strictly reside inside the artifact scratch directory or execute via permanent project scripts (`scripts/plane.js`).
+- **Automated Ticket Creation & State Transitioning**: Whenever a new architectural decision or bug fix is finalized, the agent programmatically invokes `node scripts/plane.js create "Title" "Description"`.
+- **Interactive Chat-Driven Ticket Closure**: Following a fix, the agent MUST provide a step-by-step **Test Walkthrough Protocol** for public staging (`dev.memoryweaver.studio`). Upon user sign-off (`Pass` or `Verified`), the agent MUST programmatically run `node scripts/plane.js close <issue_id_or_seq>` to mark the ticket as `Done`.
+- **Zero Workspace Root Pollution**: The agent MUST NEVER write temporary `.js` or `.ts` scratch files into the user's project workspace directory (`C:\Users\home\studio`). All transient scripts must strictly reside inside the artifact scratch directory or execute via permanent project scripts (`scripts/plane.js`).
 
 # 16. Mandatory Production-Ready Audit & Retrospective Rule
 - **Mandatory Audit Structure**: Upon completing ANY bug fix, feature modification, or architectural refactoring, the agent MUST include a structured **Production-Ready Audit & Retrospective** in its final response.
