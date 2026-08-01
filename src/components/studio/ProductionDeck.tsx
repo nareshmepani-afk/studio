@@ -678,6 +678,10 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                         isUntouched={isUntouched}
                         onActivity={resetIdleTimer}
                         onClearBackup={checkUnsavedTake}
+                        onSelectRoom={(room) => {
+                            setLobbyConfirmed(true);
+                            setActiveRoom(room);
+                        }}
                     />
                 );
             case 'collaborative':
@@ -1025,8 +1029,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                                 onClick={async () => {
                                                   if (formRef.current?.flush) {
                                                       setIsSavingNext(true);
-                                                      try { await formRef.current.flush(); } finally { setIsSavingNext(false); }
+                                                      try { await formRef.current.flush(); } catch(e) {} finally { setIsSavingNext(false); }
                                                   }
+                                                  setLobbyConfirmed(true);
                                                   setActiveRoom('solo');
                                                 }} 
                                                 className={`px-5 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${activeRoom === 'solo' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'} ${isSavingNext ? 'opacity-50 cursor-wait' : ''}`}
@@ -1047,8 +1052,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                                 onClick={async () => {
                                                   if (formRef.current?.flush) {
                                                       setIsSavingNext(true);
-                                                      try { await formRef.current.flush(); } finally { setIsSavingNext(false); }
+                                                      try { await formRef.current.flush(); } catch(e) {} finally { setIsSavingNext(false); }
                                                   }
+                                                  setLobbyConfirmed(true);
                                                   setActiveRoom('collaborative');
                                                 }} 
                                                 className={`px-5 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${activeRoom === 'collaborative' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'} ${isSavingNext ? 'opacity-50 cursor-wait' : ''}`}
@@ -1069,8 +1075,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                                 onClick={async () => {
                                                   if (formRef.current?.flush) {
                                                       setIsSavingNext(true);
-                                                      try { await formRef.current.flush(); } finally { setIsSavingNext(false); }
+                                                      try { await formRef.current.flush(); } catch(e) {} finally { setIsSavingNext(false); }
                                                   }
+                                                  setLobbyConfirmed(true);
                                                   setActiveRoom('guest');
                                                 }} 
                                                 className={`px-5 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${activeRoom === 'guest' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'} ${isSavingNext ? 'opacity-50 cursor-wait' : ''}`}

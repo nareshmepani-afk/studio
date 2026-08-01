@@ -92,12 +92,109 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Mandatory Spelling Mappings**:
   - `Color` -> `Colour` (`Colour Grade Filter`, `Colour Grading`, `Colour Tint`, `Colour Styling`)
   - `Favorite` -> `Favourite`
+# Rule: Systematic Probing & Diagnostic Discipline
+
+When encountering deployment, routing, or environment errors (e.g., 403, 404, 500, TLS/Auth failures), the agent must proceed strictly step-by-step through a bottom-up network and permission validation sequence before proposing code modifications or configuration writes:
+
+## 1. Trace the Error Source
+- Distinguish between Edge errors (e.g., GFE headers like "x-served-by" or server name headers) and application-layer exceptions.
+- Execute lightweight fetch/curl scripts mapping the exact headers and caching controls of the failing request.
+
+## 2. Test One Variable at a Time
+- Never attempt to fix credentials, routing, and code paths simultaneously.
+- Isolate the layers in this exact sequence:
+  1. DNS Propagation (nslookup/host checks)
+  2. TLS Handshake & SSL Certificates (verify active Cert subject/expiration)
+  3. Edge Routing and Domain Mapping (check mappings across staging/prod panels)
+  4. Ingress & IAM invoker permissions (verify Cloud Run access controls)
+  5. Application logic/environment variables
+
+## 3. Verify Every Assumption Programmatically
+- Write local scratch scripts to parse JSON configurations, environment flags, and active API tokens rather than predicting behaviour.
+- Validate that the staging and production contexts are completely isolated from one another before deploying changes.
+
+## 4. Zero Guessing & Native Diagnostics
+- Never guess the presence of system tools (like `gcloud` or `firebase` CLI) in the development shell.
+- When querying remote platform status, inspect active config directories (`~/.config/configstore/firebase-tools.json`) programmatically.
+- Avoid calling Node `fetch` on Windows development runtimes for token or log requests to prevent network engine crashes (`UV_HANDLE_CLOSING`). Instead, construct clean payload requests using Node's native `https` module.
+
+## 5. Staging-First Public Testing Protocol
+- Because of backend dependencies, all validation testing must be verified using the public staging environment (`dev.memoryweaver.studio`).
+- When changes are made, run validation locally first, commit and push to `dev` branch, and monitor the build pipeline progress.
+- Explicitly notify the user when the App Hosting staging build starts, clarify that build propagation takes 2–3 minutes, and instruct them to refresh `dev.memoryweaver.studio` to test the live updates.
+
+## 6. Telemetry & Analytics Micro-Version Tracing Rule
+- **Dynamic Version & Commit SHA Binding**: Every client event payload dispatched must include the unified application version parameter with micro-build Git SHA tracing (e.g. `v1.1.0-beta-MW-71.85f8572b`).
+- **Code-Level Audit Trails**: Telemetry version strings must dynamically resolve the short Git commit SHA (`git rev-parse --short HEAD` or `NEXT_PUBLIC_COMMIT_SHA`) to transform telemetry logs into pinpoint line-by-line audit trails for instant root-cause correlation.
+
+## 7. Universal Non-Degradation & Explicit Feature Confirmation Rule
+- **Universal Non-Degradation Across All Features**: The agent must NEVER silently alter, downgrade, approximate, or remove ANY existing user-facing feature, control, visual feedback loop, or functional capability under any circumstances.
+- **Explicit User Intent Confirmation Requirement**: If a proposed architectural change, technical refactoring, hardware constraint, or layout adjustment carries ANY risk of altering, degrading, or disabling any existing user capability, the agent MUST explicitly consult the user, detail the trade-offs, and obtain direct confirmation before proceeding.
+- **Heideggerian First-Principles Probing**: Interfaces for physical performers (standing back from screens framing themselves) must maintain seamless *Zuhandenheit* (ready-to-hand immersion). Always engineer genuine underlying technical bridges (e.g. WebRTC loopbacks, shared buffers, or hardware multiplexing) rather than compromising the narrator's essential visual feedback loop.
+
+## 8. Zero-Footprint Telemetry & Layout Integrity Rule
+- **No Structural Wrapper Injection**: Never wrap existing layout blocks or components in new HTML wrapper elements (such as unstyled `div` tags) purely to capture events or clicks. Doing so alters the CSS flex/grid layout tree, collapsing parent-child dimensions and breaking user interfaces.
+- **Global Capturing Listeners**: For broad telemetry tracking, register capturing event listeners (e.g. `window.addEventListener('click', handler, { capture: true })`) non-invasively inside React hooks or `useEffect` blocks rather than modifying JSX structures.
+- **Mandatory Structural Assertions**: Any edits affecting component returns must be verified with automated unit tests asserting that active child nodes render and resolve successfully.
+
+## 9. Test-Driven Verification & Regression Shield
+- **Natural Test Instinct**: For every new feature created, bug fixed, or behavior modified, the agent must evaluate: *"Should an automated test be created to prevent future regressions of this behavior?"*
+- **Mandatory Test Generation**: If a fix addresses a layout breakdown, routing edge case, state rehydration failure, or logical bug, a regression test MUST be added to verify that specific boundary condition remains correct and cannot break silently in future code changes.
+
+## 11. Spoken Monologue Integrity & Mandatory Post-Processing Regex Sanitization
+- **Probabilistic Prompt Guard**: LLM prompts alone are probabilistic and can hallucinate banned screenplay directives (e.g., `"Cut to a frame of..."`, `"The lens zooms..."`, `"Wide shot"`, `[Fade in]`) if prompts mention terms like "filmic" or "treatment".
+- **Mandatory Server-Side Sanitizer**: All narrative text synthesis functions (e.g. `expandWithAI`, `polishDescription`, `checkAndPolishGrammar`) MUST run generated output through a mandatory server-side regex sanitizer (`stripScreenplayCues`) to forcefully strip screenplay notes, camera movements, and stage directions before returning data to client state or UI.
+- **Prompt Tone Compliance**: When prompting models for spoken monologues, strictly instruct "authentic first-person spoken monologue" and "sensory depth" rather than film/cinema terminology.
+
+## 12. Zero-Latency Optimistic UI & Async Handshake Decoupling
+- **No Async UI Blocking**: Never block visual UI transitions (e.g., hiding/revealing toolbars, closing modals, card selections) on asynchronous cloud database network calls (`await flush(...)`).
+- **Synchronous State Flipping**: State flags that govern UI visibility (`setIsReviewing(false)`, `setIsReviewingSensory(false)`, `setIsDirectorOpen(false)`) MUST be flipped synchronously on the user's click event (0ms latency), allowing the UI to react instantly while the network save (`flush()`) proceeds in parallel or background.
+- **Safety Timeout Reset**: Any local pending state flags (`isPending`) in persistent toolbars MUST include a safety reset timer (e.g. 5 seconds) to prevent visual lockouts if a network call stalls or fails.
+
+## 14. Story Hook Fallback & Text Preservation Hierarchy
+- **Strict Resolution Priority**: Whenever displaying, querying, or persisting a memory's active narrative text across dashboard cards, lightboxes, or pre-flight briefs, code MUST evaluate text fields in this exact priority order: `prose` > `originalHook` > `description`.
+- **Placeholder Masking Shield**: Code MUST NEVER render or persist static prompt template placeholders (e.g. *"Your birthplace, family roots..."*, *"Enter the core of your memory"*, *"Select a prompt to begin"*) when `prose` or `originalHook` contain authentic user-written text.
+- **Automatic Persistence Dual-Sync**: During `flush()` and `update()` operations, whenever a user edits `prose` in the Scriptorium, persistence hooks MUST automatically synchronize `description` to match `prose`, permanently preventing stale prompt placeholders from surviving in Firestore queries.
+
+# 15. Automated Plane.so Board Synchronization Rule
+- **Direct API Synchronization**: The agent MUST automatically verify active `PLANE_API_KEY`, `PLANE_WORKSPACE_SLUG`, and `PLANE_PROJECT_ID` tokens in `.env.local` before asking the user to manually manage backlog tickets.
+- **Automated Ticket Creation via Permanent CLI Script**: Whenever a new architectural roadmap decision, major feature request, or systemic bug fix is finalized, the agent MUST programmatically invoke `node scripts/plane.js create "Title" "Description"` or execute via the artifact scratch directory (`<appDataDir>\brain\<conversation-id>/scratch/`).
+- **Zero Workspace Root Pollution**: The agent MUST NEVER write temporary `.js` or `.ts` scratch files (e.g. `scratch_create_plane_issue.js`) into the user's project workspace directory (`C:\Users\home\studio`). All transient scripts must strictly reside inside the artifact scratch directory or execute via permanent project scripts (`scripts/plane.js`).
+
+# 16. Mandatory Production-Ready Audit & Retrospective Rule
+- **Mandatory Audit Structure**: Upon completing ANY bug fix, feature modification, or architectural refactoring, the agent MUST include a structured **Production-Ready Audit & Retrospective** in its final response.
+- **Required Retrospective Sections**:
+  1. **Root Cause & Traceability Audit**: Exact failure mechanism, line numbers, state flags, and flawed assumptions.
+  2. **Technical Fix & Architecture Audit**: File-by-file changes, state impact, and layout integrity assertions.
+  3. **Technical Retrospective**: Systemic analysis of why the bug occurred and the preventative guardrail implemented.
+  4. **Automated Regression Shield**: Concrete output from `tsc --noEmit` and `vitest` unit tests.
+  5. **Plane.so Auto-Sync**: Confirmation of ticket creation/update via Rule 15.
+
+# 17. Proactive Ideation & Architectural Suggestions Rule
+- **Continuous Pair Programming Collaboration**: The agent MUST proactively suggest creative product features, UX improvements, performance optimizations, and architectural enhancements during pair programming sessions.
+- **Milestone & Context-Driven Brainstorming**: Upon completing key bug fixes, deploy milestones, or feature implementations, the agent will present 2–3 actionable, high-craft suggestions (e.g. Teleprompter pace visualizer, story spark prompt drawers, AI movie poster synthesis) to continuously elevate the user experience.
+
+# 18. Direct Event Prop Binding vs DOM Selector Reliance Rule
+- **Direct Function Passing**: The agent MUST NEVER rely on DOM string queries (e.g., `document.querySelector('button.bg-emerald-500')`) or class-name selector matching to trigger primary workflow actions, modal closures, or stage transitions.
+- **Explicit Prop Contracts**: All child components (e.g. `Scriptorium`, `SelectionDeck`, `ScriptLightBox`) MUST receive direct function props (`onNext`, `onBackToEditor`, `onSelect`) from parent containers. Handlers MUST invoke these function props directly, providing 100% type-safe, DOM-decoupled control flow.
+
+# 19. Maximum Evidence Gathering & Mandatory Screenshot Protocol
+- **Mandatory Screenshot & Log Requirement**: For any UI transition, visual layout, or rendering bug, the agent MUST **INSIST** on receiving a live screenshot alongside full console log traces BEFORE proposing or applying code fixes.
+- **Zero-Guesswork Mandate**: The agent MUST NEVER fill in missing behavioral blanks, assume visual component behavior, or prematurely declare a bug resolved without verifying the exact rendered DOM state alongside the user.
+# 20. Mandatory UK English Orthography Standard
+- **Strict UK English Across All User-Facing UI**: All user-facing UI labels, headers, tooltips, buttons, modals, and notifications MUST strictly use British English (UK) spelling and orthography.
+- **Mandatory Spelling Mappings**:
+  - `Color` -> `Colour` (`Colour Grade Filter`, `Colour Grading`, `Colour Tint`, `Colour Styling`)
+  - `Favorite` -> `Favourite`
   - `Center` -> `Centre` (`Prompter Centre`)
   - `Theater` -> `Theatre` (`Theatre View`)
   - `Realize` -> `Realise`
   - `Synthesize` -> `Synthesise` (user-facing text strings)
   - `Behavior` -> `Behaviour`
   - `Minimize` -> `Minimise`
+# 23. Direct Room Mode & Teleprompter Modal Unlocking Rule
+- **Explicit Room Mode Unlocking**: When performing room mode switches (Solo Stage, Collaboration, Guest Director), state handlers MUST explicitly set `lobbyConfirmed: true` to unlock teleprompter control modals immediately without forcing re-prompts or modal lockouts.
+- **Cross-Component Mode Handlers**: Room mode action cards embedded inside child components (e.g. `Collaborative Tip` inside `SoloStage`) MUST receive direct `onSelectRoom` callbacks to execute seamless room switching from anywhere in the UI tree.
 
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
@@ -155,3 +252,4 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-07-31**: v1.1.0-beta-MW-126. Routed Enter Recording Studio stage advance target to Stage 2 (Recording Teleprompter Studio) in ProductionDeck.tsx, resolving Scriptorium re-mount issue. (Build Verify: SUCCESS)
 - **2026-07-31**: v1.1.0-beta-MW-127. Expanded handleNextAct stage advance check to currentStage <= 1 in ProductionDeck.tsx, enabling direct Stage 2 Recording Studio advance regardless of whether state rehydrated as stage 0 or 1. (Build Verify: SUCCESS)
 - **2026-08-01**: v1.1.0-beta-MW-130. Refactored AI Director and Optics Grading floating sidebars in SoloStage.tsx to auto height (height: 'auto') with max-h-[calc(100vh-140px)] layout bounds, eliminating internal scrollbars and enabling full zero-scroll readability of COLLABORATIVE TIP and Check Shot Linter controls. (Build Verify: SUCCESS)
+- **2026-08-01**: v1.1.0-beta-MW-131. Implemented direct room state unlocking (lobbyConfirmed: true) upon switching to Collaboration or Guest Director modes in ProductionDeck.tsx and SoloStage.tsx, wired onSelectRoom prop callback to Collaborative Tip card action buttons, and added automated Vitest Unit Test #32. (Build Verify: SUCCESS)

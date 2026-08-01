@@ -34,21 +34,15 @@ vi.mock('framer-motion', () => {
 });
 
 vi.mock('lucide-react', async (importOriginal) => {
+  const actual: any = await importOriginal();
   const React = await import('react');
-  const icons = [
-    'PenTool', 'Mic', 'Sparkles', 'MapPin', 'Calendar', 'Tag', 'ArrowRight', 'ArrowLeft', 
-    'Save', 'Rocket', 'AlertCircle', 'Loader2', 'Edit3', 'ChevronRight', 'ChevronDown', 
-    'Maximize2', 'Trash2', 'Plus', 'Info', 'Layout', 'Layers', 'Wand2', 'Music', 'Wind', 
-    'Coffee', 'Zap', 'FileText', 'Film', 'ImageIcon', 'Video', 'Heart', 'Share2', 
-    'MoreHorizontal', 'Square', 'History', 'UserCircle', 'Eye', 'Clock', 'Lock', 
-    'RotateCcw', 'Target', 'ShieldCheck', 'Users', 'ChevronUp', 'Minus', 'BookOpen',
-    'ClipboardCopy', 'Copy', 'Check', 'Award'
-  ];
-  const mockedIcons: any = {};
-  icons.forEach(icon => {
-    mockedIcons[icon] = (props: any) => React.createElement('div', { ...props, 'data-testid': `icon-${icon}` });
+  const dummyIcon = (props: any) => React.createElement('div', { ...props });
+  return new Proxy(actual, {
+    get: (target, prop) => {
+      if (typeof prop === 'string' && prop in target) return target[prop];
+      return dummyIcon;
+    }
   });
-  return { ...mockedIcons };
 });
 
 vi.mock('next/navigation', () => ({
@@ -388,6 +382,6 @@ describe('MemoryForm Data Shielding (Split-Brain Prevention)', () => {
     expect(screen.queryByText('Sensory Lock Active')).toBeNull();
     
     // Selection Deck compare view should be visible immediately
-    expect(screen.getByText("Director's Cut")).toBeInTheDocument();
+    expect(screen.getByText("The Soul-Print")).toBeInTheDocument();
   });
 });

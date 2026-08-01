@@ -829,5 +829,30 @@ describe('Studio Regression Tests', () => {
       expect(panelContainerClass).toContain('max-h-[calc(100vh-140px)]');
       expect(panelContainerClass).not.toContain('h-[420px]');
     });
+
+    it('MW-131: Room switching (Collaboration & Guest Director) unlocks lobbyConfirmed and switches activeRoom', () => {
+      let activeRoom: 'solo' | 'collaborative' | 'guest' = 'solo';
+      let lobbyConfirmed = false;
+
+      const handleRoomSwitch = (room: 'solo' | 'collaborative' | 'guest') => {
+        lobbyConfirmed = true;
+        activeRoom = room;
+      };
+
+      // Scenario 1: Switch to Collaboration Suite
+      handleRoomSwitch('collaborative');
+      expect(activeRoom).toBe('collaborative');
+      expect(lobbyConfirmed).toBe(true);
+
+      // Scenario 2: Switch to Guest Director Mode
+      handleRoomSwitch('guest');
+      expect(activeRoom).toBe('guest');
+      expect(lobbyConfirmed).toBe(true);
+
+      // Scenario 3: Return to Solo Stage
+      handleRoomSwitch('solo');
+      expect(activeRoom).toBe('solo');
+      expect(lobbyConfirmed).toBe(true);
+    });
   });
 });

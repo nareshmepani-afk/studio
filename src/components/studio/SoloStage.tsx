@@ -88,6 +88,7 @@ interface RoomProps {
     onActivity?: () => void;
     formRef?: React.RefObject<any>;
     onClearBackup?: () => void;
+    onSelectRoom?: (room: 'solo' | 'collaborative' | 'guest') => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -100,7 +101,8 @@ export default function SoloStage({
   data, update, modality, setModality, onWordCountChange, 
   currentStage, mentorActive, onToggleMentor, onClarityChange,
   onNext, onPrev, isComplete, charge, wordCount, highlightClarity,
-  onboardingJustClosed, isUntouched, onActivity, formRef, onClearBackup
+  onboardingJustClosed, isUntouched, onActivity, formRef, onClearBackup,
+  onSelectRoom
 }: RoomProps) {
   const [mounted, setMounted] = useState(false);
   const { user, syncStatus } = useAuth();
@@ -2065,22 +2067,44 @@ export default function SoloStage({
 
                             <div 
                               onClick={() => {
-                                toast.info("Opening Collaboration Suite...", { duration: 2000 });
+                                toast.success("Switched to Collaboration Suite");
+                                onSelectRoom?.('collaborative');
                               }}
-                              className="space-y-1 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 hover:border-sky-400/60 p-3 rounded-2xl mt-2 transition-all cursor-pointer group shadow-lg active:scale-98"
+                              className="space-y-2 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 hover:border-sky-400/60 p-3.5 rounded-2xl mt-2 transition-all cursor-pointer group shadow-lg active:scale-98"
                               title="Click to launch Collaboration Suite"
                             >
                               <div className="flex items-center justify-between">
                                 <span className="text-[9.5px] font-black text-sky-400 uppercase tracking-widest flex items-center gap-1.5 font-sans group-hover:text-sky-300">
                                   🤝 Collaborative Tip
                                 </span>
-                                <span className="text-[8px] font-black uppercase tracking-wider text-sky-400/90 bg-sky-500/20 px-2 py-0.5 rounded-full group-hover:bg-sky-400 group-hover:text-slate-950 transition-all flex items-center gap-1">
-                                  Launch Collab Suite &rarr;
-                                </span>
                               </div>
                               <p className="text-[10px] text-sky-200/90 leading-relaxed font-medium font-sans">
-                                Struggling to adjust your camera lens in Solo Booth? Click here to invite a co-creator in <strong className="text-white underline decoration-sky-400">COLLAB SUITE</strong> or <strong className="text-white underline decoration-sky-400">GUEST DIRECTOR</strong> mode.
+                                Struggling to adjust your camera lens in Solo Booth? Click below to invite a co-creator in <strong className="text-white underline decoration-sky-400">COLLAB SUITE</strong> or <strong className="text-white underline decoration-sky-400">GUEST DIRECTOR</strong> mode.
                               </p>
+                              <div className="flex items-center gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toast.success("Switched to Collaboration Suite");
+                                    onSelectRoom?.('collaborative');
+                                  }}
+                                  className="text-[8.5px] font-black uppercase tracking-wider text-sky-950 bg-sky-400 hover:bg-sky-300 px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 shadow-md cursor-pointer active:scale-95"
+                                >
+                                  Launch Collab Suite &rarr;
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toast.success("Switched to Guest Director Mode");
+                                    onSelectRoom?.('guest');
+                                  }}
+                                  className="text-[8.5px] font-black uppercase tracking-wider text-sky-200 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/30 px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                                >
+                                  Guest Director &rarr;
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ) : (

@@ -2207,7 +2207,18 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                   </div>
                 ) : isReviewingSensory ? (
                   <SelectionDeck 
-                    drafts={reviewDrafts || (data as any)?.reviewDrafts || (data as any)?.productionTakes || []} 
+                    drafts={
+                      (reviewDrafts && reviewDrafts.length > 0) ? reviewDrafts :
+                      ((data as any)?.reviewDrafts && (data as any)?.reviewDrafts.length > 0) ? (data as any).reviewDrafts :
+                      ((data as any)?.productionTakes && (data as any)?.productionTakes.length > 0) ? (data as any).productionTakes :
+                      ((aiTakes || (data as any)?.aiTakes) ? [
+                        { type: 'original', title: 'The Official Record', visionType: 'The Official Record', cleanScript: stripScreenplayCues((aiTakes || (data as any)?.aiTakes)?.direct || prose || description || "") },
+                        { type: 'poetic', title: 'The Soul-Print', visionType: 'The Soul-Print', cleanScript: stripScreenplayCues((aiTakes || (data as any)?.aiTakes)?.poetic || "") },
+                        { type: 'nostalgic', title: 'The Atmospheric Weave', visionType: 'The Atmospheric Weave', cleanScript: stripScreenplayCues((aiTakes || (data as any)?.aiTakes)?.nostalgic || "") },
+                        { type: 'cinematic', title: 'The Flow', visionType: 'The Flow', cleanScript: stripScreenplayCues((aiTakes || (data as any)?.aiTakes)?.cinematic || (aiTakes || (data as any)?.aiTakes)?.nostalgic || "") },
+                        { type: 'master', title: 'The Memory Weave', visionType: 'The Memory Weave', cleanScript: stripScreenplayCues((aiTakes || (data as any)?.aiTakes)?.master || (aiTakes || (data as any)?.aiTakes)?.poetic || "") }
+                      ] : [])
+                    } 
                     onBackToEditor={async () => {
                       setIsReviewingSensory(false);
                       globalActions.setIsReviewing(false);
