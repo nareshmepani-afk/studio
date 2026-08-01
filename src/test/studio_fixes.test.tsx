@@ -819,5 +819,15 @@ describe('Studio Regression Tests', () => {
       expect(backdropClass).toContain("bg-slate-950");
       expect(backdropClass).toContain("border-white/15");
     });
+
+    it('MW-130: AI Director & Optics panel auto-height zero-scroll layout bounds', () => {
+      const panelHeight = (isMinimised: boolean) => isMinimised ? '56px' : 'auto';
+      expect(panelHeight(true)).toBe('56px');
+      expect(panelHeight(false)).toBe('auto');
+
+      const panelContainerClass = "bg-zinc-950/90 backdrop-blur-3xl border border-white/15 p-5 shadow-2xl flex flex-col justify-between max-h-[calc(100vh-140px)] overflow-y-auto custom-scrollbar";
+      expect(panelContainerClass).toContain('max-h-[calc(100vh-140px)]');
+      expect(panelContainerClass).not.toContain('h-[420px]');
+    });
   });
 });

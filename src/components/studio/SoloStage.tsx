@@ -1900,16 +1900,16 @@ export default function SoloStage({
                     opacity: 0, 
                     x: -50, 
                     scale: 0.95,
-                    height: isDirectorMinimised ? '56px' : '420px',
-                    width: isDirectorMinimised ? '200px' : '288px'
+                    height: isDirectorMinimised ? '56px' : 'auto',
+                    width: isDirectorMinimised ? '200px' : '296px'
                   }}
                   animate={{ 
                     opacity: 1, 
                     x: 0, 
                     scale: 1,
-                    height: isDirectorMinimised ? '56px' : '420px',
-                    width: isDirectorMinimised ? '200px' : '288px',
-                    borderRadius: isDirectorMinimised ? '9999px' : '2.5rem'
+                    height: isDirectorMinimised ? '56px' : 'auto',
+                    width: isDirectorMinimised ? '200px' : '296px',
+                    borderRadius: isDirectorMinimised ? '9999px' : '2rem'
                   }}
                   exit={{ opacity: 0, x: -50, scale: 0.95 }}
                   transition={{ 
@@ -1921,8 +1921,8 @@ export default function SoloStage({
                   }}
                   style={{ touchAction: 'none' }}
                   className={cn(
-                    "bg-zinc-950/85 backdrop-blur-3xl border border-white/10 p-6 shadow-2xl flex flex-col justify-between hover:bg-zinc-900/90 transition-colors duration-700 select-none cursor-grab active:cursor-grabbing",
-                    isDirectorMinimised && "p-3 px-4 flex-row items-center justify-between"
+                    "bg-zinc-950/90 backdrop-blur-3xl border border-white/15 p-5 shadow-2xl flex flex-col justify-between hover:bg-zinc-900/95 transition-colors duration-700 select-none cursor-grab active:cursor-grabbing max-h-[calc(100vh-140px)] overflow-y-auto custom-scrollbar",
+                    isDirectorMinimised && "p-3 px-4 flex-row items-center justify-between overflow-hidden"
                   )}
                 >
                   {isDirectorMinimised ? (
@@ -1956,7 +1956,7 @@ export default function SoloStage({
                     </div>
                   ) : (
                     <>
-                      <div className="space-y-4 flex-grow overflow-y-auto custom-scrollbar select-none">
+                      <div className="space-y-3 flex-grow select-none">
                         {/* Drag Grip Handle */}
                         <div className="w-12 h-1 rounded-full bg-white/10 mx-auto hover:bg-white/20 mb-2 transition-colors shrink-0" />
                         
