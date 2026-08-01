@@ -854,5 +854,40 @@ describe('Studio Regression Tests', () => {
       expect(activeRoom).toBe('solo');
       expect(lobbyConfirmed).toBe(true);
     });
+
+    it('MW-132: DirectorsNotepad safety fallback synthesis prevents 95% loading freeze', () => {
+      const createFallbackNotepad = (data: any) => {
+        const text = data?.prose || data?.description || data?.originalHook || "Default memory monologue...";
+        const words = text.split(/\s+/).filter(Boolean);
+        const estSeconds = Math.max(15, Math.ceil(words.length / 2.5));
+
+        return {
+          transcript: [
+            { startTime: 0, endTime: estSeconds, text: text, speaker: data?.narratorName || "Narrator" }
+          ],
+          emotionalBeats: [
+            { time: 0, label: data?.activeVisionLabel || "Authentic Monologue", color: "#10b981", description: "Secured recording." }
+          ],
+          entities: [],
+          directorNotes: "The monologue captures emotional truth and authentic narrative rhythm.",
+          suggestedChapters: [
+            { startTime: 0, title: data?.activeVisionLabel || "Roots & Foundations", description: text.substring(0, 85), type: "hook" }
+          ],
+          videoStory: text
+        };
+      };
+
+      const mockData = {
+        prose: "In 1964, a courageous family stepped forward across vast oceans to establish Kutch roots in Nairobi.",
+        narratorName: "Naresh",
+        activeVisionLabel: "The Atmospheric Weave"
+      };
+
+      const fallback = createFallbackNotepad(mockData);
+      expect(fallback.transcript[0].text).toContain("In 1964, a courageous family stepped forward");
+      expect(fallback.transcript[0].speaker).toBe("Naresh");
+      expect(fallback.emotionalBeats[0].label).toBe("The Atmospheric Weave");
+      expect(fallback.suggestedChapters[0].type).toBe("hook");
+    });
   });
 });

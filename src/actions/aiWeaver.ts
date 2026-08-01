@@ -496,6 +496,11 @@ export async function generateDirectorsNotepad(memoryId: string, videoUrl: strin
   if (!session?.uid) throw new Error("Unauthorized");
 
   try {
+    if (!videoUrl || videoUrl.startsWith('blob:')) {
+      console.log("[Director's Notepad] Skipping remote analysis for local blob URL.");
+      return null;
+    }
+
     // 1. Convert HTTP Video URL to GCS URI
     // URL format: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{pathEncoded}?alt=media...
     const bucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
