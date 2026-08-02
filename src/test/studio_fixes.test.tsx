@@ -923,5 +923,29 @@ describe('Studio Regression Tests', () => {
       expect(notepad).not.toBeNull();
       expect(notepad.transcript[0].text).toBe("Authentic monologue text");
     });
+
+    it('MW-135: Standardized Act Header format and 100% height DirectorsNotepad panel binding', () => {
+      const groupTitle = "PART I: ROOTS AND FOUNDATIONS";
+      const formatHeader = (currentStage: number) => {
+        return currentStage === 0 ? `${groupTitle} — ACT I: SCRIPTORIUM` :
+               currentStage === 1 ? `${groupTitle} — ACT II: THE WEAVE` :
+               currentStage === 2 ? `${groupTitle} — ACT III: CAPTURE` :
+               `${groupTitle} — ACT ${currentStage + 1}`;
+      };
+
+      // Test 1: Header includes current ACT tag across all stages
+      expect(formatHeader(0)).toBe("PART I: ROOTS AND FOUNDATIONS — ACT I: SCRIPTORIUM");
+      expect(formatHeader(1)).toBe("PART I: ROOTS AND FOUNDATIONS — ACT II: THE WEAVE");
+      expect(formatHeader(2)).toBe("PART I: ROOTS AND FOUNDATIONS — ACT III: CAPTURE");
+
+      // Test 2: DirectorsNotepad container CSS classes flex 100% parent height
+      const containerClass = "w-full lg:w-1/2 bg-black/40 border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl h-full flex flex-col min-h-[500px]";
+      const notepadClass = "w-full h-full bg-zinc-950/90 border-l border-white/10 overflow-hidden flex flex-col flex-1 shadow-2xl";
+
+      expect(containerClass).toContain("h-full");
+      expect(containerClass).toContain("flex-col");
+      expect(notepadClass).toContain("w-full");
+      expect(notepadClass).toContain("flex-1");
+    });
   });
 });

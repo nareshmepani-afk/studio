@@ -3949,8 +3949,8 @@ export default function SoloStage({
           </div>
        </div>
 
-       <div className="w-full lg:w-1/2 bg-black/40 border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl h-full">
-          <div className="h-full overflow-y-auto custom-scrollbar">
+       <div className="w-full lg:w-1/2 bg-black/40 border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl h-full flex flex-col min-h-[500px]">
+          <div className="w-full h-full flex flex-col flex-1 overflow-hidden">
             <DirectorsNotepad 
               userId={userId || user?.uid || data?.userId}
               memoryId={data?.id}

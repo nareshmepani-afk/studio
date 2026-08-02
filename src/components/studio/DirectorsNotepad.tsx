@@ -189,19 +189,19 @@ export default function DirectorsNotepad({
   const activeTabObj = tabs.find(t => t.id === activeTab);
 
   return (
-    <div className={`relative flex h-full ${className}`}>
+    <div className={`relative flex flex-col h-full w-full flex-1 ${className}`}>
       {/* Cinematic Sidebar Handle */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="absolute -left-8 top-1/2 -translate-y-1/2 w-8 h-24 bg-zinc-900 border border-white/10 rounded-l-xl flex items-center justify-center text-white/40 hover:text-emerald-400 hover:bg-zinc-800 transition-all z-50"
+        className="absolute -left-8 top-1/2 -translate-y-1/2 w-8 h-24 bg-zinc-900 border border-white/10 rounded-l-xl flex items-center justify-center text-white/40 hover:text-emerald-400 hover:bg-zinc-800 transition-all z-50 lg:hidden"
       >
         {isOpen ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
       </button>
 
       <motion.div 
-        initial={{ width: isOpen ? 400 : 0, opacity: isOpen ? 1 : 0 }}
-        animate={{ width: isOpen ? 400 : 0, opacity: isOpen ? 1 : 0 }}
-        className="h-full bg-zinc-950 border-l border-white/10 overflow-hidden flex flex-col shadow-2xl"
+        initial={{ opacity: isOpen ? 1 : 0 }}
+        animate={{ opacity: isOpen ? 1 : 0 }}
+        className="w-full h-full bg-zinc-950/90 border-l border-white/10 overflow-hidden flex flex-col flex-1 shadow-2xl"
       >
         {/* Header */}
         <div className="p-6 border-b border-white/5 bg-zinc-900/50">
