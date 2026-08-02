@@ -165,7 +165,7 @@ export interface DirectorsNotepad {
   directorNotes: string;
   videoStory?: string; // Fused narrative synthesized from transcript and hook
   suggestedChapters: Chapter[];
-  analyzedAt: string;
+  analyzedAt?: string;
 }
 
 export type MemoryCategory = {

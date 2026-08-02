@@ -95,7 +95,8 @@ export default function DirectorsNotepad({
           type: "hook"
         }
       ],
-      videoStory: text
+      videoStory: text,
+      analyzedAt: new Date().toISOString()
     };
   };
 
