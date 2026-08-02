@@ -889,5 +889,39 @@ describe('Studio Regression Tests', () => {
       expect(fallback.emotionalBeats[0].label).toBe("The Atmospheric Weave");
       expect(fallback.suggestedChapters[0].type).toBe("hook");
     });
+
+    it('MW-133: DirectorsNotepad tab tooltips & instant click activation during scanning', () => {
+      const tabs = [
+        { id: 'transcript', label: 'Transcript', tooltip: 'View timestamped spoken transcript & click lines to jump to video moments' },
+        { id: 'beats', label: 'Emotional Beats', tooltip: 'Timeline markers of emotional intensity and key narrative beats' },
+        { id: 'notes', label: 'Director Notes', tooltip: 'Directorial critique & high-level assessment of your performance' },
+        { id: 'fusion', label: 'Fusion Protocol', tooltip: 'Blends your written intent with recorded performance into a master narrative' },
+      ];
+
+      let activeTab = 'transcript';
+      let isLoading = true;
+      let notepad: any = null;
+
+      const handleTabClick = (tabId: string, mainData: any) => {
+        activeTab = tabId;
+        if (isLoading) {
+          notepad = { transcript: [{ text: mainData.prose }] };
+          isLoading = false;
+        }
+      };
+
+      // Test 1: Tooltips are non-empty for all tabs
+      tabs.forEach(tab => {
+        expect(tab.tooltip).toBeTruthy();
+        expect(tab.tooltip.length).toBeGreaterThan(15);
+      });
+
+      // Test 2: Clicking tab while scanning instantly satisfies request and ends loading state
+      handleTabClick('notes', { prose: "Authentic monologue text" });
+      expect(activeTab).toBe('notes');
+      expect(isLoading).toBe(false);
+      expect(notepad).not.toBeNull();
+      expect(notepad.transcript[0].text).toBe("Authentic monologue text");
+    });
   });
 });

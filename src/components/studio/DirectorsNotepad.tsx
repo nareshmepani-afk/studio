@@ -159,11 +159,33 @@ export default function DirectorsNotepad({
   };
 
   const tabs = [
-    { id: 'transcript', label: 'Transcript', icon: FileText },
-    { id: 'beats', label: 'Emotional Beats', icon: Activity },
-    { id: 'notes', label: 'Director Notes', icon: BookOpen },
-    { id: 'fusion', label: 'Fusion Protocol', icon: SparklesIcon },
+    { 
+      id: 'transcript', 
+      label: 'Transcript', 
+      icon: FileText,
+      tooltip: 'View timestamped spoken transcript & click lines to jump to video moments'
+    },
+    { 
+      id: 'beats', 
+      label: 'Emotional Beats', 
+      icon: Activity,
+      tooltip: 'Timeline markers of emotional intensity and key narrative beats'
+    },
+    { 
+      id: 'notes', 
+      label: 'Director Notes', 
+      icon: BookOpen,
+      tooltip: 'Directorial critique & high-level assessment of your performance'
+    },
+    { 
+      id: 'fusion', 
+      label: 'Fusion Protocol', 
+      icon: SparklesIcon,
+      tooltip: 'Blends your written intent with recorded performance into a master narrative'
+    },
   ];
+
+  const activeTabObj = tabs.find(t => t.id === activeTab);
 
   return (
     <div className={`relative flex h-full ${className}`}>
@@ -197,7 +219,14 @@ export default function DirectorsNotepad({
             {tabs.map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => {
+                  setActiveTab(tab.id as any);
+                  if (isLoading) {
+                    setNotepad(prev => prev || createFallbackNotepad(mainData));
+                    setIsLoading(false);
+                  }
+                }}
+                title={tab.tooltip}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
                   activeTab === tab.id 
                     ? 'bg-emerald-500 text-slate-950 shadow-lg' 
@@ -209,6 +238,14 @@ export default function DirectorsNotepad({
               </button>
             ))}
           </div>
+
+          {/* Dynamic Tab Purpose Guidance Tooltip */}
+          {activeTabObj && (
+            <p className="text-[9px] text-zinc-400 font-mono mt-3 px-1 leading-normal italic flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              {activeTabObj.tooltip}
+            </p>
+          )}
         </div>
 
         {/* Content Area */}
