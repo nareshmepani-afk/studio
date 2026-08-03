@@ -1014,6 +1014,8 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                     {currentStage === 0 ? `${groupTitle} — ACT I: SCRIPTORIUM` :
                                      currentStage === 1 ? `${groupTitle} — ACT II: THE WEAVE` :
                                      currentStage === 2 ? `${groupTitle} — ACT III: CAPTURE` :
+                                     currentStage === 3 ? `${groupTitle} — ACT IV: THE CUT` :
+                                     currentStage === 4 ? `${groupTitle} — ACT V: PREMIERE` :
                                      `${groupTitle} — ACT ${currentStage + 1}`}
                                 </span>
                             </button>

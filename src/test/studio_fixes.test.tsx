@@ -930,13 +930,17 @@ describe('Studio Regression Tests', () => {
         return currentStage === 0 ? `${groupTitle} — ACT I: SCRIPTORIUM` :
                currentStage === 1 ? `${groupTitle} — ACT II: THE WEAVE` :
                currentStage === 2 ? `${groupTitle} — ACT III: CAPTURE` :
+               currentStage === 3 ? `${groupTitle} — ACT IV: THE CUT` :
+               currentStage === 4 ? `${groupTitle} — ACT V: PREMIERE` :
                `${groupTitle} — ACT ${currentStage + 1}`;
       };
 
-      // Test 1: Header includes current ACT tag across all stages
+      // Test 1: Header includes current ACT tag across all 5 stages
       expect(formatHeader(0)).toBe("PART I: ROOTS AND FOUNDATIONS — ACT I: SCRIPTORIUM");
       expect(formatHeader(1)).toBe("PART I: ROOTS AND FOUNDATIONS — ACT II: THE WEAVE");
       expect(formatHeader(2)).toBe("PART I: ROOTS AND FOUNDATIONS — ACT III: CAPTURE");
+      expect(formatHeader(3)).toBe("PART I: ROOTS AND FOUNDATIONS — ACT IV: THE CUT");
+      expect(formatHeader(4)).toBe("PART I: ROOTS AND FOUNDATIONS — ACT V: PREMIERE");
 
       // Test 2: DirectorsNotepad container CSS classes flex 100% parent height
       const containerClass = "w-full lg:w-1/2 bg-black/40 border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl h-full flex flex-col min-h-[500px]";
