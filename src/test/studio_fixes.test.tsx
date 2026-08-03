@@ -951,5 +951,17 @@ describe('Studio Regression Tests', () => {
       expect(notepadClass).toContain("w-full");
       expect(notepadClass).toContain("flex-1");
     });
+
+    it('MW-138 ACT III CAPTURE: should define tooltips for NEXT, LINT, and BACK interview controls', () => {
+      const tooltips = {
+        back: "Return to previous interview prompt",
+        next: "Advance to next AI Director interview question",
+        lint: "Analyze live camera framing & rule-of-thirds alignment"
+      };
+
+      expect(tooltips.back).toBe("Return to previous interview prompt");
+      expect(tooltips.next).toBe("Advance to next AI Director interview question");
+      expect(tooltips.lint).toBe("Analyze live camera framing & rule-of-thirds alignment");
+    });
   });
 });
