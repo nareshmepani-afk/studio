@@ -22,7 +22,7 @@ import {
   Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
   Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
   Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater, Trash2,
-  ExternalLink, ChevronDown, ChevronUp
+  ExternalLink, ChevronDown, ChevronUp, Download
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -39,7 +39,7 @@ import DirectorsNotepad from './DirectorsNotepad';
 import { generateDirectorsNotepad } from '@/actions/aiWeaver';
 import { ProductionControlBar } from './ProductionControlBar';
 import CinemaStageSwitch from './CinemaStageSwitch';
-import { Memory } from '@/types';
+import { Memory, FusionManifest, PremiereMode } from '@/types';
 import CinemaPoster from '../memory/CinemaPoster';
 import { CinemaMonitor } from './CinemaMonitor';
 import { useStudioState } from '@/hooks/studio/useStudioState';
@@ -223,6 +223,7 @@ export default function SoloStage({
   const [opticsContrast, setOpticsContrast] = useState(110);
   const [opticsFilter, setOpticsFilter] = useState<'default' | 'warm' | 'cool' | 'noir'>('default');
   const [isTheaterExpanded, setIsTheaterExpanded] = useState(false);
+  const [premiereMode, setPremiereMode] = useState<PremiereMode>('fusion');
 
 
   // Minimise / Restore panel states (pre-flight checks calibration stage)
@@ -4043,6 +4044,25 @@ export default function SoloStage({
     </div>
   );
 
+  const handleDownloadPackage = () => {
+    const pkg = {
+      title: data?.title || 'Master Narrative Package',
+      prose: data?.prose || data?.description || selectedTake || '',
+      fusionManifest: data?.fusionManifest || null,
+      takes: data?.aiTakes || [],
+      opticsFilter,
+      premiereMode,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(pkg, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(data?.title || 'narrative_package').toLowerCase().replace(/\s+/g, '_')}_master.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const renderShowcase = () => (
     <div className="max-w-6xl mx-auto w-full pt-10 pb-32 space-y-16">
        <motion.div 
@@ -4060,6 +4080,34 @@ export default function SoloStage({
           <p className="text-white/40 text-xl font-serif italic max-w-2xl mx-auto leading-relaxed">
             The weave is complete. Your story has been transformed from a fleeting thought into a cinematic treasure.
           </p>
+
+          {/* DUAL-REEL MODE TOGGLE BAR */}
+          <div className="flex items-center justify-center gap-4 pt-4">
+            <button
+              data-hotspot-id="HS_ACT5_MODE_FUSION_BTN"
+              onClick={() => setPremiereMode('fusion')}
+              className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border flex items-center gap-2 ${
+                premiereMode === 'fusion'
+                  ? 'bg-emerald-500 text-black border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.3)]'
+                  : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              Fusion Masterpiece
+            </button>
+            <button
+              data-hotspot-id="HS_ACT5_MODE_RAW_BTN"
+              onClick={() => setPremiereMode('raw')}
+              className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border flex items-center gap-2 ${
+                premiereMode === 'raw'
+                  ? 'bg-sky-500 text-black border-sky-400 shadow-[0_0_25px_rgba(14,165,233,0.3)]'
+                  : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'
+              }`}
+            >
+              <FilmIcon className="w-4 h-4" />
+              Authentic Performance
+            </button>
+          </div>
        </motion.div>
        
        <div className="flex flex-col lg:flex-row gap-20 items-center justify-center">
@@ -4073,6 +4121,17 @@ export default function SoloStage({
              <div className="absolute -inset-20 bg-sky-500/10 blur-[120px] rounded-full opacity-50 group-hover:opacity-80 transition-opacity duration-1000" />
              <div className="relative z-10">
                 <CinemaPoster memory={data} />
+             </div>
+
+             {/* Mode Indicator Overlay Badge */}
+             <div className="mt-4 text-center">
+               <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-widest border ${
+                 premiereMode === 'fusion'
+                   ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                   : 'bg-sky-500/10 text-sky-400 border-sky-500/30'
+               }`}>
+                 {premiereMode === 'fusion' ? '✨ Fusion Masterpiece // Cinematic Grade Active' : '📽️ Authentic Solo Performance // Archival Raw Take'}
+               </span>
              </div>
              
              {/* Filmic Reflections */}
@@ -4167,6 +4226,16 @@ export default function SoloStage({
                   View Premiere
                 </button>
                 
+                {/* MASTER PACKAGE DOWNLOAD BUTTON */}
+                <button 
+                  data-hotspot-id="HS_ACT5_DOWNLOAD_PACKAGE_BTN"
+                  onClick={handleDownloadPackage}
+                  className="w-full py-5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-black rounded-3xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Master Narrative Package
+                </button>
+
                 <button 
                   onClick={() => window.location.href = '/timeline'} 
                   className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black rounded-3xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3"

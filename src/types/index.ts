@@ -133,6 +133,23 @@ export interface Memory {
   activeVisionLabel?: string;
   productionTakes?: any[]; // The archived alternate drafts
   isReviewing?: boolean;
+  fusionManifest?: FusionManifest;
+}
+
+export type PremiereMode = 'fusion' | 'raw';
+
+export interface FusionManifest {
+  rawVideoUrl: string;
+  videoStory: string;
+  posterImageUrl?: string;
+  soundtrackUrl?: string;
+  opticsProfile?: 'vintage' | 'noir' | 'vibrant' | 'sepia' | 'natural' | string;
+  duckingVolume?: number;
+  credits?: {
+    narrator?: string;
+    director?: string;
+    producedAt?: string;
+  };
 }
 
 export interface TranscriptSegment {

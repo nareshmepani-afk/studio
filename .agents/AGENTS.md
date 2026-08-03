@@ -267,6 +267,8 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-08-03**: v1.1.0-beta-MW-137. Added interactive tooltips to header navigation buttons in ProductionDeckContainer.tsx (`Return to main Memory Weaver Studio dashboard`) and ProductionDeck.tsx (`Secure draft to cloud & return to saved memories`), enforcing Rule 20 UK English orthography. (Build Verify: SUCCESS)
 - **2026-08-03**: v1.1.0-beta-MW-139. Added Tooltips to Master Reel Playback Timeline in SoloStage.tsx, added Play hover icon and timestamp seek Tooltips to Emotional Beats tab in DirectorsNotepad.tsx, and added an embedded ambient soundtrack score player card with waveform animation and play/pause controls under Fusion Protocol tab. (Build Verify: SUCCESS)
 - **2026-08-03**: v1.1.0-beta-MW-140. Sanitized formatTime timestamp calculation in SoloStage.tsx and DirectorsNotepad.tsx with Math.floor and finite bounds checks, preventing raw unrounded floating-point timestamp strings (e.g. 01:21.599999999999986) on video playback controls. (Build Verify: SUCCESS)
+- **2026-08-03**: v1.1.0-beta-MW-141. Implemented Dual-Reel Premiere Mode toggle (`Fusion Masterpiece` vs `Authentic Performance`) with live indicator badges, added `Download Master Narrative Package` JSON exporter (HS_ACT5_DOWNLOAD_PACKAGE_BTN), added `PremiereMode` and `FusionManifest` interfaces to `src/types/index.ts`, and verified with automated Vitest test suite. (Build Verify: SUCCESS)
+
 
 
 
