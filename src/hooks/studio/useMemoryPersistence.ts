@@ -41,6 +41,7 @@ interface PersistenceProps {
   activeVision?: 'soul' | 'sensory' | 'cinematic' | string;
   activeVisionLabel?: string;
   productionTakes?: any[];
+  previousDraftState?: string;
 }
 
 export function useMemoryPersistence({
@@ -244,6 +245,7 @@ export function useMemoryPersistence({
           return (s.activeVisionLabel || '') !== (currentData?.activeVisionLabel || '');
         })(),
         productionTakes: JSON.stringify(s.productionTakes || []) !== JSON.stringify(currentData?.productionTakes || []),
+        previousDraftState: (s.previousDraftState || '') !== (currentData?.previousDraftState || ''),
         isReviewing: (s.isReviewing ?? false) !== (currentData?.isReviewing ?? false)
       };
 
@@ -316,6 +318,7 @@ export function useMemoryPersistence({
           activeVision: s.activeVision || currentData?.activeVision || undefined,
           activeVisionLabel: s.activeVisionLabel || currentData?.activeVisionLabel || undefined,
           productionTakes: s.productionTakes || currentData?.productionTakes || undefined,
+          previousDraftState: s.previousDraftState !== undefined ? s.previousDraftState : (currentData?.previousDraftState || undefined),
           isReviewing: s.isReviewing ?? false,
           status: 'draft' as const // status is usually managed elsewhere but we keep it safe
         };

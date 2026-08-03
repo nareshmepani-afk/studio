@@ -28,7 +28,7 @@ import { LayoutGroup } from 'framer-motion';
 
 import { useProductionCharge, SensoryType } from '@/hooks/studio/useProductionCharge';
 import { AIPolishButton } from './AIPolishButton';
-import { History, Lock, Unlock, BookOpen } from 'lucide-react';
+import { History, Lock, Unlock, BookOpen, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDebounce } from '@/hooks/useDebounce';
 import {
@@ -92,6 +92,7 @@ interface ScriptoriumProps {
   onUnlockProduction?: () => void;
   onLockProduction?: () => void;
   onNext?: () => void;
+  onRestorePreviousTake?: () => void;
 }
 
 export const Scriptorium = forwardRef<any, ScriptoriumProps>(({ 
@@ -104,7 +105,8 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
   onOpenArchive,
   onUnlockProduction,
   onLockProduction,
-  onNext
+  onNext,
+  onRestorePreviousTake
 }, ref) => {
   const { actions, detectedAnchors, activeDrawer } = useStudioState();
 
@@ -417,6 +419,27 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
         </motion.div>
 
         <div className="flex items-center gap-3">
+          {(data?.previousDraftState || (data?.productionTakes && data.productionTakes.length > 0) || onRestorePreviousTake) && (
+            <motion.button
+              data-hotspot-id="HS_ACT1_RESTORE_PREVIOUS_TAKE_BTN"
+              onClick={() => {
+                if (onRestorePreviousTake) {
+                  onRestorePreviousTake();
+                } else if (data?.previousDraftState) {
+                  const restored = data.previousDraftState;
+                  const newBlocks = [{ id: uuidv4(), text: restored, type: 'beat' as const, catalysts: [] }];
+                  setBlocks(newBlocks);
+                  onSync(newBlocks);
+                }
+              }}
+              className="relative z-10 flex items-center gap-2 px-5 py-3.5 rounded-full font-black text-[10px] uppercase tracking-[0.25em] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.15)] hover:bg-emerald-500/20 active:scale-95 transition-all duration-300 cursor-pointer"
+              title="Restore previous draft version into editor slate"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Restore Previous Take</span>
+            </motion.button>
+          )}
+
           {onOpenArchive && (
             <div className="relative flex items-center gap-2">
               <motion.button

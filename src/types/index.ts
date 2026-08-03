@@ -132,6 +132,7 @@ export interface Memory {
   activeVision?: 'soul' | 'sensory' | 'cinematic' | string;
   activeVisionLabel?: string;
   productionTakes?: any[]; // The archived alternate drafts
+  previousDraftState?: string; // 1-Prior-Version Instant Undo Fallback Slot (MW-34)
   isReviewing?: boolean;
   fusionManifest?: FusionManifest;
 }

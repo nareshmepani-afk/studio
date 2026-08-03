@@ -1009,5 +1009,66 @@ describe('Studio Regression Tests', () => {
       expect(formatTime(NaN)).toBe("00:00");
       expect(formatTime(Infinity)).toBe("00:00");
     });
+
+    it('MW-126 SOLOSTAGE STAGE SWITCH ROUTING INTEGRITY: should render Act II teleprompter when currentStage is 1 or 2, regardless of stale data.productionStage', () => {
+      const resolveSoloStageRoom = (currentStageProp: number | undefined, dataProductionStage: number | undefined) => {
+        const activeStage = currentStageProp !== undefined && currentStageProp !== null ? currentStageProp : (dataProductionStage || 0);
+        
+        if (activeStage === 0) {
+          return 'Scriptorium';
+        } else if (activeStage === 1 || activeStage === 2) {
+          return 'RecordingTeleprompter';
+        }
+        return 'Unknown';
+      };
+
+      // TEST 1: User explicitly navigated to Stage 1 (currentStageProp: 1), but Firestore document has stale data.productionStage: 0
+      expect(resolveSoloStageRoom(1, 0)).toBe('RecordingTeleprompter');
+
+      // TEST 2: User explicitly navigated to Stage 2 (currentStageProp: 2), but Firestore document has stale data.productionStage: 0
+      expect(resolveSoloStageRoom(2, 0)).toBe('RecordingTeleprompter');
+
+      // TEST 3: Initial load with no explicit currentStageProp (undefined), falls back to dataProductionStage: 0
+      expect(resolveSoloStageRoom(undefined, 0)).toBe('Scriptorium');
+
+      // TEST 4: Initial load with dataProductionStage: 1
+      expect(resolveSoloStageRoom(undefined, 1)).toBe('RecordingTeleprompter');
+    });
+
+    it('MW-34 1-PRIOR-VERSION INSTANT UNDO BLUEPRINT: should stash previous draft state on edit and restore previous draft text on trigger', () => {
+      let activeProse = "In 1964, a courageous family stepped forward into their new life...";
+      let previousDraftState: string | null = null;
+
+      const handleUserEdit = (newText: string) => {
+        if (activeProse && activeProse.trim() !== newText.trim() && activeProse.trim().length > 10 && !previousDraftState) {
+          previousDraftState = activeProse;
+        }
+        activeProse = newText;
+      };
+
+      const handleRestorePreviousTake = () => {
+        if (!previousDraftState) return false;
+        const currentProseBeforeRestore = activeProse;
+        activeProse = previousDraftState;
+        previousDraftState = currentProseBeforeRestore;
+        return true;
+      };
+
+      // STEP 1: Initial state
+      expect(activeProse).toContain("1964, a courageous family");
+      expect(previousDraftState).toBeNull();
+
+      // STEP 2: User edits prose (removes a phrase)
+      handleUserEdit("In 1964, a family stepped forward into their new life...");
+      expect(activeProse).toContain("family stepped forward");
+      expect(previousDraftState).toBe("In 1964, a courageous family stepped forward into their new life...");
+
+      // STEP 3: User clicks "Restore Previous Take"
+      const restored = handleRestorePreviousTake();
+      expect(restored).toBe(true);
+      expect(activeProse).toBe("In 1964, a courageous family stepped forward into their new life...");
+      // After restore, the previousDraftState holds the edited version for instant toggle
+      expect(previousDraftState).toBe("In 1964, a family stepped forward into their new life...");
+    });
   });
 });

@@ -300,6 +300,14 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     return val;
   });
   const [prose, setProse] = useState(data?.prose || '');
+  const [previousDraftState, setPreviousDraftState] = useState<string>(() => {
+    return (data as any)?.previousDraftState || 
+      ((data as any)?.productionTakes && (data as any).productionTakes.length > 0
+        ? (typeof (data as any).productionTakes[0] === 'string'
+            ? (data as any).productionTakes[0]
+            : (data as any).productionTakes[0]?.prose || (data as any).productionTakes[0]?.text)
+        : '');
+  });
   const [isDictating, setIsDictating] = useState(false);
   const [isPolishingDesc, setIsPolishingDesc] = useState(false);
   const [activeWhisper, setActiveWhisper] = useState<any>(null);
@@ -344,6 +352,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const [prevDescription, setPrevDescription] = useState<string | null>(null);
   const [lastFocusedField, setLastFocusedField] = useState<'title' | 'description' | 'script' | 'metadata' | 'location' | null>(null);
   const lastSyncedDescription = useRef(data?.description || '');
+  const lastSyncedProse = useRef(data?.prose || '');
   const [scriptBlocks, setScriptBlocks] = useState<ScriptBlock[]>(data?.scriptBlocks || []);
   
   // Poster State
@@ -472,6 +481,10 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
         setDescription(data.description);
         lastSyncedDescription.current = data.description;
       }
+      if (data?.prose !== undefined) {
+        setProse(data.prose);
+        lastSyncedProse.current = data.prose;
+      }
       if (data?.location !== undefined) setLocation(data.location);
       if (data?.country !== undefined) setCountry(data.country);
       if (data?.tags !== undefined) setTags(data.tags);
@@ -554,7 +567,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     if (data?.sensory && JSON.stringify(data.sensory) !== JSON.stringify(sensoryValues)) {
       setSensoryValues(data.sensory);
     }
-    if (data?.prose !== undefined && data.prose !== prose) {
+    if (data?.prose !== undefined && data.prose !== lastSyncedProse.current && lastFocusedField !== 'script' && !isVolatileState) {
+      lastSyncedProse.current = data.prose;
       setProse(data.prose);
     }
     if (data?.aiTakes && JSON.stringify(data.aiTakes) !== JSON.stringify(aiTakes)) {
@@ -2339,10 +2353,16 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                       )}
                       <Scriptorium 
                         ref={scriptoriumRef}
-                        data={data} 
+                        data={{
+                          ...data,
+                          previousDraftState: previousDraftState || (data as any)?.previousDraftState
+                        }} 
                         onSync={(blocks) => {
                           const joined = blocks.map(b => b.text).join('\n\n');
                           console.log("[MemoryForm:onSync] Syncing blocks to scriptBlocks and prose:", { blocksCount: blocks.length, joinedProseLength: joined.length, snippet: joined.substring(0, 80) + "..." });
+                          if (prose && prose.trim() !== joined.trim() && prose.trim().length > 10 && !previousDraftState) {
+                            setPreviousDraftState(prose);
+                          }
                           setScriptBlocks(blocks);
                           setProse(joined);
                           setDescription(joined); // DUAL-SYNC: Ensure description matches Scriptorium prose!
@@ -2351,6 +2371,36 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         onNext={onNext}
                         isProductionLocked={isProductionLocked}
                         onOpenArchive={() => setIsArchiveOpen(true)}
+                        onRestorePreviousTake={async () => {
+                          const textToRestore = previousDraftState || (data as any)?.previousDraftState || 
+                            ((data as any)?.productionTakes && (data as any).productionTakes.length > 0
+                              ? (typeof (data as any).productionTakes[0] === 'string'
+                                  ? (data as any).productionTakes[0]
+                                  : (data as any).productionTakes[0]?.prose || (data as any).productionTakes[0]?.text)
+                              : null);
+
+                          if (!textToRestore) {
+                            toast.error("No Previous Take Available", {
+                              description: "There is no previous draft take stashed to restore."
+                            });
+                            return;
+                          }
+
+                          const currentProseBeforeRestore = prose || description || '';
+                          setPreviousDraftState(currentProseBeforeRestore);
+
+                          setProse(textToRestore);
+                          setDescription(textToRestore);
+                          const restoredBlocks = [{ id: `restored-block-${Date.now()}`, text: textToRestore, type: 'beat' as const, catalysts: [] }];
+                          setScriptBlocks(restoredBlocks);
+
+                          await flush({ prose: textToRestore, description: textToRestore, previousDraftState: currentProseBeforeRestore });
+                          update(prev => ({ ...prev, prose: textToRestore, description: textToRestore, previousDraftState: currentProseBeforeRestore }));
+
+                          toast.success("Previous Take Restored", {
+                            description: "Script text reverted to prior draft version."
+                          });
+                        }}
                         onUnlockProduction={async () => {
                           setGlobalLocked(false);
                           await flush({ isProductionLocked: false });
