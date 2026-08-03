@@ -258,4 +258,6 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-08-02**: v1.1.0-beta-MW-133. Added descriptive tooltips and dynamic guidance subtitles for TRANSCRIPT, EMOTIONAL BEATS, DIRECTOR NOTES, and FUSION PROTOCOL tabs in DirectorsNotepad.tsx; enabled instant tab click activation during scanning to immediately render fallback analysis. (Build Verify: SUCCESS)
 - **2026-08-02**: v1.1.0-beta-MW-134. Added analyzedAt property to createFallbackNotepad object in DirectorsNotepad.tsx and marked analyzedAt as optional in src/types/index.ts, resolving Cloud Build Next.js production typechecking error. (Build Verify: SUCCESS)
 - **2026-08-02**: v1.1.0-beta-MW-135. Standardized top header bar to render clear ACT titles across all 3 Acts (`PART I: ROOTS AND FOUNDATIONS — ACT I: SCRIPTORIUM` / `ACT II: THE WEAVE` / `ACT III: CAPTURE`) in ProductionDeck.tsx; expanded DirectorsNotepad in SoloStage.tsx and DirectorsNotepad.tsx to flex 100% container height without internal scrolling cutoffs. (Build Verify: SUCCESS)
+- **2026-08-03**: v1.1.0-beta-MW-136. Mapped all 5 Acts across the studio production journey (`ACT I: SCRIPTORIUM`, `ACT II: THE WEAVE`, `ACT III: CAPTURE`, `ACT IV: THE CUT`, `ACT V: PREMIERE`) in ProductionDeck.tsx top header bar and updated unit test #34 in src/test/studio_fixes.test.tsx. (Build Verify: SUCCESS)
+
 
