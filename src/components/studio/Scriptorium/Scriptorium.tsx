@@ -28,7 +28,7 @@ import { LayoutGroup } from 'framer-motion';
 
 import { useProductionCharge, SensoryType } from '@/hooks/studio/useProductionCharge';
 import { AIPolishButton } from './AIPolishButton';
-import { History, Lock, Unlock, BookOpen, RotateCcw } from 'lucide-react';
+import { History, Lock, Unlock, BookOpen, RotateCcw, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDebounce } from '@/hooks/useDebounce';
 import {
@@ -418,7 +418,25 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
           </p>
         </motion.div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {(data?.originalHook || data?.previousDraftState || (data?.productionTakes && data.productionTakes.length > 0) || onRestorePreviousTake) && (
+            <motion.button
+              data-hotspot-id="HS_ACT1_VIEW_ORIGINAL_SPARK_BTN"
+              onClick={() => {
+                if (onOpenArchive) {
+                  onOpenArchive();
+                } else if (onRestorePreviousTake) {
+                  onRestorePreviousTake();
+                }
+              }}
+              className="relative z-10 flex items-center gap-2 px-5 py-3.5 rounded-full font-black text-[10px] uppercase tracking-[0.25em] bg-sky-500/10 text-sky-400 border border-sky-500/30 shadow-[0_0_20px_rgba(56,189,248,0.15)] hover:bg-sky-500/20 active:scale-95 transition-all duration-300 cursor-pointer"
+              title="Compare raw original spark text against enhanced monologue"
+            >
+              <Eye className="w-3.5 h-3.5 text-sky-400" />
+              <span>View Original Spark</span>
+            </motion.button>
+          )}
+
           {(data?.previousDraftState || (data?.productionTakes && data.productionTakes.length > 0) || onRestorePreviousTake) && (
             <motion.button
               data-hotspot-id="HS_ACT1_RESTORE_PREVIOUS_TAKE_BTN"

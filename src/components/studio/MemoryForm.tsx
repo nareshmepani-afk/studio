@@ -8,7 +8,7 @@ import {
   Save, Rocket, AlertCircle, Loader2, Edit3, ChevronRight, ChevronDown, Maximize2, 
   Trash2, Plus, Minus, Info, Layout, Layers, Wand2, Music, Wind, Coffee, Zap,
   FileText, ImageIcon, Video, Share2, MoreHorizontal, Square, History, UserCircle,
-  RotateCcw, Lock
+  RotateCcw, Lock, Eye
 } from 'lucide-react';
 import { Memory, SensoryPromptTemplate, ActionResponse, CatalystType, StructuredScript } from '@/types';
 import { useDictionary } from '@/hooks/use-dictionary';
@@ -383,6 +383,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   const [scriptHistory, setScriptHistory] = useState<any[]>(data?.scriptHistory || []);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isReviewingSensory, setIsReviewingSensory] = useState(false);
+  const [showOriginalSparkModal, setShowOriginalSparkModal] = useState(false);
   const { isProductionLocked: globalLocked, actions: { setIsProductionLocked: setGlobalLocked } } = useGlobalStudioState();
   
   // Local sync for persistence
@@ -1635,19 +1636,38 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                   className="top-full mt-4 left-0" 
                                 />
                               )}
-                              <h3 className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] flex items-center justify-between gap-4 w-full">
-                                <div className="flex items-center gap-4">
-                                  Story Hook <RequiredIndicator />
+                              <h3 className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] flex items-center justify-between gap-4 w-full flex-wrap">
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  <span>Story Hook <RequiredIndicator /></span>
+                                  
+                                  {/* AI PROVENANCE BADGE */}
+                                  <div className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                                    <Sparkles className="w-3 h-3 text-emerald-400" />
+                                    <span>
+                                      {(data?.activeVisionLabel || data?.activeVision || selectedVision?.label)
+                                        ? `🎬 CINEMATIC WEAVE: ${(data?.activeVisionLabel || data?.activeVision || selectedVision?.label || 'THE FLOW').toUpperCase().replace(/-/g, ' ')}`
+                                        : (prose && originalHook && prose !== originalHook)
+                                          ? '✨ ENHANCED BY MEMORY WEAVER AI'
+                                          : '✍️ AUTHENTIC USER SPARK'}
+                                    </span>
+                                  </div>
+
+                                  {/* VIEW ORIGINAL SPARK TRIGGER BUTTON */}
+                                  {(originalHook || description) && (
+                                    <button
+                                      type="button"
+                                      data-hotspot-id="HS_ACT1_VIEW_ORIGINAL_SPARK_BTN"
+                                      onClick={() => setShowOriginalSparkModal(true)}
+                                      className="px-3 py-1.5 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-400 text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(56,189,248,0.1)] transition-all cursor-pointer"
+                                      title="Compare raw original spark text against enhanced monologue"
+                                    >
+                                      <Eye className="w-3 h-3 text-sky-400" />
+                                      <span>View Original Spark</span>
+                                    </button>
+                                  )}
                                 </div>
                                 
                                 <div className="flex items-center gap-2 pointer-events-auto">
-                                  {isProductionLocked && (data?.activeVisionLabel || data?.activeVision) && (
-                                    <div className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[8px] font-black uppercase tracking-widest rounded-full flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-                                      <span className="opacity-40">🎬 ESTHETIC CUT:</span>
-                                      <span className="font-bold text-[9px]">{(data?.activeVisionLabel || data?.activeVision || '').replace(/-/g, ' ')}</span>
-                                    </div>
-                                  )}
-
                                   {isProductionLocked && (
                                     <TooltipProvider>
                                       <Tooltip delayDuration={0}>
@@ -1716,6 +1736,87 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                         >
                                           Confirm Release
                                         </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+
+                                  {/* SIDE-BY-SIDE SPARK COMPARISON MODAL */}
+                                  <AlertDialog open={showOriginalSparkModal} onOpenChange={setShowOriginalSparkModal}>
+                                    <AlertDialogContent className="bg-slate-950/95 backdrop-blur-3xl border border-sky-500/30 max-w-3xl p-8 shadow-[0_0_50px_rgba(56,189,248,0.15)] rounded-[2rem]">
+                                      <AlertDialogHeader className="space-y-3">
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-10 h-10 rounded-2xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400">
+                                            <Eye className="w-5 h-5" />
+                                          </div>
+                                          <div>
+                                            <AlertDialogTitle className="text-xl font-headline text-white italic">
+                                              Original Spark vs. Enhanced Monologue
+                                            </AlertDialogTitle>
+                                            <AlertDialogDescription className="text-white/60 text-xs tracking-wide font-sans">
+                                              Compare your authentic raw recollection against the AI-synthesised monologue.
+                                            </AlertDialogDescription>
+                                          </div>
+                                        </div>
+                                      </AlertDialogHeader>
+
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                                        {/* Original Spark (Raw Input) */}
+                                        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
+                                          <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400 flex items-center gap-1.5">
+                                              ✍️ Original Spark (Raw Input)
+                                            </span>
+                                            <span className="text-[8px] font-mono text-white/40">USER PROMPT</span>
+                                          </div>
+                                          <p className="text-xs text-white/80 leading-relaxed italic font-serif max-h-60 overflow-y-auto custom-scrollbar">
+                                            "{originalHook || description || 'No raw prompt stashed.'}"
+                                          </p>
+                                        </div>
+
+                                        {/* Enhanced Monologue (Active Weave) */}
+                                        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-5 space-y-3">
+                                          <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 flex items-center gap-1.5">
+                                              🎬 Active Monologue (Synthesised)
+                                            </span>
+                                            <span className="text-[8px] font-mono text-emerald-400/60">
+                                              {(data?.activeVisionLabel || data?.activeVision || selectedVision?.label || 'THE WEAVE').toUpperCase()}
+                                            </span>
+                                          </div>
+                                          <p className="text-xs text-white/90 leading-relaxed font-sans max-h-60 overflow-y-auto custom-scrollbar">
+                                            "{prose || description || originalHook || ''}"
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      <AlertDialogFooter className="gap-3 flex items-center justify-between flex-wrap">
+                                        <button
+                                          type="button"
+                                          data-hotspot-id="HS_ACT1_RESTORE_PREVIOUS_TAKE_BTN"
+                                          onClick={() => {
+                                            const rawText = originalHook || description || '';
+                                            if (rawText) {
+                                              setDescription(rawText);
+                                              setOriginalHook(rawText);
+                                              const newBlocks: ScriptBlock[] = [{ id: crypto.randomUUID(), text: rawText, type: 'beat', catalysts: [] }];
+                                              setScriptBlocks(newBlocks);
+                                              flush({ description: rawText, prose: rawText, originalHook: rawText });
+                                              toast.success("Original Spark Restored", { description: "Reverted active Scriptorium text to raw user prompt." });
+                                            }
+                                            setShowOriginalSparkModal(false);
+                                          }}
+                                          className="px-5 py-3 rounded-full font-black text-[10px] uppercase tracking-[0.2em] bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all flex items-center gap-2 cursor-pointer"
+                                        >
+                                          <RotateCcw className="w-3.5 h-3.5" />
+                                          <span>Restore Original Spark</span>
+                                        </button>
+
+                                        <AlertDialogCancel
+                                          onClick={() => setShowOriginalSparkModal(false)}
+                                          className="bg-white/10 hover:bg-white/20 text-white border-white/10 rounded-full text-xs font-bold uppercase tracking-wider px-6"
+                                        >
+                                          Close View
+                                        </AlertDialogCancel>
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
                                   </AlertDialog>

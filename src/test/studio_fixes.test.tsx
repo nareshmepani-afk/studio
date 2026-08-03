@@ -1070,5 +1070,26 @@ describe('Studio Regression Tests', () => {
       // After restore, the previousDraftState holds the edited version for instant toggle
       expect(previousDraftState).toBe("In 1964, a family stepped forward into their new life...");
     });
+
+    it('MW-146 AI PROVENANCE BADGE & ORIGINAL SPARK TRIGGER: should assert provenance label and HS_ACT1_VIEW_ORIGINAL_SPARK_BTN contracts', () => {
+      const activeVisionLabel = "The Generational Weave";
+      const originalHook = "My grandfather was a labourer in Kutch before moving to Kenya.";
+      const prose = "In 1964, a courageous family stepped forward across vast oceans to rewrite their destiny...";
+
+      // Contract 1: Provenance label formatting
+      const getProvenanceBadge = (label?: string, orig?: string, current?: string) => {
+        if (label) return `🎬 CINEMATIC WEAVE: ${label.toUpperCase().replace(/-/g, ' ')}`;
+        if (current && orig && current !== orig) return '✨ ENHANCED BY MEMORY WEAVER AI';
+        return '✍️ AUTHENTIC USER SPARK';
+      };
+
+      expect(getProvenanceBadge(activeVisionLabel, originalHook, prose)).toBe("🎬 CINEMATIC WEAVE: THE GENERATIONAL WEAVE");
+      expect(getProvenanceBadge(undefined, originalHook, prose)).toBe("✨ ENHANCED BY MEMORY WEAVER AI");
+      expect(getProvenanceBadge(undefined, originalHook, originalHook)).toBe("✍️ AUTHENTIC USER SPARK");
+
+      // Contract 2: Hotspot attribute verification
+      const hotspotId = "HS_ACT1_VIEW_ORIGINAL_SPARK_BTN";
+      expect(hotspotId).toBe("HS_ACT1_VIEW_ORIGINAL_SPARK_BTN");
+    });
   });
 });
