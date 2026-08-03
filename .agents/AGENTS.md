@@ -259,5 +259,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-08-02**: v1.1.0-beta-MW-134. Added analyzedAt property to createFallbackNotepad object in DirectorsNotepad.tsx and marked analyzedAt as optional in src/types/index.ts, resolving Cloud Build Next.js production typechecking error. (Build Verify: SUCCESS)
 - **2026-08-02**: v1.1.0-beta-MW-135. Standardized top header bar to render clear ACT titles across all 3 Acts (`PART I: ROOTS AND FOUNDATIONS — ACT I: SCRIPTORIUM` / `ACT II: THE WEAVE` / `ACT III: CAPTURE`) in ProductionDeck.tsx; expanded DirectorsNotepad in SoloStage.tsx and DirectorsNotepad.tsx to flex 100% container height without internal scrolling cutoffs. (Build Verify: SUCCESS)
 - **2026-08-03**: v1.1.0-beta-MW-136. Mapped all 5 Acts across the studio production journey (`ACT I: SCRIPTORIUM`, `ACT II: THE WEAVE`, `ACT III: CAPTURE`, `ACT IV: THE CUT`, `ACT V: PREMIERE`) in ProductionDeck.tsx top header bar and updated unit test #34 in src/test/studio_fixes.test.tsx. (Build Verify: SUCCESS)
+- **2026-08-03**: v1.1.0-beta-MW-137. Added interactive tooltips to header navigation buttons in ProductionDeckContainer.tsx (`Return to main Memory Weaver Studio dashboard`) and ProductionDeck.tsx (`Secure draft to cloud & return to saved memories`), enforcing Rule 20 UK English orthography. (Build Verify: SUCCESS)
+
 
 
