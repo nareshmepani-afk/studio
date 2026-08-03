@@ -61,6 +61,26 @@ This document codifies the critical lessons learned from our development Sprints
 **Verdict:** The Mosh Pit
 **Root Cause:** Confused environment boundaries by instructing the user to observe telemetry logs on the production Admin Hub (`admin.memoryweaver.studio`) while recording test videos on the staging client (`dev.memoryweaver.studio`). Testing loops must always be fully contained within a single isolated environment to prevent cross-contamination and auth loop errors.
 
-**The Protocol:** Never cross environment coordinates during manual validation runs. If the test is actor-side staging (`dev.memoryweaver.studio`), the observer-side dashboard must also be staging (`dev.memoryweaver.studio/admin`). Keep staging and production testing contexts 100% isolated.
+**The Protocol:** Never cross environment coordinates during manual validation runs. If the test is actor-side staging (`dev.memoryweaver.studio`), the observer-side dashboard must also be staging (`dev.memoryweaver.studio/admin`). ---
+
+### Lesson 7: On Logical Condition Grouping in Unified Stage Controllers
+
+**Verdict:** The Mosh Pit
+**Root Cause:** In `ProductionDeck.tsx`, line 714 grouped `isProductionLocked` with local UI state `!isReviewing` using a logical OR (`||`): `if (currentStage <= 1 && (isProductionLocked || !isReviewing))`. When a user released the draft lock in Act I (`isProductionLocked: false`), `!isReviewing` evaluated to `true` because they were in editor mode. This caused `handleNextAct` to jump directly to Stage 2 (Act III Capture Booth), completely bypassing AI Weaver synthesis and the Act II Selection Deck.
+
+**The Protocol:** Never group global state locks (`isProductionLocked`) with transient UI view flags (`!isReviewing`) in a single OR clause when governing stage advancement. Each stage must explicitly guard its transition rules: `if (currentStage === 1 || (currentStage === 0 && isProductionLocked && !isReviewing))`. Always add an explicit regression test scenario targeting unlocked state transitions.
+
+---
+
+### Lesson 8: On Visual AI Provenance and Storyteller Agency
+
+**Verdict:** The Sealed Ceremony
+**Root Cause:** When moving from raw memory dictation into synthesized monologues, users experienced disorientation because there was no visual indicator explaining why text changed or how to inspect/revert back to their raw recollection.
+
+**The Protocol:** Whenever AI transforms, reframes, or synthesizes authentic user content, the UI MUST maintain 100% provenance transparency:
+1. Render a dynamic AI Provenance Badge (`🎬 CINEMATIC WEAVE: [LABEL]`, `✨ ENHANCED BY MEMORY WEAVER AI`).
+2. Provide a non-destructive side-by-side comparison popover (`[ 👁️ View Original Spark ]`) allowing performers to contrast raw input vs synthesized output.
+3. Guarantee a 1-click restoration safeguard (`[ ↩ Restore Original Spark ]`) so storytellers retain ultimate narrative agency over their memories.
+
 
 
