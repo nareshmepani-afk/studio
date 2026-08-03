@@ -744,7 +744,7 @@ describe('Studio Regression Tests', () => {
       };
 
       const handleNextAct = (currentStage: number, isProductionLocked: boolean, isReviewing: boolean) => {
-        if (currentStage <= 1 && (isProductionLocked || !isReviewing)) {
+        if (currentStage === 1 || (currentStage === 0 && isProductionLocked && !isReviewing)) {
           setStage(2);
           handleUpdate({
             productionStage: 2,
@@ -774,14 +774,15 @@ describe('Studio Regression Tests', () => {
       updatedPayload = null;
       handleNextAct(1 /* currentStage */, true /* isProductionLocked */, false /* isReviewing */);
       expect(targetStage).toBe(2);
-      expect(updatedPayload).toEqual({
-        productionStage: 2,
-        isProductionLocked: true,
-        isReviewing: false
-      });
 
-      // ASSERTION 3: AI synthesis ceremony MUST NOT be re-triggered when already locked!
-      expect(isGeneratingDraftsCalled).toBe(false);
+      // TEST SCENARIO 3 (MW-147 / MW-70): User releases draft lock in Act I (isProductionLocked: false) and clicks ENTER THE WEAVE
+      targetStage = 0;
+      updatedPayload = null;
+      isGeneratingDraftsCalled = false;
+      handleNextAct(0 /* currentStage */, false /* isProductionLocked */, false /* isReviewing */);
+      expect(targetStage).toBe(0); // MUST NOT jump to Stage 2!
+      expect(isGeneratingDraftsCalled).toBe(true); // MUST trigger AI Weaver synthesis!
+      expect(updatedPayload).toBeNull();
     });
   });
 

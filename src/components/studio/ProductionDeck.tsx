@@ -710,8 +710,8 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
         const isAct1 = currentStage === 0;
 
-        // 1. If the production blueprint is sealed (isProductionLocked: true) OR if currentStage <= 1 when ENTER RECORDING STUDIO is clicked:
-        if (currentStage <= 1 && (isProductionLocked || !isReviewing)) {
+        // 1. If the production blueprint is sealed in Act I (currentStage === 0 && isProductionLocked && !isReviewing) OR if advancing from Act II (currentStage === 1):
+        if (currentStage === 1 || (currentStage === 0 && isProductionLocked && !isReviewing)) {
             console.log("[ProductionDeck] Advancing directly to Recording Teleprompter Studio (Stage 2)...");
             setIsReviewing(false);
             setStage(2);
