@@ -197,6 +197,11 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Explicit Room Mode Unlocking**: When performing room mode switches (Solo Stage, Collaboration, Guest Director), state handlers MUST explicitly set `lobbyConfirmed: true` to unlock teleprompter control modals immediately without forcing re-prompts or modal lockouts.
 - **Cross-Component Mode Handlers**: Room mode action cards embedded inside child components (e.g. `Collaborative Tip` inside `SoloStage`) MUST receive direct `onSelectRoom` callbacks to execute seamless room switching from anywhere in the UI tree.
 
+# 24. Director's Notepad & Master Reel Timeline Synchronization Rule
+- **Timeline & Seek Synchronization**: Video playback controls in Act III / Act IV review stages MUST label the master video timeline clearly as `"Master Reel Playback Timeline"` with explicit tooltips detailing scrub functionality (`"Master video playback timeline. Drag slider to scrub through recorded video reel."`).
+- **Interactive Beat Seek Contracts**: Emotional Beats timestamp buttons inside `DirectorsNotepad` MUST pass explicit time values to `onSeek` callbacks and provide hover tooltips (`"Click timestamp to seek master video playback to [time]"`).
+- **Ambient Soundtrack Player Integration**: Fusion Protocol tabs inside `DirectorsNotepad` MUST provide an embedded ambient soundtrack player card allowing users to audition and toggle background scores with real-time visual waveform feedback and clear play/pause tooltips.
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
 - **2026-07-04**: v1.1.0-beta-MW-70. Resolved MFA loader lockout, expanded TOTP key length to 16 characters, corrected QR code URI literal colon separator, and added setup page console diagnostics. (Build Verify: SUCCESS)
@@ -261,6 +266,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-08-03**: v1.1.0-beta-MW-136. Mapped all 5 Acts across the studio production journey (`ACT I: SCRIPTORIUM`, `ACT II: THE WEAVE`, `ACT III: CAPTURE`, `ACT IV: THE CUT`, `ACT V: PREMIERE`) in ProductionDeck.tsx top header bar and updated unit test #34 in src/test/studio_fixes.test.tsx. (Build Verify: SUCCESS)
 - **2026-08-03**: v1.1.0-beta-MW-137. Added interactive tooltips to header navigation buttons in ProductionDeckContainer.tsx (`Return to main Memory Weaver Studio dashboard`) and ProductionDeck.tsx (`Secure draft to cloud & return to saved memories`), enforcing Rule 20 UK English orthography. (Build Verify: SUCCESS)
 - **2026-08-03**: v1.1.0-beta-MW-138. Added hover tooltips to NEXT (`Advance to next AI Director interview question`), LINT (`Analyze live camera framing & rule-of-thirds alignment`), and BACK (`Return to previous interview prompt`) in SoloStage.tsx under Act III Capture stage, and added Vitest Unit Test #35. (Build Verify: SUCCESS)
+- **2026-08-03**: v1.1.0-beta-MW-139. Labeled Master Reel Playback Timeline in SoloStage.tsx with scrub tooltip (`Master video playback timeline. Drag slider to scrub through recorded video reel`), enabled seeking on Emotional Beats timestamp clicks (`Click timestamp to seek master video playback to [time]`), embedded live ambient soundtrack score player card in Fusion Protocol tab in DirectorsNotepad.tsx, and added Vitest Unit Test #36. (Build Verify: SUCCESS)
 
 
 

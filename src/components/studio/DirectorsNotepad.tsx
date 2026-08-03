@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Activity, BookOpen, Clock, ChevronRight, ChevronLeft, Target, History, BrainCircuit, Sparkles as SparklesIcon } from 'lucide-react';
+import { FileText, Activity, BookOpen, Clock, ChevronRight, ChevronLeft, Target, History, BrainCircuit, Sparkles as SparklesIcon, Play, Pause, Volume2, Music, Radio } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DirectorsNotepad as NotepadType } from '@/types';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -35,6 +36,42 @@ export default function DirectorsNotepad({
   const [isOpen, setIsOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(!initialNotepad);
   const [progress, setProgress] = useState(0);
+
+  const [isPlayingSoundtrack, setIsPlayingSoundtrack] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const soundtrackUrl = mainData?.generatedSoundtrackUrl || (notepad as any)?.soundtrackUrl || mainData?.soundtrackUrl || 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=cinematic-atmosphere-score-11234.mp3';
+
+  const toggleSoundtrack = () => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio(soundtrackUrl);
+      audioRef.current.loop = true;
+      audioRef.current.volume = 0.5;
+    }
+    if (isPlayingSoundtrack) {
+      audioRef.current.pause();
+      setIsPlayingSoundtrack(false);
+    } else {
+      audioRef.current.play().then(() => {
+        setIsPlayingSoundtrack(true);
+      }).catch((err) => {
+        console.error("[DirectorsNotepad] Audio play error:", err);
+        audioRef.current = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a2ef04.mp3?filename=ambient-piano-10781.mp3');
+        audioRef.current.loop = true;
+        audioRef.current.volume = 0.5;
+        audioRef.current.play().then(() => setIsPlayingSoundtrack(true)).catch(() => {});
+      });
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   // Simulated progress loader for AI processing
   useEffect(() => {
@@ -345,17 +382,27 @@ export default function DirectorsNotepad({
                           className="absolute -left-1.5 top-0 w-3 h-3 rounded-full shadow-lg"
                           style={{ backgroundColor: beat.color || '#10b981' }}
                         />
-                        <button
-                          onClick={() => onSeek?.(beat.time)}
-                          className="flex flex-col gap-1 text-left group"
-                        >
-                          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-emerald-400 transition-colors">
-                            {formatTime(beat.time)} // {beat.label}
-                          </span>
-                          <p className="text-sm text-zinc-300 group-hover:text-white transition-colors">
-                            {beat.description}
-                          </p>
-                        </button>
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => onSeek?.(beat.time)}
+                                className="flex flex-col gap-1 text-left group cursor-pointer"
+                              >
+                                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-emerald-400 transition-colors flex items-center gap-1.5">
+                                  {formatTime(beat.time)} // {beat.label}
+                                  <Play className="w-3 h-3 text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </span>
+                                <p className="text-sm text-zinc-300 group-hover:text-white transition-colors">
+                                  {beat.description}
+                                </p>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="bg-slate-900 border border-emerald-500/30 text-emerald-200 text-xs px-3 py-1.5 rounded-lg shadow-xl z-[100]">
+                              Click timestamp to seek master video playback to {formatTime(beat.time)}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     ))}
                   </motion.div>
@@ -392,6 +439,53 @@ export default function DirectorsNotepad({
                     exit={{ opacity: 0, scale: 1.05 }}
                     className="space-y-8"
                   >
+                    {/* Cinematic Soundtrack Player Card */}
+                    <div className="p-6 bg-gradient-to-r from-emerald-950/80 via-zinc-900 to-black border border-emerald-500/30 rounded-3xl flex items-center justify-between shadow-lg">
+                      <div className="flex items-center gap-4">
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button 
+                                onClick={toggleSoundtrack}
+                                className="w-12 h-12 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer"
+                              >
+                                {isPlayingSoundtrack ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="bg-slate-900 border border-emerald-500/30 text-emerald-200 text-xs px-3 py-1.5 rounded-lg shadow-xl z-[100]">
+                              {isPlayingSoundtrack ? "Pause ambient soundtrack score" : "Play ambient soundtrack score"}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Cinematic Score // Fusion Audio</span>
+                            {isPlayingSoundtrack && (
+                              <span className="flex h-2 w-2 relative">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-zinc-300 font-mono italic">
+                            {isPlayingSoundtrack ? "Playing orchestral ambient score..." : "Click play to audition the memory soundtrack score"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Animated Waveform Indicator */}
+                      <div className="flex items-end gap-1 h-6 px-3">
+                        {[40, 70, 30, 90, 50, 80, 40].map((h, i) => (
+                          <motion.div
+                            key={i}
+                            animate={{ height: isPlayingSoundtrack ? [4, h / 3, 2, h / 2.5, 4] : 4 }}
+                            transition={{ repeat: Infinity, duration: 0.8 + i * 0.1, ease: 'easeInOut' }}
+                            className="w-1 bg-emerald-400 rounded-full opacity-80"
+                          />
+                        ))}
+                      </div>
+                    </div>
+
                     <div className="p-8 bg-gradient-to-br from-emerald-500/10 via-zinc-900 to-black border border-emerald-500/20 rounded-[2.5rem] relative overflow-hidden group">
                       <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-30 transition-opacity">
                         <SparklesIcon className="w-16 h-16 text-emerald-400" />

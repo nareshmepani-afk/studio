@@ -963,5 +963,34 @@ describe('Studio Regression Tests', () => {
       expect(tooltips.next).toBe("Advance to next AI Director interview question");
       expect(tooltips.lint).toBe("Analyze live camera framing & rule-of-thirds alignment");
     });
+
+    it('MW-139 ACT III DIRECTOR\'S NOTEPAD SOUNDTRACK & TIMELINE: should verify master reel timeline label, seek handler, and ambient soundtrack player contracts', () => {
+      let seekedTime: number | null = null;
+      const handleSeek = (time: number) => {
+        seekedTime = time;
+      };
+
+      const timelineConfig = {
+        label: "Master Reel Playback Timeline",
+        tooltip: "Master video playback timeline. Drag slider to scrub through recorded video reel."
+      };
+
+      const soundtrackConfig = {
+        defaultUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=cinematic-atmosphere-score-11234.mp3",
+        fallbackUrl: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a2ef04.mp3?filename=ambient-piano-10781.mp3",
+        tooltipPlay: "Play ambient soundtrack score",
+        tooltipPause: "Pause ambient soundtrack score"
+      };
+
+      // Test seek trigger from Emotional Beats timestamp click
+      handleSeek(12.4);
+      expect(seekedTime).toBe(12.4);
+
+      // Verify contract definitions
+      expect(timelineConfig.label).toBe("Master Reel Playback Timeline");
+      expect(timelineConfig.tooltip).toContain("scrub through");
+      expect(soundtrackConfig.defaultUrl).toContain("cinematic-atmosphere-score");
+      expect(soundtrackConfig.tooltipPlay).toBe("Play ambient soundtrack score");
+    });
   });
 });

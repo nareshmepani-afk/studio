@@ -1294,6 +1294,17 @@ export default function SoloStage({
     }
   };
 
+  const handleSeekPreview = useCallback((seconds: number) => {
+    if (previewVideoRef.current) {
+      previewVideoRef.current.currentTime = seconds;
+      if (previewVideoRef.current.paused) {
+        previewVideoRef.current.play().catch(() => {});
+        setIsPlaying(true);
+      }
+      toast.info(`Seeked master reel to ${formatTime(seconds)}`);
+    }
+  }, []);
+
   const handleSaveMemory = async () => {
     if (checkGuestAndUpsell("saving your memory")) return;
     if (recordedBlob && data?.id) {
@@ -3938,12 +3949,31 @@ export default function SoloStage({
              )}
               {/* Playback Overlay */}
               <div className="absolute bottom-8 left-8 right-8 z-20 flex items-center gap-6 p-4 bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-500">
-                <button onClick={togglePreviewPlay} className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-all">
-                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-1" />}
-                </button>
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={togglePreviewPlay} className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-all cursor-pointer">
+                        {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-1" />}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
+                      {isPlaying ? "Pause recorded master reel" : "Play recorded master reel"}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
                 <div className="flex-1">
                    <div className="flex justify-between items-center mb-2 px-1">
-                      <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Master Reel Progress</span>
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest cursor-help hover:text-white/60 transition-colors">Master Reel Playback Timeline</span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
+                            Recorded video playback timeline. Drag slider to scrub through reel.
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <span className="font-mono text-[10px] text-emerald-400">{formatTime(trimRange[0])} / {formatTime(videoDuration)}</span>
                    </div>
                     <div className="relative pt-2">
@@ -3988,7 +4018,7 @@ export default function SoloStage({
              <button 
                 onClick={handleCaptureThumbnail} 
                 disabled={isCapturingThumbnail} 
-                className="px-10 py-5 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:scale-105 transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] disabled:opacity-50"
+                className="px-10 py-5 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:scale-105 transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] disabled:opacity-50 cursor-pointer"
              >
                 {isCapturingThumbnail ? 'Capturing Snapshot...' : 'Snap Production Frame'}
              </button>
@@ -4004,6 +4034,7 @@ export default function SoloStage({
               update={update} 
               onSave={handleSaveMemory}
               isSaving={uploading}
+              onSeek={handleSeekPreview}
             />
           </div>
        </div>
