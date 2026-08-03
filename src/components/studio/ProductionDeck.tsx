@@ -1001,24 +1001,33 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                         <div className="flex items-center justify-between p-4 border-b border-white/10 sticky top-0 z-50 rounded-lg backdrop-blur-md bg-black/20 mb-6">
 
                             {/* Back Navigation */}
-                            <button
-                                onClick={async () => {
-                                    toast.info("Securing Draft...", { duration: 1500 });
-                                    await handleExit();
-                                    toast.success("Draft Saved", { description: "Your progress is secure." });
-                                }}
-                                className="flex items-center gap-3 tracking-wide text-[var(--room-accent)] hover:brightness-125 transition-all p-2 pr-4 rounded-xl hover:bg-white/5 group"
-                            >
-                                <span className="text-white/80 group-hover:text-white transition-colors uppercase">&larr;</span>
-                                <span className="text-sm font-headline uppercase tracking-widest text-emerald-400 font-bold">
-                                    {currentStage === 0 ? `${groupTitle} — ACT I: SCRIPTORIUM` :
-                                     currentStage === 1 ? `${groupTitle} — ACT II: THE WEAVE` :
-                                     currentStage === 2 ? `${groupTitle} — ACT III: CAPTURE` :
-                                     currentStage === 3 ? `${groupTitle} — ACT IV: THE CUT` :
-                                     currentStage === 4 ? `${groupTitle} — ACT V: PREMIERE` :
-                                     `${groupTitle} — ACT ${currentStage + 1}`}
-                                </span>
-                            </button>
+                            <TooltipProvider delayDuration={200}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button
+                                      onClick={async () => {
+                                          toast.info("Securing Draft...", { duration: 1500 });
+                                          await handleExit();
+                                          toast.success("Draft Saved", { description: "Your progress is secure." });
+                                      }}
+                                      className="flex items-center gap-3 tracking-wide text-[var(--room-accent)] hover:brightness-125 transition-all p-2 pr-4 rounded-xl hover:bg-white/5 group"
+                                  >
+                                      <span className="text-white/80 group-hover:text-white transition-colors uppercase">&larr;</span>
+                                      <span className="text-sm font-headline uppercase tracking-widest text-emerald-400 font-bold">
+                                          {currentStage === 0 ? `${groupTitle} — ACT I: SCRIPTORIUM` :
+                                           currentStage === 1 ? `${groupTitle} — ACT II: THE WEAVE` :
+                                           currentStage === 2 ? `${groupTitle} — ACT III: CAPTURE` :
+                                           currentStage === 3 ? `${groupTitle} — ACT IV: THE CUT` :
+                                           currentStage === 4 ? `${groupTitle} — ACT V: PREMIERE` :
+                                           `${groupTitle} — ACT ${currentStage + 1}`}
+                                      </span>
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="bg-slate-900 border border-emerald-500/30 text-emerald-200 text-xs px-3 py-1.5 rounded-lg shadow-xl z-[100]">
+                                  Secure draft to cloud &amp; return to saved memories
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
 
                             {/* Room Switcher */}
                             <nav className="flex space-x-4">

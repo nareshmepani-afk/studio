@@ -14,6 +14,7 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { resolveTemplateFixtureAsync } from '@/utils/templateResolver';
 import { MobilePortalOverlay } from './overlays/MobilePortalOverlay';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ProductionDeckContainerProps {
   promptId: string;
@@ -405,13 +406,22 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <div className="flex items-center p-4 border-b border-white/10">
-        <Button 
-          onClick={handleExitTrigger} 
-          variant="ghost" 
-          className="text-white/60 hover:text-white"
-        >
-          &larr; Exit to Studio
-        </Button>
+        <TooltipProvider delayDuration={200}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                onClick={handleExitTrigger} 
+                variant="ghost" 
+                className="text-white/60 hover:text-white"
+              >
+                &larr; Exit to Studio
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="bg-slate-900 border border-white/20 text-slate-200 text-xs px-3 py-1.5 rounded-lg shadow-xl z-[100]">
+              Return to main Memory Weaver Studio dashboard
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
       <div className="flex-1 overflow-hidden">
         {containerContent}
