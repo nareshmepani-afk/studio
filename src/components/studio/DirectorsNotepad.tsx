@@ -191,8 +191,10 @@ export default function DirectorsNotepad({
   }, [userId, memoryId, mainData?.videoUrl]);
 
   const formatTime = (seconds: number) => {
-    const min = Math.floor(seconds / 60);
-    const sec = Math.floor(seconds % 60);
+    if (!seconds || isNaN(seconds) || !isFinite(seconds)) return '00:00';
+    const totalSeconds = Math.floor(seconds);
+    const min = Math.floor(totalSeconds / 60);
+    const sec = Math.floor(totalSeconds % 60);
     return `${min}:${sec.toString().padStart(2, '0')}`;
   };
 

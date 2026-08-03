@@ -992,5 +992,22 @@ describe('Studio Regression Tests', () => {
       expect(soundtrackConfig.defaultUrl).toContain("cinematic-atmosphere-score");
       expect(soundtrackConfig.tooltipPlay).toBe("Play ambient soundtrack score");
     });
+
+    it('MW-140 TIMELINE TIMESTAMP SANITIZATION: should format floating point seconds into rounded MM:SS strings', () => {
+      const formatTime = (seconds: number) => {
+        if (!seconds || isNaN(seconds) || !isFinite(seconds)) return '00:00';
+        const totalSeconds = Math.floor(seconds);
+        const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+        const s = (totalSeconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+      };
+
+      // Floating-point edge cases from real video currentTime sniffers
+      expect(formatTime(81.599999999999986)).toBe("01:21");
+      expect(formatTime(150.00000000000003)).toBe("02:30");
+      expect(formatTime(0)).toBe("00:00");
+      expect(formatTime(NaN)).toBe("00:00");
+      expect(formatTime(Infinity)).toBe("00:00");
+    });
   });
 });
