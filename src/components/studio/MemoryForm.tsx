@@ -2218,12 +2218,12 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                   </div>
                                   <div>
                                     <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white">Script Supervisor</h4>
-                                    <p className="text-[8px] text-emerald-400/60 font-mono uppercase tracking-[0.2em]">Atmospheric Enhancements // READY</p>
+                                    <p className="text-[10px] text-emerald-400 font-mono uppercase tracking-[0.2em]">Atmospheric Enhancements // READY</p>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2 px-3 py-1 bg-black/40 rounded-full border border-white/5">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                  <span className="text-[8px] font-black text-zinc-500 uppercase tracking-widest">Scene Clarity: HIGH</span>
+                                <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                  <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">Scene Clarity: HIGH</span>
                                 </div>
                               </div>
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -2241,18 +2241,18 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                     className="text-left p-4 bg-black/40 border border-white/5 rounded-2xl hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all group/sug"
                                   >
                                     <div className="flex items-center gap-2 mb-2">
-                                      <Sparkles className="w-3 h-3 text-emerald-400/40 group-hover/sug:text-emerald-400" />
-                                      <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest group-hover/sug:text-emerald-400/60">Take {idx + 1}</span>
+                                      <Sparkles className="w-3.5 h-3.5 text-emerald-400 group-hover/sug:text-emerald-300" />
+                                      <span className="text-[10px] font-black text-emerald-400/90 uppercase tracking-widest group-hover/sug:text-emerald-300">Take {idx + 1}</span>
                                     </div>
-                                    <p className="text-xs text-zinc-400 group-hover/sug:text-white transition-colors leading-relaxed italic">
+                                    <p className="text-xs text-zinc-300 group-hover/sug:text-white transition-colors leading-relaxed italic">
                                       "{suggestion}"
                                     </p>
                                   </button>
                                 ))}
                               </div>
-                              <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-                                <p className="text-[8px] text-zinc-500 font-mono italic">Click to weave these sensory anchors into your performance blueprint.</p>
-                                <button onClick={() => setAtmosphericSuggestions([])} className="text-[8px] font-black uppercase tracking-widest text-zinc-600 hover:text-rose-400 transition-colors">Dismiss All</button>
+                              <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-4">
+                                <p className="text-xs text-zinc-200 font-medium tracking-wide">Click to weave these sensory anchors into your performance blueprint.</p>
+                                <button onClick={() => setAtmosphericSuggestions([])} className="text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-rose-400 transition-colors whitespace-nowrap">Dismiss All</button>
                               </div>
                             </div>
                           </motion.div>

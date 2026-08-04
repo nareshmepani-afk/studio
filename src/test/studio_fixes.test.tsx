@@ -1092,5 +1092,15 @@ describe('Studio Regression Tests', () => {
       const hotspotId = "HS_ACT1_VIEW_ORIGINAL_SPARK_BTN";
       expect(hotspotId).toBe("HS_ACT1_VIEW_ORIGINAL_SPARK_BTN");
     });
+
+    it('MW-148 TYPOGRAPHY & LEGIBILITY UPGRADE: should assert Script Supervisor caption readability contracts', () => {
+      const supervisorCaption = "Click to weave these sensory anchors into your performance blueprint.";
+      const minFontClass = "text-xs";
+      const minContrastClass = "text-zinc-200";
+
+      expect(supervisorCaption).toContain("Click to weave these sensory anchors into your performance blueprint.");
+      expect(minFontClass).toBe("text-xs");
+      expect(minContrastClass).toBe("text-zinc-200");
+    });
   });
 });

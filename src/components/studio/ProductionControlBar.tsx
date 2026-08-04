@@ -323,64 +323,81 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                    <SynapseTether 
                      key={lastDetectedAnchor.timestamp} 
                      type={lastDetectedAnchor.type} 
-                     xOffset={(lastDetectedAnchor as any).xOffset}
-                   />
-                 )}
-               </AnimatePresence>
-             </div>
-             <TooltipProvider>
-               <Tooltip>
-                 <TooltipTrigger asChild>
-                   <div className="flex items-center gap-3 cursor-help">
+          <div className="flex-1 flex items-center justify-center gap-8 border-l border-r border-white/10 mx-6 px-6">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-3 cursor-pointer group">
                       <div className={cn(
-                        "w-2 h-2 rounded-full",
-                        charge >= 15 ? "bg-emerald-500 shadow-[0_0_10px_#10b981]" : "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+                        "w-2.5 h-2.5 rounded-full",
+                        charge >= 15 ? "bg-emerald-400 shadow-[0_0_10px_#10b981]" : "bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
                       )} />
-                       <span className="font-mono text-[9px] tracking-[0.4em] text-white/80 uppercase">
+                       <span className="font-mono text-[11px] tracking-[0.3em] text-white font-bold uppercase">
                         Clarity: {charge}%
-                      </span>
-                   </div>
-                 </TooltipTrigger>
-                  <TooltipContent side="top" className="bg-slate-900 border-white/10 text-[10px] font-black tracking-widest uppercase py-3 px-4 mb-2 min-w-[240px]">
+                       </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="bg-slate-900 border-white/10 text-xs font-black tracking-widest uppercase py-3 px-4 mb-2 min-w-[240px]">
                     <div className="space-y-3">
                        <p className="text-emerald-400 underline decoration-emerald-500/30 underline-offset-4 flex items-center justify-between">
                          Clarity Engine v2.0
-                         <span className="text-[8px] opacity-40 font-mono no-underline">EST. DEPTH</span>
+                         <span className="text-[10px] text-zinc-400 font-mono no-underline">EST. DEPTH</span>
                        </p>
                        
-                       <div className="space-y-1.5 font-mono text-[9px]">
-                         <div className="flex justify-between items-center text-white/40">
+                       <div className="space-y-1.5 font-mono text-xs">
+                         <div className="flex justify-between items-center text-white/70">
                            <span>Narrative Density</span>
-                           <span className="text-white">{Math.min(50, Math.floor((wordCount / 30) * 50))}%</span>
+                           <span className="text-white font-bold">{Math.min(50, Math.floor((wordCount / 30) * 50))}%</span>
                          </div>
                          {detectedAnchors.length > 0 && (
-                           <div className="pt-1 border-t border-white/5">
+                           <div className="pt-1 border-t border-white/10">
                              {Array.from(new Set(detectedAnchors.map(a => a.type))).map(type => (
                                <div key={type} className="flex justify-between items-center py-0.5">
                                  <span className={cn(
-                                   type === 'aroma' ? "text-amber-400" :
-                                   type === 'soundscape' ? "text-sky-400" :
-                                   "text-emerald-400"
+                                   type === 'aroma' ? "text-amber-400 font-bold" :
+                                   type === 'soundscape' ? "text-sky-400 font-bold" :
+                                   "text-emerald-400 font-bold"
                                  )}>{type} Assets</span>
-                                 <span className="text-white">+{detectedAnchors.filter(a => a.type === type).length * 10}%</span>
+                                 <span className="text-white font-bold">+{detectedAnchors.filter(a => a.type === type).length * 10}%</span>
                                 </div>
                              ))}
                            </div>
                          )}
-                         <div className="flex justify-between items-center pt-2 border-t border-white/10 text-emerald-500">
+                         <div className="flex justify-between items-center pt-2 border-t border-white/10 text-emerald-400 font-bold">
                            <span>Total Scene Clarity</span>
                            <span>{charge}%</span>
                          </div>
                        </div>
 
-                       <p className="text-white/30 leading-relaxed font-medium text-[8px] italic border-t border-white/5 pt-2">
+                       <p className="text-zinc-300 leading-relaxed font-medium text-xs italic border-t border-white/10 pt-2">
                          Director's Tip: Detected anchors stabilize the narrative frequency.
                        </p>
                     </div>
                   </TooltipContent>
-               </Tooltip>
-             </TooltipProvider>
-             
+                </Tooltip>
+              </TooltipProvider>
+              
+              <div className="flex items-center gap-3">
+                 <span className="font-mono text-[11px] tracking-[0.3em] text-white font-bold uppercase">
+                   Script: <span className="text-emerald-400">{wordCount}</span> words
+                 </span>
+              </div>
+          </div>
+        )}
+
+        {currentStage === 1 && (
+          <div className="flex-1 flex flex-col items-center justify-center gap-1.5 px-4 border-l border-r border-white/10 mx-4">
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key={detectedAnchors.length}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="font-mono text-[11px] tracking-[0.3em] text-emerald-400 font-bold uppercase flex items-center gap-2"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                {detectedAnchors.length.toString().padStart(2, '0')} Sensory Assets Deployed
+              </motion.div>
+            </AnimatePresence>
              <div className={cn(
                 "w-full h-[2px] bg-white/5 rounded-full overflow-hidden mt-1 transition-all",
                 (draggingCatalyst || isSurging) && "h-1.5 bg-cyan-500/10 shadow-[0_0_10px_rgba(6,182,212,0.3)]"
