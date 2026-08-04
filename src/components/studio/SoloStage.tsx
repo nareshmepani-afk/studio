@@ -1731,7 +1731,7 @@ export default function SoloStage({
   // --- SUB-RENDERERS FOR 5-ACT JOURNEY ---
   
   const renderIncitingMemory = () => (
-    <div className="max-w-5xl mx-auto w-full pb-2 transition-all duration-700">
+    <div className="max-w-5xl mx-auto w-full pb-36 transition-all duration-700">
       <MemoryForm ref={formRef} 
         data={data} 
         update={shieldedUpdate} 
@@ -1754,7 +1754,7 @@ export default function SoloStage({
 
   const renderWeave = () => (
     <div className={cn(
-      "w-full pb-2 transition-all duration-1000",
+      "w-full pb-36 transition-all duration-1000",
       data?.structuredScript ? "max-w-[95vw] xl:max-w-screen-2xl mx-auto h-[calc(100vh-180px)]" : "max-w-4xl mx-auto"
     )}>
       {/* PERSISTENCE MANTLE: Keep MemoryForm mounted for flush stability */}
@@ -1796,7 +1796,7 @@ export default function SoloStage({
     </div>
   );
   const renderRecording = () => (
-    <div className={cn("w-full h-full flex flex-col items-center justify-center relative pb-24 transition-colors duration-1000", (isTableReadActive || captureModality === 'raw') ? "bg-[#030303]" : "")}>
+    <div className={cn("w-full h-full flex flex-col items-center justify-center relative pb-36 transition-colors duration-1000", (isTableReadActive || captureModality === 'raw') ? "bg-[#030303]" : "")}>
        <div 
          ref={videoContainerRef}
          className={cn(
@@ -4158,7 +4158,7 @@ export default function SoloStage({
   };
 
   const renderShowcase = () => (
-    <div className="max-w-6xl mx-auto w-full pt-10 pb-32 space-y-16">
+    <div className="max-w-6xl mx-auto w-full pt-10 pb-40 space-y-16">
        <motion.div 
          initial={{ opacity: 0, y: 30 }}
          animate={{ opacity: 1, y: 0 }}
