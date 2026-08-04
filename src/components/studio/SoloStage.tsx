@@ -1375,6 +1375,46 @@ export default function SoloStage({
     }
   };
 
+  const handleTakeSelfiePoster = async () => {
+    if (checkGuestAndUpsell("capturing cinematic poster frames")) return;
+    if (!stream) {
+      toast.error("Camera Inactive", { description: "Please ensure studio optics are active to take a selfie." });
+      return;
+    }
+    setIsCapturingThumbnail(true);
+    try {
+      const videoEl = document.createElement('video');
+      videoEl.srcObject = stream;
+      await videoEl.play();
+      const canvas = document.createElement('canvas');
+      canvas.width = videoEl.videoWidth || 1280;
+      canvas.height = videoEl.videoHeight || 720;
+      const ctx = canvas.getContext('2d');
+      if (ctx && data?.id) {
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.drawImage(videoEl, -canvas.width, 0, canvas.width, canvas.height);
+        ctx.restore();
+        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', 0.95));
+        if (blob) {
+          const url = await uploadMediaBlob(blob, data.id);
+          if (url) {
+            update({ posterImageUrl: url });
+            toast.success("Studio Portrait Anchored", { 
+              description: "Your live portrait is now set as the cinematic poster.",
+              icon: <CheckCircle2 className="w-4 h-4 text-green-500" />
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Selfie capture error:", e);
+      toast.error("Selfie Capture Failed", { description: "Unable to capture studio selfie portrait." });
+    } finally {
+      setIsCapturingThumbnail(false);
+    }
+  };
+
   const playAudio = useCallback((base64: string) => {
     // PREMIUM: Natural Pause (Realism Injection)
     setTimeout(() => {
@@ -3966,8 +4006,8 @@ export default function SoloStage({
   );
 
   const renderNotepad = () => (
-    <div className="w-full max-w-[95vw] xl:max-w-screen-2xl mx-auto flex flex-col lg:flex-row gap-8 pb-24 h-[calc(100vh-140px)]">
-       <div className="w-full lg:w-1/2 flex flex-col gap-8 h-full">
+    <div className="w-full max-w-[95vw] xl:max-w-screen-2xl mx-auto flex flex-col lg:flex-row gap-8 pb-36 min-h-[calc(100vh-160px)] overflow-y-auto">
+       <div className="w-full lg:w-1/2 flex flex-col gap-8">
           <div className="aspect-video bg-black rounded-[3rem] overflow-hidden border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.6)] relative group">
              {previewUrl ? (
                 <video 
@@ -4039,21 +4079,46 @@ export default function SoloStage({
               </div>
           </div>
           
-          <div className="flex-1 bg-white/[0.02] border border-white/5 p-12 rounded-[3rem] flex flex-col justify-center items-center text-center space-y-6">
+          <div className="bg-white/[0.02] border border-white/5 p-8 md:p-10 rounded-[3rem] flex flex-col justify-center items-center text-center space-y-6">
              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                 <Camera className="w-6 h-6 text-emerald-400" />
              </div>
              <div>
                 <h3 className="text-xl font-headline text-white italic mb-2">Cinematic Visualization</h3>
-                <p className="text-xs text-white/30 max-w-xs uppercase tracking-widest font-bold leading-relaxed">Capture a frame from your reel to anchor the theatrical showcase poster.</p>
+                <p className="text-xs text-white/40 max-w-sm uppercase tracking-widest font-bold leading-relaxed">Capture a video frame or take a studio selfie to anchor the theatrical showcase poster.</p>
              </div>
-             <button 
-                onClick={handleCaptureThumbnail} 
-                disabled={isCapturingThumbnail} 
-                className="px-10 py-5 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:scale-105 transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)] disabled:opacity-50 cursor-pointer"
-             >
-                {isCapturingThumbnail ? 'Capturing Snapshot...' : 'Snap Production Frame'}
-             </button>
+
+             {/* Live Anchored Poster Frame Preview */}
+             {data?.posterImageUrl && (
+               <div className="w-full max-w-sm aspect-video rounded-2xl overflow-hidden border border-emerald-500/40 shadow-xl relative group">
+                 <img src={data.posterImageUrl} alt="Poster Anchor Frame" className="w-full h-full object-cover" />
+                 <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md border border-emerald-500/50 px-2.5 py-1 rounded-lg text-[9px] font-mono font-bold text-emerald-400 flex items-center gap-1.5 shadow-md">
+                   <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                   <span>SHOWCASE POSTER ANCHORED</span>
+                 </div>
+               </div>
+             )}
+
+             {/* Dual Capture Action Buttons */}
+             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+               <button 
+                  onClick={handleCaptureThumbnail} 
+                  disabled={isCapturingThumbnail} 
+                  className="px-6 py-3.5 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:scale-105 transition-all shadow-[0_15px_30px_rgba(255,255,255,0.1)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+               >
+                  <Camera className="w-3.5 h-3.5 text-black" />
+                  <span>{isCapturingThumbnail ? 'Capturing Snapshot...' : 'Snap Production Frame'}</span>
+               </button>
+
+               <button 
+                  onClick={handleTakeSelfiePoster} 
+                  disabled={isCapturingThumbnail} 
+                  className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:scale-105 transition-all shadow-[0_15px_30px_rgba(16,185,129,0.25)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+               >
+                  <Sparkles className="w-3.5 h-3.5 text-slate-950" />
+                  <span>{isCapturingThumbnail ? 'Capturing Portrait...' : 'Take Studio Selfie'}</span>
+               </button>
+             </div>
           </div>
        </div>
 
