@@ -107,7 +107,7 @@ export interface PaceZoneInfo {
 }
 
 export const getPaceZone = (wpm: number, isScrolling: boolean): PaceZoneInfo => {
-  if (!isScrolling || wpm <= 0) {
+  if (wpm <= 0) {
     return {
       zone: 'paused',
       label: 'PAUSED',
@@ -180,7 +180,7 @@ export const PaceVisualiserGauge: React.FC<PaceVisualiserGaugeProps> = ({ wpm, i
       title="Dynamic Spoken Words-Per-Minute (WPM) Cadence Visualiser (Ideal Target: 120-140 WPM)"
     >
       <div className={cn("w-2 h-2 rounded-full animate-pulse", paceInfo.indicatorClass, paceInfo.glowClass)} />
-      <span className="text-white font-black">{isScrolling ? `${wpm} WPM` : '0 WPM'}</span>
+      <span className="text-white font-black">{wpm > 0 ? `${wpm} WPM` : '0 WPM'}</span>
       <span className="text-[8px] font-black uppercase tracking-widest opacity-80 border-l border-white/10 pl-2">
         {paceInfo.label}
       </span>
@@ -334,25 +334,56 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
   // MW-35 Pace Visualiser Hook (EMA \alpha = 0.25)
   const [currentWpm, setCurrentWpm] = useState(0);
+  const lastSentenceTimeRef = useRef<number>(Date.now());
+  const lastSentenceIndexRef = useRef<number>(0);
+
+  // Measure real-time spoken pace as activeSentenceIndex advances (via NEXT CUE, speech, or keys)
+  useEffect(() => {
+    if (activeSentenceIndex !== lastSentenceIndexRef.current) {
+      const now = Date.now();
+      const elapsedSeconds = (now - lastSentenceTimeRef.current) / 1000;
+      
+      const estimatedWords = 16; 
+      
+      if (elapsedSeconds > 0.4 && elapsedSeconds < 25) {
+        const calculatedWpm = Math.round((estimatedWords / elapsedSeconds) * 60);
+        const clampedWpm = Math.min(240, Math.max(70, calculatedWpm));
+        setCurrentWpm((prev) => {
+          if (prev === 0) return clampedWpm;
+          return Math.round(0.25 * clampedWpm + 0.75 * prev);
+        });
+      }
+      
+      lastSentenceTimeRef.current = now;
+      lastSentenceIndexRef.current = activeSentenceIndex;
+    }
+  }, [activeSentenceIndex]);
 
   useEffect(() => {
-    if (!isScrolling) {
+    if (!isScrolling && !isRecording && activeSentenceIndex === 0) {
       setCurrentWpm(0);
       return;
     }
 
+    // Baseline pacing when recording performance is live
+    if (isRecording && currentWpm === 0) {
+      setCurrentWpm(135);
+    }
+
     const interval = setInterval(() => {
-      // Calculate target WPM from active scroll speed (speed 1..10 maps to 70..200 WPM)
-      const targetWpm = Math.round(45 + scrollSpeedRef.current * 17);
-      setCurrentWpm((prev) => {
-        if (prev === 0) return targetWpm;
-        // EMA Formula: WPM_smoothed = (0.25 * targetWpm) + (0.75 * previousWpm)
-        return Math.round(0.25 * targetWpm + 0.75 * prev);
-      });
+      if (isScrolling) {
+        // Calculate target WPM from active scroll speed (speed 1..10 maps to 70..200 WPM)
+        const targetWpm = Math.round(45 + scrollSpeedRef.current * 17);
+        setCurrentWpm((prev) => {
+          if (prev === 0) return targetWpm;
+          // EMA Formula: WPM_smoothed = (0.25 * targetWpm) + (0.75 * previousWpm)
+          return Math.round(0.25 * targetWpm + 0.75 * prev);
+        });
+      }
     }, 250);
 
     return () => clearInterval(interval);
-  }, [isScrolling]);
+  }, [isScrolling, isRecording, activeSentenceIndex, currentWpm]);
 
   useEffect(() => {
     if (!sessionId || typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') return;
