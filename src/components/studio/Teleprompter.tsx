@@ -259,6 +259,31 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
 
   const isLayoutLocked = modalityMode === 'interview' || isScrolling;
 
+  // Option A: "ARM & ENGAGE" Master Ignition State & 3s Countdown Sequence
+  const [isArmed, setIsArmed] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+
+  const handleActivateTeleprompter = useCallback(() => {
+    setCountdown(3);
+  }, []);
+
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown((prev) => (prev !== null ? prev - 1 : null));
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setCountdown(null);
+      setIsArmed(true);
+      setScrolling(true);
+      if (!isRecording) {
+        toggleRecording();
+      }
+    }
+  }, [countdown, isRecording, setScrolling, toggleRecording]);
+
   const [isRehearsingAudio, setIsRehearsingAudio] = useState(false);
   const isInternalScroll = useRef(false);
 
@@ -304,6 +329,37 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       window.removeEventListener('resize', recacheCoordinates);
     };
   }, [selectedTake, showBreathingMarks, fontSize]);
+
+  // Smooth Eye-Level Line Gliding on activeSentenceIndex change
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const activeSpan = containerRef.current.querySelector(`span[data-sentence-index="${activeSentenceIndex}"]`) as HTMLElement;
+    if (activeSpan) {
+      const targetTop = activeSpan.offsetTop - containerRef.current.clientHeight / 3;
+      containerRef.current.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior: 'smooth'
+      });
+    }
+  }, [activeSentenceIndex]);
+
+  // Keyboard navigation shortcuts: Spacebar, ArrowRight, ArrowDown step cues smoothly
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase())) return;
+      
+      if (e.code === 'Space' || e.code === 'ArrowRight' || e.code === 'ArrowDown') {
+        e.preventDefault();
+        setActiveSentenceIndex((prev) => prev + 1);
+      } else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') {
+        e.preventDefault();
+        setActiveSentenceIndex((prev) => Math.max(0, prev - 1));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Punctuation braking refs (MW-61)
   const brakeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1217,6 +1273,17 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       {!isMini && !isTableReadActive && (
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 pb-4 mb-4 shrink-0">
           <div className="flex items-center gap-2">
+            {!isArmed && (
+              <button 
+                data-hotspot-id="HS_ACT3_TELEPROMPTER_ACTIVATE_BTN"
+                onClick={handleActivateTeleprompter}
+                className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-all flex items-center gap-2 cursor-pointer active:scale-95 animate-pulse"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Activate Teleprompter</span>
+              </button>
+            )}
+
             {modalityMode !== 'interview' && (
               <button 
                 data-hotspot-id="HS_PROMPTER_SCROLL_BTN"
@@ -1450,7 +1517,20 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
       )}
 
       {/* Main Content Area split into columns when stream is active */}
-      <div className="flex-grow flex min-h-0 w-full gap-6 overflow-hidden">
+      <div className="flex-grow flex min-h-0 w-full gap-6 overflow-hidden relative">
+        {/* 3-Second Countdown Sequence Overlay */}
+        {countdown !== null && (
+          <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-xl z-50 flex flex-col items-center justify-center gap-4 text-center animate-fade-in pointer-events-auto rounded-3xl border border-emerald-500/20 shadow-2xl">
+            <div className="w-24 h-24 rounded-full border-4 border-emerald-500/40 flex items-center justify-center bg-emerald-500/10 shadow-[0_0_50px_rgba(16,185,129,0.4)] animate-bounce">
+              <span className="text-5xl font-black text-emerald-400 font-mono">{countdown}</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-black uppercase tracking-widest text-white">Framing & Performance Standby</p>
+              <p className="text-xs text-zinc-400">Position yourself in front of the lens. Arming recording in {countdown}s...</p>
+            </div>
+          </div>
+        )}
+
         {/* Left Column: Script Viewport */}
         <div 
           ref={containerRef}

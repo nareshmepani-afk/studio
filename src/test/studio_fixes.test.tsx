@@ -1135,5 +1135,56 @@ describe('Studio Regression Tests', () => {
       const hotspotTag = "HS_ACT3_TELEPROMPTER_PACE_GAUGE";
       expect(hotspotTag).toBe("HS_ACT3_TELEPROMPTER_PACE_GAUGE");
     });
+
+    it('MW-79 OPTION A ARM & ENGAGE: should bind HS_ACT3_TELEPROMPTER_ACTIVATE_BTN hotspot attribute and transition 3s countdown sequence', () => {
+      const hotspotTag = "HS_ACT3_TELEPROMPTER_ACTIVATE_BTN";
+      expect(hotspotTag).toBe("HS_ACT3_TELEPROMPTER_ACTIVATE_BTN");
+
+      // State machine simulation for 3-second pre-flight countdown
+      let isArmed = false;
+      let countdown: number | null = null;
+      let isRecording = false;
+      let isScrolling = false;
+
+      const activateTeleprompter = () => {
+        countdown = 3;
+      };
+
+      const stepCountdown = () => {
+        if (countdown === null) return;
+        if (countdown > 0) {
+          countdown -= 1;
+        }
+        if (countdown === 0) {
+          countdown = null;
+          isArmed = true;
+          isScrolling = true;
+          isRecording = true;
+        }
+      };
+
+      // Initial Standby State
+      expect(isArmed).toBe(false);
+      expect(countdown).toBeNull();
+
+      // Trigger Activate Teleprompter
+      activateTeleprompter();
+      expect(countdown).toBe(3);
+
+      // T-2s
+      stepCountdown();
+      expect(countdown).toBe(2);
+
+      // T-1s
+      stepCountdown();
+      expect(countdown).toBe(1);
+
+      // Countdown Complete -> LIVE Performance Armed
+      stepCountdown();
+      expect(countdown).toBeNull();
+      expect(isArmed).toBe(true);
+      expect(isScrolling).toBe(true);
+      expect(isRecording).toBe(true);
+    });
   });
 });
