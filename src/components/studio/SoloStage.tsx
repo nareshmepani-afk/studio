@@ -2904,30 +2904,65 @@ export default function SoloStage({
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <button 
-                  data-hotspot-id="HS_PROMPTER_THEATER_BTN"
-                  onClick={() => setIsTheaterExpanded(prev => !prev)}
-                  className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-[0_0_12px_rgba(16,185,129,0.2)] active:scale-95"
-                  title="Toggle Theater Mode (Full Screen Takeover)"
-                >
-                  <ExternalLink className="w-3 h-3 text-emerald-400" />
-                  <span className="text-[9px] font-black uppercase tracking-wider">{isTheaterExpanded ? 'Exit Theater' : 'Theater View'}</span>
-                </button>
-                <button 
-                  data-hotspot-id="HS_PROMPTER_SIZE_BTN"
-                  onClick={() => setPrompterSize(prev => prev === 'mini' ? 'sm' : prev === 'sm' ? 'md' : prev === 'md' ? 'lg' : 'sm')}
-                  className="p-1 rounded bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center w-6 h-6 shrink-0"
-                  title="Toggle Teleprompter Size (Sm -> Md -> Lg)"
-                >
-                  <Maximize2 className="w-3 h-3" />
-                </button>
-                <button
-                  onClick={() => setIsBriefingOpen(true)}
-                  className="p-1 rounded bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center w-6 h-6 shrink-0"
-                  title="Open Stage Briefing & Tour"
-                >
-                  <Theater className="w-3.5 h-3.5" />
-                </button>
+                <TooltipProvider delayDuration={200}>
+                  {/* Theater View Tooltip */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button 
+                        data-hotspot-id="HS_PROMPTER_THEATER_BTN"
+                        onClick={() => setIsTheaterExpanded(prev => !prev)}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-[0_0_12px_rgba(16,185,129,0.2)] active:scale-95"
+                      >
+                        <ExternalLink className="w-3 h-3 text-emerald-400" />
+                        <span className="text-[9px] font-black uppercase tracking-wider">{isTheaterExpanded ? 'Exit Theater' : 'Theater View'}</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="bg-neutral-950 border-white/10 max-w-[240px] p-3 text-xs leading-relaxed text-zinc-300 shadow-2xl z-[10002]">
+                      <div className="space-y-1">
+                        <p className="font-bold text-[9px] uppercase tracking-widest text-emerald-400">Theater View</p>
+                        <p className="text-[10px] text-zinc-400 leading-normal">Expand teleprompter to full-screen view for maximum visual focus.</p>
+                        <p className="text-[9px] text-zinc-500 font-mono pt-1 border-t border-white/5"><strong className="text-zinc-300">Shortcut:</strong> Press T or Esc</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {/* Prompter Size Tooltip */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button 
+                        data-hotspot-id="HS_PROMPTER_SIZE_BTN"
+                        onClick={() => setPrompterSize(prev => prev === 'mini' ? 'sm' : prev === 'sm' ? 'md' : prev === 'md' ? 'lg' : 'sm')}
+                        className="p-1 rounded bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center w-6 h-6 shrink-0"
+                      >
+                        <Maximize2 className="w-3 h-3" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="bg-neutral-950 border-white/10 max-w-[220px] p-3 text-xs leading-relaxed text-zinc-300 shadow-2xl z-[10002]">
+                      <div className="space-y-1">
+                        <p className="font-bold text-[9px] uppercase tracking-widest text-cyan-400">Prompter Scale</p>
+                        <p className="text-[10px] text-zinc-400 leading-normal">Cycle prompter card dimensions (Small → Medium → Large → Mini).</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {/* Stage Briefing Tooltip */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setIsBriefingOpen(true)}
+                        className="p-1 rounded bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center w-6 h-6 shrink-0"
+                      >
+                        <Theater className="w-3.5 h-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="bg-neutral-950 border-white/10 max-w-[220px] p-3 text-xs leading-relaxed text-zinc-300 shadow-2xl z-[10002]">
+                      <div className="space-y-1">
+                        <p className="font-bold text-[9px] uppercase tracking-widest text-amber-400">Stage Briefing</p>
+                        <p className="text-[10px] text-zinc-400 leading-normal">Open stage guide and performance checklist.</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
 
