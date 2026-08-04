@@ -2779,7 +2779,16 @@ export default function SoloStage({
              dragConstraints={videoContainerRef}
              dragElastic={0.05}
              dragMomentum={false}
-             animate={isAlchemySaving || reviewTake || captureModality === 'raw' ? {
+             animate={isTheaterExpanded ? {
+               opacity: 1,
+               scale: 1,
+               left: 0,
+               top: 0,
+               x: 0,
+               y: 0,
+               width: "100%",
+               height: "100%"
+             } : isAlchemySaving || reviewTake || captureModality === 'raw' ? {
                opacity: 0,
                scale: 0.95,
                x: 800,

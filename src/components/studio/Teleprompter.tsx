@@ -1288,8 +1288,8 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
             )}
           </div>
 
-          {/* Settings in header only if selfie stream is not active to keep it clean */}
-          {(!stream || isMini) && (
+          {/* Settings in header only if selfie stream is not active or in Theater mode */}
+          {(!stream || isMini || isTheaterExpanded) && (
             <div className="flex items-center gap-2">
               <TooltipProvider delayDuration={300}>
                 <Tooltip>
