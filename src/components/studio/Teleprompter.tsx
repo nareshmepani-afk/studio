@@ -355,7 +355,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   }, [isScrolling]);
 
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') return;
     const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
     channel.postMessage({
       type: 'paceSync',
