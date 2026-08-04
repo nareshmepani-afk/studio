@@ -1521,7 +1521,93 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
               </div>
             )}
 
-            {/* Glowing Table Read Option (Interactive mode trigger) */}
+            {/* MW-35 Teleprompter Pace Visualiser Gauge in Sidebar */}
+            <div className="flex flex-col items-center shrink-0 w-full">
+              <PaceVisualiserGauge wpm={currentWpm} isScrolling={isScrolling} className="w-full flex-col py-1.5 px-2 text-center items-center justify-center gap-1" />
+            </div>
+
+            {/* 1. Optimised Font Size controls inside column */}
+            {!isTableReadActive && (
+              <div className="flex flex-col gap-1.5 bg-white/5 border border-white/10 rounded-2xl p-2 items-center shrink-0">
+                <span className="text-[8px] font-black uppercase tracking-widest text-white/30 text-center w-full block">Optimised Layout</span>
+                <div className="flex items-center justify-between w-full mt-1.5">
+                  <button onClick={handleDecreaseFontSize} className="w-6.5 h-6.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-black text-xs cursor-pointer flex items-center justify-center">-</button>
+                  <span className="text-[10px] font-mono font-bold text-white/90 w-8 text-center">{fontSize}px</span>
+                  <button onClick={handleIncreaseFontSize} className="w-6.5 h-6.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-black text-xs cursor-pointer flex items-center justify-center">+</button>
+                </div>
+              </div>
+            )}
+
+            {/* 2. Mirror Option */}
+            {!isTableReadActive && (
+              <div className="flex flex-col shrink-0">
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={toggleMirror}
+                        title="Mirror Mode"
+                        className={cn(
+                          "w-full py-2 rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5",
+                          isMirrored ? "bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:text-white"
+                        )}
+                      >
+                        <FlipHorizontal className="w-3.5 h-3.5" />
+                        <span className="text-[9px] font-black uppercase tracking-widest">Mirror</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="bg-neutral-950 border-white/5 max-w-[200px] p-3 text-xs leading-relaxed text-zinc-300">
+                      <div className="space-y-1.5">
+                        <p className="font-bold text-[9px] uppercase tracking-widest text-amber-400">Mirror Mode</p>
+                        <p className="text-[10px] text-zinc-400 leading-normal">Flips text horizontally for glass hoods reflection.</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+
+            {/* 3. Layout Mode (Overlay vs Center) Option */}
+            {!isTableReadActive && onPrompterLayoutToggle && (
+              <div className="flex flex-col shrink-0">
+                <TooltipProvider delayDuration={300}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={onPrompterLayoutToggle}
+                        disabled={isLayoutLocked}
+                        title="Toggle Prompter Layout Mode"
+                        className={cn(
+                          "w-full py-2 rounded-xl border transition-all flex items-center justify-center gap-1.5",
+                          isLayoutLocked
+                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400/50 cursor-not-allowed opacity-75"
+                            : prompterLayout === 'center'
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                            : "bg-white/5 border-white/10 text-white/60 hover:text-white cursor-pointer"
+                        )}
+                      >
+                        <Layout className="w-3.5 h-3.5" />
+                        <span className="text-[9px] font-black uppercase tracking-widest">
+                          {prompterLayout === 'center' ? 'Center' : 'Overlay'}
+                        </span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="bg-neutral-950 border-white/5 max-w-[200px] p-3 text-xs leading-relaxed text-zinc-300">
+                      <div className="space-y-1.5">
+                        <p className="font-bold text-[9px] uppercase tracking-widest text-emerald-400">Layout Alignment</p>
+                        {isLayoutLocked ? (
+                          <p className="text-[10px] text-zinc-400 leading-normal">Fixed to <strong>Center</strong> mode during active performance to guarantee eye-contact alignment.</p>
+                        ) : (
+                          <p className="text-[10px] text-zinc-400 leading-normal">Switch between <strong>Center</strong> (camera alignment) and <strong>Overlay</strong> (movable card) layouts.</p>
+                        )}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+
+            {/* 4. Glowing Table Read Option */}
             {onTableReadToggle && (
               <div className="flex flex-col shrink-0">
                 <TooltipProvider delayDuration={300}>
@@ -1585,36 +1671,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
               </div>
             )}
 
-            {/* Mirror Option (Hide during active Table Read) */}
-            {!isTableReadActive && (
-              <div className="flex flex-col shrink-0">
-                <TooltipProvider delayDuration={300}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={toggleMirror}
-                        title="Mirror Mode"
-                        className={cn(
-                          "w-full py-2 rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-1.5",
-                          isMirrored ? "bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:text-white"
-                        )}
-                      >
-                        <FlipHorizontal className="w-3.5 h-3.5" />
-                        <span className="text-[9px] font-black uppercase tracking-widest">Mirror</span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="bg-neutral-950 border-white/5 max-w-[200px] p-3 text-xs leading-relaxed text-zinc-300">
-                      <div className="space-y-1.5">
-                        <p className="font-bold text-[9px] uppercase tracking-widest text-amber-400">Mirror Mode</p>
-                        <p className="text-[10px] text-zinc-400 leading-normal">Flips text horizontally for glass hoods reflection.</p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            )}
-
-            {/* Pop Out Option */}
+            {/* 5. Pop Out Option */}
             <div className="flex flex-col shrink-0">
               <TooltipProvider delayDuration={300}>
                 <Tooltip>
@@ -1644,58 +1701,6 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                 </Tooltip>
               </TooltipProvider>
             </div>
-
-            {/* Layout Mode (Overlay vs Center) Option (Hide during active Table Read) */}
-            {!isTableReadActive && onPrompterLayoutToggle && (
-              <div className="flex flex-col shrink-0">
-                <TooltipProvider delayDuration={300}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={onPrompterLayoutToggle}
-                        disabled={isLayoutLocked}
-                        title="Toggle Prompter Layout Mode"
-                        className={cn(
-                          "w-full py-2 rounded-xl border transition-all flex items-center justify-center gap-1.5",
-                          isLayoutLocked
-                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400/50 cursor-not-allowed opacity-75"
-                            : prompterLayout === 'center'
-                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.15)]"
-                            : "bg-white/5 border-white/10 text-white/60 hover:text-white cursor-pointer"
-                        )}
-                      >
-                        <Layout className="w-3.5 h-3.5" />
-                        <span className="text-[9px] font-black uppercase tracking-widest">
-                          {prompterLayout === 'center' ? 'Center' : 'Overlay'}
-                        </span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="bg-neutral-950 border-white/5 max-w-[200px] p-3 text-xs leading-relaxed text-zinc-300">
-                      <div className="space-y-1.5">
-                        <p className="font-bold text-[9px] uppercase tracking-widest text-emerald-400">Layout Alignment</p>
-                        {isLayoutLocked ? (
-                          <p className="text-[10px] text-zinc-400 leading-normal">Fixed to <strong>Center</strong> mode during active performance to guarantee eye-contact alignment.</p>
-                        ) : (
-                          <p className="text-[10px] text-zinc-400 leading-normal">Switch between <strong>Center</strong> (camera alignment) and <strong>Overlay</strong> (movable card) layouts.</p>
-                        )}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            )}
-
-            {/* Optimised Font Size controls inside column (Hide during active Table Read) */}
-            {!isTableReadActive && (
-              <div className="flex flex-col gap-1.5 bg-white/5 border border-white/10 rounded-2xl p-2 items-center shrink-0">
-                <span className="text-[8px] font-black uppercase tracking-widest text-white/30 text-center w-full block">Optimised Layout</span>
-                <div className="flex items-center justify-between w-full mt-1.5">
-                  <button onClick={handleDecreaseFontSize} className="w-6.5 h-6.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-black text-xs cursor-pointer flex items-center justify-center">-</button>
-                  <span className="text-[10px] font-mono font-bold text-white/90 w-8 text-center">{fontSize}px</span>
-                  <button onClick={handleIncreaseFontSize} className="w-6.5 h-6.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white font-black text-xs cursor-pointer flex items-center justify-center">+</button>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>

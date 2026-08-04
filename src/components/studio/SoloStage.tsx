@@ -1760,7 +1760,7 @@ export default function SoloStage({
        <div 
          ref={videoContainerRef}
          className={cn(
-           "w-full max-w-[90vw] xl:max-w-7xl relative overflow-hidden transition-all duration-1000",
+           "w-full max-w-[96vw] 2xl:max-w-[1720px] relative overflow-hidden transition-all duration-1000",
            !(isTableReadActive || captureModality === 'raw') ? "aspect-video min-h-[580px] md:min-h-[660px]" : "h-[calc(100vh-240px)] min-h-[480px] max-h-[720px]",
            isRecording ? 'ring-2 ring-rose-500/50 shadow-[0_0_120px_rgba(244,63,94,0.3)] scale-[1.01]' : 'shadow-2xl',
            (isTableReadActive || captureModality === 'raw') ? "bg-[#030303] border-sky-500/20" : "bg-black border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)]",
