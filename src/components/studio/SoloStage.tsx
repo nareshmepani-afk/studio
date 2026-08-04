@@ -2775,7 +2775,7 @@ export default function SoloStage({
           {/* Cinematic Teleprompter Overlay */}
           <motion.div 
              key="cinematic-teleprompter"
-             drag={true}
+             drag={!isTheaterExpanded && !isTableReadActive && (prompterLayout as string) === 'overlay'}
              dragConstraints={videoContainerRef}
              dragElastic={0.05}
              dragMomentum={false}
