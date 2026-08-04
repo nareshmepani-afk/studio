@@ -9,6 +9,7 @@ import { HotspotOverlay } from './HotspotOverlay';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, Music } from 'lucide-react';
 import { applyTheatricalSlashes, tokenizeSentences } from '@/utils/scriptFormatter';
+import { PaceVisualiserGauge } from './Teleprompter';
 
 const highlightSensoryAnchors = (text: string): string => {
   if (!text) return '';
@@ -114,6 +115,7 @@ export const PopoutTeleprompter: React.FC = () => {
   const [selfieStream, setSelfieStream] = useState<MediaStream | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [takeStatus, setTakeStatus] = useState<'recording' | 'saving' | 'compiled' | 'complete' | 'idle'>('idle');
+  const [popoutWpm, setPopoutWpm] = useState(0);
   const selfieVideoRef = useRef<HTMLVideoElement>(null);
   const popoutPeerConnectionRef = useRef<RTCPeerConnection | null>(null);
 
@@ -499,6 +501,10 @@ export const PopoutTeleprompter: React.FC = () => {
       } else if (type === 'activeSentence') {
         if (payload.index !== undefined && payload.index !== activeSentenceIndexRef.current) {
           setActiveSentenceIndex(payload.index);
+        }
+      } else if (type === 'paceSync') {
+        if (payload.wpm !== undefined) {
+          setPopoutWpm(payload.wpm);
         }
       } else if (type === 'webrtc-offer') {
         if (payload.offer && typeof window !== 'undefined' && 'RTCPeerConnection' in window && 'RTCSessionDescription' in window) {
@@ -1017,6 +1023,8 @@ export const PopoutTeleprompter: React.FC = () => {
 
       {/* Floating telemetry HUD indicators */}
       <div className="absolute top-2 left-2 z-30 flex items-center gap-2">
+        <PaceVisualiserGauge wpm={popoutWpm} isScrolling={isScrolling} />
+
         <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700/60 rounded-lg px-2.5 py-1 text-[8px] font-mono font-bold text-zinc-200 shadow-md">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
           <span>SYNC ACTIVE</span>

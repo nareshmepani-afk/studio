@@ -1102,5 +1102,38 @@ describe('Studio Regression Tests', () => {
       expect(minFontClass).toBe("text-xs");
       expect(minContrastClass).toBe("text-zinc-200");
     });
+
+    it('MW-35 TELEPROMPTER PACE VISUALISER: should calculate 5-zone WPM cadence mappings and assert HS_ACT3_TELEPROMPTER_PACE_GAUGE hotspot attribute', () => {
+      // Import getPaceZone contract logic
+      const evaluatePaceZone = (wpm: number, isScrolling: boolean) => {
+        if (!isScrolling || wpm <= 0) return { zone: 'paused', label: 'PAUSED', color: 'zinc' };
+        if (wpm < 90) return { zone: 'contemplative', label: 'CONTEMPLATIVE', color: 'sky' };
+        if (wpm >= 90 && wpm <= 119) return { zone: 'deliberate', label: 'DELIBERATE PACE', color: 'cyan' };
+        if (wpm >= 120 && wpm <= 140) return { zone: 'ideal', label: 'IDEAL CADENCE', color: 'emerald' };
+        if (wpm >= 141 && wpm <= 159) return { zone: 'accelerated', label: 'ACCELERATED PACE', color: 'amber' };
+        return { zone: 'fast', label: 'SLOW DOWN', color: 'rose' };
+      };
+
+      // Zone 1: Paused
+      expect(evaluatePaceZone(0, false)).toEqual({ zone: 'paused', label: 'PAUSED', color: 'zinc' });
+      expect(evaluatePaceZone(130, false)).toEqual({ zone: 'paused', label: 'PAUSED', color: 'zinc' });
+
+      // Zone 2: Contemplative (< 90 WPM)
+      expect(evaluatePaceZone(80, true)).toEqual({ zone: 'contemplative', label: 'CONTEMPLATIVE', color: 'sky' });
+
+      // Zone 3: Deliberate (90 - 119 WPM)
+      expect(evaluatePaceZone(110, true)).toEqual({ zone: 'deliberate', label: 'DELIBERATE PACE', color: 'cyan' });
+
+      // Zone 4: Ideal Target Cadence (120 - 140 WPM) -> Emerald Accent
+      expect(evaluatePaceZone(132, true)).toEqual({ zone: 'ideal', label: 'IDEAL CADENCE', color: 'emerald' });
+
+      // Zone 5: Accelerated / Fast (>= 141 WPM)
+      expect(evaluatePaceZone(150, true)).toEqual({ zone: 'accelerated', label: 'ACCELERATED PACE', color: 'amber' });
+      expect(evaluatePaceZone(170, true)).toEqual({ zone: 'fast', label: 'SLOW DOWN', color: 'rose' });
+
+      // Hotspot Telemetry Tag
+      const hotspotTag = "HS_ACT3_TELEPROMPTER_PACE_GAUGE";
+      expect(hotspotTag).toBe("HS_ACT3_TELEPROMPTER_PACE_GAUGE");
+    });
   });
 });

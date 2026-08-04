@@ -98,6 +98,96 @@ const getBrakeDuration = (text: string): number => {
   return 0;
 };
 
+export interface PaceZoneInfo {
+  zone: 'paused' | 'contemplative' | 'deliberate' | 'ideal' | 'accelerated' | 'fast';
+  label: string;
+  badgeClass: string;
+  indicatorClass: string;
+  glowClass: string;
+}
+
+export const getPaceZone = (wpm: number, isScrolling: boolean): PaceZoneInfo => {
+  if (!isScrolling || wpm <= 0) {
+    return {
+      zone: 'paused',
+      label: 'PAUSED',
+      badgeClass: 'bg-zinc-900/80 text-zinc-300 border-zinc-700/50',
+      indicatorClass: 'bg-zinc-400',
+      glowClass: ''
+    };
+  }
+  if (wpm < 90) {
+    return {
+      zone: 'contemplative',
+      label: 'CONTEMPLATIVE',
+      badgeClass: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
+      indicatorClass: 'bg-sky-400',
+      glowClass: 'shadow-[0_0_12px_rgba(56,189,248,0.25)]'
+    };
+  }
+  if (wpm >= 90 && wpm <= 119) {
+    return {
+      zone: 'deliberate',
+      label: 'DELIBERATE PACE',
+      badgeClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+      indicatorClass: 'bg-cyan-400',
+      glowClass: 'shadow-[0_0_12px_rgba(34,211,238,0.25)]'
+    };
+  }
+  if (wpm >= 120 && wpm <= 140) {
+    return {
+      zone: 'ideal',
+      label: 'IDEAL CADENCE',
+      badgeClass: 'bg-emerald-500/25 text-emerald-300 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]',
+      indicatorClass: 'bg-emerald-400',
+      glowClass: 'shadow-[0_0_15px_rgba(16,185,129,0.4)]'
+    };
+  }
+  if (wpm >= 141 && wpm <= 159) {
+    return {
+      zone: 'accelerated',
+      label: 'ACCELERATED PACE',
+      badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+      indicatorClass: 'bg-amber-400',
+      glowClass: 'shadow-[0_0_12px_rgba(245,158,11,0.25)]'
+    };
+  }
+  return {
+    zone: 'fast',
+    label: 'SLOW DOWN',
+    badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse',
+    indicatorClass: 'bg-rose-400',
+    glowClass: 'shadow-[0_0_12px_rgba(244,63,94,0.3)]'
+  };
+};
+
+export interface PaceVisualiserGaugeProps {
+  wpm: number;
+  isScrolling: boolean;
+  className?: string;
+}
+
+export const PaceVisualiserGauge: React.FC<PaceVisualiserGaugeProps> = ({ wpm, isScrolling, className }) => {
+  const paceInfo = getPaceZone(wpm, isScrolling);
+  return (
+    <div
+      data-hotspot-id="HS_ACT3_TELEPROMPTER_PACE_GAUGE"
+      className={cn(
+        "flex items-center gap-2 px-3 py-1 rounded-xl border text-[10px] font-mono font-bold tracking-wider transition-all duration-300 select-none",
+        paceInfo.badgeClass,
+        className
+      )}
+      title="Dynamic Spoken Words-Per-Minute (WPM) Cadence Visualiser (Ideal Target: 120-140 WPM)"
+    >
+      <div className={cn("w-2 h-2 rounded-full animate-pulse", paceInfo.indicatorClass, paceInfo.glowClass)} />
+      <span className="text-white font-black">{isScrolling ? `${wpm} WPM` : '0 WPM'}</span>
+      <span className="text-[8px] font-black uppercase tracking-widest opacity-80 border-l border-white/10 pl-2">
+        {paceInfo.label}
+      </span>
+    </div>
+  );
+};
+
 export const Teleprompter: React.FC<TeleprompterProps> = ({
   modalityMode = 'scripted',
   activeBeatIndex: externalActiveBeatIndex,
@@ -241,6 +331,40 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
   useEffect(() => {
     activeSentenceIndexRef.current = activeSentenceIndex;
   }, [activeSentenceIndex]);
+
+  // MW-35 Pace Visualiser Hook (EMA \alpha = 0.25)
+  const [currentWpm, setCurrentWpm] = useState(0);
+
+  useEffect(() => {
+    if (!isScrolling) {
+      setCurrentWpm(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      // Calculate target WPM from active scroll speed (speed 1..10 maps to 70..200 WPM)
+      const targetWpm = Math.round(45 + scrollSpeedRef.current * 17);
+      setCurrentWpm((prev) => {
+        if (prev === 0) return targetWpm;
+        // EMA Formula: WPM_smoothed = (0.25 * targetWpm) + (0.75 * previousWpm)
+        return Math.round(0.25 * targetWpm + 0.75 * prev);
+      });
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, [isScrolling]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    const channel = new BroadcastChannel(`teleprompter_sync_${sessionId}`);
+    channel.postMessage({
+      type: 'paceSync',
+      wpm: currentWpm,
+      isScrolling,
+      sender: 'main'
+    });
+    channel.close();
+  }, [currentWpm, isScrolling, sessionId]);
 
   // Clean up timers on unmount
   useEffect(() => {
@@ -1227,6 +1351,9 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+
+              {/* MW-35 Teleprompter Pace Visualiser */}
+              <PaceVisualiserGauge wpm={currentWpm} isScrolling={isScrolling} />
 
               <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl px-2 py-1">
                 <span className="text-[8px] font-black uppercase tracking-widest text-white/30 px-1">Optimised Layout</span>
