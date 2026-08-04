@@ -1330,21 +1330,26 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
                   <TooltipTrigger asChild>
                     <button
                       onClick={onTheaterExpandToggle || handlePopout}
-                      title={onTheaterExpandToggle ? "Expand Teleprompter" : "Pop Out Teleprompter"}
-                      className="p-2 rounded-xl border border-white/10 bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer flex items-center gap-1.5"
+                      title={onTheaterExpandToggle ? (isTheaterExpanded ? "Contract Teleprompter View" : "Expand Teleprompter View") : "Pop Out Teleprompter"}
+                      className={cn(
+                        "p-2 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5",
+                        isTheaterExpanded ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "border-white/10 bg-white/5 text-white/60 hover:text-white hover:bg-white/10"
+                      )}
                     >
                       <ExternalLink className="w-4 h-4" />
-                      <span className="text-[9px] font-black uppercase tracking-widest">{onTheaterExpandToggle ? "Expand" : "Pop Out"}</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest">
+                        {onTheaterExpandToggle ? (isTheaterExpanded ? "Contract" : "Expand") : "Pop Out"}
+                      </span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="bg-neutral-950 border-white/5 max-w-[280px] p-3 text-xs leading-relaxed text-zinc-300">
                     <div className="space-y-1.5">
                       <p className="font-bold text-[9px] uppercase tracking-widest text-cyan-400">
-                        {onTheaterExpandToggle ? "Expand Teleprompter" : "Pop Out Teleprompter"}
+                        {onTheaterExpandToggle ? (isTheaterExpanded ? "Contract View" : "Expand Teleprompter") : "Pop Out Teleprompter"}
                       </p>
                       <p className="text-[11px] text-zinc-400">
                         {onTheaterExpandToggle 
-                          ? "Expand the teleprompter inline to take over the studio screen for maximum readability."
+                          ? (isTheaterExpanded ? "Return teleprompter to standard stage layout." : "Expand the teleprompter inline to take over the studio screen for maximum readability.")
                           : "Open a standalone, bezel-less window aligned right below the camera lens."}
                       </p>
                     </div>

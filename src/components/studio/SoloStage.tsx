@@ -2871,20 +2871,6 @@ export default function SoloStage({
                  : "absolute bg-zinc-950/85 backdrop-blur-3xl border border-white/10"
              )}
            >
-            {isTheaterExpanded && stream && (
-              <div className="absolute top-4 right-4 w-48 aspect-video rounded-lg border border-slate-700 shadow-md overflow-hidden z-50 bg-black">
-                <video
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover animate-fade-in"
-                  style={{ transform: 'scaleX(-1)' }}
-                  ref={(el) => {
-                    if (el) el.srcObject = stream;
-                  }}
-                />
-              </div>
-            )}
             <div className="absolute top-3 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/10 rounded-full opacity-50" />
             {/* Header Top Line: Title & Size Actions */}
             <div 
@@ -3276,7 +3262,6 @@ export default function SoloStage({
                           prompterLayout === 'center' ? "flex-row items-center gap-6 justify-between" : "flex-col text-center justify-between"
                         )}
                       >
-                        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/10 rounded-full opacity-50" />
                         {prompterLayout === 'center' ? (
                           <>
                             <div className="flex flex-col gap-1 items-start select-none shrink-0 w-32 border-r border-white/10 pr-4">
