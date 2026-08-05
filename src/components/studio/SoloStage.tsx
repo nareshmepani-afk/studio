@@ -4083,44 +4083,46 @@ export default function SoloStage({
               </div>
           </div>
           
-          <div className="bg-white/[0.02] border border-white/5 p-8 md:p-10 rounded-[3rem] flex flex-col justify-center items-center text-center space-y-6">
-             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                <Camera className="w-6 h-6 text-emerald-400" />
-             </div>
-             <div>
-                <h3 className="text-xl font-headline text-white italic mb-2">Cinematic Visualization</h3>
-                <p className="text-xs text-white/40 max-w-sm uppercase tracking-widest font-bold leading-relaxed">Capture a video frame or take a studio selfie to anchor the theatrical showcase poster.</p>
+          <div className="bg-white/[0.02] border border-white/5 p-5 md:p-6 rounded-[2.5rem] flex flex-col justify-center items-center text-center space-y-4">
+             <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                   <Camera className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div className="text-left">
+                   <h3 className="text-sm font-headline text-white italic">Cinematic Visualization</h3>
+                   <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Capture video frame or studio selfie for poster</p>
+                </div>
              </div>
 
              {/* Live Anchored Poster Frame Preview */}
              {data?.posterImageUrl && (
-               <div className="w-full max-w-sm aspect-video rounded-2xl overflow-hidden border border-emerald-500/40 shadow-xl relative group">
+               <div className="w-full max-w-xs aspect-video rounded-xl overflow-hidden border border-emerald-500/40 shadow-xl relative group">
                  <img src={data.posterImageUrl} alt="Poster Anchor Frame" className="w-full h-full object-cover" />
-                 <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md border border-emerald-500/50 px-2.5 py-1 rounded-lg text-[9px] font-mono font-bold text-emerald-400 flex items-center gap-1.5 shadow-md">
-                   <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                   <span>SHOWCASE POSTER ANCHORED</span>
+                 <div className="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md border border-emerald-500/50 px-2 py-0.5 rounded text-[8px] font-mono font-bold text-emerald-400 flex items-center gap-1 shadow-md">
+                   <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
+                   <span>POSTER ANCHORED</span>
                  </div>
                </div>
              )}
 
              {/* Dual Capture Action Buttons */}
-             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+             <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
                <button 
                   onClick={handleCaptureThumbnail} 
                   disabled={isCapturingThumbnail} 
-                  className="px-6 py-3.5 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:scale-105 transition-all shadow-[0_15px_30px_rgba(255,255,255,0.1)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                  className="px-5 py-3 bg-white text-black text-[9.5px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(255,255,255,0.1)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
                >
                   <Camera className="w-3.5 h-3.5 text-black" />
-                  <span>{isCapturingThumbnail ? 'Capturing Snapshot...' : 'Snap Production Frame'}</span>
+                  <span>{isCapturingThumbnail ? 'Capturing...' : 'Snap Video Frame'}</span>
                </button>
 
                <button 
                   onClick={handleTakeSelfiePoster} 
                   disabled={isCapturingThumbnail} 
-                  className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:scale-105 transition-all shadow-[0_15px_30px_rgba(16,185,129,0.25)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                  className="px-5 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[9.5px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(16,185,129,0.25)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
                >
                   <Sparkles className="w-3.5 h-3.5 text-slate-950" />
-                  <span>{isCapturingThumbnail ? 'Capturing Portrait...' : 'Take Studio Selfie'}</span>
+                  <span>{isCapturingThumbnail ? 'Capturing...' : 'Take Studio Selfie'}</span>
                </button>
              </div>
           </div>

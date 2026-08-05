@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MentorshipHotspot } from './MentorshipHotspot';
-import { Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, Rocket, Circle, ChevronLeft, ChevronRight, AlertCircle, Eye } from 'lucide-react';
+import { Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, Rocket, Circle, ChevronLeft, ChevronRight, ChevronDown, AlertCircle, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -256,10 +256,21 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
   return (
     <div className={cn(
-      "z-[9999] w-full max-w-4xl px-6 pointer-events-none transition-all duration-500 ease-in-out",
+      "z-[9999] w-full max-w-4xl px-6 pointer-events-none transition-all duration-500 ease-in-out relative",
       isDocked ? "fixed bottom-6 left-1/2 -translate-x-1/2" : "fixed bottom-12 left-1/2 -translate-x-1/2",
       (isReviewing || isDirectorOpen) && "opacity-0 invisible blur-xl grayscale scale-95 select-none pointer-events-none"
     )}>
+      {/* SCROLL AFFORDANCE CUE */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: [0.5, 0.95, 0.5], y: [0, 4, 0] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute -top-7 left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-[8.5px] font-mono font-bold tracking-[0.25em] text-emerald-400 uppercase pointer-events-none select-none bg-slate-950/90 backdrop-blur-md px-3.5 py-1 rounded-full border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+      >
+        <span>Scroll For Stage Controls</span>
+        <ChevronDown className="w-3 h-3 text-emerald-400 animate-bounce" />
+      </motion.div>
+
       <motion.div 
         data-blueprint="ProductionControlBar"
         initial={{ y: 20, opacity: 0 }}
