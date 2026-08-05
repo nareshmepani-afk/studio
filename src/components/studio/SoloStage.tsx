@@ -1375,45 +1375,95 @@ export default function SoloStage({
     }
   };
 
-  const handleTakeSelfiePoster = async () => {
+  // --- STUDIO PORTRAIT PHOTOBOOTH STATE ---
+  const [isSelfieModalOpen, setIsSelfieModalOpen] = useState(false);
+  const [selfieCapturedPreview, setSelfieCapturedPreview] = useState<string | null>(null);
+  const [selfieCapturedBlob, setSelfieCapturedBlob] = useState<Blob | null>(null);
+  const [selfieCountdown, setSelfieCountdown] = useState<number | null>(null);
+  const [selfieFilter, setSelfieFilter] = useState<'default' | 'warm' | 'cool' | 'noir'>('default');
+  const selfieVideoRef = useRef<HTMLVideoElement>(null);
+
+  const handleOpenSelfiePhotobooth = async () => {
     if (checkGuestAndUpsell("capturing cinematic poster frames")) return;
     if (!isCameraActive) {
       setIsCameraActive(true);
       await new Promise(res => setTimeout(res, 300));
     }
-    if (!stream) {
-      toast.error("Camera Initializing...", { description: "Activating studio optics. Please click Take Studio Selfie once more." });
-      return;
+    setSelfieCapturedPreview(null);
+    setSelfieCapturedBlob(null);
+    setSelfieCountdown(null);
+    setIsSelfieModalOpen(true);
+  };
+
+  useEffect(() => {
+    if (isSelfieModalOpen && !selfieCapturedPreview && selfieVideoRef.current && stream) {
+      selfieVideoRef.current.srcObject = stream;
+      selfieVideoRef.current.play().catch(() => {});
     }
-    setIsCapturingThumbnail(true);
+  }, [isSelfieModalOpen, selfieCapturedPreview, stream]);
+
+  const handleTriggerSelfieCountdown = () => {
+    if (selfieCountdown !== null) return;
+    setSelfieCountdown(3);
+    const interval = setInterval(() => {
+      setSelfieCountdown(prev => {
+        if (prev === 1) {
+          clearInterval(interval);
+          executeSelfieSnap();
+          return null;
+        }
+        return prev ? prev - 1 : null;
+      });
+    }, 1000);
+  };
+
+  const executeSelfieSnap = async () => {
+    if (!selfieVideoRef.current) return;
     try {
-      const videoEl = document.createElement('video');
-      videoEl.srcObject = stream;
-      await videoEl.play();
+      const video = selfieVideoRef.current;
       const canvas = document.createElement('canvas');
-      canvas.width = videoEl.videoWidth || 1280;
-      canvas.height = videoEl.videoHeight || 720;
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
       const ctx = canvas.getContext('2d');
-      if (ctx && data?.id) {
+      if (ctx) {
         ctx.save();
         ctx.scale(-1, 1);
-        ctx.drawImage(videoEl, -canvas.width, 0, canvas.width, canvas.height);
+        if (selfieFilter === 'warm') ctx.filter = 'sepia(0.35) contrast(1.1) brightness(1.05)';
+        else if (selfieFilter === 'cool') ctx.filter = 'hue-rotate(180deg) saturate(1.2) contrast(1.1)';
+        else if (selfieFilter === 'noir') ctx.filter = 'grayscale(1) contrast(1.3)';
+
+        ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
         ctx.restore();
-        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', 0.95));
+
+        const dataUrl = canvas.toDataURL('image/webp', 0.95);
+        const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/webp', 0.95));
         if (blob) {
-          const url = await uploadMediaBlob(blob, data.id);
-          if (url) {
-            update({ posterImageUrl: url });
-            toast.success("Studio Portrait Anchored", { 
-              description: "Your live portrait is now set as the cinematic poster.",
-              icon: <CheckCircle2 className="w-4 h-4 text-green-500" />
-            });
-          }
+          setSelfieCapturedBlob(blob);
+          setSelfieCapturedPreview(dataUrl);
         }
       }
-    } catch (e) {
-      console.error("Selfie capture error:", e);
-      toast.error("Selfie Capture Failed", { description: "Unable to capture studio selfie portrait." });
+    } catch (err) {
+      console.error("[Photobooth] Snap error:", err);
+      toast.error("Snap Failed", { description: "Unable to capture studio photo." });
+    }
+  };
+
+  const handleConfirmSelfiePoster = async () => {
+    if (!selfieCapturedBlob || !data?.id) return;
+    setIsCapturingThumbnail(true);
+    try {
+      const url = await uploadMediaBlob(selfieCapturedBlob, data.id);
+      if (url) {
+        update({ posterImageUrl: url });
+        toast.success("Studio Poster Anchored!", {
+          description: "Your studio portrait is now set as the cinematic showcase poster.",
+          icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+        });
+        setIsSelfieModalOpen(false);
+      }
+    } catch (err) {
+      console.error("[Photobooth] Upload error:", err);
+      toast.error("Upload Failed", { description: "Unable to anchor poster photo." });
     } finally {
       setIsCapturingThumbnail(false);
     }
@@ -4117,12 +4167,12 @@ export default function SoloStage({
                </button>
 
                <button 
-                  onClick={handleTakeSelfiePoster} 
+                  onClick={handleOpenSelfiePhotobooth} 
                   disabled={isCapturingThumbnail} 
                   className="px-5 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[9.5px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(16,185,129,0.25)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
                >
                   <Sparkles className="w-3.5 h-3.5 text-slate-950" />
-                  <span>{isCapturingThumbnail ? 'Capturing...' : 'Take Studio Selfie'}</span>
+                  <span>Studio Selfie Photobooth</span>
                </button>
              </div>
           </div>
@@ -4549,6 +4599,139 @@ export default function SoloStage({
         onClose={() => setIsUpsellOpen(false)}
         requiredFeature={upsellFeature}
       />
+
+      {/* STUDIO PORTRAIT PHOTOBOOTH MODAL */}
+      {mounted && typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isSelfieModalOpen && (
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-2xl">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="w-full max-w-xl bg-slate-950 border border-emerald-500/30 rounded-[3rem] p-6 md:p-8 shadow-[0_0_100px_rgba(16,185,129,0.25)] flex flex-col gap-6 relative overflow-hidden"
+              >
+                {/* Header Bar */}
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                      <Camera className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-headline text-white italic">Studio Portrait Photobooth</h3>
+                      <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Frame your portrait & capture showcase poster</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsSelfieModalOpen(false)}
+                    className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors cursor-pointer text-xs font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Viewfinder / Freeze-Frame Preview */}
+                <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl flex items-center justify-center">
+                  {selfieCapturedPreview ? (
+                    <img src={selfieCapturedPreview} alt="Captured Studio Selfie" className="w-full h-full object-cover" />
+                  ) : (
+                    <>
+                      <video
+                        ref={selfieVideoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="w-full h-full object-cover transform -scale-x-100"
+                        style={{
+                          filter: selfieFilter === 'warm' ? 'sepia(0.35) contrast(1.1)' :
+                                  selfieFilter === 'cool' ? 'hue-rotate(180deg) saturate(1.2)' :
+                                  selfieFilter === 'noir' ? 'grayscale(1) contrast(1.3)' : 'none'
+                        }}
+                      />
+
+                      {/* Golden Portrait Frame Oval Overlay */}
+                      <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center border-2 border-dashed border-amber-400/50 rounded-full my-4 mx-auto aspect-[3/4] max-h-[85%] shadow-[0_0_50px_rgba(251,191,36,0.15)] animate-pulse">
+                        <span className="text-[8px] font-mono font-bold tracking-[0.3em] text-amber-300 uppercase bg-slate-950/80 px-2.5 py-0.5 rounded-full border border-amber-500/30">FRAME FACE HERE</span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Countdown Overlay */}
+                  {selfieCountdown !== null && (
+                    <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center gap-3 z-30">
+                      <div className="w-20 h-20 rounded-full border-4 border-emerald-400 bg-emerald-500/20 flex items-center justify-center animate-bounce shadow-[0_0_40px_rgba(16,185,129,0.5)]">
+                        <span className="text-4xl font-black text-emerald-300 font-mono">{selfieCountdown}</span>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-white uppercase tracking-widest">Hold Still... Smiling! 📸</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Filter Selection Bar (Before Snap) */}
+                {!selfieCapturedPreview && (
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-[9px] font-mono text-white/40 uppercase tracking-widest mr-2">Grading:</span>
+                    {(['default', 'warm', 'cool', 'noir'] as const).map(f => (
+                      <button
+                        key={f}
+                        onClick={() => setSelfieFilter(f)}
+                        className={cn(
+                          "px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider border transition-all cursor-pointer",
+                          selfieFilter === f
+                            ? "bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+                            : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"
+                        )}
+                      >
+                        {f === 'default' && 'Studio Natural'}
+                        {f === 'warm' && '1960s Warm'}
+                        {f === 'cool' && 'Cool Modern'}
+                        {f === 'noir' && 'Cinematic Noir'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Action Button Bar */}
+                <div className="flex items-center justify-center gap-4 pt-2">
+                  {selfieCapturedPreview ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          setSelfieCapturedPreview(null);
+                          setSelfieCapturedBlob(null);
+                        }}
+                        className="px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl border border-white/10 transition-all cursor-pointer flex items-center gap-2"
+                      >
+                        <RefreshCw className="w-4 h-4 text-amber-400" />
+                        <span>Retake Portrait</span>
+                      </button>
+
+                      <button
+                        onClick={handleConfirmSelfiePoster}
+                        disabled={isCapturingThumbnail}
+                        className="px-8 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-slate-950" />
+                        <span>{isCapturingThumbnail ? 'Saving Poster...' : 'Anchor as Poster'}</span>
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={handleTriggerSelfieCountdown}
+                      disabled={selfieCountdown !== null}
+                      className="px-10 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.4)] hover:scale-105 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                    >
+                      <Camera className="w-4 h-4 text-slate-950" />
+                      <span>{selfieCountdown !== null ? 'Framing...' : 'Take Studio Photo (3s)'}</span>
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 }
