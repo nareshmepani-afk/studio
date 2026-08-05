@@ -1255,9 +1255,9 @@ export default function SoloStage({
       }
       return;
     }
-    if ((productionStage === 1 || productionStage === 2) && !isCameraActive && !recordedBlob) {
+    if ((productionStage === 1 || productionStage === 2 || productionStage === 3) && !isCameraActive) {
       setIsCameraActive(true);
-    } else if (productionStage !== 1 && productionStage !== 2 && isCameraActive) {
+    } else if (productionStage !== 1 && productionStage !== 2 && productionStage !== 3 && isCameraActive) {
       setIsCameraActive(false);
     }
   }, [productionStage, isCameraActive, recordedBlob, showRestorePrompt]);
@@ -1377,8 +1377,12 @@ export default function SoloStage({
 
   const handleTakeSelfiePoster = async () => {
     if (checkGuestAndUpsell("capturing cinematic poster frames")) return;
+    if (!isCameraActive) {
+      setIsCameraActive(true);
+      await new Promise(res => setTimeout(res, 300));
+    }
     if (!stream) {
-      toast.error("Camera Inactive", { description: "Please ensure studio optics are active to take a selfie." });
+      toast.error("Camera Initializing...", { description: "Activating studio optics. Please click Take Studio Selfie once more." });
       return;
     }
     setIsCapturingThumbnail(true);
