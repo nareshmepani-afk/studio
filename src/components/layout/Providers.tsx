@@ -66,14 +66,20 @@ function AppContent({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+      if ((e.ctrlKey || e.metaKey) && (e.key === '/' || e.key === '?')) {
         e.preventDefault();
-        setIsReportModalOpen(true);
+        setIsReportModalOpen((prev) => !prev);
       }
     };
 
+    const handleCustomEvent = () => setIsReportModalOpen(true);
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('open-telemetry-report', handleCustomEvent);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('open-telemetry-report', handleCustomEvent);
+    };
   }, []);
 
   if (!mounted || loading) {

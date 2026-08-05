@@ -306,14 +306,6 @@ export default function SoloStage({
       if (e.key === 'Escape' && isTheaterExpanded) {
         setIsTheaterExpanded(false);
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
-        e.preventDefault();
-        window.dispatchEvent(new CustomEvent('toggle-studio-shortcuts'));
-        toast.info("Studio Command Shortcuts", {
-          description: "Ctrl+Shift+H: Hotspots | Esc: Exit Theater | Space: Rehearse | Ctrl+/: Help",
-          icon: <Zap className="w-4 h-4 text-emerald-400" />
-        });
-      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
