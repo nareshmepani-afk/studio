@@ -1360,7 +1360,9 @@ export default function SoloStage({
          if (blob) {
             const url = await uploadMediaBlob(blob, data.id);
             if (url) {
-               update({ posterImageUrl: url }); // STANDARDIZE: Use posterImageUrl globally
+               const freshUrl = url.includes('?') ? `${url}&t=${Date.now()}` : `${url}?t=${Date.now()}`;
+               setLocalPosterUrl(freshUrl);
+               update({ posterImageUrl: freshUrl }); // STANDARDIZE: Use posterImageUrl globally
                toast.success("Poster Updated", { 
                  description: "This frame is now your cinematic poster image.",
                  icon: <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -1381,6 +1383,7 @@ export default function SoloStage({
   const [selfieCapturedBlob, setSelfieCapturedBlob] = useState<Blob | null>(null);
   const [selfieCountdown, setSelfieCountdown] = useState<number | null>(null);
   const [selfieFilter, setSelfieFilter] = useState<'default' | 'warm' | 'cool' | 'noir'>('default');
+  const [localPosterUrl, setLocalPosterUrl] = useState<string | null>(null);
   const selfieVideoRef = useRef<HTMLVideoElement>(null);
 
   const handleOpenSelfiePhotobooth = async () => {
@@ -1451,10 +1454,16 @@ export default function SoloStage({
   const handleConfirmSelfiePoster = async () => {
     if (!selfieCapturedBlob || !data?.id) return;
     setIsCapturingThumbnail(true);
+    // Optimistic zero-latency local update
+    if (selfieCapturedPreview) {
+      setLocalPosterUrl(selfieCapturedPreview);
+    }
     try {
       const url = await uploadMediaBlob(selfieCapturedBlob, data.id);
       if (url) {
-        update({ posterImageUrl: url });
+        const freshUrl = url.includes('?') ? `${url}&t=${Date.now()}` : `${url}?t=${Date.now()}`;
+        setLocalPosterUrl(freshUrl);
+        update({ posterImageUrl: freshUrl });
         toast.success("Studio Poster Anchored!", {
           description: "Your studio portrait is now set as the cinematic showcase poster.",
           icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -4145,9 +4154,14 @@ export default function SoloStage({
              </div>
 
              {/* Live Anchored Poster Frame Preview */}
-             {data?.posterImageUrl && (
+             {(localPosterUrl || data?.posterImageUrl) && (
                <div className="w-full max-w-xs aspect-video rounded-xl overflow-hidden border border-emerald-500/40 shadow-xl relative group">
-                 <img src={data.posterImageUrl} alt="Poster Anchor Frame" className="w-full h-full object-cover" />
+                 <img 
+                   key={localPosterUrl || data?.posterImageUrl}
+                   src={localPosterUrl || data?.posterImageUrl} 
+                   alt="Poster Anchor Frame" 
+                   className="w-full h-full object-cover" 
+                 />
                  <div className="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md border border-emerald-500/50 px-2 py-0.5 rounded text-[8px] font-mono font-bold text-emerald-400 flex items-center gap-1 shadow-md">
                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
                    <span>POSTER ANCHORED</span>
@@ -4270,7 +4284,7 @@ export default function SoloStage({
           >
              <div className="absolute -inset-20 bg-sky-500/10 blur-[120px] rounded-full opacity-50 group-hover:opacity-80 transition-opacity duration-1000" />
              <div className="relative z-10">
-                <CinemaPoster memory={data} />
+                <CinemaPoster memory={localPosterUrl ? { ...data, posterImageUrl: localPosterUrl } : data} />
              </div>
 
              {/* Mode Indicator Overlay Badge */}
