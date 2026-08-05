@@ -1078,7 +1078,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
       <div className="w-full relative">
         {/* --- PERSISTENT PRODUCTION HEADER --- */}
         {modality !== null && (
-          <div className="mb-12 flex items-center justify-between max-w-4xl mx-auto">
+          <div className="mb-12 flex items-center justify-between max-w-[95vw] xl:max-w-screen-2xl mx-auto">
             <div className="flex items-center gap-3 text-emerald-400 font-black text-[10px] uppercase tracking-[0.6em]">
               <div className="w-8 h-px bg-emerald-500/30" />
               {ACT_TITLES[productionStage]}
@@ -1239,7 +1239,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 1.02 }}
-                className="w-full max-w-6xl mx-auto flex flex-col pt-4 pb-0"
+                className="w-full max-w-[95vw] xl:max-w-screen-2xl mx-auto flex flex-col pt-4 pb-0"
               >
                 {isGeneratingDrafts ? (
                   <SynthesizingOverlay 
@@ -2273,10 +2273,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className={cn(
-                  "w-full mx-auto flex flex-col pt-4 pb-0 transition-all duration-500",
-                  (isExpanding || expansionError || (isReviewingSensory && aiTakes)) ? "max-w-6xl" : "max-w-4xl"
-                )}
+                className="w-full max-w-[95vw] xl:max-w-screen-2xl mx-auto flex flex-col pt-4 pb-0 transition-all duration-500"
               >
                 {/* Pinned Metadata Header */}
                 <div className="mb-12">

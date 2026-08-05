@@ -349,7 +349,7 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
   );
 
   return (
-    <section className="relative max-w-4xl mx-auto mt-12 pb-32">
+    <section className="relative max-w-[95vw] xl:max-w-screen-2xl mx-auto mt-12 pb-32">
       <LayoutGroup>
         <DndContext
           sensors={isProductionLocked ? [] : sensors}

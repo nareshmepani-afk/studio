@@ -4295,7 +4295,7 @@ export default function SoloStage({
             initial={{ x: 50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.8, duration: 1 }}
-            className="flex-1 space-y-10 max-w-md text-left"
+            className="flex-1 space-y-10 max-w-xl text-left"
           >
              <div className="space-y-8">
                 <div className="flex items-start gap-6 group">
