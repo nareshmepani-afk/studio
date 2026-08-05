@@ -306,6 +306,14 @@ export default function SoloStage({
       if (e.key === 'Escape' && isTheaterExpanded) {
         setIsTheaterExpanded(false);
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('toggle-studio-shortcuts'));
+        toast.info("Studio Command Shortcuts", {
+          description: "Ctrl+Shift+H: Hotspots | Esc: Exit Theater | Space: Rehearse | Ctrl+/: Help",
+          icon: <Zap className="w-4 h-4 text-emerald-400" />
+        });
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -1388,9 +1396,10 @@ export default function SoloStage({
 
   const handleOpenSelfiePhotobooth = async () => {
     if (checkGuestAndUpsell("capturing cinematic poster frames")) return;
-    if (!isCameraActive) {
-      setIsCameraActive(true);
-      await new Promise(res => setTimeout(res, 300));
+    unmuteOptics();
+    if (!isCameraActive || !stream) {
+      handleReattemptAccess();
+      await new Promise(res => setTimeout(res, 200));
     }
     setSelfieCapturedPreview(null);
     setSelfieCapturedBlob(null);
@@ -4682,7 +4691,8 @@ export default function SoloStage({
                           </div>
                           <button
                             onClick={() => {
-                              setIsCameraActive(true);
+                              unmuteOptics();
+                              handleReattemptAccess();
                             }}
                             className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all cursor-pointer flex items-center gap-2"
                           >
