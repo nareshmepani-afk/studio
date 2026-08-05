@@ -22,7 +22,7 @@ import {
   Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
   Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
   Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater, Trash2,
-  ExternalLink, ChevronDown, ChevronUp, Download
+  ExternalLink, ChevronDown, ChevronUp, Download, VideoOff
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -4664,9 +4664,33 @@ export default function SoloStage({
                       />
 
                       {/* Golden Portrait Frame Oval Overlay */}
-                      <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center border-2 border-dashed border-amber-400/50 rounded-full my-4 mx-auto aspect-[3/4] max-h-[85%] shadow-[0_0_50px_rgba(251,191,36,0.15)] animate-pulse">
-                        <span className="text-[8px] font-mono font-bold tracking-[0.3em] text-amber-300 uppercase bg-slate-950/80 px-2.5 py-0.5 rounded-full border border-amber-500/30">FRAME FACE HERE</span>
-                      </div>
+                      {stream && isCameraActive && (
+                        <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center border-2 border-dashed border-amber-400/50 rounded-full my-4 mx-auto aspect-[3/4] max-h-[85%] shadow-[0_0_50px_rgba(251,191,36,0.15)] animate-pulse">
+                          <span className="text-[8px] font-mono font-bold tracking-[0.3em] text-amber-300 uppercase bg-slate-950/80 px-2.5 py-0.5 rounded-full border border-amber-500/30">FRAME FACE HERE</span>
+                        </div>
+                      )}
+
+                      {/* Optics Muted / Enable Camera State */}
+                      {(!stream || !isCameraActive) && (
+                        <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center gap-4 z-20 p-6 text-center">
+                          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 animate-pulse">
+                            <VideoOff className="w-6 h-6 text-amber-400" />
+                          </div>
+                          <div className="space-y-1 max-w-xs">
+                            <h4 className="text-sm font-headline text-white italic">Studio Optics Muted</h4>
+                            <p className="text-[10px] text-white/40 font-mono uppercase tracking-widest">Camera feed is offline or muted</p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setIsCameraActive(true);
+                            }}
+                            className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all cursor-pointer flex items-center gap-2"
+                          >
+                            <Camera className="w-3.5 h-3.5 text-slate-950" />
+                            <span>Engage Camera Optics</span>
+                          </button>
+                        </div>
+                      )}
                     </>
                   )}
 
