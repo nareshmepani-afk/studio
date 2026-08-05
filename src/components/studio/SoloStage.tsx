@@ -1406,7 +1406,11 @@ export default function SoloStage({
     }
   }, [isSelfieModalOpen, selfieCapturedPreview, stream]);
 
-  const handleTriggerSelfieCountdown = () => {
+  const handleTriggerSelfieCountdown = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (selfieCountdown !== null) return;
     setSelfieCountdown(3);
     const interval = setInterval(() => {
@@ -4714,6 +4718,7 @@ export default function SoloStage({
                     {(['default', 'warm', 'cool', 'noir'] as const).map(f => (
                       <button
                         key={f}
+                        type="button"
                         onClick={() => setSelfieFilter(f)}
                         className={cn(
                           "px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider border transition-all cursor-pointer",
@@ -4736,6 +4741,7 @@ export default function SoloStage({
                   {selfieCapturedPreview ? (
                     <>
                       <button
+                        type="button"
                         onClick={() => {
                           setSelfieCapturedPreview(null);
                           setSelfieCapturedBlob(null);
@@ -4747,6 +4753,7 @@ export default function SoloStage({
                       </button>
 
                       <button
+                        type="button"
                         onClick={handleConfirmSelfiePoster}
                         disabled={isCapturingThumbnail}
                         className="px-8 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
@@ -4757,6 +4764,7 @@ export default function SoloStage({
                     </>
                   ) : (
                     <button
+                      type="button"
                       onClick={handleTriggerSelfieCountdown}
                       disabled={selfieCountdown !== null}
                       className="px-10 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.4)] hover:scale-105 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
