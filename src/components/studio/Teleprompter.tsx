@@ -1542,7 +1542,7 @@ export const Teleprompter: React.FC<TeleprompterProps> = ({
             isMirrored && "transform -scale-x-100"
           )}
         >
-          <div className={cn("prose-invert opacity-90 select-none", isMini ? "pb-[150px] space-y-4" : "pb-[400px] space-y-8")}>
+          <div className={cn("prose-invert opacity-90 select-none", isMini ? "pb-[180px] space-y-4" : "pb-[480px] space-y-8")}>
             {!selectedTake ? (
               <div className="flex flex-col items-center justify-center text-center p-8 border border-white/5 bg-zinc-950/40 rounded-3xl backdrop-blur-sm max-w-lg mx-auto mt-12 space-y-4 shadow-xl">
                 <div className="p-3.5 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.15)] animate-pulse">
