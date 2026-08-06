@@ -4166,12 +4166,21 @@ export default function SoloStage({
              </button>
 
              {previewUrl ? (
-                <video 
-                  ref={previewVideoRef}
-                  src={previewUrl}
-                  onTimeUpdate={handlePreviewTimeUpdate}
-                  className="w-full h-full object-cover grayscale-[0.2] contrast-[1.1]"
-                />
+                !isReelTheaterOpen ? (
+                  <video 
+                    ref={previewVideoRef}
+                    src={previewUrl}
+                    onTimeUpdate={handlePreviewTimeUpdate}
+                    className="w-full h-full object-cover grayscale-[0.2] contrast-[1.1]"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center text-center p-6 space-y-2">
+                    <FilmIcon className="w-8 h-8 text-emerald-400 animate-pulse" />
+                    <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest">
+                      Screening in Cinematic Theater
+                    </span>
+                  </div>
+                )
              ) : (
                 <div className="absolute inset-0 flex items-center justify-center text-white/10 font-black uppercase tracking-[0.5em] text-xs">Awaiting Development Reel...</div>
              )}
@@ -4255,14 +4264,14 @@ export default function SoloStage({
               </div>
           </div>
 
-          {/* Full Cinematic Screening Theater Modal */}
+          {/* Full Cinematic Screening Theater Modal (Elevated to z-[10000] above Stage Controls) */}
           <AnimatePresence>
             {isReelTheaterOpen && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[500] bg-slate-950/95 backdrop-blur-3xl flex flex-col items-center justify-center p-6 md:p-10 select-none overflow-hidden"
+                className="fixed inset-0 z-[10000] bg-slate-950/95 backdrop-blur-3xl flex flex-col items-center justify-center p-6 md:p-10 select-none overflow-hidden"
               >
                 {/* Header Control Bar */}
                 <div className="w-full max-w-6xl flex items-center justify-between mb-4 px-2">
