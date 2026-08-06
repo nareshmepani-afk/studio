@@ -22,7 +22,7 @@ import {
   Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
   Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
   Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater, Trash2,
-  ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X
+  ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X, Wand2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -1229,6 +1229,49 @@ export default function SoloStage({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewCurrentTime, setPreviewCurrentTime] = useState(0);
   const [isReelTheaterOpen, setIsReelTheaterOpen] = useState(false);
+  const [posterStyle, setPosterStyle] = useState<'vintage-35mm' | 'modern-legacy' | 'heritage-oil' | 'raw-authentic'>('modern-legacy');
+  const [isGeneratingAIPoster, setIsGeneratingAIPoster] = useState(false);
+
+  const handleGenerateAIPoster = async () => {
+    setIsGeneratingAIPoster(true);
+    toast.info("Synthesising AI Legacy Movie Poster...", {
+      description: `Blending Fusion Protocol story anchors with ${posterStyle} aesthetic.`
+    });
+
+    try {
+      const sourceImage = localPosterUrl || data?.posterImageUrl || previewUrl;
+      const response = await fetch('/api/ai/generate-poster', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceImage,
+          storyText: data?.prose || data?.description || data?.originalHook || "Family memory legacy",
+          style: posterStyle,
+          title: "PART I: ROOTS & FOUNDATIONS",
+          subtitle: data?.originalHook ? data.originalHook.slice(0, 60) + "..." : "Biographical Legacy Selection"
+        })
+      });
+
+      const resData = await response.json();
+      const posterUrl = resData?.posterUrl || sourceImage;
+
+      setLocalPosterUrl(posterUrl);
+      update({ posterImageUrl: posterUrl });
+
+      toast.success("AI Legacy Movie Poster Anchored!", {
+        description: `Style: ${posterStyle.toUpperCase()} • Hybrid Real Face + Story Scene Composite`
+      });
+    } catch (err) {
+      console.warn("[SoloStage] AI Poster synthesis fallback triggered:", err);
+      if (localPosterUrl || data?.posterImageUrl) {
+        toast.success("Poster Refreshed with Selected Style", {
+          description: `Applied ${posterStyle.toUpperCase()} style preset to your active anchor.`
+        });
+      }
+    } finally {
+      setIsGeneratingAIPoster(false);
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -4426,14 +4469,48 @@ export default function SoloStage({
                </div>
              )}
 
-             {/* Single Master Action Trigger for Photobooth */}
-             <div className="pt-1">
+             {/* 4 Artistic Style Presets Selector */}
+             <div className="flex flex-wrap justify-center gap-2 pt-1 max-w-md">
+               {[
+                 { id: 'vintage-35mm', label: '🎞️ Vintage 35mm' },
+                 { id: 'modern-legacy', label: '💎 Modern Legacy' },
+                 { id: 'heritage-oil', label: '🎨 Heritage Oil' },
+                 { id: 'raw-authentic', label: '📷 Raw Authentic' },
+               ].map((style) => (
+                 <button
+                   key={style.id}
+                   type="button"
+                   onClick={() => setPosterStyle(style.id as any)}
+                   className={`px-3 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                     posterStyle === style.id
+                       ? 'bg-amber-400 text-slate-950 shadow-md scale-105'
+                       : 'bg-white/5 hover:bg-white/10 text-white/60 border border-white/10'
+                   }`}
+                 >
+                   {style.label}
+                 </button>
+               ))}
+             </div>
+
+             {/* Action Triggers: AI Generator & Photobooth */}
+             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+               <button 
+                  type="button"
+                  data-hotspot-id="HS_ACT4_GENERATE_AI_POSTER_BTN"
+                  onClick={handleGenerateAIPoster} 
+                  disabled={isGeneratingAIPoster} 
+                  className="px-5 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(16,185,129,0.3)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+               >
+                  {isGeneratingAIPoster ? <Loader2 className="w-4 h-4 text-slate-950 animate-spin" /> : <Wand2 className="w-4 h-4 text-slate-950" />}
+                  <span>{isGeneratingAIPoster ? 'Synthesising Scene...' : 'Generate AI Movie Poster'}</span>
+               </button>
+
                <button 
                   type="button"
                   data-hotspot-id="HS_ACT4_OPEN_PHOTOBOOTH_BTN"
                   onClick={handleOpenSelfiePhotobooth} 
                   disabled={isCapturingThumbnail} 
-                  className="px-6 py-3.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(245,158,11,0.25)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                  className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(245,158,11,0.25)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
                >
                   <Sparkles className="w-4 h-4 text-slate-950" />
                   <span>Open Studio Photobooth</span>

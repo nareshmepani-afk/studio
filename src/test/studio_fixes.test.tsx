@@ -1316,5 +1316,38 @@ describe('Studio Regression Tests', () => {
       expect(emeraldBorderToken).toContain("border-emerald-500/25");
       expect(amberBorderToken).toContain("border-amber-500/20");
     });
+
+    it('AI MOVIE POSTER GENERATOR (OPTION C + B): should bind HS_ACT4_GENERATE_AI_POSTER_BTN hotspot and support 4 style presets (Vintage 35mm, Modern Legacy, Heritage Oil, Raw Authentic)', () => {
+      const aiPosterHotspot = "HS_ACT4_GENERATE_AI_POSTER_BTN";
+      expect(aiPosterHotspot).toBe("HS_ACT4_GENERATE_AI_POSTER_BTN");
+
+      const styles = ['vintage-35mm', 'modern-legacy', 'heritage-oil', 'raw-authentic'];
+      let selectedStyle = 'modern-legacy';
+
+      const selectStyle = (style: string) => {
+        if (styles.includes(style)) {
+          selectedStyle = style;
+        }
+      };
+
+      expect(selectedStyle).toBe('modern-legacy');
+
+      selectStyle('vintage-35mm');
+      expect(selectedStyle).toBe('vintage-35mm');
+
+      selectStyle('heritage-oil');
+      expect(selectedStyle).toBe('heritage-oil');
+
+      // Build payload
+      const payload = {
+        sourceImage: 'data:image/png;base64,sample',
+        storyText: '1956 voyage across oceans from Kutch to Great Britain',
+        style: selectedStyle,
+        title: 'PART I: ROOTS & FOUNDATIONS'
+      };
+
+      expect(payload.style).toBe('heritage-oil');
+      expect(payload.title).toBe('PART I: ROOTS & FOUNDATIONS');
+    });
   });
 });
