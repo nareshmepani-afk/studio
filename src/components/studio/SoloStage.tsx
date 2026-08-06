@@ -4137,6 +4137,12 @@ export default function SoloStage({
     <div className="w-full max-w-[95vw] xl:max-w-screen-2xl mx-auto flex flex-col lg:flex-row gap-8 pb-36 min-h-[calc(100vh-160px)] overflow-y-auto">
        <div className="w-full lg:w-1/2 flex flex-col gap-8">
           <div className="aspect-video bg-black rounded-[3rem] overflow-hidden border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.6)] relative group">
+             {/* Master Performance Reel Badge */}
+             <div className="absolute top-4 left-4 z-10 bg-slate-950/85 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full text-[9px] font-mono font-bold text-white/80 uppercase tracking-widest flex items-center gap-1.5 shadow-lg">
+                <Video className="w-3 h-3 text-emerald-400" />
+                <span>Master Performance Reel</span>
+             </div>
+
              {previewUrl ? (
                 <video 
                   ref={previewVideoRef}
@@ -4221,7 +4227,7 @@ export default function SoloStage({
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
-                      Anchor current video frame as theatrical showcase poster
+                      Capture frame at {formatTime(trimRange[0])} as Showcase Poster
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -4236,7 +4242,7 @@ export default function SoloStage({
                 </div>
                 <div className="text-left">
                    <h3 className="text-sm font-headline text-white italic">Theatrical Showcase Poster Anchor</h3>
-                   <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Selected still frame or studio photobooth capture</p>
+                   <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Active cover image for your Memory Cinema</p>
                 </div>
              </div>
 
