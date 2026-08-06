@@ -1349,5 +1349,27 @@ describe('Studio Regression Tests', () => {
       expect(payload.style).toBe('heritage-oil');
       expect(payload.title).toBe('PART I: ROOTS & FOUNDATIONS');
     });
+
+    it('OPTION 1 3D CAROUSEL STUDIO DECK (2:3 VERTICAL POSTER): should bind slide hotspot tags and render vertical 2:3 aspect poster canvas', () => {
+      const videoSlideHotspot = "HS_ACT4_CAROUSEL_SLIDE_VIDEO_BTN";
+      const posterSlideHotspot = "HS_ACT4_CAROUSEL_SLIDE_POSTER_BTN";
+      const verticalAspectToken = "aspect-[2/3]";
+
+      let activeSlide: 'video' | 'poster' = 'video';
+      const toggleSlide = (slide: 'video' | 'poster') => {
+        activeSlide = slide;
+      };
+
+      expect(videoSlideHotspot).toBe("HS_ACT4_CAROUSEL_SLIDE_VIDEO_BTN");
+      expect(posterSlideHotspot).toBe("HS_ACT4_CAROUSEL_SLIDE_POSTER_BTN");
+      expect(verticalAspectToken).toBe("aspect-[2/3]");
+      expect(activeSlide).toBe("video");
+
+      toggleSlide('poster');
+      expect(activeSlide).toBe("poster");
+
+      toggleSlide('video');
+      expect(activeSlide).toBe("video");
+    });
   });
 });

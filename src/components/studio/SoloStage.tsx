@@ -1231,6 +1231,7 @@ export default function SoloStage({
   const [isReelTheaterOpen, setIsReelTheaterOpen] = useState(false);
   const [posterStyle, setPosterStyle] = useState<'vintage-35mm' | 'modern-legacy' | 'heritage-oil' | 'raw-authentic'>('modern-legacy');
   const [isGeneratingAIPoster, setIsGeneratingAIPoster] = useState(false);
+  const [activeCarouselSlide, setActiveCarouselSlide] = useState<'video' | 'poster'>('video');
 
   const handleGenerateAIPoster = async () => {
     setIsGeneratingAIPoster(true);
@@ -4194,348 +4195,301 @@ export default function SoloStage({
 
   const renderNotepad = () => (
     <div className="w-full max-w-[95vw] xl:max-w-screen-2xl mx-auto flex flex-col lg:flex-row gap-8 pb-36 min-h-[calc(100vh-160px)] overflow-y-auto">
-       <div className="w-full lg:w-1/2 flex flex-col gap-8">
-          {/* Top Container: 35mm Cinema Film Strip Frame */}
-          <div className="w-full rounded-[2.5rem] overflow-hidden border-2 border-emerald-500/25 bg-slate-950/90 shadow-[0_30px_60px_rgba(0,0,0,0.8)] relative group">
-             {/* Top 35mm Film Strip Sprocket Perforations Track */}
-             <div className="w-full bg-slate-950/90 border-b border-white/10 px-4 py-1.5 flex justify-between items-center select-none font-mono text-[9px] text-white/40 tracking-[0.3em] overflow-hidden">
-                <div className="flex items-center gap-1.5 shrink-0">
-                   <FilmIcon className="w-3 h-3 text-emerald-400" />
-                   <span className="text-emerald-400 font-bold">🎞️ 35MM CINEMA REEL #01</span>
-                </div>
-                <div className="flex items-center gap-2 overflow-hidden text-slate-600">
-                   <span>▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪</span>
-                </div>
-             </div>
-
-             {/* Video Player Canvas */}
-             <div className="aspect-video bg-black relative group">
-                {/* Master Performance Reel Badge */}
-                <div className="absolute top-4 left-4 z-10 bg-slate-950/85 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full text-[9px] font-mono font-bold text-white/80 uppercase tracking-widest flex items-center gap-1.5 shadow-lg">
-                   <Video className="w-3 h-3 text-emerald-400" />
-                   <span>Master Performance Reel</span>
-                </div>
-
-                {/* Top-Right Theater View Toggle Button */}
+       <div className="w-full lg:w-1/2 flex flex-col gap-6">
+          {/* Top Carousel Navigation Header */}
+          <div className="w-full bg-slate-950/80 backdrop-blur-xl border border-white/10 p-2 rounded-2xl flex items-center justify-between shadow-xl">
+             <div className="flex items-center gap-2">
                 <button
-                  type="button"
-                  data-hotspot-id="HS_ACT4_THEATER_TOGGLE_BTN"
-                  onClick={() => setIsReelTheaterOpen(true)}
-                  className="absolute top-4 right-4 z-10 bg-slate-950/85 hover:bg-slate-900 border border-white/10 text-white/80 hover:text-white px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-lg cursor-pointer transition-all hover:scale-105"
+                   type="button"
+                   data-hotspot-id="HS_ACT4_CAROUSEL_SLIDE_VIDEO_BTN"
+                   onClick={() => setActiveCarouselSlide('video')}
+                   className={`px-4 py-2 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
+                      activeCarouselSlide === 'video'
+                        ? 'bg-emerald-500 text-slate-950 shadow-[0_0_20px_rgba(16,185,129,0.3)] font-black scale-105'
+                        : 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/5'
+                   }`}
                 >
-                  <Maximize2 className="w-3 h-3 text-emerald-400" />
-                  <span>Theater View</span>
+                   <FilmIcon className="w-3.5 h-3.5" />
+                   <span>🎞️ Master Reel</span>
                 </button>
 
-                {previewUrl ? (
-                   !isReelTheaterOpen ? (
-                     <video 
-                       ref={previewVideoRef}
-                       src={previewUrl}
-                       onTimeUpdate={handlePreviewTimeUpdate}
-                       className="w-full h-full object-cover grayscale-[0.2] contrast-[1.1]"
-                     />
-                   ) : (
-                     <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center text-center p-6 space-y-2">
-                       <FilmIcon className="w-8 h-8 text-emerald-400 animate-pulse" />
-                       <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest">
-                         Screening in Cinematic Theater
-                       </span>
-                     </div>
-                   )
-                ) : (
-                   <div className="absolute inset-0 flex items-center justify-center text-white/10 font-black uppercase tracking-[0.5em] text-xs">Awaiting Development Reel...</div>
-                )}
-                 {/* Playback Overlay */}
-                 <div className="absolute bottom-8 left-8 right-8 z-20 flex items-center gap-6 p-4 bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-500">
-                   <TooltipProvider delayDuration={200}>
-                     <Tooltip>
-                       <TooltipTrigger asChild>
-                         <button type="button" onClick={togglePreviewPlay} className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-all cursor-pointer">
-                           {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-1" />}
-                         </button>
-                       </TooltipTrigger>
-                       <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
-                         {isPlaying ? "Pause recorded master reel" : "Play recorded master reel"}
-                       </TooltipContent>
-                     </Tooltip>
-                   </TooltipProvider>
+                <button
+                   type="button"
+                   data-hotspot-id="HS_ACT4_CAROUSEL_SLIDE_POSTER_BTN"
+                   onClick={() => setActiveCarouselSlide('poster')}
+                   className={`px-4 py-2 rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
+                      activeCarouselSlide === 'poster'
+                        ? 'bg-amber-400 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.3)] font-black scale-105'
+                        : 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/5'
+                   }`}
+                >
+                   <Camera className="w-3.5 h-3.5" />
+                   <span>🎨 Poster Studio</span>
+                </button>
+             </div>
 
-                   <div className="flex-1">
-                      <div className="flex justify-between items-center mb-2 px-1">
+             {/* Carousel Slide Indicators & Direction Arrows */}
+             <div className="flex items-center gap-3 pr-2">
+                <div className="flex items-center gap-1">
+                   <span className={`w-2 h-2 rounded-full transition-all ${activeCarouselSlide === 'video' ? 'bg-emerald-400 w-4' : 'bg-white/20'}`} />
+                   <span className={`w-2 h-2 rounded-full transition-all ${activeCarouselSlide === 'poster' ? 'bg-amber-400 w-4' : 'bg-white/20'}`} />
+                </div>
+                <button
+                   type="button"
+                   onClick={() => setActiveCarouselSlide(activeCarouselSlide === 'video' ? 'poster' : 'video')}
+                   className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                   title="Toggle Deck Slide"
+                >
+                   {activeCarouselSlide === 'video' ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                </button>
+             </div>
+          </div>
+
+          {/* Carousel Slide Viewport */}
+          <AnimatePresence mode="wait">
+             {activeCarouselSlide === 'video' ? (
+                /* SLIDE 1: 🎞️ MASTER PERFORMANCE REEL */
+                <motion.div
+                   key="slide-video"
+                   initial={{ opacity: 0, x: -20 }}
+                   animate={{ opacity: 1, x: 0 }}
+                   exit={{ opacity: 0, x: 20 }}
+                   transition={{ duration: 0.25 }}
+                   className="w-full rounded-[2.5rem] overflow-hidden border-2 border-emerald-500/25 bg-slate-950/90 shadow-[0_30px_60px_rgba(0,0,0,0.8)] relative group"
+                >
+                   {/* Top 35mm Film Strip Sprocket Perforations Track */}
+                   <div className="w-full bg-slate-950/90 border-b border-white/10 px-4 py-1.5 flex justify-between items-center select-none font-mono text-[9px] text-white/40 tracking-[0.3em] overflow-hidden">
+                      <div className="flex items-center gap-1.5 shrink-0">
+                         <FilmIcon className="w-3 h-3 text-emerald-400" />
+                         <span className="text-emerald-400 font-bold">🎞️ 35MM CINEMA REEL #01</span>
+                      </div>
+                      <div className="flex items-center gap-2 overflow-hidden text-slate-600">
+                         <span>▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪</span>
+                      </div>
+                   </div>
+
+                   {/* Video Player Canvas */}
+                   <div className="aspect-video bg-black relative group">
+                      <div className="absolute top-4 left-4 z-10 bg-slate-950/85 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full text-[9px] font-mono font-bold text-white/80 uppercase tracking-widest flex items-center gap-1.5 shadow-lg">
+                         <Video className="w-3 h-3 text-emerald-400" />
+                         <span>Master Performance Reel</span>
+                      </div>
+
+                      <button
+                        type="button"
+                        data-hotspot-id="HS_ACT4_THEATER_TOGGLE_BTN"
+                        onClick={() => setIsReelTheaterOpen(true)}
+                        className="absolute top-4 right-4 z-10 bg-slate-950/85 hover:bg-slate-900 border border-white/10 text-white/80 hover:text-white px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-lg cursor-pointer transition-all hover:scale-105"
+                      >
+                        <Maximize2 className="w-3 h-3 text-emerald-400" />
+                        <span>Theater View</span>
+                      </button>
+
+                      {previewUrl ? (
+                         !isReelTheaterOpen ? (
+                           <video 
+                             ref={previewVideoRef}
+                             src={previewUrl}
+                             onTimeUpdate={handlePreviewTimeUpdate}
+                             className="w-full h-full object-cover grayscale-[0.2] contrast-[1.1]"
+                           />
+                         ) : (
+                           <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center text-center p-6 space-y-2">
+                             <FilmIcon className="w-8 h-8 text-emerald-400 animate-pulse" />
+                             <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest">
+                               Screening in Cinematic Theater
+                             </span>
+                           </div>
+                         )
+                      ) : (
+                         <div className="absolute inset-0 flex items-center justify-center text-white/10 font-black uppercase tracking-[0.5em] text-xs">Awaiting Development Reel...</div>
+                      )}
+
+                       {/* Playback HUD Overlay */}
+                       <div className="absolute bottom-8 left-8 right-8 z-20 flex items-center gap-6 p-4 bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-500">
                          <TooltipProvider delayDuration={200}>
                            <Tooltip>
                              <TooltipTrigger asChild>
-                               <span className="text-[10px] font-black text-white/40 uppercase tracking-widest cursor-help hover:text-white/60 transition-colors">Master Reel Playback Timeline</span>
+                               <button type="button" onClick={togglePreviewPlay} className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-all cursor-pointer">
+                                 {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-1" />}
+                               </button>
                              </TooltipTrigger>
                              <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
-                               Recorded video playback timeline. Drag playhead to scrub through reel.
+                               {isPlaying ? "Pause recorded master reel" : "Play recorded master reel"}
                              </TooltipContent>
                            </Tooltip>
                          </TooltipProvider>
-                         <span className="font-mono text-[10px] text-emerald-400">{formatTime(previewCurrentTime)} / {formatTime(videoDuration)}</span>
-                      </div>
-                       <div className="relative pt-2">
-                          <Slider 
-                             value={[previewCurrentTime]} 
-                             onValueChange={(val) => handleSeekPreview(val[0])}
-                             min={0}
-                             max={videoDuration || 100}
-                             step={0.1}
-                          />
-                          {/* Beat Markers Overlay */}
-                          <div className="absolute top-0 left-0 right-0 h-4 pointer-events-none">
-                             {videoDuration > 0 && data?.emotionalBeats?.map((beat: any, idx: number) => {
-                                const percent = (beat.time / videoDuration) * 100;
-                                if (percent > 100) return null;
-                                return (
-                                  <motion.div 
-                                    key={idx}
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    className="absolute w-1 h-3 bg-emerald-500/60 rounded-full"
-                                    style={{ left: `${percent}%`, top: '8px' }}
-                                    title={beat.label}
-                                  />
-                                );
-                             })}
-                          </div>
+
+                         <div className="flex-1">
+                            <div className="flex justify-between items-center mb-2 px-1">
+                               <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Playback Scrubber</span>
+                               <span className="font-mono text-[10px] text-emerald-400">{formatTime(previewCurrentTime)} / {formatTime(videoDuration)}</span>
+                            </div>
+                            <div className="relative pt-2">
+                               <Slider 
+                                  value={[previewCurrentTime]} 
+                                  onValueChange={(val) => handleSeekPreview(val[0])}
+                                  min={0}
+                                  max={videoDuration || 100}
+                                  step={0.1}
+                               />
+                            </div>
+                         </div>
+
+                         <TooltipProvider delayDuration={200}>
+                           <Tooltip>
+                             <TooltipTrigger asChild>
+                               <button 
+                                  type="button"
+                                  data-hotspot-id="HS_ACT4_SNAP_FRAME_BTN"
+                                  onClick={handleCaptureThumbnail} 
+                                  disabled={isCapturingThumbnail} 
+                                  className="px-4 py-3 bg-white hover:bg-emerald-400 text-black text-[9.5px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(255,255,255,0.1)] disabled:opacity-50 cursor-pointer flex items-center gap-2 shrink-0"
+                               >
+                                  <Camera className="w-3.5 h-3.5 text-black" />
+                                  <span>{isCapturingThumbnail ? 'Snapping...' : `Snap Frame at ${formatTime(previewCurrentTime)}`}</span>
+                               </button>
+                             </TooltipTrigger>
+                             <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
+                               Capture frame at {formatTime(previewCurrentTime)} as Showcase Poster
+                             </TooltipContent>
+                           </Tooltip>
+                         </TooltipProvider>
                        </div>
                    </div>
 
-                   {/* Master Player Scrubber Integration: Option A Dynamic Snap Frame */}
-                   <TooltipProvider delayDuration={200}>
-                     <Tooltip>
-                       <TooltipTrigger asChild>
-                         <button 
-                            type="button"
-                            data-hotspot-id="HS_ACT4_SNAP_FRAME_BTN"
-                            onClick={handleCaptureThumbnail} 
-                            disabled={isCapturingThumbnail} 
-                            className="px-4 py-3 bg-white hover:bg-emerald-400 text-black text-[9.5px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(255,255,255,0.1)] disabled:opacity-50 cursor-pointer flex items-center gap-2 shrink-0"
-                         >
-                            <Camera className="w-3.5 h-3.5 text-black" />
-                            <span>{isCapturingThumbnail ? 'Snapping...' : `Snap Frame at ${formatTime(previewCurrentTime)}`}</span>
-                         </button>
-                       </TooltipTrigger>
-                       <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
-                         Capture frame at {formatTime(previewCurrentTime)} as Showcase Poster
-                       </TooltipContent>
-                     </Tooltip>
-                   </TooltipProvider>
-                 </div>
-             </div>
-
-             {/* Bottom 35mm Film Strip Sprocket Perforations Track */}
-             <div className="w-full bg-slate-950/90 border-t border-white/10 px-4 py-1.5 flex justify-between items-center select-none font-mono text-[9px] text-white/40 tracking-[0.3em] overflow-hidden">
-                <div className="flex items-center gap-2 overflow-hidden text-slate-600">
-                   <span>▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪</span>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0 text-white/30 text-[8px]">
-                   <span>FPS: 60 • 4K PRORES</span>
-                </div>
-             </div>
-          </div>
-
-          {/* Full Cinematic Screening Theater Modal (Elevated to z-[10000] above Stage Controls) */}
-          <AnimatePresence>
-            {isReelTheaterOpen && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[10000] bg-slate-950/95 backdrop-blur-3xl flex flex-col items-center justify-center p-6 md:p-10 select-none overflow-hidden"
-              >
-                {/* Header Control Bar */}
-                <div className="w-full max-w-6xl flex items-center justify-between mb-4 px-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                      <FilmIcon className="w-4.5 h-4.5 text-emerald-400" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-black text-white uppercase tracking-widest font-headline italic">
-                        Cinematic Screening Theater
-                      </h2>
-                      <p className="text-[10px] text-white/40 uppercase tracking-widest font-mono">
-                        Master Performance Reel Review & Frame Selector
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    data-hotspot-id="HS_ACT4_THEATER_TOGGLE_BTN"
-                    onClick={() => setIsReelTheaterOpen(false)}
-                    className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-[10px] font-mono font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    <X className="w-4 h-4 text-white" />
-                    <span>Exit Theater (Esc)</span>
-                  </button>
-                </div>
-
-                {/* Expanded 85vw Video Canvas */}
-                <div className="w-full max-w-6xl aspect-video bg-black rounded-[2.5rem] overflow-hidden border border-white/15 shadow-[0_40px_80px_rgba(0,0,0,0.8)] relative group flex items-center justify-center">
-                  {previewUrl ? (
-                    <video
-                      ref={previewVideoRef}
-                      src={previewUrl}
-                      onTimeUpdate={handlePreviewTimeUpdate}
-                      className="w-full h-full object-cover grayscale-[0.1] contrast-[1.05]"
-                    />
-                  ) : (
-                    <div className="text-white/20 font-black uppercase tracking-[0.5em] text-xs">
-                      Awaiting Master Reel...
-                    </div>
-                  )}
-
-                  {/* Floating Theater HUD Controls */}
-                  <div className="absolute bottom-6 left-6 right-6 z-20 flex items-center gap-6 p-4 bg-black/60 backdrop-blur-2xl rounded-2xl border border-white/10">
-                    <button
-                      type="button"
-                      onClick={togglePreviewPlay}
-                      className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-all cursor-pointer shrink-0"
-                    >
-                      {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-1" />}
-                    </button>
-
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center mb-1.5 px-1 font-mono text-[10px]">
-                        <span className="text-white/40 uppercase tracking-widest">Master Reel Playhead</span>
-                        <span className="text-emerald-400">{formatTime(previewCurrentTime)} / {formatTime(videoDuration)}</span>
+                   {/* Bottom Sprocket Track */}
+                   <div className="w-full bg-slate-950/90 border-t border-white/10 px-4 py-1.5 flex justify-between items-center select-none font-mono text-[9px] text-white/40 tracking-[0.3em] overflow-hidden">
+                      <div className="flex items-center gap-2 overflow-hidden text-slate-600">
+                         <span>▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪</span>
                       </div>
-                      <Slider
-                        value={[previewCurrentTime]}
-                        onValueChange={(val) => handleSeekPreview(val[0])}
-                        min={0}
-                        max={videoDuration || 100}
-                        step={0.1}
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      data-hotspot-id="HS_ACT4_THEATER_SNAP_FRAME_BTN"
-                      onClick={handleCaptureThumbnail}
-                      disabled={isCapturingThumbnail}
-                      className="px-5 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(16,185,129,0.3)] disabled:opacity-50 cursor-pointer flex items-center gap-2 shrink-0"
-                    >
-                      <Camera className="w-4 h-4 text-slate-950" />
-                      <span>{isCapturingThumbnail ? 'Snapping...' : `Snap Frame at ${formatTime(previewCurrentTime)}`}</span>
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          
-          {/* Bottom Container: Photographic Viewfinder Reticle Frame */}
-          <div className="bg-slate-950/60 border-2 border-amber-500/20 p-5 md:p-6 rounded-[2.5rem] flex flex-col justify-center items-center text-center space-y-4 shadow-[0_20px_50px_rgba(245,158,11,0.08)] relative overflow-hidden group">
-             {/* Optical Viewfinder Reticle Corners */}
-             <div className="absolute top-3 left-3 w-4 h-4 border-t-2 border-l-2 border-amber-400/70 rounded-tl-sm pointer-events-none" />
-             <div className="absolute top-3 right-3 w-4 h-4 border-t-2 border-r-2 border-amber-400/70 rounded-tr-sm pointer-events-none" />
-             <div className="absolute bottom-3 left-3 w-4 h-4 border-b-2 border-l-2 border-amber-400/70 rounded-bl-sm pointer-events-none" />
-             <div className="absolute bottom-3 right-3 w-4 h-4 border-b-2 border-r-2 border-amber-400/70 rounded-br-sm pointer-events-none" />
-
-             <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                   <Camera className="w-4 h-4 text-amber-400" />
-                </div>
-                <div className="text-left">
-                   <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-headline text-white italic">Theatrical Showcase Poster Anchor</h3>
-                      <span className="text-[9px] font-mono font-bold text-amber-400 uppercase tracking-widest px-2 py-0.5 bg-amber-500/10 rounded-full border border-amber-500/20">📷 35MM STILL ANCHOR • f/1.8</span>
+                      <div className="flex items-center gap-1.5 shrink-0 text-white/30 text-[8px]">
+                         <span>FPS: 60 • 4K PRORES</span>
+                      </div>
                    </div>
-                   <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mt-0.5">Active cover image for your Memory Cinema</p>
-                </div>
-             </div>
-
-             {/* Live Anchored Poster Frame Preview - Enlarged Cinematic Frame */}
-             {(localPosterUrl || data?.posterImageUrl) ? (
-               <div className="w-full max-w-lg md:max-w-xl aspect-video rounded-2xl overflow-hidden border-2 border-amber-500/50 shadow-[0_20px_50px_rgba(245,158,11,0.2)] relative group bg-black/60 transition-all hover:scale-[1.01]">
-                 <img 
-                   key={localPosterUrl || data?.posterImageUrl}
-                   src={localPosterUrl || data?.posterImageUrl} 
-                   alt="Poster Anchor Frame" 
-                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                 />
-                 {/* Subtle Cinematic Vignette Gradient */}
-                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30 pointer-events-none" />
-
-                 {/* Top Status & Badge Overlay */}
-                 <div className="absolute top-3 left-3 bg-slate-950/90 backdrop-blur-md border border-amber-500/60 px-3 py-1 rounded-lg text-[9px] font-mono font-bold text-amber-400 flex items-center gap-1.5 shadow-lg tracking-wider">
-                   <CheckCircle2 className="w-3 h-3 text-amber-400" />
-                   <span>POSTER ANCHORED • 4K KEY ART</span>
-                 </div>
-
-                 {/* Bottom Filmic Title Tagline */}
-                 <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end text-left pointer-events-none">
-                   <div>
-                     <span className="text-[9px] font-mono text-amber-300/80 uppercase tracking-widest block font-bold">Part I: Roots & Foundations</span>
-                     <h4 className="text-sm font-headline text-white font-bold italic drop-shadow-md">
-                       {(data?.title || data?.originalHook || 'Biographical Cinema Selection').slice(0, 45) + '...'}
-                     </h4>
-                   </div>
-                   <span className="text-[8px] font-mono text-white/50 uppercase tracking-widest bg-black/50 px-2 py-0.5 rounded border border-white/10">
-                     {posterStyle.toUpperCase()}
-                   </span>
-                 </div>
-               </div>
+                </motion.div>
              ) : (
-               <div className="w-full max-w-lg md:max-w-xl aspect-video rounded-2xl border-2 border-dashed border-amber-500/30 flex flex-col items-center justify-center bg-black/40 text-[11px] font-mono text-amber-400/60 uppercase tracking-widest p-8 text-center gap-2">
-                 <Camera className="w-8 h-8 text-amber-500/40 animate-pulse" />
-                 <span>No Poster Anchored Yet</span>
-                 <span className="text-[9px] text-white/30 lowercase font-sans">Snap a video frame or open Studio Photobooth below</span>
-               </div>
+                /* SLIDE 2: 🎨 THEATRICAL MOVIE POSTER STUDIO (Classic 2:3 Vertical Format) */
+                <motion.div
+                   key="slide-poster"
+                   initial={{ opacity: 0, x: 20 }}
+                   animate={{ opacity: 1, x: 0 }}
+                   exit={{ opacity: 0, x: -20 }}
+                   transition={{ duration: 0.25 }}
+                   className="bg-slate-950/60 border-2 border-amber-500/30 p-6 rounded-[2.5rem] flex flex-col items-center text-center space-y-6 shadow-[0_25px_60px_rgba(245,158,11,0.12)] relative overflow-hidden group"
+                >
+                   {/* Optical Viewfinder Reticle Corners */}
+                   <div className="absolute top-3 left-3 w-4 h-4 border-t-2 border-l-2 border-amber-400/70 rounded-tl-sm pointer-events-none" />
+                   <div className="absolute top-3 right-3 w-4 h-4 border-t-2 border-r-2 border-amber-400/70 rounded-tr-sm pointer-events-none" />
+                   <div className="absolute bottom-3 left-3 w-4 h-4 border-b-2 border-l-2 border-amber-400/70 rounded-bl-sm pointer-events-none" />
+                   <div className="absolute bottom-3 right-3 w-4 h-4 border-b-2 border-r-2 border-amber-400/70 rounded-br-sm pointer-events-none" />
+
+                   <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                         <Camera className="w-4 h-4 text-amber-400" />
+                      </div>
+                      <div className="text-left">
+                         <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-headline text-white italic font-bold">Theatrical Movie Poster Key Art</h3>
+                            <span className="text-[9px] font-mono font-bold text-amber-400 uppercase tracking-widest px-2 py-0.5 bg-amber-500/10 rounded-full border border-amber-500/20">📷 2:3 VERTICAL KEY ART • f/1.8</span>
+                         </div>
+                         <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mt-0.5">Authentic theatrical poster presentation for Memory Cinema</p>
+                      </div>
+                   </div>
+
+                   {/* Classic 2:3 Vertical Theatrical Poster Canvas (400px x 600px aspect-ratio) */}
+                   <div className="w-full max-w-xs md:max-w-sm aspect-[2/3] rounded-2xl overflow-hidden border-2 border-amber-500/50 shadow-[0_25px_60px_rgba(245,158,11,0.25)] relative group bg-black/80 transition-all hover:scale-[1.01]">
+                      {(localPosterUrl || data?.posterImageUrl) ? (
+                        <>
+                          <img 
+                            key={localPosterUrl || data?.posterImageUrl}
+                            src={localPosterUrl || data?.posterImageUrl} 
+                            alt="Poster Anchor Frame" 
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                          />
+                          {/* Rich Filmic Vignette Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-black/40 pointer-events-none" />
+
+                          {/* Top Status Badge */}
+                          <div className="absolute top-4 left-4 bg-slate-950/90 backdrop-blur-md border border-amber-500/60 px-3 py-1 rounded-lg text-[9px] font-mono font-bold text-amber-400 flex items-center gap-1.5 shadow-lg tracking-wider">
+                            <CheckCircle2 className="w-3 h-3 text-amber-400" />
+                            <span>POSTER ANCHORED • 4K KEY ART</span>
+                          </div>
+
+                          {/* Bottom Hollywood Poster Typography Overlay */}
+                          <div className="absolute bottom-5 left-5 right-5 text-left pointer-events-none space-y-1">
+                            <span className="text-[9px] font-mono text-amber-300/90 uppercase tracking-[0.25em] block font-bold">A MEMORY WEAVER CINEMA SELECTION</span>
+                            <h3 className="text-lg font-headline font-black text-white italic drop-shadow-lg leading-snug">
+                              PART I: ROOTS & FOUNDATIONS
+                            </h3>
+                            <p className="text-[10px] text-white/70 font-serif italic line-clamp-2 drop-shadow-md">
+                              {(data?.title || data?.originalHook || 'Biographical Memory Odyssey').slice(0, 60)}
+                            </p>
+                            <div className="pt-2 flex justify-between items-center text-[8px] font-mono text-white/40 uppercase tracking-widest border-t border-white/10">
+                              <span>STYLE: {posterStyle.toUpperCase()}</span>
+                              <span>1956 • KUTCH TO GREAT BRITAIN</span>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-full h-full border-2 border-dashed border-amber-500/30 flex flex-col items-center justify-center bg-black/40 text-[11px] font-mono text-amber-400/60 uppercase tracking-widest p-8 text-center gap-3">
+                          <Camera className="w-10 h-10 text-amber-500/40 animate-pulse" />
+                          <span className="font-bold">No Poster Anchored Yet</span>
+                          <span className="text-[9px] text-white/40 lowercase font-sans max-w-[200px]">Generate an AI key art poster or snap a video frame</span>
+                        </div>
+                      )}
+                   </div>
+
+                   {/* 4 Artistic Style Presets Selector */}
+                   <div className="flex flex-wrap justify-center gap-2 max-w-md pt-2">
+                     {[
+                       { id: 'vintage-35mm', label: '🎞️ Vintage 35mm' },
+                       { id: 'modern-legacy', label: '💎 Modern Legacy' },
+                       { id: 'heritage-oil', label: '🎨 Heritage Oil' },
+                       { id: 'raw-authentic', label: '📷 Raw Authentic' },
+                     ].map((style) => (
+                       <button
+                         key={style.id}
+                         type="button"
+                         onClick={() => setPosterStyle(style.id as any)}
+                         className={`px-3.5 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                           posterStyle === style.id
+                             ? 'bg-amber-400 text-slate-950 shadow-md scale-105 font-black'
+                             : 'bg-white/5 hover:bg-white/10 text-white/60 border border-white/10'
+                         }`}
+                       >
+                         {style.label}
+                       </button>
+                     ))}
+                   </div>
+
+                   {/* Master Action Triggers */}
+                   <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                     <button 
+                        type="button"
+                        data-hotspot-id="HS_ACT4_GENERATE_AI_POSTER_BTN"
+                        onClick={handleGenerateAIPoster} 
+                        disabled={isGeneratingAIPoster} 
+                        className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(16,185,129,0.3)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                     >
+                        {isGeneratingAIPoster ? <Loader2 className="w-4 h-4 text-slate-950 animate-spin" /> : <Wand2 className="w-4 h-4 text-slate-950" />}
+                        <span>{isGeneratingAIPoster ? 'Synthesising Scene...' : 'Generate AI Movie Poster'}</span>
+                     </button>
+
+                     <button 
+                        type="button"
+                        data-hotspot-id="HS_ACT4_OPEN_PHOTOBOOTH_BTN"
+                        onClick={handleOpenSelfiePhotobooth} 
+                        disabled={isCapturingThumbnail} 
+                        className="px-6 py-3.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(245,158,11,0.25)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                     >
+                        <Sparkles className="w-4 h-4 text-slate-950" />
+                        <span>Open Studio Photobooth</span>
+                     </button>
+                   </div>
+                </motion.div>
              )}
-
-             {/* 4 Artistic Style Presets Selector */}
-             <div className="flex flex-wrap justify-center gap-2 pt-1 max-w-md">
-               {[
-                 { id: 'vintage-35mm', label: '🎞️ Vintage 35mm' },
-                 { id: 'modern-legacy', label: '💎 Modern Legacy' },
-                 { id: 'heritage-oil', label: '🎨 Heritage Oil' },
-                 { id: 'raw-authentic', label: '📷 Raw Authentic' },
-               ].map((style) => (
-                 <button
-                   key={style.id}
-                   type="button"
-                   onClick={() => setPosterStyle(style.id as any)}
-                   className={`px-3 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                     posterStyle === style.id
-                       ? 'bg-amber-400 text-slate-950 shadow-md scale-105'
-                       : 'bg-white/5 hover:bg-white/10 text-white/60 border border-white/10'
-                   }`}
-                 >
-                   {style.label}
-                 </button>
-               ))}
-             </div>
-
-             {/* Action Triggers: AI Generator & Photobooth */}
-             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-               <button 
-                  type="button"
-                  data-hotspot-id="HS_ACT4_GENERATE_AI_POSTER_BTN"
-                  onClick={handleGenerateAIPoster} 
-                  disabled={isGeneratingAIPoster} 
-                  className="px-5 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(16,185,129,0.3)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
-               >
-                  {isGeneratingAIPoster ? <Loader2 className="w-4 h-4 text-slate-950 animate-spin" /> : <Wand2 className="w-4 h-4 text-slate-950" />}
-                  <span>{isGeneratingAIPoster ? 'Synthesising Scene...' : 'Generate AI Movie Poster'}</span>
-               </button>
-
-               <button 
-                  type="button"
-                  data-hotspot-id="HS_ACT4_OPEN_PHOTOBOOTH_BTN"
-                  onClick={handleOpenSelfiePhotobooth} 
-                  disabled={isCapturingThumbnail} 
-                  className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(245,158,11,0.25)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
-               >
-                  <Sparkles className="w-4 h-4 text-slate-950" />
-                  <span>Open Studio Photobooth</span>
-               </button>
-             </div>
-          </div>
+          </AnimatePresence>
        </div>
 
        <div className="w-full lg:w-1/2 bg-black/40 border border-white/10 rounded-[3rem] overflow-hidden shadow-2xl h-full flex flex-col min-h-[500px]">
