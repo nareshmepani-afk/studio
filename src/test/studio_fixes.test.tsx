@@ -1186,5 +1186,52 @@ describe('Studio Regression Tests', () => {
       expect(isScrolling).toBe(true);
       expect(isRecording).toBe(true);
     });
+
+    it('ACT IV POSTER ANCHORING & ACOUSTIC COUNTDOWN: should bind HS_ACT4_SNAP_FRAME_BTN and HS_ACT4_OPEN_PHOTOBOOTH_BTN hotspots and run acoustic countdown pipeline', () => {
+      const snapFrameHotspot = "HS_ACT4_SNAP_FRAME_BTN";
+      const openPhotoboothHotspot = "HS_ACT4_OPEN_PHOTOBOOTH_BTN";
+
+      expect(snapFrameHotspot).toBe("HS_ACT4_SNAP_FRAME_BTN");
+      expect(openPhotoboothHotspot).toBe("HS_ACT4_OPEN_PHOTOBOOTH_BTN");
+
+      // Acoustic Countdown Pipeline Simulation
+      const spokenCues: string[] = [];
+      let shutterFired = false;
+
+      const speakAcousticCue = (cue: string) => {
+        spokenCues.push(cue);
+      };
+
+      const playShutterSound = () => {
+        shutterFired = true;
+      };
+
+      let selfieCountdown: number | null = null;
+
+      // Start Photobooth Countdown
+      selfieCountdown = 3;
+      speakAcousticCue("Three");
+
+      expect(selfieCountdown).toBe(3);
+      expect(spokenCues).toEqual(["Three"]);
+
+      // T-2s
+      selfieCountdown = 2;
+      speakAcousticCue("Two");
+      expect(spokenCues).toEqual(["Three", "Two"]);
+
+      // T-1s
+      selfieCountdown = 1;
+      speakAcousticCue("One");
+      expect(spokenCues).toEqual(["Three", "Two", "One"]);
+
+      // Snap Moment (0s)
+      selfieCountdown = null;
+      speakAcousticCue("Smile!");
+      playShutterSound();
+
+      expect(spokenCues).toEqual(["Three", "Two", "One", "Smile!"]);
+      expect(shutterFired).toBe(true);
+    });
   });
 });

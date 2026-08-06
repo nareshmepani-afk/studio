@@ -1406,6 +1406,63 @@ export default function SoloStage({
     }
   }, [isSelfieModalOpen, selfieCapturedPreview, stream]);
 
+  // Acoustic Countdown Cues & Web Audio Shutter Synthesiser (UK English per Rule 20)
+  const speakAcousticCue = (text: string) => {
+    try {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 1.25;
+        utter.pitch = 1.1;
+        utter.lang = 'en-GB';
+        window.speechSynthesis.speak(utter);
+      }
+    } catch (e) {
+      console.warn("[Acoustic Cue] Speech synthesis unavailable:", e);
+    }
+  };
+
+  const playShutterSound = () => {
+    try {
+      if (typeof window === 'undefined') return;
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      
+      const bufferSize = Math.floor(ctx.sampleRate * 0.08);
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.15));
+      }
+      
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.setValueAtTime(1200, ctx.currentTime);
+      
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.7, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+      
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      
+      noise.start();
+    } catch (e) {
+      console.warn("[Acoustic Cue] Web Audio shutter failed:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (selfieCountdown === 3) speakAcousticCue("Three");
+    else if (selfieCountdown === 2) speakAcousticCue("Two");
+    else if (selfieCountdown === 1) speakAcousticCue("One");
+  }, [selfieCountdown]);
+
   const handleTriggerSelfieCountdown = (e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
@@ -1428,6 +1485,9 @@ export default function SoloStage({
   const executeSelfieSnap = async () => {
     if (!selfieVideoRef.current) return;
     try {
+      speakAcousticCue("Smile!");
+      playShutterSound();
+
       const video = selfieVideoRef.current;
       const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth || 1280;
@@ -4092,7 +4152,7 @@ export default function SoloStage({
                 <TooltipProvider delayDuration={200}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button onClick={togglePreviewPlay} className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-all cursor-pointer">
+                      <button type="button" onClick={togglePreviewPlay} className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-all cursor-pointer">
                         {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-1" />}
                       </button>
                     </TooltipTrigger>
@@ -4144,22 +4204,44 @@ export default function SoloStage({
                        </div>
                     </div>
                 </div>
+
+                {/* Master Player Scrubber Integration: Snap This Frame */}
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button 
+                         type="button"
+                         data-hotspot-id="HS_ACT4_SNAP_FRAME_BTN"
+                         onClick={handleCaptureThumbnail} 
+                         disabled={isCapturingThumbnail} 
+                         className="px-4 py-3 bg-white hover:bg-emerald-400 text-black text-[9.5px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(255,255,255,0.1)] disabled:opacity-50 cursor-pointer flex items-center gap-2 shrink-0"
+                      >
+                         <Camera className="w-3.5 h-3.5 text-black" />
+                         <span>{isCapturingThumbnail ? 'Snapping...' : 'Snap This Frame'}</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
+                      Anchor current video frame as theatrical showcase poster
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
           </div>
           
+          {/* Bottom Container: Theatrical Showcase Poster Anchor */}
           <div className="bg-white/[0.02] border border-white/5 p-5 md:p-6 rounded-[2.5rem] flex flex-col justify-center items-center text-center space-y-4">
              <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                   <Camera className="w-4 h-4 text-emerald-400" />
+                   <Sparkles className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div className="text-left">
-                   <h3 className="text-sm font-headline text-white italic">Cinematic Visualization</h3>
-                   <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Capture video frame or studio selfie for poster</p>
+                   <h3 className="text-sm font-headline text-white italic">Theatrical Showcase Poster Anchor</h3>
+                   <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Selected still frame or studio photobooth capture</p>
                 </div>
              </div>
 
              {/* Live Anchored Poster Frame Preview */}
-             {(localPosterUrl || data?.posterImageUrl) && (
+             {(localPosterUrl || data?.posterImageUrl) ? (
                <div className="w-full max-w-xs aspect-video rounded-xl overflow-hidden border border-emerald-500/40 shadow-xl relative group">
                  <img 
                    key={localPosterUrl || data?.posterImageUrl}
@@ -4172,26 +4254,23 @@ export default function SoloStage({
                    <span>POSTER ANCHORED</span>
                  </div>
                </div>
+             ) : (
+               <div className="w-full max-w-xs aspect-video rounded-xl border border-dashed border-white/20 flex items-center justify-center bg-black/40 text-[10px] font-mono text-white/40 uppercase tracking-widest p-6 text-center">
+                 No Poster Anchored Yet
+               </div>
              )}
 
-             {/* Dual Capture Action Buttons */}
-             <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+             {/* Single Master Action Trigger for Photobooth */}
+             <div className="pt-1">
                <button 
-                  onClick={handleCaptureThumbnail} 
-                  disabled={isCapturingThumbnail} 
-                  className="px-5 py-3 bg-white text-black text-[9.5px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(255,255,255,0.1)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
-               >
-                  <Camera className="w-3.5 h-3.5 text-black" />
-                  <span>{isCapturingThumbnail ? 'Capturing...' : 'Snap Video Frame'}</span>
-               </button>
-
-               <button 
+                  type="button"
+                  data-hotspot-id="HS_ACT4_OPEN_PHOTOBOOTH_BTN"
                   onClick={handleOpenSelfiePhotobooth} 
                   disabled={isCapturingThumbnail} 
-                  className="px-5 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[9.5px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(16,185,129,0.25)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                  className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(16,185,129,0.25)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
                >
-                  <Sparkles className="w-3.5 h-3.5 text-slate-950" />
-                  <span>Studio Selfie Photobooth</span>
+                  <Sparkles className="w-4 h-4 text-slate-950" />
+                  <span>Open Studio Photobooth</span>
                </button>
              </div>
           </div>
