@@ -1226,6 +1226,7 @@ export default function SoloStage({
   const videoRef = useRef<HTMLVideoElement>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewCurrentTime, setPreviewCurrentTime] = useState(0);
 
   // 3. Mount Stream to Live Video Element
   useEffect(() => {
@@ -1298,13 +1299,9 @@ export default function SoloStage({
   };
 
   const handleSeekPreview = useCallback((seconds: number) => {
+    setPreviewCurrentTime(seconds);
     if (previewVideoRef.current) {
       previewVideoRef.current.currentTime = seconds;
-      if (previewVideoRef.current.paused) {
-        previewVideoRef.current.play().catch(() => {});
-        setIsPlaying(true);
-      }
-      toast.info(`Seeked master reel to ${formatTime(seconds)}`);
     }
   }, []);
 
@@ -1834,6 +1831,7 @@ export default function SoloStage({
   const handlePreviewTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
     const vid = e.currentTarget;
     const currentTime = vid.currentTime;
+    setPreviewCurrentTime(currentTime);
     
     // Safety check just in case Infinity slipped through
     if (videoDuration === 0 || !isFinite(videoDuration)) return;
@@ -1842,6 +1840,7 @@ export default function SoloStage({
     if (currentTime > trimRange[1]) {
       vid.pause();
       vid.currentTime = trimRange[0];
+      setIsPlaying(false);
     }
   };
 
@@ -4176,17 +4175,16 @@ export default function SoloStage({
                             <span className="text-[10px] font-black text-white/40 uppercase tracking-widest cursor-help hover:text-white/60 transition-colors">Master Reel Playback Timeline</span>
                           </TooltipTrigger>
                           <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
-                            Recorded video playback timeline. Drag slider to scrub through reel.
+                            Recorded video playback timeline. Drag playhead to scrub through reel.
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <span className="font-mono text-[10px] text-emerald-400">{formatTime(trimRange[0])} / {formatTime(videoDuration)}</span>
+                      <span className="font-mono text-[10px] text-emerald-400">{formatTime(previewCurrentTime)} / {formatTime(videoDuration)}</span>
                    </div>
                     <div className="relative pt-2">
                        <Slider 
-                          value={trimRange} 
-                          onValueChange={(val) => setTrimRange(val as [number, number])}
-                          onValueCommit={(val) => update({ trimStart: val[0], trimEnd: val[1] })}
+                          value={[previewCurrentTime]} 
+                          onValueChange={(val) => handleSeekPreview(val[0])}
                           min={0}
                           max={videoDuration || 100}
                           step={0.1}
@@ -4211,7 +4209,7 @@ export default function SoloStage({
                     </div>
                 </div>
 
-                {/* Master Player Scrubber Integration: Snap This Frame */}
+                {/* Master Player Scrubber Integration: Option A Dynamic Snap Frame */}
                 <TooltipProvider delayDuration={200}>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -4223,11 +4221,11 @@ export default function SoloStage({
                          className="px-4 py-3 bg-white hover:bg-emerald-400 text-black text-[9.5px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(255,255,255,0.1)] disabled:opacity-50 cursor-pointer flex items-center gap-2 shrink-0"
                       >
                          <Camera className="w-3.5 h-3.5 text-black" />
-                         <span>{isCapturingThumbnail ? 'Snapping...' : 'Snap This Frame'}</span>
+                         <span>{isCapturingThumbnail ? 'Snapping...' : `Snap Frame at ${formatTime(previewCurrentTime)}`}</span>
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
-                      Capture frame at {formatTime(trimRange[0])} as Showcase Poster
+                      Capture frame at {formatTime(previewCurrentTime)} as Showcase Poster
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

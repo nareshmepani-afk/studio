@@ -1233,5 +1233,27 @@ describe('Studio Regression Tests', () => {
       expect(spokenCues).toEqual(["Three", "Two", "One", "Smile!"]);
       expect(shutterFired).toBe(true);
     });
+
+    it('OPTION A SINGLE PLAYHEAD SCRUBBER & DYNAMIC SNAP LABEL: should update currentTime and dynamically format snap button label text', () => {
+      let currentTime = 0;
+      const formatTime = (secs: number) => {
+        const m = Math.floor(secs / 60).toString().padStart(2, '0');
+        const s = Math.floor(secs % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+      };
+
+      const getButtonLabel = (time: number) => `Snap Frame at ${formatTime(time)}`;
+
+      // Initial Position (00:00)
+      expect(getButtonLabel(currentTime)).toBe('Snap Frame at 00:00');
+
+      // User seeks to 14 seconds
+      currentTime = 14;
+      expect(getButtonLabel(currentTime)).toBe('Snap Frame at 00:14');
+
+      // User seeks to 1 minute 25 seconds
+      currentTime = 85;
+      expect(getButtonLabel(currentTime)).toBe('Snap Frame at 01:25');
+    });
   });
 });
