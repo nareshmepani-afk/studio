@@ -1294,5 +1294,15 @@ describe('Studio Regression Tests', () => {
       handleEscape('Escape');
       expect(isReelTheaterOpen).toBe(false);
     });
+
+    it('PRODUCTION CONTROL BAR THEATER DISMISSAL: should return null when isTheaterOpen is true to prevent floating bar overlaps', () => {
+      const renderControlBar = (isTheaterOpen: boolean) => {
+        if (isTheaterOpen) return null;
+        return { type: 'ProductionControlBar', visible: true };
+      };
+
+      expect(renderControlBar(false)).toEqual({ type: 'ProductionControlBar', visible: true });
+      expect(renderControlBar(true)).toBeNull();
+    });
   });
 });

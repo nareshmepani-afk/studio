@@ -30,6 +30,7 @@ interface ProductionControlBarProps {
   mentorActive?: boolean;
   isSaving?: boolean;
   isProductionLocked?: boolean;
+  isTheaterOpen?: boolean;
 }
 
 const SynapseTether = ({ type, xOffset = 0 }: { type: string, xOffset?: number }) => {
@@ -56,10 +57,8 @@ const SynapseTether = ({ type, xOffset = 0 }: { type: string, xOffset?: number }
       >
         <svg className="w-full h-full overflow-visible">
           <motion.line
-            // Start from the word (approx center-screen horizontal + offset)
             x1={dimensions.width / 2 + xOffset}
             y1={dimensions.height * 0.45} 
-            // Target the inline Clarity meter (approx 33% position in screenshot)
             x2={dimensions.width / 2 + 250} 
             y2={dimensions.height * 0.52} 
             stroke={color}
@@ -92,8 +91,10 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   isLowClarity = false,
   mentorActive = false,
   isSaving = false,
-  isProductionLocked = false
+  isProductionLocked = false,
+  isTheaterOpen = false
 }) => {
+  if (isTheaterOpen) return null;
   const { 
     detectedAnchors, 
     draggingCatalyst, 

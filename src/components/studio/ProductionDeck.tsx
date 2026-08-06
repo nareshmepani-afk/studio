@@ -125,6 +125,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     } = useGlobalStudioState();
 
     const [hasNavigatedBack, setHasNavigatedBack] = useState(false);
+    const [isTheaterActive, setIsTheaterActive] = useState(false);
     const prevStageRef = useRef<number>(0);
 
     useEffect(() => {
@@ -658,6 +659,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             case 'solo':
                 return (
                     <SoloStage
+                        onTheaterToggle={setIsTheaterActive}
                         formRef={formRef}
                         data={memoryData}
                         update={handleUpdate}
@@ -1208,6 +1210,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                          mentorActive={mentorModeActive}
                                          isSaving={isSavingNext}
                                          isProductionLocked={!!isProductionLocked}
+                                         isTheaterOpen={isTheaterActive}
                                      />
                                  </div>
                              )}

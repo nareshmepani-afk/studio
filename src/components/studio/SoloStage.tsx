@@ -89,6 +89,7 @@ interface RoomProps {
     formRef?: React.RefObject<any>;
     onClearBackup?: () => void;
     onSelectRoom?: (room: 'solo' | 'collaborative' | 'guest') => void;
+    onTheaterToggle?: (isOpen: boolean) => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -104,7 +105,7 @@ export default function SoloStage({
   currentStage, mentorActive, onToggleMentor, onClarityChange,
   onNext, onPrev, isComplete, charge, wordCount, highlightClarity,
   onboardingJustClosed, isUntouched, onActivity, formRef, onClearBackup,
-  onSelectRoom
+  onSelectRoom, onTheaterToggle
 }: RoomProps) {
   const [mounted, setMounted] = useState(false);
   const { user, syncStatus } = useAuth();
@@ -1238,6 +1239,10 @@ export default function SoloStage({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isReelTheaterOpen]);
+
+  useEffect(() => {
+    onTheaterToggle?.(isReelTheaterOpen || isTheaterExpanded);
+  }, [isReelTheaterOpen, isTheaterExpanded, onTheaterToggle]);
 
   // 3. Mount Stream to Live Video Element
   useEffect(() => {
