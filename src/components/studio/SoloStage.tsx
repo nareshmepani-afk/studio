@@ -22,7 +22,7 @@ import {
   Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
   Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
   Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater, Trash2,
-  ExternalLink, ChevronDown, ChevronUp, Download, VideoOff
+  ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -1227,6 +1227,17 @@ export default function SoloStage({
   const previewVideoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewCurrentTime, setPreviewCurrentTime] = useState(0);
+  const [isReelTheaterOpen, setIsReelTheaterOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isReelTheaterOpen) {
+        setIsReelTheaterOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isReelTheaterOpen]);
 
   // 3. Mount Stream to Live Video Element
   useEffect(() => {
@@ -1293,6 +1304,7 @@ export default function SoloStage({
         previewVideoRef.current.pause();
       } else {
         previewVideoRef.current.play();
+        setIsReelTheaterOpen(true);
       }
       setIsPlaying(!isPlaying);
     }
@@ -4142,6 +4154,17 @@ export default function SoloStage({
                 <span>Master Performance Reel</span>
              </div>
 
+             {/* Top-Right Theater View Toggle Button */}
+             <button
+               type="button"
+               data-hotspot-id="HS_ACT4_THEATER_TOGGLE_BTN"
+               onClick={() => setIsReelTheaterOpen(true)}
+               className="absolute top-4 right-4 z-10 bg-slate-950/85 hover:bg-slate-900 border border-white/10 text-white/80 hover:text-white px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-lg cursor-pointer transition-all hover:scale-105"
+             >
+               <Maximize2 className="w-3 h-3 text-emerald-400" />
+               <span>Theater View</span>
+             </button>
+
              {previewUrl ? (
                 <video 
                   ref={previewVideoRef}
@@ -4231,6 +4254,97 @@ export default function SoloStage({
                 </TooltipProvider>
               </div>
           </div>
+
+          {/* Full Cinematic Screening Theater Modal */}
+          <AnimatePresence>
+            {isReelTheaterOpen && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[500] bg-slate-950/95 backdrop-blur-3xl flex flex-col items-center justify-center p-6 md:p-10 select-none overflow-hidden"
+              >
+                {/* Header Control Bar */}
+                <div className="w-full max-w-6xl flex items-center justify-between mb-4 px-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                      <FilmIcon className="w-4.5 h-4.5 text-emerald-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-black text-white uppercase tracking-widest font-headline italic">
+                        Cinematic Screening Theater
+                      </h2>
+                      <p className="text-[10px] text-white/40 uppercase tracking-widest font-mono">
+                        Master Performance Reel Review & Frame Selector
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    data-hotspot-id="HS_ACT4_THEATER_TOGGLE_BTN"
+                    onClick={() => setIsReelTheaterOpen(false)}
+                    className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-[10px] font-mono font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    <X className="w-4 h-4 text-white" />
+                    <span>Exit Theater (Esc)</span>
+                  </button>
+                </div>
+
+                {/* Expanded 85vw Video Canvas */}
+                <div className="w-full max-w-6xl aspect-video bg-black rounded-[2.5rem] overflow-hidden border border-white/15 shadow-[0_40px_80px_rgba(0,0,0,0.8)] relative group flex items-center justify-center">
+                  {previewUrl ? (
+                    <video
+                      ref={previewVideoRef}
+                      src={previewUrl}
+                      onTimeUpdate={handlePreviewTimeUpdate}
+                      className="w-full h-full object-cover grayscale-[0.1] contrast-[1.05]"
+                    />
+                  ) : (
+                    <div className="text-white/20 font-black uppercase tracking-[0.5em] text-xs">
+                      Awaiting Master Reel...
+                    </div>
+                  )}
+
+                  {/* Floating Theater HUD Controls */}
+                  <div className="absolute bottom-6 left-6 right-6 z-20 flex items-center gap-6 p-4 bg-black/60 backdrop-blur-2xl rounded-2xl border border-white/10">
+                    <button
+                      type="button"
+                      onClick={togglePreviewPlay}
+                      className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-all cursor-pointer shrink-0"
+                    >
+                      {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-1" />}
+                    </button>
+
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center mb-1.5 px-1 font-mono text-[10px]">
+                        <span className="text-white/40 uppercase tracking-widest">Master Reel Playhead</span>
+                        <span className="text-emerald-400">{formatTime(previewCurrentTime)} / {formatTime(videoDuration)}</span>
+                      </div>
+                      <Slider
+                        value={[previewCurrentTime]}
+                        onValueChange={(val) => handleSeekPreview(val[0])}
+                        min={0}
+                        max={videoDuration || 100}
+                        step={0.1}
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      data-hotspot-id="HS_ACT4_THEATER_SNAP_FRAME_BTN"
+                      onClick={handleCaptureThumbnail}
+                      disabled={isCapturingThumbnail}
+                      className="px-5 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(16,185,129,0.3)] disabled:opacity-50 cursor-pointer flex items-center gap-2 shrink-0"
+                    >
+                      <Camera className="w-4 h-4 text-slate-950" />
+                      <span>{isCapturingThumbnail ? 'Snapping...' : `Snap Frame at ${formatTime(previewCurrentTime)}`}</span>
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           
           {/* Bottom Container: Theatrical Showcase Poster Anchor */}
           <div className="bg-white/[0.02] border border-white/5 p-5 md:p-6 rounded-[2.5rem] flex flex-col justify-center items-center text-center space-y-4">

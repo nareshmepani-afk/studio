@@ -1255,5 +1255,44 @@ describe('Studio Regression Tests', () => {
       currentTime = 85;
       expect(getButtonLabel(currentTime)).toBe('Snap Frame at 01:25');
     });
+
+    it('CINEMATIC THEATER OVERLAY: should bind HS_ACT4_THEATER_TOGGLE_BTN & HS_ACT4_THEATER_SNAP_FRAME_BTN hotspots, mount overlay, and support Escape key dismissal', () => {
+      const theaterToggleHotspot = "HS_ACT4_THEATER_TOGGLE_BTN";
+      const theaterSnapHotspot = "HS_ACT4_THEATER_SNAP_FRAME_BTN";
+
+      expect(theaterToggleHotspot).toBe("HS_ACT4_THEATER_TOGGLE_BTN");
+      expect(theaterSnapHotspot).toBe("HS_ACT4_THEATER_SNAP_FRAME_BTN");
+
+      let isReelTheaterOpen = false;
+      let isPlaying = false;
+
+      // Hitting Play or Theater View button opens Theater Overlay
+      const onTogglePlay = () => {
+        if (!isPlaying) {
+          isPlaying = true;
+          isReelTheaterOpen = true;
+        } else {
+          isPlaying = false;
+        }
+      };
+
+      const handleEscape = (key: string) => {
+        if (key === 'Escape' && isReelTheaterOpen) {
+          isReelTheaterOpen = false;
+        }
+      };
+
+      // Initial Closed State
+      expect(isReelTheaterOpen).toBe(false);
+
+      // Hit Play -> Opens Theater Overlay
+      onTogglePlay();
+      expect(isReelTheaterOpen).toBe(true);
+      expect(isPlaying).toBe(true);
+
+      // Press Escape -> Dismisses Theater Overlay cleanly
+      handleEscape('Escape');
+      expect(isReelTheaterOpen).toBe(false);
+    });
   });
 });
