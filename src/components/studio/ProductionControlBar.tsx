@@ -94,7 +94,6 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   isProductionLocked = false,
   isTheaterOpen = false
 }) => {
-  if (isTheaterOpen) return null;
   const { 
     detectedAnchors, 
     draggingCatalyst, 
@@ -132,6 +131,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
       return () => clearTimeout(timer);
     }
   }, [lastDetectedAnchor]);
+
+  if (isTheaterOpen) return null;
   
   const steps = [
     { label: 'Inciting Memory', act: 'ACT I' },
