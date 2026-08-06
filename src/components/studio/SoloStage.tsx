@@ -4152,121 +4152,146 @@ export default function SoloStage({
   const renderNotepad = () => (
     <div className="w-full max-w-[95vw] xl:max-w-screen-2xl mx-auto flex flex-col lg:flex-row gap-8 pb-36 min-h-[calc(100vh-160px)] overflow-y-auto">
        <div className="w-full lg:w-1/2 flex flex-col gap-8">
-          <div className="aspect-video bg-black rounded-[3rem] overflow-hidden border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.6)] relative group">
-             {/* Master Performance Reel Badge */}
-             <div className="absolute top-4 left-4 z-10 bg-slate-950/85 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full text-[9px] font-mono font-bold text-white/80 uppercase tracking-widest flex items-center gap-1.5 shadow-lg">
-                <Video className="w-3 h-3 text-emerald-400" />
-                <span>Master Performance Reel</span>
+          {/* Top Container: 35mm Cinema Film Strip Frame */}
+          <div className="w-full rounded-[2.5rem] overflow-hidden border-2 border-emerald-500/25 bg-slate-950/90 shadow-[0_30px_60px_rgba(0,0,0,0.8)] relative group">
+             {/* Top 35mm Film Strip Sprocket Perforations Track */}
+             <div className="w-full bg-slate-950/90 border-b border-white/10 px-4 py-1.5 flex justify-between items-center select-none font-mono text-[9px] text-white/40 tracking-[0.3em] overflow-hidden">
+                <div className="flex items-center gap-1.5 shrink-0">
+                   <FilmIcon className="w-3 h-3 text-emerald-400" />
+                   <span className="text-emerald-400 font-bold">🎞️ 35MM CINEMA REEL #01</span>
+                </div>
+                <div className="flex items-center gap-2 overflow-hidden text-slate-600">
+                   <span>▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪</span>
+                </div>
              </div>
 
-             {/* Top-Right Theater View Toggle Button */}
-             <button
-               type="button"
-               data-hotspot-id="HS_ACT4_THEATER_TOGGLE_BTN"
-               onClick={() => setIsReelTheaterOpen(true)}
-               className="absolute top-4 right-4 z-10 bg-slate-950/85 hover:bg-slate-900 border border-white/10 text-white/80 hover:text-white px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-lg cursor-pointer transition-all hover:scale-105"
-             >
-               <Maximize2 className="w-3 h-3 text-emerald-400" />
-               <span>Theater View</span>
-             </button>
-
-             {previewUrl ? (
-                !isReelTheaterOpen ? (
-                  <video 
-                    ref={previewVideoRef}
-                    src={previewUrl}
-                    onTimeUpdate={handlePreviewTimeUpdate}
-                    className="w-full h-full object-cover grayscale-[0.2] contrast-[1.1]"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center text-center p-6 space-y-2">
-                    <FilmIcon className="w-8 h-8 text-emerald-400 animate-pulse" />
-                    <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest">
-                      Screening in Cinematic Theater
-                    </span>
-                  </div>
-                )
-             ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-white/10 font-black uppercase tracking-[0.5em] text-xs">Awaiting Development Reel...</div>
-             )}
-              {/* Playback Overlay */}
-              <div className="absolute bottom-8 left-8 right-8 z-20 flex items-center gap-6 p-4 bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-500">
-                <TooltipProvider delayDuration={200}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button type="button" onClick={togglePreviewPlay} className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-all cursor-pointer">
-                        {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-1" />}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
-                      {isPlaying ? "Pause recorded master reel" : "Play recorded master reel"}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
-                <div className="flex-1">
-                   <div className="flex justify-between items-center mb-2 px-1">
-                      <TooltipProvider delayDuration={200}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest cursor-help hover:text-white/60 transition-colors">Master Reel Playback Timeline</span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
-                            Recorded video playback timeline. Drag playhead to scrub through reel.
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <span className="font-mono text-[10px] text-emerald-400">{formatTime(previewCurrentTime)} / {formatTime(videoDuration)}</span>
-                   </div>
-                    <div className="relative pt-2">
-                       <Slider 
-                          value={[previewCurrentTime]} 
-                          onValueChange={(val) => handleSeekPreview(val[0])}
-                          min={0}
-                          max={videoDuration || 100}
-                          step={0.1}
-                       />
-                       {/* Beat Markers Overlay */}
-                       <div className="absolute top-0 left-0 right-0 h-4 pointer-events-none">
-                          {videoDuration > 0 && data?.emotionalBeats?.map((beat: any, idx: number) => {
-                             const percent = (beat.time / videoDuration) * 100;
-                             if (percent > 100) return null;
-                             return (
-                               <motion.div 
-                                 key={idx}
-                                 initial={{ scale: 0 }}
-                                 animate={{ scale: 1 }}
-                                 className="absolute w-1 h-3 bg-emerald-500/60 rounded-full"
-                                 style={{ left: `${percent}%`, top: '8px' }}
-                                 title={beat.label}
-                               />
-                             );
-                          })}
-                       </div>
-                    </div>
+             {/* Video Player Canvas */}
+             <div className="aspect-video bg-black relative group">
+                {/* Master Performance Reel Badge */}
+                <div className="absolute top-4 left-4 z-10 bg-slate-950/85 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full text-[9px] font-mono font-bold text-white/80 uppercase tracking-widest flex items-center gap-1.5 shadow-lg">
+                   <Video className="w-3 h-3 text-emerald-400" />
+                   <span>Master Performance Reel</span>
                 </div>
 
-                {/* Master Player Scrubber Integration: Option A Dynamic Snap Frame */}
-                <TooltipProvider delayDuration={200}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button 
-                         type="button"
-                         data-hotspot-id="HS_ACT4_SNAP_FRAME_BTN"
-                         onClick={handleCaptureThumbnail} 
-                         disabled={isCapturingThumbnail} 
-                         className="px-4 py-3 bg-white hover:bg-emerald-400 text-black text-[9.5px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(255,255,255,0.1)] disabled:opacity-50 cursor-pointer flex items-center gap-2 shrink-0"
-                      >
-                         <Camera className="w-3.5 h-3.5 text-black" />
-                         <span>{isCapturingThumbnail ? 'Snapping...' : `Snap Frame at ${formatTime(previewCurrentTime)}`}</span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
-                      Capture frame at {formatTime(previewCurrentTime)} as Showcase Poster
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+                {/* Top-Right Theater View Toggle Button */}
+                <button
+                  type="button"
+                  data-hotspot-id="HS_ACT4_THEATER_TOGGLE_BTN"
+                  onClick={() => setIsReelTheaterOpen(true)}
+                  className="absolute top-4 right-4 z-10 bg-slate-950/85 hover:bg-slate-900 border border-white/10 text-white/80 hover:text-white px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-lg cursor-pointer transition-all hover:scale-105"
+                >
+                  <Maximize2 className="w-3 h-3 text-emerald-400" />
+                  <span>Theater View</span>
+                </button>
+
+                {previewUrl ? (
+                   !isReelTheaterOpen ? (
+                     <video 
+                       ref={previewVideoRef}
+                       src={previewUrl}
+                       onTimeUpdate={handlePreviewTimeUpdate}
+                       className="w-full h-full object-cover grayscale-[0.2] contrast-[1.1]"
+                     />
+                   ) : (
+                     <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center text-center p-6 space-y-2">
+                       <FilmIcon className="w-8 h-8 text-emerald-400 animate-pulse" />
+                       <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest">
+                         Screening in Cinematic Theater
+                       </span>
+                     </div>
+                   )
+                ) : (
+                   <div className="absolute inset-0 flex items-center justify-center text-white/10 font-black uppercase tracking-[0.5em] text-xs">Awaiting Development Reel...</div>
+                )}
+                 {/* Playback Overlay */}
+                 <div className="absolute bottom-8 left-8 right-8 z-20 flex items-center gap-6 p-4 bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-500">
+                   <TooltipProvider delayDuration={200}>
+                     <Tooltip>
+                       <TooltipTrigger asChild>
+                         <button type="button" onClick={togglePreviewPlay} className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-all cursor-pointer">
+                           {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-1" />}
+                         </button>
+                       </TooltipTrigger>
+                       <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
+                         {isPlaying ? "Pause recorded master reel" : "Play recorded master reel"}
+                       </TooltipContent>
+                     </Tooltip>
+                   </TooltipProvider>
+
+                   <div className="flex-1">
+                      <div className="flex justify-between items-center mb-2 px-1">
+                         <TooltipProvider delayDuration={200}>
+                           <Tooltip>
+                             <TooltipTrigger asChild>
+                               <span className="text-[10px] font-black text-white/40 uppercase tracking-widest cursor-help hover:text-white/60 transition-colors">Master Reel Playback Timeline</span>
+                             </TooltipTrigger>
+                             <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
+                               Recorded video playback timeline. Drag playhead to scrub through reel.
+                             </TooltipContent>
+                           </Tooltip>
+                         </TooltipProvider>
+                         <span className="font-mono text-[10px] text-emerald-400">{formatTime(previewCurrentTime)} / {formatTime(videoDuration)}</span>
+                      </div>
+                       <div className="relative pt-2">
+                          <Slider 
+                             value={[previewCurrentTime]} 
+                             onValueChange={(val) => handleSeekPreview(val[0])}
+                             min={0}
+                             max={videoDuration || 100}
+                             step={0.1}
+                          />
+                          {/* Beat Markers Overlay */}
+                          <div className="absolute top-0 left-0 right-0 h-4 pointer-events-none">
+                             {videoDuration > 0 && data?.emotionalBeats?.map((beat: any, idx: number) => {
+                                const percent = (beat.time / videoDuration) * 100;
+                                if (percent > 100) return null;
+                                return (
+                                  <motion.div 
+                                    key={idx}
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    className="absolute w-1 h-3 bg-emerald-500/60 rounded-full"
+                                    style={{ left: `${percent}%`, top: '8px' }}
+                                    title={beat.label}
+                                  />
+                                );
+                             })}
+                          </div>
+                       </div>
+                   </div>
+
+                   {/* Master Player Scrubber Integration: Option A Dynamic Snap Frame */}
+                   <TooltipProvider delayDuration={200}>
+                     <Tooltip>
+                       <TooltipTrigger asChild>
+                         <button 
+                            type="button"
+                            data-hotspot-id="HS_ACT4_SNAP_FRAME_BTN"
+                            onClick={handleCaptureThumbnail} 
+                            disabled={isCapturingThumbnail} 
+                            className="px-4 py-3 bg-white hover:bg-emerald-400 text-black text-[9.5px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(255,255,255,0.1)] disabled:opacity-50 cursor-pointer flex items-center gap-2 shrink-0"
+                         >
+                            <Camera className="w-3.5 h-3.5 text-black" />
+                            <span>{isCapturingThumbnail ? 'Snapping...' : `Snap Frame at ${formatTime(previewCurrentTime)}`}</span>
+                         </button>
+                       </TooltipTrigger>
+                       <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-white text-xs px-3 py-1.5 rounded-lg z-[100]">
+                         Capture frame at {formatTime(previewCurrentTime)} as Showcase Poster
+                       </TooltipContent>
+                     </Tooltip>
+                   </TooltipProvider>
+                 </div>
+             </div>
+
+             {/* Bottom 35mm Film Strip Sprocket Perforations Track */}
+             <div className="w-full bg-slate-950/90 border-t border-white/10 px-4 py-1.5 flex justify-between items-center select-none font-mono text-[9px] text-white/40 tracking-[0.3em] overflow-hidden">
+                <div className="flex items-center gap-2 overflow-hidden text-slate-600">
+                   <span>▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪ ▪</span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0 text-white/30 text-[8px]">
+                   <span>FPS: 60 • 4K PRORES</span>
+                </div>
+             </div>
           </div>
 
           {/* Full Cinematic Screening Theater Modal (Elevated to z-[10000] above Stage Controls) */}
@@ -4360,34 +4385,43 @@ export default function SoloStage({
             )}
           </AnimatePresence>
           
-          {/* Bottom Container: Theatrical Showcase Poster Anchor */}
-          <div className="bg-white/[0.02] border border-white/5 p-5 md:p-6 rounded-[2.5rem] flex flex-col justify-center items-center text-center space-y-4">
+          {/* Bottom Container: Photographic Viewfinder Reticle Frame */}
+          <div className="bg-slate-950/60 border-2 border-amber-500/20 p-5 md:p-6 rounded-[2.5rem] flex flex-col justify-center items-center text-center space-y-4 shadow-[0_20px_50px_rgba(245,158,11,0.08)] relative overflow-hidden group">
+             {/* Optical Viewfinder Reticle Corners */}
+             <div className="absolute top-3 left-3 w-4 h-4 border-t-2 border-l-2 border-amber-400/70 rounded-tl-sm pointer-events-none" />
+             <div className="absolute top-3 right-3 w-4 h-4 border-t-2 border-r-2 border-amber-400/70 rounded-tr-sm pointer-events-none" />
+             <div className="absolute bottom-3 left-3 w-4 h-4 border-b-2 border-l-2 border-amber-400/70 rounded-bl-sm pointer-events-none" />
+             <div className="absolute bottom-3 right-3 w-4 h-4 border-b-2 border-r-2 border-amber-400/70 rounded-br-sm pointer-events-none" />
+
              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                   <Sparkles className="w-4 h-4 text-emerald-400" />
+                <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                   <Camera className="w-4 h-4 text-amber-400" />
                 </div>
                 <div className="text-left">
-                   <h3 className="text-sm font-headline text-white italic">Theatrical Showcase Poster Anchor</h3>
-                   <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Active cover image for your Memory Cinema</p>
+                   <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-headline text-white italic">Theatrical Showcase Poster Anchor</h3>
+                      <span className="text-[9px] font-mono font-bold text-amber-400 uppercase tracking-widest px-2 py-0.5 bg-amber-500/10 rounded-full border border-amber-500/20">📷 35MM STILL ANCHOR • f/1.8</span>
+                   </div>
+                   <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mt-0.5">Active cover image for your Memory Cinema</p>
                 </div>
              </div>
 
              {/* Live Anchored Poster Frame Preview */}
              {(localPosterUrl || data?.posterImageUrl) ? (
-               <div className="w-full max-w-xs aspect-video rounded-xl overflow-hidden border border-emerald-500/40 shadow-xl relative group">
+               <div className="w-full max-w-xs aspect-video rounded-xl overflow-hidden border-2 border-amber-500/40 shadow-xl relative group">
                  <img 
                    key={localPosterUrl || data?.posterImageUrl}
                    src={localPosterUrl || data?.posterImageUrl} 
                    alt="Poster Anchor Frame" 
                    className="w-full h-full object-cover" 
                  />
-                 <div className="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md border border-emerald-500/50 px-2 py-0.5 rounded text-[8px] font-mono font-bold text-emerald-400 flex items-center gap-1 shadow-md">
-                   <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
+                 <div className="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md border border-amber-500/50 px-2 py-0.5 rounded text-[8px] font-mono font-bold text-amber-400 flex items-center gap-1 shadow-md">
+                   <CheckCircle2 className="w-2.5 h-2.5 text-amber-400" />
                    <span>POSTER ANCHORED</span>
                  </div>
                </div>
              ) : (
-               <div className="w-full max-w-xs aspect-video rounded-xl border border-dashed border-white/20 flex items-center justify-center bg-black/40 text-[10px] font-mono text-white/40 uppercase tracking-widest p-6 text-center">
+               <div className="w-full max-w-xs aspect-video rounded-xl border border-dashed border-amber-500/30 flex items-center justify-center bg-black/40 text-[10px] font-mono text-amber-400/60 uppercase tracking-widest p-6 text-center">
                  No Poster Anchored Yet
                </div>
              )}
@@ -4399,7 +4433,7 @@ export default function SoloStage({
                   data-hotspot-id="HS_ACT4_OPEN_PHOTOBOOTH_BTN"
                   onClick={handleOpenSelfiePhotobooth} 
                   disabled={isCapturingThumbnail} 
-                  className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(16,185,129,0.25)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                  className="px-6 py-3.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(245,158,11,0.25)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
                >
                   <Sparkles className="w-4 h-4 text-slate-950" />
                   <span>Open Studio Photobooth</span>

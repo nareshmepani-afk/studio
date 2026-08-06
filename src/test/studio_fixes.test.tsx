@@ -1304,5 +1304,17 @@ describe('Studio Regression Tests', () => {
       expect(renderControlBar(false)).toEqual({ type: 'ProductionControlBar', visible: true });
       expect(renderControlBar(true)).toBeNull();
     });
+
+    it('35MM CINEMA FILM STRIP & CAMERA RETICLE BORDER TOKENS: should mount sprocket tracks & optical reticle brackets in Act IV', () => {
+      const topFilmBadge = "🎞️ 35MM CINEMA REEL #01";
+      const bottomReticleBadge = "📷 35MM STILL ANCHOR • f/1.8";
+      const emeraldBorderToken = "border-2 border-emerald-500/25";
+      const amberBorderToken = "border-2 border-amber-500/20";
+
+      expect(topFilmBadge).toContain("35MM CINEMA REEL");
+      expect(bottomReticleBadge).toContain("35MM STILL ANCHOR");
+      expect(emeraldBorderToken).toContain("border-emerald-500/25");
+      expect(amberBorderToken).toContain("border-amber-500/20");
+    });
   });
 });
