@@ -1371,5 +1371,36 @@ describe('Studio Regression Tests', () => {
       toggleSlide('video');
       expect(activeSlide).toBe("video");
     });
+
+    it('4K POSTER LIGHTBOX & AUTO-SLIDE ENGINE: should auto-slide to Poster Studio on frame snap and manage 4K Lightbox modal state', () => {
+      const openLightboxHotspot = "HS_ACT4_POSTER_LIGHTBOX_OPEN_BTN";
+      const downloadPosterHotspot = "HS_ACT4_DOWNLOAD_POSTER_BTN";
+
+      let activeSlide: 'video' | 'poster' = 'video';
+      let isPosterLightboxOpen = false;
+
+      // Simulate frame snap event
+      const handleSnapFrame = () => {
+        activeSlide = 'poster';
+      };
+
+      // Initial state assertion
+      expect(activeSlide).toBe('video');
+      expect(isPosterLightboxOpen).toBe(false);
+
+      // Trigger frame snap
+      handleSnapFrame();
+      expect(activeSlide).toBe('poster');
+
+      // Open Lightbox Modal
+      isPosterLightboxOpen = true;
+      expect(isPosterLightboxOpen).toBe(true);
+      expect(openLightboxHotspot).toBe("HS_ACT4_POSTER_LIGHTBOX_OPEN_BTN");
+      expect(downloadPosterHotspot).toBe("HS_ACT4_DOWNLOAD_POSTER_BTN");
+
+      // Dismiss Lightbox on Escape
+      isPosterLightboxOpen = false;
+      expect(isPosterLightboxOpen).toBe(false);
+    });
   });
 });

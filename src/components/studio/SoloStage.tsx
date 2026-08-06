@@ -1274,15 +1274,37 @@ export default function SoloStage({
     }
   };
 
+  const [isPosterLightboxOpen, setIsPosterLightboxOpen] = useState(false);
+
+  const handleDownloadPoster = () => {
+    const targetUrl = localPosterUrl || data?.posterImageUrl;
+    if (!targetUrl) {
+      toast.error("No Poster Anchored", { description: "Please generate or snap a poster frame first." });
+      return;
+    }
+
+    const link = document.createElement('a');
+    link.href = targetUrl;
+    link.download = `memory-weaver-poster-${data?.id || 'key-art'}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success("4K Poster Downloaded!", {
+      description: "Print-ready key art saved to your device."
+    });
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isReelTheaterOpen) {
-        setIsReelTheaterOpen(false);
+      if (e.key === 'Escape') {
+        if (isPosterLightboxOpen) setIsPosterLightboxOpen(false);
+        if (isReelTheaterOpen) setIsReelTheaterOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isReelTheaterOpen]);
+  }, [isReelTheaterOpen, isPosterLightboxOpen]);
 
   useEffect(() => {
     onTheaterToggle?.(isReelTheaterOpen || isTheaterExpanded);
@@ -1421,9 +1443,10 @@ export default function SoloStage({
                const freshUrl = url.includes('?') ? `${url}&t=${Date.now()}` : `${url}?t=${Date.now()}`;
                setLocalPosterUrl(freshUrl);
                update({ posterImageUrl: freshUrl }); // STANDARDIZE: Use posterImageUrl globally
-               toast.success("Poster Updated", { 
-                 description: "This frame is now your cinematic poster image.",
-                 icon: <CheckCircle2 className="w-4 h-4 text-green-500" />
+               setActiveCarouselSlide('poster');
+               toast.success("Frame Snapped! Viewing 2:3 Movie Key Art", { 
+                 description: "Switched to Poster Studio to inspect your anchored key art.",
+                 icon: <CheckCircle2 className="w-4 h-4 text-amber-400" />
                });
             }
          }
@@ -4398,7 +4421,12 @@ export default function SoloStage({
                    </div>
 
                    {/* Classic 2:3 Vertical Theatrical Poster Canvas (400px x 600px aspect-ratio) */}
-                   <div className="w-full max-w-xs md:max-w-sm aspect-[2/3] rounded-2xl overflow-hidden border-2 border-amber-500/50 shadow-[0_25px_60px_rgba(245,158,11,0.25)] relative group bg-black/80 transition-all hover:scale-[1.01]">
+                   <div 
+                      data-hotspot-id="HS_ACT4_POSTER_LIGHTBOX_OPEN_BTN"
+                      onClick={() => setIsPosterLightboxOpen(true)}
+                      className="w-full max-w-xs md:max-w-sm aspect-[2/3] rounded-2xl overflow-hidden border-2 border-amber-500/50 shadow-[0_25px_60px_rgba(245,158,11,0.25)] relative group bg-black/80 transition-all hover:scale-[1.03] cursor-pointer hover:rotate-x-2 hover:rotate-y-2 duration-300"
+                      title="Click to view full-screen 4K Poster Lightbox"
+                   >
                       {(localPosterUrl || data?.posterImageUrl) ? (
                         <>
                           <img 
@@ -4414,6 +4442,11 @@ export default function SoloStage({
                           <div className="absolute top-4 left-4 bg-slate-950/90 backdrop-blur-md border border-amber-500/60 px-3 py-1 rounded-lg text-[9px] font-mono font-bold text-amber-400 flex items-center gap-1.5 shadow-lg tracking-wider">
                             <CheckCircle2 className="w-3 h-3 text-amber-400" />
                             <span>POSTER ANCHORED • 4K KEY ART</span>
+                          </div>
+
+                          {/* Hover Zoom Prompt Badge */}
+                          <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-lg text-[8px] font-mono font-bold text-white/80 opacity-0 group-hover:opacity-100 transition-all">
+                            <span>🔍 CLICK FOR 4K LIGHTBOX</span>
                           </div>
 
                           {/* Bottom Hollywood Poster Typography Overlay */}
@@ -5071,6 +5104,97 @@ export default function SoloStage({
                 </div>
               </motion.div>
             </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Full-Screen 4K Poster Lightbox Modal */}
+      {typeof window !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isPosterLightboxOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[10000] bg-slate-950/95 backdrop-blur-3xl flex flex-col items-center justify-center p-6 md:p-10 select-none overflow-hidden"
+            >
+              {/* Top Control Bar */}
+              <div className="w-full max-w-4xl flex items-center justify-between mb-6 px-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                    <Camera className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="text-left">
+                    <h2 className="text-sm md:text-base font-black text-white uppercase tracking-widest font-headline italic">
+                      4K Key Art Exhibition Lightbox
+                    </h2>
+                    <p className="text-[10px] text-white/40 uppercase tracking-widest font-mono">
+                      High-Res Theatrical Poster Presentation
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    data-hotspot-id="HS_ACT4_DOWNLOAD_POSTER_BTN"
+                    onClick={handleDownloadPoster}
+                    className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-mono font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:scale-105"
+                  >
+                    <Download className="w-4 h-4 text-slate-950" />
+                    <span>Download 4K Poster</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsPosterLightboxOpen(false)}
+                    className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-[10px] font-mono font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    <X className="w-4 h-4 text-white" />
+                    <span>Close (Esc)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Ultra-Crisp 4K Poster Card */}
+              <div className="w-full max-w-sm aspect-[2/3] max-h-[75vh] rounded-3xl overflow-hidden border-2 border-amber-500/60 shadow-[0_30px_90px_rgba(245,158,11,0.35)] relative group bg-black/90 transition-all hover:scale-[1.01]">
+                {(localPosterUrl || data?.posterImageUrl) ? (
+                  <>
+                    <img 
+                      src={localPosterUrl || data?.posterImageUrl} 
+                      alt="4K Key Art Poster" 
+                      className="w-full h-full object-cover" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-black/40 pointer-events-none" />
+
+                    <div className="absolute top-5 left-5 bg-slate-950/90 backdrop-blur-md border border-amber-500/60 px-3.5 py-1.5 rounded-xl text-[10px] font-mono font-bold text-amber-400 flex items-center gap-2 shadow-xl tracking-wider">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
+                      <span>4K EXHIBITION MASTER</span>
+                    </div>
+
+                    <div className="absolute bottom-6 left-6 right-6 text-left pointer-events-none space-y-1.5">
+                      <span className="text-[10px] font-mono text-amber-300 uppercase tracking-[0.3em] block font-bold">A MEMORY WEAVER CINEMA SELECTION</span>
+                      <h2 className="text-xl font-headline font-black text-white italic drop-shadow-xl leading-tight">
+                        PART I: ROOTS & FOUNDATIONS
+                      </h2>
+                      <p className="text-xs text-white/80 font-serif italic line-clamp-3 drop-shadow-md">
+                        {data?.title || data?.originalHook || 'Biographical Memory Odyssey'}
+                      </p>
+                      <div className="pt-3 flex justify-between items-center text-[9px] font-mono text-white/50 uppercase tracking-widest border-t border-white/15">
+                        <span>STYLE: {posterStyle.toUpperCase()}</span>
+                        <span>1956 • KUTCH TO GREAT BRITAIN</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 space-y-3">
+                    <Camera className="w-12 h-12 text-amber-400 animate-pulse" />
+                    <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">No Poster Anchored Yet</span>
+                  </div>
+                )}
+              </div>
+            </motion.div>
           )}
         </AnimatePresence>,
         document.body
