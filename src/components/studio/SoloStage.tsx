@@ -4449,23 +4449,42 @@ export default function SoloStage({
                 </div>
              </div>
 
-             {/* Live Anchored Poster Frame Preview */}
+             {/* Live Anchored Poster Frame Preview - Enlarged Cinematic Frame */}
              {(localPosterUrl || data?.posterImageUrl) ? (
-               <div className="w-full max-w-xs aspect-video rounded-xl overflow-hidden border-2 border-amber-500/40 shadow-xl relative group">
+               <div className="w-full max-w-lg md:max-w-xl aspect-video rounded-2xl overflow-hidden border-2 border-amber-500/50 shadow-[0_20px_50px_rgba(245,158,11,0.2)] relative group bg-black/60 transition-all hover:scale-[1.01]">
                  <img 
                    key={localPosterUrl || data?.posterImageUrl}
                    src={localPosterUrl || data?.posterImageUrl} 
                    alt="Poster Anchor Frame" 
-                   className="w-full h-full object-cover" 
+                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
                  />
-                 <div className="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md border border-amber-500/50 px-2 py-0.5 rounded text-[8px] font-mono font-bold text-amber-400 flex items-center gap-1 shadow-md">
-                   <CheckCircle2 className="w-2.5 h-2.5 text-amber-400" />
-                   <span>POSTER ANCHORED</span>
+                 {/* Subtle Cinematic Vignette Gradient */}
+                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30 pointer-events-none" />
+
+                 {/* Top Status & Badge Overlay */}
+                 <div className="absolute top-3 left-3 bg-slate-950/90 backdrop-blur-md border border-amber-500/60 px-3 py-1 rounded-lg text-[9px] font-mono font-bold text-amber-400 flex items-center gap-1.5 shadow-lg tracking-wider">
+                   <CheckCircle2 className="w-3 h-3 text-amber-400" />
+                   <span>POSTER ANCHORED • 4K KEY ART</span>
+                 </div>
+
+                 {/* Bottom Filmic Title Tagline */}
+                 <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end text-left pointer-events-none">
+                   <div>
+                     <span className="text-[9px] font-mono text-amber-300/80 uppercase tracking-widest block font-bold">Part I: Roots & Foundations</span>
+                     <h4 className="text-sm font-headline text-white font-bold italic drop-shadow-md">
+                       {(data?.title || data?.originalHook || 'Biographical Cinema Selection').slice(0, 45) + '...'}
+                     </h4>
+                   </div>
+                   <span className="text-[8px] font-mono text-white/50 uppercase tracking-widest bg-black/50 px-2 py-0.5 rounded border border-white/10">
+                     {posterStyle.toUpperCase()}
+                   </span>
                  </div>
                </div>
              ) : (
-               <div className="w-full max-w-xs aspect-video rounded-xl border border-dashed border-amber-500/30 flex items-center justify-center bg-black/40 text-[10px] font-mono text-amber-400/60 uppercase tracking-widest p-6 text-center">
-                 No Poster Anchored Yet
+               <div className="w-full max-w-lg md:max-w-xl aspect-video rounded-2xl border-2 border-dashed border-amber-500/30 flex flex-col items-center justify-center bg-black/40 text-[11px] font-mono text-amber-400/60 uppercase tracking-widest p-8 text-center gap-2">
+                 <Camera className="w-8 h-8 text-amber-500/40 animate-pulse" />
+                 <span>No Poster Anchored Yet</span>
+                 <span className="text-[9px] text-white/30 lowercase font-sans">Snap a video frame or open Studio Photobooth below</span>
                </div>
              )}
 
