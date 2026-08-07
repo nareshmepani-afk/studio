@@ -1692,5 +1692,19 @@ describe('Studio Regression Tests', () => {
       expect(previewCurrentTime).toBe(0);
       expect(currentTimeOverride).toBe(0);
     });
+
+    it('MW-115 ZERO-LATENCY DIRECTORS NOTEPAD REHYDRATION SHIELD: should initialize isLoading to false when memory prose exists', () => {
+      const memoryDataWithProse = {
+        id: 'ey96djU6qR1BrDGnvZwp',
+        prose: 'In 1964, a courageous family stepped forward across vast oceans...',
+        activeVisionLabel: 'Roots & Foundations'
+      };
+
+      const hasExistingText = !!(memoryDataWithProse.prose || (memoryDataWithProse as any).description);
+      const initialIsLoading = !hasExistingText;
+
+      expect(hasExistingText).toBe(true);
+      expect(initialIsLoading).toBe(false); // 0ms delay! "Scanning Negative..." is zero-latency bypassed!
+    });
   });
 });

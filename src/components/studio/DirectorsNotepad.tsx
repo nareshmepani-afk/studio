@@ -20,6 +20,50 @@ interface DirectorsNotepadProps {
   className?: string;
 }
 
+// Helper to generate an immediate fallback notepad from memory data
+const createFallbackNotepad = (data: any): NotepadType => {
+  const text = data?.prose || data?.description || data?.originalHook || "In 1964, a courageous family stepped forward across vast oceans...";
+  const words = text.split(/\s+/).filter(Boolean);
+  const estSeconds = Math.max(15, Math.ceil(words.length / 2.5));
+
+  return {
+    transcript: [
+      {
+        startTime: 0,
+        endTime: estSeconds,
+        text: text,
+        speaker: data?.narratorName || "Narrator"
+      }
+    ],
+    emotionalBeats: [
+      {
+        time: 0,
+        label: data?.activeVisionLabel || "Authentic Monologue",
+        color: "#10b981",
+        description: "Oral history monologue recorded and secured with atmospheric clarity."
+      },
+      {
+        time: Math.floor(estSeconds * 0.5),
+        label: "Climactic Arc",
+        color: "#38bdf8",
+        description: "Peak emotional delivery captured in high-definition video."
+      }
+    ],
+    entities: [],
+    directorNotes: "The monologue captures emotional truth and authentic narrative rhythm.",
+    suggestedChapters: [
+      {
+        startTime: 0,
+        title: data?.activeVisionLabel || "Roots & Foundations",
+        description: text.length > 85 ? text.substring(0, 85) + "..." : text,
+        type: "hook"
+      }
+    ],
+    videoStory: text,
+    analyzedAt: new Date().toISOString()
+  };
+};
+
 export default function DirectorsNotepad({ 
   userId, 
   memoryId, 
@@ -31,10 +75,22 @@ export default function DirectorsNotepad({
   onSeek, 
   className = "" 
 }: DirectorsNotepadProps) {
-  const [notepad, setNotepad] = useState<NotepadType | null>(initialNotepad || null);
+  const [notepad, setNotepad] = useState<NotepadType | null>(() => {
+    if (initialNotepad) return initialNotepad;
+    if (mainData?.prose || mainData?.description || mainData?.videoStory || mainData?.originalHook) {
+      return createFallbackNotepad(mainData);
+    }
+    return null;
+  });
   const [activeTab, setActiveTab] = useState<'transcript' | 'beats' | 'notes' | 'fusion'>('transcript');
   const [isOpen, setIsOpen] = useState(true);
-  const [isLoading, setIsLoading] = useState(!initialNotepad);
+  const [isLoading, setIsLoading] = useState<boolean>(() => {
+    if (initialNotepad) return false;
+    if (mainData?.prose || mainData?.description || mainData?.videoStory || mainData?.originalHook) {
+      return false;
+    }
+    return true;
+  });
   const [progress, setProgress] = useState(0);
 
   const [isPlayingSoundtrack, setIsPlayingSoundtrack] = useState(false);
@@ -73,6 +129,16 @@ export default function DirectorsNotepad({
     };
   }, []);
 
+  // Sync notepad if mainData loads after initial mount
+  useEffect(() => {
+    if (mainData && (!notepad || !notepad.transcript || notepad.transcript.length === 0)) {
+      if (mainData.prose || mainData.description || mainData.originalHook) {
+        setNotepad(createFallbackNotepad(mainData));
+        setIsLoading(false);
+      }
+    }
+  }, [mainData?.prose, mainData?.description, mainData?.originalHook]);
+
   // Simulated progress loader for AI processing
   useEffect(() => {
     if (!isLoading) {
@@ -92,50 +158,6 @@ export default function DirectorsNotepad({
     
     return () => clearInterval(interval);
   }, [isLoading]);
-
-  // Helper to generate an immediate fallback notepad from memory data
-  const createFallbackNotepad = (data: any): NotepadType => {
-    const text = data?.prose || data?.description || data?.originalHook || "In 1964, a courageous family stepped forward across vast oceans...";
-    const words = text.split(/\s+/).filter(Boolean);
-    const estSeconds = Math.max(15, Math.ceil(words.length / 2.5));
-
-    return {
-      transcript: [
-        {
-          startTime: 0,
-          endTime: estSeconds,
-          text: text,
-          speaker: data?.narratorName || "Narrator"
-        }
-      ],
-      emotionalBeats: [
-        {
-          time: 0,
-          label: data?.activeVisionLabel || "Authentic Monologue",
-          color: "#10b981",
-          description: "Oral history monologue recorded and secured with atmospheric clarity."
-        },
-        {
-          time: Math.floor(estSeconds * 0.5),
-          label: "Climactic Arc",
-          color: "#38bdf8",
-          description: "Peak emotional delivery captured in high-definition video."
-        }
-      ],
-      entities: [],
-      directorNotes: "The monologue captures emotional truth and authentic narrative rhythm.",
-      suggestedChapters: [
-        {
-          startTime: 0,
-          title: data?.activeVisionLabel || "Roots & Foundations",
-          description: text.length > 85 ? text.substring(0, 85) + "..." : text,
-          type: "hook"
-        }
-      ],
-      videoStory: text,
-      analyzedAt: new Date().toISOString()
-    };
-  };
 
   // Safety Timeout: Prevent infinite 95% progress hangs if background AI worker is delayed or missing
   useEffect(() => {
@@ -170,6 +192,11 @@ export default function DirectorsNotepad({
         setNotepad(data);
         setIsLoading(data.status !== 'completed');
       } else {
+        // If subdocument doesn't exist yet, unblock loading immediately with local memory fallback!
+        if (mainData?.prose || mainData?.description || mainData?.originalHook) {
+          setNotepad(prev => prev || createFallbackNotepad(mainData));
+          setIsLoading(false);
+        }
         // Self-healing check: Trigger background analysis if video is an uploaded GCS URL
         const videoUrl = mainData?.videoUrl;
         if (videoUrl && memoryId && !videoUrl.startsWith('blob:')) {
