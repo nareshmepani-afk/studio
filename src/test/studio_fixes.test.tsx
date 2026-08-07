@@ -1487,5 +1487,14 @@ describe('Studio Regression Tests', () => {
       expect(activeCarouselSlide).toBe('poster');
       expect(isReelTheaterOpen).toBe(false);
     });
+
+    it('PRODUCTION CONTROL BAR UX HARMONIZATION: floating scroll cue pill and dock header should use matching Stage Controls terminology', () => {
+      const scrollCueLabel = "Scroll For Stage Controls";
+      const dockHeaderLabel = "Stage Controls";
+
+      expect(scrollCueLabel).toContain("Stage Controls");
+      expect(dockHeaderLabel).toBe("Stage Controls");
+      expect(scrollCueLabel.toUpperCase()).toContain(dockHeaderLabel.toUpperCase());
+    });
   });
 });

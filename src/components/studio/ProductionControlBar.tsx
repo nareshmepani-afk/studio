@@ -298,7 +298,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
           {/* --- ACT PROGRESSION (LEFT) --- */}
         <div className="flex items-center gap-6 pl-2">
           <div className="flex flex-col">
-            <span className="text-[9px] text-white/90 uppercase tracking-[0.4em] font-black mb-1.5 ml-0.5">Production Stage</span>
+            <span className="text-[9px] text-emerald-400 uppercase tracking-[0.4em] font-black mb-1.5 ml-0.5">Stage Controls</span>
             <div className="flex items-center gap-4">
               <div className="flex gap-1.5">
                 {steps.map((step, idx) => (
