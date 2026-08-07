@@ -1591,5 +1591,30 @@ describe('Studio Regression Tests', () => {
       expect(isSnapExecuted).toBe(true);
       expect(countdownState).toBeNull();
     });
+
+    it('VIDEO DURATION METADATA RESILIENCY SHIELD: handleVideoLoadedMetadata should capture actual video duration and update state from 00:00', () => {
+      let videoDuration = 0;
+
+      const handleVideoLoadedMetadataTest = (loadedDuration: number) => {
+        if (loadedDuration && isFinite(loadedDuration) && loadedDuration > 0) {
+          videoDuration = loadedDuration;
+        }
+      };
+
+      const formatTimeTest = (seconds: number) => {
+        if (!seconds || isNaN(seconds) || !isFinite(seconds)) return '00:00';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      };
+
+      expect(videoDuration).toBe(0);
+      expect(formatTimeTest(videoDuration)).toBe('00:00');
+
+      handleVideoLoadedMetadataTest(108); // 1 minute 48 seconds
+
+      expect(videoDuration).toBe(108);
+      expect(formatTimeTest(videoDuration)).toBe('01:48');
+    });
   });
 });

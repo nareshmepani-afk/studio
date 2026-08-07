@@ -2092,13 +2092,26 @@ export default function SoloStage({
     }
   };
 
+  const handleVideoLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    const vid = e.currentTarget;
+    if (vid && vid.duration && isFinite(vid.duration) && vid.duration > 0) {
+      setVideoDuration(vid.duration);
+    }
+  };
+
   const handlePreviewTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
     const vid = e.currentTarget;
     const currentTime = vid.currentTime;
     setPreviewCurrentTime(currentTime);
     
+    if (vid.duration && isFinite(vid.duration) && vid.duration > 0 && videoDuration !== vid.duration) {
+      setVideoDuration(vid.duration);
+    }
+
+    const activeDuration = (vid.duration && isFinite(vid.duration) && vid.duration > 0) ? vid.duration : videoDuration;
+
     // Safety check just in case Infinity slipped through
-    if (videoDuration === 0 || !isFinite(videoDuration)) return;
+    if (activeDuration === 0 || !isFinite(activeDuration)) return;
 
     if (currentTime < trimRange[0]) vid.currentTime = trimRange[0];
     if (currentTime > trimRange[1]) {
@@ -4505,6 +4518,8 @@ export default function SoloStage({
                           ref={previewVideoRef}
                           src={previewUrl}
                           crossOrigin="anonymous"
+                          onLoadedMetadata={handleVideoLoadedMetadata}
+                          onDurationChange={handleVideoLoadedMetadata}
                           onPlay={() => setIsPlaying(true)}
                           onPause={() => setIsPlaying(false)}
                           onEnded={() => setIsPlaying(false)}
@@ -4534,14 +4549,14 @@ export default function SoloStage({
                          <div className="flex-1">
                             <div className="flex justify-between items-center mb-2 px-1">
                                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Playback Scrubber</span>
-                               <span className="font-mono text-[10px] text-emerald-400">{formatTime(previewCurrentTime)} / {formatTime(videoDuration)}</span>
+                               <span className="font-mono text-[10px] text-emerald-400">{formatTime(previewCurrentTime)} / {formatTime(videoDuration || (previewVideoRef.current?.duration && isFinite(previewVideoRef.current.duration) ? previewVideoRef.current.duration : 0))}</span>
                             </div>
                             <div className="relative pt-2">
                                <Slider 
                                   value={[previewCurrentTime]} 
                                   onValueChange={(val) => handleSeekPreview(val[0])}
                                   min={0}
-                                  max={videoDuration || 100}
+                                  max={videoDuration || (previewVideoRef.current?.duration && isFinite(previewVideoRef.current.duration) ? previewVideoRef.current.duration : 100)}
                                   step={0.1}
                                />
                             </div>
@@ -5527,7 +5542,15 @@ export default function SoloStage({
                     crossOrigin="anonymous"
                     autoPlay
                     controls
-                    onTimeUpdate={(e) => setPreviewCurrentTime((e.target as HTMLVideoElement).currentTime)}
+                    onLoadedMetadata={handleVideoLoadedMetadata}
+                    onDurationChange={handleVideoLoadedMetadata}
+                    onTimeUpdate={(e) => {
+                      const vid = e.currentTarget;
+                      setPreviewCurrentTime(vid.currentTime);
+                      if (vid.duration && isFinite(vid.duration) && vid.duration > 0 && videoDuration !== vid.duration) {
+                        setVideoDuration(vid.duration);
+                      }
+                    }}
                     className="w-full h-full object-contain"
                   />
                 ) : (
