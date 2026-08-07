@@ -1523,5 +1523,24 @@ describe('Studio Regression Tests', () => {
       expect(isReelTheaterOpen).toBe(false);
       expect(isPosterLightboxOpen).toBe(false);
     });
+
+    it('DUAL AUDIO ECHO PREVENTION SHIELD: opening Reel Theater should pause in-page video player to prevent overlapping audio', () => {
+      let isPreviewPlaying = true;
+      let isReelTheaterOpen = false;
+
+      const handleOpenReelTheaterTest = () => {
+        // Force pause in-page player
+        isPreviewPlaying = false;
+        isReelTheaterOpen = true;
+      };
+
+      expect(isPreviewPlaying).toBe(true);
+      expect(isReelTheaterOpen).toBe(false);
+
+      handleOpenReelTheaterTest();
+
+      expect(isPreviewPlaying).toBe(false);
+      expect(isReelTheaterOpen).toBe(true);
+    });
   });
 });

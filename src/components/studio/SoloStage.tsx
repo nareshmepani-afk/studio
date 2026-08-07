@@ -1342,7 +1342,13 @@ export default function SoloStage({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (isPosterLightboxOpen) setIsPosterLightboxOpen(false);
-        if (isReelTheaterOpen) setIsReelTheaterOpen(false);
+        if (isReelTheaterOpen) {
+          if (theaterVideoRef.current) {
+            theaterVideoRef.current.pause();
+          }
+          setIsReelTheaterOpen(false);
+          setIsPlaying(false);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -1430,10 +1436,32 @@ export default function SoloStage({
     }
   };
 
-  const handleOpenReelTheater = () => {
+  const handleCloseReelTheater = useCallback(() => {
+    if (theaterVideoRef.current) {
+      theaterVideoRef.current.pause();
+    }
+    setIsReelTheaterOpen(false);
+    setIsPlaying(false);
+  }, []);
+
+  const handleOpenReelTheater = useCallback(() => {
+    // Crucial: Pause in-page preview video to prevent dual audio track echo!
+    if (previewVideoRef.current) {
+      previewVideoRef.current.pause();
+    }
+    const currentTime = previewVideoRef.current ? previewVideoRef.current.currentTime : previewCurrentTime;
+    setIsPlaying(false);
     setIsReelTheaterOpen(true);
+
+    // Sync start timecode on 4K Reel Theater video element
+    setTimeout(() => {
+      if (theaterVideoRef.current) {
+        theaterVideoRef.current.currentTime = currentTime;
+      }
+    }, 50);
+
     logEvent('HS_ACT4_REEL_THEATER_OPEN', { version: APP_VERSION });
-  };
+  }, [previewCurrentTime]);
 
   const handleRetakePerformance = useCallback(() => {
     if (previewVideoRef.current) {
@@ -5428,7 +5456,7 @@ export default function SoloStage({
 
                   <button
                     type="button"
-                    onClick={() => setIsReelTheaterOpen(false)}
+                    onClick={handleCloseReelTheater}
                     className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-[10px] font-mono font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2"
                   >
                     <X className="w-4 h-4 text-white" />
