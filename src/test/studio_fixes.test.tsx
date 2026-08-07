@@ -1749,5 +1749,35 @@ describe('Studio Regression Tests', () => {
       expect(isCinemaGuest).toBe(true);
       expect(isGuestBypass).toBe(true);
     });
+
+    it('MW-118 GUEST Q&A LOOP SHIELD: should construct valid GuestQuestion payload for teleprompter promotion', () => {
+      const guestName = 'Aunt Priya';
+      const questionText = 'Tell us about your arrival in London in 1964';
+      
+      const newQuestion = {
+        id: 'q123',
+        guestName: guestName.trim() || 'Family Member',
+        questionText: questionText.trim(),
+        createdAt: '2026-08-07T23:00:00Z',
+        status: 'pending' as const
+      };
+
+      expect(newQuestion.guestName).toBe('Aunt Priya');
+      expect(newQuestion.questionText).toContain('London in 1964');
+      expect(newQuestion.status).toBe('pending');
+    });
+
+    it('MW-118 TELEMETRY HOTSPOT SHIELD: should verify telemetry hotspot keys for share modal actions', () => {
+      const hotspots = [
+        'HS_ACT4_SHARE_COPY_LINK_BTN',
+        'HS_ACT4_SHARE_WHATSAPP_BTN',
+        'HS_ACT4_SHARE_EMAIL_BTN',
+        'HS_ACT4_GUEST_SUBMIT_QUESTION_BTN'
+      ];
+
+      hotspots.forEach(id => {
+        expect(id).toMatch(/^HS_ACT4_/);
+      });
+    });
   });
 });

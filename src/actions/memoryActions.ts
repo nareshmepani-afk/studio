@@ -335,5 +335,96 @@ export async function addGuestReactionAction(
   }
 }
 
+export interface GuestQuestion {
+  id: string;
+  guestName: string;
+  questionText: string;
+  createdAt: string;
+  status: 'pending' | 'promoted_to_prompt' | 'answered';
+}
+
+/**
+ * Increment guestViewCount atomically and return current count.
+ */
+export async function recordGuestViewAction(memoryId: string): Promise<{ success: boolean; guestViewCount?: number }> {
+  if (!memoryId || !adminDb) return { success: false };
+
+  try {
+    const memoryQuery = await adminDb.collectionGroup('memories').get();
+    const targetDoc = memoryQuery.docs.find(d => d.id === memoryId);
+
+    if (!targetDoc || !targetDoc.exists) return { success: false };
+
+    const currentCount = (targetDoc.data().guestViewCount || 0) + 1;
+    await targetDoc.ref.update({
+      guestViewCount: currentCount
+    });
+
+    return { success: true, guestViewCount: currentCount };
+  } catch (error) {
+    console.error('[recordGuestViewAction] Failed to record view:', error);
+    return { success: false };
+  }
+}
+
+/**
+ * Submit a question from a guest ("Ask Grandpa a Question").
+ */
+export async function submitGuestQuestionAction(
+  memoryId: string, 
+  guestName: string, 
+  questionText: string
+): Promise<{ success: boolean; message: string; questionId?: string }> {
+  if (!memoryId || !questionText.trim() || !adminDb) {
+    return { success: false, message: 'Question text is required.' };
+  }
+
+  try {
+    const memoryQuery = await adminDb.collectionGroup('memories').get();
+    const targetDoc = memoryQuery.docs.find(d => d.id === memoryId);
+
+    if (!targetDoc || !targetDoc.exists) {
+      return { success: false, message: 'Memory story not found.' };
+    }
+
+    const questionRef = targetDoc.ref.collection('questions').doc();
+    const newQuestion: GuestQuestion = {
+      id: questionRef.id,
+      guestName: guestName.trim() || 'Family Member',
+      questionText: questionText.trim(),
+      createdAt: new Date().toISOString(),
+      status: 'pending'
+    };
+
+    await questionRef.set(newQuestion);
+    return { success: true, message: 'Question sent to the director! It will appear in their Scriptorium teleprompter queue.', questionId: questionRef.id };
+  } catch (error: any) {
+    console.error('[submitGuestQuestionAction] Error submitting question:', error);
+    return { success: false, message: error?.message || 'Failed to submit question.' };
+  }
+}
+
+/**
+ * Fetch pending questions for a host in Scriptorium.
+ */
+export async function getGuestQuestionsAction(memoryId: string): Promise<{ success: boolean; questions?: GuestQuestion[] }> {
+  if (!memoryId || !adminDb) return { success: false, questions: [] };
+
+  try {
+    const memoryQuery = await adminDb.collectionGroup('memories').get();
+    const targetDoc = memoryQuery.docs.find(d => d.id === memoryId);
+
+    if (!targetDoc || !targetDoc.exists) return { success: false, questions: [] };
+
+    const questionsSnap = await targetDoc.ref.collection('questions').get();
+    const questions = questionsSnap.docs.map(d => ({ id: d.id, ...d.data() })) as GuestQuestion[];
+
+    return { success: true, questions };
+  } catch (error) {
+    console.error('[getGuestQuestionsAction] Error fetching questions:', error);
+    return { success: false, questions: [] };
+  }
+}
+
 // We need to re-import getSession here because it was removed from the top of the file
 import { getSession } from '@/lib/session';

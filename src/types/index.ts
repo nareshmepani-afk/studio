@@ -113,6 +113,11 @@ export interface Memory {
   trimEnd?: number;
   cameraActive?: boolean;
   videoStory?: string; // Fused narrative from Hook + Transcript
+  guestViewCount?: number;
+  vaultTier?: 'free' | 'host_pass' | 'lifetime_vault';
+  passcode?: string;
+  optionalPasscode?: string;
+  hlsMasterPlaylistUrl?: string;
   atmosphericSuggestions?: string[]; // Script Supervisor enhancements
   emotionalBeats?: {
     time: number;

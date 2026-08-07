@@ -6,7 +6,7 @@ import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageW
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useStudioData } from '@/hooks/studio/useStudioData';
-import { unpublishMemoryAction, getPublicMemoryAction, addGuestReactionAction } from '@/actions/memoryActions';
+import { unpublishMemoryAction, getPublicMemoryAction, addGuestReactionAction, recordGuestViewAction, submitGuestQuestionAction } from '@/actions/memoryActions';
 import { MemoryCard } from '@/components/memory/MemoryCard';
 import { MemoryCinematicViewer } from '@/components/memory/MemoryCinematicViewer';
 import { CinemaComingSoon } from '@/components/cinema/CinemaComingSoon';
@@ -33,11 +33,20 @@ function CinemaContent() {
   const [isFetchingPublic, setIsFetchingPublic] = useState<boolean>(!!memoryIdParam);
   const [requestModalState, setRequestModalState] = useState<{ isOpen: boolean; promptId: string; promptTitle: string } | null>(null);
 
-  // Guestbook Reaction State
+  // Guestbook Reaction & Q&A State
   const [guestName, setGuestName] = useState<string>('');
   const [guestComment, setGuestComment] = useState<string>('');
   const [selectedReaction, setSelectedReaction] = useState<'inspiring' | 'moved' | 'legendary' | null>(null);
   const [isSubmittingReaction, setIsSubmittingReaction] = useState<boolean>(false);
+
+  // Guest Q&A Loop State
+  const [guestQuestionName, setGuestQuestionName] = useState<string>('');
+  const [guestQuestionText, setGuestQuestionText] = useState<string>('');
+  const [isSubmittingQuestion, setIsSubmittingQuestion] = useState<boolean>(false);
+
+  // PIN Protection State
+  const [enteredPin, setEnteredPin] = useState<string>('');
+  const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
 
   // Auto-fetch shared memory when opened via Guest Access Pass URL (?id=...)
   useEffect(() => {
@@ -54,6 +63,13 @@ function CinemaContent() {
         if (isMounted && res.success && res.memory) {
           setPublicMemory(res.memory);
           setSelectedMemory(res.memory);
+          
+          // Increment guest view count atomically
+          recordGuestViewAction(res.memory.id).then((vRes) => {
+            if (vRes.success && vRes.guestViewCount) {
+              setPublicMemory(prev => prev ? { ...prev, guestViewCount: vRes.guestViewCount } : prev);
+            }
+          });
         }
       })
       .catch((err) => console.error('[CinemaPage] Public memory fetch error:', err))
@@ -63,6 +79,33 @@ function CinemaContent() {
 
     return () => { isMounted = false; };
   }, [memoryIdParam]);
+
+  const handleSubmitQuestion = async () => {
+    const targetId = publicMemory?.id || selectedMemory?.id || memoryIdParam;
+    if (!targetId || !guestQuestionText.trim()) {
+      toast.error('Question text required', { description: 'Please type your question for the storyteller.' });
+      return;
+    }
+
+    setIsSubmittingQuestion(true);
+
+    try {
+      const res = await submitGuestQuestionAction(targetId, guestQuestionName, guestQuestionText);
+      if (res.success) {
+        toast.success('Question Sent to Teleprompter!', {
+          description: res.message,
+          icon: <MessageSquare className="w-4 h-4 text-amber-400 fill-current" />
+        });
+        setGuestQuestionText('');
+      } else {
+        toast.error('Could not send question', { description: res.message });
+      }
+    } catch (err) {
+      console.error('[CinemaPage] Submit question error:', err);
+    } finally {
+      setIsSubmittingQuestion(false);
+    }
+  };
 
   const handleEdit = (memory: Memory) => {
     router.push(`/add-memory?editMemoryId=${memory.id}`);
@@ -252,26 +295,97 @@ function CinemaContent() {
               </div>
             </div>
 
-            {/* VIRAL PRODUCER CONVERSION BANNER */}
-            <div className="mt-8 p-6 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent border border-emerald-500/20 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-4 text-left">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-6 h-6 text-emerald-400" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-black text-white uppercase tracking-wider">Inspired by this story?</h4>
-                  <p className="text-xs text-white/50 leading-relaxed font-medium">Weave your own family legacy with 6 months complimentary Host Pass access.</p>
-                </div>
+            {/* GUEST RE-ENGAGEMENT LOOP ("ASK GRANDPA A QUESTION") */}
+            <div className="mt-8 pt-8 border-t border-white/10 space-y-4 text-left">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-[0.25em] flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-amber-400" />
+                  <span>Ask the Storyteller a Question (Appears in their Studio Teleprompter)</span>
+                </h4>
               </div>
 
-              <button
-                type="button"
-                onClick={() => router.push('/register')}
-                className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black uppercase tracking-widest rounded-xl shadow-[0_0_25px_rgba(16,185,129,0.3)] transition-all flex items-center gap-2 shrink-0 cursor-pointer"
-              >
-                <span>Claim 6-Month Host Pass</span>
-                <ArrowRight className="w-4 h-4 text-slate-950" />
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3 max-w-3xl">
+                <input
+                  type="text"
+                  placeholder="Your Name..."
+                  value={guestQuestionName}
+                  onChange={(e) => setGuestQuestionName(e.target.value)}
+                  className="px-4 py-3 bg-slate-950 border border-amber-500/30 rounded-xl text-xs text-white placeholder-white/30 focus:outline-none focus:border-amber-400 flex-1"
+                />
+                <input
+                  type="text"
+                  placeholder="e.g. Tell us what happened when you moved to London in 1964..."
+                  value={guestQuestionText}
+                  onChange={(e) => setGuestQuestionText(e.target.value)}
+                  className="px-4 py-3 bg-slate-950 border border-amber-500/30 rounded-xl text-xs text-white placeholder-white/30 focus:outline-none focus:border-amber-400 flex-[2]"
+                />
+                <button
+                  type="button"
+                  data-hotspot-id="HS_ACT4_GUEST_SUBMIT_QUESTION_BTN"
+                  onClick={handleSubmitQuestion}
+                  disabled={isSubmittingQuestion}
+                  className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shrink-0 shadow-lg"
+                >
+                  Submit Question
+                </button>
+              </div>
+            </div>
+
+            {/* 2,500 VIEWS SOFT CAP VIRAL INFRASTRUCTURE SHIELD BANNER */}
+            {(publicMemory.guestViewCount && publicMemory.guestViewCount > 2500) && (
+              <div className="mt-8 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between text-left">
+                <div className="flex items-center gap-3">
+                  <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+                  <p className="text-xs font-mono text-amber-300">
+                    <strong>VIRAL STREAMING ACTIVE ({publicMemory.guestViewCount} views):</strong> Story streaming automatically optimized to 720p/1080p HLS.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* VIRAL PRODUCER CONVERSION & MONETIZATION VAULT TIERS BANNER */}
+            <div className="mt-10 p-8 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-slate-950 border border-emerald-500/30 rounded-3xl space-y-6">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-4 text-left">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-6 h-6 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-white uppercase tracking-wider">Inspired by this story?</h4>
+                    <p className="text-xs text-white/60 leading-relaxed font-medium">Weave your own family legacy with 6 months complimentary Host Pass access.</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => router.push('/register')}
+                  className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black uppercase tracking-widest rounded-xl shadow-[0_0_25px_rgba(16,185,129,0.3)] transition-all flex items-center gap-2 shrink-0 cursor-pointer"
+                >
+                  <span>Claim 6-Month Host Pass</span>
+                  <ArrowRight className="w-4 h-4 text-slate-950" />
+                </button>
+              </div>
+
+              {/* 3-Tier Vault Pricing Matrix */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-white/10 text-left">
+                <div className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                  <span className="text-[10px] font-mono font-bold text-white/50 uppercase tracking-widest block">Tier 1: Free Host Pass</span>
+                  <p className="text-sm font-bold text-white">£0.00 / Permanently Free</p>
+                  <p className="text-[10px] text-white/40 leading-relaxed">Part I (Roots & Foundations) is 100% free forever with up to 2,500 guest views.</p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1">
+                  <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest block">Tier 2: 31-Day Host Pass</span>
+                  <p className="text-sm font-bold text-amber-300">~£12.99 / $14.99 / Mo</p>
+                  <p className="text-[10px] text-white/60 leading-relaxed">Unlocks Parts II–VI, Family Storytelling Suite, 4K exports, and unlimited streaming.</p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1">
+                  <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest block">Tier 3: Lifetime Heirloom Vault</span>
+                  <p className="text-sm font-bold text-emerald-300">$249.00 One-Time</p>
+                  <p className="text-[10px] text-white/60 leading-relaxed">Permanent lifetime 4K cloud vault & offline archival package for future generations.</p>
+                </div>
+              </div>
             </div>
           </motion.div>
         )}

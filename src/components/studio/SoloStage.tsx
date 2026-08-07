@@ -5914,6 +5914,7 @@ export default function SoloStage({
                 </span>
                 <button
                   type="button"
+                  data-hotspot-id="HS_ACT4_SHARE_COPY_LINK_BTN"
                   onClick={handleCopyCinemaLink}
                   className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-mono font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-md"
                 >
@@ -5926,6 +5927,7 @@ export default function SoloStage({
               <div className="grid grid-cols-2 gap-2.5">
                 <button
                   type="button"
+                  data-hotspot-id="HS_ACT4_SHARE_WHATSAPP_BTN"
                   onClick={handleShareWhatsApp}
                   className="py-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
@@ -5935,6 +5937,7 @@ export default function SoloStage({
 
                 <button
                   type="button"
+                  data-hotspot-id="HS_ACT4_SHARE_EMAIL_BTN"
                   onClick={handleShareEmail}
                   className="py-3 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-400 text-[10px] font-mono font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
