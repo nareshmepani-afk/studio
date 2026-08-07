@@ -1402,20 +1402,29 @@ export default function SoloStage({
       ctx.strokeRect(46, 46, canvas.width - 92, canvas.height - 92);
 
       // 5. Draw Cinema Typography
+      const rawUser = user?.email || (data as any)?.starring || (data as any)?.producer || 'MemoryWeaver';
+      const cleanUser = rawUser.trim().replace(/[^a-zA-Z0-9@._-]/g, '_');
+
+      const rawTitle = data?.title || data?.prose?.slice(0, 35) || 'PART I: ROOTS & FOUNDATIONS';
+      const cleanTitle = rawTitle.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, ' ');
+
+      const rawSubtitle = data?.originalHook || 'A Child of Two Worlds';
+      const cleanSubtitle = rawSubtitle.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, ' ');
+
+      const docId = data?.id || 'key-art';
+
       ctx.fillStyle = '#fde68a'; // amber-200
       ctx.font = 'bold 24px monospace';
       ctx.textAlign = 'center';
       ctx.fillText('A MEMORY WEAVER CINEMA SELECTION', canvas.width / 2, 1300);
 
       // Main Title
-      const rawTitle = data?.title || data?.prose?.slice(0, 40) || 'PART I: ROOTS & FOUNDATIONS';
       ctx.fillStyle = '#ffffff';
       ctx.font = '900 48px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(rawTitle.toUpperCase(), canvas.width / 2, 1370);
 
       // Subtitle
-      const rawSubtitle = data?.originalHook || 'A Child of Two Worlds';
       ctx.fillStyle = '#94a3b8'; // slate-400
       ctx.font = 'italic 30px serif';
       ctx.fillText(`"${rawSubtitle}"`, canvas.width / 2, 1420);
@@ -1472,11 +1481,11 @@ export default function SoloStage({
       ctx.textAlign = 'center';
       ctx.fillText('SCAN TO WATCH', qrBoxX + qrSize / 2, qrBoxY + qrSize + 22);
 
-      // 7. Trigger Direct Client PNG Download
+      // 7. Trigger Direct Client PNG Download per User Specification ([user]-[title]-[subtitle]-[id].png)
       const dataUrl = canvas.toDataURL('image/png', 1.0);
       const link = document.createElement('a');
       link.href = dataUrl;
-      link.download = `memory-weaver-poster-${data?.id || 'key-art'}.png`;
+      link.download = `${cleanUser}-${cleanTitle}-${cleanSubtitle}-${docId}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

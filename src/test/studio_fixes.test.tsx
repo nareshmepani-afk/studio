@@ -1635,5 +1635,20 @@ describe('Studio Regression Tests', () => {
 
       expect(isShareModalOpen).toBe(true);
     });
+
+    it('4K POSTER FILENAME SYNTHESIS: should format descriptive filename with email, title, subtitle, and ID', () => {
+      const email = 'nareshmepani@hotmail.com';
+      const title = 'Part I: Roots & Foundations';
+      const subtitle = 'A Child of Two Worlds';
+      const docId = 'ey96djU6qR1BrDGnvZwp';
+
+      const cleanUser = email.trim().replace(/[^a-zA-Z0-9@._-]/g, '_');
+      const cleanTitle = title.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, ' ');
+      const cleanSubtitle = subtitle.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, ' ');
+
+      const filename = `${cleanUser}-${cleanTitle}-${cleanSubtitle}-${docId}.png`;
+
+      expect(filename).toBe('nareshmepani@hotmail.com-Part I Roots Foundations-A Child of Two Worlds-ey96djU6qR1BrDGnvZwp.png');
+    });
   });
 });
