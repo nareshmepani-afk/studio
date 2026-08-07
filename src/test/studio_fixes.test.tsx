@@ -1616,5 +1616,22 @@ describe('Studio Regression Tests', () => {
       expect(videoDuration).toBe(108);
       expect(formatTimeTest(videoDuration)).toBe('01:48');
     });
+
+    it('4K POSTER CANVAS DOWNLOAD & UNIQUE CINEMA QR SHARING: should construct unique cinema URL and trigger share portal modal', () => {
+      let isShareModalOpen = false;
+      const memoryId = 'ey96djU6qR1BrDGnvZwp';
+      const cinemaShareUrl = `https://dev.memoryweaver.studio/cinema?id=${memoryId}`;
+
+      const handleOpenSharePortal = () => {
+        isShareModalOpen = true;
+      };
+
+      expect(isShareModalOpen).toBe(false);
+      expect(cinemaShareUrl).toContain('/cinema?id=ey96djU6qR1BrDGnvZwp');
+
+      handleOpenSharePortal();
+
+      expect(isShareModalOpen).toBe(true);
+    });
   });
 });

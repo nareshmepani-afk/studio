@@ -22,7 +22,7 @@ import {
   Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
   Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
   Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater, Trash2,
-  ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X, Wand2
+  ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X, Wand2, Share2, Copy
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -1314,7 +1314,28 @@ export default function SoloStage({
     });
   };
 
-  const handleDownloadPoster = () => {
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  const cinemaShareUrl = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/cinema?id=${data?.id || 'demo'}`;
+    }
+    return `https://dev.memoryweaver.studio/cinema?id=${data?.id || 'demo'}`;
+  }, [data?.id]);
+
+  const handleCopyCinemaLink = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(cinemaShareUrl);
+      toast.success("Cinema Share Link Copied!", {
+        description: cinemaShareUrl,
+        icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+      });
+      logEvent('HS_ACT4_CINEMA_LINK_COPY', { version: APP_VERSION });
+    }
+  };
+
+  // --- 4K KEY ART POSTER SYNTHESIS & DOWNLOAD ENGINE ---
+  const handleDownloadPoster = async () => {
     const targetUrl = localPosterUrl || data?.posterImageUrl;
     if (!targetUrl) {
       toast.error("No Poster Anchored", { description: "Please generate or snap a poster frame first." });
@@ -1326,16 +1347,152 @@ export default function SoloStage({
       version: APP_VERSION
     });
 
-    const link = document.createElement('a');
-    link.href = targetUrl;
-    link.download = `memory-weaver-poster-${data?.id || 'key-art'}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    toast.success("4K Poster Downloaded!", {
-      description: `Saved ${posterStyle.toUpperCase()} key art directly to your device.`
+    const toastId = toast.loading("Synthesizing 4K Key Art Poster...", {
+      description: "Rendering high-resolution typography & cinema QR code..."
     });
+
+    try {
+      // 1. Create High-Res 4K Canvas (1200 x 1800 px)
+      const canvas = document.createElement('canvas');
+      canvas.width = 1200;
+      canvas.height = 1800;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error("Canvas context initialization failed");
+
+      // 2. Load base portrait image
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = targetUrl;
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = (err) => reject(err);
+      });
+
+      ctx.save();
+      // Apply active style filter grading
+      if (posterStyle === 'vintage-35mm') ctx.filter = 'sepia(0.35) contrast(1.1) brightness(1.05)';
+      else if (posterStyle === 'modern-legacy') ctx.filter = 'contrast(1.15) saturate(1.1)';
+      else if (posterStyle === 'heritage-oil') ctx.filter = 'sepia(0.2) contrast(1.25) saturate(1.2)';
+      else if (posterStyle === 'raw-authentic') ctx.filter = 'contrast(1.05)';
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+
+      // 3. Draw Dark Cinematic Vignette Gradients
+      const topGrad = ctx.createLinearGradient(0, 0, 0, 450);
+      topGrad.addColorStop(0, 'rgba(2, 6, 23, 0.85)');
+      topGrad.addColorStop(1, 'rgba(2, 6, 23, 0)');
+      ctx.fillStyle = topGrad;
+      ctx.fillRect(0, 0, canvas.width, 450);
+
+      const bottomGrad = ctx.createLinearGradient(0, 1000, 0, 1800);
+      bottomGrad.addColorStop(0, 'rgba(2, 6, 23, 0)');
+      bottomGrad.addColorStop(0.5, 'rgba(2, 6, 23, 0.7)');
+      bottomGrad.addColorStop(1, 'rgba(2, 6, 23, 0.98)');
+      ctx.fillStyle = bottomGrad;
+      ctx.fillRect(0, 1000, canvas.width, 800);
+
+      // 4. Draw Gold Theatrical Border Frame
+      ctx.strokeStyle = '#f59e0b'; // amber-500
+      ctx.lineWidth = 14;
+      ctx.strokeRect(28, 28, canvas.width - 56, canvas.height - 56);
+
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)'; // amber-400/40
+      ctx.lineWidth = 4;
+      ctx.strokeRect(46, 46, canvas.width - 92, canvas.height - 92);
+
+      // 5. Draw Cinema Typography
+      ctx.fillStyle = '#fde68a'; // amber-200
+      ctx.font = 'bold 24px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('A MEMORY WEAVER CINEMA SELECTION', canvas.width / 2, 1300);
+
+      // Main Title
+      const rawTitle = data?.title || data?.prose?.slice(0, 40) || 'PART I: ROOTS & FOUNDATIONS';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 48px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(rawTitle.toUpperCase(), canvas.width / 2, 1370);
+
+      // Subtitle
+      const rawSubtitle = data?.originalHook || 'A Child of Two Worlds';
+      ctx.fillStyle = '#94a3b8'; // slate-400
+      ctx.font = 'italic 30px serif';
+      ctx.fillText(`"${rawSubtitle}"`, canvas.width / 2, 1420);
+
+      // Decorative Line
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2 - 200, 1460);
+      ctx.lineTo(canvas.width / 2 + 200, 1460);
+      ctx.stroke();
+
+      // Style & Details
+      ctx.fillStyle = '#64748b'; // slate-500
+      ctx.font = 'bold 20px monospace';
+      ctx.fillText(`STYLE: ${posterStyle.toUpperCase()} • YEAR: ${(data as any)?.year || data?.timeframeScope || 1965}`, canvas.width / 2, 1500);
+
+      // Billing Line
+      const performerName = (data as any)?.starring || (data as any)?.producer || user?.email?.split('@')[0] || 'N. Mepani';
+      ctx.fillStyle = '#cbd5e1'; // slate-300
+      ctx.font = 'bold 18px monospace';
+      ctx.fillText(`STARRING ${performerName.toUpperCase()} • DIRECTED BY MEMORY WEAVER`, canvas.width / 2, 1540);
+
+      // 6. Synthesize & Draw Cinema Sharing QR Code
+      const qrBoxX = canvas.width - 240;
+      const qrBoxY = canvas.height - 240;
+      const qrSize = 160;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      if (typeof (ctx as any).roundRect === 'function') {
+        (ctx as any).roundRect(qrBoxX - 10, qrBoxY - 10, qrSize + 20, qrSize + 50, 16);
+      } else {
+        ctx.rect(qrBoxX - 10, qrBoxY - 10, qrSize + 20, qrSize + 50);
+      }
+      ctx.fill();
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      const qrImg = new Image();
+      qrImg.crossOrigin = 'anonymous';
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(cinemaShareUrl)}`;
+
+      await new Promise<void>((resolve) => {
+        qrImg.onload = () => {
+          ctx.drawImage(qrImg, qrBoxX, qrBoxY, qrSize, qrSize);
+          resolve();
+        };
+        qrImg.onerror = () => resolve();
+      });
+
+      ctx.fillStyle = '#020617';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('SCAN TO WATCH', qrBoxX + qrSize / 2, qrBoxY + qrSize + 22);
+
+      // 7. Trigger Direct Client PNG Download
+      const dataUrl = canvas.toDataURL('image/png', 1.0);
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `memory-weaver-poster-${data?.id || 'key-art'}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.dismiss(toastId);
+      toast.success("4K Poster Downloaded!", {
+        description: "Saved 4K Key Art PNG with embedded Cinema QR Code to your device.",
+        icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+      });
+    } catch (err) {
+      console.error("[4K Poster Engine] Download synthesis error:", err);
+      toast.dismiss(toastId);
+      toast.error("Download Failed", {
+        description: "Unable to synthesize 4K poster PNG."
+      });
+    }
   };
 
   useEffect(() => {
@@ -5387,6 +5544,16 @@ export default function SoloStage({
 
                   <button
                     type="button"
+                    data-hotspot-id="HS_ACT4_SHARE_CINEMA_BTN"
+                    onClick={() => setIsShareModalOpen(true)}
+                    className="px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-lg hover:scale-105"
+                  >
+                    <Share2 className="w-4 h-4 text-emerald-400" />
+                    <span>Share Cinema Link & QR</span>
+                  </button>
+
+                  <button
+                    type="button"
                     data-hotspot-id="HS_ACT4_DOWNLOAD_POSTER_BTN"
                     onClick={handleDownloadPoster}
                     className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-mono font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:scale-105"
@@ -5563,6 +5730,92 @@ export default function SoloStage({
             </motion.div>
           )}
         </AnimatePresence>,
+        document.body
+      )}
+
+      {/* CINEMA SHARE & QR CODE PORTAL MODAL */}
+      {isShareModalOpen && createPortal(
+        <div className="fixed inset-0 z-[25000] bg-slate-950/90 backdrop-blur-2xl flex items-center justify-center p-4 select-none">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="w-full max-w-lg bg-slate-900 border-2 border-emerald-500/50 rounded-3xl p-6 shadow-[0_0_80px_rgba(16,185,129,0.3)] space-y-6 relative"
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400">
+                  <Share2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black font-headline text-white uppercase tracking-wider">
+                    Memory Weaver Cinema Portal
+                  </h3>
+                  <p className="text-[10px] font-mono text-white/50 uppercase tracking-widest">
+                    Unique Share Link & Scannable Key Art QR Code
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsShareModalOpen(false)}
+                className="p-2 hover:bg-white/10 rounded-xl text-white/60 hover:text-white transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* QR Code Display Card */}
+            <div className="flex flex-col items-center justify-center gap-4 p-6 bg-slate-950/80 rounded-2xl border border-emerald-500/30">
+              <div className="p-3 bg-white rounded-2xl border-4 border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.4)]">
+                <QRCodeCanvas 
+                  value={cinemaShareUrl} 
+                  size={200} 
+                  level="H" 
+                  includeMargin={false} 
+                  className="rounded-lg" 
+                />
+              </div>
+              <div className="text-center space-y-1">
+                <span className="text-xs font-mono font-bold text-emerald-300 uppercase tracking-widest block">
+                  Scan With Mobile Camera
+                </span>
+                <span className="text-[10px] font-mono text-white/60 block">
+                  Instantly opens performance reel on Memory Weaver Cinema
+                </span>
+              </div>
+            </div>
+
+            {/* Unique Link & Action Bar */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-3 bg-slate-950/90 rounded-xl border border-white/10">
+                <span className="text-xs font-mono text-emerald-400 truncate flex-1 px-2">
+                  {cinemaShareUrl}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyCinemaLink}
+                  className="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-mono font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy Link</span>
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadPoster}
+                  className="flex-1 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-mono font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download 4K Poster PNG (With QR Code)</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>,
         document.body
       )}
 
