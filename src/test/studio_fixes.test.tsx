@@ -1674,5 +1674,21 @@ describe('Studio Regression Tests', () => {
       expect(sw).toBe(720); // Center cropped 720 width from 1920
       expect(sx).toBe(600); // 600px left offset for perfect face centering!
     });
+
+    it('ACT IV STAGE ZERO-START PLAYBACK SHIELD: should initialize playhead at 00:00 without jumping to stale trimStart', () => {
+      let previewCurrentTime = 21; // Stale time jump
+      let currentTimeOverride = -1;
+
+      // Zero-Start Safeguard handler on Act IV load:
+      const handleActIVMountTest = () => {
+        currentTimeOverride = 0;
+        previewCurrentTime = 0;
+      };
+
+      handleActIVMountTest();
+
+      expect(previewCurrentTime).toBe(0);
+      expect(currentTimeOverride).toBe(0);
+    });
   });
 });

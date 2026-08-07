@@ -188,14 +188,12 @@ export default function SoloStage({
     return false; // Not guest, proceed
   };
 
-  // Rehydrate trimRange when Firestore data or videoDuration loads
+  // Rehydrate trimRange when Firestore data or videoDuration loads (default trimStart to 0 for zero-start playhead integrity)
   useEffect(() => {
-    if (data?.trimStart !== undefined || data?.trimEnd !== undefined) {
-      const start = data?.trimStart ?? 0;
-      const end = data?.trimEnd ?? (videoDuration || 100);
-      setTrimRange([start, end]);
-    }
-  }, [data?.trimStart, data?.trimEnd, videoDuration]);
+    const start = 0;
+    const end = data?.trimEnd ?? (videoDuration || 100);
+    setTrimRange([start, end]);
+  }, [data?.trimEnd, videoDuration]);
 
   // Cinematic Pipeline State (Shared via Firestore)
   // BUGFIX: Prioritize global stage from prop, but allow local data fallback ONLY if prop is undefined.
@@ -1600,19 +1598,13 @@ export default function SoloStage({
   // Phase 3 Preview Local URL
   const previewUrl = reviewVideoUrl || data?.videoUrl;
 
-  const prevTrimRangeRef = useRef<[number, number]>(trimRange);
+  // Zero-Start Playhead Safeguard: Ensure video playhead starts at 00:00 when entering Act IV or loading video
   useEffect(() => {
-    if (!previewVideoRef.current) return;
-    const video = previewVideoRef.current;
-    const prev = prevTrimRangeRef.current;
-    
-    if (trimRange[0] !== prev[0]) {
-      video.currentTime = trimRange[0];
-    } else if (trimRange[1] !== prev[1]) {
-      video.currentTime = trimRange[1];
+    if (previewVideoRef.current) {
+      previewVideoRef.current.currentTime = 0;
+      setPreviewCurrentTime(0);
     }
-    prevTrimRangeRef.current = trimRange;
-  }, [trimRange]);
+  }, [previewUrl, currentStage]);
 
   const theaterVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -2350,10 +2342,10 @@ export default function SoloStage({
     const activeDur = effectiveVideoDuration;
     if (activeDur === 0) return;
 
-    if (currentTime < trimRange[0]) vid.currentTime = trimRange[0];
-    if (currentTime > trimRange[1] && trimRange[1] > 0) {
+    // Trim boundary check (pause if video exceeds active end trim, zero-start preserved)
+    if (trimRange[1] > 0 && currentTime > trimRange[1]) {
       vid.pause();
-      vid.currentTime = trimRange[0];
+      vid.currentTime = 0;
       setIsPlaying(false);
     }
   };
