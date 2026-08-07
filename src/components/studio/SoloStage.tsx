@@ -1412,16 +1412,27 @@ export default function SoloStage({
     prevTrimRangeRef.current = trimRange;
   }, [trimRange]);
 
+  const theaterVideoRef = useRef<HTMLVideoElement>(null);
+
   const togglePreviewPlay = () => {
     if (previewVideoRef.current) {
       if (isPlaying) {
         previewVideoRef.current.pause();
+        setIsPlaying(false);
       } else {
-        previewVideoRef.current.play();
-        setIsReelTheaterOpen(true);
+        previewVideoRef.current.play().then(() => {
+          setIsPlaying(true);
+        }).catch(err => {
+          console.warn("[SoloStage] Video playback error:", err);
+          setIsPlaying(false);
+        });
       }
-      setIsPlaying(!isPlaying);
     }
+  };
+
+  const handleOpenReelTheater = () => {
+    setIsReelTheaterOpen(true);
+    logEvent('HS_ACT4_REEL_THEATER_OPEN', { version: APP_VERSION });
   };
 
   const handleSeekPreview = useCallback((seconds: number) => {
@@ -4344,7 +4355,7 @@ export default function SoloStage({
                       <button
                         type="button"
                         data-hotspot-id="HS_ACT4_THEATER_TOGGLE_BTN"
-                        onClick={() => setIsReelTheaterOpen(true)}
+                        onClick={handleOpenReelTheater}
                         className="absolute top-4 right-4 z-10 bg-slate-950/85 hover:bg-slate-900 border border-white/10 text-white/80 hover:text-white px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-lg cursor-pointer transition-all hover:scale-105"
                       >
                         <Maximize2 className="w-3 h-3 text-emerald-400" />
@@ -4352,21 +4363,16 @@ export default function SoloStage({
                       </button>
 
                       {previewUrl ? (
-                         !isReelTheaterOpen ? (
-                           <video 
-                             ref={previewVideoRef}
-                             src={previewUrl}
-                             onTimeUpdate={handlePreviewTimeUpdate}
-                             className="w-full h-full object-cover grayscale-[0.2] contrast-[1.1]"
-                           />
-                         ) : (
-                           <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center text-center p-6 space-y-2">
-                             <FilmIcon className="w-8 h-8 text-emerald-400 animate-pulse" />
-                             <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest">
-                               Screening in Cinematic Theater
-                             </span>
-                           </div>
-                         )
+                        <video 
+                          ref={previewVideoRef}
+                          src={previewUrl}
+                          onPlay={() => setIsPlaying(true)}
+                          onPause={() => setIsPlaying(false)}
+                          onEnded={() => setIsPlaying(false)}
+                          onTimeUpdate={handlePreviewTimeUpdate}
+                          className="w-full h-full object-cover grayscale-[0.2] contrast-[1.1] rounded-2xl"
+                          playsInline
+                        />
                       ) : (
                          <div className="absolute inset-0 flex items-center justify-center text-white/10 font-black uppercase tracking-[0.5em] text-xs">Awaiting Development Reel...</div>
                       )}
@@ -5262,6 +5268,79 @@ export default function SoloStage({
                     {style.label}
                   </button>
                 ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Full-Screen 4K Master Reel Theater Portal Modal */}
+      {typeof window !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isReelTheaterOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[10000] bg-slate-950/98 backdrop-blur-3xl flex flex-col items-center justify-center p-6 md:p-10 select-none overflow-hidden"
+            >
+              {/* Top Control Header */}
+              <div className="w-full max-w-5xl flex items-center justify-between mb-4 px-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                    <FilmIcon className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="text-left">
+                    <h2 className="text-sm md:text-base font-black text-white uppercase tracking-widest font-headline italic">
+                      4K Master Reel Cinematic Theater
+                    </h2>
+                    <p className="text-[10px] text-emerald-400 uppercase tracking-widest font-mono">
+                      Full-Screen Performance Screening // 60 FPS ProRes
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    data-hotspot-id="HS_ACT4_THEATER_SNAP_FRAME_BTN"
+                    onClick={handleCaptureThumbnail}
+                    disabled={isCapturingThumbnail}
+                    className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-mono font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:scale-105"
+                  >
+                    <Camera className="w-4 h-4 text-slate-950" />
+                    <span>{isCapturingThumbnail ? 'Snapping...' : 'Snap Poster Frame'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsReelTheaterOpen(false)}
+                    className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-[10px] font-mono font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    <X className="w-4 h-4 text-white" />
+                    <span>Close Theater (Esc)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 16:9 Full Theater Video Viewport */}
+              <div className="w-full max-w-5xl aspect-video rounded-3xl overflow-hidden border-2 border-emerald-500/40 shadow-[0_30px_90px_rgba(16,185,129,0.25)] relative group bg-black/90 flex items-center justify-center">
+                {previewUrl ? (
+                  <video 
+                    ref={theaterVideoRef}
+                    src={previewUrl}
+                    autoPlay
+                    controls
+                    onTimeUpdate={(e) => setPreviewCurrentTime((e.target as HTMLVideoElement).currentTime)}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-white/40 space-y-2">
+                    <FilmIcon className="w-10 h-10 animate-pulse text-emerald-400" />
+                    <span className="text-xs font-mono font-bold uppercase tracking-widest text-emerald-400">Awaiting Master Performance Reel...</span>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

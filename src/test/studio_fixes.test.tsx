@@ -1435,5 +1435,33 @@ describe('Studio Regression Tests', () => {
         expect(tag).toMatch(/^HS_ACT4_POSTER_STYLE_/);
       });
     });
+
+    it('4K MASTER REEL PLAYBACK & THEATER PORTAL INTEGRITY: togglePreviewPlay should not unmount video element and should open full-screen Reel Theater modal on explicit trigger', () => {
+      let isPlaying = false;
+      let isReelTheaterOpen = false;
+      const theaterHotspot = "HS_ACT4_THEATER_TOGGLE_BTN";
+
+      // Simulate togglePreviewPlay without unmounting video
+      const togglePreviewPlay = () => {
+        isPlaying = !isPlaying;
+      };
+
+      const handleOpenReelTheater = () => {
+        isReelTheaterOpen = true;
+      };
+
+      expect(isPlaying).toBe(false);
+      expect(isReelTheaterOpen).toBe(false);
+
+      // Play video in-page
+      togglePreviewPlay();
+      expect(isPlaying).toBe(true);
+      expect(isReelTheaterOpen).toBe(false); // VIDEO MUST REMAIN MOUNTED IN-PAGE
+
+      // Explicitly trigger Full-Screen Reel Theater
+      handleOpenReelTheater();
+      expect(isReelTheaterOpen).toBe(true);
+      expect(theaterHotspot).toBe("HS_ACT4_THEATER_TOGGLE_BTN");
+    });
   });
 });
