@@ -1254,8 +1254,9 @@ export default function SoloStage({
       style: styleId, 
       version: APP_VERSION 
     });
-    toast.success(`Poster Style Grade: ${styleId.toUpperCase()}`, {
-      description: "Dynamic style filters applied to active poster anchor frame.",
+    const formattedStyle = styleId.replace('-', ' ').toUpperCase();
+    toast.success(`Colour Grade Applied: ${formattedStyle}`, {
+      description: "Live CSS colour filter updated. (Click 'Synthesize AI Key Art' to render new AI artwork).",
       icon: <CheckCircle2 className="w-4 h-4 text-amber-400" />
     });
   };
@@ -1263,8 +1264,9 @@ export default function SoloStage({
   const handleGenerateAIPoster = async () => {
     setIsGeneratingAIPoster(true);
     logEvent('HS_ACT4_GENERATE_AI_POSTER', { style: posterStyle, version: APP_VERSION });
-    toast.info("Synthesising AI Legacy Movie Poster...", {
-      description: `Blending Fusion Protocol story anchors with ${posterStyle} aesthetic.`
+    const formattedStyle = posterStyle.replace('-', ' ').toUpperCase();
+    toast.info("Synthesising Generative AI Key Art...", {
+      description: `Imagen AI is rendering custom ${formattedStyle} background artwork from your story prose.`
     });
 
     try {
@@ -1287,14 +1289,14 @@ export default function SoloStage({
       setLocalPosterUrl(posterUrl);
       update({ posterImageUrl: posterUrl });
 
-      toast.success("AI Legacy Movie Poster Anchored!", {
-        description: `Style: ${posterStyle.toUpperCase()} • Hybrid Real Face + Story Scene Composite`
+      toast.success("AI Generative Key Art Synthesised!", {
+        description: `New ${formattedStyle} AI artwork composite generated and locked to poster frame.`
       });
     } catch (err) {
       console.warn("[SoloStage] AI Poster synthesis fallback triggered:", err);
       if (localPosterUrl || data?.posterImageUrl) {
         toast.success("Poster Refreshed with Selected Style", {
-          description: `Applied ${posterStyle.toUpperCase()} style preset to your active anchor.`
+          description: `Applied ${formattedStyle} style grade preset to your active frame.`
         });
       }
     } finally {
@@ -4910,52 +4912,63 @@ export default function SoloStage({
                    </div>
 
                    {/* 4 Artistic Style Presets Selector */}
-                   <div className="flex flex-wrap justify-center gap-2 max-w-md pt-2">
-                     {[
-                       { id: 'vintage-35mm', label: '🎞️ Vintage 35mm' },
-                       { id: 'modern-legacy', label: '💎 Modern Legacy' },
-                       { id: 'heritage-oil', label: '🎨 Heritage Oil' },
-                       { id: 'raw-authentic', label: '📷 Raw Authentic' },
-                     ].map((style) => (
-                       <button
-                         key={style.id}
-                         type="button"
-                         data-hotspot-id={`HS_ACT4_POSTER_STYLE_${style.id.toUpperCase().replace('-', '_')}_BTN`}
-                         onClick={() => handleSelectPosterStyle(style.id as any)}
-                         className={`px-3.5 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                           posterStyle === style.id
-                             ? 'bg-amber-400 text-slate-950 shadow-md scale-105 font-black ring-2 ring-amber-300'
-                             : 'bg-white/5 hover:bg-white/10 text-white/60 border border-white/10'
-                         }`}
-                       >
-                         {style.label}
-                       </button>
-                     ))}
+                   <div className="w-full max-w-md text-center pt-2 space-y-2">
+                     <span className="text-[8px] font-mono font-bold uppercase tracking-[0.25em] text-white/40 block">
+                       STEP 1: SELECT COLOUR GRADE FILTER
+                     </span>
+                     <div className="flex flex-wrap justify-center gap-2">
+                       {[
+                         { id: 'vintage-35mm', label: '🎞️ Vintage 35mm' },
+                         { id: 'modern-legacy', label: '💎 Modern Legacy' },
+                         { id: 'heritage-oil', label: '🎨 Heritage Oil' },
+                         { id: 'raw-authentic', label: '📷 Raw Authentic' },
+                       ].map((style) => (
+                         <button
+                           key={style.id}
+                           type="button"
+                           data-hotspot-id={`HS_ACT4_POSTER_STYLE_${style.id.toUpperCase().replace('-', '_')}_BTN`}
+                           onClick={() => handleSelectPosterStyle(style.id as any)}
+                           title="Apply live CSS colour grade filter preview"
+                           className={`px-3.5 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                             posterStyle === style.id
+                               ? 'bg-amber-400 text-slate-950 shadow-md scale-105 font-black ring-2 ring-amber-300'
+                               : 'bg-white/5 hover:bg-white/10 text-white/60 border border-white/10'
+                           }`}
+                         >
+                           {style.label}
+                         </button>
+                       ))}
+                     </div>
                    </div>
 
                    {/* Master Action Triggers */}
-                   <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                     <button 
-                        type="button"
-                        data-hotspot-id="HS_ACT4_GENERATE_AI_POSTER_BTN"
-                        onClick={handleGenerateAIPoster} 
-                        disabled={isGeneratingAIPoster} 
-                        className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(16,185,129,0.3)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
-                     >
-                        {isGeneratingAIPoster ? <Loader2 className="w-4 h-4 text-slate-950 animate-spin" /> : <Wand2 className="w-4 h-4 text-slate-950" />}
-                        <span>{isGeneratingAIPoster ? 'Synthesising Scene...' : 'Generate AI Movie Poster'}</span>
-                     </button>
+                   <div className="w-full max-w-md text-center pt-3 space-y-2">
+                     <span className="text-[8px] font-mono font-bold uppercase tracking-[0.25em] text-emerald-400/60 block">
+                       STEP 2: SYNTHESISE GENERATIVE AI ARTWORK (IMAGEN AI)
+                     </span>
+                     <div className="flex flex-wrap items-center justify-center gap-3">
+                       <button 
+                          type="button"
+                          data-hotspot-id="HS_ACT4_GENERATE_AI_POSTER_BTN"
+                          onClick={handleGenerateAIPoster} 
+                          disabled={isGeneratingAIPoster} 
+                          className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(16,185,129,0.3)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                       >
+                          {isGeneratingAIPoster ? <Loader2 className="w-4 h-4 text-slate-950 animate-spin" /> : <Wand2 className="w-4 h-4 text-slate-950" />}
+                          <span>{isGeneratingAIPoster ? 'Rendering Imagen AI Key Art...' : 'Synthesise AI Key Art (Imagen AI)'}</span>
+                       </button>
 
-                     <button 
-                        type="button"
-                        data-hotspot-id="HS_ACT4_OPEN_PHOTOBOOTH_BTN"
-                        onClick={handleOpenSelfiePhotobooth} 
-                        disabled={isCapturingThumbnail} 
-                        className="px-6 py-3.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(245,158,11,0.25)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
-                     >
-                        <Sparkles className="w-4 h-4 text-slate-950" />
-                        <span>Open Studio Photobooth</span>
-                     </button>
+                       <button 
+                          type="button"
+                          data-hotspot-id="HS_ACT4_OPEN_PHOTOBOOTH_BTN"
+                          onClick={handleOpenSelfiePhotobooth} 
+                          disabled={isCapturingThumbnail} 
+                          className="px-6 py-3.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-black uppercase tracking-[0.18em] rounded-xl hover:scale-105 transition-all shadow-[0_10px_25px_rgba(245,158,11,0.25)] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                       >
+                          <Sparkles className="w-4 h-4 text-slate-950" />
+                          <span>Open Studio Photobooth</span>
+                       </button>
+                     </div>
                    </div>
                 </motion.div>
              )}
