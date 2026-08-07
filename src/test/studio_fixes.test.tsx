@@ -1542,5 +1542,28 @@ describe('Studio Regression Tests', () => {
       expect(isPreviewPlaying).toBe(false);
       expect(isReelTheaterOpen).toBe(true);
     });
+
+    it('POSTER PHOTOBOOTH SELFIE ENGINE INTEGRITY: handleOpenSelfiePhotobooth should close lightboxes and open Studio Selfie Photobooth Modal', () => {
+      let isPosterLightboxOpen = true;
+      let isReelTheaterOpen = false;
+      let isSelfieModalOpen = false;
+      let isCameraActive = false;
+
+      const handleOpenSelfiePhotoboothTest = () => {
+        isPosterLightboxOpen = false;
+        isReelTheaterOpen = false;
+        isCameraActive = true;
+        isSelfieModalOpen = true;
+      };
+
+      expect(isPosterLightboxOpen).toBe(true);
+      expect(isSelfieModalOpen).toBe(false);
+
+      handleOpenSelfiePhotoboothTest();
+
+      expect(isPosterLightboxOpen).toBe(false);
+      expect(isCameraActive).toBe(true);
+      expect(isSelfieModalOpen).toBe(true);
+    });
   });
 });

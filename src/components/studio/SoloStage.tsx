@@ -1631,6 +1631,15 @@ export default function SoloStage({
 
   const handleOpenSelfiePhotobooth = async () => {
     if (checkGuestAndUpsell("capturing cinematic poster frames")) return;
+    if (previewVideoRef.current) {
+      previewVideoRef.current.pause();
+    }
+    if (theaterVideoRef.current) {
+      theaterVideoRef.current.pause();
+    }
+    setIsPlaying(false);
+    setIsPosterLightboxOpen(false);
+    setIsReelTheaterOpen(false);
     unmuteOptics();
     if (!isCameraActive || !stream) {
       handleReattemptAccess();
@@ -1640,6 +1649,7 @@ export default function SoloStage({
     setSelfieCapturedBlob(null);
     setSelfieCountdown(null);
     setIsSelfieModalOpen(true);
+    logEvent('HS_ACT4_POSTER_SELFIE_OPEN', { version: APP_VERSION });
   };
 
   useEffect(() => {
@@ -5309,12 +5319,22 @@ export default function SoloStage({
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
+                    data-hotspot-id="HS_ACT4_LIGHTBOX_SELFIE_BTN"
+                    onClick={handleOpenSelfiePhotobooth}
+                    className="px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-lg hover:scale-105"
+                  >
+                    <Camera className="w-4 h-4 text-emerald-400" />
+                    <span>Snap Studio Selfie</span>
+                  </button>
+
+                  <button
+                    type="button"
                     data-hotspot-id="HS_ACT4_LIGHTBOX_RETAKE_BTN"
                     onClick={handleRetakePerformance}
                     className="px-4 py-2.5 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-400 text-[10px] font-mono font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-lg hover:scale-105"
                   >
                     <RefreshCw className="w-4 h-4 text-sky-400" />
-                    <span>Retake Performance</span>
+                    <span>Retake Video Reel</span>
                   </button>
 
                   <button
