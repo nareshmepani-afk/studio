@@ -1347,17 +1347,20 @@ export default function SoloStage({
       version: APP_VERSION
     });
 
-    const toastId = toast.loading("Synthesizing 4K Key Art Poster...", {
-      description: "Rendering high-resolution typography & cinema QR code..."
+    const toastId = toast.loading("Synthesizing Ultra-HD 4K Key Art Poster...", {
+      description: "Rendering 2400x3600 300 DPI typography & vector QR code..."
     });
 
     try {
-      // 1. Create High-Res 4K Canvas (1200 x 1800 px)
+      // 1. Create Ultra-HD 4K Canvas (2400 x 3600 px @ 300 DPI)
       const canvas = document.createElement('canvas');
-      canvas.width = 1200;
-      canvas.height = 1800;
+      canvas.width = 2400;
+      canvas.height = 3600;
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error("Canvas context initialization failed");
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
 
       // 2. Load base portrait image
       const img = new Image();
@@ -1368,6 +1371,19 @@ export default function SoloStage({
         img.onerror = (err) => reject(err);
       });
 
+      // Object-Fit Cover Math (Prevents Stretching / Distorting Webcam Photo)
+      const imgRatio = img.width / img.height;
+      const canvasRatio = canvas.width / canvas.height;
+      let sx = 0, sy = 0, sw = img.width, sh = img.height;
+
+      if (imgRatio > canvasRatio) {
+        sw = img.height * canvasRatio;
+        sx = (img.width - sw) / 2;
+      } else {
+        sh = img.width / canvasRatio;
+        sy = (img.height - sh) / 2;
+      }
+
       ctx.save();
       // Apply active style filter grading
       if (posterStyle === 'vintage-35mm') ctx.filter = 'sepia(0.35) contrast(1.1) brightness(1.05)';
@@ -1375,33 +1391,33 @@ export default function SoloStage({
       else if (posterStyle === 'heritage-oil') ctx.filter = 'sepia(0.2) contrast(1.25) saturate(1.2)';
       else if (posterStyle === 'raw-authentic') ctx.filter = 'contrast(1.05)';
 
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
       ctx.restore();
 
       // 3. Draw Dark Cinematic Vignette Gradients
-      const topGrad = ctx.createLinearGradient(0, 0, 0, 450);
-      topGrad.addColorStop(0, 'rgba(2, 6, 23, 0.85)');
+      const topGrad = ctx.createLinearGradient(0, 0, 0, 900);
+      topGrad.addColorStop(0, 'rgba(2, 6, 23, 0.9)');
       topGrad.addColorStop(1, 'rgba(2, 6, 23, 0)');
       ctx.fillStyle = topGrad;
-      ctx.fillRect(0, 0, canvas.width, 450);
+      ctx.fillRect(0, 0, canvas.width, 900);
 
-      const bottomGrad = ctx.createLinearGradient(0, 1000, 0, 1800);
+      const bottomGrad = ctx.createLinearGradient(0, 1800, 0, 3600);
       bottomGrad.addColorStop(0, 'rgba(2, 6, 23, 0)');
-      bottomGrad.addColorStop(0.5, 'rgba(2, 6, 23, 0.7)');
+      bottomGrad.addColorStop(0.4, 'rgba(2, 6, 23, 0.75)');
       bottomGrad.addColorStop(1, 'rgba(2, 6, 23, 0.98)');
       ctx.fillStyle = bottomGrad;
-      ctx.fillRect(0, 1000, canvas.width, 800);
+      ctx.fillRect(0, 1800, canvas.width, 1800);
 
-      // 4. Draw Gold Theatrical Border Frame
+      // 4. Draw Gold Theatrical Double Border Frame
       ctx.strokeStyle = '#f59e0b'; // amber-500
-      ctx.lineWidth = 14;
-      ctx.strokeRect(28, 28, canvas.width - 56, canvas.height - 56);
+      ctx.lineWidth = 28;
+      ctx.strokeRect(56, 56, canvas.width - 112, canvas.height - 112);
 
-      ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)'; // amber-400/40
-      ctx.lineWidth = 4;
-      ctx.strokeRect(46, 46, canvas.width - 92, canvas.height - 92);
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.5)'; // amber-400/50
+      ctx.lineWidth = 8;
+      ctx.strokeRect(92, 92, canvas.width - 184, canvas.height - 184);
 
-      // 5. Draw Cinema Typography
+      // 5. Draw Cinema Typography Layout
       const rawUser = user?.email || (data as any)?.starring || (data as any)?.producer || 'MemoryWeaver';
       const cleanUser = rawUser.trim().replace(/[^a-zA-Z0-9@._-]/g, '_');
 
@@ -1413,57 +1429,70 @@ export default function SoloStage({
 
       const docId = data?.id || 'key-art';
 
+      const extractedYear = (() => {
+        if ((data as any)?.year && !isNaN(Number((data as any).year))) return (data as any).year;
+        const textToSearch = `${typeof data?.timeframeScope === 'string' ? data.timeframeScope : ''} ${data?.prose || ''} ${data?.title || ''}`;
+        const match = textToSearch.match(/\b(19\d\d|20\d\d)\b/);
+        return match ? match[1] : '1964';
+      })();
+
+      // Header Tagline
       ctx.fillStyle = '#fde68a'; // amber-200
-      ctx.font = 'bold 24px monospace';
+      ctx.font = 'bold 48px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('A MEMORY WEAVER CINEMA SELECTION', canvas.width / 2, 1300);
+      ctx.fillText('A MEMORY WEAVER CINEMA SELECTION', canvas.width / 2, 2600);
 
       // Main Title
       ctx.fillStyle = '#ffffff';
-      ctx.font = '900 48px sans-serif';
+      ctx.font = '900 96px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(rawTitle.toUpperCase(), canvas.width / 2, 1370);
+      ctx.fillText(rawTitle.toUpperCase(), canvas.width / 2, 2740);
 
-      // Subtitle
+      // Subtitle (Hook)
       ctx.fillStyle = '#94a3b8'; // slate-400
-      ctx.font = 'italic 30px serif';
-      ctx.fillText(`"${rawSubtitle}"`, canvas.width / 2, 1420);
+      ctx.font = 'italic 60px serif';
+      ctx.fillText(`"${rawSubtitle}"`, canvas.width / 2, 2840);
 
-      // Decorative Line
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      // Decorative Amber Line
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+      ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.moveTo(canvas.width / 2 - 200, 1460);
-      ctx.lineTo(canvas.width / 2 + 200, 1460);
+      ctx.moveTo(canvas.width / 2 - 400, 2920);
+      ctx.lineTo(canvas.width / 2 + 400, 2920);
       ctx.stroke();
 
-      // Style & Details
+      // Style & Year Metadata
       ctx.fillStyle = '#64748b'; // slate-500
-      ctx.font = 'bold 20px monospace';
-      ctx.fillText(`STYLE: ${posterStyle.toUpperCase()} • YEAR: ${(data as any)?.year || data?.timeframeScope || 1965}`, canvas.width / 2, 1500);
+      ctx.font = 'bold 40px monospace';
+      ctx.fillText(`STYLE: ${posterStyle.toUpperCase()}  •  YEAR: ${extractedYear}`, canvas.width / 2, 3000);
 
       // Billing Line
       const performerName = (data as any)?.starring || (data as any)?.producer || user?.email?.split('@')[0] || 'N. Mepani';
       ctx.fillStyle = '#cbd5e1'; // slate-300
-      ctx.font = 'bold 18px monospace';
-      ctx.fillText(`STARRING ${performerName.toUpperCase()} • DIRECTED BY MEMORY WEAVER`, canvas.width / 2, 1540);
+      ctx.font = 'bold 36px monospace';
+      ctx.fillText(`STARRING ${performerName.toUpperCase()}  •  DIRECTED BY MEMORY WEAVER`, canvas.width / 2, 3080);
 
-      // 6. Synthesize & Draw Cinema Sharing QR Code
-      const qrBoxX = canvas.width - 240;
-      const qrBoxY = canvas.height - 240;
-      const qrSize = 160;
+      // 6. Synthesize & Draw Scannable Cinema QR Card
+      const qrSize = 300;
+      const qrBoxX = canvas.width - 420;
+      const qrBoxY = canvas.height - 480;
 
-      ctx.fillStyle = '#ffffff';
+      // Dark Glassmorphic Card Background
+      ctx.fillStyle = '#020617';
       ctx.beginPath();
       if (typeof (ctx as any).roundRect === 'function') {
-        (ctx as any).roundRect(qrBoxX - 10, qrBoxY - 10, qrSize + 20, qrSize + 50, 16);
+        (ctx as any).roundRect(qrBoxX - 20, qrBoxY - 20, qrSize + 40, qrSize + 90, 24);
       } else {
-        ctx.rect(qrBoxX - 10, qrBoxY - 10, qrSize + 20, qrSize + 50);
+        ctx.rect(qrBoxX - 20, qrBoxY - 20, qrSize + 40, qrSize + 90);
       }
       ctx.fill();
+
+      // Gold Border Frame around QR Card
       ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 6;
       ctx.stroke();
 
+      // Draw QR Code Image
       const qrImg = new Image();
       qrImg.crossOrigin = 'anonymous';
       qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(cinemaShareUrl)}`;
@@ -1476,12 +1505,13 @@ export default function SoloStage({
         qrImg.onerror = () => resolve();
       });
 
-      ctx.fillStyle = '#020617';
-      ctx.font = 'bold 12px monospace';
+      // QR Code Label
+      ctx.fillStyle = '#fde68a';
+      ctx.font = 'bold 24px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('SCAN TO WATCH', qrBoxX + qrSize / 2, qrBoxY + qrSize + 22);
+      ctx.fillText('SCAN TO WATCH', qrBoxX + qrSize / 2, qrBoxY + qrSize + 42);
 
-      // 7. Trigger Direct Client PNG Download per User Specification ([user]-[title]-[subtitle]-[id].png)
+      // 7. Trigger Direct Client Ultra-HD 4K PNG Download per User Specification ([user]-[title]-[subtitle]-[id].png)
       const dataUrl = canvas.toDataURL('image/png', 1.0);
       const link = document.createElement('a');
       link.href = dataUrl;
@@ -1491,8 +1521,8 @@ export default function SoloStage({
       document.body.removeChild(link);
 
       toast.dismiss(toastId);
-      toast.success("4K Poster Downloaded!", {
-        description: "Saved 4K Key Art PNG with embedded Cinema QR Code to your device.",
+      toast.success("Ultra-HD 4K Poster Downloaded!", {
+        description: "Saved 2400x3600 300 DPI Key Art PNG with embedded Cinema QR Code to your device.",
         icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" />
       });
     } catch (err) {

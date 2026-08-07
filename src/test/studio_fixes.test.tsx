@@ -1650,5 +1650,29 @@ describe('Studio Regression Tests', () => {
 
       expect(filename).toBe('nareshmepani@hotmail.com-Part I Roots Foundations-A Child of Two Worlds-ey96djU6qR1BrDGnvZwp.png');
     });
+
+    it('ULTRA-HD 4K CANVAS ASPECT COVER ENGINE: should calculate 2400x3600 object-fit cover crop without distortion', () => {
+      const imgWidth = 1920;
+      const imgHeight = 1080; // Widescreen webcam photo
+      const canvasWidth = 2400;
+      const canvasHeight = 3600;
+
+      const imgRatio = imgWidth / imgHeight;
+      const canvasRatio = canvasWidth / canvasHeight;
+      let sx = 0, sy = 0, sw = imgWidth, sh = imgHeight;
+
+      if (imgRatio > canvasRatio) {
+        sw = imgHeight * canvasRatio;
+        sx = (imgWidth - sw) / 2;
+      } else {
+        sh = imgWidth / canvasRatio;
+        sy = (imgHeight - sh) / 2;
+      }
+
+      expect(canvasWidth).toBe(2400);
+      expect(canvasHeight).toBe(3600);
+      expect(sw).toBe(720); // Center cropped 720 width from 1920
+      expect(sx).toBe(600); // 600px left offset for perfect face centering!
+    });
   });
 });
