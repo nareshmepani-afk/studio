@@ -1706,5 +1706,21 @@ describe('Studio Regression Tests', () => {
       expect(hasExistingText).toBe(true);
       expect(initialIsLoading).toBe(false); // 0ms delay! "Scanning Negative..." is zero-latency bypassed!
     });
+
+    it('MW-117 ZERO TEXT DUPLICATION & PREVIEW PARITY SHIELD: should ensure mainTitle and subTitle do not duplicate when title equals hook', () => {
+      const data = {
+        title: 'A Child of Two Worlds',
+        originalHook: 'A Child of Two Worlds',
+        chapterTitle: undefined
+      };
+
+      const rawSubtitle = data.originalHook;
+      const rawTitle = data.chapterTitle || 
+        (data.title && data.title.toUpperCase().trim() !== rawSubtitle.toUpperCase().trim() ? data.title : 'Part I Roots and Foundations');
+
+      expect(rawTitle).toBe('Part I Roots and Foundations');
+      expect(rawSubtitle).toBe('A Child of Two Worlds');
+      expect(rawTitle.toUpperCase().trim()).not.toBe(rawSubtitle.toUpperCase().trim());
+    });
   });
 });

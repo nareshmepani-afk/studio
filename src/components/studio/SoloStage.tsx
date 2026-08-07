@@ -1421,14 +1421,16 @@ export default function SoloStage({
       const rawUser = user?.email || (data as any)?.starring || (data as any)?.producer || 'MemoryWeaver';
       const cleanUser = rawUser.trim().replace(/[^a-zA-Z0-9@._-]/g, '_');
 
-      // Strict Title: Chapter Title or default Part I Roots & Foundations (NEVER prose text!)
-      const rawTitle = data?.title || data?.chapterTitle || 'Part I Roots and Foundations';
-      const cleanTitle = rawTitle.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, '_').slice(0, 30);
-
-      // Strict Subtitle: Hook or default A Child of Two Worlds (NEVER long prose excerpts!)
+      // Subtitle / Hook (e.g. "A Child of Two Worlds")
       const rawSubtitle = data?.originalHook && !data.originalHook.toLowerCase().startsWith('in 19') && data.originalHook.length < 50 
         ? data.originalHook 
-        : 'A Child of Two Worlds';
+        : (data?.title && data.title.length < 50 && data.title !== data.chapterTitle ? data.title : 'A Child of Two Worlds');
+
+      // Main Chapter Title (e.g. "Part I Roots & Foundations" - matches screen preview!)
+      const rawTitle = data?.chapterTitle || 
+        (data?.title && data.title.toUpperCase().trim() !== rawSubtitle.toUpperCase().trim() ? data.title : 'Part I Roots and Foundations');
+
+      const cleanTitle = rawTitle.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, '_').slice(0, 30);
       const cleanSubtitle = rawSubtitle.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, '_').slice(0, 30);
 
       const docId = data?.id || 'key-art';
@@ -1452,10 +1454,12 @@ export default function SoloStage({
       ctx.textAlign = 'center';
       ctx.fillText(rawTitle.toUpperCase(), canvas.width / 2, 2740);
 
-      // Subtitle (Hook)
-      ctx.fillStyle = '#94a3b8'; // slate-400
-      ctx.font = 'italic 60px serif';
-      ctx.fillText(`"${rawSubtitle}"`, canvas.width / 2, 2840);
+      // Subtitle (Hook) - Only render if subTitle is NOT identical to main title
+      if (rawSubtitle && rawSubtitle.toUpperCase().trim() !== rawTitle.toUpperCase().trim()) {
+        ctx.fillStyle = '#94a3b8'; // slate-400
+        ctx.font = 'italic 60px serif';
+        ctx.fillText(`"${rawSubtitle}"`, canvas.width / 2, 2840);
+      }
 
       // Decorative Amber Line
       ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
