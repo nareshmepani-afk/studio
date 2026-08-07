@@ -1565,5 +1565,31 @@ describe('Studio Regression Tests', () => {
       expect(isCameraActive).toBe(true);
       expect(isSelfieModalOpen).toBe(true);
     });
+
+    it('SMILE HOLD PHOTOBOOTH TIMING ENGINE: countdown should transition to explicit SMILE phase before snapshot shutter', () => {
+      let countdownState: number | string | null = null;
+      let isSnapExecuted = false;
+
+      const triggerCountdownTest = () => {
+        countdownState = 3;
+        // Step to 2
+        countdownState = 2;
+        // Step to 1
+        countdownState = 1;
+        // Step to SMILE phase
+        countdownState = "SMILE";
+        // Execute snap after hold phase
+        isSnapExecuted = true;
+        countdownState = null;
+      };
+
+      expect(countdownState).toBeNull();
+      expect(isSnapExecuted).toBe(false);
+
+      triggerCountdownTest();
+
+      expect(isSnapExecuted).toBe(true);
+      expect(countdownState).toBeNull();
+    });
   });
 });

@@ -1624,7 +1624,7 @@ export default function SoloStage({
   const [isSelfieModalOpen, setIsSelfieModalOpen] = useState(false);
   const [selfieCapturedPreview, setSelfieCapturedPreview] = useState<string | null>(null);
   const [selfieCapturedBlob, setSelfieCapturedBlob] = useState<Blob | null>(null);
-  const [selfieCountdown, setSelfieCountdown] = useState<number | null>(null);
+  const [selfieCountdown, setSelfieCountdown] = useState<number | string | null>(null);
   const [selfieFilter, setSelfieFilter] = useState<'default' | 'warm' | 'cool' | 'noir'>('default');
   const [localPosterUrl, setLocalPosterUrl] = useState<string | null>(null);
   const selfieVideoRef = useRef<HTMLVideoElement>(null);
@@ -1714,6 +1714,7 @@ export default function SoloStage({
     if (selfieCountdown === 3) speakAcousticCue("Three");
     else if (selfieCountdown === 2) speakAcousticCue("Two");
     else if (selfieCountdown === 1) speakAcousticCue("One");
+    else if (selfieCountdown === "SMILE") speakAcousticCue("Smile! Hold it!");
   }, [selfieCountdown]);
 
   const handleTriggerSelfieCountdown = (e?: React.MouseEvent) => {
@@ -1723,16 +1724,23 @@ export default function SoloStage({
     }
     if (selfieCountdown !== null) return;
     setSelfieCountdown(3);
-    const interval = setInterval(() => {
-      setSelfieCountdown(prev => {
-        if (prev === 1) {
-          clearInterval(interval);
-          executeSelfieSnap();
-          return null;
-        }
-        return prev ? prev - 1 : null;
-      });
+
+    setTimeout(() => {
+      setSelfieCountdown(2);
     }, 1000);
+
+    setTimeout(() => {
+      setSelfieCountdown(1);
+    }, 2000);
+
+    setTimeout(() => {
+      setSelfieCountdown("SMILE");
+    }, 3000);
+
+    setTimeout(() => {
+      executeSelfieSnap();
+      setSelfieCountdown(null);
+    }, 4200);
   };
 
   const executeSelfieSnap = async () => {
@@ -5209,13 +5217,38 @@ export default function SoloStage({
                     </>
                   )}
 
-                  {/* Countdown Overlay */}
+                  {/* Countdown & Smile Hold Overlay */}
                   {selfieCountdown !== null && (
-                    <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center gap-3 z-30">
-                      <div className="w-20 h-20 rounded-full border-4 border-emerald-400 bg-emerald-500/20 flex items-center justify-center animate-bounce shadow-[0_0_40px_rgba(16,185,129,0.5)]">
-                        <span className="text-4xl font-black text-emerald-300 font-mono">{selfieCountdown}</span>
-                      </div>
-                      <span className="text-xs font-mono font-bold text-white uppercase tracking-widest">Hold Still... Smiling! 📸</span>
+                    <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center gap-4 z-30 select-none">
+                      {selfieCountdown === "SMILE" ? (
+                        <motion.div 
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: [1, 1.1, 1], opacity: 1 }}
+                          transition={{ duration: 0.6, repeat: Infinity }}
+                          className="flex flex-col items-center gap-3"
+                        >
+                          <div className="w-24 h-24 rounded-full border-4 border-emerald-400 bg-emerald-500/30 flex items-center justify-center shadow-[0_0_60px_rgba(16,185,129,0.7)] animate-pulse">
+                            <span className="text-4xl">😁</span>
+                          </div>
+                          <div className="text-center space-y-1">
+                            <span className="text-2xl font-black font-headline text-emerald-300 uppercase tracking-widest block drop-shadow-[0_0_15px_rgba(16,185,129,0.6)]">
+                              SMILE & HOLD!
+                            </span>
+                            <span className="text-[10px] font-mono font-bold text-white/80 uppercase tracking-widest block">
+                              Hold your smile... Capturing portrait key art 📸
+                            </span>
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <>
+                          <div className="w-20 h-20 rounded-full border-4 border-amber-400 bg-amber-500/20 flex items-center justify-center animate-bounce shadow-[0_0_40px_rgba(245,158,11,0.5)]">
+                            <span className="text-4xl font-black text-amber-300 font-mono">{selfieCountdown}</span>
+                          </div>
+                          <span className="text-xs font-mono font-bold text-white uppercase tracking-widest">
+                            Frame Face & Prepare Your Smile... 📸
+                          </span>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
