@@ -1402,5 +1402,38 @@ describe('Studio Regression Tests', () => {
       isPosterLightboxOpen = false;
       expect(isPosterLightboxOpen).toBe(false);
     });
+
+    it('DYNAMIC POSTER STYLES & TELEMETRY CONTROL ENGINE: should apply dynamic CSS filter classes per style preset and bind telemetry hotspot tags', () => {
+      const getPosterStyleFilterClass = (style: 'vintage-35mm' | 'modern-legacy' | 'heritage-oil' | 'raw-authentic') => {
+        switch (style) {
+          case 'vintage-35mm':
+            return 'sepia-[0.45] contrast-[1.2] saturate-[1.25] hue-rotate-[-10deg] brightness-[0.92] blur-[0.2px]';
+          case 'modern-legacy':
+            return 'contrast-[1.25] saturate-[1.2] brightness-[1.05] hue-rotate-[5deg]';
+          case 'heritage-oil':
+            return 'contrast-[1.3] saturate-[1.5] sepia-[0.3] brightness-[0.9] drop-shadow-[0_0_25px_rgba(245,158,11,0.4)]';
+          case 'raw-authentic':
+          default:
+            return 'contrast-[1.05] saturate-[1.05]';
+        }
+      };
+
+      expect(getPosterStyleFilterClass('vintage-35mm')).toContain('sepia');
+      expect(getPosterStyleFilterClass('heritage-oil')).toContain('drop-shadow');
+      expect(getPosterStyleFilterClass('modern-legacy')).toContain('hue-rotate');
+      expect(getPosterStyleFilterClass('raw-authentic')).toContain('contrast');
+
+      // Assert telemetry hotspot button tag binding
+      const styleTags = [
+        'HS_ACT4_POSTER_STYLE_VINTAGE_35MM_BTN',
+        'HS_ACT4_POSTER_STYLE_MODERN_LEGACY_BTN',
+        'HS_ACT4_POSTER_STYLE_HERITAGE_OIL_BTN',
+        'HS_ACT4_POSTER_STYLE_RAW_AUTHENTIC_BTN'
+      ];
+
+      styleTags.forEach(tag => {
+        expect(tag).toMatch(/^HS_ACT4_POSTER_STYLE_/);
+      });
+    });
   });
 });

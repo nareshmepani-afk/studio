@@ -46,6 +46,7 @@ import { useStudioState } from '@/hooks/studio/useStudioState';
 import { useAuth } from '@/hooks/useAuth';
 import { Teleprompter } from './Teleprompter';
 import { useJourneyLogger } from '@/hooks/telemetry/useJourneyLogger';
+import { APP_VERSION } from '@/config/version';
 import { useAudioMonitor } from '@/hooks/useAudioMonitor';
 import { useCaptureLogic } from '@/hooks/studio/useCaptureLogic';
 import { useAlchemy } from '@/hooks/studio/useAlchemy';
@@ -125,7 +126,7 @@ export default function SoloStage({
     sessionId,
     actions: globalActions 
   } = useStudioState();
-  const { traceInteraction } = useJourneyLogger(userId, sessionId);
+  const { traceInteraction, logEvent } = useJourneyLogger(userId, sessionId);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1233,8 +1234,37 @@ export default function SoloStage({
   const [isGeneratingAIPoster, setIsGeneratingAIPoster] = useState(false);
   const [activeCarouselSlide, setActiveCarouselSlide] = useState<'video' | 'poster'>('video');
 
+  // Dynamic CSS Visual Filters for Style Presets
+  const getPosterStyleFilterClass = (style: 'vintage-35mm' | 'modern-legacy' | 'heritage-oil' | 'raw-authentic') => {
+    switch (style) {
+      case 'vintage-35mm':
+        return 'sepia-[0.45] contrast-[1.2] saturate-[1.25] hue-rotate-[-10deg] brightness-[0.92] blur-[0.2px]';
+      case 'modern-legacy':
+        return 'contrast-[1.25] saturate-[1.2] brightness-[1.05] hue-rotate-[5deg]';
+      case 'heritage-oil':
+        return 'contrast-[1.3] saturate-[1.5] sepia-[0.3] brightness-[0.9] drop-shadow-[0_0_25px_rgba(245,158,11,0.4)]';
+      case 'raw-authentic':
+      default:
+        return 'contrast-[1.05] saturate-[1.05]';
+    }
+  };
+
+  const handleSelectPosterStyle = (styleId: 'vintage-35mm' | 'modern-legacy' | 'heritage-oil' | 'raw-authentic') => {
+    setPosterStyle(styleId);
+    update({ posterStyle: styleId as any });
+    logEvent('HS_ACT4_POSTER_STYLE_CHANGE', { 
+      style: styleId, 
+      version: APP_VERSION 
+    });
+    toast.success(`Poster Style Grade: ${styleId.toUpperCase()}`, {
+      description: "Dynamic style filters applied to active poster anchor frame.",
+      icon: <CheckCircle2 className="w-4 h-4 text-amber-400" />
+    });
+  };
+
   const handleGenerateAIPoster = async () => {
     setIsGeneratingAIPoster(true);
+    logEvent('HS_ACT4_GENERATE_AI_POSTER', { style: posterStyle, version: APP_VERSION });
     toast.info("Synthesising AI Legacy Movie Poster...", {
       description: `Blending Fusion Protocol story anchors with ${posterStyle} aesthetic.`
     });
@@ -1276,12 +1306,25 @@ export default function SoloStage({
 
   const [isPosterLightboxOpen, setIsPosterLightboxOpen] = useState(false);
 
+  const handleOpenPosterLightbox = () => {
+    setIsPosterLightboxOpen(true);
+    logEvent('HS_ACT4_POSTER_LIGHTBOX_OPEN', {
+      style: posterStyle,
+      version: APP_VERSION
+    });
+  };
+
   const handleDownloadPoster = () => {
     const targetUrl = localPosterUrl || data?.posterImageUrl;
     if (!targetUrl) {
       toast.error("No Poster Anchored", { description: "Please generate or snap a poster frame first." });
       return;
     }
+
+    logEvent('HS_ACT4_POSTER_DOWNLOAD', {
+      style: posterStyle,
+      version: APP_VERSION
+    });
 
     const link = document.createElement('a');
     link.href = targetUrl;
@@ -1291,7 +1334,7 @@ export default function SoloStage({
     document.body.removeChild(link);
 
     toast.success("4K Poster Downloaded!", {
-      description: "Print-ready key art saved to your device."
+      description: `Saved ${posterStyle.toUpperCase()} key art directly to your device.`
     });
   };
 
@@ -4423,17 +4466,17 @@ export default function SoloStage({
                    {/* Classic 2:3 Vertical Theatrical Poster Canvas (400px x 600px aspect-ratio) */}
                    <div 
                       data-hotspot-id="HS_ACT4_POSTER_LIGHTBOX_OPEN_BTN"
-                      onClick={() => setIsPosterLightboxOpen(true)}
+                      onClick={handleOpenPosterLightbox}
                       className="w-full max-w-xs md:max-w-sm aspect-[2/3] rounded-2xl overflow-hidden border-2 border-amber-500/50 shadow-[0_25px_60px_rgba(245,158,11,0.25)] relative group bg-black/80 transition-all hover:scale-[1.03] cursor-pointer hover:rotate-x-2 hover:rotate-y-2 duration-300"
                       title="Click to view full-screen 4K Poster Lightbox"
                    >
                       {(localPosterUrl || data?.posterImageUrl) ? (
                         <>
                           <img 
-                            key={localPosterUrl || data?.posterImageUrl}
+                            key={`${localPosterUrl || data?.posterImageUrl}-${posterStyle}`}
                             src={localPosterUrl || data?.posterImageUrl} 
                             alt="Poster Anchor Frame" 
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${getPosterStyleFilterClass(posterStyle)}`} 
                           />
                           {/* Rich Filmic Vignette Overlay */}
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-black/40 pointer-events-none" />
@@ -4484,10 +4527,11 @@ export default function SoloStage({
                        <button
                          key={style.id}
                          type="button"
-                         onClick={() => setPosterStyle(style.id as any)}
+                         data-hotspot-id={`HS_ACT4_POSTER_STYLE_${style.id.toUpperCase().replace('-', '_')}_BTN`}
+                         onClick={() => handleSelectPosterStyle(style.id as any)}
                          className={`px-3.5 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
                            posterStyle === style.id
-                             ? 'bg-amber-400 text-slate-950 shadow-md scale-105 font-black'
+                             ? 'bg-amber-400 text-slate-950 shadow-md scale-105 font-black ring-2 ring-amber-300'
                              : 'bg-white/5 hover:bg-white/10 text-white/60 border border-white/10'
                          }`}
                        >
@@ -5158,19 +5202,20 @@ export default function SoloStage({
               </div>
 
               {/* Ultra-Crisp 4K Poster Card */}
-              <div className="w-full max-w-sm aspect-[2/3] max-h-[75vh] rounded-3xl overflow-hidden border-2 border-amber-500/60 shadow-[0_30px_90px_rgba(245,158,11,0.35)] relative group bg-black/90 transition-all hover:scale-[1.01]">
+              <div className="w-full max-w-sm aspect-[2/3] max-h-[70vh] rounded-3xl overflow-hidden border-2 border-amber-500/60 shadow-[0_30px_90px_rgba(245,158,11,0.35)] relative group bg-black/90 transition-all hover:scale-[1.01]">
                 {(localPosterUrl || data?.posterImageUrl) ? (
                   <>
                     <img 
+                      key={`${localPosterUrl || data?.posterImageUrl}-${posterStyle}`}
                       src={localPosterUrl || data?.posterImageUrl} 
                       alt="4K Key Art Poster" 
-                      className="w-full h-full object-cover" 
+                      className={`w-full h-full object-cover transition-all duration-500 ${getPosterStyleFilterClass(posterStyle)}`} 
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-black/40 pointer-events-none" />
 
                     <div className="absolute top-5 left-5 bg-slate-950/90 backdrop-blur-md border border-amber-500/60 px-3.5 py-1.5 rounded-xl text-[10px] font-mono font-bold text-amber-400 flex items-center gap-2 shadow-xl tracking-wider">
                       <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
-                      <span>4K EXHIBITION MASTER</span>
+                      <span>4K EXHIBITION MASTER • {posterStyle.toUpperCase()}</span>
                     </div>
 
                     <div className="absolute bottom-6 left-6 right-6 text-left pointer-events-none space-y-1.5">
@@ -5193,6 +5238,30 @@ export default function SoloStage({
                     <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">No Poster Anchored Yet</span>
                   </div>
                 )}
+              </div>
+
+              {/* Interactive Style Preset Selector Bar Inside Lightbox */}
+              <div className="flex flex-wrap justify-center gap-2 max-w-lg mt-5 z-10">
+                {[
+                  { id: 'vintage-35mm', label: '🎞️ Vintage 35mm' },
+                  { id: 'modern-legacy', label: '💎 Modern Legacy' },
+                  { id: 'heritage-oil', label: '🎨 Heritage Oil' },
+                  { id: 'raw-authentic', label: '📷 Raw Authentic' },
+                ].map((style) => (
+                  <button
+                    key={style.id}
+                    type="button"
+                    data-hotspot-id={`HS_ACT4_POSTER_STYLE_${style.id.toUpperCase().replace('-', '_')}_BTN`}
+                    onClick={() => handleSelectPosterStyle(style.id as any)}
+                    className={`px-4 py-2 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      posterStyle === style.id
+                        ? 'bg-amber-400 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.5)] scale-105 font-black ring-2 ring-amber-300'
+                        : 'bg-white/10 hover:bg-white/20 text-white/70 hover:text-white border border-white/10'
+                    }`}
+                  >
+                    {style.label}
+                  </button>
+                ))}
               </div>
             </motion.div>
           )}
