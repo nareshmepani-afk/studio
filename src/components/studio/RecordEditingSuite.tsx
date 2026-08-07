@@ -376,6 +376,7 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
             {/* Buffer A element */}
             <video
               ref={videoARef}
+              crossOrigin="anonymous"
               onTimeUpdate={handleTimeUpdate}
               data-testid="review-video"
               className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ease-in-out ${
@@ -387,6 +388,7 @@ export const RecordEditingSuite: React.FC<RecordEditingSuiteProps> = ({
             {/* Buffer B element */}
             <video
               ref={videoBRef}
+              crossOrigin="anonymous"
               onTimeUpdate={handleTimeUpdateB}
               data-testid="review-video-b"
               className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ease-in-out ${

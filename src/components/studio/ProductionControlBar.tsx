@@ -21,6 +21,7 @@ interface ProductionControlBarProps {
   isComplete: boolean;
   onNext: () => void;
   onPrev: () => void;
+  onRetake?: () => void;
   onPublish?: () => void;
   charge?: number;
   wordCount?: number;
@@ -83,6 +84,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   isComplete,
   onNext,
   onPrev,
+  onRetake,
   onPublish,
   charge = 0,
   wordCount = 0,
@@ -565,6 +567,27 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
           )}
 
           <AnimatePresence mode="wait">
+            {onRetake && (currentStage === 2 || currentStage === 3) && (
+              <Tooltip key="retake-btn">
+                <TooltipTrigger asChild>
+                  <motion.button
+                    data-hotspot-id="HS_STAGE_DOCK_RETAKE_BTN"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 10 }}
+                    onClick={onRetake}
+                    className="flex items-center gap-1.5 px-3.5 py-3.5 rounded-2xl bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-400 text-[10px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer shadow-lg hover:scale-105"
+                  >
+                    <RefreshCw className="w-4 h-4 text-sky-400" />
+                    <span>Retake</span>
+                  </motion.button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-[10px] uppercase font-bold tracking-widest px-3 py-2">
+                  <span>Return to Recording Studio to record another take</span>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
             {currentStage > 0 && (
               <motion.button
                 key="prev-btn"

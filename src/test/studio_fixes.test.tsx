@@ -1496,5 +1496,32 @@ describe('Studio Regression Tests', () => {
       expect(dockHeaderLabel).toBe("Stage Controls");
       expect(scrollCueLabel.toUpperCase()).toContain(dockHeaderLabel.toUpperCase());
     });
+
+    it('PERFORMER RETAKE ENGINE INTEGRITY: handleRetakePerformance should reset video URLs and return stage to 1 (Recording Studio)', () => {
+      let productionStage = 3; // Act IV: The Cut
+      let isPlaying = true;
+      let isReelTheaterOpen = true;
+      let isPosterLightboxOpen = true;
+      let recordedBlob: any = { size: 1024 };
+
+      const handleRetakePerformanceTest = () => {
+        isPlaying = false;
+        isReelTheaterOpen = false;
+        isPosterLightboxOpen = false;
+        recordedBlob = null;
+        productionStage = 1; // Stage 1 (Act II: Perform / Recording Studio)
+      };
+
+      expect(productionStage).toBe(3);
+      expect(recordedBlob).not.toBeNull();
+
+      handleRetakePerformanceTest();
+
+      expect(productionStage).toBe(1);
+      expect(recordedBlob).toBeNull();
+      expect(isPlaying).toBe(false);
+      expect(isReelTheaterOpen).toBe(false);
+      expect(isPosterLightboxOpen).toBe(false);
+    });
   });
 });

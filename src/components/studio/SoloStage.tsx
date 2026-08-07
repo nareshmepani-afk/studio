@@ -1435,6 +1435,30 @@ export default function SoloStage({
     logEvent('HS_ACT4_REEL_THEATER_OPEN', { version: APP_VERSION });
   };
 
+  const handleRetakePerformance = useCallback(() => {
+    if (previewVideoRef.current) {
+      previewVideoRef.current.pause();
+    }
+    if (theaterVideoRef.current) {
+      theaterVideoRef.current.pause();
+    }
+    
+    setIsPlaying(false);
+    setIsReelTheaterOpen(false);
+    setIsPosterLightboxOpen(false);
+    clearRecording();
+    setReviewVideoUrl(null);
+    setProductionStage(1);
+    setIsCameraActive(true);
+
+    logEvent('HS_ACT4_RETAKE_PERFORMANCE', { version: APP_VERSION });
+
+    toast.info("Recording Studio Ready for Take 2", {
+      description: "Returned to Stage 1. Frame yourself and start recording when ready.",
+      icon: <RefreshCw className="w-4 h-4 text-sky-400" />
+    });
+  }, [setProductionStage, clearRecording]);
+
   const handleSeekPreview = useCallback((seconds: number) => {
     setPreviewCurrentTime(seconds);
     if (previewVideoRef.current) {
@@ -4408,15 +4432,27 @@ export default function SoloStage({
                          <span>Master Performance Reel</span>
                       </div>
 
-                      <button
-                        type="button"
-                        data-hotspot-id="HS_ACT4_THEATER_TOGGLE_BTN"
-                        onClick={handleOpenReelTheater}
-                        className="absolute top-4 right-4 z-10 bg-slate-950/85 hover:bg-slate-900 border border-white/10 text-white/80 hover:text-white px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-lg cursor-pointer transition-all hover:scale-105"
-                      >
-                        <Maximize2 className="w-3 h-3 text-emerald-400" />
-                        <span>Theater View</span>
-                      </button>
+                      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+                        <button
+                          type="button"
+                          data-hotspot-id="HS_ACT4_RETAKE_BTN"
+                          onClick={handleRetakePerformance}
+                          className="bg-slate-950/85 hover:bg-slate-900 border border-sky-500/40 text-sky-400 hover:text-white px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-lg cursor-pointer transition-all hover:scale-105"
+                        >
+                          <RefreshCw className="w-3 h-3 text-sky-400" />
+                          <span>Retake Performance</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          data-hotspot-id="HS_ACT4_THEATER_TOGGLE_BTN"
+                          onClick={handleOpenReelTheater}
+                          className="bg-slate-950/85 hover:bg-slate-900 border border-white/10 text-white/80 hover:text-white px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-lg cursor-pointer transition-all hover:scale-105"
+                        >
+                          <Maximize2 className="w-3 h-3 text-emerald-400" />
+                          <span>Theater View</span>
+                        </button>
+                      </div>
 
                       {previewUrl ? (
                         <video 
@@ -5245,6 +5281,16 @@ export default function SoloStage({
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
+                    data-hotspot-id="HS_ACT4_LIGHTBOX_RETAKE_BTN"
+                    onClick={handleRetakePerformance}
+                    className="px-4 py-2.5 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-400 text-[10px] font-mono font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-lg hover:scale-105"
+                  >
+                    <RefreshCw className="w-4 h-4 text-sky-400" />
+                    <span>Retake Performance</span>
+                  </button>
+
+                  <button
+                    type="button"
                     data-hotspot-id="HS_ACT4_DOWNLOAD_POSTER_BTN"
                     onClick={handleDownloadPoster}
                     className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-mono font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:scale-105"
@@ -5359,6 +5405,16 @@ export default function SoloStage({
                 </div>
 
                 <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    data-hotspot-id="HS_ACT4_THEATER_RETAKE_BTN"
+                    onClick={handleRetakePerformance}
+                    className="px-4 py-2.5 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-400 text-[10px] font-mono font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-lg hover:scale-105"
+                  >
+                    <RefreshCw className="w-4 h-4 text-sky-400" />
+                    <span>Retake Performance</span>
+                  </button>
+
                   <button
                     type="button"
                     data-hotspot-id="HS_ACT4_THEATER_SNAP_FRAME_BTN"

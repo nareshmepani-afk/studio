@@ -1203,6 +1203,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                          missingRequirements={missingRequirements}
                                          onNext={handleNextAct}
                                          onPrev={handlePrevAct}
+                                         onRetake={() => setStage(1)}
                                          onPublish={handlePublish}
                                          charge={currentStage === 0 ? hotClarity : totalCharge}
                                          wordCount={wordCount}
