@@ -1592,13 +1592,18 @@ describe('Studio Regression Tests', () => {
       expect(countdownState).toBeNull();
     });
 
-    it('VIDEO DURATION METADATA RESILIENCY SHIELD: handleVideoLoadedMetadata should capture actual video duration and update state from 00:00', () => {
-      let videoDuration = 0;
+    it('VIDEO DURATION METADATA RESILIENCY SHIELD: effectiveVideoDuration should fallback to recordedSegments or currentTime when WebM duration is Infinity', () => {
+      let videoDuration = 0; // State is 0 when WebM returns Infinity in Chrome
+      let previewCurrentTime = 7; // User has played 7 seconds
+      const recordedSegments = [{ duration: 108 }];
 
-      const handleVideoLoadedMetadataTest = (loadedDuration: number) => {
-        if (loadedDuration && isFinite(loadedDuration) && loadedDuration > 0) {
-          videoDuration = loadedDuration;
+      const resolveEffectiveDurationTest = () => {
+        if (videoDuration && isFinite(videoDuration) && videoDuration > 0) return videoDuration;
+        if (recordedSegments && recordedSegments.length > 0) {
+          const sum = recordedSegments.reduce((acc, seg) => acc + (seg.duration || 0), 0);
+          if (sum > 0) return sum;
         }
+        return previewCurrentTime > 0 ? previewCurrentTime : 0;
       };
 
       const formatTimeTest = (seconds: number) => {
@@ -1608,13 +1613,10 @@ describe('Studio Regression Tests', () => {
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
       };
 
-      expect(videoDuration).toBe(0);
-      expect(formatTimeTest(videoDuration)).toBe('00:00');
-
-      handleVideoLoadedMetadataTest(108); // 1 minute 48 seconds
-
-      expect(videoDuration).toBe(108);
-      expect(formatTimeTest(videoDuration)).toBe('01:48');
+      // Even when state videoDuration is 0 (due to WebM blob header absence), effective duration uses segments:
+      const effectiveDur = resolveEffectiveDurationTest();
+      expect(effectiveDur).toBe(108);
+      expect(formatTimeTest(effectiveDur)).toBe('01:48');
     });
 
     it('4K POSTER CANVAS DOWNLOAD & UNIQUE CINEMA QR SHARING: should construct unique cinema URL and trigger share portal modal', () => {

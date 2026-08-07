@@ -2249,10 +2249,53 @@ export default function SoloStage({
     }
   };
 
+  const effectiveVideoDuration = useMemo(() => {
+    // 1. Direct state duration if finite and > 0
+    if (videoDuration && isFinite(videoDuration) && videoDuration > 0) {
+      return videoDuration;
+    }
+    // 2. Direct preview video element duration
+    if (previewVideoRef.current?.duration && isFinite(previewVideoRef.current.duration) && previewVideoRef.current.duration > 0) {
+      return previewVideoRef.current.duration;
+    }
+    // 3. Direct theater video element duration
+    if (theaterVideoRef.current?.duration && isFinite(theaterVideoRef.current.duration) && theaterVideoRef.current.duration > 0) {
+      return theaterVideoRef.current.duration;
+    }
+    // 4. Sum of recordedSegments EDL tracks
+    if (recordedSegments && recordedSegments.length > 0) {
+      const sum = recordedSegments.reduce((acc, seg) => acc + (seg.duration || 0), 0);
+      if (sum > 0) return sum;
+    }
+    // 5. Firestore data.videoDuration
+    if ((data as any)?.videoDuration && isFinite((data as any).videoDuration) && (data as any).videoDuration > 0) {
+      return (data as any).videoDuration;
+    }
+    // 6. Dynamic fallback: current playback time if video is playing
+    return previewCurrentTime > 0 ? previewCurrentTime : 0;
+  }, [videoDuration, previewCurrentTime, recordedSegments, data]);
+
   const handleVideoLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
     const vid = e.currentTarget;
-    if (vid && vid.duration && isFinite(vid.duration) && vid.duration > 0) {
+    if (!vid) return;
+
+    if (vid.duration && isFinite(vid.duration) && vid.duration > 0) {
       setVideoDuration(vid.duration);
+    } else if (vid.duration === Infinity) {
+      // Fix WebM MediaRecorder blob duration in Chrome (fast seek forces duration calculation)
+      try {
+        vid.currentTime = 1e101;
+        const onTimeUpdateTemp = () => {
+          vid.removeEventListener('timeupdate', onTimeUpdateTemp);
+          vid.currentTime = 0;
+          if (vid.duration && isFinite(vid.duration) && vid.duration > 0) {
+            setVideoDuration(vid.duration);
+          }
+        };
+        vid.addEventListener('timeupdate', onTimeUpdateTemp);
+      } catch (err) {
+        console.warn("[MediaEngine] WebM duration seek fallback:", err);
+      }
     }
   };
 
@@ -2265,13 +2308,11 @@ export default function SoloStage({
       setVideoDuration(vid.duration);
     }
 
-    const activeDuration = (vid.duration && isFinite(vid.duration) && vid.duration > 0) ? vid.duration : videoDuration;
-
-    // Safety check just in case Infinity slipped through
-    if (activeDuration === 0 || !isFinite(activeDuration)) return;
+    const activeDur = effectiveVideoDuration;
+    if (activeDur === 0) return;
 
     if (currentTime < trimRange[0]) vid.currentTime = trimRange[0];
-    if (currentTime > trimRange[1]) {
+    if (currentTime > trimRange[1] && trimRange[1] > 0) {
       vid.pause();
       vid.currentTime = trimRange[0];
       setIsPlaying(false);
@@ -4706,14 +4747,14 @@ export default function SoloStage({
                          <div className="flex-1">
                             <div className="flex justify-between items-center mb-2 px-1">
                                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Playback Scrubber</span>
-                               <span className="font-mono text-[10px] text-emerald-400">{formatTime(previewCurrentTime)} / {formatTime(videoDuration || (previewVideoRef.current?.duration && isFinite(previewVideoRef.current.duration) ? previewVideoRef.current.duration : 0))}</span>
+                               <span className="font-mono text-[10px] text-emerald-400">{formatTime(previewCurrentTime)} / {formatTime(effectiveVideoDuration)}</span>
                             </div>
                             <div className="relative pt-2">
                                <Slider 
                                   value={[previewCurrentTime]} 
                                   onValueChange={(val) => handleSeekPreview(val[0])}
                                   min={0}
-                                  max={videoDuration || (previewVideoRef.current?.duration && isFinite(previewVideoRef.current.duration) ? previewVideoRef.current.duration : 100)}
+                                  max={effectiveVideoDuration || 100}
                                   step={0.1}
                                />
                             </div>
