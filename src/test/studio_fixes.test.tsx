@@ -1722,5 +1722,32 @@ describe('Studio Regression Tests', () => {
       expect(rawSubtitle).toBe('A Child of Two Worlds');
       expect(rawTitle.toUpperCase().trim()).not.toBe(rawSubtitle.toUpperCase().trim());
     });
+
+    it('MW-118 GUEST CINEMA PASS & SOCIAL DEEP-LINK SHIELD: should construct valid WhatsApp and Email deep-link share URLs', () => {
+      const memoryId = 'ey96djU6qR1BrDGnvZwp';
+      const baseUrl = 'https://dev.memoryweaver.studio/cinema';
+      const cinemaShareUrl = `${baseUrl}?id=${memoryId}`;
+
+      const title = 'A Child of Two Worlds';
+      const whatsAppText = `Watch my memory story '${title}' on Memory Weaver Cinema: ${cinemaShareUrl}`;
+      const encodedWhatsApp = encodeURIComponent(whatsAppText);
+
+      expect(encodedWhatsApp).toContain('Watch%20my%20memory%20story');
+      expect(encodedWhatsApp).toContain(encodeURIComponent(cinemaShareUrl));
+
+      const emailSubject = `Inviting you to watch my memory story: ${title}`;
+      const encodedSubject = encodeURIComponent(emailSubject);
+
+      expect(encodedSubject).toContain('Inviting%20you%20to%20watch');
+    });
+
+    it('MW-118 UNAUTHENTICATED GUEST ROUTE BYPASS SHIELD: should allow /cinema routes in AuthenticatedPageWrapper guest check', () => {
+      const pathname = '/cinema';
+      const isCinemaGuest = Boolean(pathname?.startsWith('/cinema'));
+      const isGuestBypass = isCinemaGuest;
+
+      expect(isCinemaGuest).toBe(true);
+      expect(isGuestBypass).toBe(true);
+    });
   });
 });

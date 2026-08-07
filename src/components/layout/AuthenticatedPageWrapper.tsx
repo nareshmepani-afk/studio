@@ -46,8 +46,9 @@ export function AuthenticatedPageWrapper({ children, theme = 'default' }: Authen
     return <SplashScreen />;
   }
 
-  // GUEST BYPASS: If we are in guest mode with a session ID, we permit rendering.
-  const isGuestBypass = pathname?.startsWith('/studio') && isGuestMode && hasSessionId;
+  // GUEST BYPASS: If we are in guest mode, session bypass, or on the public Cinema page, permit rendering.
+  const isCinemaGuest = Boolean(pathname?.startsWith('/cinema'));
+  const isGuestBypass = (pathname?.startsWith('/studio') && isGuestMode && hasSessionId) || isCinemaGuest;
 
   // If loading is finished but no user, and no guest bypass, we render the loader while wait for the redirect.
   if (!user && !isGuestBypass) {

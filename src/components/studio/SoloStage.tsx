@@ -22,7 +22,7 @@ import {
   Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
   Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
   Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater, Trash2,
-  ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X, Wand2, Share2, Copy
+  ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X, Wand2, Share2, Copy, Mail
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -1315,13 +1315,16 @@ export default function SoloStage({
   };
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isPinProtected, setIsPinProtected] = useState(false);
+  const [sharePin, setSharePin] = useState('');
 
   const cinemaShareUrl = useMemo(() => {
+    const basePin = isPinProtected && sharePin ? `&pin=${sharePin}` : '';
     if (typeof window !== 'undefined') {
-      return `${window.location.origin}/cinema?id=${data?.id || 'demo'}`;
+      return `${window.location.origin}/cinema?id=${data?.id || 'demo'}${basePin}`;
     }
-    return `https://dev.memoryweaver.studio/cinema?id=${data?.id || 'demo'}`;
-  }, [data?.id]);
+    return `https://dev.memoryweaver.studio/cinema?id=${data?.id || 'demo'}${basePin}`;
+  }, [data?.id, isPinProtected, sharePin]);
 
   const handleCopyCinemaLink = () => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -1332,6 +1335,19 @@ export default function SoloStage({
       });
       logEvent('HS_ACT4_CINEMA_LINK_COPY', { version: APP_VERSION });
     }
+  };
+
+  const handleShareWhatsApp = () => {
+    const text = `Watch my memory story '${data?.title || 'Part I: Roots and Foundations'}' on Memory Weaver Cinema: ${cinemaShareUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    toast.success("Opening WhatsApp Share...", { icon: <MessageSquare className="w-4 h-4 text-emerald-400" /> });
+  };
+
+  const handleShareEmail = () => {
+    const subject = `Inviting you to watch my memory story: ${data?.title || 'Part I: Roots and Foundations'}`;
+    const body = `I've preserved an authentic oral history monologue on Memory Weaver Cinema.\n\nWatch it here: ${cinemaShareUrl}\n\nWith love,`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    toast.success("Opening Email App...", { icon: <Mail className="w-4 h-4 text-sky-400" /> });
   };
 
   // --- 4K KEY ART POSTER SYNTHESIS & DOWNLOAD ENGINE ---
@@ -5890,8 +5906,8 @@ export default function SoloStage({
               </div>
             </div>
 
-            {/* Unique Link & Action Bar */}
-            <div className="space-y-3">
+            {/* Unique Link & Multi-Channel Action Bar */}
+            <div className="space-y-4">
               <div className="flex items-center gap-2 p-3 bg-slate-950/90 rounded-xl border border-white/10">
                 <span className="text-xs font-mono text-emerald-400 truncate flex-1 px-2">
                   {cinemaShareUrl}
@@ -5899,21 +5915,79 @@ export default function SoloStage({
                 <button
                   type="button"
                   onClick={handleCopyCinemaLink}
-                  className="px-3 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-mono font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+                  className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-mono font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-md"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   <span>Copy Link</span>
                 </button>
               </div>
 
-              <div className="flex items-center justify-between gap-3 pt-2">
+              {/* Multi-Channel Direct Share Triggers */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleShareWhatsApp}
+                  className="py-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <MessageSquare className="w-4 h-4 text-emerald-400" />
+                  <span>Share to WhatsApp</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleShareEmail}
+                  className="py-3 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-400 text-[10px] font-mono font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Mail className="w-4 h-4 text-sky-400" />
+                  <span>Send via Email</span>
+                </button>
+              </div>
+
+              {/* 4-Digit Family Passcode PIN Toggle */}
+              <div className="p-3 bg-slate-950/50 rounded-xl border border-white/10 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 text-left">
+                  <ShieldCheck className={`w-4 h-4 ${isPinProtected ? 'text-amber-400' : 'text-white/40'}`} />
+                  <div>
+                    <span className="text-[10px] font-mono font-bold text-white uppercase tracking-wider block">
+                      Optional 4-Digit Passcode PIN
+                    </span>
+                    <span className="text-[9px] font-mono text-white/40 block">
+                      {isPinProtected ? 'PIN Security Active' : 'Default: Public Unlisted (Off)'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {isPinProtected && (
+                    <input
+                      type="text"
+                      maxLength={4}
+                      placeholder="1234"
+                      value={sharePin}
+                      onChange={(e) => setSharePin(e.target.value.replace(/[^0-9]/g, ''))}
+                      className="w-16 px-2 py-1 bg-black/60 border border-amber-400/50 rounded-lg text-center text-xs font-mono text-amber-400 font-bold focus:outline-none"
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsPinProtected(!isPinProtected)}
+                    className={`px-3 py-1.5 rounded-lg text-[9px] font-mono font-bold uppercase tracking-widest transition-all cursor-pointer ${
+                      isPinProtected ? 'bg-amber-400 text-slate-950' : 'bg-white/10 text-white/60'
+                    }`}
+                  >
+                    {isPinProtected ? 'ON' : 'OFF'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-1">
                 <button
                   type="button"
                   onClick={handleDownloadPoster}
-                  className="flex-1 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-mono font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+                  className="w-full py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-mono font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
                 >
                   <Download className="w-4 h-4" />
-                  <span>Download 4K Poster PNG (With QR Code)</span>
+                  <span>Download 4K Poster PNG (With Embedded QR Code)</span>
                 </button>
               </div>
             </div>

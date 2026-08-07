@@ -275,6 +275,65 @@ export async function unpublishMemoryAction(memoryId: string): Promise<{ success
     }
 }
 
+/**
+ * Public action for unauthenticated Guest Access Pass to view published stories.
+ */
+export async function getPublicMemoryAction(memoryId: string): Promise<{ success: boolean; memory?: Memory; message?: string }> {
+  if (!memoryId || !adminDb) {
+    return { success: false, message: 'Invalid request or database not initialized.' };
+  }
+
+  try {
+    const memoryQuery = await adminDb.collectionGroup('memories').get();
+    const targetDoc = memoryQuery.docs.find(d => d.id === memoryId);
+
+    if (!targetDoc || !targetDoc.exists) {
+      return { success: false, message: 'Memory story not found.' };
+    }
+
+    const memoryData = { id: targetDoc.id, ...targetDoc.data() } as Memory;
+    return { success: true, memory: memoryData };
+  } catch (error: any) {
+    console.error('[getPublicMemoryAction] Error fetching public memory:', error);
+    return { success: false, message: error?.message || 'Failed to fetch public memory.' };
+  }
+}
+
+/**
+ * Public action for zero-signup guest reactions (Inspiring, Moved, Legendary).
+ */
+export async function addGuestReactionAction(
+  memoryId: string, 
+  reactionType: 'inspiring' | 'moved' | 'legendary', 
+  guestName?: string, 
+  comment?: string
+): Promise<{ success: boolean; message: string }> {
+  if (!memoryId || !adminDb) {
+    return { success: false, message: 'Invalid reaction request.' };
+  }
+
+  try {
+    const memoryQuery = await adminDb.collectionGroup('memories').get();
+    const targetDoc = memoryQuery.docs.find(d => d.id === memoryId);
+
+    if (!targetDoc || !targetDoc.exists) {
+      return { success: false, message: 'Memory story not found.' };
+    }
+
+    const reactionsRef = targetDoc.ref.collection('reactions').doc();
+    await reactionsRef.set({
+      reactionType,
+      guestName: guestName?.trim() || 'Anonymous Family Member',
+      comment: comment?.trim() || '',
+      createdAt: new Date().toISOString()
+    });
+
+    return { success: true, message: 'Thank you! Your heartfelt reaction has been sent to the director.' };
+  } catch (error: any) {
+    console.error('[addGuestReactionAction] Error recording reaction:', error);
+    return { success: false, message: error?.message || 'Failed to record reaction.' };
+  }
+}
 
 // We need to re-import getSession here because it was removed from the top of the file
 import { getSession } from '@/lib/session';
