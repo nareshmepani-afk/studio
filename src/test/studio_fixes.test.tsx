@@ -1619,10 +1619,11 @@ describe('Studio Regression Tests', () => {
       expect(formatTimeTest(effectiveDur)).toBe('01:48');
     });
 
-    it('4K POSTER CANVAS DOWNLOAD & UNIQUE CINEMA QR SHARING: should construct unique cinema URL and trigger share portal modal', () => {
+    it('4K POSTER CANVAS DOWNLOAD & UNIQUE CINEMA QR SHARING: should construct unique cinema URL and trigger share portal modal with Share Cinema Link & QR Code label', () => {
       let isShareModalOpen = false;
       const memoryId = 'ey96djU6qR1BrDGnvZwp';
       const cinemaShareUrl = `https://dev.memoryweaver.studio/cinema?id=${memoryId}`;
+      const buttonLabel = 'Share Cinema Link & QR Code';
 
       const handleOpenSharePortal = () => {
         isShareModalOpen = true;
@@ -1630,6 +1631,7 @@ describe('Studio Regression Tests', () => {
 
       expect(isShareModalOpen).toBe(false);
       expect(cinemaShareUrl).toContain('/cinema?id=ey96djU6qR1BrDGnvZwp');
+      expect(buttonLabel).toBe('Share Cinema Link & QR Code');
 
       handleOpenSharePortal();
 

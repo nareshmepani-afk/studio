@@ -5160,6 +5160,16 @@ export default function SoloStage({
                   View Premiere
                 </button>
                 
+                {/* SHARE CINEMA LINK & QR CODE BUTTON */}
+                <button 
+                  data-hotspot-id="HS_ACT5_SHARE_CINEMA_BTN"
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="w-full py-5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-black rounded-3xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 hover:scale-[1.02] cursor-pointer shadow-lg"
+                >
+                  <Share2 className="w-4 h-4 text-emerald-400" />
+                  Share Cinema Link & QR Code
+                </button>
+
                 {/* MASTER PACKAGE DOWNLOAD BUTTON */}
                 <button 
                   data-hotspot-id="HS_ACT5_DOWNLOAD_PACKAGE_BTN"
@@ -5625,7 +5635,7 @@ export default function SoloStage({
                     className="px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-lg hover:scale-105"
                   >
                     <Share2 className="w-4 h-4 text-emerald-400" />
-                    <span>Share Cinema Link & QR</span>
+                    <span>Share Cinema Link & QR Code</span>
                   </button>
 
                   <button
