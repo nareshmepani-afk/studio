@@ -1475,38 +1475,94 @@ export default function SoloStage({
   };
 
   const [isCapturingThumbnail, setIsCapturingThumbnail] = useState(false);
+  const [isCameraFlashActive, setIsCameraFlashActive] = useState(false);
 
-  // SNAPSHOT: Capture current frame as thumbnail
+  // SNAPSHOT: Capture current frame as thumbnail with 0ms instant feedback & CORS resilience
   const handleCaptureThumbnail = async () => {
     if (checkGuestAndUpsell("capturing cinematic poster frames")) return;
-    if (!previewVideoRef.current || !data?.id) return;
+    
+    // Choose active video element (theater video or in-page preview video)
+    const video = (isReelTheaterOpen && theaterVideoRef.current) 
+      ? theaterVideoRef.current 
+      : previewVideoRef.current;
+
+    if (!video || !data?.id) {
+      toast.error("Video player unavailable for frame snap", {
+        description: "Please play the master reel before snapping a key art frame."
+      });
+      return;
+    }
     
     setIsCapturingThumbnail(true);
+    playShutterSound();
+    setIsCameraFlashActive(true);
+    setTimeout(() => setIsCameraFlashActive(false), 300);
+
     try {
-      const video = previewVideoRef.current;
+      const width = video.videoWidth || video.clientWidth || 1280;
+      const height = video.videoHeight || video.clientHeight || 720;
+      
       const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvas.width = width;
+      canvas.height = height;
       const ctx = canvas.getContext('2d');
-      if (ctx) {
-         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-         const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/webp', 0.9));
-         if (blob) {
-            const url = await uploadMediaBlob(blob, data.id);
-            if (url) {
-               const freshUrl = url.includes('?') ? `${url}&t=${Date.now()}` : `${url}?t=${Date.now()}`;
-               setLocalPosterUrl(freshUrl);
-               update({ posterImageUrl: freshUrl }); // STANDARDIZE: Use posterImageUrl globally
-               setActiveCarouselSlide('poster');
-               toast.success("Frame Snapped! Viewing 2:3 Movie Key Art", { 
-                 description: "Switched to Poster Studio to inspect your anchored key art.",
-                 icon: <CheckCircle2 className="w-4 h-4 text-amber-400" />
-               });
-            }
-         }
+
+      if (!ctx) throw new Error("Could not initialize 2D canvas context");
+
+      // Draw active frame onto canvas
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      let blob: Blob | null = null;
+      let dataUrl: string | null = null;
+
+      try {
+        dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        const res = await fetch(dataUrl);
+        blob = await res.blob();
+      } catch (corsErr) {
+        console.warn("[SoloStage] Canvas export cross-origin warning, attempting direct blob export:", corsErr);
+        blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
       }
-    } catch (e) {
-      console.error("Snapshot capture failed:", e);
+
+      if (blob || dataUrl) {
+        const localUrl = dataUrl || (blob ? URL.createObjectURL(blob) : null);
+        if (localUrl) {
+          setLocalPosterUrl(localUrl);
+          setActiveCarouselSlide('poster');
+          
+          if (isReelTheaterOpen) {
+            setIsReelTheaterOpen(false);
+          }
+
+          toast.success("Frame Snapped! Viewing 2:3 Movie Key Art", { 
+            description: "Switched to Poster Studio to inspect your anchored key art.",
+            icon: <CheckCircle2 className="w-4 h-4 text-amber-400" />
+          });
+          
+          logEvent('HS_ACT4_SNAP_FRAME', { version: APP_VERSION });
+        }
+
+        // Asynchronous background upload to Firebase Storage
+        if (blob && data?.id) {
+          uploadMediaBlob(blob, data.id).then((remoteUrl) => {
+            if (remoteUrl) {
+              const freshUrl = remoteUrl.includes('?') ? `${remoteUrl}&t=${Date.now()}` : `${remoteUrl}?t=${Date.now()}`;
+              setLocalPosterUrl(freshUrl);
+              update({ posterImageUrl: freshUrl });
+            }
+          }).catch(err => {
+            console.error("[SoloStage] Background poster upload failed:", err);
+          });
+        }
+      } else {
+        throw new Error("Failed to export image blob from frame canvas");
+      }
+    } catch (e: any) {
+      console.error("[SoloStage] Snapshot capture failed:", e);
+      toast.error("Unable to snap video frame", {
+        description: e?.message || "Ensure video playback has initialized.",
+        icon: <AlertTriangle className="w-4 h-4 text-rose-400" />
+      });
     } finally {
       setIsCapturingThumbnail(false);
     }
@@ -4366,6 +4422,7 @@ export default function SoloStage({
                         <video 
                           ref={previewVideoRef}
                           src={previewUrl}
+                          crossOrigin="anonymous"
                           onPlay={() => setIsPlaying(true)}
                           onPause={() => setIsPlaying(false)}
                           onEnded={() => setIsPlaying(false)}
@@ -5330,6 +5387,7 @@ export default function SoloStage({
                   <video 
                     ref={theaterVideoRef}
                     src={previewUrl}
+                    crossOrigin="anonymous"
                     autoPlay
                     controls
                     onTimeUpdate={(e) => setPreviewCurrentTime((e.target as HTMLVideoElement).currentTime)}
@@ -5347,6 +5405,19 @@ export default function SoloStage({
         </AnimatePresence>,
         document.body
       )}
+
+      {/* 0ms Camera Shutter Lens Flash Overlay */}
+      <AnimatePresence>
+        {isCameraFlashActive && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[30000] bg-white pointer-events-none"
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }

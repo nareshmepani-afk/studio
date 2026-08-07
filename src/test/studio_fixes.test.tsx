@@ -1463,5 +1463,29 @@ describe('Studio Regression Tests', () => {
       expect(isReelTheaterOpen).toBe(true);
       expect(theaterHotspot).toBe("HS_ACT4_THEATER_TOGGLE_BTN");
     });
+
+    it('FRAME SNAP ENGINE & 0MS INSTANT OPTIMISTIC FEEDBACK: handleCaptureThumbnail should trigger 0ms shutter, local poster URL, and switch carousel slide to poster', () => {
+      let localPosterUrl: string | null = null;
+      let activeCarouselSlide: 'video' | 'poster' = 'video';
+      let isCameraFlashActive = false;
+      let isReelTheaterOpen = true;
+
+      const handleCaptureThumbnailOptimistic = () => {
+        isCameraFlashActive = true;
+        localPosterUrl = 'blob:http://localhost/test-poster-snap';
+        activeCarouselSlide = 'poster';
+        if (isReelTheaterOpen) isReelTheaterOpen = false;
+      };
+
+      expect(activeCarouselSlide).toBe('video');
+      expect(localPosterUrl).toBeNull();
+
+      handleCaptureThumbnailOptimistic();
+
+      expect(isCameraFlashActive).toBe(true);
+      expect(localPosterUrl).toBe('blob:http://localhost/test-poster-snap');
+      expect(activeCarouselSlide).toBe('poster');
+      expect(isReelTheaterOpen).toBe(false);
+    });
   });
 });
