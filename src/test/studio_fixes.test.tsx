@@ -1636,19 +1636,19 @@ describe('Studio Regression Tests', () => {
       expect(isShareModalOpen).toBe(true);
     });
 
-    it('4K POSTER FILENAME SYNTHESIS: should format descriptive filename with email, title, subtitle, and ID', () => {
+    it('4K POSTER FILENAME SYNTHESIS: should format descriptive filename with email, title, subtitle, and ID without prose pollution', () => {
       const email = 'nareshmepani@hotmail.com';
       const title = 'Part I: Roots & Foundations';
       const subtitle = 'A Child of Two Worlds';
       const docId = 'ey96djU6qR1BrDGnvZwp';
 
       const cleanUser = email.trim().replace(/[^a-zA-Z0-9@._-]/g, '_');
-      const cleanTitle = title.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, ' ');
-      const cleanSubtitle = subtitle.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, ' ');
+      const cleanTitle = title.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, '_').slice(0, 30);
+      const cleanSubtitle = subtitle.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, '_').slice(0, 30);
 
       const filename = `${cleanUser}-${cleanTitle}-${cleanSubtitle}-${docId}.png`;
 
-      expect(filename).toBe('nareshmepani@hotmail.com-Part I Roots Foundations-A Child of Two Worlds-ey96djU6qR1BrDGnvZwp.png');
+      expect(filename).toBe('nareshmepani@hotmail.com-Part_I_Roots_Foundations-A_Child_of_Two_Worlds-ey96djU6qR1BrDGnvZwp.png');
     });
 
     it('ULTRA-HD 4K CANVAS ASPECT COVER ENGINE: should calculate 2400x3600 object-fit cover crop without distortion', () => {

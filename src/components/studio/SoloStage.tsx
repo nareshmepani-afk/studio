@@ -1415,15 +1415,19 @@ export default function SoloStage({
       ctx.lineWidth = 8;
       ctx.strokeRect(92, 92, canvas.width - 184, canvas.height - 184);
 
-      // 5. Draw Cinema Typography Layout
+      // 5. Draw Cinema Typography Layout & Filename Synthesis
       const rawUser = user?.email || (data as any)?.starring || (data as any)?.producer || 'MemoryWeaver';
       const cleanUser = rawUser.trim().replace(/[^a-zA-Z0-9@._-]/g, '_');
 
-      const rawTitle = data?.title || data?.prose?.slice(0, 35) || 'PART I: ROOTS & FOUNDATIONS';
-      const cleanTitle = rawTitle.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, ' ');
+      // Strict Title: Chapter Title or default Part I Roots & Foundations (NEVER prose text!)
+      const rawTitle = data?.title || data?.chapterTitle || 'Part I Roots and Foundations';
+      const cleanTitle = rawTitle.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, '_').slice(0, 30);
 
-      const rawSubtitle = data?.originalHook || 'A Child of Two Worlds';
-      const cleanSubtitle = rawSubtitle.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, ' ');
+      // Strict Subtitle: Hook or default A Child of Two Worlds (NEVER long prose excerpts!)
+      const rawSubtitle = data?.originalHook && !data.originalHook.toLowerCase().startsWith('in 19') && data.originalHook.length < 50 
+        ? data.originalHook 
+        : 'A Child of Two Worlds';
+      const cleanSubtitle = rawSubtitle.trim().replace(/[^a-zA-Z0-9\s_-]/g, '').replace(/\s+/g, '_').slice(0, 30);
 
       const docId = data?.id || 'key-art';
 
