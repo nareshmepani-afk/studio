@@ -183,6 +183,16 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                        </span>
                     </div>
                   )}
+
+                  {/* Lifetime Heirloom Vault Dynamic PPP Badge */}
+                  <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-left space-y-1.5 mt-4">
+                    <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest block">
+                      Lifetime Heirloom Vault Active
+                    </span>
+                    <span className="text-[9px] font-mono text-emerald-300 font-bold bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-1 rounded-full inline-block">
+                      ☕ Equivalent to 60 local coffees — zero monthly rent forever
+                    </span>
+                  </div>
                 </div>
               </div>
 

@@ -62,7 +62,7 @@ function CinemaContent() {
       .then((res) => {
         if (isMounted && res.success && res.memory) {
           setPublicMemory(res.memory);
-          setSelectedMemory(res.memory);
+          // Do not auto-select memory on mount so guest sees hero card & pricing matrix first
           
           // Increment guest view count atomically
           recordGuestViewAction(res.memory.id).then((vRes) => {
