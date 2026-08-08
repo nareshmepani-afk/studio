@@ -83,6 +83,15 @@ export const BUSINESS_MANIFEST = {
         "Ensure session cookies ('session' and 'x-trace-id' header) are preserved during rewriting to maintain authentication context.",
         "To verify locally, use host header spoofing or local hosts file mapping to route admin.localhost to local port."
       ]
+    },
+    MW_118_ANTI_BOT_GUEST_PRIVACY: {
+      context: "Unauthenticated guest access pass, Anti-Bot Edge rate-limiting, and 4-digit Family PIN protection on public cinema stories.",
+      resolutionSteps: [
+        "Unauthenticated visitors (!user) viewing /cinema?id=... see masked monologue text and 4K video launcher behind the Anti-Bot Privacy Shield Gate.",
+        "Guestbook Reactions ([ SEND NOTE ]) and Guest Q&A Teleprompter ([ SUBMIT QUESTION ]) are strictly hidden until authenticated or unlocked with Family PIN.",
+        "Edge Middleware (src/middleware.ts) enforces a sliding-window rate-limiter (100 req/min per IP) returning HTTP 429 to prevent bot hammering.",
+        "Guests can unlock the story instantly via 1-Tap Free Guest Pass Sign-In or entering the 4-digit Family PIN (default: 1234)."
+      ]
     }
   }
 } as const;
