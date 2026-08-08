@@ -101,6 +101,14 @@ export const BUSINESS_MANIFEST = {
         "Drafts missing final video renders display a Cinematic Storyboard Reel with Web Speech TTS Voice Synthesizer ([ 🔊 Listen to Monologue Draft ]) and a Private Family Feedback Box ([ 💬 Send Note to Storyteller ]).",
         "Telemetry hotspots HS_CINEMA_SECTION_OFFICIAL, HS_CINEMA_SECTION_DRAFTS, HS_CINEMA_SECTION_SAVED, HS_CINEMA_PLAY_TTS_BTN, and HS_CINEMA_SUBMIT_FEEDBACK_BTN are active."
       ]
+    },
+    MW_123_FUSION_SCORE_GUEST_LAYER: {
+      context: "Fusion Cohesive Narrative & Cinematic Score Guest Layer in MemoryCinematicViewer.",
+      resolutionSteps: [
+        "Render top Cinematic Score Pill (HS_CINEMA_SCORE_PILL) displaying musical mood, instrumentation, and BPM above the media viewport.",
+        "Render Fusion Cohesive Narrative Card (HS_CINEMA_FUSION_CARD) displaying sensoryPalette, emotionalTone, and cohesiveScript directly beneath the video/audio viewport.",
+        "Collapse gracefully if fusionManifest and sensory values are missing without causing layout shifts."
+      ]
     }
   }
 } as const;

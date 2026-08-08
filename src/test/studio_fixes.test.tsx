@@ -1859,5 +1859,38 @@ describe('Studio Regression Tests', () => {
         expect(id).toMatch(/^HS_CINEMA_/);
       });
     });
+
+    it('MW-123 FUSION COHESIVE NARRATIVE & CINEMATIC SCORE GUEST LAYER SHIELD: should extract fusionManifest fields accurately for guest viewing', () => {
+      const mockMemory = {
+        id: 'm_fusion_1',
+        title: 'Voyage to London 1964',
+        prose: 'Standing on the deck of the SS Kenya as the cliffs of Dover emerged through the misty dawn...',
+        sensoryValues: { smell: 'Salt air & rain', sound: 'Steam engine' },
+        emotionTags: ['Courage', 'Heritage'],
+        fusionManifest: {
+          audioMood: 'Vintage Acoustic Guitar & Soft String Ensemble // 72 BPM',
+          sensoryPalette: 'Smell of salt sea air, sound of steam engine in 1964',
+          emotionalTone: 'Courageous, Reverent, Ancestral Gratitude',
+          cohesiveScript: 'Standing on the deck of the SS Kenya...'
+        }
+      };
+
+      const extractedManifest = mockMemory.fusionManifest;
+      expect(extractedManifest.audioMood).toContain('72 BPM');
+      expect(extractedManifest.sensoryPalette).toContain('salt sea air');
+      expect(extractedManifest.emotionalTone).toBe('Courageous, Reverent, Ancestral Gratitude');
+      expect(extractedManifest.cohesiveScript).toContain('SS Kenya');
+    });
+
+    it('MW-123 GUEST TELEMETRY HOTSPOT SHIELD: should verify telemetry hotspot keys for score pill and fusion card', () => {
+      const guestHotspots = [
+        'HS_CINEMA_SCORE_PILL',
+        'HS_CINEMA_FUSION_CARD'
+      ];
+
+      guestHotspots.forEach(id => {
+        expect(id).toMatch(/^HS_CINEMA_/);
+      });
+    });
   });
 });

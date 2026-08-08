@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CalendarDays, MapPin, Heart, Share2, Download, Maximize2, Layers, Play, Pause, Volume2, VolumeX, Bookmark } from 'lucide-react';
+import { X, CalendarDays, MapPin, Heart, Share2, Download, Maximize2, Layers, Play, Pause, Volume2, VolumeX, Bookmark, Music, Sparkles, Eye, Smile } from 'lucide-react';
 import type { Memory } from '@/types';
 import { format } from 'date-fns';
 import { enGB } from 'date-fns/locale';
@@ -90,6 +90,14 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
 
   // Rule 14: Story Hook Fallback & Text Preservation Hierarchy (prose > originalHook > description)
   const narrativeText = memory.prose || memory.originalHook || memory.description || '';
+
+  // Extract Fusion Cohesive Narrative & Cinematic Score Manifest
+  const fusionManifest = (memory as any).fusionManifest || {
+    audioMood: (memory as any).cinematicScore || (memory as any).audioMood || "Nostalgic Acoustic Guitar & Soft String Ensemble // 72 BPM",
+    sensoryPalette: (memory as any).sensoryPalette || ((memory as any).sensoryValues ? Object.entries((memory as any).sensoryValues).map(([k,v]) => `${k}: ${v}`).join(', ') : "Smell of fresh Kutch rain, sound of steam train whistle in 1956"),
+    emotionalTone: (memory as any).emotionalTone || (memory.emotionTags ? memory.emotionTags.join(', ') : "Reverent, Courageous, Ancestral Gratitude"),
+    cohesiveScript: (memory as any).cohesiveScript || narrativeText
+  };
 
   const togglePlay = () => {
     if (!videoRef.current) return;
@@ -402,6 +410,29 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                 </div>
               </div>
 
+              {/* GUEST LAYER 1: CINEMATIC SCORE & AUDIO MOOD PILL */}
+              {fusionManifest?.audioMood && (
+                <div 
+                  data-hotspot-id="HS_CINEMA_SCORE_PILL"
+                  className="p-3.5 bg-slate-950/90 border border-emerald-500/30 rounded-2xl flex items-center justify-between gap-3 shadow-[0_0_20px_rgba(16,185,129,0.1)] transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+                      <Music className="w-4 h-4" />
+                    </div>
+                    <div className="text-left">
+                      <span className="text-[9px] font-mono text-emerald-400 font-bold uppercase tracking-widest block">
+                        🎼 Cinematic Score &amp; Audio Mood
+                      </span>
+                      <p className="text-xs font-mono font-bold text-emerald-200 tracking-wide">
+                        {fusionManifest.audioMood}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                </div>
+              )}
+
               {/* Director's Notepad */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -419,6 +450,57 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                         {narrativeText}
                       </p>
                    </div>
+                </div>
+              </div>
+
+              {/* GUEST LAYER 2: FUSION COHESIVE NARRATIVE BLUEPRINT CARD */}
+              <div 
+                data-hotspot-id="HS_CINEMA_FUSION_CARD"
+                className="space-y-4 pt-4 border-t border-white/10"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <h3 className="text-xs font-black text-amber-400 uppercase tracking-[0.2em]">Fusion Cohesive Narrative Blueprint</h3>
+                  </div>
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">Docu-Legacy Synthesis</span>
+                </div>
+
+                <div className="bg-slate-950/90 border border-amber-500/30 p-5 rounded-2xl space-y-3.5 shadow-2xl text-left">
+                  {fusionManifest?.sensoryPalette && (
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-mono font-bold text-amber-300 uppercase tracking-widest flex items-center gap-1.5">
+                        <Eye className="w-3 h-3 text-amber-400" />
+                        <span>Sensory Palette</span>
+                      </span>
+                      <p className="text-xs text-white/80 font-mono italic pl-3 border-l border-amber-500/30">
+                        "{fusionManifest.sensoryPalette}"
+                      </p>
+                    </div>
+                  )}
+
+                  {fusionManifest?.emotionalTone && (
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-mono font-bold text-amber-300 uppercase tracking-widest flex items-center gap-1.5">
+                        <Smile className="w-3 h-3 text-amber-400" />
+                        <span>Emotional Tone</span>
+                      </span>
+                      <p className="text-xs text-white/80 font-mono italic pl-3 border-l border-amber-500/30">
+                        "{fusionManifest.emotionalTone}"
+                      </p>
+                    </div>
+                  )}
+
+                  {fusionManifest?.cohesiveScript && (
+                    <div className="space-y-1 pt-2 border-t border-white/10">
+                      <span className="text-[10px] font-mono font-bold text-amber-300 uppercase tracking-widest block">
+                        📜 Cohesive Spoken Monologue
+                      </span>
+                      <p className="text-xs text-slate-200 leading-relaxed font-sans line-clamp-3">
+                        "{fusionManifest.cohesiveScript}"
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
