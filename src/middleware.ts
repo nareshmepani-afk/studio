@@ -94,8 +94,36 @@ async function getGoogleAccessToken(): Promise<string | null> {
   }
 }
 
+const ipRequestCounts = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = ipRequestCounts.get(ip);
+
+  if (!record || now > record.resetTime) {
+    ipRequestCounts.set(ip, { count: 1, resetTime: now + 60000 });
+    return true;
+  }
+
+  if (record.count >= 100) {
+    return false;
+  }
+
+  record.count += 1;
+  return true;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Anti-Bot Edge Rate Limiting (100 req/min per IP)
+  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || '127.0.0.1';
+  if (!checkRateLimit(clientIp)) {
+    return new NextResponse('Too Many Requests - Anti-Bot Rate Limit Exceeded', { 
+      status: 429,
+      headers: { 'Retry-After': '60' }
+    });
+  }
   
   const requestHeaders = new Headers(request.headers);
   let traceId = requestHeaders.get('x-trace-id');
