@@ -109,6 +109,14 @@ export const BUSINESS_MANIFEST = {
         "Render Fusion Cohesive Narrative Card (HS_CINEMA_FUSION_CARD) displaying sensoryPalette, emotionalTone, and cohesiveScript directly beneath the video/audio viewport.",
         "Collapse gracefully if fusionManifest and sensory values are missing without causing layout shifts."
       ]
+    },
+    MW_124_MOVIE_POSTER_VIEWER_TOGGLE: {
+      context: "Interactive Movie Poster keyart view switcher inside MemoryCinematicViewer STAGE CONTROLS.",
+      resolutionSteps: [
+        "Provide 1-tap view switcher ([ 🖼️ Movie Poster ] / [ ▶ Watch Video ]) in floating STAGE CONTROLS toolbar.",
+        "Bind telemetry hotspot attribute HS_CINEMA_TOGGLE_POSTER_BTN.",
+        "Render 2:3 vertical film poster with Hollywood billing block via CinemaPoster component when activeViewMode is poster."
+      ]
     }
   }
 } as const;

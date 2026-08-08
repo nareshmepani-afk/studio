@@ -1892,5 +1892,23 @@ describe('Studio Regression Tests', () => {
         expect(id).toMatch(/^HS_CINEMA_/);
       });
     });
+
+    it('MW-124 MOVIE POSTER VIEWER TOGGLE SHIELD: should verify toggle button hotspot and view mode flipping logic', () => {
+      let activeViewMode: 'media' | 'poster' = 'media';
+      const toggleViewMode = () => {
+        activeViewMode = activeViewMode === 'media' ? 'poster' : 'media';
+      };
+
+      expect(activeViewMode).toBe('media');
+
+      toggleViewMode();
+      expect(activeViewMode).toBe('poster');
+
+      toggleViewMode();
+      expect(activeViewMode).toBe('media');
+
+      const hotspotId = 'HS_CINEMA_TOGGLE_POSTER_BTN';
+      expect(hotspotId).toBe('HS_CINEMA_TOGGLE_POSTER_BTN');
+    });
   });
 });

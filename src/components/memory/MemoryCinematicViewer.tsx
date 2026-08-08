@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import { CinemaPoster } from '@/components/memory/CinemaPoster';
 
 interface MemoryCinematicViewerProps {
   memory: Memory | null;
@@ -21,6 +22,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
   const [duration, setDuration] = useState<number>(0);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isSaved, setIsSaved] = useState<boolean>(true);
+  const [activeViewMode, setActiveViewMode] = useState<'media' | 'poster'>('media');
 
   // Close on Escape key
   useEffect(() => {
@@ -179,7 +181,11 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
 
           {/* Media Section (Left/Top) */}
           <div className="w-full xl:w-2/3 h-[50vh] xl:h-full bg-slate-950 relative group flex items-center justify-center overflow-hidden">
-            {videoUrl ? (
+            {activeViewMode === 'poster' ? (
+              <div className="w-full h-full p-4 flex items-center justify-center bg-slate-950/90 relative z-30">
+                <CinemaPoster memory={memory} className="h-full max-h-[78vh] w-auto aspect-[2/3] shadow-[0_0_50px_rgba(245,158,11,0.2)]" />
+              </div>
+            ) : videoUrl ? (
               <div className="relative w-full h-full flex items-center justify-center">
                 <video
                   ref={videoRef}
@@ -315,6 +321,21 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
               >
                 <Share2 className="w-3.5 h-3.5 text-amber-400" />
                 <span>Share</span>
+              </button>
+
+              {/* Movie Poster View Toggle */}
+              <button
+                type="button"
+                onClick={() => setActiveViewMode(prev => prev === 'media' ? 'poster' : 'media')}
+                data-hotspot-id="HS_CINEMA_TOGGLE_POSTER_BTN"
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border hover:scale-105 ${
+                  activeViewMode === 'poster' 
+                    ? 'bg-amber-400 text-slate-950 border-amber-400 font-black shadow-md' 
+                    : 'bg-white/10 hover:bg-white/20 text-white border-white/10'
+                }`}
+              >
+                <Layers className={`w-3.5 h-3.5 ${activeViewMode === 'poster' ? 'text-slate-950' : 'text-amber-400'}`} />
+                <span>{activeViewMode === 'poster' ? '▶ Watch Video' : '🖼️ Movie Poster'}</span>
               </button>
 
               {/* Save / Bookmark Button */}
