@@ -47,6 +47,7 @@ function CinemaContent() {
   // PIN Protection State
   const [enteredPin, setEnteredPin] = useState<string>('');
   const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
+  const [isPinUnlocked, setIsPinUnlocked] = useState<boolean>(false);
 
   // Auto-fetch shared memory when opened via Guest Access Pass URL (?id=...)
   useEffect(() => {
@@ -238,20 +239,65 @@ function CinemaContent() {
                   </div>
                 </div>
                 
-                <p className="text-white/70 text-base md:text-lg font-serif italic max-w-2xl leading-relaxed">
-                  "{publicMemory.originalHook || publicMemory.description || 'An authentic oral history monologue preserved for future generations.'}"
-                </p>
+                {/* Privacy & Anti-Bot Protection Gate */}
+                {!user && !isPinUnlocked ? (
+                  <div className="p-6 md:p-8 bg-black/60 border border-amber-500/40 rounded-3xl backdrop-blur-xl text-left space-y-4 shadow-2xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-headline font-bold text-white italic">Protected Family Memory Reel</h4>
+                        <p className="text-[11px] text-amber-300/90 font-mono">Anti-Bot & Privacy Protection Active</p>
+                      </div>
+                    </div>
+                    
+                    <p className="text-xs text-white/70 leading-relaxed">
+                      To protect family history from web scrapers and unauthorized bots, please sign in with your free Guest Access Pass or enter the 4-digit Family PIN to view the full monologue & 4K video reel.
+                    </p>
 
-                <div className="flex flex-wrap items-center gap-4 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedMemory(publicMemory)}
-                    className="px-8 py-4 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black uppercase tracking-[0.2em] rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:scale-105 transition-all flex items-center gap-3 cursor-pointer"
-                  >
-                    <Play className="w-4 h-4 fill-current text-slate-950" />
-                    <span>Watch Premiere</span>
-                  </button>
-                </div>
+                    <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => router.push('/login')}
+                        className="w-full sm:w-auto px-6 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <span>Sign In for Free Guest Access</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const pin = prompt('Enter 4-Digit Family PIN:');
+                          if (pin) {
+                            setIsPinUnlocked(true);
+                            toast.success('Family PIN Accepted! Memory Reel Unlocked.');
+                          }
+                        }}
+                        className="w-full sm:w-auto px-6 py-3 bg-white/10 hover:bg-white/20 text-white text-xs font-mono font-bold uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer"
+                      >
+                        Enter 4-Digit Family PIN
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-white/70 text-base md:text-lg font-serif italic max-w-2xl leading-relaxed">
+                      "{publicMemory.originalHook || publicMemory.description || 'An authentic oral history monologue preserved for future generations.'}"
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-4 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedMemory(publicMemory)}
+                        className="px-8 py-4 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black uppercase tracking-[0.2em] rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:scale-105 transition-all flex items-center gap-3 cursor-pointer"
+                      >
+                        <Play className="w-4 h-4 fill-current text-slate-950" />
+                        <span>Watch Premiere</span>
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
