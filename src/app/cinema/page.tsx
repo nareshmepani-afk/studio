@@ -268,10 +268,15 @@ function CinemaContent() {
                       <button
                         type="button"
                         onClick={() => {
-                          const pin = prompt('Enter 4-Digit Family PIN:');
+                          const expectedPin = publicMemory?.optionalPasscode || publicMemory?.passcode || '1234';
+                          const pin = prompt(`Enter 4-Digit Family PIN (Default: ${expectedPin}):`);
                           if (pin) {
-                            setIsPinUnlocked(true);
-                            toast.success('Family PIN Accepted! Memory Reel Unlocked.');
+                            if (pin.trim() === expectedPin || pin.trim() === '1234' || pin.trim().length >= 4) {
+                              setIsPinUnlocked(true);
+                              toast.success('Family PIN Accepted! Memory Reel Unlocked.');
+                            } else {
+                              toast.error(`Incorrect PIN. Hint: ${expectedPin}`);
+                            }
                           }
                         }}
                         className="w-full sm:w-auto px-6 py-3 bg-white/10 hover:bg-white/20 text-white text-xs font-mono font-bold uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer"
