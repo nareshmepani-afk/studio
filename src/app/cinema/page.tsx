@@ -301,96 +301,100 @@ function CinemaContent() {
               </div>
             </div>
 
-            {/* GUESTBOOK REACTION SUITE */}
-            <div className="mt-12 pt-8 border-t border-white/10 space-y-6">
-              <h4 className="text-xs font-mono font-bold text-white/60 uppercase tracking-[0.25em] flex items-center gap-2">
-                <Heart className="w-4 h-4 text-rose-400" />
-                <span>Send a Heartfelt Reaction to the Director</span>
-              </h4>
+            {/* GUESTBOOK REACTION SUITE & Q&A LOOP (PROTECTED BEHIND AUTH OR PIN) */}
+            {(user || isPinUnlocked) && (
+              <>
+                <div className="mt-12 pt-8 border-t border-white/10 space-y-6">
+                  <h4 className="text-xs font-mono font-bold text-white/60 uppercase tracking-[0.25em] flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-rose-400" />
+                    <span>Send a Heartfelt Reaction to the Director</span>
+                  </h4>
 
-              <div className="flex flex-wrap items-center gap-3">
-                {[
-                  { id: 'inspiring', label: '❤️ Inspiring' },
-                  { id: 'moved', label: '🥹 Deeply Moved' },
-                  { id: 'legendary', label: '👏 Legendary Heritage' }
-                ].map(r => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => handleSendReaction(r.id as any)}
-                    disabled={isSubmittingReaction}
-                    className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
-                      selectedReaction === r.id 
-                        ? 'bg-rose-500 text-white shadow-lg scale-105' 
-                        : 'bg-white/5 hover:bg-white/10 text-white/80 border border-white/10'
-                    }`}
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    {[
+                      { id: 'inspiring', label: '❤️ Inspiring' },
+                      { id: 'moved', label: '🥹 Deeply Moved' },
+                      { id: 'legendary', label: '👏 Legendary Heritage' }
+                    ].map(r => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => handleSendReaction(r.id as any)}
+                        disabled={isSubmittingReaction}
+                        className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
+                          selectedReaction === r.id 
+                            ? 'bg-rose-500 text-white shadow-lg scale-105' 
+                            : 'bg-white/5 hover:bg-white/10 text-white/80 border border-white/10'
+                        }`}
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
-                <input
-                  type="text"
-                  placeholder="Your Name (Optional family name)..."
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  className="px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-white/30 focus:outline-none focus:border-amber-400 flex-1"
-                />
-                <input
-                  type="text"
-                  placeholder="Leave a short note for the storyteller..."
-                  value={guestComment}
-                  onChange={(e) => setGuestComment(e.target.value)}
-                  className="px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-white/30 focus:outline-none focus:border-amber-400 flex-[2]"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleSendReaction('inspiring')}
-                  disabled={isSubmittingReaction}
-                  className="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shrink-0"
-                >
-                  Send Note
-                </button>
-              </div>
-            </div>
+                  <div className="flex flex-col sm:flex-row gap-3 max-w-2xl">
+                    <input
+                      type="text"
+                      placeholder="Your Name (Optional family name)..."
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      className="px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-white/30 focus:outline-none focus:border-amber-400 flex-1"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Leave a short note for the storyteller..."
+                      value={guestComment}
+                      onChange={(e) => setGuestComment(e.target.value)}
+                      className="px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-white/30 focus:outline-none focus:border-amber-400 flex-[2]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleSendReaction('inspiring')}
+                      disabled={isSubmittingReaction}
+                      className="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/10 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shrink-0"
+                    >
+                      Send Note
+                    </button>
+                  </div>
+                </div>
 
-            {/* GUEST RE-ENGAGEMENT LOOP ("ASK GRANDPA A QUESTION") */}
-            <div className="mt-8 pt-8 border-t border-white/10 space-y-4 text-left">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-[0.25em] flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-amber-400" />
-                  <span>Ask the Storyteller a Question (Appears in their Studio Teleprompter)</span>
-                </h4>
-              </div>
+                {/* GUEST RE-ENGAGEMENT LOOP ("ASK GRANDPA A QUESTION") */}
+                <div className="mt-8 pt-8 border-t border-white/10 space-y-4 text-left">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-[0.25em] flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-amber-400" />
+                      <span>Ask the Storyteller a Question (Appears in their Studio Teleprompter)</span>
+                    </h4>
+                  </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 max-w-3xl">
-                <input
-                  type="text"
-                  placeholder="Your Name..."
-                  value={guestQuestionName}
-                  onChange={(e) => setGuestQuestionName(e.target.value)}
-                  className="px-4 py-3 bg-slate-950 border border-amber-500/30 rounded-xl text-xs text-white placeholder-white/30 focus:outline-none focus:border-amber-400 flex-1"
-                />
-                <input
-                  type="text"
-                  placeholder="e.g. Tell us what happened when you moved to London in 1964..."
-                  value={guestQuestionText}
-                  onChange={(e) => setGuestQuestionText(e.target.value)}
-                  className="px-4 py-3 bg-slate-950 border border-amber-500/30 rounded-xl text-xs text-white placeholder-white/30 focus:outline-none focus:border-amber-400 flex-[2]"
-                />
-                <button
-                  type="button"
-                  data-hotspot-id="HS_ACT4_GUEST_SUBMIT_QUESTION_BTN"
-                  onClick={handleSubmitQuestion}
-                  disabled={isSubmittingQuestion}
-                  className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shrink-0 shadow-lg"
-                >
-                  Submit Question
-                </button>
-              </div>
-            </div>
+                  <div className="flex flex-col sm:flex-row gap-3 max-w-3xl">
+                    <input
+                      type="text"
+                      placeholder="Your Name..."
+                      value={guestQuestionName}
+                      onChange={(e) => setGuestQuestionName(e.target.value)}
+                      className="px-4 py-3 bg-slate-950 border border-amber-500/30 rounded-xl text-xs text-white placeholder-white/30 focus:outline-none focus:border-amber-400 flex-1"
+                    />
+                    <input
+                      type="text"
+                      placeholder="e.g. Tell us what happened when you moved to London in 1964..."
+                      value={guestQuestionText}
+                      onChange={(e) => setGuestQuestionText(e.target.value)}
+                      className="px-4 py-3 bg-slate-950 border border-amber-500/30 rounded-xl text-xs text-white placeholder-white/30 focus:outline-none focus:border-amber-400 flex-[2]"
+                    />
+                    <button
+                      type="button"
+                      data-hotspot-id="HS_ACT4_GUEST_SUBMIT_QUESTION_BTN"
+                      onClick={handleSubmitQuestion}
+                      disabled={isSubmittingQuestion}
+                      className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shrink-0 shadow-lg"
+                    >
+                      Submit Question
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* 2,500 VIEWS SOFT CAP VIRAL INFRASTRUCTURE SHIELD BANNER */}
             {(publicMemory.guestViewCount && publicMemory.guestViewCount > 2500) && (
