@@ -20,7 +20,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [isMuted, setIsMuted] = useState<boolean>(false);
-  const [isSaved, setIsSaved] = useState<boolean>(false);
+  const [isSaved, setIsSaved] = useState<boolean>(true);
 
   // Close on Escape key
   useEffect(() => {
@@ -30,6 +30,27 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
+
+  // Automatic Zero-Tap Story Ingest to Local Cinema Library
+  useEffect(() => {
+    if (!memory?.id) return;
+    try {
+      const rawSaved = localStorage.getItem('mw_saved_stories');
+      const savedList: Array<any> = rawSaved ? JSON.parse(rawSaved) : [];
+      if (!savedList.some(item => item.id === memory.id)) {
+        savedList.unshift({
+          id: memory.id,
+          title: memory.title,
+          director: memory.credits?.director || memory.credits?.starring || 'Naresh Mepani',
+          posterImageUrl: memory.posterImageUrl || memory.imageUrl || '',
+          savedAt: new Date().toISOString()
+        });
+        localStorage.setItem('mw_saved_stories', JSON.stringify(savedList));
+      }
+    } catch (err) {
+      console.warn('[MemoryCinematicViewer] Auto-save error:', err);
+    }
+  }, [memory?.id]);
 
   if (!memory) return null;
 
@@ -307,8 +328,8 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                     : 'bg-white/10 hover:bg-white/20 text-white border-white/10'
                 }`}
               >
-                <Bookmark className="w-3.5 h-3.5 fill-current" />
-                <span>{isSaved ? 'Saved to Library' : 'Save Story'}</span>
+                <Bookmark className="w-3.5 h-3.5 fill-current text-amber-400" />
+                <span className="text-amber-400 font-bold">{isSaved ? 'Saved to Library ✓' : 'Save Story'}</span>
               </button>
 
               {/* Offline 4K Video Download Button */}
