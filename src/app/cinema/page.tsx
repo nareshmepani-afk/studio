@@ -642,7 +642,11 @@ function CinemaContent() {
                 </div>
 
                 <p className="text-[11px] text-white/40 font-mono italic">
-                  Hint: Default PIN is <span className="text-amber-400 font-bold">1234</span>
+                  {publicMemory?.optionalPasscode || publicMemory?.passcode ? (
+                    <span>Passcode set by Storyteller ({publicMemory.credits?.director || 'Director'})</span>
+                  ) : (
+                    <span>Proof of Concept PIN: <span className="text-amber-400 font-bold">1234</span></span>
+                  )}
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
