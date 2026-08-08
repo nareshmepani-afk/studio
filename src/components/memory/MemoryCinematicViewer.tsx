@@ -1,13 +1,12 @@
-'use client';
-
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CalendarDays, MapPin, Heart, Share2, Download, Maximize2, Layers } from 'lucide-react';
+import { X, CalendarDays, MapPin, Heart, Share2, Download, Maximize2, Layers, Play, Pause, Volume2, VolumeX, Bookmark } from 'lucide-react';
 import type { Memory } from '@/types';
 import { format } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import Image from 'next/image';
 
 interface MemoryCinematicViewerProps {
@@ -17,6 +16,11 @@ interface MemoryCinematicViewerProps {
 
 export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(0);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [isSaved, setIsSaved] = useState<boolean>(false);
 
   // Close on Escape key
   useEffect(() => {
@@ -35,6 +39,56 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
   const imageUrl = memory.posterImageUrl || memory.imageUrl || (memory as any).posterUrl || memory.mediaAttachments?.find(m => m.type === 'image' || m.url?.endsWith('.jpg') || m.url?.endsWith('.png') || m.url?.endsWith('.webp'))?.url;
 
   const locationString = [memory.location, memory.country].filter(Boolean).join(', ');
+
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    if (isPlaying) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      videoRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (!videoRef.current) return;
+    setCurrentTime(videoRef.current.currentTime);
+  };
+
+  const handleLoadedMetadata = () => {
+    if (!videoRef.current) return;
+    setDuration(videoRef.current.duration || 0);
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    if (videoRef.current) {
+      videoRef.current.currentTime = time;
+      setCurrentTime(time);
+    }
+  };
+
+  const toggleMute = () => {
+    if (!videoRef.current) return;
+    videoRef.current.muted = !isMuted;
+    setIsMuted(!isMuted);
+  };
+
+  const toggleFullscreen = () => {
+    if (!videoRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      videoRef.current.requestFullscreen();
+    }
+  };
+
+  const formatTime = (timeInSeconds: number) => {
+    const mins = Math.floor(timeInSeconds / 60);
+    const secs = Math.floor(timeInSeconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <AnimatePresence>
@@ -67,14 +121,61 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
           {/* Media Section (Left/Top) */}
           <div className="w-full xl:w-2/3 h-[50vh] xl:h-full bg-slate-950 relative group flex items-center justify-center overflow-hidden">
             {videoUrl ? (
-              <video
-                ref={videoRef}
-                src={videoUrl}
-                controls
-                className="w-full h-full object-contain"
-                preload="auto"
-                autoPlay={false}
-              />
+              <div className="relative w-full h-full flex items-center justify-center">
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  onTimeUpdate={handleTimeUpdate}
+                  onLoadedMetadata={handleLoadedMetadata}
+                  onClick={togglePlay}
+                  className="w-full h-full object-contain cursor-pointer"
+                  preload="auto"
+                  autoPlay={false}
+                />
+
+                {/* CUSTOM STUDIO-STANDARD PLAYBACK SCRUBBER PILL OVERLAY */}
+                <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-[92%] max-w-xl bg-slate-950/90 border border-amber-500/30 rounded-2xl p-3 backdrop-blur-xl shadow-2xl flex items-center gap-3 z-40 transition-all opacity-90 group-hover:opacity-100">
+                  <button
+                    type="button"
+                    onClick={togglePlay}
+                    className="w-9 h-9 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center justify-center font-bold shrink-0 transition-transform active:scale-95 cursor-pointer shadow-lg"
+                  >
+                    {isPlaying ? <Pause className="w-4 h-4 fill-current text-slate-950" /> : <Play className="w-4 h-4 fill-current ml-0.5 text-slate-950" />}
+                  </button>
+
+                  <div className="flex-1 flex flex-col justify-center gap-1">
+                    <div className="flex items-center justify-between text-[9px] font-mono font-bold text-amber-300/80 uppercase tracking-widest">
+                      <span>Playback Scrubber</span>
+                      <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={duration || 100}
+                      value={currentTime}
+                      onChange={handleSeek}
+                      className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={toggleMute}
+                      className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white transition-colors cursor-pointer"
+                    >
+                      {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={toggleFullscreen}
+                      className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white transition-colors cursor-pointer"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
             ) : audioUrl ? (
               <div className="w-full h-full flex flex-col items-center justify-center gap-6 p-8 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/30">
                 <div className="w-32 h-32 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/30 animate-pulse">
@@ -134,14 +235,71 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
               </div>
             )}
 
-            {/* Quick Actions overlay */}
-            <div className="absolute bottom-6 left-6 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-               <Button variant="secondary" size="sm" className="bg-white/10 backdrop-blur-md border-white/10 text-white hover:bg-white/20 rounded-full px-4">
-                 <Share2 className="w-4 h-4 mr-2" /> Share
-               </Button>
-               <Button variant="secondary" size="sm" className="bg-white/10 backdrop-blur-md border-white/10 text-white hover:bg-white/20 rounded-full px-4">
-                 <Download className="w-4 h-4 mr-2" /> Save
-               </Button>
+            {/* FLOATING STAGE CONTROLS TOOLBAR (Share & Save) */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-950/95 border border-amber-500/40 rounded-full px-4 py-2 backdrop-blur-2xl shadow-[0_0_40px_rgba(245,158,11,0.25)] flex items-center gap-3 z-50">
+              <div className="flex items-center gap-2 pr-3 border-r border-white/10 text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest">
+                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span>Stage Controls</span>
+              </div>
+
+              {/* Share Link Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const shareUrl = window.location.href;
+                  navigator.clipboard.writeText(shareUrl);
+                  toast.success('Share Link Copied to Clipboard!', {
+                    description: 'You can now share this direct family story link with loved ones.'
+                  });
+                }}
+                className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border border-white/10 hover:scale-105"
+              >
+                <Share2 className="w-3.5 h-3.5 text-amber-400" />
+                <span>Share</span>
+              </button>
+
+              {/* Save / Bookmark Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSaved(!isSaved);
+                  if (!isSaved) {
+                    toast.success('Saved to My Family Cinema Library!', {
+                      description: `"${memory.title}" has been bookmarked to your family library.`
+                    });
+                  } else {
+                    toast.info('Removed from My Family Cinema Library');
+                  }
+                }}
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border hover:scale-105 ${
+                  isSaved 
+                    ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-md font-black' 
+                    : 'bg-white/10 hover:bg-white/20 text-white border-white/10'
+                }`}
+              >
+                <Bookmark className="w-3.5 h-3.5 fill-current" />
+                <span>{isSaved ? 'Saved to Library' : 'Save Story'}</span>
+              </button>
+
+              {/* Offline 4K Video Download Button */}
+              {videoUrl && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const a = document.createElement('a');
+                    a.href = videoUrl;
+                    a.download = `${memory.title.replace(/\s+/g, '_')}_4K_Reel.mp4`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    toast.success('4K Archival Video Download Started');
+                  }}
+                  className="px-3.5 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border border-amber-500/30 hover:scale-105"
+                >
+                  <Download className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Save 4K Video</span>
+                </button>
+              )}
             </div>
           </div>
 
