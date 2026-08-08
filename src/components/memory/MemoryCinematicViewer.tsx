@@ -40,6 +40,36 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
 
   const locationString = [memory.location, memory.country].filter(Boolean).join(', ');
 
+  // Robust Date Resolution (Year, Date, Timeframe Scope)
+  const formattedDate = (() => {
+    if (memory.date) {
+      const rawDateStr = String(memory.date).trim();
+      // Check if rawDateStr is a 4-digit CCYY year (e.g. "1956")
+      if (/^\d{4}$/.test(rawDateStr)) {
+        return rawDateStr;
+      }
+      const d = new Date(rawDateStr);
+      if (!isNaN(d.getTime())) {
+        return format(d, 'd MMMM yyyy', { locale: enGB });
+      }
+    }
+    if ((memory as any).year) {
+      const year = (memory as any).year;
+      const month = (memory as any).month;
+      const day = (memory as any).day;
+      if (month && day) return `${day} ${month} ${year}`;
+      if (month) return `${month} ${year}`;
+      return `${year}`;
+    }
+    if ((memory as any).timeframeScope) {
+      return (memory as any).timeframeScope;
+    }
+    return 'Date Unknown';
+  })();
+
+  // Rule 14: Story Hook Fallback & Text Preservation Hierarchy (prose > originalHook > description)
+  const narrativeText = memory.prose || memory.originalHook || memory.description || '';
+
   const togglePlay = () => {
     if (!videoRef.current) return;
     if (isPlaying) {
@@ -337,34 +367,35 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                     </div>
                 </motion.div>
 
-                <div className="flex flex-wrap gap-4 text-white/60 text-sm font-medium">
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="w-4 h-4 text-primary" />
-                    {(memory.date && !isNaN(new Date(memory.date).getTime()))
-                      ? format(new Date(memory.date), 'PPP', { locale: enGB }) 
-                      : 'Date Unknown'}
+                <div className="flex flex-wrap gap-3 text-white/80 text-sm font-medium">
+                  <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-xs font-mono font-bold text-amber-300">
+                    <CalendarDays className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{formattedDate}</span>
                   </div>
                   {locationString && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-primary" />
-                      {locationString}
+                    <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full text-xs font-mono font-bold text-amber-300">
+                      <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{locationString}</span>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Director's Notepad */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  <h3 className="text-xs font-black text-primary uppercase tracking-[0.2em]">Director's Notes</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    <h3 className="text-xs font-black text-amber-400 uppercase tracking-[0.2em]">Director's Notes</h3>
+                  </div>
+                  <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">Act Narrative</span>
                 </div>
                 
-                <div className="relative bg-white/[0.02] border border-white/10 p-6 md:p-8 rounded-2xl shadow-inner group transition-all hover:bg-white/[0.03]">
-                   <div className="absolute top-4 left-4 text-6xl text-white/5 font-serif font-black leading-none pointer-events-none group-hover:text-primary/10 transition-colors">"</div>
-                   <div className="prose prose-invert prose-slate max-w-none relative z-10 px-2 md:px-4">
-                      <p className="text-xl md:text-2xl font-serif leading-relaxed text-slate-200/90 italic">
-                        {memory.description}
+                <div className="relative bg-slate-950/80 border border-amber-500/30 p-6 md:p-8 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.08)] group transition-all">
+                   <div className="absolute top-3 left-4 text-6xl text-amber-500/10 font-serif font-black leading-none pointer-events-none">"</div>
+                   <div className="relative z-10 space-y-4">
+                      <p className="text-base md:text-lg font-sans leading-relaxed text-slate-100 font-normal">
+                        {narrativeText}
                       </p>
                    </div>
                 </div>
