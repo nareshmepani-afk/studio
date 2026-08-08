@@ -29,7 +29,11 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
 
   if (!memory) return null;
 
-  const primaryMedia = memory.mediaAttachments?.[0];
+  // Resolve video, audio, and image assets across all memory schema fields
+  const videoUrl = memory.videoUrl || (memory as any).recordingUrl || (memory as any).video || memory.mediaAttachments?.find(m => m.type === 'video' || m.url?.includes('.mp4') || m.url?.includes('.webm'))?.url;
+  const audioUrl = (memory as any).audioUrl || memory.mediaAttachments?.find(m => m.type === 'audio' || m.url?.includes('.mp3') || m.url?.includes('.wav'))?.url;
+  const imageUrl = memory.posterImageUrl || memory.imageUrl || (memory as any).posterUrl || memory.mediaAttachments?.find(m => m.type === 'image' || m.url?.endsWith('.jpg') || m.url?.endsWith('.png') || m.url?.endsWith('.webp'))?.url;
+
   const locationString = [memory.location, memory.country].filter(Boolean).join(', ');
 
   return (
@@ -55,33 +59,33 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute top-6 right-6 z-50 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all backdrop-blur-md border border-white/10 hover:scale-110 active:scale-95"
+            className="absolute top-6 right-6 z-50 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all backdrop-blur-md border border-white/10 hover:scale-110 active:scale-95 cursor-pointer"
           >
             <X className="w-6 h-6" />
           </button>
 
           {/* Media Section (Left/Top) */}
-          <div className="w-full xl:w-2/3 h-[50vh] xl:h-full bg-black relative group flex items-center justify-center">
-            {primaryMedia?.type === 'video' ? (
+          <div className="w-full xl:w-2/3 h-[50vh] xl:h-full bg-slate-950 relative group flex items-center justify-center overflow-hidden">
+            {videoUrl ? (
               <video
                 ref={videoRef}
-                src={primaryMedia.url}
+                src={videoUrl}
                 controls
                 className="w-full h-full object-contain"
                 preload="auto"
-                autoPlay={false} // Verified: No auto-play
+                autoPlay={false}
               />
-            ) : primaryMedia?.type === 'audio' ? (
-              <div className="w-full h-full flex flex-col items-center justify-center gap-6 p-8 bg-gradient-to-br from-slate-900 to-black">
-                <div className="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 animate-pulse">
-                   <Layers className="w-12 h-12 text-primary" />
+            ) : audioUrl ? (
+              <div className="w-full h-full flex flex-col items-center justify-center gap-6 p-8 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/30">
+                <div className="w-32 h-32 rounded-full bg-amber-500/20 flex items-center justify-center border border-amber-500/30 animate-pulse">
+                   <Layers className="w-12 h-12 text-amber-400" />
                 </div>
-                <audio src={primaryMedia.url} controls className="w-full max-w-md" />
+                <audio src={audioUrl} controls className="w-full max-w-md" />
               </div>
-            ) : memory.imageUrl ? (
+            ) : imageUrl ? (
               <div className="relative w-full h-full">
                 <Image
-                  src={memory.imageUrl}
+                  src={imageUrl}
                   alt={memory.title}
                   fill
                   sizes="(max-width: 1280px) 100vw, 66vw"
@@ -90,8 +94,43 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                 />
               </div>
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-slate-900/50">
-                <Layers className="w-24 h-24 text-white/5" />
+              /* Cinematic Monologue Storyboard Reel Fallback */
+              <div className="w-full h-full flex flex-col items-center justify-center p-8 md:p-12 text-center bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/40 relative">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent pointer-events-none" />
+                
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 flex items-center justify-center font-bold text-2xl shadow-[0_0_40px_rgba(245,158,11,0.3)] mb-6 border-2 border-amber-300">
+                  {memory.credits?.director?.[0] || 'N'}
+                </div>
+
+                <Badge className="bg-amber-400/20 text-amber-300 border border-amber-500/30 mb-3 px-3 py-1 font-mono font-bold tracking-widest uppercase text-[10px]">
+                  🎬 Cinematic Storyboard Reel
+                </Badge>
+
+                <h3 className="text-2xl md:text-4xl font-headline italic text-white max-w-lg mb-3">
+                  {memory.title}
+                </h3>
+
+                <p className="text-xs text-amber-200/70 font-mono mb-8">
+                  Storyteller: {memory.credits?.director || memory.credits?.starring || 'Naresh Mepani'}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const textToSpeak = memory.prose || memory.originalHook || memory.description;
+                    if (!textToSpeak) return;
+                    if ('speechSynthesis' in window) {
+                      window.speechSynthesis.cancel();
+                      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                      utterance.rate = 0.9;
+                      utterance.pitch = 1.0;
+                      window.speechSynthesis.speak(utterance);
+                    }
+                  }}
+                  className="px-6 py-3.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black uppercase tracking-widest rounded-xl shadow-[0_0_30px_rgba(245,158,11,0.2)] transition-all flex items-center gap-2 cursor-pointer hover:scale-105"
+                >
+                  <span>🔊 Listen to Spoken Monologue</span>
+                </button>
               </div>
             )}
 
