@@ -17,9 +17,11 @@ export async function getHostPassPriceAction(input: GetHostPassPriceInput): Prom
     }
     return {
       passPrice: fallbackCurrency === 'GBP' ? 12.99 : 14.99,
+      lifetimeVaultPrice: fallbackCurrency === 'GBP' ? 195.00 : 249.00,
       currency: fallbackCurrency,
       coffeePrice: fallbackCurrency === 'GBP' ? 3.50 : 3.00,
       justification: 'Unlock a full month of memory creation tools and preserve your precious moments.',
+      vaultMicrocopy: 'Equivalent to 60 local coffees — zero monthly rent forever',
     };
   }
 }

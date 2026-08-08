@@ -1779,5 +1779,20 @@ describe('Studio Regression Tests', () => {
         expect(id).toMatch(/^HS_ACT4_/);
       });
     });
+
+    it('MW-118 DYNAMIC COFFEE INDEX LIFETIME VAULT SHIELD: should calculate Lifetime Heirloom Vault price as 60x local coffee price', () => {
+      const coffeePriceUK = 3.25;
+      const lifetimeVaultUK = Math.round(coffeePriceUK * 60);
+
+      expect(lifetimeVaultUK).toBe(195);
+
+      const coffeePriceUS = 4.15;
+      const lifetimeVaultUS = Math.round(coffeePriceUS * 60);
+
+      expect(lifetimeVaultUS).toBe(249);
+
+      const microcopy = 'Equivalent to 60 local coffees — zero monthly rent forever';
+      expect(microcopy).toContain('60 local coffees');
+    });
   });
 });

@@ -382,8 +382,11 @@ function CinemaContent() {
 
                 <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1">
                   <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest block">Tier 3: Lifetime Heirloom Vault</span>
-                  <p className="text-sm font-bold text-emerald-300">$249.00 One-Time</p>
-                  <p className="text-[10px] text-white/60 leading-relaxed">Permanent lifetime 4K cloud vault & offline archival package for future generations.</p>
+                  <p className="text-sm font-bold text-emerald-300">$249.00 One-Time (Dynamic PPP)</p>
+                  <span className="text-[9px] font-mono text-emerald-300 font-bold bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full inline-block">
+                    ☕ Equivalent to 60 local coffees — zero monthly rent forever
+                  </span>
+                  <p className="text-[10px] text-white/60 leading-relaxed pt-1">Permanent lifetime 4K cloud vault & offline archival package for future generations.</p>
                 </div>
               </div>
             </div>

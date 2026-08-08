@@ -16,12 +16,14 @@ import {getAverageCoffeePriceTool, GetAverageCoffeePriceInputSchema} from '@/ai/
 // Use the imported schema for defining the input type for this flow as well.
 export type GetHostPassPriceInput = z.infer<typeof GetAverageCoffeePriceInputSchema>;
 
-// Define the output schema for the Host Pass price
+// Define the output schema for the Host Pass and Lifetime Vault price
 const GetHostPassPriceOutputSchema = z.object({
   passPrice: z.number().describe('The calculated price for the 31-day Host Pass, rounded to two decimal places.'),
+  lifetimeVaultPrice: z.number().describe('The calculated one-time Lifetime Heirloom Vault price (approx. 60x local coffee price).'),
   currency: z.string().describe('The currency of the pass price (e.g., GBP, USD).'),
   coffeePrice: z.number().describe('The average coffee price that was used for the calculation.'),
-  justification: z.string().describe('A brief, friendly justification for the Host Pass price based on the coffee price. Max 1-2 sentences. Mention it unlocks creation features.'),
+  justification: z.string().describe('A brief, friendly justification for the Host Pass price based on the coffee price. Max 1-2 sentences.'),
+  vaultMicrocopy: z.string().describe('Microcopy for the Lifetime Vault (e.g., "Equivalent to 60 local coffees — zero monthly rent forever").'),
 });
 export type GetHostPassPriceOutput = z.infer<typeof GetHostPassPriceOutputSchema>;
 
@@ -35,19 +37,19 @@ const hostPassPricePrompt = ai.definePrompt({
   input: { schema: GetAverageCoffeePriceInputSchema },
   output: { schema: GetHostPassPriceOutputSchema },
   prompt: `You are a pricing assistant for a digital memory sharing app called "Memory Weaver".
-Your task is to determine a fair and attractive price for a 31-day Host Pass. This pass allows users to access all memory creation features, including recording video/audio, full "My Life Journey" chapter access, and a standard storage quota.
-The pricing strategy should be based on the local average price of a cup of coffee. The pass should feel like an affordable investment for preserving memories, roughly equivalent to 3 to 4 cups of coffee.
+Your task is to determine a fair and attractive price for a 31-day Host Pass and a Lifetime Heirloom Vault based on local coffee prices.
+The 31-day Host Pass should be ~3 to 4 times the local coffee price.
+The Lifetime Heirloom Vault should be ~60 times the local coffee price (rounded to a clean integer, e.g. 195 or 249).
 
 Use the 'getAverageCoffeePrice' tool to find the current average coffee price for the user's location.
 User's location:
 City: {{{city}}}
 Country: {{{country}}}
 
-Once the coffee price is obtained, follow these steps:
-1.  Calculate a Host Pass price. This price should be between 3.0 and 4.0 times the retrieved coffee price.
-2.  Round the final pass price to two decimal places.
-3.  Create a short, friendly justification for this price. It should be appealing to the user and highlight the value (e.g., "Unlock a full month of memory creation and storage for less than the price of 4 coffees!"). Keep it to 1-2 sentences.
-4.  Ensure your output strictly adheres to the GetHostPassPriceOutputSchema, providing 'passPrice', 'currency', 'coffeePrice' (the value returned by the tool), and 'justification'.
+Once the coffee price is obtained:
+1. Calculate passPrice (3.5x coffee price, rounded to .99 or .00).
+2. Calculate lifetimeVaultPrice (60x coffee price, rounded clean).
+3. Create justification and vaultMicrocopy ("Equivalent to 60 local coffees — zero monthly rent forever").
 `,
 });
 
@@ -61,18 +63,26 @@ const getHostPassPriceFlow = ai.defineFlow(
     const {output} = await hostPassPricePrompt(input);
     if (!output) {
       console.error('No output from getHostPassPricePrompt for input:', input);
-      // Provide a default/fallback pricing in case of AI error
       let fallbackCurrency = 'USD';
       if (input.city?.toLowerCase() === 'london' && (input.country?.toLowerCase() === 'uk' || input.country?.toLowerCase() === 'united kingdom')) {
           fallbackCurrency = 'GBP';
       }
+      const coffee = fallbackCurrency === 'GBP' ? 3.50 : 3.00;
       return {
-        passPrice: fallbackCurrency === 'GBP' ? 12.99 : 14.99, // Fallback price
+        passPrice: fallbackCurrency === 'GBP' ? 12.99 : 14.99,
+        lifetimeVaultPrice: fallbackCurrency === 'GBP' ? 195.00 : 249.00,
         currency: fallbackCurrency,
-        coffeePrice: fallbackCurrency === 'GBP' ? 3.50 : 3.00, // Mock coffee price
-        justification: 'Unlock a full month of memory creation tools and preserve your precious moments.',
+        coffeePrice: coffee,
+        justification: 'Unlock a full month of memory creation tools for less than 4 coffees!',
+        vaultMicrocopy: 'Equivalent to 60 local coffees — zero monthly rent forever',
       };
     }
-    return output;
+
+    const calculatedVault = output.lifetimeVaultPrice || Math.round(output.coffeePrice * 60);
+    return {
+      ...output,
+      lifetimeVaultPrice: calculatedVault,
+      vaultMicrocopy: output.vaultMicrocopy || 'Equivalent to 60 local coffees — zero monthly rent forever'
+    };
   }
 );
