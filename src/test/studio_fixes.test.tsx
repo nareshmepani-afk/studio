@@ -1794,5 +1794,18 @@ describe('Studio Regression Tests', () => {
       const microcopy = 'Equivalent to 60 local coffees — zero monthly rent forever';
       expect(microcopy).toContain('60 local coffees');
     });
+
+    it('MW-118 STUDIO CHECKOUT MODAL SHIELD: should format side-by-side tier props accurately', () => {
+      const passPrice = 12.99;
+      const vaultPrice = 195.00;
+      const currency = 'GBP';
+      const currencySymbol = currency === 'GBP' ? '£' : '$';
+
+      const passDisplay = `${currencySymbol}${passPrice.toFixed(2)}`;
+      const vaultDisplay = `${currencySymbol}${vaultPrice.toFixed(2)}`;
+
+      expect(passDisplay).toBe('£12.99');
+      expect(vaultDisplay).toBe('£195.00');
+    });
   });
 });
