@@ -11,7 +11,8 @@ import { MemoryCard } from '@/components/memory/MemoryCard';
 import { MemoryCinematicViewer } from '@/components/memory/MemoryCinematicViewer';
 import { CinemaComingSoon } from '@/components/cinema/CinemaComingSoon';
 import { GuestRequestModal } from '@/components/cinema/GuestRequestModal';
-import { Loader2, Clapperboard, Film, Sparkles, User, Play, Heart, MessageSquare, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Loader2, Clapperboard, Film, Sparkles, User, Play, Heart, MessageSquare, ShieldCheck, ArrowRight, KeyRound, Unlock } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { Memory } from '@/types';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -267,21 +268,11 @@ function CinemaContent() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          const expectedPin = publicMemory?.optionalPasscode || publicMemory?.passcode || '1234';
-                          const pin = prompt(`Enter 4-Digit Family PIN (Default: ${expectedPin}):`);
-                          if (pin) {
-                            if (pin.trim() === expectedPin || pin.trim() === '1234' || pin.trim().length >= 4) {
-                              setIsPinUnlocked(true);
-                              toast.success('Family PIN Accepted! Memory Reel Unlocked.');
-                            } else {
-                              toast.error(`Incorrect PIN. Hint: ${expectedPin}`);
-                            }
-                          }
-                        }}
-                        className="w-full sm:w-auto px-6 py-3 bg-white/10 hover:bg-white/20 text-white text-xs font-mono font-bold uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer"
+                        onClick={() => setIsPinModalOpen(true)}
+                        className="w-full sm:w-auto px-6 py-3 bg-white/10 hover:bg-white/20 text-white text-xs font-mono font-bold uppercase tracking-wider rounded-xl border border-white/10 transition-all cursor-pointer flex items-center justify-center gap-2"
                       >
-                        Enter 4-Digit Family PIN
+                        <KeyRound className="w-4 h-4 text-amber-400" />
+                        <span>Enter 4-Digit Family PIN</span>
                       </button>
                     </div>
                   </div>
@@ -600,6 +591,80 @@ function CinemaContent() {
           promptTitle={requestModalState.promptTitle}
           hostId={hostId}
         />
+      )}
+
+      {/* CUSTOM CINEMATIC FAMILY PIN KEYPAD MODAL */}
+      {isPinModalOpen && (
+        <Dialog open={isPinModalOpen} onOpenChange={setIsPinModalOpen}>
+          <DialogContent className="sm:max-w-md bg-slate-950 border border-amber-500/30 text-white p-6 md:p-8 rounded-3xl backdrop-blur-2xl shadow-[0_0_80px_rgba(245,158,11,0.2)]">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-lg">
+                <KeyRound className="w-7 h-7" />
+              </div>
+              
+              <div>
+                <DialogTitle className="text-2xl font-headline italic font-bold text-white">
+                  Enter 4-Digit Family PIN
+                </DialogTitle>
+                <DialogDescription className="text-xs text-amber-200/70 font-mono mt-1">
+                  Private Family Memory Protection Active
+                </DialogDescription>
+              </div>
+
+              <p className="text-xs text-white/60 leading-relaxed max-w-xs">
+                Enter the 4-digit passcode provided by the Story Director to unlock full 4K playback & monologue text.
+              </p>
+
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const expectedPin = publicMemory?.optionalPasscode || publicMemory?.passcode || '1234';
+                  if (enteredPin.trim() === expectedPin || enteredPin.trim() === '1234' || enteredPin.trim().length >= 4) {
+                    setIsPinUnlocked(true);
+                    setIsPinModalOpen(false);
+                    toast.success('Family PIN Accepted! Memory Reel Unlocked.');
+                  } else {
+                    toast.error(`Incorrect PIN. Hint: Default PIN is ${expectedPin}`);
+                  }
+                }}
+                className="w-full space-y-4 pt-2"
+              >
+                <div className="relative">
+                  <input
+                    type="password"
+                    maxLength={6}
+                    placeholder="••••"
+                    value={enteredPin}
+                    onChange={(e) => setEnteredPin(e.target.value)}
+                    className="w-full py-4 text-center font-mono text-2xl tracking-[0.5em] bg-black/60 border border-amber-500/40 rounded-2xl text-amber-400 placeholder-white/20 focus:outline-none focus:border-amber-400 shadow-inner"
+                    autoFocus
+                  />
+                </div>
+
+                <p className="text-[11px] text-white/40 font-mono italic">
+                  Hint: Default PIN is <span className="text-amber-400 font-bold">1234</span>
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button
+                    type="submit"
+                    className="flex-1 py-3.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Unlock className="w-4 h-4" />
+                    <span>Unlock Memory Reel</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsPinModalOpen(false)}
+                    className="px-5 py-3.5 bg-white/10 hover:bg-white/20 text-white text-xs font-mono font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </AuthenticatedPageWrapper>
   );
