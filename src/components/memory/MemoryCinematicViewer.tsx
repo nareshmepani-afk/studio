@@ -120,9 +120,24 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                    <Badge className="bg-primary/20 text-primary border-primary/30 mb-4 px-3 py-1 font-bold tracking-wider uppercase text-[10px]">
                      Cinematic Experience
                    </Badge>
-                   <h1 className="text-4xl md:text-5xl font-headline leading-tight text-white font-bold mb-4">
-                     {memory.title}
-                   </h1>
+                    <h1 className="text-4xl md:text-5xl font-headline leading-tight text-white font-bold mb-4">
+                      {memory.title}
+                    </h1>
+
+                    {/* Storyteller / Director Attribution */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 flex items-center justify-center font-bold text-xs shadow-md shrink-0">
+                        {memory.credits?.director?.[0] || 'N'}
+                      </div>
+                      <div className="text-left">
+                        <span className="text-[9px] font-mono text-amber-400 font-bold uppercase tracking-widest block">
+                          Storyteller / Director
+                        </span>
+                        <p className="text-xs font-bold text-white tracking-wide">
+                          {memory.credits?.director || memory.credits?.starring || 'Naresh Mepani'}
+                        </p>
+                      </div>
+                    </div>
                 </motion.div>
 
                 <div className="flex flex-wrap gap-4 text-white/60 text-sm font-medium">

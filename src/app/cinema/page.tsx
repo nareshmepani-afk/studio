@@ -222,6 +222,21 @@ function CinemaContent() {
                 <h2 className="text-4xl md:text-6xl font-headline italic text-white leading-tight">
                   {publicMemory.title}
                 </h2>
+
+                {/* Storyteller / Director Attribution */}
+                <div className="flex items-center gap-3 py-1">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 flex items-center justify-center font-bold text-sm shadow-md shrink-0">
+                    <User className="w-5 h-5 text-slate-950" />
+                  </div>
+                  <div className="text-left">
+                    <span className="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-widest block">
+                      Storyteller / Director
+                    </span>
+                    <p className="text-sm font-bold text-white tracking-wide">
+                      {publicMemory.credits?.director || publicMemory.credits?.starring || 'Naresh Mepani'}
+                    </p>
+                  </div>
+                </div>
                 
                 <p className="text-white/70 text-base md:text-lg font-serif italic max-w-2xl leading-relaxed">
                   "{publicMemory.originalHook || publicMemory.description || 'An authentic oral history monologue preserved for future generations.'}"
