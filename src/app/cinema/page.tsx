@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import type { Memory } from '@/types';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
 
 function CinemaContent() {
   const { user } = useAuth();
@@ -49,6 +50,21 @@ function CinemaContent() {
   const [enteredPin, setEnteredPin] = useState<string>('');
   const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
   const [isPinUnlocked, setIsPinUnlocked] = useState<boolean>(false);
+
+  // Saved Stories Library State
+  const [savedStories, setSavedStories] = useState<Array<{ id: string; title: string; director: string; savedAt: string }>>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('mw_saved_stories');
+      if (raw) setSavedStories(JSON.parse(raw));
+    } catch (e) {}
+  }, []);
+
+  // Compute 3-Section Memory Collections
+  const allMemories = chapters.flatMap(c => c.prompts.map(p => p.memory)).filter(Boolean) as Memory[];
+  const publishedMemories = allMemories.filter(m => m.status === 'published');
+  const draftMemories = allMemories.filter(m => m.status !== 'published');
 
   // Auto-fetch shared memory when opened via Guest Access Pass URL (?id=...)
   useEffect(() => {
@@ -489,79 +505,126 @@ function CinemaContent() {
            </div>
         </div>
 
-        {/* Chapters and Grid */}
-        <div className="space-y-32">
-          {chapters.length > 0 ? (
-            chapters.map((chapter, idx) => (
-            <section key={chapter.id} className="relative">
-              {/* Chapter Backdrop Visual */}
-              <div className="absolute -left-20 top-0 text-[18vw] font-headline italic tracking-tighter text-white/[0.02] select-none pointer-events-none -z-10 h-min">
-                 {String(idx + 1).padStart(2, '0')}
-              </div>
+        {/* 3-SECTION CINEMA DASHBOARD ARCHITECTURE */}
+        <div className="space-y-24">
 
-              <div className="space-y-12">
-                {/* Chapter Title Block */}
-                <div className="relative pl-4 border-l-2 border-primary/20">
-                   <span className="text-[10px] uppercase tracking-[.5em] text-primary font-black mb-2 block">
-                      {mode === 'gu' ? `ભાગ ${idx + 1}` : mode === 'dual' ? `Part ${idx + 1} | ભાગ ${idx + 1}` : `Part ${idx + 1}`}
-                   </span>
-                   <h2 className="text-4xl md:text-6xl font-headline italic tracking-tighter text-white drop-shadow-sm">{chapter.title}</h2>
-                   {chapter.subtitle && <p className="text-white/30 text-lg mt-2 font-medium italic">{chapter.subtitle}</p>}
-                </div>
+          {/* SECTION 1: 🌟 OFFICIAL PREMIERES */}
+          <section data-hotspot-id="HS_CINEMA_SECTION_OFFICIAL" className="space-y-8">
+            <div className="flex items-center justify-between border-b border-emerald-500/20 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
+                <h2 className="text-2xl md:text-4xl font-headline italic text-white font-bold">
+                  🌟 Official Premieres
+                </h2>
+                <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold uppercase tracking-widest rounded-full">
+                  Locked 4K Master Reels
+                </span>
+              </div>
+              <span className="text-xs font-mono text-white/40">{publishedMemories.length} Stories Released</span>
+            </div>
 
-                {/* The Cinematic Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                   {chapter.prompts.map((cp) => (
-                      <div key={cp.id}>
-                        {cp.memory && cp.memory.status === 'published' ? (
-                           <MemoryCard 
-                              memory={cp.memory}
-                              onEdit={!isGuest ? () => handleEdit(cp.memory!) : undefined}
-                              onUnpublish={!isGuest ? () => handleUnpublish(cp.memory!.id) : undefined}
-                              onView={() => setSelectedMemory(cp.memory!)}
-                           />
-                        ) : (
-                           <CinemaComingSoon 
-                              title={cp.title}
-                              description={cp.description}
-                              onRequest={() => handleRequestStory(cp.id, cp.title)}
-                              requestCount={cp.requests.length}
-                           />
-                        )}
-                      </div>
-                   ))}
-                </div>
+            {publishedMemories.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {publishedMemories.map((mem) => (
+                  <MemoryCard 
+                    key={mem.id}
+                    memory={mem}
+                    onEdit={!isGuest ? () => handleEdit(mem) : undefined}
+                    onUnpublish={!isGuest ? () => handleUnpublish(mem.id) : undefined}
+                    onView={() => setSelectedMemory(mem)}
+                  />
+                ))}
               </div>
-            </section>
-            ))
-          ) : (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center justify-center py-40 text-center space-y-8"
-            >
-              <div className="relative">
-                <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full animate-pulse" />
-                <Film className="h-24 w-24 text-white/5 relative z-10" />
+            ) : (
+              <div className="p-8 rounded-2xl bg-black/40 border border-white/10 text-center text-white/40 text-xs font-mono">
+                No official premieres released yet. Complete Act V in Studio to release your first master reel!
               </div>
-              <div className="space-y-4">
-                <h2 className="text-3xl font-headline italic text-white/60">Theater Doors Closed</h2>
-                <p className="text-sm text-white/20 max-w-sm mx-auto uppercase tracking-[0.2em] font-bold">
-                  {isGuest 
-                    ? "This director hasn't released any memories to the public yet." 
-                    : "Your cinematic journey is awaiting its first release. Head to the Studio to publish a memory."}
-                </p>
+            )}
+          </section>
+
+          {/* SECTION 2: 🎬 PRE-RELEASE SCREENERS (Work-in-Progress & Private Shares) */}
+          <section data-hotspot-id="HS_CINEMA_SECTION_DRAFTS" className="space-y-8">
+            <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-amber-400 animate-pulse" />
+                <h2 className="text-2xl md:text-4xl font-headline italic text-white font-bold">
+                  🎬 Pre-Release Screeners
+                </h2>
+                <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-mono font-bold uppercase tracking-widest rounded-full">
+                  Private Family Cuts
+                </span>
               </div>
-              {!isGuest && (
-                <button 
-                  onClick={() => router.push('/studio')}
-                  className="px-8 py-3 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-[0.4em] text-white hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-500"
-                 >
-                  Open Studio
-                </button>
-              )}
-            </motion.div>
-          )}
+              <span className="text-xs font-mono text-white/40">{draftMemories.length} Screeners Active</span>
+            </div>
+
+            {draftMemories.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {draftMemories.map((mem) => (
+                  <div key={mem.id} className="relative group">
+                    <div className="absolute top-3 right-3 z-20 px-2.5 py-1 bg-amber-500/90 text-slate-950 text-[9px] font-mono font-black uppercase tracking-widest rounded-full shadow-lg">
+                      🎬 PRE-RELEASE DRAFT
+                    </div>
+                    <MemoryCard 
+                      memory={mem}
+                      onEdit={!isGuest ? () => handleEdit(mem) : undefined}
+                      onView={() => setSelectedMemory(mem)}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 rounded-2xl bg-black/40 border border-white/10 text-center text-white/40 text-xs font-mono">
+                No active pre-release screeners in production.
+              </div>
+            )}
+          </section>
+
+          {/* SECTION 3: 🔖 MY SAVED FAMILY CINEMA (Bookmarked Shared Stories) */}
+          <section data-hotspot-id="HS_CINEMA_SECTION_SAVED" className="space-y-8">
+            <div className="flex items-center justify-between border-b border-cyan-500/20 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse" />
+                <h2 className="text-2xl md:text-4xl font-headline italic text-white font-bold">
+                  🔖 My Saved Family Cinema
+                </h2>
+                <span className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] font-mono font-bold uppercase tracking-widest rounded-full">
+                  Auto-Bookmarked Family Stories
+                </span>
+              </div>
+              <span className="text-xs font-mono text-white/40">{savedStories.length} Bookmarked</span>
+            </div>
+
+            {savedStories.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {savedStories.map((saved) => (
+                  <div 
+                    key={saved.id}
+                    onClick={() => router.push(`/cinema?id=${saved.id}`)}
+                    className="p-6 rounded-2xl bg-slate-900/80 border border-cyan-500/30 hover:border-cyan-400 transition-all cursor-pointer space-y-4 group shadow-lg"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="px-2.5 py-0.5 bg-cyan-500/20 text-cyan-300 text-[9px] font-mono font-bold uppercase tracking-widest rounded-full">
+                        🔖 Saved Reel
+                      </span>
+                      <span className="text-[10px] text-white/40 font-mono">
+                        {saved.savedAt ? format(new Date(saved.savedAt), 'dd MMM yyyy') : 'Recently Saved'}
+                      </span>
+                    </div>
+                    <h4 className="text-lg font-headline font-bold text-white group-hover:text-cyan-300 transition-colors">
+                      {saved.title}
+                    </h4>
+                    <p className="text-xs font-mono text-white/60">
+                      Storyteller: {saved.director || 'Naresh Mepani'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 rounded-2xl bg-black/40 border border-white/10 text-center text-white/40 text-xs font-mono">
+                Shared family memory links you view will be automatically bookmarked here!
+              </div>
+            )}
+          </section>
         </div>
 
         {/* Global Stats Footer */}

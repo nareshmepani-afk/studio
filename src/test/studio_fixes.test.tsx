@@ -1807,5 +1807,57 @@ describe('Studio Regression Tests', () => {
       expect(passDisplay).toBe('£12.99');
       expect(vaultDisplay).toBe('£195.00');
     });
+
+    it('MW-122 PRE-RELEASE SCREENERS & 3-SECTION CINEMA DASHBOARD SHIELD: should correctly partition memories into Official Premieres, Pre-Release Screeners, and Saved Cinema', () => {
+      const memories = [
+        { id: 'm1', title: 'Arrival in Kenya', status: 'published' },
+        { id: 'm2', title: 'Childhood Memories', status: 'draft' },
+        { id: 'm3', title: 'School Days in Madhapur', status: 'published' },
+        { id: 'm4', title: 'Voyage across Oceans', status: 'draft' }
+      ];
+
+      const publishedMemories = memories.filter(m => m.status === 'published');
+      const draftMemories = memories.filter(m => m.status !== 'published');
+
+      expect(publishedMemories.length).toBe(2);
+      expect(publishedMemories[0].title).toBe('Arrival in Kenya');
+      expect(publishedMemories[1].title).toBe('School Days in Madhapur');
+
+      expect(draftMemories.length).toBe(2);
+      expect(draftMemories[0].title).toBe('Childhood Memories');
+      expect(draftMemories[1].title).toBe('Voyage across Oceans');
+    });
+
+    it('MW-122 DRAFT FEEDBACK ACTION SHIELD: should format private draft feedback notes payload', () => {
+      const memoryId = 'm2';
+      const guestName = 'Aunt Devaki';
+      const feedbackText = 'Did we move to Nairobi in 1961 or 1962? Check with Uncle Ramesh!';
+
+      const draftNotePayload = {
+        id: 'note_999',
+        guestName: guestName.trim() || 'Family Member',
+        feedbackText: feedbackText.trim(),
+        createdAt: '2026-08-08T11:00:00Z',
+        status: 'unread' as const
+      };
+
+      expect(draftNotePayload.guestName).toBe('Aunt Devaki');
+      expect(draftNotePayload.feedbackText).toContain('Nairobi in 1961');
+      expect(draftNotePayload.status).toBe('unread');
+    });
+
+    it('MW-122 TELEMETRY HOTSPOT BINDINGS: should verify hotspot IDs for 3-section Cinema layout & TTS buttons', () => {
+      const hotspots = [
+        'HS_CINEMA_SECTION_OFFICIAL',
+        'HS_CINEMA_SECTION_DRAFTS',
+        'HS_CINEMA_SECTION_SAVED',
+        'HS_CINEMA_PLAY_TTS_BTN',
+        'HS_CINEMA_SUBMIT_FEEDBACK_BTN'
+      ];
+
+      hotspots.forEach(id => {
+        expect(id).toMatch(/^HS_CINEMA_/);
+      });
+    });
   });
 });

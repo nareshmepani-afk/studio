@@ -426,5 +426,41 @@ export async function getGuestQuestionsAction(memoryId: string): Promise<{ succe
   }
 }
 
+/**
+ * Submit private family feedback notes on a Pre-Release Screener draft story.
+ */
+export async function submitDraftFeedbackAction(
+  memoryId: string,
+  guestName: string,
+  feedbackText: string
+): Promise<{ success: boolean; message: string }> {
+  if (!memoryId || !feedbackText.trim() || !adminDb) {
+    return { success: false, message: 'Invalid feedback submission.' };
+  }
+
+  try {
+    const memoryQuery = await adminDb.collectionGroup('memories').get();
+    const targetDoc = memoryQuery.docs.find(d => d.id === memoryId);
+
+    if (!targetDoc || !targetDoc.exists) {
+      return { success: false, message: 'Pre-release memory story not found.' };
+    }
+
+    const notesRef = targetDoc.ref.collection('draftNotes').doc();
+    await notesRef.set({
+      id: notesRef.id,
+      guestName: guestName.trim() || 'Family Member',
+      feedbackText: feedbackText.trim(),
+      createdAt: new Date().toISOString(),
+      status: 'unread'
+    });
+
+    return { success: true, message: 'Thank you! Your private feedback note has been delivered to the storyteller.' };
+  } catch (error: any) {
+    console.error('[submitDraftFeedbackAction] Error recording draft note:', error);
+    return { success: false, message: error?.message || 'Failed to submit draft feedback note.' };
+  }
+}
+
 // We need to re-import getSession here because it was removed from the top of the file
 import { getSession } from '@/lib/session';

@@ -92,6 +92,15 @@ export const BUSINESS_MANIFEST = {
         "Edge Middleware (src/middleware.ts) enforces a sliding-window rate-limiter (100 req/min per IP) returning HTTP 429 to prevent bot hammering.",
         "Guests can unlock the story instantly via 1-Tap Free Guest Pass Sign-In or entering the 4-digit Family PIN (default: 1234)."
       ]
+    },
+    MW_122_PRE_RELEASE_SCREENERS_CINEMA: {
+      context: "Pre-Release Screener Workflow & 3-Section Memory Cinema Dashboard Architecture.",
+      resolutionSteps: [
+        "Partition /cinema dashboard into Section 1 (🌟 Official Premieres), Section 2 (🎬 Pre-Release Screeners), and Section 3 (🔖 My Saved Family Cinema).",
+        "Pre-Release Screeners display amber badges (bg-amber-500/10 border-amber-500/30 text-amber-400) allowing storytellers to share private cuts before locking 4K masters.",
+        "Drafts missing final video renders display a Cinematic Storyboard Reel with Web Speech TTS Voice Synthesizer ([ 🔊 Listen to Monologue Draft ]) and a Private Family Feedback Box ([ 💬 Send Note to Storyteller ]).",
+        "Telemetry hotspots HS_CINEMA_SECTION_OFFICIAL, HS_CINEMA_SECTION_DRAFTS, HS_CINEMA_SECTION_SAVED, HS_CINEMA_PLAY_TTS_BTN, and HS_CINEMA_SUBMIT_FEEDBACK_BTN are active."
+      ]
     }
   }
 } as const;
