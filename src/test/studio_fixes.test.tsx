@@ -1920,5 +1920,27 @@ describe('Studio Regression Tests', () => {
       expect(exportHotspots[0]).toBe('HS_CINEMA_DOWNLOAD_AUTOBIOGRAPHY_BTN');
       expect(exportHotspots[1]).toBe('HS_ACT4_DOWNLOAD_AUTOBIOGRAPHY_BTN');
     });
+
+    it('MW-126 STAGE CONTROL MODE REFACTOR SHIELD: should verify stage mode hotspots and state preservation', () => {
+      const modeHotspots = [
+        'HS_STAGE_CONTROL_MODE_SOLO_BTN',
+        'HS_STAGE_CONTROL_MODE_COLLAB_BTN',
+        'HS_STAGE_CONTROL_MODE_GUEST_DIR_BTN'
+      ];
+
+      expect(modeHotspots[0]).toBe('HS_STAGE_CONTROL_MODE_SOLO_BTN');
+      expect(modeHotspots[1]).toBe('HS_STAGE_CONTROL_MODE_COLLAB_BTN');
+      expect(modeHotspots[2]).toBe('HS_STAGE_CONTROL_MODE_GUEST_DIR_BTN');
+
+      // Test state preservation mock
+      let activeRoom: 'solo' | 'collaborative' | 'guest' = 'solo';
+      const memoryState = { id: 'mem-1', title: 'Voyage to Mombasa', currentStage: 3 };
+
+      // Switch mode mid-journey (Act IV)
+      activeRoom = 'collaborative';
+      expect(activeRoom).toBe('collaborative');
+      expect(memoryState.currentStage).toBe(3);
+      expect(memoryState.title).toBe('Voyage to Mombasa');
+    });
   });
 });

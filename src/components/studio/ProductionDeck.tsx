@@ -1031,97 +1031,21 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                               </Tooltip>
                             </TooltipProvider>
 
-                            {/* Room Switcher */}
-                            <nav className="flex space-x-4">
-                                <TooltipProvider delayDuration={200}>
-
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <button 
-                                                disabled={isSavingNext}
-                                                onClick={async () => {
-                                                  if (formRef.current?.flush) {
-                                                      setIsSavingNext(true);
-                                                      try { await formRef.current.flush(); } catch(e) {} finally { setIsSavingNext(false); }
-                                                  }
-                                                  setLobbyConfirmed(true);
-                                                  setActiveRoom('solo');
-                                                }} 
-                                                className={`px-5 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${activeRoom === 'solo' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'} ${isSavingNext ? 'opacity-50 cursor-wait' : ''}`}
-                                            >
-                                                {isSavingNext && activeRoom !== 'solo' && <Loader2 className="w-3 h-3 animate-spin" />}
-                                                Solo Stage
-                                            </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent sideOffset={8} className="bg-slate-950 border border-[var(--room-accent)] text-[var(--room-accent)] font-medium">
-                                            <p>Record directly from this device (Director Mode)</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <button 
-                                                disabled={isSavingNext}
-                                                onClick={async () => {
-                                                  if (formRef.current?.flush) {
-                                                      setIsSavingNext(true);
-                                                      try { await formRef.current.flush(); } catch(e) {} finally { setIsSavingNext(false); }
-                                                  }
-                                                  setLobbyConfirmed(true);
-                                                  setActiveRoom('collaborative');
-                                                }} 
-                                                className={`px-5 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${activeRoom === 'collaborative' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'} ${isSavingNext ? 'opacity-50 cursor-wait' : ''}`}
-                                            >
-                                                {isSavingNext && activeRoom !== 'collaborative' && <Loader2 className="w-3 h-3 animate-spin" />}
-                                                Collaboration
-                                            </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent sideOffset={8} className="bg-slate-950 border border-[var(--room-accent)] text-[var(--room-accent)] font-medium">
-                                            <p>Connect a mobile prompter/camera for co-creation</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <button 
-                                                disabled={isSavingNext}
-                                                onClick={async () => {
-                                                  if (formRef.current?.flush) {
-                                                      setIsSavingNext(true);
-                                                      try { await formRef.current.flush(); } catch(e) {} finally { setIsSavingNext(false); }
-                                                  }
-                                                  setLobbyConfirmed(true);
-                                                  setActiveRoom('guest');
-                                                }} 
-                                                className={`px-5 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${activeRoom === 'guest' ? 'bg-[var(--room-accent)] text-slate-900 shadow-lg scale-105' : 'hover:bg-white/10'} ${isSavingNext ? 'opacity-50 cursor-wait' : ''}`}
-                                            >
-                                                {isSavingNext && activeRoom !== 'guest' && <Loader2 className="w-3 h-3 animate-spin" />}
-                                                Guest Director
-                                            </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent sideOffset={8} className="bg-slate-950 border border-[var(--room-accent)] text-[var(--room-accent)] font-medium">
-                                            <p>Invite a professional to control your camera remotely</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-
-                                    <div className="h-6 w-px bg-white/10 mx-2" />
-
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <button
-                                                onClick={onToggleLayout}
-                                                className="p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all"
-                                            >
-                                                {layoutMode === 'takeover' ? <Monitor className="w-5 h-5 text-[var(--room-accent)]" /> : <Maximize className="w-5 h-5 text-[var(--room-accent)]" />}
-                                            </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent sideOffset={8} className="bg-slate-950 border border-[var(--room-accent)] text-[var(--room-accent)] font-medium">
-                                            <p>Switch to {layoutMode === 'takeover' ? 'Side Drawer' : 'Full-Screen'} Layout</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-
-                                </TooltipProvider>
-                            </nav>
+                            <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            onClick={onToggleLayout}
+                                            className="p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all cursor-pointer"
+                                        >
+                                            {layoutMode === 'takeover' ? <Monitor className="w-5 h-5 text-[var(--room-accent)]" /> : <Maximize className="w-5 h-5 text-[var(--room-accent)]" />}
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent sideOffset={8} className="bg-slate-950 border border-[var(--room-accent)] text-[var(--room-accent)] font-medium">
+                                        <p>Switch to {layoutMode === 'takeover' ? 'Side Drawer' : 'Full-Screen'} Layout</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </div>
                     )}
                     <div
@@ -1212,6 +1136,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                          isSaving={isSavingNext}
                                          isProductionLocked={!!isProductionLocked}
                                          isTheaterOpen={isTheaterActive}
+                                         activeRoom={activeRoom}
+                                         onSelectRoom={(room) => {
+                                           setLobbyConfirmed(true);
+                                           setActiveRoom(room);
+                                         }}
                                      />
                                  </div>
                              )}

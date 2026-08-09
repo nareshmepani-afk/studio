@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MentorshipHotspot } from './MentorshipHotspot';
-import { Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, Rocket, Circle, ChevronLeft, ChevronRight, ChevronDown, AlertCircle, Eye } from 'lucide-react';
+import { Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, Rocket, Circle, ChevronLeft, ChevronRight, ChevronDown, AlertCircle, Eye, User, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -32,6 +32,8 @@ interface ProductionControlBarProps {
   isSaving?: boolean;
   isProductionLocked?: boolean;
   isTheaterOpen?: boolean;
+  activeRoom?: 'solo' | 'collaborative' | 'guest';
+  onSelectRoom?: (room: 'solo' | 'collaborative' | 'guest') => void;
 }
 
 const SynapseTether = ({ type, xOffset = 0 }: { type: string, xOffset?: number }) => {
@@ -94,7 +96,9 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
   mentorActive = false,
   isSaving = false,
   isProductionLocked = false,
-  isTheaterOpen = false
+  isTheaterOpen = false,
+  activeRoom = 'solo',
+  onSelectRoom
 }) => {
   const { 
     detectedAnchors, 
@@ -106,6 +110,23 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
     isDirectorOpen,
     isCleanView
   } = useStudioState();
+
+  const getActModeLabel = (mode: 'solo' | 'collaborative' | 'guest', stage: number) => {
+    switch (stage) {
+      case 0:
+        return mode === 'solo' ? '✍️ Solo Scripting' : mode === 'collaborative' ? '👥 Co-Scripting' : '🤖 AI Mentor';
+      case 1:
+        return mode === 'solo' ? '📐 Solo Weave' : mode === 'collaborative' ? '📱 Mobile Prompter' : '🎬 Remote Scout';
+      case 2:
+        return mode === 'solo' ? '📹 Solo Record' : mode === 'collaborative' ? '📱 Phone Remote' : '🎬 Remote Director';
+      case 3:
+        return mode === 'solo' ? '🍿 Solo Review' : mode === 'collaborative' ? '👥 Co-Review Cut' : '🎬 Retake Room';
+      case 4:
+        return mode === 'solo' ? '🌟 Solo Premiere' : mode === 'collaborative' ? '👥 Family Screening' : '🌐 Director Link';
+      default:
+        return mode === 'solo' ? 'Solo' : mode === 'collaborative' ? 'Collab' : 'Guest Dir';
+    }
+  };
   const [lastClickTime, setLastClickTime] = React.useState(0);
   const [isSurging, setIsSurging] = React.useState(false);
   const [isPending, setIsPending] = React.useState(false);
@@ -297,8 +318,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
         )}
       >
         <TooltipProvider>
-          {/* --- ACT PROGRESSION (LEFT) --- */}
-        <div className="flex items-center gap-6 pl-2">
+          {/* --- ACT PROGRESSION & MODE SWITCHER (LEFT WING) --- */}
+        <div className="flex items-center gap-5 pl-2">
           <div className="flex flex-col">
             <span className="text-[9px] text-emerald-400 uppercase tracking-[0.4em] font-black mb-1.5 ml-0.5">Stage Controls</span>
             <div className="flex items-center gap-4">
@@ -325,6 +346,57 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                 {steps[currentStage].act}
               </span>
             </div>
+          </div>
+
+          {/* COMPACT SEGMENTED GLASSMORPHIC PILL SWITCHER */}
+          <div className="flex items-center bg-slate-900/90 border border-white/10 p-1 rounded-full shadow-inner gap-1">
+            <button
+              type="button"
+              data-hotspot-id="HS_STAGE_CONTROL_MODE_SOLO_BTN"
+              onClick={() => onSelectRoom?.('solo')}
+              className={cn(
+                "px-3 py-1 rounded-full text-[9.5px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border",
+                activeRoom === 'solo'
+                  ? "bg-emerald-400 text-slate-950 border-emerald-400 font-black shadow-md scale-105"
+                  : "text-slate-400 hover:text-white hover:bg-white/5 border-transparent"
+              )}
+              title="Solo Mode: Direct self-recording"
+            >
+              <User className="w-3 h-3" />
+              <span>{getActModeLabel('solo', currentStage)}</span>
+            </button>
+
+            <button
+              type="button"
+              data-hotspot-id="HS_STAGE_CONTROL_MODE_COLLAB_BTN"
+              onClick={() => onSelectRoom?.('collaborative')}
+              className={cn(
+                "px-3 py-1 rounded-full text-[9.5px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border",
+                activeRoom === 'collaborative'
+                  ? "bg-cyan-400 text-slate-950 border-cyan-400 font-black shadow-md scale-105"
+                  : "text-slate-400 hover:text-white hover:bg-white/5 border-transparent"
+              )}
+              title="Collaborative Mode: Mobile prompter & co-creation"
+            >
+              <Users className="w-3 h-3" />
+              <span>{getActModeLabel('collaborative', currentStage)}</span>
+            </button>
+
+            <button
+              type="button"
+              data-hotspot-id="HS_STAGE_CONTROL_MODE_GUEST_DIR_BTN"
+              onClick={() => onSelectRoom?.('guest')}
+              className={cn(
+                "px-3 py-1 rounded-full text-[9.5px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border",
+                activeRoom === 'guest'
+                  ? "bg-amber-400 text-slate-950 border-amber-400 font-black shadow-md scale-105"
+                  : "text-slate-400 hover:text-white hover:bg-white/5 border-transparent"
+              )}
+              title="Guest Director Mode: Remote camera & prompter control"
+            >
+              <Video className="w-3 h-3" />
+              <span>{getActModeLabel('guest', currentStage)}</span>
+            </button>
           </div>
         </div>
 

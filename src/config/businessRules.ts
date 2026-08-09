@@ -125,6 +125,15 @@ export const BUSINESS_MANIFEST = {
         "Bind telemetry hotspot attributes HS_CINEMA_DOWNLOAD_AUTOBIOGRAPHY_BTN and HS_ACT4_DOWNLOAD_AUTOBIOGRAPHY_BTN.",
         "Export in Memory Weaver dark obsidian (#020617), amber gold (#f59e0b), and emerald heritage (#10b981) brand theme."
       ]
+    },
+    MW_126_STAGE_CONTROL_MODE_REFACTOR: {
+      context: "Stage Control Mode Selection Refactor moving mode switcher pills inside left wing of ProductionControlBar.",
+      resolutionSteps: [
+        "Remove top-right header room switcher nav from ProductionDeck header.",
+        "Integrate Compact Segmented Glassmorphic Pill Switcher inside left wing of ProductionControlBar.",
+        "Bind telemetry hotspot attributes HS_STAGE_CONTROL_MODE_SOLO_BTN, HS_STAGE_CONTROL_MODE_COLLAB_BTN, and HS_STAGE_CONTROL_MODE_GUEST_DIR_BTN.",
+        "Render Act-aware dynamic labels (e.g. Solo Scripting in Act I vs Solo Record in Act III vs Solo Review in Act IV)."
+      ]
     }
   }
 } as const;
