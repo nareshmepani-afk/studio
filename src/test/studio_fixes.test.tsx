@@ -1978,12 +1978,16 @@ describe('Studio Regression Tests', () => {
         'HS_CINEMA_CAST_AIRPLAY_BTN',
         'HS_CINEMA_CAST_CHROMECAST_BTN',
         'HS_ACT5_LIVING_ROOM_PREMIERE_BTN',
-        'HS_CINEMA_TV_REMOTE_TOGGLE'
+        'HS_CINEMA_TV_REMOTE_TOGGLE',
+        'HS_CINEMA_TV_LAUNCHER_BTN',
+        'HS_CINEMA_CARD_CAST_BTN'
       ];
       expect(castHotspots).toContain('HS_CINEMA_CAST_AIRPLAY_BTN');
       expect(castHotspots).toContain('HS_CINEMA_CAST_CHROMECAST_BTN');
       expect(castHotspots).toContain('HS_ACT5_LIVING_ROOM_PREMIERE_BTN');
       expect(castHotspots).toContain('HS_CINEMA_TV_REMOTE_TOGGLE');
+      expect(castHotspots).toContain('HS_CINEMA_TV_LAUNCHER_BTN');
+      expect(castHotspots).toContain('HS_CINEMA_CARD_CAST_BTN');
     });
   });
 });

@@ -498,6 +498,29 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                 <span>Autobiography PDF</span>
               </button>
 
+              {/* Living Room TV Launcher Button */}
+              <button
+                type="button"
+                data-hotspot-id="HS_CINEMA_TV_LAUNCHER_BTN"
+                onClick={() => {
+                  if (videoRef.current && (videoRef.current as any).webkitShowPlaybackTargetPicker) {
+                    triggerAirPlay();
+                  } else if ((window as any).cast?.framework) {
+                    triggerChromecast();
+                  } else {
+                    window.open(`/cinema/tv?id=${memory.id}`, '_blank');
+                    toast.info("Smart TV Cinema Mode Launched", {
+                      description: "Opened 10-foot player route (/cinema/tv) optimized for Smart TV remotes."
+                    });
+                  }
+                }}
+                className="px-3.5 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border border-amber-500/40 hover:scale-105"
+                title="Cast to Living Room TV or launch Smart TV mode"
+              >
+                <Tv className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span>Cast to TV</span>
+              </button>
+
               {/* Save / Bookmark Button */}
               <button
                 type="button"

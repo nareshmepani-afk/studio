@@ -34,7 +34,7 @@ export function downloadFusedAutobiography(memory: Memory) {
   })();
 
   const locationStr = [memory.location, memory.country].filter(Boolean).join(', ') || 'Global Archive';
-  const qrTargetUrl = `${window.location.origin}/cinema?id=${memory.id || 'preview'}`;
+  const qrTargetUrl = `${window.location.origin}/cinema/tv?id=${memory.id || 'preview'}`;
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrTargetUrl)}`;
 
   const htmlContent = `
@@ -284,7 +284,7 @@ export function downloadFusedAutobiography(memory: Memory) {
       <div class="director-line">HOUSE OF MEMORIES ARCHIVAL COLLECTION</div>
       <div class="qr-box">
         <img class="qr-img" src="${qrImageUrl}" alt="Scan QR Code" />
-        <div class="qr-label">SCAN TO WATCH<br>4K FILM REEL</div>
+        <div class="qr-label">SCAN TO STREAM ON<br>LIVING ROOM TV</div>
       </div>
     </div>
   </div>

@@ -11,7 +11,7 @@ import { MemoryCard } from '@/components/memory/MemoryCard';
 import { MemoryCinematicViewer } from '@/components/memory/MemoryCinematicViewer';
 import { CinemaComingSoon } from '@/components/cinema/CinemaComingSoon';
 import { GuestRequestModal } from '@/components/cinema/GuestRequestModal';
-import { Loader2, Clapperboard, Film, Sparkles, User, Play, Heart, MessageSquare, ShieldCheck, ArrowRight, KeyRound, Unlock } from 'lucide-react';
+import { Loader2, Clapperboard, Film, Sparkles, User, Play, Heart, MessageSquare, ShieldCheck, ArrowRight, KeyRound, Unlock, Tv } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { Memory } from '@/types';
 import { toast } from 'sonner';
@@ -306,6 +306,17 @@ function CinemaContent() {
                       >
                         <Play className="w-4 h-4 fill-current text-slate-950" />
                         <span>Watch Premiere</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        data-hotspot-id="HS_CINEMA_CARD_CAST_BTN"
+                        onClick={() => window.open(`/cinema/tv?id=${publicMemory.id}`, '_blank')}
+                        className="px-6 py-4 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-black uppercase tracking-[0.2em] rounded-2xl shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:scale-105 transition-all flex items-center gap-2.5 cursor-pointer"
+                        title="Stream directly on Living Room Smart TV"
+                      >
+                        <Tv className="w-4 h-4 text-amber-400 animate-pulse" />
+                        <span>Cast to TV</span>
                       </button>
                     </div>
                   </>
