@@ -22,7 +22,8 @@ import {
   Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
   Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
   Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater, Trash2,
-  ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X, Wand2, Share2, Copy, Mail, FileText
+  ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X, Wand2, Share2, Copy, Mail, FileText,
+  Tv, Airplay, Cast
 } from 'lucide-react';
 import { downloadFusedAutobiography } from '@/utils/autobiographyExporter';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
@@ -1316,6 +1317,7 @@ export default function SoloStage({
   };
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [showLivingRoomCastModal, setShowLivingRoomCastModal] = useState(false);
   const [isPinProtected, setIsPinProtected] = useState(false);
   const [sharePin, setSharePin] = useState('');
 
@@ -5194,6 +5196,16 @@ export default function SoloStage({
                   View Premiere
                 </button>
                 
+                {/* LIVING ROOM TV PREMIERE LAUNCHER BUTTON */}
+                <button 
+                  data-hotspot-id="HS_ACT5_LIVING_ROOM_PREMIERE_BTN"
+                  onClick={() => setShowLivingRoomCastModal(true)}
+                  className="w-full py-5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-black rounded-3xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 hover:scale-[1.02] cursor-pointer shadow-[0_0_30px_rgba(245,158,11,0.15)]"
+                >
+                  <Tv className="w-4 h-4 text-amber-400 animate-pulse" />
+                  Start Living Room TV Premiere
+                </button>
+
                 {/* SHARE CINEMA LINK & QR CODE BUTTON */}
                 <button 
                   data-hotspot-id="HS_ACT5_SHARE_CINEMA_BTN"
@@ -6009,6 +6021,86 @@ export default function SoloStage({
                 >
                   <Download className="w-4 h-4" />
                   <span>Download 4K Poster PNG (With Embedded QR Code)</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>,
+        document.body
+      )}
+
+      {/* LIVING ROOM PREMIERE CASTING MODAL */}
+      {showLivingRoomCastModal && createPortal(
+        <div className="fixed inset-0 z-[25000] bg-slate-950/95 backdrop-blur-2xl flex items-center justify-center p-4 select-none">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="w-full max-w-xl bg-slate-900 border-2 border-amber-500/40 rounded-3xl p-8 shadow-[0_0_80px_rgba(245,158,11,0.3)] space-y-6 relative text-center"
+          >
+            <button
+              onClick={() => setShowLivingRoomCastModal(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-16 h-16 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center mx-auto shadow-[0_0_40px_rgba(245,158,11,0.25)]">
+              <Tv className="w-8 h-8 text-amber-400 animate-pulse" />
+            </div>
+
+            <div>
+              <h3 className="font-headline text-2xl font-black text-white uppercase tracking-widest mb-2">Living Room TV Premiere</h3>
+              <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed font-mono uppercase tracking-wider">
+                Cast your memory reel directly to living room televisions via AirPlay, Google Chromecast, or Smart TV web browser.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLivingRoomCastModal(false);
+                  window.location.href = `/cinema?id=${data.id}`;
+                }}
+                className="p-5 bg-slate-950 border border-amber-500/30 hover:border-amber-400 rounded-2xl flex flex-col items-center gap-2 group/cast transition-all cursor-pointer"
+              >
+                <Airplay className="w-6 h-6 text-amber-400 group-hover/cast:scale-110 transition-transform" />
+                <span className="text-xs font-black text-white uppercase tracking-wider">Apple AirPlay</span>
+                <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">Apple TV / Mac / iPad</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLivingRoomCastModal(false);
+                  window.location.href = `/cinema?id=${data.id}`;
+                }}
+                className="p-5 bg-slate-950 border border-amber-500/30 hover:border-amber-400 rounded-2xl flex flex-col items-center gap-2 group/cast transition-all cursor-pointer"
+              >
+                <Cast className="w-6 h-6 text-amber-400 group-hover/cast:scale-110 transition-transform" />
+                <span className="text-xs font-black text-white uppercase tracking-wider">Google Chromecast</span>
+                <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">Chromecast / Android TV</span>
+              </button>
+            </div>
+
+            <div className="pt-4 border-t border-white/10 space-y-4">
+              <div className="flex items-center justify-between bg-slate-950 p-4 rounded-2xl border border-white/10 text-left">
+                <div>
+                  <span className="text-[9px] font-mono font-bold text-amber-400 uppercase tracking-widest block mb-0.5">Smart TV Web Route</span>
+                  <span className="text-xs font-mono text-zinc-300 font-bold truncate max-w-xs block">
+                    dev.memoryweaver.studio/cinema/tv?id={data.id}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`https://dev.memoryweaver.studio/cinema/tv?id=${data.id}`);
+                    toast.success("TV Link Copied", { description: "Paste into your Smart TV browser address bar." });
+                  }}
+                  className="px-4 py-2 bg-amber-500 text-slate-950 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-amber-400 transition-colors shrink-0 cursor-pointer"
+                >
+                  Copy Link
                 </button>
               </div>
             </div>

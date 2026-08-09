@@ -134,6 +134,16 @@ export const BUSINESS_MANIFEST = {
         "Bind telemetry hotspot attributes HS_STAGE_CONTROL_MODE_SOLO_BTN, HS_STAGE_CONTROL_MODE_COLLAB_BTN, and HS_STAGE_CONTROL_MODE_GUEST_DIR_BTN.",
         "Render Act-aware dynamic labels (e.g. Solo Scripting in Act I vs Solo Record in Act III vs Solo Review in Act IV)."
       ]
+    },
+    MW_130_LIVING_ROOM_TV_CAST: {
+      context: "Living Room TV Cast & AirPlay Suite in Act V Studio & Guest Cinema Portal.",
+      resolutionSteps: [
+        "Attach x-webkit-airplay='allow' and controlsList='nodownload' to HTML5 video element.",
+        "Inject WebKit AirPlay availability listeners and Google Cast Web Sender SDK loader safely.",
+        "Render casting controls with HS_CINEMA_CAST_AIRPLAY_BTN and HS_CINEMA_CAST_CHROMECAST_BTN.",
+        "Build 10-foot lean-back Smart TV portal route (/cinema/tv) with TV remote key handlers bound to HS_CINEMA_TV_REMOTE_TOGGLE.",
+        "Integrate HS_ACT5_LIVING_ROOM_PREMIERE_BTN launcher and Living Room Premiere Casting Modal in Act V."
+      ]
     }
   }
 } as const;

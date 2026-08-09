@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CalendarDays, MapPin, Heart, Share2, Download, Maximize2, Layers, Play, Pause, Volume2, VolumeX, Bookmark, Music, Sparkles, Eye, Smile, FileText } from 'lucide-react';
+import { X, CalendarDays, MapPin, Heart, Share2, Download, Maximize2, Layers, Play, Pause, Volume2, VolumeX, Bookmark, Music, Sparkles, Eye, Smile, FileText, Cast, Airplay, Tv } from 'lucide-react';
 import type { Memory } from '@/types';
 import { format } from 'date-fns';
 import { enGB } from 'date-fns/locale';
@@ -24,6 +24,9 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isSaved, setIsSaved] = useState<boolean>(true);
   const [activeViewMode, setActiveViewMode] = useState<'media' | 'poster'>('media');
+  const [isAirPlayAvailable, setIsAirPlayAvailable] = useState<boolean>(false);
+  const [isChromecastAvailable, setIsChromecastAvailable] = useState<boolean>(false);
+  const [isCasting, setIsCasting] = useState<boolean>(false);
 
   // Close on Escape key
   useEffect(() => {
@@ -33,6 +36,110 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
+
+  // AirPlay Target Listener
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+
+    if ((window as any).WebKitPlaybackTargetAvailabilityEvent) {
+      const handleAvailability = (event: any) => {
+        setIsAirPlayAvailable(event.availability === 'available');
+      };
+      videoEl.addEventListener('webkitplaybacktargetavailabilitychanged', handleAvailability);
+      return () => {
+        videoEl.removeEventListener('webkitplaybacktargetavailabilitychanged', handleAvailability);
+      };
+    } else if ((videoEl as any).webkitShowPlaybackTargetPicker) {
+      setIsAirPlayAvailable(true);
+    }
+  }, [videoRef.current]);
+
+  // Google Cast Sender SDK Loader
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const initCast = () => {
+      if ((window as any).chrome?.cast && (window as any).cast?.framework) {
+        try {
+          const context = (window as any).cast.framework.CastContext.getInstance();
+          context.setOptions({
+            receiverApplicationId: (window as any).chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+            autoJoinPolicy: (window as any).chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+          });
+          setIsChromecastAvailable(true);
+          context.addEventListener(
+            (window as any).cast.framework.CastContextEventType.CAST_STATE_CHANGED,
+            (event: any) => {
+              const state = event.castState;
+              setIsCasting(state === (window as any).cast.framework.CastState.CONNECTED);
+            }
+          );
+        } catch (err) {
+          console.warn("[CastSDK] Initialization error:", err);
+        }
+      }
+    };
+
+    (window as any).__onGCastApiAvailable = (isAvailable: boolean) => {
+      if (isAvailable) initCast();
+    };
+
+    if ((window as any).cast?.framework) {
+      initCast();
+    } else {
+      const existingScript = document.getElementById('cast-sender-sdk');
+      if (!existingScript) {
+        const script = document.createElement('script');
+        script.id = 'cast-sender-sdk';
+        script.src = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
+        script.async = true;
+        document.body.appendChild(script);
+      }
+    }
+  }, []);
+
+  const triggerAirPlay = () => {
+    if (videoRef.current && (videoRef.current as any).webkitShowPlaybackTargetPicker) {
+      (videoRef.current as any).webkitShowPlaybackTargetPicker();
+      toast.info("AirPlay Target Picker Triggered", {
+        description: "Select your Apple TV or AirPlay compatible smart speaker."
+      });
+    } else {
+      toast.info("AirPlay Launcher", {
+        description: "AirPlay is supported natively on Safari, iOS, and macOS devices."
+      });
+    }
+  };
+
+  const triggerChromecast = () => {
+    if ((window as any).cast?.framework) {
+      try {
+        const context = (window as any).cast.framework.CastContext.getInstance();
+        context.requestSession().then(
+          () => {
+            setIsCasting(true);
+            toast.success("Chromecast Session Started", {
+              description: "Casting memory reel directly to your living room TV."
+            });
+          },
+          (err: any) => {
+            if (err !== 'cancel') {
+              toast.error("Chromecast Connection Failed", {
+                description: "Ensure your Chromecast device is powered on and on the same Wi-Fi network."
+              });
+            }
+          }
+        );
+      } catch (e) {
+        console.warn("[CastSDK] Request session failure:", e);
+      }
+    } else {
+      toast.info("Chromecast Launcher", {
+        description: "Cast directly from Chrome desktop, Android, or Smart TV browser."
+      });
+    }
+  };
 
   // Automatic Zero-Tap Story Ingest to Local Cinema Library
   useEffect(() => {
@@ -68,7 +175,6 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
   const formattedDate = (() => {
     if (memory.date) {
       const rawDateStr = String(memory.date).trim();
-      // Check if rawDateStr is a 4-digit CCYY year (e.g. "1956")
       if (/^\d{4}$/.test(rawDateStr)) {
         return rawDateStr;
       }
@@ -91,10 +197,8 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
     return 'Date Unknown';
   })();
 
-  // Rule 14: Story Hook Fallback & Text Preservation Hierarchy (prose > originalHook > description)
   const narrativeText = memory.prose || memory.originalHook || memory.description || '';
 
-  // Extract Fusion Cohesive Narrative & Cinematic Score Manifest
   const fusionManifest = (memory as any).fusionManifest || {
     audioMood: (memory as any).cinematicScore || (memory as any).audioMood || "Nostalgic Acoustic Guitar & Soft String Ensemble // 72 BPM",
     sensoryPalette: (memory as any).sensoryPalette || ((memory as any).sensoryValues ? Object.entries((memory as any).sensoryValues).map(([k,v]) => `${k}: ${v}`).join(', ') : "Smell of fresh Kutch rain, sound of steam train whistle in 1956"),
@@ -160,6 +264,25 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/95 backdrop-blur-2xl p-4 md:p-8"
       >
+        {/* Ambient Phone Screen Dimming Overlay during active casting */}
+        {isCasting && (
+          <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-3xl z-[60] flex flex-col items-center justify-center p-8 text-center animate-fade-in">
+            <div className="w-20 h-20 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center mb-6 animate-pulse shadow-[0_0_50px_rgba(245,158,11,0.3)]">
+              <Cast className="w-10 h-10 text-amber-400" />
+            </div>
+            <h3 className="font-headline text-2xl font-black text-white uppercase tracking-widest mb-2">Casting to Living Room TV</h3>
+            <p className="text-xs text-zinc-400 max-w-md mb-8 leading-relaxed font-mono uppercase tracking-wider">
+              Screen dimmed to conserve battery. Control playback directly on your smart TV remote or stop the session below.
+            </p>
+            <button
+              onClick={() => setIsCasting(false)}
+              className="px-8 py-3 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all cursor-pointer shadow-lg active:scale-95"
+            >
+              Stop Casting
+            </button>
+          </div>
+        )}
+
         {/* Backdrop Glow */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] bg-primary/10 blur-[120px] rounded-full animate-pulse" />
@@ -194,6 +317,8 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                   onTimeUpdate={handleTimeUpdate}
                   onLoadedMetadata={handleLoadedMetadata}
                   onClick={togglePlay}
+                  x-webkit-airplay="allow"
+                  controlsList="nodownload"
                   className="w-full h-full object-contain cursor-pointer"
                   preload="auto"
                   autoPlay={false}
@@ -229,8 +354,27 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                       type="button"
                       onClick={toggleMute}
                       className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white transition-colors cursor-pointer"
+                      title="Toggle Mute"
                     >
                       {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      type="button"
+                      data-hotspot-id="HS_CINEMA_CAST_AIRPLAY_BTN"
+                      onClick={triggerAirPlay}
+                      className="p-1.5 rounded-lg bg-white/5 hover:bg-amber-500/20 text-white/80 hover:text-amber-300 transition-all cursor-pointer"
+                      title="Cast via Apple AirPlay"
+                    >
+                      <Airplay className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      data-hotspot-id="HS_CINEMA_CAST_CHROMECAST_BTN"
+                      onClick={triggerChromecast}
+                      className="p-1.5 rounded-lg bg-white/5 hover:bg-amber-500/20 text-white/80 hover:text-amber-300 transition-all cursor-pointer"
+                      title="Cast via Google Chromecast"
+                    >
+                      <Cast className="w-3.5 h-3.5" />
                     </button>
                     <button
                       type="button"
@@ -261,7 +405,6 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                 />
               </div>
             ) : (
-              /* Cinematic Monologue Storyboard Reel Fallback */
               <div className="w-full h-full flex flex-col items-center justify-center p-8 md:p-12 text-center bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/40 relative">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent pointer-events-none" />
                 
