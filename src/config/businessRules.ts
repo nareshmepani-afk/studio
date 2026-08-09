@@ -117,6 +117,14 @@ export const BUSINESS_MANIFEST = {
         "Bind telemetry hotspot attribute HS_CINEMA_TOGGLE_POSTER_BTN.",
         "Render 2:3 vertical film poster with Hollywood billing block via CinemaPoster component when activeViewMode is poster."
       ]
+    },
+    MW_125_FUSED_OFFLINE_AUTOBIOGRAPHY_KEEPSAKE: {
+      context: "Dual-integrated Fused Offline Autobiography Keepsake Export Engine in Act IV Studio & Guest Cinema.",
+      resolutionSteps: [
+        "Synthesize printable 2-page document (Page 1 Cover Poster + Billing Block + QR Code & Page 2 Monologue + Sensory Blueprint Chapter).",
+        "Bind telemetry hotspot attributes HS_CINEMA_DOWNLOAD_AUTOBIOGRAPHY_BTN and HS_ACT4_DOWNLOAD_AUTOBIOGRAPHY_BTN.",
+        "Export in Memory Weaver dark obsidian (#020617), amber gold (#f59e0b), and emerald heritage (#10b981) brand theme."
+      ]
     }
   }
 } as const;

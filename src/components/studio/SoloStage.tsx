@@ -22,8 +22,9 @@ import {
   Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
   Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
   Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater, Trash2,
-  ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X, Wand2, Share2, Copy, Mail
+  ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X, Wand2, Share2, Copy, Mail, FileText
 } from 'lucide-react';
+import { downloadFusedAutobiography } from '@/utils/autobiographyExporter';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -5679,6 +5680,23 @@ export default function SoloStage({
                   >
                     <Download className="w-4 h-4 text-slate-950" />
                     <span>Download 4K Poster</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    data-hotspot-id="HS_ACT4_DOWNLOAD_AUTOBIOGRAPHY_BTN"
+                    onClick={() => {
+                      if (data) {
+                        downloadFusedAutobiography(data as Memory);
+                        toast.success('Generating Master Autobiography Keepsake PDF...', {
+                          description: 'Your 2-page heirloom document (Poster + Monologue Chapter) is ready to print or save.'
+                        });
+                      }
+                    }}
+                    className="px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-lg hover:scale-105"
+                  >
+                    <FileText className="w-4 h-4 text-emerald-400" />
+                    <span>Download Master Autobiography</span>
                   </button>
 
                   <button

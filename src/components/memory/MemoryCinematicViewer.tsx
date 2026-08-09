@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CalendarDays, MapPin, Heart, Share2, Download, Maximize2, Layers, Play, Pause, Volume2, VolumeX, Bookmark, Music, Sparkles, Eye, Smile } from 'lucide-react';
+import { X, CalendarDays, MapPin, Heart, Share2, Download, Maximize2, Layers, Play, Pause, Volume2, VolumeX, Bookmark, Music, Sparkles, Eye, Smile, FileText } from 'lucide-react';
 import type { Memory } from '@/types';
 import { format } from 'date-fns';
 import { enGB } from 'date-fns/locale';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { CinemaPoster } from '@/components/memory/CinemaPoster';
+import { downloadFusedAutobiography } from '@/utils/autobiographyExporter';
 
 interface MemoryCinematicViewerProps {
   memory: Memory | null;
@@ -336,6 +337,22 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
               >
                 <Layers className={`w-3.5 h-3.5 ${activeViewMode === 'poster' ? 'text-slate-950' : 'text-amber-400'}`} />
                 <span>{activeViewMode === 'poster' ? '▶ Watch Video' : '🖼️ Movie Poster'}</span>
+              </button>
+
+              {/* Fused Offline Autobiography PDF Download */}
+              <button
+                type="button"
+                data-hotspot-id="HS_CINEMA_DOWNLOAD_AUTOBIOGRAPHY_BTN"
+                onClick={() => {
+                  downloadFusedAutobiography(memory);
+                  toast.success('Generating Offline Autobiography Keepsake PDF...', {
+                    description: 'Your 2-page heirloom document (Poster + Monologue Chapter) is ready to print or save.'
+                  });
+                }}
+                className="px-3.5 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border border-emerald-500/30 hover:scale-105"
+              >
+                <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Autobiography PDF</span>
               </button>
 
               {/* Save / Bookmark Button */}

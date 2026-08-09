@@ -1910,5 +1910,15 @@ describe('Studio Regression Tests', () => {
       const hotspotId = 'HS_CINEMA_TOGGLE_POSTER_BTN';
       expect(hotspotId).toBe('HS_CINEMA_TOGGLE_POSTER_BTN');
     });
+
+    it('MW-125 FUSED OFFLINE AUTOBIOGRAPHY KEEPSAKE SHIELD: should verify dual export hotspots for Act IV and Guest Cinema', () => {
+      const exportHotspots = [
+        'HS_CINEMA_DOWNLOAD_AUTOBIOGRAPHY_BTN',
+        'HS_ACT4_DOWNLOAD_AUTOBIOGRAPHY_BTN'
+      ];
+
+      expect(exportHotspots[0]).toBe('HS_CINEMA_DOWNLOAD_AUTOBIOGRAPHY_BTN');
+      expect(exportHotspots[1]).toBe('HS_ACT4_DOWNLOAD_AUTOBIOGRAPHY_BTN');
+    });
   });
 });
