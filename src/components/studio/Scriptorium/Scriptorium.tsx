@@ -531,27 +531,16 @@ export const Scriptorium = forwardRef<any, ScriptoriumProps>(({
                 </p>
               </div>
             </div>
-            <button
+            <div
               data-hotspot-id="HS_ENTER_STUDIO_BTN"
-              onClick={() => {
-                if (typeof onNext === 'function') {
-                  console.log("[Scriptorium] Executing onNext callback directly.");
-                  onNext();
-                } else {
-                  const nextBtn = document.querySelector('[data-hotspot-id="HS_ENTER_STUDIO_BTN"], [data-hotspot-id="HS_ACT1_DRAFT_COMPLETED_BTN"], [data-blueprint="ProductionControlBar"] button') as HTMLButtonElement;
-                  if (nextBtn) {
-                    console.log("[Scriptorium] Triggering nextBtn via querySelector.");
-                    nextBtn.click();
-                  } else {
-                    console.warn("[Scriptorium] Global navigate next trigger button could not be located in DOM.");
-                  }
-                }
-              }}
-              className="w-full md:w-auto px-8 py-4 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-[11px] uppercase tracking-[0.2em] rounded-2xl transition-all shadow-[0_10px_25px_rgba(16,185,129,0.3)] hover:shadow-[0_15px_35px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3"
+              className="w-full md:w-auto px-6 py-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center gap-3"
             >
-              <span>Enter Recording Studio</span>
-              <BookOpen className="w-4 h-4 text-slate-950" />
-            </button>
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_#10b981]" />
+              <span className="text-emerald-300 font-mono text-[10.5px] font-bold uppercase tracking-[0.15em]">
+                🔒 Sensory Blueprint Sealed • Proceed via Stage Controls
+              </span>
+              <BookOpen className="w-4 h-4 text-emerald-400" />
+            </div>
           </motion.div>
         )}
 

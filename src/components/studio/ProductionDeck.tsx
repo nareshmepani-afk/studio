@@ -929,9 +929,13 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     setIsSavingNext(false);
                 }
             }
-            setStage(currentStage - 1);
+            const prev = currentStage - 1;
+            if (prev === 0) {
+                setIsReviewing(false);
+            }
+            setStage(prev);
         }
-    }, [currentStage]);
+    }, [currentStage, setIsReviewing]);
 
     const handleStageJump = async (newStage: number) => {
         synthesisAbortRef.current = true;
@@ -947,6 +951,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             } finally {
                 setIsSavingNext(false);
             }
+        }
+        if (newStage === 0) {
+            setIsReviewing(false);
         }
         setStage(newStage);
     };
