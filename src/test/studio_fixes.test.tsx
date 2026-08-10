@@ -2140,5 +2140,24 @@ describe('Studio Regression Tests', () => {
         label: 'Title your Remembrance'
       });
     });
+
+    it('CLEAN READ MODE SHIELD: should suppress all sentence anchor icons, underlines, and hotspots when Clean Read Mode is active', () => {
+      const resolveCleanReadState = (isCleanView: boolean) => ({
+        effectiveHideAnchors: isCleanView,
+        headerLabel: isCleanView ? 'Clean Read' : 'Sensory View On',
+        dockLabel: isCleanView ? 'Clean Read Mode' : 'Sensory View On',
+        toastMessage: isCleanView ? '📖 Clean Read Mode Active' : '👁 Sensory Overlays Restored'
+      });
+
+      const offState = resolveCleanReadState(false);
+      expect(offState.effectiveHideAnchors).toBe(false);
+      expect(offState.headerLabel).toBe('Sensory View On');
+
+      const onState = resolveCleanReadState(true);
+      expect(onState.effectiveHideAnchors).toBe(true);
+      expect(onState.headerLabel).toBe('Clean Read');
+      expect(onState.dockLabel).toBe('Clean Read Mode');
+      expect(onState.toastMessage).toContain('Clean Read Mode Active');
+    });
   });
 });

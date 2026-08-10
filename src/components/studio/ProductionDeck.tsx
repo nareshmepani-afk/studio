@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef, useImperative
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Maximize, Monitor, Rocket, Edit3, Loader2, X } from 'lucide-react';
+import { Maximize, Monitor, Rocket, Edit3, Loader2, X, BookOpen, Eye, EyeOff } from 'lucide-react';
 import { publishMemoryAction, unpublishMemoryAction } from '@/actions/memoryActions';
 import { mockPromptGroups } from '@/lib/mockData';
 import {
@@ -102,10 +102,12 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         durationQuantity,
         durationUnit,
         narratorAgeAtTime,
+        isCleanView,
         isProductionLocked,
         selectedTake,
         mentorContext,
         actions: {
+            toggleCleanView,
             setIsReviewing, 
             setReviewDrafts, 
             setPolishedOriginalHook,
@@ -1038,7 +1040,55 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                               </Tooltip>
                             </TooltipProvider>
 
-                             <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2">
+                                  {/* CLEAN READ MODE / SENSORY VIEW TOGGLE (HEADER HOTSPOT) */}
+                                  <TooltipProvider delayDuration={200}>
+                                      <Tooltip>
+                                          <TooltipTrigger asChild>
+                                              <button
+                                                  data-hotspot-id="HS_HEADER_CLEAN_READ_BTN"
+                                                  data-state={isCleanView ? "off" : "on"}
+                                                  onClick={() => {
+                                                      const nextCleanView = !isCleanView;
+                                                      toggleCleanView();
+                                                      toast.info(
+                                                          nextCleanView 
+                                                              ? "📖 Clean Read Mode Active" 
+                                                              : "👁 Sensory Overlays Restored",
+                                                          { 
+                                                              description: nextCleanView 
+                                                                  ? "Floating catalyst icons and underlines hidden for clean manuscript reading." 
+                                                                  : "Sensory anchor icons and hotspots restored." 
+                                                          }
+                                                      );
+                                                  }}
+                                                  className={cn(
+                                                      "flex items-center gap-2 px-3 py-2 rounded-xl border text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer shadow-md shrink-0",
+                                                      isCleanView 
+                                                          ? "bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:bg-amber-500/30" 
+                                                          : "bg-emerald-500/20 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 hover:border-emerald-500/60"
+                                                  )}
+                                                  aria-label="Toggle Clean Read Mode"
+                                              >
+                                                  {isCleanView ? (
+                                                      <>
+                                                          <BookOpen className="w-4 h-4 text-amber-400" />
+                                                          <span className="hidden sm:inline">Clean Read</span>
+                                                      </>
+                                                  ) : (
+                                                      <>
+                                                          <Eye className="w-4 h-4 text-emerald-400" />
+                                                          <span className="hidden sm:inline">Sensory View On</span>
+                                                      </>
+                                                  )}
+                                              </button>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="bottom" sideOffset={8} className="bg-slate-950 border border-white/10 text-xs px-3 py-1.5 rounded-lg shadow-xl z-[100]">
+                                              <p>{isCleanView ? "Clean Read Mode Active (Icons Hidden) • Click to show Sensory Overlays" : "Sensory Overlays Active (Icons Shown) • Click for Clean Read Mode"}</p>
+                                          </TooltipContent>
+                                      </Tooltip>
+                                  </TooltipProvider>
+
                                  <TooltipProvider delayDuration={200}>
                                      <Tooltip>
                                          <TooltipTrigger asChild>

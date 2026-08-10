@@ -11,6 +11,7 @@ import { detectAnchors } from '@/hooks/studio/useDirectorInk';
 import { Sparkles, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { useStudioState } from '@/hooks/studio/useStudioState';
 
 const SHARED_STYLES: React.CSSProperties = {
   fontFamily: '"Courier Prime", monospace',
@@ -433,7 +434,9 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
     }
   }, [block.text]);
 
-  const anchors = useMemo(() => hideAnchors ? [] : detectAnchors(block.text), [block.text, hideAnchors]);
+  const { isCleanView } = useStudioState();
+  const effectiveHideAnchors = hideAnchors || isCleanView;
+  const anchors = useMemo(() => effectiveHideAnchors ? [] : detectAnchors(block.text), [block.text, effectiveHideAnchors]);
 
   // 1. REFINED TOKENIZATION ENGINE (V4.6 - CODE RED STABILIZATION)
   const tokens = useMemo(() => {
@@ -570,7 +573,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
   };
 
   const portalContent = useMemo(() => {
-    if (hideAnchors || readOnly) return null;
+    if (effectiveHideAnchors || readOnly) return null;
     return tokens.map((token: string, idx: number) => {
       const clean = token.toLowerCase();
       const anchor = anchors.find(a => a.word.toLowerCase() === clean);
@@ -610,10 +613,10 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
         </Tooltip>
       );
     });
-  }, [tokens, anchors, rects, block.id, actions, hideAnchors, readOnly]);
+  }, [tokens, anchors, rects, block.id, actions, effectiveHideAnchors, readOnly]);
 
   const pivotPortalContent = useMemo(() => {
-    if (hideAnchors || readOnly) return null;
+    if (effectiveHideAnchors || readOnly) return null;
     return tokens.map((token: string, idx: number) => {
       const clean = token.toLowerCase().trim().replace(/[^\w]/g, '');
       const pivotInfo = getActivePivotInfo(clean);
@@ -711,7 +714,7 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
 
   // Selection ghosting trigger button floating above the highlighted word
   const sparkleTriggerPortal = useMemo(() => {
-    if (hideAnchors || readOnly || !ghostWordInfo || suggestionsOpen) return null;
+    if (effectiveHideAnchors || readOnly || !ghostWordInfo || suggestionsOpen) return null;
     const { word, rect } = ghostWordInfo;
     const hasPivots = getSuggestions(word) !== null;
     if (!hasPivots) return null;
@@ -737,11 +740,11 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
         <Sparkles className="w-3 h-3" />
       </motion.button>
     );
-  }, [ghostWordInfo, suggestionsOpen, readOnly, hideAnchors]);
+  }, [ghostWordInfo, suggestionsOpen, readOnly, effectiveHideAnchors]);
 
   // Tonal Spectrum suggestions grouped layout
   const suggestionsPortal = useMemo(() => {
-    if (hideAnchors || readOnly || !ghostWordInfo || !suggestionsOpen) return null;
+    if (effectiveHideAnchors || readOnly || !ghostWordInfo || !suggestionsOpen) return null;
 
     const { word, start, end, rect } = ghostWordInfo;
     const pivots = getSuggestions(word);
@@ -1006,11 +1009,11 @@ export const SentenceWrapper = React.forwardRef<HTMLTextAreaElement, any>(({
             let charOffset = 0;
             return tokens.map((token: string, idx: number) => {
               const clean = token.toLowerCase();
-              const isAnchor = !hideAnchors && anchors.some(a => a.word.toLowerCase() === clean);
+              const isAnchor = !effectiveHideAnchors && anchors.some(a => a.word.toLowerCase() === clean);
               
               const cleanCleaned = clean.trim().replace(/[^\w]/g, '');
               const pivotInfo = getActivePivotInfo(cleanCleaned);
-              const isPivoted = !hideAnchors && pivotInfo !== null && cleanCleaned !== pivotInfo.root;
+              const isPivoted = !effectiveHideAnchors && pivotInfo !== null && cleanCleaned !== pivotInfo.root;
               const pivotTone = pivotInfo?.tone;
 
               const tokenId = `${block.id}-${idx}`;

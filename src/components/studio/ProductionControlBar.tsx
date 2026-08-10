@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MentorshipHotspot } from './MentorshipHotspot';
-import { Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, Rocket, Circle, ChevronLeft, ChevronRight, ChevronDown, AlertCircle, Eye, EyeOff, User, Users } from 'lucide-react';
+import { Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, Rocket, Circle, ChevronLeft, ChevronRight, ChevronDown, AlertCircle, Eye, EyeOff, User, Users, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -649,15 +649,15 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                   )}
                 >
                   {isCleanView ? (
-                    <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+                    <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
                   ) : (
                     <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
                   )}
-                  <span>{isCleanView ? "Sensory View Off" : "Sensory View On"}</span>
+                  <span>{isCleanView ? "Clean Read Mode" : "Sensory View On"}</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-[10px] uppercase font-bold tracking-widest px-3 py-2">
-                <span>{isCleanView ? "Sensory View Off (Clean Reading) • Click to turn Sensory View On" : "Sensory View On (Anchors Active) • Click to turn Sensory View Off"}</span>
+                <span>{isCleanView ? "Clean Read Mode Active (Icons Hidden) • Click for Sensory View" : "Sensory Overlays Active (Icons Shown) • Click for Clean Read Mode"}</span>
               </TooltipContent>
             </Tooltip>
           )}
