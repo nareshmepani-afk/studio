@@ -702,10 +702,25 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
           <Tooltip>
               <TooltipTrigger asChild>
                 <div className="relative shrink-0">
-                  {mentorActive && (currentStage === 0 || currentStage === 1) && (
+                  {mentorActive && (
                     <MentorshipHotspot 
-                      number={currentStage === 0 ? 3 : 2} 
-                      label={currentStage === 0 ? "Enter the Weave" : "Enter Recording Studio"} 
+                      number={3} 
+                      label={
+                        currentStage === 0 ? "Seal & Weave Monologue" :
+                        currentStage === 1 ? "Launch Recording Studio" :
+                        currentStage === 2 ? "Finalize Footage & Submit Take" :
+                        currentStage === 3 ? "Prepare Premiere Cut" :
+                        "Share Cinema Package"
+                      } 
+                      hotspotId={
+                        currentStage === 0 ? "HS_ACT1_MENTOR_STEP3" :
+                        currentStage === 1 ? "HS_ACT2_MENTOR_STEP3" :
+                        currentStage === 2 ? "HS_ACT3_MENTOR_STEP3" :
+                        currentStage === 3 ? "HS_ACT4_MENTOR_STEP3" :
+                        "HS_ACT5_MENTOR_STEP3"
+                      }
+                      isAct1Guard={currentStage === 0}
+                      isCompleted={isComplete && !isLowClarity}
                       className="-top-4 -right-4" 
                     />
                   )}

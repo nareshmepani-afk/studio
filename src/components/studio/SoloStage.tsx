@@ -38,6 +38,7 @@ import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import DirectorsNotepad from './DirectorsNotepad';
+import { MentorshipHotspot } from './MentorshipHotspot';
 import { generateDirectorsNotepad } from '@/actions/aiWeaver';
 import { ProductionControlBar } from './ProductionControlBar';
 import CinemaStageSwitch from './CinemaStageSwitch';
@@ -3136,7 +3137,14 @@ export default function SoloStage({
                       Take a moment to verify your framing, lighting, and background in full view. Click below once you are satisfied with the setup.
                     </p>
 
-                    <div className="flex gap-4 w-full">
+                    <div className="flex gap-4 w-full relative">
+                      <MentorshipHotspot 
+                        number={2} 
+                        label="Calibrate Teleprompter Speed & Alignment" 
+                        hotspotId="HS_ACT2_MENTOR_STEP2"
+                        isCompleted={techAlignmentConfirmed}
+                        className="-top-3 -left-3" 
+                      />
                       <button 
                         data-hotspot-id="HS_STAGE_CONFIRM_ALIGNMENT"
                         onClick={() => {
@@ -3708,7 +3716,15 @@ export default function SoloStage({
             <div className="absolute inset-0 z-20 pointer-events-none border-[40px] border-transparent">
                
                {/* Corner Accents */}
-               <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white/20 rounded-tl-xl" />
+               <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white/20 rounded-tl-xl relative">
+                  <MentorshipHotspot 
+                    number={1} 
+                    label="Position Camera & Check Mic" 
+                    hotspotId="HS_ACT3_MENTOR_STEP1"
+                    isCompleted={Boolean(stream)}
+                    className="-top-3 -left-3" 
+                  />
+                </div>
                <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white/20 rounded-tr-xl" />
                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white/20 rounded-bl-xl" />
                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white/20 rounded-br-xl" />
@@ -4745,20 +4761,34 @@ export default function SoloStage({
                    {/* Video Player Canvas */}
                    <div className="aspect-video bg-black relative group">
                       <div className="absolute top-4 left-4 z-10 bg-slate-950/85 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full text-[9px] font-mono font-bold text-white/80 uppercase tracking-widest flex items-center gap-1.5 shadow-lg">
+                          <MentorshipHotspot 
+                            number={1} 
+                            label="Preview Recorded Takes" 
+                            hotspotId="HS_ACT4_MENTOR_STEP1"
+                            className="-top-2 -left-2" 
+                          />
                          <Video className="w-3 h-3 text-emerald-400" />
                          <span>Master Performance Reel</span>
                       </div>
 
                       <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-                        <button
-                          type="button"
-                          data-hotspot-id="HS_ACT4_RETAKE_BTN"
-                          onClick={handleRetakePerformance}
-                          className="bg-slate-950/85 hover:bg-slate-900 border border-sky-500/40 text-sky-400 hover:text-white px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-lg cursor-pointer transition-all hover:scale-105"
-                        >
-                          <RefreshCw className="w-3 h-3 text-sky-400" />
-                          <span>Retake Performance</span>
-                        </button>
+                        <div className="relative">
+                          <MentorshipHotspot 
+                            number={2} 
+                            label="Select Master Take & Retake" 
+                            hotspotId="HS_ACT4_MENTOR_STEP2"
+                            className="-top-2 -left-2" 
+                          />
+                          <button
+                            type="button"
+                            data-hotspot-id="HS_ACT4_RETAKE_BTN"
+                            onClick={handleRetakePerformance}
+                            className="bg-slate-950/85 hover:bg-slate-900 border border-sky-500/40 text-sky-400 hover:text-white px-3 py-1.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-lg cursor-pointer transition-all hover:scale-105"
+                          >
+                            <RefreshCw className="w-3 h-3 text-sky-400" />
+                            <span>Retake Performance</span>
+                          </button>
+                        </div>
 
                         <button
                           type="button"
@@ -5197,34 +5227,52 @@ export default function SoloStage({
                 </button>
                 
                 {/* LIVING ROOM TV PREMIERE LAUNCHER BUTTON */}
-                <button 
-                  data-hotspot-id="HS_ACT5_LIVING_ROOM_PREMIERE_BTN"
-                  onClick={() => setShowLivingRoomCastModal(true)}
-                  className="w-full py-5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-black rounded-3xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 hover:scale-[1.02] cursor-pointer shadow-[0_0_30px_rgba(245,158,11,0.15)]"
-                >
-                  <Tv className="w-4 h-4 text-amber-400 animate-pulse" />
-                  Start Living Room TV Premiere
-                </button>
-
-                {/* SHARE CINEMA LINK & QR CODE BUTTON */}
-                <button 
-                  data-hotspot-id="HS_ACT5_SHARE_CINEMA_BTN"
-                  onClick={() => setIsShareModalOpen(true)}
-                  className="w-full py-5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-black rounded-3xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 hover:scale-[1.02] cursor-pointer shadow-lg"
-                >
-                  <Share2 className="w-4 h-4 text-emerald-400" />
-                  Share Cinema Link & QR Code
-                </button>
+                <div className="relative w-full">
+                  <MentorshipHotspot 
+                    number={1} 
+                    label="Stream to Living Room TV" 
+                    hotspotId="HS_ACT5_MENTOR_STEP1"
+                    className="-top-3 -left-3" 
+                  />
+                  <button 
+                    data-hotspot-id="HS_ACT5_LIVING_ROOM_PREMIERE_BTN"
+                    onClick={() => setShowLivingRoomCastModal(true)}
+                    className="w-full py-5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-black rounded-3xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 hover:scale-[1.02] cursor-pointer shadow-[0_0_30px_rgba(245,158,11,0.15)]"
+                  >
+                    <Tv className="w-4 h-4 text-amber-400 animate-pulse" />
+                    Start Living Room TV Premiere
+                  </button>
+                </div>
 
                 {/* MASTER PACKAGE DOWNLOAD BUTTON */}
-                <button 
-                  data-hotspot-id="HS_ACT5_DOWNLOAD_PACKAGE_BTN"
-                  onClick={handleDownloadPackage}
-                  className="w-full py-5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-black rounded-3xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3"
-                >
-                  <Download className="w-4 h-4" />
-                  Download Master Narrative Package
-                </button>
+                <div className="relative w-full">
+                  <MentorshipHotspot 
+                    number={2} 
+                    label="Export Autobiography PDF" 
+                    hotspotId="HS_ACT5_MENTOR_STEP2"
+                    className="-top-3 -left-3" 
+                  />
+                  <button 
+                    data-hotspot-id="HS_ACT5_DOWNLOAD_PACKAGE_BTN"
+                    onClick={handleDownloadPackage}
+                    className="w-full py-5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-black rounded-3xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Master Narrative Package
+                  </button>
+                </div>
+
+                {/* SHARE CINEMA LINK & QR CODE BUTTON */}
+                <div className="relative w-full">
+                  <button 
+                    data-hotspot-id="HS_ACT5_SHARE_CINEMA_BTN"
+                    onClick={() => setIsShareModalOpen(true)}
+                    className="w-full py-5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-black rounded-3xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 hover:scale-[1.02] cursor-pointer shadow-lg"
+                  >
+                    <Share2 className="w-4 h-4 text-emerald-400" />
+                    Share Cinema Link & QR Code
+                  </button>
+                </div>
 
                 <button 
                   onClick={() => window.location.href = '/timeline'} 

@@ -334,7 +334,9 @@ ${bundleText}`;
           {mentorModeActive && (
             <MentorshipHotspot 
               number={1} 
-              label="Review Narrative Interpretations" 
+              label="Select AI Vision Style" 
+              hotspotId="HS_ACT2_MENTOR_STEP1"
+              isCompleted={Boolean(activeVisionTitle)}
               className="-top-6 -left-6" 
             />
           )}

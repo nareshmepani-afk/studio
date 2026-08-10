@@ -1343,6 +1343,9 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                         <MentorshipHotspot 
                           number={1} 
                           label="Title your Remembrance" 
+                          hotspotId="HS_ACT1_MENTOR_STEP1"
+                          isAct1Guard={true}
+                          isCompleted={Boolean(title && title.trim().length > 0)}
                           className="-top-8 -left-8" 
                         />
                       )}
@@ -1633,6 +1636,9 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                 <MentorshipHotspot 
                                   number={2} 
                                   label="Cast the Story Hook" 
+                                  hotspotId="HS_ACT1_MENTOR_STEP2"
+                                  isAct1Guard={true}
+                                  isCompleted={Boolean(description && description.trim().length > 20)}
                                   className="top-full mt-4 left-0" 
                                 />
                               )}
