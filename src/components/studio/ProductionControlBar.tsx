@@ -737,9 +737,12 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                         ? "bg-emerald-500 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:brightness-110 hover:shadow-[0_0_50px_rgba(16,185,129,0.6)]" 
                         : isLowClarity
                           ? "bg-white/5 text-white/40 border border-white/10 cursor-pointer hover:bg-white/10"
-                          : "bg-white/5 text-white/20 border border-white/5 cursor-not-allowed",
+                          // Rule 7: Disabled buttons MUST remain visible — never use opacity-invisible styling.
+                          // Rose-tinted disabled state clearly signals "requirements not met" to the user.
+                          : "bg-rose-500/10 text-rose-300/60 border border-rose-500/30 cursor-not-allowed hover:bg-rose-500/15",
                       (isPending || isGeneratingDrafts || isSaving) && "opacity-80 cursor-wait brightness-90"
                     )}
+
                   >
                   {isComplete && !isLowClarity && (
                     <>
@@ -781,7 +784,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                        />
                     </div>
                   ) : (
-                    <AlertCircle className="w-4 h-4 relative z-10 opacity-50" />
+                    <AlertCircle className="w-4 h-4 relative z-10 text-rose-400/60" />
+
                   )}
                 </motion.button>
               </div>
