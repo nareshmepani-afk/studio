@@ -1,99 +1,194 @@
-# Rule: Model Selection Advisory Protocol
+# Rule 21: Model Selection Advisory & Prompt Router Protocol
 
-After answering the user's question or before beginning execution, the agent MUST include a **Model Advisory** recommendation specifying which model the user should use for the NEXT interaction based on the task type.
-
----
-
-## Model Tier Definitions
-
-| Model | Tier | Cost | Best For |
-|---|---|---|---|
-| **Gemini 3.6 Flash (Low)** | 💚 Economy | Lowest | Quick lookups, simple grep searches, reading files, status checks, git operations, running commands |
-| **Gemini 3.6 Flash (Medium)** | 💛 Standard | Low | Single-file bug fixes, CSS tweaks, copy changes, test runs, small refactors, deployment monitoring |
-| **Gemini 3.6 Flash (High)** | 🟠 Enhanced | Medium | Multi-file feature implementation, component creation, standard debugging, build pipeline work |
-| **Claude Sonnet 4.6 (Thinking)** | 🔴 Premium | High | Complex multi-file architectural changes, state machine debugging, cross-component state flow tracing, intricate UI/UX logic |
-| **Claude Opus 4.6 (Thinking)** | 🟣 Ultra | Highest | Deep architectural decisions, system design brainstorming, root cause analysis of systemic failures, USCR-level registry creation, multi-agent orchestration planning |
+Every model, regardless of tier, MUST act as an intelligent **task router** before executing. This ensures every question lands on the optimal model with the optimal prompt.
 
 ---
 
-## Decision Matrix
+## Protocol Flow
 
-### 💚 Use **Gemini Flash (Low)** when:
-- Checking build/deploy status
-- Running `git log`, `git status`, `git diff`
-- Reading a single file to check current state
-- Simple "what does X do?" lookups
-- Running `tsc --noEmit` or `vitest` checks
-- Viewing Plane.so tickets or Firebase logs
-
-### 💛 Use **Gemini Flash (Medium)** when:
-- Fixing a single CSS styling issue (colours, spacing, fonts)
-- Changing button labels or copy text
-- Adding a single import or fixing a missing variable
-- Running and interpreting test results
-- Simple single-component tweaks (< 20 lines changed)
-- Committing and pushing changes
-
-### 🟠 Use **Gemini Flash (High)** when:
-- Implementing a new UI component from scratch
-- Multi-file bug fix requiring 2–4 file changes
-- Adding new props/handlers across parent-child components
-- Writing new test suites
-- Standard feature development (new page, new hook, new API route)
-- Build error resolution across multiple files
-
-### 🔴 Use **Claude Sonnet (Thinking)** when:
-- Debugging state flow across 3+ interconnected components
-- Tracing why a button/control disappears (cross-component visibility logic)
-- Complex conditional rendering with multiple interacting state variables
-- Refactoring hooks with dependency arrays and side effects
-- Performance optimisation requiring deep code analysis
-- Multi-step fix requiring research → diagnosis → implementation → verification
-
-### 🟣 Use **Claude Opus (Thinking)** when:
-- Architectural design decisions (USCR registry, control matrices, state machines)
-- Brainstorming sessions requiring creative product thinking
-- Root cause analysis of systemic/recurring failures
-- Creating new architectural rules or `.agents/` rulebooks
-- Complex multi-agent orchestration or planning sessions
-- Tasks where previous models failed or produced incorrect results
-- When the user explicitly says "think deeply" or "brainstorm"
+```
+User asks a question
+        │
+        ▼
+┌─────────────────────────────┐
+│  STEP 1: ASSESS THE TASK    │
+│  Classify complexity tier   │
+│  Check if more info needed  │
+└──────────┬──────────────────┘
+           │
+     ┌─────┴──────┐
+     │             │
+     ▼             ▼
+ SAME MODEL    DIFFERENT MODEL
+ NEEDED        NEEDED
+     │             │
+     ▼             ▼
+ EXECUTE       WRITE THE PROMPT
+ DIRECTLY      + RECOMMEND MODEL
+```
 
 ---
 
-## Advisory Format
+## Step 1: Task Classification
 
-At the end of every response, include:
+On EVERY user message, the agent MUST silently classify the task into one of these tiers:
 
-```
+| Tier | Complexity | Examples |
+|---|---|---|
+| 💚 **Low** | Read-only, status checks, single lookups | "Is the build live?", "What version is deployed?", "Read this file" |
+| 💛 **Medium** | Single-file, < 20 lines changed | "Fix this CSS colour", "Change this label", "Run tsc" |
+| 🟠 **High** | Multi-file, new component, standard debugging | "Add a loading skeleton", "Write a test suite", "Fix this import error across 3 files" |
+| 🔴 **Premium** | Cross-component state tracing, complex refactors | "Why did this button disappear?", "Debug this state flow", "Fix this race condition" |
+| 🟣 **Ultra** | Architecture, brainstorming, systemic root cause | "BRAINSTORM solutions", "Design a new registry", "Why do we keep hitting this class of bug?" |
+
 ---
-📊 **Model Advisory for Next Interaction:**
-[Emoji] **[Model Name]** — [One-line reason]
+
+## Step 2: Route Decision
+
+### If the CURRENT model matches the task tier → **EXECUTE DIRECTLY**
+Proceed with the task normally. Include the Model Advisory at the end for the NEXT interaction.
+
+### If a DIFFERENT model is better → **WRITE THE PROMPT**
+Do NOT attempt to execute the task. Instead, output:
+
+```markdown
+---
+🔀 **Model Route Advisory**
+
+**Current Model:** [current model name]
+**Recommended Model:** [emoji] **[recommended model name]**
+**Reason:** [one-line explanation of why the recommended model is better for this task]
+
+### Ready-to-Paste Prompt
+Copy and paste this into the chat after switching models:
+
+> [Optimised prompt written specifically for the target model, including all
+> necessary context, file paths, screenshots references, and clear instructions.
+> The prompt should be self-contained so the target model can execute without
+> needing to re-read the entire conversation history.]
+
+### Context Files the Next Model Should Read
+- `file/path/1.tsx` — [why]
+- `file/path/2.tsx` — [why]
+---
 ```
 
-### Examples:
+### If MORE INFORMATION is needed → **ASK FIRST**
+If the task is ambiguous or underspecified, ask the user for clarification BEFORE routing. Include what information is needed and why.
+
+---
+
+## Step 3: Model Tier Mapping
+
+| Tier | Primary Model | Alternate (if overloaded) |
+|---|---|---|
+| 💚 Low | Gemini 3.6 Flash (Low) | Gemini 3.6 Flash (Medium) |
+| 💛 Medium | Gemini 3.6 Flash (Medium) | Gemini 3.6 Flash (High) |
+| 🟠 High | Gemini 3.6 Flash (High) | Claude Sonnet 4.6 (Thinking) |
+| 🔴 Premium | Claude Sonnet 4.6 (Thinking) | Claude Opus 4.6 (Thinking) |
+| 🟣 Ultra | Claude Opus 4.6 (Thinking) | Claude Sonnet 4.6 (Thinking) |
+
+---
+
+## Prompt Writing Guidelines
+
+When writing a prompt for a different model, the agent MUST:
+
+1. **Include full context** — Don't assume the next model has conversation history
+2. **Reference exact file paths** — Use absolute paths so the model can `view_file` immediately
+3. **Include line numbers** — If the fix is in a specific region, specify the line range
+4. **Paste telemetry traces** — If the user provided trace IDs, version strings, or error logs, include them
+5. **Describe screenshots** — Since screenshots don't transfer between sessions, describe what the user showed
+6. **State the success criteria** — What does "done" look like for this task?
+7. **Include relevant rule references** — If Rules 7, 12, 14, etc. apply, mention them
+
+### Prompt Template
 
 ```
-📊 **Model Advisory for Next Interaction:**
-💛 **Gemini Flash (Medium)** — Simple CSS colour fix, single file change.
-```
+## Task: [Clear one-line summary]
 
-```
-📊 **Model Advisory for Next Interaction:**
-🔴 **Claude Sonnet (Thinking)** — Cross-component state debugging across ProductionDeck, MemoryForm, and SoloStage.
-```
+### Context
+[What the user is working on, current state, what's been tried]
 
-```
-📊 **Model Advisory for Next Interaction:**
-💚 **Gemini Flash (Low)** — Just checking deploy status and reading logs.
+### Problem
+[Exact description of the bug/feature, including any screenshots the user showed]
+
+### Files to Investigate
+- `[absolute/path/to/file.tsx]` lines [X-Y] — [what to look for]
+
+### Success Criteria
+- [ ] [What the fix should achieve]
+- [ ] [How to verify it worked]
+
+### Relevant Rules
+- Rule [N]: [brief description of why it applies]
+
+### Telemetry / Version
+- Version: [version string if provided]
+- Trace: [trace ID if provided]
+- Path: [route path if provided]
 ```
 
 ---
 
 ## Escalation Rules
 
-1. **If a task fails on a lower-tier model**, recommend upgrading one tier for the retry.
-2. **If the user reports API overload errors**, recommend switching to the alternate provider (Gemini ↔ Claude).
-3. **Never recommend Opus for tasks that Sonnet can handle** — respect the user's budget.
-4. **When in doubt, recommend Sonnet** — it handles 80% of real development tasks well.
-5. **Always recommend Flash (Low) for follow-up verification** after a fix is deployed (checking staging, reading logs, confirming status).
+1. **If the current model CAN handle the task** (even if not optimal), it SHOULD execute rather than route — avoid unnecessary model switches for marginal gains.
+2. **If the task would FAIL on the current model** (e.g., Flash trying to debug cross-component state), it MUST route to the correct tier.
+3. **If the user explicitly says "just do it"** or similar, execute on the current model regardless of tier mismatch.
+4. **If API overload errors occur**, recommend switching to the alternate provider column.
+5. **Never route DOWN** — if the user is on Opus and asks a simple question, just answer it. Only route UP when complexity exceeds the current model's capabilities.
+
+---
+
+## User Style Profile (Memory Weaver Project)
+
+The primary user of this project writes in a specific style that all models must accommodate:
+
+- **Terse, action-oriented messages** — often just 1-2 sentences + screenshots
+- **Screenshot-first evidence** — visual proof is always primary, text is supplementary
+- **Multi-issue batching** — frequently bundles 2-3 related bugs in one message
+- **Inline telemetry traces** — pastes `traceId`, `version`, `path` as diagnostic context
+- **Implicit expectations** — says "I don't see..." and expects full diagnosis from the screenshot
+- **Rapid escalation** — uses "FAILED" with a screenshot when a fix didn't work
+- **UK English** — all UI text must use British spelling (Rule 20)
+
+Models receiving routed prompts should be prepared for this communication style.
+
+---
+
+## Examples
+
+### Example 1: User on Opus asks "Is the build live?"
+```
+This is a 💚 Low task. I'll answer directly:
+[checks build status]
+📊 Model Advisory: 💚 Gemini Flash (Low) for your next status check.
+```
+
+### Example 2: User on Flash (Low) asks "Why did the proceed button disappear?"
+```
+🔀 Model Route Advisory
+Current Model: Gemini Flash (Low)
+Recommended Model: 🔴 Claude Sonnet (Thinking)
+Reason: Cross-component state debugging across ProductionDeck, ProductionControlBar,
+and MemoryForm requires deep reasoning and multi-file analysis.
+
+### Ready-to-Paste Prompt
+> ## Task: Debug disappeared "Proceed to ACT II" button in Studio Production
+>
+> ### Context
+> The user is on Act I (Scriptorium) with a locked Story Hook...
+> [full optimised prompt]
+```
+
+### Example 3: User on Sonnet asks "BRAINSTORM a new feature"
+```
+🔀 Model Route Advisory
+Current Model: Claude Sonnet (Thinking)
+Recommended Model: 🟣 Claude Opus (Thinking)
+Reason: Creative architectural brainstorming benefits from Opus's deeper reasoning.
+
+### Ready-to-Paste Prompt
+> ## Task: Brainstorm [feature area]...
+```
