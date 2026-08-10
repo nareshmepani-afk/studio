@@ -2116,15 +2116,13 @@ describe('Studio Regression Tests', () => {
       }
 
       // Verify Clean View suppression rule
-      const shouldRenderHotspot = (isCleanView: boolean, isAct1Guard: boolean, isLocked: boolean) => {
-        if (isCleanView || (isAct1Guard && isLocked)) return false;
+      const shouldRenderHotspot = (isCleanView: boolean) => {
+        if (isCleanView) return false;
         return true;
       };
 
-      expect(shouldRenderHotspot(true, false, false)).toBe(false); // Hidden when Clean View active
-      expect(shouldRenderHotspot(false, true, true)).toBe(false); // Hidden in Act 1 when draft locked
-      expect(shouldRenderHotspot(false, false, true)).toBe(true);  // Rendered in Act 2-5 even when Scriptorium locked
-      expect(shouldRenderHotspot(false, false, false)).toBe(true); // Rendered when unlocked & Sensory View on
+      expect(shouldRenderHotspot(true)).toBe(false); // Hidden when Clean View active (Sensory View Off)
+      expect(shouldRenderHotspot(false)).toBe(true); // Rendered when Sensory View is On (even when locked)
 
       // Tooltip completion state resolution
       const resolveHotspotTooltip = (number: number, label: string, isCompleted: boolean) => ({

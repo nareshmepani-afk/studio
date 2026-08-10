@@ -23,8 +23,8 @@ export const MentorshipHotspot: React.FC<MentorshipHotspotProps> = ({
   isCompleted = false,
   isAct1Guard = false
 }) => {
-  const { isCleanView, isProductionLocked } = useStudioState();
-  if (isCleanView || (isAct1Guard && isProductionLocked)) return null;
+  const { isCleanView } = useStudioState();
+  if (isCleanView) return null;
 
   return (
     <TooltipProvider delayDuration={0}>

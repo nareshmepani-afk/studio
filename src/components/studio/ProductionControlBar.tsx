@@ -625,7 +625,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
         {/* --- NAVIGATION (RIGHT) --- */}
         <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 shrink-0">
-          {currentStage === 0 && !isGeneratingDrafts && !isReviewing && !isDirectorOpen && !isProductionLocked && !isTheaterOpen && (
+          {currentStage === 0 && !isGeneratingDrafts && !isReviewing && !isDirectorOpen && !isTheaterOpen && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
