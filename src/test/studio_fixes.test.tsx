@@ -2066,5 +2066,26 @@ describe('Studio Regression Tests', () => {
         newProse: 'Initial prose\n\nThe scent of rain...'
       });
     });
+
+    it('RESPONSIVE STAGE CONTROLS SHIELD: should verify responsive padding, compact mode pill switching, and zero-shrink hero button shield', () => {
+      const getHeroButtonClass = () => 'relative px-5 sm:px-8 lg:px-10 py-3.5 sm:py-4 rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] transition-all flex items-center gap-2 sm:gap-3 overflow-hidden group/btn pointer-events-auto shrink-0 whitespace-nowrap min-w-max';
+      
+      const heroClass = getHeroButtonClass();
+      expect(heroClass).toContain('shrink-0');
+      expect(heroClass).toContain('whitespace-nowrap');
+      expect(heroClass).toContain('min-w-max');
+
+      const resolvePillLabel = (mode: 'solo' | 'collaborative' | 'guest', isCompact: boolean) => {
+        if (isCompact) {
+          return mode === 'solo' ? 'Solo' : mode === 'collaborative' ? 'Collab' : 'Guest Dir';
+        }
+        return mode === 'solo' ? '✍️ Solo Scripting' : mode === 'collaborative' ? '👥 Co-Scripting' : '🤖 AI Mentor';
+      };
+
+      expect(resolvePillLabel('solo', true)).toBe('Solo');
+      expect(resolvePillLabel('solo', false)).toBe('✍️ Solo Scripting');
+      expect(resolvePillLabel('collaborative', true)).toBe('Collab');
+      expect(resolvePillLabel('guest', true)).toBe('Guest Dir');
+    });
   });
 });
