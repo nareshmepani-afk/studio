@@ -270,7 +270,10 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-08-03**: v1.1.0-beta-MW-141. Implemented Dual-Reel Premiere Mode toggle (`Fusion Masterpiece` vs `Authentic Performance`) with live indicator badges, added `Download Master Narrative Package` JSON exporter (HS_ACT5_DOWNLOAD_PACKAGE_BTN), added `PremiereMode` and `FusionManifest` interfaces to `src/types/index.ts`, and verified with automated Vitest test suite. (Build Verify: SUCCESS)
 - **2026-08-03**: v1.1.0-beta-MW-142. Implemented `1-Prior-Version Instant Undo Blueprint` in `Scriptorium.tsx`, `MemoryForm.tsx`, and `useMemoryPersistence.ts` with `[ ↩ Restore Previous Take ]` button (HS_ACT1_RESTORE_TAKE_BTN), `previousDraftState` interface in `src/types/index.ts`, and automated Vitest unit test suite verification. (Build Verify: SUCCESS)
 
-
+# 21. Model Selection Advisory Protocol
+- **Mandatory Post-Response Advisory**: After every response, the agent MUST include a `📊 Model Advisory for Next Interaction` recommendation specifying which AI model tier the user should switch to for the NEXT task, based on complexity, cost efficiency, and reasoning depth required.
+- **Full Decision Matrix**: See `.agents/MODEL_SELECTION_GUIDE.md` for the complete tier definitions (💚 Flash Low → 💛 Flash Medium → 🟠 Flash High → 🔴 Sonnet Thinking → 🟣 Opus Thinking) and escalation rules.
+- **Escalation on Failure**: If a task fails on a lower-tier model, recommend upgrading one tier for the retry. If the user reports API overload errors, recommend switching to the alternate provider (Gemini ↔ Claude).
 
 
 
