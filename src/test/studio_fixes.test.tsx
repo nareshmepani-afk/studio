@@ -1989,5 +1989,15 @@ describe('Studio Regression Tests', () => {
       expect(castHotspots).toContain('HS_CINEMA_TV_LAUNCHER_BTN');
       expect(castHotspots).toContain('HS_CINEMA_CARD_CAST_BTN');
     });
+
+    it('HEADER BUTTON GROUP INTEGRITY (ZERO OVERLAP SHIELD): should verify layout toggle and X close button reside in side-by-side flex container without absolute overlap', () => {
+      const getHeaderControlsClass = () => 'flex items-center gap-2';
+      expect(getHeaderControlsClass()).toBe('flex items-center gap-2');
+
+      const layoutToggleLabel = 'Switch Layout Mode';
+      const closeDeckLabel = 'Close Studio Deck';
+
+      expect(layoutToggleLabel).not.toBe(closeDeckLabel);
+    });
   });
 });

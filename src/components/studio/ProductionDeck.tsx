@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef, useImperative
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Maximize, Monitor, Rocket, Edit3, Loader2 } from 'lucide-react';
+import { Maximize, Monitor, Rocket, Edit3, Loader2, X } from 'lucide-react';
 import { publishMemoryAction, unpublishMemoryAction } from '@/actions/memoryActions';
 import { mockPromptGroups } from '@/lib/mockData';
 import {
@@ -1038,21 +1038,45 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                               </Tooltip>
                             </TooltipProvider>
 
-                            <TooltipProvider delayDuration={200}>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            onClick={onToggleLayout}
-                                            className="p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all cursor-pointer"
-                                        >
-                                            {layoutMode === 'takeover' ? <Monitor className="w-5 h-5 text-[var(--room-accent)]" /> : <Maximize className="w-5 h-5 text-[var(--room-accent)]" />}
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent sideOffset={8} className="bg-slate-950 border border-[var(--room-accent)] text-[var(--room-accent)] font-medium">
-                                        <p>Switch to {layoutMode === 'takeover' ? 'Side Drawer' : 'Full-Screen'} Layout</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
+                             <div className="flex items-center gap-2">
+                                 <TooltipProvider delayDuration={200}>
+                                     <Tooltip>
+                                         <TooltipTrigger asChild>
+                                             <button
+                                                 onClick={onToggleLayout}
+                                                 className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white transition-all cursor-pointer"
+                                                 aria-label="Switch Layout Mode"
+                                             >
+                                                 {layoutMode === 'takeover' ? <Monitor className="w-5 h-5 text-[var(--room-accent)]" /> : <Maximize className="w-5 h-5 text-[var(--room-accent)]" />}
+                                             </button>
+                                         </TooltipTrigger>
+                                         <TooltipContent side="bottom" sideOffset={8} className="bg-slate-950 border border-[var(--room-accent)] text-[var(--room-accent)] font-medium text-xs">
+                                             <p>Switch to {layoutMode === 'takeover' ? 'Side Drawer' : 'Full-Screen'} Layout</p>
+                                         </TooltipContent>
+                                     </Tooltip>
+                                 </TooltipProvider>
+
+                                 <TooltipProvider delayDuration={200}>
+                                     <Tooltip>
+                                         <TooltipTrigger asChild>
+                                             <button
+                                                 onClick={async () => {
+                                                     toast.info("Securing Draft...", { duration: 1500 });
+                                                     await handleExit();
+                                                     toast.success("Draft Saved", { description: "Your progress is secure." });
+                                                 }}
+                                                 className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-rose-500/20 hover:border-rose-500/30 text-white/70 hover:text-rose-300 transition-all cursor-pointer"
+                                                 aria-label="Close Studio Deck"
+                                             >
+                                                 <X className="w-5 h-5 text-zinc-300 hover:text-rose-300" />
+                                             </button>
+                                         </TooltipTrigger>
+                                         <TooltipContent side="bottom" sideOffset={8} className="bg-slate-950 border border-rose-500/40 text-rose-300 font-medium text-xs">
+                                             <p>Close Studio Deck &amp; Return</p>
+                                         </TooltipContent>
+                                     </Tooltip>
+                                 </TooltipProvider>
+                             </div>
                         </div>
                     )}
                     <div

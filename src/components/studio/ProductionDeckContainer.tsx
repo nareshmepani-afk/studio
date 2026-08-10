@@ -344,20 +344,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   }
 
   const containerContent = (
-    <>
-      {isModal && (
-        <div className="absolute top-6 right-6 z-[110]">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleExitTrigger}
-              className="rounded-full bg-black/20 hover:bg-white/10 text-white/50 hover:text-white transition-all w-12 h-12"
-            >
-              <Plus className="w-6 h-6 rotate-45" />
-            </Button>
-        </div>
-      )}
-      <div className="flex-1 overflow-hidden h-full flex flex-col">
+    <div className="flex-1 overflow-hidden h-full flex flex-col">
         <ProductionDeck 
           ref={deckRef}
           memoryData={selectedProductionData} 
@@ -367,7 +354,6 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
           onClose={handleClose}
         />
       </div>
-    </>
   );
 
   if (isModal) {
