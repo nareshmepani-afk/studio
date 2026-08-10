@@ -458,16 +458,16 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     const resetIdleTimer = useCallback(() => {
         if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
         idleTimerRef.current = setTimeout(() => {
-            if (!mentorModeActive && currentStage === 0 && !isReviewing) {
+            if (!mentorModeActive && currentStage === 0 && !isReviewing && !isProductionLocked) {
                 toggleMentor(false); // Auto-trigger, not manual
             }
         }, 90000); // 90 seconds
-    }, [mentorModeActive, currentStage, toggleMentor, isReviewing]);
+    }, [mentorModeActive, currentStage, toggleMentor, isReviewing, isProductionLocked]);
 
     // AUTO-ACTIVATION: Studio Mentor Idle Protocol
     useEffect(() => {
-        // Only trigger in Act I if not already active and not reviewing
-        if (currentStage !== 0 || mentorModeActive || isReviewing) {
+        // Only trigger in Act I if not already active, not reviewing, and NOT locked
+        if (currentStage !== 0 || mentorModeActive || isReviewing || isProductionLocked) {
             if (idleTimerRef.current) {
                 clearTimeout(idleTimerRef.current);
                 idleTimerRef.current = null;
@@ -493,7 +493,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             window.removeEventListener('scroll', resetIdleTimer, true);
             window.removeEventListener('touchstart', resetIdleTimer);
         };
-    }, [currentStage, mentorModeActive, isReviewing, resetIdleTimer]);
+    }, [currentStage, mentorModeActive, isReviewing, isProductionLocked, resetIdleTimer]);
 
     // Find the current group context for navigation breadcrumbs
     const currentGroup = useMemo(() => {
@@ -1198,10 +1198,17 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
             {/* STUDIO MENTOR OVERLAY (LIFELINE) */}
             <MentorGuide 
-                active={isOverlayOpen}
+                active={isOverlayOpen && !isProductionLocked}
                 onClose={closeOverlay}
                 whisper={getWhisper(currentStage)}
                 onApplySeed={(seed) => {
+                    if (isProductionLocked) {
+                        toast.error("Scriptorium Draft Sealed", {
+                            description: "Release Draft Lock to edit monologue prose."
+                        });
+                        closeOverlay();
+                        return;
+                    }
                     handleUpdate((prev: any) => ({ ...prev, description: (prev.description || '') + (prev.description ? '\n\n' : '') + seed }));
                     closeOverlay();
                     toast.success("Inspiration Seed Sown", {

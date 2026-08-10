@@ -12,8 +12,8 @@ interface MentorshipHotspotProps {
 }
 
 export const MentorshipHotspot: React.FC<MentorshipHotspotProps> = ({ number, label, className }) => {
-  const { isCleanView } = useStudioState();
-  if (isCleanView) return null;
+  const { isCleanView, isProductionLocked } = useStudioState();
+  if (isCleanView || isProductionLocked) return null;
   return (
     <TooltipProvider delayDuration={0}>
       <Tooltip>

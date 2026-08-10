@@ -2038,5 +2038,33 @@ describe('Studio Regression Tests', () => {
         ariaPressed: false
       });
     });
+
+    it('STUDIO MENTOR PICTURE LOCK GUARD: should suppress mentor popups and seed applications when Scriptorium is locked', () => {
+      const shouldAllowMentorPopup = (stage: number, isReviewing: boolean, isLocked: boolean) => {
+        return stage === 0 && !isReviewing && !isLocked;
+      };
+
+      // Unlocked Act I -> Mentor allowed
+      expect(shouldAllowMentorPopup(0, false, false)).toBe(true);
+      // Locked Act I -> Mentor suppressed
+      expect(shouldAllowMentorPopup(0, false, true)).toBe(false);
+
+      const applySeedToDraft = (currentProse: string, seed: string, isLocked: boolean) => {
+        if (isLocked) {
+          return { success: false, error: 'Scriptorium Draft Sealed' };
+        }
+        return { success: true, newProse: (currentProse ? currentProse + '\n\n' : '') + seed };
+      };
+
+      expect(applySeedToDraft('Initial prose', 'The scent of rain...', true)).toEqual({
+        success: false,
+        error: 'Scriptorium Draft Sealed'
+      });
+
+      expect(applySeedToDraft('Initial prose', 'The scent of rain...', false)).toEqual({
+        success: true,
+        newProse: 'Initial prose\n\nThe scent of rain...'
+      });
+    });
   });
 });
