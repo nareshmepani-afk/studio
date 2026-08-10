@@ -1996,8 +1996,47 @@ describe('Studio Regression Tests', () => {
 
       const layoutToggleLabel = 'Switch Layout Mode';
       const closeDeckLabel = 'Close Studio Deck';
-
       expect(layoutToggleLabel).not.toBe(closeDeckLabel);
+    });
+
+    it('STRICT SENSORY VIEW ON/OFF SHIELD: should evaluate strict visibility matrix, data-state attributes, and clear labels', () => {
+      const shouldShowSensoryViewToggle = (
+        stage: number, 
+        isGenerating: boolean, 
+        isReviewing: boolean, 
+        isDirector: boolean,
+        isLocked: boolean,
+        isTheater: boolean
+      ) => {
+        return stage === 0 && !isGenerating && !isReviewing && !isDirector && !isLocked && !isTheater;
+      };
+
+      // 1. Strict Visibility Guard Matrix
+      expect(shouldShowSensoryViewToggle(0, false, false, false, false, false)).toBe(true);
+      expect(shouldShowSensoryViewToggle(0, true, false, false, false, false)).toBe(false); // Hidden during AI synthesis
+      expect(shouldShowSensoryViewToggle(0, false, true, false, false, false)).toBe(false); // Hidden during Review Lightbox
+      expect(shouldShowSensoryViewToggle(0, false, false, true, false, false)).toBe(false); // Hidden during Director Guide
+      expect(shouldShowSensoryViewToggle(0, false, false, false, true, false)).toBe(false); // Hidden when Picture Locked
+      expect(shouldShowSensoryViewToggle(1, false, false, false, false, false)).toBe(false); // Hidden outside Act I
+
+      // 2. State & Label Mapping
+      const resolveSensoryButtonState = (isCleanView: boolean) => ({
+        label: isCleanView ? 'Sensory View Off' : 'Sensory View On',
+        dataState: isCleanView ? 'off' : 'on',
+        ariaPressed: !isCleanView
+      });
+
+      expect(resolveSensoryButtonState(false)).toEqual({
+        label: 'Sensory View On',
+        dataState: 'on',
+        ariaPressed: true
+      });
+
+      expect(resolveSensoryButtonState(true)).toEqual({
+        label: 'Sensory View Off',
+        dataState: 'off',
+        ariaPressed: false
+      });
     });
   });
 });

@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MentorshipHotspot } from './MentorshipHotspot';
-import { Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, Rocket, Circle, ChevronLeft, ChevronRight, ChevronDown, AlertCircle, Eye, User, Users } from 'lucide-react';
+import { Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, Rocket, Circle, ChevronLeft, ChevronRight, ChevronDown, AlertCircle, Eye, EyeOff, User, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -609,16 +609,20 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
         {/* --- NAVIGATION (RIGHT) --- */}
         <div className="flex items-center gap-4">
-          {currentStage === 0 && !isGeneratingDrafts && (
+          {currentStage === 0 && !isGeneratingDrafts && !isReviewing && !isDirectorOpen && !isProductionLocked && !isTheaterOpen && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   data-hotspot-id="HS_ACT1_CLEAN_VIEW_BTN"
+                  data-state={isCleanView ? "off" : "on"}
+                  aria-pressed={!isCleanView}
                   onClick={() => {
                     const nextCleanView = !isCleanView;
                     actions.toggleCleanView();
-                    toast.info(nextCleanView ? "Clean Reading View Active" : "Sensory Overlays Restored", {
-                      description: nextCleanView ? "Floating badges and overlays hidden for uncluttered reading." : "Sensory anchor badges and hotspot pins restored."
+                    toast.info(nextCleanView ? "Sensory View Off (Clean Reading Active)" : "Sensory View On (Overlays Restored)", {
+                      description: nextCleanView 
+                        ? "Floating badges and underlines hidden for clean reading." 
+                        : "Sensory anchor badges and hotspot pins restored."
                     });
                   }}
                   className={cn(
@@ -628,12 +632,16 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                       : "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
                   )}
                 >
-                  <Eye className={cn("w-4 h-4", isCleanView ? "text-amber-400" : "text-emerald-400")} />
-                  <span>{isCleanView ? "Clean View Active" : "Sensory View On"}</span>
+                  {isCleanView ? (
+                    <EyeOff className="w-4 h-4 text-amber-400" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-emerald-400" />
+                  )}
+                  <span>{isCleanView ? "Sensory View Off" : "Sensory View On"}</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-[10px] uppercase font-bold tracking-widest px-3 py-2">
-                <span>{isCleanView ? "Click to restore sensory anchor badges & underlines" : "Click to hide floating badges for clean reading"}</span>
+                <span>{isCleanView ? "Sensory View Off (Clean Reading) • Click to turn Sensory View On" : "Sensory View On (Anchors Active) • Click to turn Sensory View Off"}</span>
               </TooltipContent>
             </Tooltip>
           )}
