@@ -46,5 +46,47 @@
     "category": "Support Playbooks",
     "title": "Operational Resolution Playbook: MW_19_ADMIN_ROUTING",
     "content": "Context background: Accessing the Admin Portal (admin.memoryweaver.studio) redirects or rewrites to the secure /admin app layout without exposing administrative routes on the primary studio subdomain.. Action instructions: Ensure Next.js edge middleware (src/middleware.ts) intercepts requests with host starting with admin. Ensure infinite loop guard is active: only rewrite if pathname does not start with /admin. Ensure session cookies ('session' and 'x-trace-id' header) are preserved during rewriting to maintain authentication context. To verify locally, use host header spoofing or local hosts file mapping to route admin.localhost to local port."
+  },
+  {
+    "id": "playbook-MW_118_ANTI_BOT_GUEST_PRIVACY",
+    "category": "Support Playbooks",
+    "title": "Operational Resolution Playbook: MW_118_ANTI_BOT_GUEST_PRIVACY",
+    "content": "Context background: Unauthenticated guest access pass, Anti-Bot Edge rate-limiting, and 4-digit Family PIN protection on public cinema stories.. Action instructions: Unauthenticated visitors (!user) viewing /cinema?id=... see masked monologue text and 4K video launcher behind the Anti-Bot Privacy Shield Gate. Guestbook Reactions ([ SEND NOTE ]) and Guest Q&A Teleprompter ([ SUBMIT QUESTION ]) are strictly hidden until authenticated or unlocked with Family PIN. Edge Middleware (src/middleware.ts) enforces a sliding-window rate-limiter (100 req/min per IP) returning HTTP 429 to prevent bot hammering. Guests can unlock the story instantly via 1-Tap Free Guest Pass Sign-In or entering the 4-digit Family PIN (default: 1234)."
+  },
+  {
+    "id": "playbook-MW_122_PRE_RELEASE_SCREENERS_CINEMA",
+    "category": "Support Playbooks",
+    "title": "Operational Resolution Playbook: MW_122_PRE_RELEASE_SCREENERS_CINEMA",
+    "content": "Context background: Pre-Release Screener Workflow & 3-Section Memory Cinema Dashboard Architecture.. Action instructions: Partition /cinema dashboard into Section 1 (🌟 Official Premieres), Section 2 (🎬 Pre-Release Screeners), and Section 3 (🔖 My Saved Family Cinema). Pre-Release Screeners display amber badges (bg-amber-500/10 border-amber-500/30 text-amber-400) allowing storytellers to share private cuts before locking 4K masters. Drafts missing final video renders display a Cinematic Storyboard Reel with Web Speech TTS Voice Synthesizer ([ 🔊 Listen to Monologue Draft ]) and a Private Family Feedback Box ([ 💬 Send Note to Storyteller ]). Telemetry hotspots HS_CINEMA_SECTION_OFFICIAL, HS_CINEMA_SECTION_DRAFTS, HS_CINEMA_SECTION_SAVED, HS_CINEMA_PLAY_TTS_BTN, and HS_CINEMA_SUBMIT_FEEDBACK_BTN are active."
+  },
+  {
+    "id": "playbook-MW_123_FUSION_SCORE_GUEST_LAYER",
+    "category": "Support Playbooks",
+    "title": "Operational Resolution Playbook: MW_123_FUSION_SCORE_GUEST_LAYER",
+    "content": "Context background: Fusion Cohesive Narrative & Cinematic Score Guest Layer in MemoryCinematicViewer.. Action instructions: Render top Cinematic Score Pill (HS_CINEMA_SCORE_PILL) displaying musical mood, instrumentation, and BPM above the media viewport. Render Fusion Cohesive Narrative Card (HS_CINEMA_FUSION_CARD) displaying sensoryPalette, emotionalTone, and cohesiveScript directly beneath the video/audio viewport. Collapse gracefully if fusionManifest and sensory values are missing without causing layout shifts."
+  },
+  {
+    "id": "playbook-MW_124_MOVIE_POSTER_VIEWER_TOGGLE",
+    "category": "Support Playbooks",
+    "title": "Operational Resolution Playbook: MW_124_MOVIE_POSTER_VIEWER_TOGGLE",
+    "content": "Context background: Interactive Movie Poster keyart view switcher inside MemoryCinematicViewer STAGE CONTROLS.. Action instructions: Provide 1-tap view switcher ([ 🖼️ Movie Poster ] / [ ▶ Watch Video ]) in floating STAGE CONTROLS toolbar. Bind telemetry hotspot attribute HS_CINEMA_TOGGLE_POSTER_BTN. Render 2:3 vertical film poster with Hollywood billing block via CinemaPoster component when activeViewMode is poster."
+  },
+  {
+    "id": "playbook-MW_125_FUSED_OFFLINE_AUTOBIOGRAPHY_KEEPSAKE",
+    "category": "Support Playbooks",
+    "title": "Operational Resolution Playbook: MW_125_FUSED_OFFLINE_AUTOBIOGRAPHY_KEEPSAKE",
+    "content": "Context background: Dual-integrated Fused Offline Autobiography Keepsake Export Engine in Act IV Studio & Guest Cinema.. Action instructions: Synthesize printable 2-page document (Page 1 Cover Poster + Billing Block + QR Code & Page 2 Monologue + Sensory Blueprint Chapter). Bind telemetry hotspot attributes HS_CINEMA_DOWNLOAD_AUTOBIOGRAPHY_BTN and HS_ACT4_DOWNLOAD_AUTOBIOGRAPHY_BTN. Export in Memory Weaver dark obsidian (#020617), amber gold (#f59e0b), and emerald heritage (#10b981) brand theme."
+  },
+  {
+    "id": "playbook-MW_126_STAGE_CONTROL_MODE_REFACTOR",
+    "category": "Support Playbooks",
+    "title": "Operational Resolution Playbook: MW_126_STAGE_CONTROL_MODE_REFACTOR",
+    "content": "Context background: Stage Control Mode Selection Refactor moving mode switcher pills inside left wing of ProductionControlBar.. Action instructions: Remove top-right header room switcher nav from ProductionDeck header. Integrate Compact Segmented Glassmorphic Pill Switcher inside left wing of ProductionControlBar. Bind telemetry hotspot attributes HS_STAGE_CONTROL_MODE_SOLO_BTN, HS_STAGE_CONTROL_MODE_COLLAB_BTN, and HS_STAGE_CONTROL_MODE_GUEST_DIR_BTN. Render Act-aware dynamic labels (e.g. Solo Scripting in Act I vs Solo Record in Act III vs Solo Review in Act IV)."
+  },
+  {
+    "id": "playbook-MW_130_LIVING_ROOM_TV_CAST",
+    "category": "Support Playbooks",
+    "title": "Operational Resolution Playbook: MW_130_LIVING_ROOM_TV_CAST",
+    "content": "Context background: Living Room TV Cast & AirPlay Suite in Act V Studio & Guest Cinema Portal.. Action instructions: Attach x-webkit-airplay='allow' and controlsList='nodownload' to HTML5 video element. Inject WebKit AirPlay availability listeners and Google Cast Web Sender SDK loader safely. Render casting controls with HS_CINEMA_CAST_AIRPLAY_BTN and HS_CINEMA_CAST_CHROMECAST_BTN. Build 10-foot lean-back Smart TV portal route (/cinema/tv) with TV remote key handlers bound to HS_CINEMA_TV_REMOTE_TOGGLE. Integrate HS_ACT5_LIVING_ROOM_PREMIERE_BTN launcher and Living Room Premiere Casting Modal in Act V."
   }
 ]

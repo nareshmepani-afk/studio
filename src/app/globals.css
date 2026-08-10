@@ -278,3 +278,11 @@
   height: 0;
   pointer-events: none;
 }
+
+/* Cinematic Video Loading Skeleton — SoloStage Act IV Master Performance Reel */
+@keyframes scanLine {
+  0% { top: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}

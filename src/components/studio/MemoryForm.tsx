@@ -231,8 +231,13 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
   onSavingChange
 }, ref) => {
   const [showUnlockConfirm, setShowUnlockConfirm] = useState(false);
+  // Prose snapshot taken at unlock time — used to detect if user made changes before re-locking.
+  // If prose hasn't changed, re-lock silently without AI re-generation.
+  const unlockedAtProseSnapshot = useRef<string | null>(null);
+
   const router = useRouter();
   // Lifted state management: use props if provided, otherwise local state
+
   const [internalModality, setInternalModality] = useState<'pen' | 'voice' | null>(data?.modality || null);
   const modality = propModality !== undefined ? propModality : internalModality;
   const setModality = propSetModality || setInternalModality;
@@ -1729,15 +1734,18 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                                         </AlertDialogCancel>
                                         <AlertDialogAction 
                                           onClick={async () => {
-                                            console.log("[MemoryForm] Unlock confirmed. Updating states...");
+                                            console.log("[MemoryForm] Unlock confirmed. Capturing prose snapshot...");
+                                            // Capture current prose at unlock time for unchanged-content re-lock guard
+                                            unlockedAtProseSnapshot.current = prose || description || '';
                                             setGlobalLocked(false);
                                             await flush({ isProductionLocked: false });
                                             update({ isProductionLocked: false });
                                             setShowUnlockConfirm(false);
                                             toast.success("Draft Lock Released", {
-                                              description: "Manual text control in the Scriptorium is now enabled."
+                                              description: "Manual text control in the Scriptorium is now enabled. Re-lock when done."
                                             });
                                           }}
+
                                           className="bg-amber-500 hover:bg-amber-400 text-black rounded-xl px-8 py-2 h-auto text-[10px] font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:scale-105 active:scale-95"
                                         >
                                           Confirm Release
@@ -2506,21 +2514,41 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                           });
                         }}
                         onUnlockProduction={async () => {
+                          // Capture prose snapshot at unlock time for unchanged-content re-lock guard
+                          unlockedAtProseSnapshot.current = prose || description || '';
                           setGlobalLocked(false);
                           await flush({ isProductionLocked: false });
                           update({ isProductionLocked: false });
                           toast.success("Production Lock Released", {
-                            description: "Manual control of metadata is now enabled."
+                            description: "Manual control is now enabled. Re-lock when done."
                           });
                         }}
                         onLockProduction={async () => {
+                          const currentProse = prose || description || '';
+                          const snapshot = unlockedAtProseSnapshot.current;
+                          // UNCHANGED-CONTENT GUARD (Rule 1): If prose hasn't changed since unlock,
+                          // re-lock silently without triggering AI re-generation or complex flows.
+                          if (snapshot !== null && currentProse === snapshot) {
+                            console.log('[MemoryForm] Re-lock: prose unchanged since unlock — applying silent re-lock.');
+                            setGlobalLocked(true);
+                            await flush({ isProductionLocked: true });
+                            update({ isProductionLocked: true });
+                            unlockedAtProseSnapshot.current = null;
+                            toast.success("Script Re-Locked", {
+                              description: "No changes detected. Your script has been re-sealed silently."
+                            });
+                            return;
+                          }
+                          // Prose has changed — proceed with standard lock flow
+                          unlockedAtProseSnapshot.current = null;
                           setGlobalLocked(true);
                           await flush({ isProductionLocked: true });
                           update({ isProductionLocked: true });
                           toast.success("Production Sealed", {
-                            description: "Script editor is now locked to preserve changes."
+                            description: "Script editor is now locked to preserve your changes."
                           });
                         }}
+
                       />
                     </div>
                   </div>

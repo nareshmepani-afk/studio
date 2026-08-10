@@ -4816,8 +4816,61 @@ export default function SoloStage({
                           playsInline
                         />
                       ) : (
-                         <div className="absolute inset-0 flex items-center justify-center text-white/10 font-black uppercase tracking-[0.5em] text-xs">Awaiting Development Reel...</div>
+                        /* CINEMATIC LOADING SKELETON — shown while video URL resolves */
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-slate-950/95">
+                          {/* Animated Film Grain Noise Overlay */}
+                          <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                            style={{
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
+                              backgroundSize: '128px 128px'
+                            }}
+                          />
+                          {/* Film Sprocket Strip — Top */}
+                          <div className="absolute top-0 left-0 right-0 h-6 bg-slate-900/80 border-b border-white/5 flex items-center gap-3 px-4 overflow-hidden">
+                            {Array.from({ length: 24 }).map((_, i) => (
+                              <div key={i} className="w-3 h-3 rounded-sm border border-white/10 bg-black/40 shrink-0 animate-pulse" style={{ animationDelay: `${i * 60}ms` }} />
+                            ))}
+                          </div>
+                          {/* Film Sprocket Strip — Bottom */}
+                          <div className="absolute bottom-0 left-0 right-0 h-6 bg-slate-900/80 border-t border-white/5 flex items-center gap-3 px-4 overflow-hidden">
+                            {Array.from({ length: 24 }).map((_, i) => (
+                              <div key={i} className="w-3 h-3 rounded-sm border border-white/10 bg-black/40 shrink-0 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
+                            ))}
+                          </div>
+                          {/* Central Loading Indicator */}
+                          <div className="flex flex-col items-center gap-4 z-10">
+                            <div className="relative w-16 h-16">
+                              {/* Outer ring pulse */}
+                              <div className="absolute inset-0 rounded-full border-2 border-emerald-500/20 animate-ping" />
+                              {/* Middle ring */}
+                              <div className="absolute inset-2 rounded-full border border-emerald-500/30 animate-pulse" />
+                              {/* Film icon center */}
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <FilmIcon className="w-6 h-6 text-emerald-400 animate-pulse" />
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-center gap-1.5">
+                              <span className="font-mono text-[10px] font-black uppercase tracking-[0.5em] text-emerald-400 animate-pulse">
+                                Loading Reel...
+                              </span>
+                              <span className="font-mono text-[8px] text-white/20 uppercase tracking-widest">
+                                Resolving master performance footage
+                              </span>
+                            </div>
+                          </div>
+                          {/* Scanning line animation */}
+                          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                            <div
+                              className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent"
+                              style={{
+                                animation: 'scanLine 3s ease-in-out infinite',
+                                top: '0%'
+                              }}
+                            />
+                          </div>
+                        </div>
                       )}
+
 
                        {/* Playback HUD Overlay */}
                        <div className="absolute bottom-8 left-8 right-8 z-20 flex items-center gap-6 p-4 bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-500">

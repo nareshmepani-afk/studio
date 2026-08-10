@@ -365,6 +365,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
         switch (stage) {
             case 0: // Act I: Hook
+                // If the production is already sealed (isProductionLocked === true on Act I),
+                // treat the act as complete so the proceed button stays visible and enabled.
+                if (isProductionLocked) return true;
                 return !!(
                     memoryData?.title?.trim() && 
                     (memoryData?.description?.trim()?.length > 10) && 
@@ -384,7 +387,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             default:
                 return false;
         }
-    }, [currentStage, memoryData?.title, memoryData?.description, memoryData?.videoUrl, memoryData?.location, memoryData?.dateComponents?.year, memoryData?.activeVision]);
+    }, [currentStage, isProductionLocked, memoryData?.title, memoryData?.description, memoryData?.videoUrl, memoryData?.location, memoryData?.dateComponents?.year, memoryData?.activeVision]);
 
     const isLowClarity = useMemo(() => {
         const isAct1 = currentStage === 0;

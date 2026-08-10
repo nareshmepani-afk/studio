@@ -274,7 +274,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
     if (currentStage === 0) {
         if (isGeneratingDrafts || isPending) return 'SYNTHESIZING...';
         if (isReviewing) return 'SEAL THE MEMORY';
-        if (isProductionLocked) return 'ENTER THE WEAVE';
+        if (isProductionLocked) return 'ENTER RECORDING STUDIO';
+
         return 'DRAFT COMPLETED';
     }
     

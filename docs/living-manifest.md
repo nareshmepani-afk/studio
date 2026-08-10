@@ -73,3 +73,78 @@
 3. Ensure session cookies ('session' and 'x-trace-id' header) are preserved during rewriting to maintain authentication context.
 4. To verify locally, use host header spoofing or local hosts file mapping to route admin.localhost to local port.
 
+### Playbook: MW_118_ANTI_BOT_GUEST_PRIVACY
+
+**Context:**
+> Unauthenticated guest access pass, Anti-Bot Edge rate-limiting, and 4-digit Family PIN protection on public cinema stories.
+
+**Resolution Steps:**
+1. Unauthenticated visitors (!user) viewing /cinema?id=... see masked monologue text and 4K video launcher behind the Anti-Bot Privacy Shield Gate.
+2. Guestbook Reactions ([ SEND NOTE ]) and Guest Q&A Teleprompter ([ SUBMIT QUESTION ]) are strictly hidden until authenticated or unlocked with Family PIN.
+3. Edge Middleware (src/middleware.ts) enforces a sliding-window rate-limiter (100 req/min per IP) returning HTTP 429 to prevent bot hammering.
+4. Guests can unlock the story instantly via 1-Tap Free Guest Pass Sign-In or entering the 4-digit Family PIN (default: 1234).
+
+### Playbook: MW_122_PRE_RELEASE_SCREENERS_CINEMA
+
+**Context:**
+> Pre-Release Screener Workflow & 3-Section Memory Cinema Dashboard Architecture.
+
+**Resolution Steps:**
+1. Partition /cinema dashboard into Section 1 (🌟 Official Premieres), Section 2 (🎬 Pre-Release Screeners), and Section 3 (🔖 My Saved Family Cinema).
+2. Pre-Release Screeners display amber badges (bg-amber-500/10 border-amber-500/30 text-amber-400) allowing storytellers to share private cuts before locking 4K masters.
+3. Drafts missing final video renders display a Cinematic Storyboard Reel with Web Speech TTS Voice Synthesizer ([ 🔊 Listen to Monologue Draft ]) and a Private Family Feedback Box ([ 💬 Send Note to Storyteller ]).
+4. Telemetry hotspots HS_CINEMA_SECTION_OFFICIAL, HS_CINEMA_SECTION_DRAFTS, HS_CINEMA_SECTION_SAVED, HS_CINEMA_PLAY_TTS_BTN, and HS_CINEMA_SUBMIT_FEEDBACK_BTN are active.
+
+### Playbook: MW_123_FUSION_SCORE_GUEST_LAYER
+
+**Context:**
+> Fusion Cohesive Narrative & Cinematic Score Guest Layer in MemoryCinematicViewer.
+
+**Resolution Steps:**
+1. Render top Cinematic Score Pill (HS_CINEMA_SCORE_PILL) displaying musical mood, instrumentation, and BPM above the media viewport.
+2. Render Fusion Cohesive Narrative Card (HS_CINEMA_FUSION_CARD) displaying sensoryPalette, emotionalTone, and cohesiveScript directly beneath the video/audio viewport.
+3. Collapse gracefully if fusionManifest and sensory values are missing without causing layout shifts.
+
+### Playbook: MW_124_MOVIE_POSTER_VIEWER_TOGGLE
+
+**Context:**
+> Interactive Movie Poster keyart view switcher inside MemoryCinematicViewer STAGE CONTROLS.
+
+**Resolution Steps:**
+1. Provide 1-tap view switcher ([ 🖼️ Movie Poster ] / [ ▶ Watch Video ]) in floating STAGE CONTROLS toolbar.
+2. Bind telemetry hotspot attribute HS_CINEMA_TOGGLE_POSTER_BTN.
+3. Render 2:3 vertical film poster with Hollywood billing block via CinemaPoster component when activeViewMode is poster.
+
+### Playbook: MW_125_FUSED_OFFLINE_AUTOBIOGRAPHY_KEEPSAKE
+
+**Context:**
+> Dual-integrated Fused Offline Autobiography Keepsake Export Engine in Act IV Studio & Guest Cinema.
+
+**Resolution Steps:**
+1. Synthesize printable 2-page document (Page 1 Cover Poster + Billing Block + QR Code & Page 2 Monologue + Sensory Blueprint Chapter).
+2. Bind telemetry hotspot attributes HS_CINEMA_DOWNLOAD_AUTOBIOGRAPHY_BTN and HS_ACT4_DOWNLOAD_AUTOBIOGRAPHY_BTN.
+3. Export in Memory Weaver dark obsidian (#020617), amber gold (#f59e0b), and emerald heritage (#10b981) brand theme.
+
+### Playbook: MW_126_STAGE_CONTROL_MODE_REFACTOR
+
+**Context:**
+> Stage Control Mode Selection Refactor moving mode switcher pills inside left wing of ProductionControlBar.
+
+**Resolution Steps:**
+1. Remove top-right header room switcher nav from ProductionDeck header.
+2. Integrate Compact Segmented Glassmorphic Pill Switcher inside left wing of ProductionControlBar.
+3. Bind telemetry hotspot attributes HS_STAGE_CONTROL_MODE_SOLO_BTN, HS_STAGE_CONTROL_MODE_COLLAB_BTN, and HS_STAGE_CONTROL_MODE_GUEST_DIR_BTN.
+4. Render Act-aware dynamic labels (e.g. Solo Scripting in Act I vs Solo Record in Act III vs Solo Review in Act IV).
+
+### Playbook: MW_130_LIVING_ROOM_TV_CAST
+
+**Context:**
+> Living Room TV Cast & AirPlay Suite in Act V Studio & Guest Cinema Portal.
+
+**Resolution Steps:**
+1. Attach x-webkit-airplay='allow' and controlsList='nodownload' to HTML5 video element.
+2. Inject WebKit AirPlay availability listeners and Google Cast Web Sender SDK loader safely.
+3. Render casting controls with HS_CINEMA_CAST_AIRPLAY_BTN and HS_CINEMA_CAST_CHROMECAST_BTN.
+4. Build 10-foot lean-back Smart TV portal route (/cinema/tv) with TV remote key handlers bound to HS_CINEMA_TV_REMOTE_TOGGLE.
+5. Integrate HS_ACT5_LIVING_ROOM_PREMIERE_BTN launcher and Living Room Premiere Casting Modal in Act V.
+
