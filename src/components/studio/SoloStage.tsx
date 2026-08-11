@@ -176,6 +176,9 @@ export default function SoloStage({
   const [trimRange, setTrimRange] = useState<[number, number]>([0, 100]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSlowMo, setIsSlowMo] = useState(false);
+  // Tracks whether the master reel video is still buffering its first frame.
+  // Starts true on every new previewUrl — cleared by onCanPlay / onError.
+  const [isVideoBuffering, setIsVideoBuffering] = useState(true);
 
   // Guest Upsell State
   const [isUpsellOpen, setIsUpsellOpen] = useState(false);
@@ -1635,6 +1638,12 @@ export default function SoloStage({
       setPreviewCurrentTime(0);
     }
   }, [previewUrl, currentStage]);
+
+  // Video Buffering Guard: Reset skeleton whenever the source URL changes.
+  // onCanPlay / onError on the <video> element clear this flag.
+  useEffect(() => {
+    setIsVideoBuffering(true);
+  }, [previewUrl]);
 
   const theaterVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -4801,13 +4810,16 @@ export default function SoloStage({
                         </button>
                       </div>
 
-                      {previewUrl ? (
+                      {/* Master Reel Video — always rendered when URL exists so the browser can buffer */}
+                      {previewUrl && (
                         <video 
                           ref={previewVideoRef}
                           src={previewUrl}
                           crossOrigin="anonymous"
                           onLoadedMetadata={handleVideoLoadedMetadata}
                           onDurationChange={handleVideoLoadedMetadata}
+                          onCanPlay={() => setIsVideoBuffering(false)}
+                          onError={() => setIsVideoBuffering(false)}
                           onPlay={() => setIsPlaying(true)}
                           onPause={() => setIsPlaying(false)}
                           onEnded={() => setIsPlaying(false)}
@@ -4815,61 +4827,63 @@ export default function SoloStage({
                           className="w-full h-full object-cover grayscale-[0.2] contrast-[1.1] rounded-2xl"
                           playsInline
                         />
-                      ) : (
-                        /* CINEMATIC LOADING SKELETON — shown while video URL resolves */
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-slate-950/95">
-                          {/* Animated Film Grain Noise Overlay */}
-                          <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
-                            style={{
-                              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
-                              backgroundSize: '128px 128px'
-                            }}
-                          />
-                          {/* Film Sprocket Strip — Top */}
-                          <div className="absolute top-0 left-0 right-0 h-6 bg-slate-900/80 border-b border-white/5 flex items-center gap-3 px-4 overflow-hidden">
-                            {Array.from({ length: 24 }).map((_, i) => (
-                              <div key={i} className="w-3 h-3 rounded-sm border border-white/10 bg-black/40 shrink-0 animate-pulse" style={{ animationDelay: `${i * 60}ms` }} />
-                            ))}
-                          </div>
-                          {/* Film Sprocket Strip — Bottom */}
-                          <div className="absolute bottom-0 left-0 right-0 h-6 bg-slate-900/80 border-t border-white/5 flex items-center gap-3 px-4 overflow-hidden">
-                            {Array.from({ length: 24 }).map((_, i) => (
-                              <div key={i} className="w-3 h-3 rounded-sm border border-white/10 bg-black/40 shrink-0 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
-                            ))}
-                          </div>
-                          {/* Central Loading Indicator */}
-                          <div className="flex flex-col items-center gap-4 z-10">
-                            <div className="relative w-16 h-16">
-                              {/* Outer ring pulse */}
-                              <div className="absolute inset-0 rounded-full border-2 border-emerald-500/20 animate-ping" />
-                              {/* Middle ring */}
-                              <div className="absolute inset-2 rounded-full border border-emerald-500/30 animate-pulse" />
-                              {/* Film icon center */}
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <FilmIcon className="w-6 h-6 text-emerald-400 animate-pulse" />
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-center gap-1.5">
-                              <span className="font-mono text-[10px] font-black uppercase tracking-[0.5em] text-emerald-400 animate-pulse">
-                                Loading Reel...
-                              </span>
-                              <span className="font-mono text-[8px] text-white/20 uppercase tracking-widest">
-                                Resolving master performance footage
-                              </span>
+                      )}
+
+                      {/* CINEMATIC LOADING SKELETON
+                           Shows in two cases:
+                           1. previewUrl is null  — no video recorded yet
+                           2. isVideoBuffering    — video URL exists but first frame not yet decoded
+                           Fades out smoothly via opacity transition when video is ready. */}
+                      <div
+                        className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-slate-950/95 rounded-2xl transition-opacity duration-700 pointer-events-none"
+                        style={{ opacity: (!previewUrl || isVideoBuffering) ? 1 : 0 }}
+                        aria-hidden={!(!previewUrl || isVideoBuffering)}
+                      >
+                        {/* Animated Film Grain Noise Overlay */}
+                        <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                          style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
+                            backgroundSize: '128px 128px'
+                          }}
+                        />
+                        {/* Film Sprocket Strip — Top */}
+                        <div className="absolute top-0 left-0 right-0 h-6 bg-slate-900/80 border-b border-white/5 flex items-center gap-3 px-4 overflow-hidden">
+                          {Array.from({ length: 24 }).map((_, i) => (
+                            <div key={i} className="w-3 h-3 rounded-sm border border-white/10 bg-black/40 shrink-0 animate-pulse" style={{ animationDelay: `${i * 60}ms` }} />
+                          ))}
+                        </div>
+                        {/* Film Sprocket Strip — Bottom */}
+                        <div className="absolute bottom-0 left-0 right-0 h-6 bg-slate-900/80 border-t border-white/5 flex items-center gap-3 px-4 overflow-hidden">
+                          {Array.from({ length: 24 }).map((_, i) => (
+                            <div key={i} className="w-3 h-3 rounded-sm border border-white/10 bg-black/40 shrink-0 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
+                          ))}
+                        </div>
+                        {/* Central Loading Indicator */}
+                        <div className="flex flex-col items-center gap-4 z-10">
+                          <div className="relative w-16 h-16">
+                            <div className="absolute inset-0 rounded-full border-2 border-emerald-500/20 animate-ping" />
+                            <div className="absolute inset-2 rounded-full border border-emerald-500/30 animate-pulse" />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <FilmIcon className="w-6 h-6 text-emerald-400 animate-pulse" />
                             </div>
                           </div>
-                          {/* Scanning line animation */}
-                          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                            <div
-                              className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent"
-                              style={{
-                                animation: 'scanLine 3s ease-in-out infinite',
-                                top: '0%'
-                              }}
-                            />
+                          <div className="flex flex-col items-center gap-1.5">
+                            <span className="font-mono text-[10px] font-black uppercase tracking-[0.5em] text-emerald-400 animate-pulse">
+                              {previewUrl ? 'Loading Reel...' : 'Awaiting Performance'}
+                            </span>
+                            <span className="font-mono text-[8px] text-white/20 uppercase tracking-widest">
+                              {previewUrl ? 'Buffering master performance footage' : 'Record your performance in Act III'}
+                            </span>
                           </div>
                         </div>
-                      )}
+                        {/* Scanning line animation */}
+                        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                          <div
+                            className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent"
+                            style={{ animation: 'scanLine 3s ease-in-out infinite', top: '0%' }}
+                          />
+                        </div>
+                      </div>
 
 
                        {/* Playback HUD Overlay */}
