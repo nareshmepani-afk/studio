@@ -46,7 +46,8 @@ On EVERY user message, the agent MUST silently classify the task into one of the
 ## Step 2: Route Decision
 
 ### If the CURRENT model matches the task tier → **EXECUTE DIRECTLY**
-Proceed with the task normally. Include the Model Advisory at the end for the NEXT interaction.
+Proceed with the task normally. At the start of your response, explicitly state the pre-gate validation:
+`🎯 The model selected for your question should be: [emoji] [Model Name] — [Reason]`
 
 ### If a DIFFERENT model is better → **WRITE THE PROMPT**
 Do NOT attempt to execute the task. Instead, output:
@@ -55,9 +56,10 @@ Do NOT attempt to execute the task. Instead, output:
 ---
 🔀 **Model Route Advisory**
 
+**The model selected for your question should be:** [emoji] **[recommended model name]**
 **Current Model:** [current model name]
-**Recommended Model:** [emoji] **[recommended model name]**
 **Reason:** [one-line explanation of why the recommended model is better for this task]
+
 
 ### Ready-to-Paste Prompt
 Copy and paste this into the chat after switching models:
