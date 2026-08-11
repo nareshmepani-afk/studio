@@ -498,22 +498,23 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
         )}
 
         {currentStage === 1 && (
-          <div className="flex-1 flex flex-col items-center justify-center gap-1.5 px-4 border-l border-r border-white/10 mx-4">
+          <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 border-l border-r border-white/10 mx-1 sm:mx-2 lg:mx-4 relative overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.div 
                 key={detectedAnchors.length}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="font-mono text-[11px] tracking-[0.3em] text-emerald-400 font-bold uppercase flex items-center gap-2"
+                className="font-mono text-[9px] sm:text-[11px] tracking-[0.2em] sm:tracking-[0.3em] text-emerald-400 font-bold uppercase flex items-center gap-1.5 sm:gap-2 whitespace-nowrap"
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                {detectedAnchors.length.toString().padStart(2, '0')} Sensory Assets Deployed
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                <span>{detectedAnchors.length.toString().padStart(2, '0')} Sensory Assets Deployed</span>
               </motion.div>
             </AnimatePresence>
-             <div className={cn(
+            
+            <div className={cn(
                 "w-full h-[2px] bg-white/5 rounded-full overflow-hidden mt-1 transition-all",
                 (draggingCatalyst || isSurging) && "h-1.5 bg-cyan-500/10 shadow-[0_0_10px_rgba(6,182,212,0.3)]"
-             )}>
+            )}>
                 <motion.div 
                    className={cn(
                      "h-full transition-colors",
@@ -529,99 +530,27 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                      opacity: (draggingCatalyst || isSurging) ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" } : { duration: 0.3 }
                    }}
                 />
-             </div>
-             
-             <div className="flex items-center gap-3">
-                <span className="font-mono text-[9px] tracking-[0.4em] text-white/80 uppercase">
-                  Script: <span className="text-white/90">{wordCount}</span> words
-                </span>
-             </div>
-          </div>
-        )}
+            </div>
 
-        {currentStage === 1 && (
-          <div className="flex-1 flex flex-col items-center justify-center gap-1.5 px-4 border-l border-r border-white/5 mx-4">
-            <AnimatePresence mode="wait">
-              <motion.div 
-                key={detectedAnchors.length}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="font-mono text-[8px] tracking-[0.4em] text-emerald-500/40 uppercase flex items-center gap-2"
-              >
-                <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                {detectedAnchors.length.toString().padStart(2, '0')} Sensory Assets Deployed
-              </motion.div>
-            </AnimatePresence>
-            
-            <div className="flex items-center gap-2.5">
-              {detectedAnchors.slice(-5).map((anchor, i) => {
+            {/* Anchor pills — displayed only on xl screens to prevent button displacement */}
+            <div className="hidden xl:flex items-center gap-2 mt-1">
+              {detectedAnchors.slice(-3).map((anchor, i) => {
                 let btnClass = "border-emerald-500/20 bg-emerald-500/5 text-emerald-400/90";
-                let pulseColor = "rgba(16, 185, 129, 0.4)";
-
                 if (anchor.type === 'aroma') {
-                  btnClass = "border-amber-500/20 bg-amber-500/5 text-amber-400/90 shadow-[0_0_15px_rgba(251,191,36,0.1)]";
-                  pulseColor = "rgba(251, 191, 36, 0.4)";
+                  btnClass = "border-amber-500/20 bg-amber-500/5 text-amber-400/90";
                 } else if (anchor.type === 'soundscape') {
-                  btnClass = "border-sky-500/20 bg-sky-500/5 text-sky-400/90 shadow-[0_0_15px_rgba(56,189,248,0.1)]";
-                  pulseColor = "rgba(56, 189, 248, 0.4)";
+                  btnClass = "border-sky-500/20 bg-sky-500/5 text-sky-400/90";
                 }
-
                 return (
-                     <Tooltip key={`${anchor.word}-${i}`}>
-                      <TooltipTrigger asChild>
-                        <span className="inline-block">
-                          <motion.button
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ 
-                              scale: 1, 
-                              opacity: 1,
-                              boxShadow: [`0 0 0px ${pulseColor}`, `0 0 10px ${pulseColor}`, `0 0 0px ${pulseColor}`]
-                            }}
-                            transition={{ 
-                              scale: { type: "spring", damping: 15 },
-                              boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
-                            }}
-                            onClick={() => actions.primeCatalyst(anchor.word, anchor.type)}
-                            className={cn(
-                              "group relative flex items-center gap-2 rounded-lg border px-3 py-1 transition-all hover:brightness-125 active:scale-95",
-                              btnClass
-                            )}
-                          >
-                            <motion.div 
-                              className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white opacity-0 group-hover:opacity-100"
-                              initial={{ scale: 1, opacity: 0 }}
-                              animate={{ scale: [1, 1.5, 1], opacity: [0, 1, 0] }}
-                              transition={{ duration: 1, repeat: Infinity }}
-                            />
-                            
-                            <span className="font-mono text-[9px] font-black uppercase tracking-widest">
-                              {anchor.word}
-                            </span>
-                          </motion.button>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="bg-slate-900 border-white/10 text-[10px] font-bold tracking-widest uppercase py-2 px-3 mb-2 shadow-2xl">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-emerald-400">Captured Asset</span>
-                          <span className="text-white/60 normal-case font-normal text-[9px]">
-                            {anchor.type === 'visual' ? "Visual anchor detected in your narrative." :
-                             anchor.type === 'soundscape' ? "Auditory clarity detected in your prose." :
-                             "Olfactory memory anchor detected."}
-                          </span>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
+                  <span key={`${anchor.word}-${i}`} className="font-mono text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-white/10 text-white/70">
+                    {anchor.word}
+                  </span>
                 );
               })}
-              
-              {detectedAnchors.length === 0 && (
-                <div className="text-[10px] text-white/10 italic font-mono uppercase tracking-widest py-1">
-                  Awaiting Narrative Input...
-                </div>
-              )}
             </div>
           </div>
         )}
+
 
 
 
