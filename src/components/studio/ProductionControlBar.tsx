@@ -419,7 +419,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
             {/* --- PRODUCTION STATUS HUD (CENTER) --- */}
         {currentStage === 0 && (
-          <div className="flex-1 flex flex-col items-center justify-center gap-1.5 px-4 border-l border-r border-white/10 mx-4 relative">
+          <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 border-l border-r border-white/10 mx-1 sm:mx-2 lg:mx-4 relative overflow-hidden">
              <div className="absolute inset-x-0 -top-[500px] pointer-events-none flex justify-center">
                <AnimatePresence mode="wait">
                  {lastDetectedAnchor && (
@@ -432,17 +432,17 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                </AnimatePresence>
              </div>
              
-             <div className="flex items-center gap-6">
+             <div className="flex items-center gap-2 sm:gap-4 lg:gap-6">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center gap-3 cursor-pointer group">
+                      <div className="flex items-center gap-1.5 sm:gap-3 cursor-pointer group">
                         <div className={cn(
-                          "w-2.5 h-2.5 rounded-full",
+                          "w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0",
                           charge >= 15 ? "bg-emerald-400 shadow-[0_0_10px_#10b981]" : "bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
                         )} />
-                         <span className="font-mono text-[11px] tracking-[0.3em] text-white font-bold uppercase">
-                          Clarity: {charge}%
+                         <span className="font-mono text-[9px] sm:text-[11px] tracking-[0.2em] sm:tracking-[0.3em] text-white font-bold uppercase whitespace-nowrap">
+                          <span className="hidden sm:inline">Clarity: </span>{charge}%
                          </span>
                       </div>
                     </TooltipTrigger>
@@ -486,7 +486,8 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                   </Tooltip>
                 </TooltipProvider>
                 
-                <div className="flex items-center gap-3">
+                {/* Script word count — hidden on sub-lg viewports to prevent overflow */}
+                <div className="hidden lg:flex items-center gap-3">
                    <span className="font-mono text-[11px] tracking-[0.3em] text-white font-bold uppercase">
                      Script: <span className="text-emerald-400">{wordCount}</span> words
                    </span>
@@ -627,8 +628,43 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
         {/* --- NAVIGATION (RIGHT) --- */}
         <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 shrink-0">
 
-          {/* Clean View toggle lives in the top header bar — removed from here to prevent
-              the proceed button from being pushed off the right edge of the toolbar. */}
+          {currentStage === 0 && !isGeneratingDrafts && !isReviewing && !isDirectorOpen && !isTheaterOpen && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  data-hotspot-id="HS_ACT1_CLEAN_VIEW_BTN"
+                  data-state={isCleanView ? "off" : "on"}
+                  aria-pressed={!isCleanView}
+                  onClick={() => {
+                    const nextCleanView = !isCleanView;
+                    actions.toggleCleanView();
+                    toast.info(nextCleanView ? "Sensory View Off (Clean Reading Active)" : "Sensory View On (Overlays Restored)", {
+                      description: nextCleanView 
+                        ? "Floating badges and underlines hidden for clean reading." 
+                        : "Sensory anchor badges and hotspot pins restored."
+                    });
+                  }}
+                  className={cn(
+                    "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2.5 sm:py-3.5 rounded-2xl border text-[8.5px] sm:text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg shrink-0 whitespace-nowrap",
+                    isCleanView 
+                      ? "bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+                      : "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                  )}
+                >
+                  {isCleanView ? (
+                    <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+                  ) : (
+                    <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+                  )}
+                  <span className="hidden sm:inline">{isCleanView ? "Clean Read Mode" : "Sensory View On"}</span>
+                  <span className="inline sm:hidden">{isCleanView ? "Clean" : "Sensory"}</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-[10px] uppercase font-bold tracking-widest px-3 py-2">
+                <span>{isCleanView ? "Clean Read Mode Active (Icons Hidden) • Click for Sensory View" : "Sensory Overlays Active (Icons Shown) • Click for Clean Read Mode"}</span>
+              </TooltipContent>
+            </Tooltip>
+          )}
 
 
 
