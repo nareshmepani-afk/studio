@@ -868,7 +868,11 @@ export default function SoloStage({
   // Memoize recordedBlob URL safely to avoid browser memory leaks and duplicate URL instantiations
   useEffect(() => {
     if (!recordedBlob) {
-      setReviewVideoUrl(null);
+      if (data?.videoUrl) {
+        setReviewVideoUrl(data.videoUrl);
+      } else {
+        setReviewVideoUrl(null);
+      }
       return;
     }
     const url = URL.createObjectURL(recordedBlob);
@@ -876,7 +880,17 @@ export default function SoloStage({
     return () => {
       URL.revokeObjectURL(url);
     };
-  }, [recordedBlob]);
+  }, [recordedBlob, data?.videoUrl]);
+
+  // Auto-engage Review Take Mode on Act III load if a recorded video performance exists
+  useEffect(() => {
+    if (currentStage === 2 && (recordedBlob || data?.videoUrl)) {
+      setReviewTake(true);
+      if (data?.videoUrl && !recordedBlob) {
+        setReviewVideoUrl(data.videoUrl);
+      }
+    }
+  }, [currentStage, data?.videoUrl, recordedBlob]);
 
   // Intercept MediaRecorder stop event and trigger Review overlay before sealing
   useEffect(() => {
@@ -3833,7 +3847,7 @@ export default function SoloStage({
  
                     {/* Sleek Metadata Tag & Replay Tour aligned side-by-side with Status Label */}
                     <div className="flex items-center gap-2">
-                      {(!isOnline || bridgeStatus === 'disconnected') && (
+                      {!isOnline && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
