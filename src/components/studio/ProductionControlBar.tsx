@@ -276,7 +276,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
         if (isReviewing) return 'SEAL THE MEMORY';
         if (isProductionLocked) return 'ENTER RECORDING STUDIO';
 
-        return 'DRAFT COMPLETED';
+        return 'ENTER THE WEAVE';
     }
     
     switch (currentStage) {
@@ -289,10 +289,11 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
   return (
     <div className={cn(
-      "z-[9999] w-full max-w-4xl px-6 pointer-events-none transition-all duration-500 ease-in-out relative",
+      "z-[9999] w-full max-w-[98vw] sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl px-3 sm:px-6 pointer-events-none transition-all duration-500 ease-in-out relative",
       isDocked ? "fixed bottom-6 left-1/2 -translate-x-1/2" : "fixed bottom-12 left-1/2 -translate-x-1/2",
       (isReviewing || isDirectorOpen) && "opacity-0 invisible blur-xl grayscale scale-95 select-none pointer-events-none"
     )}>
+
       {/* SCROLL AFFORDANCE CUE */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
