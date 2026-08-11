@@ -626,42 +626,11 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
         {/* --- NAVIGATION (RIGHT) --- */}
         <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 shrink-0">
-          {currentStage === 0 && !isGeneratingDrafts && !isReviewing && !isDirectorOpen && !isTheaterOpen && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  data-hotspot-id="HS_ACT1_CLEAN_VIEW_BTN"
-                  data-state={isCleanView ? "off" : "on"}
-                  aria-pressed={!isCleanView}
-                  onClick={() => {
-                    const nextCleanView = !isCleanView;
-                    actions.toggleCleanView();
-                    toast.info(nextCleanView ? "Sensory View Off (Clean Reading Active)" : "Sensory View On (Overlays Restored)", {
-                      description: nextCleanView 
-                        ? "Floating badges and underlines hidden for clean reading." 
-                        : "Sensory anchor badges and hotspot pins restored."
-                    });
-                  }}
-                  className={cn(
-                    "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3 sm:py-3.5 rounded-2xl border text-[8.5px] sm:text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg shrink-0 whitespace-nowrap",
-                    isCleanView 
-                      ? "bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
-                      : "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
-                  )}
-                >
-                  {isCleanView ? (
-                    <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
-                  ) : (
-                    <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
-                  )}
-                  <span>{isCleanView ? "Clean Read Mode" : "Sensory View On"}</span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-[10px] uppercase font-bold tracking-widest px-3 py-2">
-                <span>{isCleanView ? "Clean Read Mode Active (Icons Hidden) • Click for Sensory View" : "Sensory Overlays Active (Icons Shown) • Click for Clean Read Mode"}</span>
-              </TooltipContent>
-            </Tooltip>
-          )}
+
+          {/* Clean View toggle lives in the top header bar — removed from here to prevent
+              the proceed button from being pushed off the right edge of the toolbar. */}
+
+
 
           <AnimatePresence mode="wait">
             {onRetake && (currentStage === 2 || currentStage === 3) && (
