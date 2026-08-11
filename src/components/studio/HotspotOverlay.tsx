@@ -52,7 +52,7 @@ export function HotspotOverlay() {
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'h') {
+      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'h') {
         e.preventDefault();
         setIsActive((prev) => !prev);
       }
@@ -89,7 +89,7 @@ export function HotspotOverlay() {
     <div className="fixed inset-0 z-[9999] pointer-events-none w-full h-full select-none">
       {/* Floating Status HUD Badge */}
       <div className="fixed bottom-4 right-4 bg-zinc-950/90 border border-amber-500/30 text-amber-400 font-mono text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-        ● HOTSPOT OVERLAY ACTIVE (Ctrl+Shift+H)
+        ● HOTSPOT OVERLAY ACTIVE (Ctrl+H)
       </div>
 
       {hotspots.map((hs) => (
