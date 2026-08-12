@@ -4858,6 +4858,7 @@ export default function SoloStage({
                         <video 
                           ref={previewVideoRef}
                           src={previewUrl}
+                          poster={localPosterUrl || data?.posterImageUrl}
                           crossOrigin="anonymous"
                           onLoadedMetadata={(e) => {
                             handleVideoLoadedMetadata(e);
@@ -4880,14 +4881,24 @@ export default function SoloStage({
 
                       {/* CINEMATIC LOADING SKELETON
                            Shows in two cases:
-                           1. previewUrl is null  — no video recorded yet
+                           1. previewUrl is null  — no video recorded yet / Firestore rehydrating
                            2. isVideoBuffering    — video URL exists but first frame not yet decoded
                            Fades out smoothly via opacity transition when video is ready. */}
                       <div
-                        className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-slate-950/95 rounded-2xl transition-opacity duration-700 pointer-events-none"
+                        className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-slate-950/90 rounded-2xl transition-opacity duration-700 pointer-events-none overflow-hidden"
                         style={{ opacity: (!previewUrl || isVideoBuffering) ? 1 : 0 }}
                         aria-hidden={!(!previewUrl || isVideoBuffering)}
                       >
+                        {/* Background Poster Image Blur Layer (shows during hard refresh if poster exists) */}
+                        {(localPosterUrl || data?.posterImageUrl) && (
+                          <div 
+                            className="absolute inset-0 bg-cover bg-center opacity-30 blur-md scale-105 pointer-events-none"
+                            style={{ backgroundImage: `url("${localPosterUrl || data?.posterImageUrl}")` }}
+                          />
+                        )}
+
+                        {/* Animated Shimmer Background */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/60 to-slate-950/90 bg-[length:200%_100%] animate-pulse pointer-events-none" />
                         {/* Animated Film Grain Noise Overlay */}
                         <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
                           style={{

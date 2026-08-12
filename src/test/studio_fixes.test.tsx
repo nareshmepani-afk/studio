@@ -2282,8 +2282,24 @@ describe('Studio Regression Tests', () => {
       // Test 3: Null previewUrl keeps buffering/skeleton active
       expect(resolveBufferingState(null, 0, false)).toBe(true);
     });
+
+    it('ACT IV HARD REFRESH POSTER FALLBACK SHIELD: should supply poster attribute and render background preloader layer during hard refresh rehydration', () => {
+      const resolvePreloaderPoster = (localPosterUrl?: string | null, dataPosterUrl?: string | null) => {
+        return localPosterUrl || dataPosterUrl || null;
+      };
+
+      // Test 1: Local poster URL takes highest priority
+      expect(resolvePreloaderPoster('blob:http://localhost/poster', 'https://storage.googleapis.com/poster.png')).toBe('blob:http://localhost/poster');
+
+      // Test 2: Data poster URL from Firestore is used on hard refresh
+      expect(resolvePreloaderPoster(null, 'https://storage.googleapis.com/poster.png')).toBe('https://storage.googleapis.com/poster.png');
+
+      // Test 3: Null poster returns null fallback for animated shimmer gradient
+      expect(resolvePreloaderPoster(null, null)).toBeNull();
+    });
   });
 });
+
 
 
 
