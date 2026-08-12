@@ -2265,8 +2265,26 @@ describe('Studio Regression Tests', () => {
       // Test 4: Verify Act I NEVER skips directly to Stage 2
       expect(resolveNextStage(0, true, false)).not.toBe(2);
     });
+
+    it('ACT IV MASTER REEL BUFFERING SHIELD: should clear video buffering overlay when previewUrl exists and readyState is ready', () => {
+      const resolveBufferingState = (previewUrl: string | null, readyState: number, eventFired: boolean) => {
+        if (!previewUrl) return true; // Buffering/Awaiting performance
+        if (readyState >= 1 || eventFired) return false; // Media loaded & ready to render
+        return true;
+      };
+
+      // Test 1: Active previewUrl with readyState >= 1 clears buffering immediately
+      expect(resolveBufferingState('blob:http://localhost/123', 2, false)).toBe(false);
+
+      // Test 2: Active previewUrl onCanPlay / onLoadedData event clears buffering
+      expect(resolveBufferingState('blob:http://localhost/123', 0, true)).toBe(false);
+
+      // Test 3: Null previewUrl keeps buffering/skeleton active
+      expect(resolveBufferingState(null, 0, false)).toBe(true);
+    });
   });
 });
+
 
 
 

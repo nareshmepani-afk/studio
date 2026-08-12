@@ -1653,11 +1653,30 @@ export default function SoloStage({
     }
   }, [previewUrl, currentStage]);
 
-  // Video Buffering Guard: Reset skeleton whenever the source URL changes.
-  // onCanPlay / onError on the <video> element clear this flag.
+  // Video Buffering Guard: Check if video is already ready in memory/cache when URL loads or Act IV mounts
   useEffect(() => {
+    if (!previewUrl) {
+      setIsVideoBuffering(true);
+      return;
+    }
+    
+    // Check if video element is already initialized and ready
+    if (previewVideoRef.current && previewVideoRef.current.readyState >= 2) {
+      setIsVideoBuffering(false);
+      return;
+    }
+
     setIsVideoBuffering(true);
-  }, [previewUrl]);
+
+    // Fallback timer: if browser doesn't dispatch onCanPlay within 300ms (e.g. cached video or slide transition), check readyState
+    const checkTimer = setTimeout(() => {
+      if (previewVideoRef.current && previewVideoRef.current.readyState >= 1) {
+        setIsVideoBuffering(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(checkTimer);
+  }, [previewUrl, currentStage]);
 
   const theaterVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -4840,7 +4859,13 @@ export default function SoloStage({
                           ref={previewVideoRef}
                           src={previewUrl}
                           crossOrigin="anonymous"
-                          onLoadedMetadata={handleVideoLoadedMetadata}
+                          onLoadedMetadata={(e) => {
+                            handleVideoLoadedMetadata(e);
+                            if (previewVideoRef.current && previewVideoRef.current.readyState >= 1) {
+                              setIsVideoBuffering(false);
+                            }
+                          }}
+                          onLoadedData={() => setIsVideoBuffering(false)}
                           onDurationChange={handleVideoLoadedMetadata}
                           onCanPlay={() => setIsVideoBuffering(false)}
                           onError={() => setIsVideoBuffering(false)}
