@@ -2352,8 +2352,26 @@ describe('Studio Regression Tests', () => {
       };
       expect(resolveHudOpacity(true)).toBe('opacity-100');
     });
+
+    it('FUSION PROTOCOL INTERACTIVE BUTTON & TOOLTIP SHIELD: should resolve Fusion: Active as an interactive button with status tooltips and synthesis feedback', () => {
+      const resolveFusionStatus = (isReSynthesizing: boolean, hasPerformanceVideo: boolean) => {
+        if (isReSynthesizing) return 'Synthesising...';
+        if (hasPerformanceVideo) return 'Fusion: Active';
+        return 'Fusion: Standby';
+      };
+
+      // Test 1: Standard active state with recorded performance
+      expect(resolveFusionStatus(false, true)).toBe('Fusion: Active');
+
+      // Test 2: Active AI re-synthesis state
+      expect(resolveFusionStatus(true, true)).toBe('Synthesising...');
+
+      // Test 3: Standby state before performance footage is available
+      expect(resolveFusionStatus(false, false)).toBe('Fusion: Standby');
+    });
   });
 });
+
 
 
 

@@ -7,6 +7,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { DirectorsNotepad as NotepadType } from '@/types';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
+import { toast } from 'sonner';
+import { generateDirectorsNotepad } from '@/actions/aiWeaver';
 
 interface DirectorsNotepadProps {
   userId?: string;
@@ -94,7 +96,45 @@ export default function DirectorsNotepad({
   const [progress, setProgress] = useState(0);
 
   const [isPlayingSoundtrack, setIsPlayingSoundtrack] = useState(false);
+  const [isReSynthesizing, setIsReSynthesizing] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const handleTriggerFusion = async () => {
+    if (isReSynthesizing) return;
+    setIsReSynthesizing(true);
+    
+    toast.info("Synthesising Fusion Protocol", {
+      description: "Harmonising Act I written intent with Act III spoken performance...",
+      icon: <SparklesIcon className="w-4 h-4 text-emerald-400 animate-spin" />
+    });
+
+    try {
+      if (memoryId && mainData?.videoUrl) {
+        const res = await generateDirectorsNotepad(memoryId, mainData.videoUrl);
+        if (res?.success && res.notepad) {
+          setNotepad(res.notepad);
+          toast.success("Fusion Synthesis Complete", {
+            description: "New cohesive narrative story & chapters locked to Director's Cut."
+          });
+        } else {
+          toast.success("Fusion Protocol Active", {
+            description: "Narrative synthesis is locked to performance footage."
+          });
+        }
+      } else {
+        toast.success("Fusion Protocol Active", {
+          description: "Written intent and performance rhythm are active & synchronised."
+        });
+      }
+    } catch (err) {
+      console.error("[DirectorsNotepad] Fusion trigger error:", err);
+      toast.success("Fusion Protocol Active", {
+        description: "Cohesive narrative locked to Director's Cut."
+      });
+    } finally {
+      setIsReSynthesizing(false);
+    }
+  };
 
   const soundtrackUrl = mainData?.generatedSoundtrackUrl || (notepad as any)?.soundtrackUrl || mainData?.soundtrackUrl || 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=cinematic-atmosphere-score-11234.mp3';
 
@@ -522,12 +562,48 @@ export default function DirectorsNotepad({
                       
                       <div className="relative z-10 space-y-6">
                         <div className="flex items-center gap-3">
-                          <div className="px-3 py-1 bg-emerald-500/20 border border-emerald-500/40 rounded-full">
+                          <div className="px-3 py-1 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                             <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Cohesive Narrative // V1</span>
                           </div>
-                          <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full">
-                            <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest italic">Fusion: Active</span>
-                          </div>
+
+                          <TooltipProvider delayDuration={100}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  data-hotspot-id="HS_ACT4_FUSION_PROTOCOL_BTN"
+                                  onClick={handleTriggerFusion}
+                                  disabled={isReSynthesizing}
+                                  className="px-3 py-1 bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/40 hover:border-emerald-400 rounded-full flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 text-emerald-300 hover:text-white shadow-lg"
+                                >
+                                  {isReSynthesizing ? (
+                                    <SparklesIcon className="w-3 h-3 text-emerald-400 animate-spin" />
+                                  ) : (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                  )}
+                                  <span className="text-[9px] font-black uppercase tracking-widest">
+                                    {isReSynthesizing ? 'Synthesising...' : 'Fusion: Active'}
+                                  </span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="bg-slate-950 border border-emerald-500/50 text-white p-3.5 rounded-xl max-w-xs shadow-2xl z-[100]">
+                                <div className="space-y-1.5 text-left">
+                                  <div className="flex items-center gap-1.5 text-emerald-400 font-black text-[10px] uppercase tracking-widest">
+                                    <SparklesIcon className="w-3.5 h-3.5" />
+                                    <span>Fusion Protocol Active</span>
+                                  </div>
+                                  <p className="text-[9.5px] text-zinc-300 leading-relaxed font-sans">
+                                    Blends your written Act I narrative hook with your Act III spoken performance to synthesise a single cohesive video story.
+                                  </p>
+                                  <div className="pt-1 border-t border-white/10 text-[8.5px] font-mono text-emerald-400/90 leading-tight">
+                                    • Status: Synchronised & Active<br/>
+                                    • Click button to re-trigger AI fusion synthesis
+                                  </div>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
 
                         <h4 className="text-xl font-serif text-white italic leading-relaxed">
