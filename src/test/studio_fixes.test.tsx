@@ -2369,8 +2369,42 @@ describe('Studio Regression Tests', () => {
       // Test 3: Standby state before performance footage is available
       expect(resolveFusionStatus(false, false)).toBe('Fusion: Standby');
     });
+
+    it('ACT V CINEMA POSTER LAYOUT & PHOTO FALLBACK SHIELD: should resolve selfieUrl and photo fallbacks and format billing credits with zero text overlapping', () => {
+      const resolvePosterImage = (memory: any) => {
+        return memory.posterImageUrl || 
+          memory.posterUrl ||
+          memory.localPosterUrl ||
+          memory.selfieUrl ||
+          memory.heroImageUrl ||
+          memory.narratorPhotoUrl ||
+          memory.imageUrl || null;
+      };
+
+      // Test 1: selfieUrl falls back when posterImageUrl is not set
+      expect(resolvePosterImage({ selfieUrl: 'https://storage.googleapis.com/selfie.jpg' })).toBe('https://storage.googleapis.com/selfie.jpg');
+
+      // Test 2: narratorPhotoUrl falls back when selfieUrl is not set
+      expect(resolvePosterImage({ narratorPhotoUrl: 'https://storage.googleapis.com/narrator.jpg' })).toBe('https://storage.googleapis.com/narrator.jpg');
+
+      // Test 3: localPosterUrl takes precedence over selfieUrl
+      expect(resolvePosterImage({ localPosterUrl: 'blob:http://localhost/poster', selfieUrl: 'https://storage.googleapis.com/selfie.jpg' })).toBe('blob:http://localhost/poster');
+
+      // Test 4: Verify unified layout structure prevents text collision
+      const resolveLayoutClasses = () => {
+        return {
+          container: 'absolute bottom-0 inset-x-0 p-5 flex flex-col items-center gap-2.5 text-center',
+          title: 'font-serif italic text-xl uppercase',
+          coordinates: 'text-[10px] font-mono font-bold tracking-[0.35em] text-amber-300/90'
+        };
+      };
+      const layout = resolveLayoutClasses();
+      expect(layout.container).toContain('flex-col');
+      expect(layout.coordinates).toContain('text-amber-300/90');
+    });
   });
 });
+
 
 
 

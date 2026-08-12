@@ -19,14 +19,18 @@ export function CinemaPoster({ memory, className = "" }: CinemaPosterProps) {
   
   // Determine the best source for the poster image
   // Ensure we don't try to use a .webm or .mp4 as a static image source
-  // We check before the query parameters for the file extension
   const isVideoUrl = (url?: string) => {
     if (!url) return false;
     const cleanUrl = url.split('?')[0].toLowerCase();
     return cleanUrl.match(/\.(webm|mp4|mov|ogg)$/);
   };
   
-  const primaryImage = memory.posterImageUrl || 
+  const primaryImage = (memory as any)?.posterImageUrl || 
+    (memory as any)?.posterUrl ||
+    (memory as any)?.localPosterUrl ||
+    (memory as any)?.selfieUrl ||
+    (memory as any)?.heroImageUrl ||
+    (memory as any)?.narratorPhotoUrl ||
     (!isVideoUrl(memory.imageUrl) ? memory.imageUrl : null) || 
     memory.mediaAttachments?.find(m => m.type === 'image')?.url || 
     memory.mediaAttachments?.find(m => !isVideoUrl(m.url))?.url ||
@@ -40,102 +44,106 @@ export function CinemaPoster({ memory, className = "" }: CinemaPosterProps) {
   const starring = credits?.starring || 'THE SOUL OF THE STORY';
 
   return (
-    <div className={`relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-slate-950 shadow-2xl border border-white/5 group ${className}`}>
+    <div className={`relative aspect-[2/3] w-full overflow-hidden rounded-2xl bg-slate-950 shadow-2xl border border-white/10 group ${className}`}>
       {/* 1. Underlying Image with Filmic Filter Stack */}
       <div 
         className="absolute inset-0 w-full h-full"
-        style={{ filter: 'brightness(0.85) contrast(1.15) saturate(0.8)' }}
+        style={{ filter: 'brightness(0.85) contrast(1.15) saturate(0.95)' }}
       >
         {hasBackground ? (
           <Image 
             src={primaryImage} 
-            alt={memory.title} 
+            alt={memory.title || "Memory Poster"} 
             fill 
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover transition-transform duration-[2000ms] group-hover:scale-110" 
+            className="object-cover transition-transform duration-[2000ms] group-hover:scale-105" 
             priority
+            unoptimized={primaryImage.startsWith('blob:')}
           />
         ) : (
           /* Fallback Gradient if no image exists */
-          <div className="w-full h-full bg-gradient-to-br from-slate-900 via-slate-950 to-black flex items-center justify-center">
-             <div className="w-24 h-24 rounded-full bg-amber-500/5 blur-2xl animate-pulse" />
+          <div className="w-full h-full bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 flex flex-col items-center justify-center p-6 text-center">
+             <div className="w-28 h-28 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-3">
+                <span className="text-3xl">🎬</span>
+             </div>
+             <span className="font-serif italic text-base text-amber-200/80">Cinematic Memory Archive</span>
           </div>
         )}
       </div>
 
-      {/* 2. Cinematic Shadows & Depth */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-black/40" />
-      <div className="absolute inset-0 shadow-[inset_0_0_100px_rgba(0,0,0,0.6)] pointer-events-none" />
+      {/* 2. Film Grain & Gradient Vignette Overlays */}
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-slate-950/60 pointer-events-none" />
+      <div className="absolute inset-0 shadow-[inset_0_0_80px_rgba(0,0,0,0.7)] pointer-events-none" />
 
       {/* 3. Gold-tinted Chapter Header (Top Focus) */}
-      <div className="absolute top-8 left-0 w-full text-center px-4">
+      <div className="absolute top-6 inset-x-0 text-center px-4 z-10 pointer-events-none">
         <motion.div
            initial={{ opacity: 0, y: -10 }}
            animate={{ opacity: 1, y: 0 }}
-           className="inline-block"
+           className="inline-flex flex-col items-center gap-1.5"
         >
-          <span className="text-[10px] sm:text-xs font-sans font-medium uppercase tracking-[0.4em] text-amber-200/80 drop-shadow-md">
-            {memory.chapterTitle || "An Original Memory"}
+          <span className="text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-[0.4em] text-amber-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+            {memory.chapterTitle || "AN ORIGINAL MEMORY"}
           </span>
-          <div className="h-px w-8 bg-amber-500/30 mx-auto mt-2" />
+          <div className="h-0.5 w-8 bg-amber-400/50 rounded-full" />
         </motion.div>
       </div>
 
-      {/* 4. Film Title (Bottom Third Focus) */}
-      <div className="absolute inset-x-0 bottom-[22%] px-6 text-center pointer-events-none">
+      {/* 4 & 5. Unified Bottom Billing & Title Block (Eliminates text overlapping and cramped lines) */}
+      <div className="absolute bottom-0 inset-x-0 p-5 sm:p-6 flex flex-col items-center gap-2.5 text-center bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent pt-14 z-10 pointer-events-none">
+        {/* Film Title */}
         <motion.h2 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="font-serif italic text-2xl sm:text-3xl lg:text-4xl text-white drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] tracking-widest leading-tight uppercase"
+          className="font-serif italic text-xl sm:text-2xl lg:text-3xl text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] tracking-wider leading-tight uppercase max-w-[92%]"
         >
-          {memory.title}
+          {memory.title || "UNTITLED MEMORY"}
         </motion.h2>
         
-        {/* Memory Coordinates & Mark Tagline */}
+        {/* Memory Coordinates (Location & Year) */}
         {(memory.location || memory.dateComponents?.year) && (
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="text-[10px] sm:text-xs font-sans tracking-[0.4em] text-white/60 mt-3 drop-shadow-md uppercase"
+            transition={{ delay: 0.2 }}
+            className="text-[10px] sm:text-xs font-mono font-bold tracking-[0.35em] text-amber-300/90 uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
           >
             {memory.location} {memory.location && memory.dateComponents?.year ? '•' : ''} {memory.dateComponents?.year}
           </motion.p>
         )}
-      </div>
 
-      {/* 5. Billing Block (Theatrical Credits) */}
-      <div className="absolute bottom-6 inset-x-0 px-8">
-        <div className="flex flex-col items-center gap-1 opacity-60 group-hover:opacity-90 transition-opacity duration-700">
-          <div className="flex flex-col items-center gap-0.5 max-w-full">
-             <span className="text-[0.5rem] font-sans tracking-[0.25em] text-white/80 leading-tight font-light text-center">
-                DIRECTED BY {director.toUpperCase()} • PRODUCED BY {producer.toUpperCase()}
-             </span>
-             <span className="text-[0.6rem] font-sans tracking-[0.35em] text-white font-medium text-center uppercase">
-                STARRING {starring.toUpperCase()}
-             </span>
-          </div>
+        {/* Decorative Divider */}
+        <div className="h-px w-16 bg-white/20 my-0.5" />
+
+        {/* Theatrical Billing Credits */}
+        <div className="flex flex-col items-center gap-1 text-white/90">
+           <span className="text-[8px] sm:text-[9px] font-sans tracking-[0.2em] text-amber-100/90 font-medium uppercase leading-relaxed text-center drop-shadow-md">
+              DIRECTED BY <strong className="text-white font-bold">{director.toUpperCase()}</strong> • PRODUCED BY <strong className="text-white font-bold">{producer.toUpperCase()}</strong>
+           </span>
+           <span className="text-[8px] sm:text-[9px] font-sans tracking-[0.25em] text-emerald-300 font-semibold uppercase leading-relaxed text-center drop-shadow-md">
+              STARRING <strong className="text-white font-bold">{starring.toUpperCase()}</strong>
+           </span>
           
           {/* Custom Billing Line */}
           {credits?.billingLine && (
-            <p className="text-[0.5rem] uppercase tracking-widest text-center mt-2 border-t border-white/10 pt-2 w-full text-white/50 px-4 line-clamp-2">
+            <p className="text-[7.5px] uppercase tracking-widest text-center mt-1 text-white/70 line-clamp-2">
               {credits.billingLine}
             </p>
           )}
 
-          {/* Theatrical Branding */}
-          <div className="flex items-center gap-3 mt-3 opacity-60">
-             <div className="h-px w-6 bg-white/10" />
-             <span className="font-serif italic text-[0.6rem] tracking-[0.3em] uppercase whitespace-nowrap text-amber-200/80">
+          {/* Theatrical Branding Release Badge */}
+          <div className="flex items-center gap-2 mt-1.5 opacity-90">
+             <div className="h-px w-4 bg-amber-400/40" />
+             <span className="font-serif italic text-[8.5px] sm:text-[9.5px] tracking-[0.25em] uppercase text-amber-300 font-medium">
                 Chronicle Cinema Release
              </span>
-             <div className="h-px w-6 bg-white/10" />
+             <div className="h-px w-4 bg-amber-400/40" />
           </div>
         </div>
       </div>
 
-      {/* Decorative Border Glow */}
-      <div className="absolute inset-0 border border-white/5 rounded-xl pointer-events-none group-hover:border-white/10 transition-colors" />
+      {/* Decorative Border Frame */}
+      <div className="absolute inset-0 border border-white/10 rounded-2xl pointer-events-none group-hover:border-amber-400/30 transition-colors z-20" />
     </div>
   );
 }

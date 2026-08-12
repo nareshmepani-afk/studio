@@ -5281,7 +5281,10 @@ export default function SoloStage({
           >
              <div className="absolute -inset-20 bg-sky-500/10 blur-[120px] rounded-full opacity-50 group-hover:opacity-80 transition-opacity duration-1000" />
              <div className="relative z-10">
-                <CinemaPoster memory={localPosterUrl ? { ...data, posterImageUrl: localPosterUrl } : data} />
+                <CinemaPoster memory={{
+                  ...data,
+                  posterImageUrl: localPosterUrl || data?.posterImageUrl || (data as any)?.selfieUrl || (data as any)?.narratorPhotoUrl || data?.imageUrl || (data as any)?.heroImageUrl
+                }} />
              </div>
 
              {/* Mode Indicator Overlay Badge */}
