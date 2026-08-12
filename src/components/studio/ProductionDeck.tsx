@@ -181,11 +181,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         // 1. Sync stage - Restore from saved database state or URL override
         setStage(targetStage);
         
-        // 2. Sync modality
+        // 2. Sync modality (default to 'pen' if missing to prevent dock unmounting)
         if (memoryData?.modality) {
             setModality(memoryData.modality);
         } else {
-            setModality(null);
+            setModality('pen');
         }
         
         // 3. Sync original hook
@@ -1202,7 +1202,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                             )}
 
                              {/* PRODUCTION CONTROL BAR: THE HEARTBEAT */}
-                             {modality !== null && currentStage >= 0 && (
+                             {currentStage >= 0 && (
                                  <div className={cn("transition-all duration-500", isDirectorOpen && "opacity-20 blur-sm pointer-events-none")}>
                                      <ProductionControlBar
                                          currentStage={currentStage}

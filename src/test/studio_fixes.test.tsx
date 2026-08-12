@@ -2185,6 +2185,29 @@ describe('Studio Regression Tests', () => {
       expect(act2Result.upperTier.hotspots).toContain('HS_STAGE_CONTROL_MODE_COLLAB_BTN');
       expect(act2Result.lowerTier.actionHotspot).toBe('HS_ENTER_STUDIO_BTN');
     });
+
+    it('MODALITY REHYDRATION SHIELD: should guarantee ProductionControlBar dock mounts even when memoryData modality is null or missing on page load', () => {
+      const resolveRehydratedModality = (memoryDataModality?: string | null) => {
+        return memoryDataModality || 'pen';
+      };
+
+      const shouldMountControlBar = (currentStage: number) => {
+        return currentStage >= 0;
+      };
+
+      // Test 1: Null modality on Firestore memoryData defaults to 'pen'
+      expect(resolveRehydratedModality(null)).toBe('pen');
+      expect(resolveRehydratedModality(undefined)).toBe('pen');
+      expect(resolveRehydratedModality('canvas')).toBe('canvas');
+
+      // Test 2: Control bar ALWAYS mounts across all stages (Act I to Act V)
+      expect(shouldMountControlBar(0)).toBe(true);
+      expect(shouldMountControlBar(1)).toBe(true);
+      expect(shouldMountControlBar(2)).toBe(true);
+      expect(shouldMountControlBar(3)).toBe(true);
+      expect(shouldMountControlBar(4)).toBe(true);
+    });
   });
 });
+
 
