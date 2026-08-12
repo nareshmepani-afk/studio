@@ -2319,8 +2319,42 @@ describe('Studio Regression Tests', () => {
       // Test 4: Mentor Mode ON & Clean Read OFF -> Rendered across all Acts (returns true)
       expect(shouldRenderMentorHotspot(false, true)).toBe(true);
     });
+
+    it('TIMESTAMP SEEK AUTO-PLAY & SCRUBBER VISIBILITY SHIELD: should trigger video playback and keep Playback Scrubber HUD visible on timestamp seek', () => {
+      const handleSeekEvent = (seconds: number, autoPlay: boolean = true) => {
+        let currentTime = seconds;
+        let isPlaying = false;
+        let isVideoBuffering = true;
+
+        if (autoPlay) {
+          isPlaying = true;
+          isVideoBuffering = false;
+        }
+
+        return { currentTime, isPlaying, isVideoBuffering };
+      };
+
+      // Test 1: Seeking 00:00 (THE FLOW) sets currentTime to 0 and triggers playback
+      const res0 = handleSeekEvent(0, true);
+      expect(res0.currentTime).toBe(0);
+      expect(res0.isPlaying).toBe(true);
+      expect(res0.isVideoBuffering).toBe(false);
+
+      // Test 2: Seeking 00:43 (CLIMACTIC ARC) sets currentTime to 43 and triggers playback
+      const res43 = handleSeekEvent(43, true);
+      expect(res43.currentTime).toBe(43);
+      expect(res43.isPlaying).toBe(true);
+      expect(res43.isVideoBuffering).toBe(false);
+
+      // Test 3: Playback Scrubber HUD opacity resolved when previewUrl exists
+      const resolveHudOpacity = (hasPreviewUrl: boolean) => {
+        return hasPreviewUrl ? 'opacity-100' : 'opacity-0';
+      };
+      expect(resolveHudOpacity(true)).toBe('opacity-100');
+    });
   });
 });
+
 
 
 

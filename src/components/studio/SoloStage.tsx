@@ -1748,10 +1748,18 @@ export default function SoloStage({
     });
   }, [setProductionStage, clearRecording]);
 
-  const handleSeekPreview = useCallback((seconds: number) => {
+  const handleSeekPreview = useCallback((seconds: number, autoPlay: boolean = true) => {
     setPreviewCurrentTime(seconds);
     if (previewVideoRef.current) {
       previewVideoRef.current.currentTime = seconds;
+      if (autoPlay) {
+        previewVideoRef.current.play().then(() => {
+          setIsPlaying(true);
+          setIsVideoBuffering(false);
+        }).catch((err) => {
+          console.warn("[SoloStage] Video seek playback requested:", err);
+        });
+      }
     }
   }, []);
 
@@ -4972,8 +4980,8 @@ export default function SoloStage({
                       </div>
 
 
-                       {/* Playback HUD Overlay */}
-                       <div className="absolute bottom-8 left-8 right-8 z-20 flex items-center gap-6 p-4 bg-black/40 backdrop-blur-2xl rounded-2xl border border-white/10 opacity-0 group-hover:opacity-100 transition-all duration-500">
+                        {/* Playback HUD Overlay — permanently visible for high contrast playback control */}
+                        <div className="absolute bottom-8 left-8 right-8 z-20 flex items-center gap-6 p-4 bg-slate-950/85 backdrop-blur-2xl rounded-2xl border border-white/15 shadow-2xl transition-all duration-500">
                          <TooltipProvider delayDuration={200}>
                            <Tooltip>
                              <TooltipTrigger asChild>
