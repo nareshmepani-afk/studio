@@ -23,8 +23,11 @@ export const MentorshipHotspot: React.FC<MentorshipHotspotProps> = ({
   isCompleted = false,
   isAct1Guard = false
 }) => {
-  const { isCleanView } = useStudioState();
-  if (isCleanView) return null;
+  const { isCleanView, mentorContext } = useStudioState();
+  const isMentorActive = mentorContext?.mentorModeActive ?? false;
+
+  // Rule: Suppress ALL Mentor Hotspots when Clean Read Mode is active OR when Mentor Guide mode is OFF
+  if (isCleanView || !isMentorActive) return null;
 
   return (
     <TooltipProvider delayDuration={0}>

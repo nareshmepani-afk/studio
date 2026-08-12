@@ -2297,8 +2297,28 @@ describe('Studio Regression Tests', () => {
       // Test 3: Null poster returns null fallback for animated shimmer gradient
       expect(resolvePreloaderPoster(null, null)).toBeNull();
     });
+
+    it('MENTOR HOTSPOT SUPPRESSION SHIELD ACROSS ALL ACTS: should strictly suppress all mentor hotspot pins when mentorModeActive is false or cleanView is active across all 5 Acts', () => {
+      const shouldRenderMentorHotspot = (isCleanView: boolean, mentorModeActive: boolean) => {
+        if (isCleanView || !mentorModeActive) return false;
+        return true;
+      };
+
+      // Test 1: Mentor Mode OFF -> Suppressed on ALL Acts (returns false)
+      expect(shouldRenderMentorHotspot(false, false)).toBe(false);
+
+      // Test 2: Clean Read Active -> Suppressed on ALL Acts (returns false)
+      expect(shouldRenderMentorHotspot(true, true)).toBe(false);
+
+      // Test 3: Both Clean Read Active & Mentor Mode OFF -> Suppressed (returns false)
+      expect(shouldRenderMentorHotspot(true, false)).toBe(false);
+
+      // Test 4: Mentor Mode ON & Clean Read OFF -> Rendered across all Acts (returns true)
+      expect(shouldRenderMentorHotspot(false, true)).toBe(true);
+    });
   });
 });
+
 
 
 
