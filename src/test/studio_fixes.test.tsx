@@ -2266,20 +2266,23 @@ describe('Studio Regression Tests', () => {
       expect(resolveNextStage(0, true, false)).not.toBe(2);
     });
 
-    it('ACT IV MASTER REEL BUFFERING SHIELD: should clear video buffering overlay when previewUrl exists and readyState is ready', () => {
+    it('ACT IV MASTER REEL BUFFERING SHIELD: should clear video buffering overlay ONLY when readyState >= 2 (HAVE_CURRENT_DATA) or onCanPlay fires', () => {
       const resolveBufferingState = (previewUrl: string | null, readyState: number, eventFired: boolean) => {
         if (!previewUrl) return true; // Buffering/Awaiting performance
-        if (readyState >= 1 || eventFired) return false; // Media loaded & ready to render
-        return true;
+        if (readyState >= 2 || eventFired) return false; // First frame decoded & ready to render
+        return true; // Keep loading widget active during network buffering or readyState 1 (metadata only)
       };
 
-      // Test 1: Active previewUrl with readyState >= 1 clears buffering immediately
+      // Test 1: Active previewUrl with readyState 2 (HAVE_CURRENT_DATA) clears buffering immediately
       expect(resolveBufferingState('blob:http://localhost/123', 2, false)).toBe(false);
 
-      // Test 2: Active previewUrl onCanPlay / onLoadedData event clears buffering
+      // Test 2: Active previewUrl with readyState 1 (HAVE_METADATA only) KEEPS loading widget active (returns true)
+      expect(resolveBufferingState('blob:http://localhost/123', 1, false)).toBe(true);
+
+      // Test 3: Active previewUrl onCanPlay / onLoadedData event clears buffering
       expect(resolveBufferingState('blob:http://localhost/123', 0, true)).toBe(false);
 
-      // Test 3: Null previewUrl keeps buffering/skeleton active
+      // Test 4: Null previewUrl keeps buffering/widget active
       expect(resolveBufferingState(null, 0, false)).toBe(true);
     });
 

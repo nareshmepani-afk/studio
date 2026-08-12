@@ -1653,14 +1653,14 @@ export default function SoloStage({
     }
   }, [previewUrl, currentStage]);
 
-  // Video Buffering Guard: Check if video is already ready in memory/cache when URL loads or Act IV mounts
+  // Video Buffering Guard: Require readyState >= 2 (HAVE_CURRENT_DATA) before clearing buffering
   useEffect(() => {
     if (!previewUrl) {
       setIsVideoBuffering(true);
       return;
     }
     
-    // Check if video element is already initialized and ready
+    // Check if video element is already initialized and has decoded its first frame
     if (previewVideoRef.current && previewVideoRef.current.readyState >= 2) {
       setIsVideoBuffering(false);
       return;
@@ -1668,14 +1668,15 @@ export default function SoloStage({
 
     setIsVideoBuffering(true);
 
-    // Fallback timer: if browser doesn't dispatch onCanPlay within 300ms (e.g. cached video or slide transition), check readyState
-    const checkTimer = setTimeout(() => {
-      if (previewVideoRef.current && previewVideoRef.current.readyState >= 1) {
+    // Polling timer: check readyState >= 2 until first frame is decoded
+    const intervalId = setInterval(() => {
+      if (previewVideoRef.current && previewVideoRef.current.readyState >= 2) {
         setIsVideoBuffering(false);
+        clearInterval(intervalId);
       }
-    }, 300);
+    }, 150);
 
-    return () => clearTimeout(checkTimer);
+    return () => clearInterval(intervalId);
   }, [previewUrl, currentStage]);
 
   const theaterVideoRef = useRef<HTMLVideoElement>(null);
@@ -4862,82 +4863,107 @@ export default function SoloStage({
                           crossOrigin="anonymous"
                           onLoadedMetadata={(e) => {
                             handleVideoLoadedMetadata(e);
-                            if (previewVideoRef.current && previewVideoRef.current.readyState >= 1) {
+                            if (previewVideoRef.current && previewVideoRef.current.readyState >= 2) {
                               setIsVideoBuffering(false);
                             }
                           }}
-                          onLoadedData={() => setIsVideoBuffering(false)}
+                          onLoadedData={() => {
+                            if (previewVideoRef.current && previewVideoRef.current.readyState >= 2) {
+                              setIsVideoBuffering(false);
+                            }
+                          }}
                           onDurationChange={handleVideoLoadedMetadata}
                           onCanPlay={() => setIsVideoBuffering(false)}
-                          onError={() => setIsVideoBuffering(false)}
-                          onPlay={() => setIsPlaying(true)}
+                          onWaiting={() => setIsVideoBuffering(true)}
+                          onSeeking={() => setIsVideoBuffering(true)}
+                          onSeeked={() => setIsVideoBuffering(false)}
+                          onPlay={() => {
+                            setIsPlaying(true);
+                            if (previewVideoRef.current && previewVideoRef.current.readyState >= 2) {
+                              setIsVideoBuffering(false);
+                            }
+                          }}
                           onPause={() => setIsPlaying(false)}
                           onEnded={() => setIsPlaying(false)}
+                          onError={() => setIsVideoBuffering(false)}
                           onTimeUpdate={handlePreviewTimeUpdate}
                           className="w-full h-full object-cover grayscale-[0.2] contrast-[1.1] rounded-2xl"
                           playsInline
                         />
                       )}
 
-                      {/* CINEMATIC LOADING SKELETON
+                      {/* CINEMATIC MEDIA LOADING WIDGET
                            Shows in two cases:
                            1. previewUrl is null  — no video recorded yet / Firestore rehydrating
-                           2. isVideoBuffering    — video URL exists but first frame not yet decoded
+                           2. isVideoBuffering    — video URL exists but first frame (readyState >= 2) not yet decoded
                            Fades out smoothly via opacity transition when video is ready. */}
                       <div
-                        className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-slate-950/90 rounded-2xl transition-opacity duration-700 pointer-events-none overflow-hidden"
+                        className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-slate-950/95 rounded-2xl transition-opacity duration-500 pointer-events-none overflow-hidden z-30"
                         style={{ opacity: (!previewUrl || isVideoBuffering) ? 1 : 0 }}
                         aria-hidden={!(!previewUrl || isVideoBuffering)}
                       >
                         {/* Background Poster Image Blur Layer (shows during hard refresh if poster exists) */}
                         {(localPosterUrl || data?.posterImageUrl) && (
                           <div 
-                            className="absolute inset-0 bg-cover bg-center opacity-30 blur-md scale-105 pointer-events-none"
+                            className="absolute inset-0 bg-cover bg-center opacity-35 blur-xl scale-110 pointer-events-none"
                             style={{ backgroundImage: `url("${localPosterUrl || data?.posterImageUrl}")` }}
                           />
                         )}
 
                         {/* Animated Shimmer Background */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/60 to-slate-950/90 bg-[length:200%_100%] animate-pulse pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/70 to-slate-950/95 bg-[length:200%_100%] animate-pulse pointer-events-none" />
+
                         {/* Animated Film Grain Noise Overlay */}
-                        <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                        <div className="absolute inset-0 opacity-[0.05] pointer-events-none"
                           style={{
                             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
                             backgroundSize: '128px 128px'
                           }}
                         />
+
                         {/* Film Sprocket Strip — Top */}
-                        <div className="absolute top-0 left-0 right-0 h-6 bg-slate-900/80 border-b border-white/5 flex items-center gap-3 px-4 overflow-hidden">
+                        <div className="absolute top-0 left-0 right-0 h-6 bg-slate-900/90 border-b border-white/10 flex items-center gap-3 px-4 overflow-hidden z-10">
                           {Array.from({ length: 24 }).map((_, i) => (
-                            <div key={i} className="w-3 h-3 rounded-sm border border-white/10 bg-black/40 shrink-0 animate-pulse" style={{ animationDelay: `${i * 60}ms` }} />
+                            <div key={i} className="w-3 h-3 rounded-sm border border-white/15 bg-black/50 shrink-0 animate-pulse" style={{ animationDelay: `${i * 60}ms` }} />
                           ))}
                         </div>
+
                         {/* Film Sprocket Strip — Bottom */}
-                        <div className="absolute bottom-0 left-0 right-0 h-6 bg-slate-900/80 border-t border-white/5 flex items-center gap-3 px-4 overflow-hidden">
+                        <div className="absolute bottom-0 left-0 right-0 h-6 bg-slate-900/90 border-t border-white/10 flex items-center gap-3 px-4 overflow-hidden z-10">
                           {Array.from({ length: 24 }).map((_, i) => (
-                            <div key={i} className="w-3 h-3 rounded-sm border border-white/10 bg-black/40 shrink-0 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
+                            <div key={i} className="w-3 h-3 rounded-sm border border-white/15 bg-black/50 shrink-0 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
                           ))}
                         </div>
-                        {/* Central Loading Indicator */}
-                        <div className="flex flex-col items-center gap-4 z-10">
-                          <div className="relative w-16 h-16">
+
+                        {/* Central Glassmorphic Loading Widget Card */}
+                        <div className="flex flex-col items-center gap-4 z-20 p-6 rounded-3xl bg-slate-950/85 backdrop-blur-2xl border border-emerald-500/30 shadow-[0_0_50px_rgba(16,185,129,0.2)] max-w-sm text-center">
+                          <div className="relative w-14 h-14 flex items-center justify-center">
                             <div className="absolute inset-0 rounded-full border-2 border-emerald-500/20 animate-ping" />
-                            <div className="absolute inset-2 rounded-full border border-emerald-500/30 animate-pulse" />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <FilmIcon className="w-6 h-6 text-emerald-400 animate-pulse" />
-                            </div>
+                            <div className="absolute inset-1 rounded-full border border-emerald-400/40 animate-pulse" />
+                            <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+                            <FilmIcon className="w-4 h-4 text-emerald-300 absolute inset-0 m-auto animate-pulse" />
                           </div>
+
                           <div className="flex flex-col items-center gap-1.5">
-                            <span className="font-mono text-[10px] font-black uppercase tracking-[0.5em] text-emerald-400 animate-pulse">
-                              {previewUrl ? 'Loading Reel...' : 'Awaiting Performance'}
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                              <span className="font-mono text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400">
+                                {previewUrl ? 'INITIALIZING MASTER REEL...' : 'AWAITING PERFORMANCE'}
+                              </span>
+                            </div>
+                            <span className="font-mono text-[8px] text-white/50 uppercase tracking-widest leading-relaxed">
+                              {previewUrl ? 'Buffering high-definition performance stream' : 'Record your performance in Act III'}
                             </span>
-                            <span className="font-mono text-[8px] text-white/20 uppercase tracking-widest">
-                              {previewUrl ? 'Buffering master performance footage' : 'Record your performance in Act III'}
-                            </span>
+                          </div>
+
+                          {/* Telemetry Shimmer Progress Bar */}
+                          <div className="w-44 h-1 bg-slate-800/80 rounded-full overflow-hidden relative border border-white/10">
+                            <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-emerald-500 via-sky-400 to-emerald-400 rounded-full animate-pulse" />
                           </div>
                         </div>
+
                         {/* Scanning line animation */}
-                        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
                           <div
                             className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent"
                             style={{ animation: 'scanLine 3s ease-in-out infinite', top: '0%' }}
