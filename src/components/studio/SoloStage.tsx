@@ -4398,7 +4398,17 @@ export default function SoloStage({
                      style={{ pointerEvents: 'auto' }}
                    >
                      <RecordEditingSuite
-                       segments={recordedSegments}
+                       segments={
+                         recordedSegments && recordedSegments.length > 0
+                           ? recordedSegments
+                           : [{
+                               segmentId: 'master_take_01',
+                               blobUrl: reviewVideoUrl,
+                               startOffset: 0,
+                               endOffset: videoDuration || 60,
+                               duration: videoDuration || 60,
+                             }]
+                       }
                        onUpdateSegments={setRecordedSegments}
                        onApprove={handleStitchAndApprove}
                        onDiscard={handleDiscardTake}
