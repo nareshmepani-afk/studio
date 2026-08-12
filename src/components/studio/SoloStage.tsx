@@ -58,6 +58,42 @@ import { useInterviewMode } from '@/hooks/studio/useInterviewMode';
 import { QRController } from './QRController';
 import { BeatSheet } from './BeatSheet';
 import { useTableRead } from '@/hooks/studio/useTableRead';
+
+/**
+ * Helper: Aspect-Ratio Preserving Center-Crop Canvas Drawer.
+ * Prevents stretching / distorting webcam photos or video frames into 2:3 vertical aspect ratio.
+ */
+function drawAspectCover(
+  ctx: CanvasRenderingContext2D,
+  source: HTMLVideoElement | HTMLImageElement,
+  targetWidth: number,
+  targetHeight: number,
+  flipHorizontal: boolean = false
+) {
+  const srcWidth = (source instanceof HTMLVideoElement) ? (source.videoWidth || 1280) : source.width;
+  const srcHeight = (source instanceof HTMLVideoElement) ? (source.videoHeight || 720) : source.height;
+
+  const srcRatio = srcWidth / srcHeight;
+  const targetRatio = targetWidth / targetHeight;
+
+  let sx = 0, sy = 0, sw = srcWidth, sh = srcHeight;
+
+  if (srcRatio > targetRatio) {
+    sw = srcHeight * targetRatio;
+    sx = (srcWidth - sw) / 2;
+  } else {
+    sh = srcWidth / targetRatio;
+    sy = (srcHeight - sh) / 2;
+  }
+
+  ctx.save();
+  if (flipHorizontal) {
+    ctx.translate(targetWidth, 0);
+    ctx.scale(-1, 1);
+  }
+  ctx.drawImage(source, sx, sy, sw, sh, 0, 0, targetWidth, targetHeight);
+  ctx.restore();
+}
 import { TableReadPanel } from './TableReadPanel';
 import { StudioBriefing } from './StudioBriefing';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
@@ -1824,14 +1860,14 @@ export default function SoloStage({
       const height = video.videoHeight || video.clientHeight || 720;
       
       const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = 1200;
+      canvas.height = 1800;
       const ctx = canvas.getContext('2d');
 
       if (!ctx) throw new Error("Could not initialize 2D canvas context");
 
-      // Draw active frame onto canvas
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      // Draw active frame onto canvas with aspect-ratio center crop (prevents face stretching!)
+      drawAspectCover(ctx, video, canvas.width, canvas.height, false);
 
       let blob: Blob | null = null;
       let dataUrl: string | null = null;
@@ -1914,16 +1950,16 @@ export default function SoloStage({
         if (video && video.readyState >= 2) {
           try {
             const canvas = document.createElement('canvas');
-            canvas.width = 400;
-            canvas.height = 600;
+            canvas.width = 1200;
+            canvas.height = 1800;
             const ctx = canvas.getContext('2d');
             if (ctx) {
-              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              drawAspectCover(ctx, video, canvas.width, canvas.height, false);
               const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
               if (dataUrl) {
                 setLocalPosterUrl(dataUrl);
                 update({ posterImageUrl: dataUrl });
-                console.log("[SoloStage] Auto-extracted video frame 0 for poster key art");
+                console.log("[SoloStage] Auto-extracted video frame 0 for poster key art with aspect crop");
               }
             }
           } catch (e) {
@@ -2056,18 +2092,16 @@ export default function SoloStage({
 
       const video = selfieVideoRef.current;
       const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth || 1280;
-      canvas.height = video.videoHeight || 720;
+      canvas.width = 1200;
+      canvas.height = 1800; // 2:3 Vertical Movie Key Art aspect ratio
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.save();
-        ctx.scale(-1, 1);
         if (selfieFilter === 'warm') ctx.filter = 'sepia(0.35) contrast(1.1) brightness(1.05)';
         else if (selfieFilter === 'cool') ctx.filter = 'hue-rotate(180deg) saturate(1.2) contrast(1.1)';
         else if (selfieFilter === 'noir') ctx.filter = 'grayscale(1) contrast(1.3)';
 
-        ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-        ctx.restore();
+        // Draw camera feed mirrored horizontally with aspect-ratio center crop (no stretching!)
+        drawAspectCover(ctx, video, canvas.width, canvas.height, true);
 
         const dataUrl = canvas.toDataURL('image/webp', 0.95);
         const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/webp', 0.95));
@@ -5989,7 +6023,7 @@ export default function SoloStage({
               </div>
 
               {/* Ultra-Crisp 4K Poster Card */}
-              <div className="w-full max-w-sm aspect-[2/3] max-h-[70vh] rounded-3xl overflow-hidden border-2 border-amber-500/60 shadow-[0_30px_90px_rgba(245,158,11,0.35)] relative group bg-black/90 transition-all hover:scale-[1.01]">
+              <div className="h-[65vh] max-h-[680px] aspect-[2/3] max-w-[90vw] shrink-0 rounded-3xl overflow-hidden border-2 border-amber-500/60 shadow-[0_30px_90px_rgba(245,158,11,0.35)] relative group bg-black/90 transition-all hover:scale-[1.01]">
                 {(localPosterUrl || data?.posterImageUrl) ? (
                   <>
                     <img 

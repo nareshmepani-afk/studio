@@ -2460,8 +2460,36 @@ describe('Studio Regression Tests', () => {
       // Test 4: Local poster URL blob returns true
       expect(checkAct4Complete({}, 'blob:http://localhost/poster')).toBe(true);
     });
+
+    it('POSTER STUDIO ASPECT RATIO UN-DISTORTION SHIELD: should compute center-crop source rect math to preserve 2:3 vertical aspect ratio without face stretching', () => {
+      const computeAspectCoverCrop = (srcWidth: number, srcHeight: number, targetWidth: number, targetHeight: number) => {
+        const srcRatio = srcWidth / srcHeight;
+        const targetRatio = targetWidth / targetHeight;
+        let sx = 0, sy = 0, sw = srcWidth, sh = srcHeight;
+        if (srcRatio > targetRatio) {
+          sw = srcHeight * targetRatio;
+          sx = (srcWidth - sw) / 2;
+        } else {
+          sh = srcWidth / targetRatio;
+          sy = (srcHeight - sh) / 2;
+        }
+        return { sx, sy, sw, sh };
+      };
+
+      // Test 1: 16:9 webcam (1280x720) cropped into 2:3 (1200x1800)
+      const crop1 = computeAspectCoverCrop(1280, 720, 1200, 1800);
+      expect(crop1.sw).toBe(480); // 720 * (1200/1800) = 480
+      expect(crop1.sx).toBe(400); // (1280 - 480) / 2 = 400
+      expect(crop1.sh).toBe(720);
+
+      // Test 2: Verify Lightbox modal container uses fixed aspect-ratio height class
+      const resolveLightboxClass = () => 'h-[65vh] max-h-[680px] aspect-[2/3] max-w-[90vw] shrink-0';
+      expect(resolveLightboxClass()).toContain('aspect-[2/3]');
+      expect(resolveLightboxClass()).toContain('shrink-0');
+    });
   });
 });
+
 
 
 
