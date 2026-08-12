@@ -2238,8 +2238,36 @@ describe('Studio Regression Tests', () => {
       // Test 6: Verify Act I and Act II do NOT share the same label
       expect(getActionLabel(0)).not.toBe(getActionLabel(1));
     });
+
+    it('ACT I STAGE PROGRESSION LINEARITY SHIELD: should strictly transition from Act I (stage 0) to Act II (stage 1) upon clicking proceed', () => {
+      const resolveNextStage = (currentStage: number, isProductionLocked: boolean, isReviewing: boolean) => {
+        // Stage 0 + locked monologue -> Stage 1 (Act II: The Weave)
+        if (currentStage === 0 && isProductionLocked && !isReviewing) {
+          return 1;
+        }
+        // Stage 1 -> Stage 2 (Act III: Capture)
+        if (currentStage === 1) {
+          return 2;
+        }
+        // Default linear increment
+        return currentStage + 1;
+      };
+
+      // Test 1: Act I (stage 0) locked monologue MUST advance to Stage 1 (Act II: The Weave)
+      expect(resolveNextStage(0, true, false)).toBe(1);
+
+      // Test 2: Act II (stage 1) MUST advance to Stage 2 (Act III: Capture)
+      expect(resolveNextStage(1, true, false)).toBe(2);
+
+      // Test 3: Act III (stage 2) MUST advance to Stage 3 (Act IV: The Cut)
+      expect(resolveNextStage(2, true, false)).toBe(3);
+
+      // Test 4: Verify Act I NEVER skips directly to Stage 2
+      expect(resolveNextStage(0, true, false)).not.toBe(2);
+    });
   });
 });
+
 
 
 

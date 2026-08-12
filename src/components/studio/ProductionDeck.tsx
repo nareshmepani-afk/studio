@@ -717,9 +717,22 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
         const isAct1 = currentStage === 0;
 
-        // 1. If the production blueprint is sealed in Act I (currentStage === 0 && isProductionLocked && !isReviewing) OR if advancing from Act II (currentStage === 1):
-        if (currentStage === 1 || (currentStage === 0 && isProductionLocked && !isReviewing)) {
-            console.log("[ProductionDeck] Advancing directly to Recording Teleprompter Studio (Stage 2)...");
+        // 1. If advancing from Act I with a sealed monologue, transition to Act II (stage 1 - The Weave):
+        if (currentStage === 0 && isProductionLocked && !isReviewing) {
+            console.log("[ProductionDeck] Advancing from Act I to Act II (The Weave - Stage 1)...");
+            setIsReviewing(false);
+            setStage(1);
+            handleUpdate({
+                productionStage: 1,
+                isProductionLocked: true,
+                isReviewing: false
+            });
+            return;
+        }
+
+        // 2. If advancing from Act II (The Weave), transition to Act III (stage 2 - Recording Teleprompter Studio):
+        if (currentStage === 1) {
+            console.log("[ProductionDeck] Advancing from Act II to Act III (Recording Studio - Stage 2)...");
             setIsReviewing(false);
             setStage(2);
             handleUpdate({
