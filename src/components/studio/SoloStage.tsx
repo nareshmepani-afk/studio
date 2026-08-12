@@ -5749,7 +5749,7 @@ export default function SoloStage({
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="w-full max-w-xl bg-slate-950 border border-emerald-500/30 rounded-[3rem] p-6 md:p-8 shadow-[0_0_100px_rgba(16,185,129,0.25)] flex flex-col gap-6 relative overflow-hidden"
+                className="w-full max-w-md bg-slate-950 border border-emerald-500/30 rounded-[2.5rem] p-6 shadow-[0_0_100px_rgba(16,185,129,0.25)] flex flex-col gap-4 relative overflow-hidden"
               >
                 {/* Header Bar */}
                 <div className="flex items-center justify-between border-b border-white/10 pb-4">
@@ -5770,8 +5770,8 @@ export default function SoloStage({
                   </button>
                 </div>
 
-                {/* Viewfinder / Freeze-Frame Preview */}
-                <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl flex items-center justify-center">
+                {/* Viewfinder / Freeze-Frame Preview (Strict 2:3 Vertical Movie Key Art Aspect Ratio) */}
+                <div className="relative aspect-[2/3] w-full max-h-[50vh] rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl flex items-center justify-center mx-auto">
                   {selfieCapturedPreview ? (
                     <img src={selfieCapturedPreview} alt="Captured Studio Selfie" className="w-full h-full object-cover" />
                   ) : (

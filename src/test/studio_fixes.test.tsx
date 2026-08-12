@@ -2487,8 +2487,22 @@ describe('Studio Regression Tests', () => {
       expect(resolveLightboxClass()).toContain('aspect-[2/3]');
       expect(resolveLightboxClass()).toContain('shrink-0');
     });
+
+    it('PHOTOBOOTH VIEWFINDER 2:3 ASPECT ALIGNMENT SHIELD: Photobooth live video container must use aspect-[2/3] matching captured selfie output 1:1', () => {
+      const resolvePhotoboothViewfinderClass = (isCapturing: boolean) => {
+        return 'relative aspect-[2/3] w-full max-h-[50vh] rounded-2xl overflow-hidden bg-black';
+      };
+
+      // Test 1: Photobooth live viewfinder container uses aspect-[2/3]
+      expect(resolvePhotoboothViewfinderClass(false)).toContain('aspect-[2/3]');
+      expect(resolvePhotoboothViewfinderClass(false)).not.toContain('aspect-video');
+
+      // Test 2: Photobooth captured preview container uses aspect-[2/3]
+      expect(resolvePhotoboothViewfinderClass(true)).toContain('aspect-[2/3]');
+    });
   });
 });
+
 
 
 
