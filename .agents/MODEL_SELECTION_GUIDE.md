@@ -46,12 +46,12 @@ On EVERY user message, the agent MUST silently classify the task into one of the
 ## Step 2: Route Decision
 
 ### If the CURRENT model matches (or exceeds) the task tier → **EXECUTE DIRECTLY**
-Proceed with the task normally. At the start of your response, explicitly state the pre-gate validation:
-`🎯 The model selected for your question should be: [emoji] [Model Name] — [Reason]`
+Proceed with the task normally. At the start of your response, explicitly state the pre-gate validation matching your EXACT active model name:
+`🎯 The model selected for your question should be: [emoji] [CURRENT_ACTIVE_MODEL_NAME] — [Reason]`
 
 ### If a HIGHER model tier is required → **HALT EXECUTION & WRITE THE PROMPT**
-**STRICT HARD LOCKOUT RULE**: If a task requires a higher model tier than the active model, the agent is **STRICTLY FORBIDDEN** from invoking any code-modification tools (`replace_file_content`, `multi_replace_file_content`, `write_to_file`, `run_command` git commit). 
-The agent MUST immediately HALT all code modifications and output ONLY the Route Advisory:
+**STRICT HARD LOCKOUT RULE**: If the task tier (Medium, High, Premium, Ultra) is higher than your current active model (e.g. Current is Low, Task is Medium+), calling ANY code-modification tools (`replace_file_content`, `multi_replace_file_content`, `write_to_file`, `run_command` git commit) is **PHYSICALLY FORBIDDEN**.
+The agent MUST immediately HALT all code modifications and output ONLY the Route Advisory + Ready-to-Paste Prompt:
 
 ```markdown
 ---
@@ -60,6 +60,7 @@ The agent MUST immediately HALT all code modifications and output ONLY the Route
 **The model selected for your question should be:** [emoji] **[recommended model name]**
 **Current Model:** [current model name]
 **Reason:** [one-line explanation of why the recommended model is better for this task]
+
 
 
 
