@@ -381,13 +381,21 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             case 2: // Act III: Capture
                 return !!memoryData?.videoUrl;
             case 3: // Act IV: Director's Cut
-                return true; // Usually manual review
+                const hasPosterKeyArt = !!(
+                    memoryData?.posterImageUrl || 
+                    (memoryData as any)?.posterUrl ||
+                    (memoryData as any)?.localPosterUrl ||
+                    ((memoryData as any)?.selfieUrl && !(memoryData as any)?.selfieUrl?.match(/\.(webm|mp4|mov|ogg)$/i)) ||
+                    ((memoryData as any)?.narratorPhotoUrl && !(memoryData as any)?.narratorPhotoUrl?.match(/\.(webm|mp4|mov|ogg)$/i)) ||
+                    (memoryData?.imageUrl && !memoryData?.imageUrl?.match(/\.(webm|mp4|mov|ogg)$/i))
+                );
+                return hasPosterKeyArt;
             case 4: // Act V: Premiere
                 return true;
             default:
                 return false;
         }
-    }, [currentStage, isProductionLocked, memoryData?.title, memoryData?.description, memoryData?.videoUrl, memoryData?.location, memoryData?.dateComponents?.year, memoryData?.activeVision]);
+    }, [currentStage, isProductionLocked, memoryData?.title, memoryData?.description, memoryData?.videoUrl, memoryData?.posterImageUrl, memoryData?.imageUrl, memoryData?.location, memoryData?.dateComponents?.year, memoryData?.activeVision]);
 
     const isLowClarity = useMemo(() => {
         const isAct1 = currentStage === 0;
@@ -408,6 +416,16 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             if (!hasWeave) reqs.push("Sensory Weave Selection");
         } else if (currentStage === 2) {
             if (!memoryData?.videoUrl) reqs.push("Video Recording");
+        } else if (currentStage === 3) {
+            const hasPosterKeyArt = !!(
+                memoryData?.posterImageUrl || 
+                (memoryData as any)?.posterUrl ||
+                (memoryData as any)?.localPosterUrl ||
+                ((memoryData as any)?.selfieUrl && !(memoryData as any)?.selfieUrl?.match(/\.(webm|mp4|mov|ogg)$/i)) ||
+                ((memoryData as any)?.narratorPhotoUrl && !(memoryData as any)?.narratorPhotoUrl?.match(/\.(webm|mp4|mov|ogg)$/i)) ||
+                (memoryData?.imageUrl && !memoryData?.imageUrl?.match(/\.(webm|mp4|mov|ogg)$/i))
+            );
+            if (!hasPosterKeyArt) reqs.push("Anchored Movie Key Art Poster");
         }
         return reqs;
     }, [currentStage, memoryData, hotClarity]);

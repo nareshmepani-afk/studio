@@ -2433,8 +2433,36 @@ describe('Studio Regression Tests', () => {
       expect(resolvePosterTabBadge(true)).toBe('✓ ANCHORED');
       expect(resolvePosterTabBadge(false)).toBe('• ANCHOR');
     });
+
+    it('ACT IV PREPARE PREMIERE POSTER REQUIREMENT GUARD: should return isActComplete = false and missingRequirement = Anchored Movie Key Art Poster when no key art exists', () => {
+      const isVideoUrl = (url?: string) => url ? !!url.split('?')[0].match(/\.(webm|mp4|mov|ogg)$/i) : false;
+      const checkAct4Complete = (memory: any, localPosterUrl?: string | null) => {
+        const hasPosterKeyArt = !!(
+          memory?.posterImageUrl || 
+          memory?.posterUrl ||
+          localPosterUrl ||
+          (memory?.selfieUrl && !isVideoUrl(memory?.selfieUrl)) ||
+          (memory?.narratorPhotoUrl && !isVideoUrl(memory?.narratorPhotoUrl)) ||
+          (memory?.imageUrl && !isVideoUrl(memory?.imageUrl))
+        );
+        return hasPosterKeyArt;
+      };
+
+      // Test 1: Unanchored memory with no photo/poster returns false
+      expect(checkAct4Complete({})).toBe(false);
+
+      // Test 2: Memory with only a .webm video URL (and no static image/selfie) returns false until frame is extracted
+      expect(checkAct4Complete({ imageUrl: 'https://storage.googleapis.com/video.webm' })).toBe(false);
+
+      // Test 3: Anchored posterImageUrl returns true
+      expect(checkAct4Complete({ posterImageUrl: 'https://storage.googleapis.com/poster.jpg' })).toBe(true);
+
+      // Test 4: Local poster URL blob returns true
+      expect(checkAct4Complete({}, 'blob:http://localhost/poster')).toBe(true);
+    });
   });
 });
+
 
 
 

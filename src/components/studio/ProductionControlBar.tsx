@@ -217,9 +217,10 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
     if (!isComplete && currentStage !== 4) {
       console.log("[ProductionControlBar] Act Incomplete. Missing:", missingRequirements);
+      const reqList = missingRequirements.length > 0 ? missingRequirements.join(', ') : "Mandatory requirements incomplete.";
       toast.error("CATALYSTS REQUIRED", {
-        description: "Mandatory fields are missing. Check the tooltips for details.",
-        icon: <AlertTriangle className="w-4 h-4" />
+        description: `Please complete required stage items: ${reqList}`,
+        icon: <AlertTriangle className="w-4 h-4 text-amber-400" />
       });
       return;
     }
