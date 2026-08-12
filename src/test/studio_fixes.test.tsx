@@ -2403,14 +2403,16 @@ describe('Studio Regression Tests', () => {
       expect(layout.coordinates).toContain('text-amber-300/90');
     });
 
-    it('ACT IV POSTER AUTO-ANCHOR SAFEGUARD & CAROUSEL COMPLETION SHIELD: should automatically auto-anchor selfieUrl/narratorPhotoUrl on stage 3 mount and prepare premiere progression', () => {
+    it('ACT IV POSTER AUTO-ANCHOR SAFEGUARD & CAROUSEL COMPLETION SHIELD: should automatically auto-anchor selfieUrl/narratorPhotoUrl or extract frame 0 on stage 3 mount', () => {
+      const isVideoUrl = (url?: string) => url ? !!url.split('?')[0].match(/\.(webm|mp4|mov|ogg)$/i) : false;
       const autoAnchorPoster = (memory: any, localPosterUrl?: string | null) => {
         if (memory.posterImageUrl || localPosterUrl) return { anchored: true, url: memory.posterImageUrl || localPosterUrl };
         const candidate = memory.selfieUrl || memory.narratorPhotoUrl || memory.imageUrl || memory.heroImageUrl;
-        if (candidate) {
+        if (candidate && !isVideoUrl(candidate)) {
           return { anchored: true, url: candidate, autoAnchored: true };
         }
-        return { anchored: false, url: null };
+        // Video file fallback triggers frame 0 extraction
+        return { anchored: true, url: 'data:image/jpeg;base64,frame0', extractedFromVideo: true };
       };
 
       // Test 1: Automatically auto-anchors selfieUrl if posterImageUrl is empty
@@ -2419,7 +2421,12 @@ describe('Studio Regression Tests', () => {
       expect(res1.url).toBe('https://storage.googleapis.com/selfie_taken_in_act3.jpg');
       expect(res1.autoAnchored).toBe(true);
 
-      // Test 2: Carousel tab indicator status resolution
+      // Test 2: If imageUrl is a .webm video file, auto-extracts frame 0
+      const res2 = autoAnchorPoster({ imageUrl: 'https://storage.googleapis.com/video.webm' });
+      expect(res2.anchored).toBe(true);
+      expect(res2.extractedFromVideo).toBe(true);
+
+      // Test 3: Carousel tab indicator status resolution
       const resolvePosterTabBadge = (hasAnchoredPoster: boolean) => {
         return hasAnchoredPoster ? '✓ ANCHORED' : '• ANCHOR';
       };

@@ -1898,18 +1898,41 @@ export default function SoloStage({
   const [localPosterUrl, setLocalPosterUrl] = useState<string | null>(null);
   const selfieVideoRef = useRef<HTMLVideoElement>(null);
 
-  // Act IV Poster Auto-Anchor Safeguard: Automatically anchor selfie or narrator photo as key art if unpopulated
+  // Act IV Poster Auto-Anchor Safeguard: Automatically anchor selfie, photo, or extract video frame 0 as key art if unpopulated
   useEffect(() => {
     if (currentStage === 3) {
       if (!data?.posterImageUrl && !localPosterUrl) {
         const candidatePhoto = (data as any)?.selfieUrl || (data as any)?.narratorPhotoUrl || data?.imageUrl || (data as any)?.heroImageUrl;
-        if (candidatePhoto) {
+        if (candidatePhoto && !candidatePhoto.match(/\.(webm|mp4|mov|ogg)$/i)) {
           setLocalPosterUrl(candidatePhoto);
           update({ posterImageUrl: candidatePhoto });
+          return;
+        }
+
+        // Fallback: If candidate photo is missing or a video file, extract frame 0 from active video element
+        const video = previewVideoRef.current;
+        if (video && video.readyState >= 2) {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 400;
+            canvas.height = 600;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+              if (dataUrl) {
+                setLocalPosterUrl(dataUrl);
+                update({ posterImageUrl: dataUrl });
+                console.log("[SoloStage] Auto-extracted video frame 0 for poster key art");
+              }
+            }
+          } catch (e) {
+            console.warn("[SoloStage] Auto video frame extraction warning:", e);
+          }
         }
       }
     }
-  }, [currentStage, data?.posterImageUrl, (data as any)?.selfieUrl, (data as any)?.narratorPhotoUrl, data?.imageUrl, localPosterUrl, update]);
+  }, [currentStage, data?.posterImageUrl, (data as any)?.selfieUrl, (data as any)?.narratorPhotoUrl, data?.imageUrl, localPosterUrl, isVideoBuffering, update]);
 
   const handleOpenSelfiePhotobooth = async () => {
     if (checkGuestAndUpsell("capturing cinematic poster frames")) return;
