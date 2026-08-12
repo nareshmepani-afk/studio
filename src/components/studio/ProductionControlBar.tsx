@@ -307,6 +307,7 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
       <motion.div 
         data-blueprint="ProductionControlBar"
+        data-tier-architecture="concept-a-two-tier"
         initial={{ y: 20, opacity: 0 }}
         animate={{ 
           y: [0, -8, 0], // Subtle float
@@ -321,17 +322,17 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
           opacity: { duration: 0.3 }
         }}
         className={cn(
-          "bg-slate-950/85 backdrop-blur-3xl border border-white/10 p-3 sm:p-4 lg:p-5 rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] ring-1 ring-white/5 flex items-center justify-between gap-3 md:gap-4 lg:gap-6 xl:gap-8 max-w-[95vw] xl:max-w-none mx-auto transition-all overflow-x-auto no-scrollbar",
+          "bg-slate-950/90 backdrop-blur-3xl border border-white/10 p-3 sm:p-4 rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] ring-1 ring-white/5 flex flex-col gap-2.5 sm:gap-3 max-w-[95vw] xl:max-w-6xl mx-auto transition-all pointer-events-auto",
           (isReviewing || isDirectorOpen) ? "pointer-events-none" : "pointer-events-auto",
           !isComplete && currentStage !== 4 && "border-rose-500/20"
         )}
       >
         <TooltipProvider>
-          {/* --- ACT PROGRESSION & MODE SWITCHER (LEFT WING) --- */}
-        <div className="flex items-center gap-3 md:gap-4 lg:gap-5 pl-1 sm:pl-2 shrink-0">
-          <div className="flex flex-col">
-            <span className="text-[8px] sm:text-[9px] text-emerald-400 uppercase tracking-[0.4em] font-black mb-1.5 ml-0.5 hidden sm:inline-block">Stage Controls</span>
-            <div className="flex items-center gap-2.5 sm:gap-4">
+          {/* --- UPPER TIER: STAGE PROGRESSION & ROOM SWITCHER --- */}
+          <div data-tier="upper" className="flex items-center justify-between gap-3 border-b border-white/10 pb-2.5 px-1 sm:px-2 shrink-0">
+            {/* Stage Tracker & Act Label */}
+            <div className="flex items-center gap-3">
+              <span className="text-[8px] sm:text-[9px] text-emerald-400 uppercase tracking-[0.4em] font-black hidden sm:inline-block">Stage Controls</span>
               <div className="flex gap-1 sm:gap-1.5">
                 {steps.map((step, idx) => (
                     <Tooltip key={idx}>
@@ -355,96 +356,84 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                 {steps[currentStage].act}
               </span>
             </div>
+
+            {/* Room Switcher Pills */}
+            <div className="flex items-center bg-slate-900/90 border border-white/10 p-1 rounded-full shadow-inner gap-0.5 sm:gap-1 shrink-0">
+              <button
+                type="button"
+                data-hotspot-id="HS_STAGE_CONTROL_MODE_SOLO_BTN"
+                onClick={() => onSelectRoom?.('solo')}
+                className={cn(
+                  "px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[9.5px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border whitespace-nowrap",
+                  activeRoom === 'solo'
+                    ? "bg-emerald-400 text-slate-950 border-emerald-400 font-black shadow-md scale-105"
+                    : "text-slate-400 hover:text-white hover:bg-white/5 border-transparent"
+                )}
+                title="Solo Mode: Direct self-recording"
+              >
+                <User className="w-3 h-3" />
+                <span>
+                  <span className="hidden xl:inline">{getActModeLabel('solo', currentStage)}</span>
+                  <span className="inline xl:hidden">{getActModeLabel('solo', currentStage, true)}</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                data-hotspot-id="HS_STAGE_CONTROL_MODE_COLLAB_BTN"
+                onClick={() => onSelectRoom?.('collaborative')}
+                className={cn(
+                  "px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[9.5px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border whitespace-nowrap",
+                  activeRoom === 'collaborative'
+                    ? "bg-cyan-400 text-slate-950 border-cyan-400 font-black shadow-md scale-105"
+                    : "text-slate-400 hover:text-white hover:bg-white/5 border-transparent"
+                )}
+                title="Collaborative Mode: Mobile prompter & co-creation"
+              >
+                <Users className="w-3 h-3" />
+                <span>
+                  <span className="hidden xl:inline">{getActModeLabel('collaborative', currentStage)}</span>
+                  <span className="inline xl:hidden">{getActModeLabel('collaborative', currentStage, true)}</span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                data-hotspot-id="HS_STAGE_CONTROL_MODE_GUEST_DIR_BTN"
+                onClick={() => onSelectRoom?.('guest')}
+                className={cn(
+                  "px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[9.5px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border whitespace-nowrap",
+                  activeRoom === 'guest'
+                    ? "bg-amber-400 text-slate-950 border-amber-400 font-black shadow-md scale-105"
+                    : "text-slate-400 hover:text-white hover:bg-white/5 border-transparent"
+                )}
+                title="Guest Director Mode: Remote camera & prompter control"
+              >
+                <Video className="w-3 h-3" />
+                <span>
+                  <span className="hidden xl:inline">{getActModeLabel('guest', currentStage)}</span>
+                  <span className="inline xl:hidden">{getActModeLabel('guest', currentStage, true)}</span>
+                </span>
+              </button>
+            </div>
           </div>
 
-          {/* COMPACT SEGMENTED GLASSMORPHIC PILL SWITCHER */}
-          <div className="flex items-center bg-slate-900/90 border border-white/10 p-1 rounded-full shadow-inner gap-0.5 sm:gap-1 shrink-0">
-            <button
-              type="button"
-              data-hotspot-id="HS_STAGE_CONTROL_MODE_SOLO_BTN"
-              onClick={() => onSelectRoom?.('solo')}
-              className={cn(
-                "px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[9.5px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border whitespace-nowrap",
-                activeRoom === 'solo'
-                  ? "bg-emerald-400 text-slate-950 border-emerald-400 font-black shadow-md scale-105"
-                  : "text-slate-400 hover:text-white hover:bg-white/5 border-transparent"
-              )}
-              title="Solo Mode: Direct self-recording"
-            >
-              <User className="w-3 h-3" />
-              <span>
-                <span className="hidden xl:inline">{getActModeLabel('solo', currentStage)}</span>
-                <span className="inline xl:hidden">{getActModeLabel('solo', currentStage, true)}</span>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              data-hotspot-id="HS_STAGE_CONTROL_MODE_COLLAB_BTN"
-              onClick={() => onSelectRoom?.('collaborative')}
-              className={cn(
-                "px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[9.5px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border whitespace-nowrap",
-                activeRoom === 'collaborative'
-                  ? "bg-cyan-400 text-slate-950 border-cyan-400 font-black shadow-md scale-105"
-                  : "text-slate-400 hover:text-white hover:bg-white/5 border-transparent"
-              )}
-              title="Collaborative Mode: Mobile prompter & co-creation"
-            >
-              <Users className="w-3 h-3" />
-              <span>
-                <span className="hidden xl:inline">{getActModeLabel('collaborative', currentStage)}</span>
-                <span className="inline xl:hidden">{getActModeLabel('collaborative', currentStage, true)}</span>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              data-hotspot-id="HS_STAGE_CONTROL_MODE_GUEST_DIR_BTN"
-              onClick={() => onSelectRoom?.('guest')}
-              className={cn(
-                "px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[9.5px] font-mono font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border whitespace-nowrap",
-                activeRoom === 'guest'
-                  ? "bg-amber-400 text-slate-950 border-amber-400 font-black shadow-md scale-105"
-                  : "text-slate-400 hover:text-white hover:bg-white/5 border-transparent"
-              )}
-              title="Guest Director Mode: Remote camera & prompter control"
-            >
-              <Video className="w-3 h-3" />
-              <span>
-                <span className="hidden xl:inline">{getActModeLabel('guest', currentStage)}</span>
-                <span className="inline xl:hidden">{getActModeLabel('guest', currentStage, true)}</span>
-              </span>
-            </button>
-          </div>
-        </div>
-
-            {/* --- PRODUCTION STATUS HUD (CENTER) --- */}
-        {currentStage === 0 && (
-          <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 border-l border-r border-white/10 mx-1 sm:mx-2 lg:mx-4 relative overflow-hidden">
-             <div className="absolute inset-x-0 -top-[500px] pointer-events-none flex justify-center">
-               <AnimatePresence mode="wait">
-                 {lastDetectedAnchor && (
-                   <SynapseTether 
-                     key={lastDetectedAnchor.timestamp} 
-                     type={lastDetectedAnchor.type} 
-                     xOffset={(lastDetectedAnchor as any).xOffset}
-                   />
-                 )}
-               </AnimatePresence>
-             </div>
-             
-             <div className="flex items-center gap-2 sm:gap-4 lg:gap-6">
-                <TooltipProvider>
+          {/* --- LOWER TIER: TELEMETRY HUD & HERO ACTION BUTTONS --- */}
+          <div data-tier="lower" className="flex items-center justify-between gap-3 px-1 sm:px-2 shrink-0">
+            {/* Left: Stage Status & Telemetry HUD */}
+            <div className="flex items-center gap-3 sm:gap-6 min-w-0 overflow-hidden">
+              {currentStage === 0 && (
+                <div className="flex items-center gap-3 sm:gap-6 font-mono text-[10px] sm:text-[11px] tracking-widest uppercase">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="flex items-center gap-1.5 sm:gap-3 cursor-pointer group">
+                      <div className="flex items-center gap-2 cursor-pointer">
                         <div className={cn(
-                          "w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0",
+                          "w-2.5 h-2.5 rounded-full shrink-0",
                           charge >= 15 ? "bg-emerald-400 shadow-[0_0_10px_#10b981]" : "bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
                         )} />
-                         <span className="font-mono text-[9px] sm:text-[11px] tracking-[0.2em] sm:tracking-[0.3em] text-white font-bold uppercase whitespace-nowrap">
-                          <span className="hidden sm:inline">Clarity: </span>{charge}%
-                         </span>
+                        <span className="text-white font-bold whitespace-nowrap">
+                          Clarity: <span className="text-emerald-400">{charge}%</span>
+                        </span>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="bg-slate-900 border-white/10 text-xs font-black tracking-widest uppercase py-3 px-4 mb-2 min-w-[240px]">
@@ -453,285 +442,221 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                            Clarity Engine v2.0
                            <span className="text-[10px] text-zinc-400 font-mono no-underline">EST. DEPTH</span>
                          </p>
-                         
                          <div className="space-y-1.5 font-mono text-xs">
                            <div className="flex justify-between items-center text-white/70">
                              <span>Narrative Density</span>
                              <span className="text-white font-bold">{Math.min(50, Math.floor((wordCount / 30) * 50))}%</span>
                            </div>
-                           {detectedAnchors.length > 0 && (
-                             <div className="pt-1 border-t border-white/10">
-                               {Array.from(new Set(detectedAnchors.map(a => a.type))).map(type => (
-                                 <div key={type} className="flex justify-between items-center py-0.5">
-                                   <span className={cn(
-                                     type === 'aroma' ? "text-amber-400 font-bold" :
-                                     type === 'soundscape' ? "text-sky-400 font-bold" :
-                                     "text-emerald-400 font-bold"
-                                   )}>{type} Assets</span>
-                                   <span className="text-white font-bold">+{detectedAnchors.filter(a => a.type === type).length * 10}%</span>
-                                  </div>
-                               ))}
-                             </div>
-                           )}
                            <div className="flex justify-between items-center pt-2 border-t border-white/10 text-emerald-400 font-bold">
                              <span>Total Scene Clarity</span>
                              <span>{charge}%</span>
                            </div>
                          </div>
-
-                         <p className="text-zinc-300 leading-relaxed font-medium text-xs italic border-t border-white/10 pt-2">
-                           Director's Tip: Detected anchors stabilize the narrative frequency.
-                         </p>
                       </div>
                     </TooltipContent>
                   </Tooltip>
-                </TooltipProvider>
-                
-                {/* Script word count — hidden on sub-lg viewports to prevent overflow */}
-                <div className="hidden lg:flex items-center gap-3">
-                   <span className="font-mono text-[11px] tracking-[0.3em] text-white font-bold uppercase">
-                     Script: <span className="text-emerald-400">{wordCount}</span> words
-                   </span>
+                  <span className="text-white/20 hidden sm:inline">•</span>
+                  <span className="text-white/80 hidden sm:inline whitespace-nowrap">
+                    Script: <span className="text-emerald-400 font-bold">{wordCount}</span> words
+                  </span>
                 </div>
-             </div>
-          </div>
-        )}
+              )}
 
-        {currentStage === 1 && (
-          <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1 px-3 sm:px-4 border-l border-r border-white/10 mx-2 lg:mx-4 relative overflow-hidden">
-            <div className="flex items-center gap-2 whitespace-nowrap">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              <span className="font-mono text-[10px] sm:text-[11px] tracking-[0.25em] text-emerald-400 font-bold uppercase">
-                {detectedAnchors.length.toString().padStart(2, '0')} Sensory Assets Active
-              </span>
+              {currentStage === 1 && (
+                <div className="flex items-center gap-3 font-mono text-[10px] sm:text-[11px] tracking-widest text-emerald-400 font-bold uppercase whitespace-nowrap">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <span>{detectedAnchors.length.toString().padStart(2, '0')} Sensory Assets Active</span>
+                </div>
+              )}
+
+              {currentStage >= 2 && (
+                <div className="flex items-center gap-2 font-mono text-[10px] sm:text-[11px] tracking-widest text-white/70 uppercase whitespace-nowrap">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse" />
+                  <span>{steps[currentStage].label} Studio Mode</span>
+                </div>
+              )}
             </div>
-            
-            <div className={cn(
-                "w-full max-w-[180px] sm:max-w-[220px] h-[3px] bg-white/10 rounded-full overflow-hidden mt-0.5 transition-all",
-                (draggingCatalyst || isSurging) && "h-1.5 bg-cyan-500/10 shadow-[0_0_10px_rgba(6,182,212,0.3)]"
-            )}>
-                <motion.div 
-                   className={cn(
-                     "h-full transition-colors",
-                     (draggingCatalyst || isSurging) ? "bg-cyan-400 shadow-[0_0_15px_#22d3ee]" : "bg-emerald-400 shadow-[0_0_8px_#10b981]"
-                   )}
-                   initial={{ width: 0, opacity: 1 }}
-                   animate={{ 
-                     width: `${Math.min(charge, 100)}%`,
-                     opacity: (draggingCatalyst || isSurging) ? [0.6, 1, 0.6] : 1
-                   }}
-                   transition={{ 
-                     width: { type: "spring", damping: 20 },
-                     opacity: (draggingCatalyst || isSurging) ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" } : { duration: 0.3 }
-                   }}
-                />
-            </div>
-          </div>
-        )}
 
+            {/* Right: Actions & Primary Button */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              {currentStage === 0 && !isGeneratingDrafts && !isReviewing && !isDirectorOpen && !isTheaterOpen && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      data-hotspot-id="HS_ACT1_CLEAN_VIEW_BTN"
+                      data-state={isCleanView ? "off" : "on"}
+                      aria-pressed={!isCleanView}
+                      onClick={() => {
+                        const nextCleanView = !isCleanView;
+                        actions.toggleCleanView();
+                        toast.info(nextCleanView ? "Sensory View Off (Clean Reading Active)" : "Sensory View On (Overlays Restored)", {
+                          description: nextCleanView 
+                            ? "Floating badges and underlines hidden for clean reading." 
+                            : "Sensory anchor badges and hotspot pins restored."
+                        });
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2.5 sm:py-3.5 rounded-2xl border text-[8.5px] sm:text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg shrink-0 whitespace-nowrap",
+                        isCleanView 
+                          ? "bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+                          : "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                      )}
+                    >
+                      {isCleanView ? <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" /> : <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />}
+                      <span className="hidden sm:inline">{isCleanView ? "Clean Read Mode" : "Sensory View On"}</span>
+                      <span className="inline sm:hidden">{isCleanView ? "Clean" : "Sensory"}</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-[10px] uppercase font-bold tracking-widest px-3 py-2">
+                    <span>{isCleanView ? "Clean Read Mode Active (Icons Hidden) • Click for Sensory View" : "Sensory Overlays Active (Icons Shown) • Click for Clean Read Mode"}</span>
+                  </TooltipContent>
+                </Tooltip>
+              )}
 
+              <AnimatePresence mode="wait">
+                {onRetake && (currentStage === 2 || currentStage === 3) && (
+                  <Tooltip key="retake-btn">
+                    <TooltipTrigger asChild>
+                      <motion.button
+                        data-hotspot-id="HS_STAGE_DOCK_RETAKE_BTN"
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 10 }}
+                        onClick={onRetake}
+                        className="flex items-center gap-1.5 px-3 sm:px-3.5 py-3 sm:py-3.5 rounded-2xl bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-400 text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer shadow-lg hover:scale-105 shrink-0 whitespace-nowrap"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400" />
+                        <span>Retake</span>
+                      </motion.button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-[10px] uppercase font-bold tracking-widest px-3 py-2">
+                      <span>Return to Recording Studio to record another take</span>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
 
+                {currentStage > 0 && (
+                  <motion.button
+                    key="prev-btn"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    onClick={onPrev}
+                    title="Return to previous stage"
+                    className="p-3 sm:p-4 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-2xl transition-all border border-white/5 group shrink-0"
+                  >
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-0.5 transition-transform" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
 
-
-
-        {/* --- NAVIGATION (RIGHT) --- */}
-        <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 shrink-0">
-
-          {currentStage === 0 && !isGeneratingDrafts && !isReviewing && !isDirectorOpen && !isTheaterOpen && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  data-hotspot-id="HS_ACT1_CLEAN_VIEW_BTN"
-                  data-state={isCleanView ? "off" : "on"}
-                  aria-pressed={!isCleanView}
-                  onClick={() => {
-                    const nextCleanView = !isCleanView;
-                    actions.toggleCleanView();
-                    toast.info(nextCleanView ? "Sensory View Off (Clean Reading Active)" : "Sensory View On (Overlays Restored)", {
-                      description: nextCleanView 
-                        ? "Floating badges and underlines hidden for clean reading." 
-                        : "Sensory anchor badges and hotspot pins restored."
-                    });
-                  }}
+              {/* HERO PRIMARY ACTION BUTTON */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="relative shrink-0">
+                    {mentorActive && (
+                      <MentorshipHotspot 
+                        number={3} 
+                        label={
+                          currentStage === 0 ? "Seal & Weave Monologue" :
+                          currentStage === 1 ? "Launch Recording Studio" :
+                          currentStage === 2 ? "Finalize Footage & Submit Take" :
+                          currentStage === 3 ? "Prepare Premiere Cut" :
+                          "Share Cinema Package"
+                        } 
+                        hotspotId={
+                          currentStage === 0 ? "HS_ACT1_MENTOR_STEP3" :
+                          currentStage === 1 ? "HS_ACT2_MENTOR_STEP3" :
+                          currentStage === 2 ? "HS_ACT3_MENTOR_STEP3" :
+                          currentStage === 3 ? "HS_ACT4_MENTOR_STEP3" :
+                          "HS_ACT5_MENTOR_STEP3"
+                        }
+                        isAct1Guard={currentStage === 0}
+                        isCompleted={isComplete && !isLowClarity}
+                        className="-top-4 -right-4" 
+                      />
+                    )}
+                    <motion.button
+                      data-hotspot-id={currentStage === 0 ? "HS_ACT1_DRAFT_COMPLETED_BTN" : "HS_ENTER_STUDIO_BTN"}
+                      whileHover={(!isPending && !isGeneratingDrafts && !isSaving) ? { scale: 1.02 } : {}}
+                      whileTap={(!isPending && !isGeneratingDrafts && !isSaving) ? { scale: 0.98 } : shakeAnimation}
+                      disabled={isPending || isGeneratingDrafts || isSaving}
+                      onClick={handleNextClick}
+                      className={cn(
+                        "relative px-5 sm:px-8 lg:px-10 py-3.5 sm:py-4 rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] transition-all flex items-center gap-2 sm:gap-3 overflow-hidden group/btn pointer-events-auto shrink-0 whitespace-nowrap min-w-max",
+                        (isComplete && !isLowClarity) 
+                          ? "bg-emerald-500 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:brightness-110 hover:shadow-[0_0_50px_rgba(16,185,129,0.6)]" 
+                          : isLowClarity
+                            ? "bg-white/5 text-white/40 border border-white/10 cursor-pointer hover:bg-white/10"
+                            : "bg-rose-500/10 text-rose-300/60 border border-rose-500/30 cursor-not-allowed hover:bg-rose-500/15",
+                        (isPending || isGeneratingDrafts || isSaving) && "opacity-80 cursor-wait brightness-90"
+                      )}
+                    >
+                      {isComplete && !isLowClarity && (
+                        <>
+                          <motion.div 
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                            initial={{ x: '-100%' }}
+                            animate={{ x: ['-100%', '200%'] }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                          />
+                          <motion.div 
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-[0_0_15px_white]"
+                          >
+                            <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
+                          </motion.div>
+                        </>
+                      )}
+                      
+                      <span className="relative z-10">{getActionLabel()}</span>
+                      
+                      {isComplete && !isLowClarity ? (
+                        (isPending || isGeneratingDrafts || isSaving) ? (
+                          <Loader2 className="w-4 h-4 animate-spin relative z-10" />
+                        ) : currentStage === 4 ? (
+                          <Rocket className="w-4 h-4 relative z-10" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 relative z-10 group-hover/btn:translate-x-1 transition-transform" />
+                        )
+                      ) : isLowClarity ? (
+                        <div className="relative">
+                           <Circle className="w-4 h-4 relative z-10 opacity-20" />
+                           <motion.div 
+                            className="absolute inset-0 border-2 border-emerald-500 rounded-full"
+                            initial={{ scale: 1, opacity: 1 }}
+                            animate={{ scale: [1, 1.5], opacity: [1, 0] }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                           />
+                        </div>
+                      ) : (
+                        <AlertCircle className="w-4 h-4 relative z-10 text-rose-400/60" />
+                      )}
+                    </motion.button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent 
+                  side="top" 
+                  sideOffset={12} 
                   className={cn(
-                    "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2.5 sm:py-3.5 rounded-2xl border text-[8.5px] sm:text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-lg shrink-0 whitespace-nowrap",
-                    isCleanView 
-                      ? "bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.3)]"
-                      : "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                    "border text-[10px] font-bold uppercase tracking-widest px-4 py-3 mb-4 rounded-xl shadow-2xl z-[9999]",
+                    (isComplete && !isLowClarity)
+                      ? "bg-emerald-950 border-emerald-500/50 text-emerald-200"
+                      : "bg-rose-950 border-rose-500/50 text-rose-200"
                   )}
                 >
-                  {isCleanView ? (
-                    <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
-                  ) : (
-                    <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
-                  )}
-                  <span className="hidden sm:inline">{isCleanView ? "Clean Read Mode" : "Sensory View On"}</span>
-                  <span className="inline sm:hidden">{isCleanView ? "Clean" : "Sensory"}</span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-[10px] uppercase font-bold tracking-widest px-3 py-2">
-                <span>{isCleanView ? "Clean Read Mode Active (Icons Hidden) • Click for Sensory View" : "Sensory Overlays Active (Icons Shown) • Click for Clean Read Mode"}</span>
-              </TooltipContent>
-            </Tooltip>
-          )}
-
-
-
-          <AnimatePresence mode="wait">
-            {onRetake && (currentStage === 2 || currentStage === 3) && (
-              <Tooltip key="retake-btn">
-                <TooltipTrigger asChild>
-                  <motion.button
-                    data-hotspot-id="HS_STAGE_DOCK_RETAKE_BTN"
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 10 }}
-                    onClick={onRetake}
-                    className="flex items-center gap-1.5 px-3 sm:px-3.5 py-3 sm:py-3.5 rounded-2xl bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-400 text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer shadow-lg hover:scale-105 shrink-0 whitespace-nowrap"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400" />
-                    <span>Retake</span>
-                  </motion.button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="bg-slate-900 border border-white/10 text-[10px] uppercase font-bold tracking-widest px-3 py-2">
-                  <span>Return to Recording Studio to record another take</span>
+                  <div className="flex flex-col gap-1">
+                    <span className="flex items-center gap-2">
+                      {isComplete && !isLowClarity ? <CheckCircle2 className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                      {isComplete && !isLowClarity ? "Production Ready" : "Requirements Not Met"}
+                    </span>
+                    <span className="text-[9px] opacity-60 normal-case">{getRequirementTooltip()}</span>
+                  </div>
                 </TooltipContent>
               </Tooltip>
-            )}
-
-            {currentStage > 0 && (
-              <motion.button
-                key="prev-btn"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                onClick={onPrev}
-                title="Return to previous stage"
-                className="p-3 sm:p-4 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-2xl transition-all border border-white/5 group shrink-0"
-              >
-                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-0.5 transition-transform" />
-              </motion.button>
-            )}
-          </AnimatePresence>
-
-          <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="relative shrink-0">
-                  {mentorActive && (
-                    <MentorshipHotspot 
-                      number={3} 
-                      label={
-                        currentStage === 0 ? "Seal & Weave Monologue" :
-                        currentStage === 1 ? "Launch Recording Studio" :
-                        currentStage === 2 ? "Finalize Footage & Submit Take" :
-                        currentStage === 3 ? "Prepare Premiere Cut" :
-                        "Share Cinema Package"
-                      } 
-                      hotspotId={
-                        currentStage === 0 ? "HS_ACT1_MENTOR_STEP3" :
-                        currentStage === 1 ? "HS_ACT2_MENTOR_STEP3" :
-                        currentStage === 2 ? "HS_ACT3_MENTOR_STEP3" :
-                        currentStage === 3 ? "HS_ACT4_MENTOR_STEP3" :
-                        "HS_ACT5_MENTOR_STEP3"
-                      }
-                      isAct1Guard={currentStage === 0}
-                      isCompleted={isComplete && !isLowClarity}
-                      className="-top-4 -right-4" 
-                    />
-                  )}
-                  <motion.button
-                    data-hotspot-id={currentStage === 0 ? "HS_ACT1_DRAFT_COMPLETED_BTN" : "HS_ENTER_STUDIO_BTN"}
-                    whileHover={(!isPending && !isGeneratingDrafts && !isSaving) ? { scale: 1.02 } : {}}
-                    whileTap={(!isPending && !isGeneratingDrafts && !isSaving) ? { scale: 0.98 } : shakeAnimation}
-                    disabled={isPending || isGeneratingDrafts || isSaving}
-                    onClick={handleNextClick}
-                    className={cn(
-                      "relative px-5 sm:px-8 lg:px-10 py-3.5 sm:py-4 rounded-2xl font-black text-[10px] sm:text-[11px] uppercase tracking-[0.2em] transition-all flex items-center gap-2 sm:gap-3 overflow-hidden group/btn pointer-events-auto shrink-0 whitespace-nowrap min-w-max",
-                      (isComplete && !isLowClarity) 
-                        ? "bg-emerald-500 text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:brightness-110 hover:shadow-[0_0_50px_rgba(16,185,129,0.6)]" 
-                        : isLowClarity
-                          ? "bg-white/5 text-white/40 border border-white/10 cursor-pointer hover:bg-white/10"
-                          // Rule 7: Disabled buttons MUST remain visible — never use opacity-invisible styling.
-                          // Rose-tinted disabled state clearly signals "requirements not met" to the user.
-                          : "bg-rose-500/10 text-rose-300/60 border border-rose-500/30 cursor-not-allowed hover:bg-rose-500/15",
-                      (isPending || isGeneratingDrafts || isSaving) && "opacity-80 cursor-wait brightness-90"
-                    )}
-
-                  >
-                  {isComplete && !isLowClarity && (
-                    <>
-                      <motion.div 
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-                        initial={{ x: '-100%' }}
-                        animate={{ x: ['-100%', '200%'] }}
-                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                      />
-                      {/* Premium Sparkles Badge */}
-                      <motion.div 
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-[0_0_15px_white]"
-                      >
-                        <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
-                      </motion.div>
-                    </>
-                  )}
-                  
-                  <span className="relative z-10">{getActionLabel()}</span>
-                  
-                  {isComplete && !isLowClarity ? (
-                    (isPending || isGeneratingDrafts || isSaving) ? (
-                      <Loader2 className="w-4 h-4 animate-spin relative z-10" />
-                    ) : currentStage === 4 ? (
-                      <Rocket className="w-4 h-4 relative z-10" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 relative z-10 group-hover/btn:translate-x-1 transition-transform" />
-                    )
-                  ) : isLowClarity ? (
-                    <div className="relative">
-                       <Circle className="w-4 h-4 relative z-10 opacity-20" />
-                       <motion.div 
-                        className="absolute inset-0 border-2 border-emerald-500 rounded-full"
-                        initial={{ scale: 1, opacity: 1 }}
-                        animate={{ scale: [1, 1.5], opacity: [1, 0] }}
-                        transition={{ duration: 1, repeat: Infinity }}
-                       />
-                    </div>
-                  ) : (
-                    <AlertCircle className="w-4 h-4 relative z-10 text-rose-400/60" />
-
-                  )}
-                </motion.button>
-              </div>
-            </TooltipTrigger>
-              <TooltipContent 
-                side="top" 
-                sideOffset={12} 
-                className={cn(
-                  "border text-[10px] font-bold uppercase tracking-widest px-4 py-3 mb-4 rounded-xl shadow-2xl z-[9999]",
-                  (isComplete && !isLowClarity)
-                    ? "bg-emerald-950 border-emerald-500/50 text-emerald-200"
-                    : "bg-rose-950 border-rose-500/50 text-rose-200"
-                )}
-              >
-                <div className="flex flex-col gap-1">
-                  <span className="flex items-center gap-2">
-                    {isComplete && !isLowClarity ? (
-                      <CheckCircle2 className="w-3 h-3" />
-                    ) : (
-                      <AlertCircle className="w-3 h-3" />
-                    )}
-                    {isComplete && !isLowClarity ? "Production Ready" : "Requirements Not Met"}
-                  </span>
-                  <span className="text-[9px] opacity-60 normal-case">
-                    {getRequirementTooltip()}
-                  </span>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-
-          {/* Act V publishing is now handled by the primary button */}
-        </div>
+            </div>
+          </div>
         </TooltipProvider>
       </motion.div>
     </div>

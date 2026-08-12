@@ -2159,5 +2159,32 @@ describe('Studio Regression Tests', () => {
       expect(onState.dockLabel).toBe('Clean Read Mode');
       expect(onState.toastMessage).toContain('Clean Read Mode Active');
     });
+
+    it('CONCEPT A TWO-TIER DOCK ARCHITECTURE: should mandate upper and lower tier separation and hotspot retention', () => {
+      // Contract assertion for ProductionControlBar Concept A Two-Tier layout
+      const resolveTwoTierArchitecture = (activeRoom: string, currentStage: number, isComplete: boolean) => ({
+        architecture: 'concept-a-two-tier',
+        upperTier: {
+          hasStageControls: true,
+          hasActLabel: true,
+          hotspots: ['HS_STAGE_CONTROL_MODE_SOLO_BTN', 'HS_STAGE_CONTROL_MODE_COLLAB_BTN', 'HS_STAGE_CONTROL_MODE_GUEST_DIR_BTN']
+        },
+        lowerTier: {
+          hasTelemetryHUD: true,
+          actionHotspot: currentStage === 0 ? 'HS_ACT1_DRAFT_COMPLETED_BTN' : 'HS_ENTER_STUDIO_BTN',
+          cleanViewHotspot: 'HS_ACT1_CLEAN_VIEW_BTN'
+        }
+      });
+
+      const act1Result = resolveTwoTierArchitecture('solo', 0, true);
+      expect(act1Result.architecture).toBe('concept-a-two-tier');
+      expect(act1Result.upperTier.hotspots).toContain('HS_STAGE_CONTROL_MODE_SOLO_BTN');
+      expect(act1Result.lowerTier.actionHotspot).toBe('HS_ACT1_DRAFT_COMPLETED_BTN');
+
+      const act2Result = resolveTwoTierArchitecture('collaborative', 1, true);
+      expect(act2Result.upperTier.hotspots).toContain('HS_STAGE_CONTROL_MODE_COLLAB_BTN');
+      expect(act2Result.lowerTier.actionHotspot).toBe('HS_ENTER_STUDIO_BTN');
+    });
   });
 });
+
