@@ -1898,6 +1898,19 @@ export default function SoloStage({
   const [localPosterUrl, setLocalPosterUrl] = useState<string | null>(null);
   const selfieVideoRef = useRef<HTMLVideoElement>(null);
 
+  // Act IV Poster Auto-Anchor Safeguard: Automatically anchor selfie or narrator photo as key art if unpopulated
+  useEffect(() => {
+    if (currentStage === 3) {
+      if (!data?.posterImageUrl && !localPosterUrl) {
+        const candidatePhoto = (data as any)?.selfieUrl || (data as any)?.narratorPhotoUrl || data?.imageUrl || (data as any)?.heroImageUrl;
+        if (candidatePhoto) {
+          setLocalPosterUrl(candidatePhoto);
+          update({ posterImageUrl: candidatePhoto });
+        }
+      }
+    }
+  }, [currentStage, data?.posterImageUrl, (data as any)?.selfieUrl, (data as any)?.narratorPhotoUrl, data?.imageUrl, localPosterUrl, update]);
+
   const handleOpenSelfiePhotobooth = async () => {
     if (checkGuestAndUpsell("capturing cinematic poster frames")) return;
     if (previewVideoRef.current) {
@@ -5121,6 +5134,24 @@ export default function SoloStage({
                           <Camera className="w-10 h-10 text-amber-500/40 animate-pulse" />
                           <span className="font-bold">No Poster Anchored Yet</span>
                           <span className="text-[9px] text-white/40 lowercase font-sans max-w-[200px]">Generate an AI key art poster or snap a video frame</span>
+                          {((data as any)?.selfieUrl || (data as any)?.narratorPhotoUrl || data?.imageUrl) && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const photo = (data as any)?.selfieUrl || (data as any)?.narratorPhotoUrl || data?.imageUrl;
+                                if (photo) {
+                                  setLocalPosterUrl(photo);
+                                  update({ posterImageUrl: photo });
+                                  toast.success("Selfie Photo Anchored as Key Art!");
+                                }
+                              }}
+                              className="mt-2 px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-[10px] font-mono font-black uppercase tracking-wider shadow-lg hover:scale-105 transition-all flex items-center gap-1.5 cursor-pointer pointer-events-auto"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>⚡ Auto-Anchor Selfie Photo</span>
+                            </button>
+                          )}
                         </div>
                       )}
                    </div>

@@ -893,6 +893,20 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                     return;
                 }
             }
+
+            // Act IV -> Act V Poster Auto-Anchor Safeguard:
+            // Ensures a photo poster image is anchored before landing on Act V Premiere
+            if (currentStage === 3 && !memoryData?.posterImageUrl) {
+                const candidatePoster = (memoryData as any)?.selfieUrl || (memoryData as any)?.narratorPhotoUrl || memoryData?.imageUrl || (memoryData as any)?.heroImageUrl;
+                if (candidatePoster) {
+                    console.log("[ProductionDeck] Auto-anchoring poster before advancing to Act V Premiere:", candidatePoster);
+                    handleUpdate({ posterImageUrl: candidatePoster, productionStage: next });
+                    setStage(next);
+                    setShowPreFlight(false);
+                    return;
+                }
+            }
+
             setStage(next);
             setShowPreFlight(false); // Reset pre-flight
             if ((memoryData?.productionStage || 0) < next) {

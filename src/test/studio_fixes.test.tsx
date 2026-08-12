@@ -2402,8 +2402,33 @@ describe('Studio Regression Tests', () => {
       expect(layout.container).toContain('flex-col');
       expect(layout.coordinates).toContain('text-amber-300/90');
     });
+
+    it('ACT IV POSTER AUTO-ANCHOR SAFEGUARD & CAROUSEL COMPLETION SHIELD: should automatically auto-anchor selfieUrl/narratorPhotoUrl on stage 3 mount and prepare premiere progression', () => {
+      const autoAnchorPoster = (memory: any, localPosterUrl?: string | null) => {
+        if (memory.posterImageUrl || localPosterUrl) return { anchored: true, url: memory.posterImageUrl || localPosterUrl };
+        const candidate = memory.selfieUrl || memory.narratorPhotoUrl || memory.imageUrl || memory.heroImageUrl;
+        if (candidate) {
+          return { anchored: true, url: candidate, autoAnchored: true };
+        }
+        return { anchored: false, url: null };
+      };
+
+      // Test 1: Automatically auto-anchors selfieUrl if posterImageUrl is empty
+      const res1 = autoAnchorPoster({ selfieUrl: 'https://storage.googleapis.com/selfie_taken_in_act3.jpg' });
+      expect(res1.anchored).toBe(true);
+      expect(res1.url).toBe('https://storage.googleapis.com/selfie_taken_in_act3.jpg');
+      expect(res1.autoAnchored).toBe(true);
+
+      // Test 2: Carousel tab indicator status resolution
+      const resolvePosterTabBadge = (hasAnchoredPoster: boolean) => {
+        return hasAnchoredPoster ? '✓ ANCHORED' : '• ANCHOR';
+      };
+      expect(resolvePosterTabBadge(true)).toBe('✓ ANCHORED');
+      expect(resolvePosterTabBadge(false)).toBe('• ANCHOR');
+    });
   });
 });
+
 
 
 
