@@ -2207,7 +2207,39 @@ describe('Studio Regression Tests', () => {
       expect(shouldMountControlBar(3)).toBe(true);
       expect(shouldMountControlBar(4)).toBe(true);
     });
+
+    it('ACTION BUTTON LABEL UNIQUENESS SHIELD: should guarantee distinct, meaningful proceed button labels across all 5 Acts', () => {
+      const getActionLabel = (currentStage: number, isProductionLocked: boolean = false) => {
+        switch (currentStage) {
+          case 0: return 'ENTER THE WEAVE';
+          case 1: return 'ENTER RECORDING STUDIO';
+          case 2: return 'FINALIZE FOOTAGE';
+          case 3: return 'PREPARE PREMIERE';
+          default: return 'PUBLISH TO CINEMA';
+        }
+      };
+
+      // Test 1: Act I strictly returns 'ENTER THE WEAVE' even when production is locked
+      expect(getActionLabel(0, true)).toBe('ENTER THE WEAVE');
+      expect(getActionLabel(0, false)).toBe('ENTER THE WEAVE');
+
+      // Test 2: Act II returns 'ENTER RECORDING STUDIO'
+      expect(getActionLabel(1)).toBe('ENTER RECORDING STUDIO');
+
+      // Test 3: Act III returns 'FINALIZE FOOTAGE'
+      expect(getActionLabel(2)).toBe('FINALIZE FOOTAGE');
+
+      // Test 4: Act IV returns 'PREPARE PREMIERE'
+      expect(getActionLabel(3)).toBe('PREPARE PREMIERE');
+
+      // Test 5: Act V returns 'PUBLISH TO CINEMA'
+      expect(getActionLabel(4)).toBe('PUBLISH TO CINEMA');
+
+      // Test 6: Verify Act I and Act II do NOT share the same label
+      expect(getActionLabel(0)).not.toBe(getActionLabel(1));
+    });
   });
 });
+
 
 

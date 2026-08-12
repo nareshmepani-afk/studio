@@ -271,19 +271,28 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
   const getActionLabel = () => {
     if (isSaving) return 'SAVING...';
-    if (currentStage === 0) {
-        if (isGeneratingDrafts || isPending) return 'SYNTHESIZING...';
-        if (isReviewing) return 'SEAL THE MEMORY';
-        if (isProductionLocked) return 'ENTER RECORDING STUDIO';
-
-        return 'ENTER THE WEAVE';
-    }
     
     switch (currentStage) {
-      case 1: return 'Enter Recording Studio';
-      case 2: return 'Finalize Footage';
-      case 3: return 'Prepare Premiere';
-      default: return 'Publish to Cinema';
+      case 0:
+        if (isGeneratingDrafts || isPending) return 'SYNTHESIZING...';
+        if (isReviewing) return 'SEAL THE MEMORY';
+        return 'ENTER THE WEAVE';
+
+      case 1:
+        if (isPending) return 'PREPARING STUDIO...';
+        return 'ENTER RECORDING STUDIO';
+
+      case 2:
+        if (isPending) return 'SAVING FOOTAGE...';
+        return 'FINALIZE FOOTAGE';
+
+      case 3:
+        if (isPending) return 'CUTTING PREMIERE...';
+        return 'PREPARE PREMIERE';
+
+      default:
+        if (isPending) return 'PUBLISHING...';
+        return 'PUBLISH TO CINEMA';
     }
   };
 
