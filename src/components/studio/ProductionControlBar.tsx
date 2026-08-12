@@ -498,27 +498,22 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
         )}
 
         {currentStage === 1 && (
-          <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-4 border-l border-r border-white/10 mx-1 sm:mx-2 lg:mx-4 relative overflow-hidden">
-            <AnimatePresence mode="wait">
-              <motion.div 
-                key={detectedAnchors.length}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="font-mono text-[9px] sm:text-[11px] tracking-[0.2em] sm:tracking-[0.3em] text-emerald-400 font-bold uppercase flex items-center gap-1.5 sm:gap-2 whitespace-nowrap"
-              >
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                <span>{detectedAnchors.length.toString().padStart(2, '0')} Sensory Assets Deployed</span>
-              </motion.div>
-            </AnimatePresence>
+          <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1 px-3 sm:px-4 border-l border-r border-white/10 mx-2 lg:mx-4 relative overflow-hidden">
+            <div className="flex items-center gap-2 whitespace-nowrap">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="font-mono text-[10px] sm:text-[11px] tracking-[0.25em] text-emerald-400 font-bold uppercase">
+                {detectedAnchors.length.toString().padStart(2, '0')} Sensory Assets Active
+              </span>
+            </div>
             
             <div className={cn(
-                "w-full h-[2px] bg-white/5 rounded-full overflow-hidden mt-1 transition-all",
+                "w-full max-w-[180px] sm:max-w-[220px] h-[3px] bg-white/10 rounded-full overflow-hidden mt-0.5 transition-all",
                 (draggingCatalyst || isSurging) && "h-1.5 bg-cyan-500/10 shadow-[0_0_10px_rgba(6,182,212,0.3)]"
             )}>
                 <motion.div 
                    className={cn(
                      "h-full transition-colors",
-                     (draggingCatalyst || isSurging) ? "bg-cyan-400 shadow-[0_0_15px_#22d3ee]" : "bg-emerald-500/40"
+                     (draggingCatalyst || isSurging) ? "bg-cyan-400 shadow-[0_0_15px_#22d3ee]" : "bg-emerald-400 shadow-[0_0_8px_#10b981]"
                    )}
                    initial={{ width: 0, opacity: 1 }}
                    animate={{ 
@@ -531,25 +526,9 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
                    }}
                 />
             </div>
-
-            {/* Anchor pills — displayed only on xl screens to prevent button displacement */}
-            <div className="hidden xl:flex items-center gap-2 mt-1">
-              {detectedAnchors.slice(-3).map((anchor, i) => {
-                let btnClass = "border-emerald-500/20 bg-emerald-500/5 text-emerald-400/90";
-                if (anchor.type === 'aroma') {
-                  btnClass = "border-amber-500/20 bg-amber-500/5 text-amber-400/90";
-                } else if (anchor.type === 'soundscape') {
-                  btnClass = "border-sky-500/20 bg-sky-500/5 text-sky-400/90";
-                }
-                return (
-                  <span key={`${anchor.word}-${i}`} className="font-mono text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-white/10 text-white/70">
-                    {anchor.word}
-                  </span>
-                );
-              })}
-            </div>
           </div>
         )}
+
 
 
 
