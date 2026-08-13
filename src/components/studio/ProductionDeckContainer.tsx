@@ -5,10 +5,10 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useStudioData } from '@/hooks/studio/useStudioData';
 import { storyScripts } from '@/lib/storyScripts';
-import { doc, updateDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import ProductionDeck from './ProductionDeck';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -53,6 +53,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   const [selectedProductionData, setSelectedProductionData] = useState<any>(null);
   const [resolvedAsyncTemplate, setResolvedAsyncTemplate] = useState<any>(null);
   const [isReady, setIsReady] = useState(false);
+  const [isNotFound, setIsNotFound] = useState(false);
   
   // To avoid circular layout state, we just keep it simple. If it's modal, we use takeover.
   // We can still support the drawer mode if needed, but takeover is the default.
@@ -67,15 +68,72 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     console.log("[ProductionDeckContainer] Auth user state changed. Clearing local rehydration guards...");
     lastLoadedId.current = null;
     setIsReady(false);
+    setIsNotFound(false);
     setSelectedProductionData(null);
   }, [user?.uid]);
+
+  // 4-Second Timeout Safety Guard: Prevent hanging indefinitely on a black loading screen
+  useEffect(() => {
+    if (isReady) {
+      setIsNotFound(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (!isReady && !selectedProductionData) {
+        console.warn(`[ProductionDeckContainer] Stage resolution timeout reached for ID "${promptId}". Displaying recovery shield.`);
+        setIsNotFound(true);
+      }
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [isReady, promptId, selectedProductionData]);
+
+  // Direct Firestore Document Resolution:
+  // If promptId is a document ID (e.g. ey96djU6qR1BrDGnvZwp) and not a static template ID,
+  // fetch the document directly from Firestore if useStudioData memories list has not loaded it yet.
+  useEffect(() => {
+    let active = true;
+
+    async function resolveDirectDocument() {
+      if (!promptId || isReady || selectedProductionData?.id === promptId) return;
+
+      const chapterPrompts = chapters.flatMap(c => c.prompts);
+      const isTemplateId = chapterPrompts.some(p => p.id === promptId);
+      if (isTemplateId) return;
+
+      try {
+        console.log(`[ProductionDeckContainer] Attempting direct Firestore fetch for document ID "${promptId}"...`);
+        let docSnap = await getDoc(doc(db, 'memories', promptId));
+
+        if (!docSnap.exists() && user?.uid) {
+          docSnap = await getDoc(doc(db, 'users', user.uid, 'memories', promptId));
+        }
+
+        if (active && docSnap.exists()) {
+          const fetchedMemory = { id: docSnap.id, ...docSnap.data() };
+          console.log(`[ProductionDeckContainer] Direct Firestore document fetch succeeded for "${promptId}". Stage: ${(fetchedMemory as any).productionStage}`);
+          setSelectedProductionData(fetchedMemory);
+          setIsReady(true);
+          setIsNotFound(false);
+          lastLoadedId.current = promptId;
+        }
+      } catch (err) {
+        console.warn("[ProductionDeckContainer] Direct document resolution warning:", err);
+      }
+    }
+
+    resolveDirectDocument();
+
+    return () => {
+      active = false;
+    };
+  }, [promptId, chapters, isReady, selectedProductionData?.id, user?.uid]);
 
   // Scroll to top on modal exit/unmount to prevent Next.js layout shift clamping bugs
   useEffect(() => {
     return () => {
       if (typeof window !== 'undefined') {
-        // We use a small timeout to let the modal transition close and Next.js router navigate
-        // before smoothly scrolling the main viewport back to the top dashboard view.
         setTimeout(() => {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }, 50);
@@ -331,6 +389,31 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
           router.push('/studio');
         }}
       />
+    );
+  }
+
+  if (isNotFound && (!isReady || !selectedProductionData)) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-white p-6 text-center space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+          <AlertCircle className="w-8 h-8" />
+        </div>
+        <div className="space-y-1.5 max-w-sm">
+          <h2 className="text-xl font-headline font-bold text-white italic">Memory Production Not Resolved</h2>
+          <p className="text-xs text-white/50 font-mono leading-relaxed">
+            Unable to load memory document "{promptId}". It may require host authentication or has been relocated.
+          </p>
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => router.push('/studio')}
+            className="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-mono font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-lg hover:scale-105"
+          >
+            Return to Studio Dashboard
+          </button>
+        </div>
+      </div>
     );
   }
 

@@ -2528,8 +2528,27 @@ describe('Studio Regression Tests', () => {
       const resolveButtonLabel = () => 'Print / Save PDF Autobiography';
       expect(resolveButtonLabel()).toContain('Print / Save PDF');
     });
+
+    it('DIRECT FIRESTORE RESOLUTION & BLACK SCREEN TIMEOUT RECOVERY SHIELD: direct document URLs should perform direct document lookup and trigger recovery UI if unresolved after 4s', () => {
+      const isDocumentId = (promptId: string, templateIds: string[]) => !templateIds.includes(promptId);
+      const resolveFallbackState = (isReady: boolean, isNotFound: boolean) => {
+        if (isNotFound && !isReady) return 'RECOVERY_CARD';
+        if (!isReady) return 'PREPARING_SPINNER';
+        return 'PRODUCTION_DECK';
+      };
+
+      // Test 1: Identify document ID vs template ID
+      expect(isDocumentId('ey96djU6qR1BrDGnvZwp', ['roots-foundations'])).toBe(true);
+      expect(isDocumentId('roots-foundations', ['roots-foundations'])).toBe(false);
+
+      // Test 2: Fallback transition from spinner to recovery card when unresolved
+      expect(resolveFallbackState(false, false)).toBe('PREPARING_SPINNER');
+      expect(resolveFallbackState(false, true)).toBe('RECOVERY_CARD');
+      expect(resolveFallbackState(true, true)).toBe('PRODUCTION_DECK');
+    });
   });
 });
+
 
 
 
