@@ -5320,7 +5320,7 @@ export default function SoloStage({
          transition={{ duration: 1 }}
          className="text-center space-y-6"
        >
-          <div className="flex items-center justify-center gap-4 text-emerald-400 font-black text-[10px] uppercase tracking-[0.8em] mb-4">
+<div className="flex items-center justify-center gap-4 text-emerald-400 font-black text-[10px] uppercase tracking-[0.8em] mb-4">
             <div className="w-12 h-px bg-emerald-500/30" />
             Premiere: Act V
             <div className="w-12 h-px bg-emerald-500/30" />
@@ -5351,12 +5351,14 @@ export default function SoloStage({
                       <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
                       <span>Fusion Masterpiece</span>
                       {premiereMode === 'fusion' && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+                        <span className="px-2 py-0.5 rounded-md text-[8px] bg-emerald-400/20 text-emerald-300 border border-emerald-400/40 font-mono tracking-widest uppercase font-bold">
+                          APPLIED
+                        </span>
                       )}
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="bg-slate-900 border border-emerald-500/30 text-slate-200 text-xs px-3.5 py-2 rounded-xl shadow-2xl z-[10002] max-w-[280px]">
-                    <p className="font-bold text-emerald-400 font-mono text-[11px] mb-0.5 uppercase tracking-wider">✨ Fusion Masterpiece (Applied)</p>
+                    <p className="font-bold text-emerald-400 font-mono text-[11px] mb-0.5 uppercase tracking-wider">✨ Fusion Masterpiece // APPLIED</p>
                     <p className="text-white/80 leading-relaxed">Blends your polished narrative prose with the spoken recorded performance into a seamless, cinematic-grade presentation.</p>
                   </TooltipContent>
                 </Tooltip>
@@ -5412,7 +5414,7 @@ export default function SoloStage({
                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                    : 'bg-sky-500/10 text-sky-400 border-sky-500/30'
                }`}>
-                 {premiereMode === 'fusion' ? '✨ Fusion Masterpiece // Cinematic Grade Active' : '📽️ Authentic Solo Performance // Archival Raw Take'}
+                 {premiereMode === 'fusion' ? '✨ Fusion Masterpiece // APPLIED' : '📽️ Authentic Solo Performance // Archival Raw Take'}
                </span>
              </div>
              
@@ -5429,15 +5431,21 @@ export default function SoloStage({
             transition={{ delay: 0.6, duration: 0.8 }}
             className="flex-1 space-y-6 max-w-xl text-left"
           >
-              {/* PRIMARY ACTION BUTTONS (ELEVATED TO TOP) */}
-              <div className="space-y-3.5 bg-slate-900/60 p-6 rounded-[2.5rem] border border-white/10 backdrop-blur-xl shadow-2xl">
-                 <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50 mb-2">
-                   Premiere Controls & Master Exports
-                 </h4>
+              {/* PRIMARY ACTION CONTROLS */}
+              <div className="space-y-3.5 bg-gradient-to-b from-slate-900/90 to-slate-950/90 p-6 rounded-[2.5rem] border border-white/10 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                 <div className="flex items-center justify-between mb-1">
+                   <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">
+                     Premiere Controls & Master Exports
+                   </h4>
+                   <span className="text-[9px] font-mono text-emerald-400/80 uppercase tracking-widest flex items-center gap-1.5">
+                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                     Ready to Stream
+                   </span>
+                 </div>
                  
                  <button 
                    onClick={() => window.location.href = `/memory/${data.id}`} 
-                   className="w-full py-5 bg-white text-slate-950 font-black rounded-2xl uppercase tracking-[0.2em] text-xs hover:scale-[1.01] active:scale-[0.99] transition-all shadow-[0_15px_35px_rgba(255,255,255,0.15)] flex items-center justify-center gap-3 cursor-pointer"
+                   className="w-full py-5 bg-white hover:bg-slate-100 text-slate-950 font-black rounded-2xl uppercase tracking-[0.2em] text-xs hover:scale-[1.01] active:scale-[0.99] transition-all shadow-[0_15px_35px_rgba(255,255,255,0.15)] flex items-center justify-center gap-3 cursor-pointer"
                  >
                    <Play className="w-4 h-4 fill-current text-slate-950" />
                    View Premiere
@@ -5493,14 +5501,14 @@ export default function SoloStage({
 
                  <button 
                    onClick={() => window.location.href = '/studio'}
-                   className="w-full py-3.5 bg-transparent hover:bg-white/5 border border-white/5 text-white/50 font-mono text-[10px] uppercase tracking-widest rounded-xl transition-all cursor-pointer text-center"
+                   className="w-full py-3 bg-transparent hover:bg-white/5 border border-white/5 text-white/40 hover:text-white/70 font-mono text-[10px] uppercase tracking-widest rounded-xl transition-all cursor-pointer text-center"
                  >
                    Return to Studio Slate
                  </button>
               </div>
 
               {/* COMPACT PRODUCTION VERIFICATION GRID */}
-              <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="grid grid-cols-2 gap-3 pt-1">
                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3">
                     <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                     <div>
@@ -5561,71 +5569,6 @@ export default function SoloStage({
                   </div>
                 </motion.div>
               )}
-
-             <div className="pt-8 space-y-4">
-                <button 
-                  onClick={() => window.location.href = `/memory/${data.id}`} 
-                  className="w-full py-6 bg-white text-slate-950 font-black rounded-3xl uppercase tracking-[0.2em] text-xs hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_20px_50px_rgba(255,255,255,0.15)] flex items-center justify-center gap-3"
-                >
-                  <Play className="w-4 h-4 fill-current" />
-                  View Premiere
-                </button>
-                
-                {/* LIVING ROOM TV PREMIERE LAUNCHER BUTTON */}
-                <div className="relative w-full">
-                  <MentorshipHotspot 
-                    number={1} 
-                    label="Stream to Living Room TV" 
-                    hotspotId="HS_ACT5_MENTOR_STEP1"
-                    className="-top-3 -left-3" 
-                  />
-                  <button 
-                    data-hotspot-id="HS_ACT5_LIVING_ROOM_PREMIERE_BTN"
-                    onClick={() => setShowLivingRoomCastModal(true)}
-                    className="w-full py-5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-black rounded-3xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 hover:scale-[1.02] cursor-pointer shadow-[0_0_30px_rgba(245,158,11,0.15)]"
-                  >
-                    <Tv className="w-4 h-4 text-amber-400 animate-pulse" />
-                    Start Living Room TV Premiere
-                  </button>
-                </div>
-
-                {/* MASTER PACKAGE DOWNLOAD BUTTON */}
-                <div className="relative w-full">
-                  <MentorshipHotspot 
-                    number={2} 
-                    label="Export Autobiography PDF" 
-                    hotspotId="HS_ACT5_MENTOR_STEP2"
-                    className="-top-3 -left-3" 
-                  />
-                  <button 
-                    data-hotspot-id="HS_ACT5_DOWNLOAD_PACKAGE_BTN"
-                    onClick={handleDownloadPackage}
-                    className="w-full py-5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-black rounded-3xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download Master Narrative Package
-                  </button>
-                </div>
-
-                {/* SHARE CINEMA LINK & QR CODE BUTTON */}
-                <div className="relative w-full">
-                  <button 
-                    data-hotspot-id="HS_ACT5_SHARE_CINEMA_BTN"
-                    onClick={() => setIsShareModalOpen(true)}
-                    className="w-full py-5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-black rounded-3xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 hover:scale-[1.02] cursor-pointer shadow-lg"
-                  >
-                    <Share2 className="w-4 h-4 text-emerald-400" />
-                    Share Cinema Link & QR Code
-                  </button>
-                </div>
-
-                <button 
-                  onClick={() => window.location.href = '/timeline'} 
-                  className="w-full py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black rounded-3xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3"
-                >
-                  Return to Studio Slate
-                </button>
-             </div>
           </motion.div>
        </div>
     </div>

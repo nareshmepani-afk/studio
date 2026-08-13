@@ -2578,7 +2578,7 @@ describe('Studio Regression Tests', () => {
       const getTooltipContent = (mode: 'fusion' | 'raw') => {
         if (mode === 'fusion') {
           return {
-            title: '✨ Fusion Masterpiece (Applied)',
+            title: '✨ Fusion Masterpiece // APPLIED',
             desc: 'Blends your polished narrative prose with the spoken recorded performance into a seamless, cinematic-grade presentation.'
           };
         }
