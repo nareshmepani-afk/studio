@@ -90,20 +90,16 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   }, [isReady, promptId, selectedProductionData]);
 
   // Direct Firestore Document Resolution:
-  // If promptId is a document ID (e.g. ey96djU6qR1BrDGnvZwp) and not a static template ID,
-  // fetch the document directly from Firestore if useStudioData memories list has not loaded it yet.
+  // If promptId is a document ID (e.g. ey96djU6qR1BrDGnvZwp), fetch the document directly from Firestore
+  // on mount so direct URL navigation & parallel tabs load in <100ms without waiting for user collection queries.
   useEffect(() => {
     let active = true;
 
     async function resolveDirectDocument() {
-      if (!promptId || isReady || selectedProductionData?.id === promptId) return;
-
-      const chapterPrompts = chapters.flatMap(c => c.prompts);
-      const isTemplateId = chapterPrompts.some(p => p.id === promptId);
-      if (isTemplateId) return;
+      if (!promptId || isReady || (selectedProductionData?.id === promptId && isReady)) return;
 
       try {
-        console.log(`[ProductionDeckContainer] Attempting direct Firestore fetch for document ID "${promptId}"...`);
+        console.log(`[ProductionDeckContainer] Executing direct Firestore lookup for document ID "${promptId}"...`);
         let docSnap = await getDoc(doc(db, 'memories', promptId));
 
         if (!docSnap.exists() && user?.uid) {
@@ -112,7 +108,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
 
         if (active && docSnap.exists()) {
           const fetchedMemory = { id: docSnap.id, ...docSnap.data() };
-          console.log(`[ProductionDeckContainer] Direct Firestore document fetch succeeded for "${promptId}". Stage: ${(fetchedMemory as any).productionStage}`);
+          console.log(`[ProductionDeckContainer] Direct Firestore document lookup succeeded for "${promptId}". Title: "${(fetchedMemory as any).title}", Stage: ${(fetchedMemory as any).productionStage}`);
           setSelectedProductionData(fetchedMemory);
           setIsReady(true);
           setIsNotFound(false);
@@ -128,7 +124,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     return () => {
       active = false;
     };
-  }, [promptId, chapters, isReady, selectedProductionData?.id, user?.uid]);
+  }, [promptId, isReady, selectedProductionData?.id, user?.uid]);
 
   // Scroll to top on modal exit/unmount to prevent Next.js layout shift clamping bugs
   useEffect(() => {
