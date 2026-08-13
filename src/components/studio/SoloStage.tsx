@@ -5331,32 +5331,51 @@ export default function SoloStage({
           </p>
 
           {/* DUAL-REEL MODE TOGGLE BAR */}
-          <div className="flex items-center justify-center gap-4 pt-4">
-            <button
-              data-hotspot-id="HS_ACT5_MODE_FUSION_BTN"
-              onClick={() => setPremiereMode('fusion')}
-              className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border flex items-center gap-2 ${
-                premiereMode === 'fusion'
-                  ? 'bg-emerald-500 text-black border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.3)]'
-                  : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'
-              }`}
-            >
-              <Sparkles className="w-4 h-4" />
-              Fusion Masterpiece
-            </button>
-            <button
-              data-hotspot-id="HS_ACT5_MODE_RAW_BTN"
-              onClick={() => setPremiereMode('raw')}
-              className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border flex items-center gap-2 ${
-                premiereMode === 'raw'
-                  ? 'bg-sky-500 text-black border-sky-400 shadow-[0_0_25px_rgba(14,165,233,0.3)]'
-                  : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'
-              }`}
-            >
-              <FilmIcon className="w-4 h-4" />
-              Authentic Performance
-            </button>
-          </div>
+          <TooltipProvider delayDuration={200}>
+            <div className="flex items-center justify-center gap-4 pt-4">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    data-hotspot-id="HS_ACT5_MODE_FUSION_BTN"
+                    onClick={() => setPremiereMode('fusion')}
+                    className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border flex items-center gap-2 cursor-pointer ${
+                      premiereMode === 'fusion'
+                        ? 'bg-emerald-500 text-black border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.3)]'
+                        : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Fusion Masterpiece
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-slate-900 border border-emerald-500/30 text-slate-200 text-xs px-3.5 py-2 rounded-xl shadow-2xl z-[10002] max-w-[280px]">
+                  <p className="font-bold text-emerald-400 font-mono text-[11px] mb-0.5 uppercase tracking-wider">✨ Fusion Masterpiece</p>
+                  <p className="text-white/80 leading-relaxed">Blends your polished narrative prose with the spoken recorded performance into a seamless, cinematic-grade presentation.</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    data-hotspot-id="HS_ACT5_MODE_RAW_BTN"
+                    onClick={() => setPremiereMode('raw')}
+                    className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border flex items-center gap-2 cursor-pointer ${
+                      premiereMode === 'raw'
+                        ? 'bg-sky-500 text-black border-sky-400 shadow-[0_0_25px_rgba(14,165,233,0.3)]'
+                        : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    <FilmIcon className="w-4 h-4" />
+                    Authentic Performance
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-slate-900 border border-sky-500/30 text-slate-200 text-xs px-3.5 py-2 rounded-xl shadow-2xl z-[10002] max-w-[280px]">
+                  <p className="font-bold text-sky-400 font-mono text-[11px] mb-0.5 uppercase tracking-wider">📽️ Authentic Performance</p>
+                  <p className="text-white/80 leading-relaxed">Displays your unedited, raw archival recording exactly as performed in the studio without AI prose synthesis.</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
        </motion.div>
        
        <div className="flex flex-col lg:flex-row gap-20 items-center justify-center">

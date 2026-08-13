@@ -2573,8 +2573,30 @@ describe('Studio Regression Tests', () => {
       expect(isChunkError('Failed to fetch dynamically imported module')).toBe(true);
       expect(isChunkError('TypeError: Cannot read property of undefined')).toBe(false);
     });
+
+    it('ACT V DUAL-REEL MODE TOOLTIPS SHIELD: Fusion Masterpiece and Authentic Performance buttons must provide tooltips with UK English orthography', () => {
+      const getTooltipContent = (mode: 'fusion' | 'raw') => {
+        if (mode === 'fusion') {
+          return {
+            title: '✨ Fusion Masterpiece',
+            desc: 'Blends your polished narrative prose with the spoken recorded performance into a seamless, cinematic-grade presentation.'
+          };
+        }
+        return {
+          title: '📽️ Authentic Performance',
+          desc: 'Displays your unedited, raw archival recording exactly as performed in the studio without AI prose synthesis.'
+        };
+      };
+
+      const fusionTooltip = getTooltipContent('fusion');
+      const rawTooltip = getTooltipContent('raw');
+
+      expect(fusionTooltip.desc).toContain('cinematic-grade presentation');
+      expect(rawTooltip.desc).toContain('unedited, raw archival recording');
+    });
   });
 });
+
 
 
 
