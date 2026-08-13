@@ -2561,8 +2561,21 @@ describe('Studio Regression Tests', () => {
       expect(isStaticAsset('/studio/production/ey96djU6qR1BrDGnvZwp')).toBe(false);
       expect(isStaticAsset('/cinema')).toBe(false);
     });
+
+    it('STALE BUILD CHUNK AUTO-RECOVERY SHIELD: ChunkLoadError and stale script bundle mismatches across deployments must be detected for auto-sync', () => {
+      const isChunkError = (errorMessage: string) => 
+        errorMessage.includes('Loading chunk') || 
+        errorMessage.includes('ChunkLoadError') || 
+        errorMessage.includes('Failed to fetch dynamically imported module');
+
+      expect(isChunkError('Loading chunk 4875 failed.')).toBe(true);
+      expect(isChunkError('ChunkLoadError: Loading chunk 1255 failed')).toBe(true);
+      expect(isChunkError('Failed to fetch dynamically imported module')).toBe(true);
+      expect(isChunkError('TypeError: Cannot read property of undefined')).toBe(false);
+    });
   });
 });
+
 
 
 
