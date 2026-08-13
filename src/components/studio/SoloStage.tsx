@@ -5330,61 +5330,72 @@ export default function SoloStage({
             The weave is complete. Your story has been transformed from a fleeting thought into a cinematic treasure.
           </p>
 
-          {/* DUAL-REEL MODE TOGGLE BAR */}
+          {/* DUAL-REEL MODE SEGMENTED CONTROL BAR */}
           <TooltipProvider delayDuration={200}>
-            <div className="flex items-center justify-center gap-4 pt-4">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    data-hotspot-id="HS_ACT5_MODE_FUSION_BTN"
-                    onClick={() => setPremiereMode('fusion')}
-                    className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border flex items-center gap-2 cursor-pointer ${
-                      premiereMode === 'fusion'
-                        ? 'bg-emerald-500 text-black border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.3)]'
-                        : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'
-                    }`}
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Fusion Masterpiece
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="bg-slate-900 border border-emerald-500/30 text-slate-200 text-xs px-3.5 py-2 rounded-xl shadow-2xl z-[10002] max-w-[280px]">
-                  <p className="font-bold text-emerald-400 font-mono text-[11px] mb-0.5 uppercase tracking-wider">✨ Fusion Masterpiece</p>
-                  <p className="text-white/80 leading-relaxed">Blends your polished narrative prose with the spoken recorded performance into a seamless, cinematic-grade presentation.</p>
-                </TooltipContent>
-              </Tooltip>
+            <div className="flex flex-col items-center justify-center gap-2 pt-3">
+              <span className="text-[9px] font-mono uppercase tracking-[0.25em] text-white/40 font-bold">
+                Presentation Reel Mode
+              </span>
+              <div className="bg-slate-900/90 p-1.5 rounded-2xl border border-white/10 flex items-center gap-2 shadow-2xl backdrop-blur-xl">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      data-hotspot-id="HS_ACT5_MODE_FUSION_BTN"
+                      onClick={() => setPremiereMode('fusion')}
+                      className={`px-5 py-2.5 rounded-xl text-[11px] font-mono font-bold uppercase tracking-wider transition-all border flex items-center gap-2 cursor-pointer ${
+                        premiereMode === 'fusion'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.25)]'
+                          : 'bg-transparent text-white/50 border-transparent hover:text-white/80 hover:bg-white/5'
+                      }`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Fusion Masterpiece</span>
+                      {premiereMode === 'fusion' && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="bg-slate-900 border border-emerald-500/30 text-slate-200 text-xs px-3.5 py-2 rounded-xl shadow-2xl z-[10002] max-w-[280px]">
+                    <p className="font-bold text-emerald-400 font-mono text-[11px] mb-0.5 uppercase tracking-wider">✨ Fusion Masterpiece (Applied)</p>
+                    <p className="text-white/80 leading-relaxed">Blends your polished narrative prose with the spoken recorded performance into a seamless, cinematic-grade presentation.</p>
+                  </TooltipContent>
+                </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    data-hotspot-id="HS_ACT5_MODE_RAW_BTN"
-                    onClick={() => setPremiereMode('raw')}
-                    className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all border flex items-center gap-2 cursor-pointer ${
-                      premiereMode === 'raw'
-                        ? 'bg-sky-500 text-black border-sky-400 shadow-[0_0_25px_rgba(14,165,233,0.3)]'
-                        : 'bg-white/5 text-white/60 border-white/10 hover:bg-white/10'
-                    }`}
-                  >
-                    <FilmIcon className="w-4 h-4" />
-                    Authentic Performance
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="bg-slate-900 border border-sky-500/30 text-slate-200 text-xs px-3.5 py-2 rounded-xl shadow-2xl z-[10002] max-w-[280px]">
-                  <p className="font-bold text-sky-400 font-mono text-[11px] mb-0.5 uppercase tracking-wider">📽️ Authentic Performance</p>
-                  <p className="text-white/80 leading-relaxed">Displays your unedited, raw archival recording exactly as performed in the studio without AI prose synthesis.</p>
-                </TooltipContent>
-              </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      data-hotspot-id="HS_ACT5_MODE_RAW_BTN"
+                      onClick={() => setPremiereMode('raw')}
+                      className={`px-5 py-2.5 rounded-xl text-[11px] font-mono font-bold uppercase tracking-wider transition-all border flex items-center gap-2 cursor-pointer ${
+                        premiereMode === 'raw'
+                          ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-[0_0_20px_rgba(14,165,233,0.25)]'
+                          : 'bg-transparent text-white/50 border-transparent hover:text-white/80 hover:bg-white/5'
+                      }`}
+                    >
+                      <FilmIcon className="w-3.5 h-3.5 text-sky-400" />
+                      <span>Authentic Performance</span>
+                      {premiereMode === 'raw' && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse ml-0.5" />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="bg-slate-900 border border-sky-500/30 text-slate-200 text-xs px-3.5 py-2 rounded-xl shadow-2xl z-[10002] max-w-[280px]">
+                    <p className="font-bold text-sky-400 font-mono text-[11px] mb-0.5 uppercase tracking-wider">📽️ Authentic Performance</p>
+                    <p className="text-white/80 leading-relaxed">Displays your unedited, raw archival recording exactly as performed in the studio without AI prose synthesis.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </div>
           </TooltipProvider>
        </motion.div>
        
-       <div className="flex flex-col lg:flex-row gap-20 items-center justify-center">
+       <div className="flex flex-col lg:flex-row gap-12 items-start justify-center pt-4">
           {/* THE POSTER (LEFT) */}
           <motion.div 
             initial={{ scale: 0.9, opacity: 0, rotateY: 20 }}
             animate={{ scale: 1, opacity: 1, rotateY: 0 }}
             transition={{ delay: 0.4, duration: 1.2, ease: "easeOut" }}
-            className="relative group perspective-2000"
+            className="relative group perspective-2000 shrink-0"
           >
              <div className="absolute -inset-20 bg-sky-500/10 blur-[120px] rounded-full opacity-50 group-hover:opacity-80 transition-opacity duration-1000" />
              <div className="relative z-10">
@@ -5411,82 +5422,145 @@ export default function SoloStage({
              </div>
           </motion.div>
 
-          {/* PRODUCTION STATS & ACTIONS (RIGHT) */}
+          {/* PRODUCTION ACTIONS & STATS (RIGHT) */}
           <motion.div 
             initial={{ x: 50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.8, duration: 1 }}
-            className="flex-1 space-y-10 max-w-xl text-left"
+            transition={{ delay: 0.6, duration: 0.8 }}
+            className="flex-1 space-y-6 max-w-xl text-left"
           >
-             <div className="space-y-8">
-                <div className="flex items-start gap-6 group">
-                   <div className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center group-hover:bg-emerald-500/10 group-hover:border-emerald-500/30 transition-all">
-                      <CheckCircle2 className="w-7 h-7 text-emerald-400" />
-                   </div>
-                   <div>
-                      <h4 className="font-black text-white text-sm uppercase tracking-widest mb-1">Negative Mastered</h4>
-                      <p className="text-sm text-white/40 leading-relaxed font-medium">All visual and auditory catalysts have been processed into the final narrative weave.</p>
-                   </div>
-                </div>
-
-                <div className="flex items-start gap-6 group">
-                   <div className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center group-hover:bg-sky-500/10 group-hover:border-sky-500/30 transition-all">
-                      <BrainCircuit className="w-7 h-7 text-sky-400" />
-                   </div>
-                   <div>
-                      <h4 className="font-black text-white text-sm uppercase tracking-widest mb-1">AI Metadata Synced // VERIFIED</h4>
-                      <p className="text-sm text-white/40 leading-relaxed font-medium">Emotional beats and entity mapping have been secured for the global cinematic archive.</p>
-                   </div>
-                </div>
-
-                <div className="flex items-start gap-6 group">
-                   <div className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center group-hover:bg-amber-500/10 group-hover:border-amber-500/30 transition-all">
-                      <Sparkles className="w-7 h-7 text-amber-400" />
-                   </div>
-                   <div>
-                      <h4 className="font-black text-white text-sm uppercase tracking-widest mb-1">Fusion Protocol // ACTIVE</h4>
-                      <p className="text-sm text-white/40 leading-relaxed font-medium">Original intent and performance have been synthesized into a prestigious video story.</p>
-                   </div>
-                </div>
-
-                <div className="flex items-start gap-6 group">
-                   <div className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center group-hover:bg-rose-500/10 group-hover:border-rose-500/30 transition-all">
-                      <Rocket className="w-7 h-7 text-rose-400" />
-                   </div>
-                   <div>
-                      <h4 className="font-black text-white text-sm uppercase tracking-widest mb-1">Archive Entry</h4>
-                      <p className="text-sm text-white/40 leading-relaxed font-medium">Your memory is now a permanent chapter in your life's cinematic timeline.</p>
-                   </div>
-                </div>
-             </div>
-
-             {data.videoStory && (
-               <motion.div 
-                 initial={{ opacity: 0, y: 20 }}
-                 animate={{ opacity: 1, y: 0 }}
-                 transition={{ delay: 1.2 }}
-                 className="mt-8 p-8 bg-gradient-to-br from-emerald-500/5 via-white/5 to-transparent border border-white/10 rounded-[2.5rem] backdrop-blur-xl relative overflow-hidden group"
-               >
-                 <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
-                   <FilmIcon className="w-16 h-16 text-white" />
-                 </div>
-                 <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400 mb-6 flex items-center gap-3">
-                   <Sparkles className="w-4 h-4" />
-                   The Narrative Fusion
+              {/* PRIMARY ACTION BUTTONS (ELEVATED TO TOP) */}
+              <div className="space-y-3.5 bg-slate-900/60 p-6 rounded-[2.5rem] border border-white/10 backdrop-blur-xl shadow-2xl">
+                 <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50 mb-2">
+                   Premiere Controls & Master Exports
                  </h4>
-                 <p className="text-xl text-white/90 leading-relaxed font-medium italic serif">
-                   "{data.videoStory}"
-                 </p>
-                 <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
-                    <span className="text-[8px] font-mono uppercase tracking-widest text-white/20">Auteur Synthesis // AI-Fused Narrative</span>
-                    <div className="flex gap-2">
-                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40" />
-                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/20" />
+                 
+                 <button 
+                   onClick={() => window.location.href = `/memory/${data.id}`} 
+                   className="w-full py-5 bg-white text-slate-950 font-black rounded-2xl uppercase tracking-[0.2em] text-xs hover:scale-[1.01] active:scale-[0.99] transition-all shadow-[0_15px_35px_rgba(255,255,255,0.15)] flex items-center justify-center gap-3 cursor-pointer"
+                 >
+                   <Play className="w-4 h-4 fill-current text-slate-950" />
+                   View Premiere
+                 </button>
+                 
+                 {/* LIVING ROOM TV PREMIERE LAUNCHER BUTTON */}
+                 <div className="relative w-full">
+                   <MentorshipHotspot 
+                     number={1} 
+                     label="Stream to Living Room TV" 
+                     hotspotId="HS_ACT5_MENTOR_STEP1"
+                     className="-top-3 -left-3" 
+                   />
+                   <button 
+                     data-hotspot-id="HS_ACT5_LIVING_ROOM_PREMIERE_BTN"
+                     onClick={() => setShowLivingRoomCastModal(true)}
+                     className="w-full py-4.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-black rounded-2xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 hover:scale-[1.01] cursor-pointer shadow-[0_0_20px_rgba(245,158,11,0.15)]"
+                   >
+                     <Tv className="w-4 h-4 text-amber-400 animate-pulse" />
+                     Start Living Room TV Premiere
+                   </button>
+                 </div>
+
+                 {/* MASTER PACKAGE DOWNLOAD BUTTON */}
+                 <div className="relative w-full">
+                   <MentorshipHotspot 
+                     number={2} 
+                     label="Export Autobiography PDF" 
+                     hotspotId="HS_ACT5_MENTOR_STEP2"
+                     className="-top-3 -left-3" 
+                   />
+                   <button 
+                     data-hotspot-id="HS_ACT5_DOWNLOAD_PACKAGE_BTN"
+                     onClick={handleDownloadPackage}
+                     className="w-full py-4.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-black rounded-2xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 cursor-pointer"
+                   >
+                     <Download className="w-4 h-4" />
+                     Download Master Narrative Package
+                   </button>
+                 </div>
+
+                 {/* SHARE CINEMA LINK & QR CODE BUTTON */}
+                 <div className="relative w-full">
+                   <button 
+                     data-hotspot-id="HS_ACT5_SHARE_CINEMA_BTN"
+                     onClick={() => setIsShareModalOpen(true)}
+                     className="w-full py-4.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 font-black rounded-2xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 cursor-pointer"
+                   >
+                     <Share2 className="w-4 h-4" />
+                     Share Cinema Link & QR Code
+                   </button>
+                 </div>
+
+                 <button 
+                   onClick={() => window.location.href = '/studio'}
+                   className="w-full py-3.5 bg-transparent hover:bg-white/5 border border-white/5 text-white/50 font-mono text-[10px] uppercase tracking-widest rounded-xl transition-all cursor-pointer text-center"
+                 >
+                   Return to Studio Slate
+                 </button>
+              </div>
+
+              {/* COMPACT PRODUCTION VERIFICATION GRID */}
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                 <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <div>
+                       <h4 className="font-bold text-white text-[11px] uppercase tracking-wider">Negative Mastered</h4>
+                       <p className="text-[10px] text-white/40 leading-snug">Visual & audio weave processed.</p>
                     </div>
                  </div>
-               </motion.div>
-             )}
+
+                 <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3">
+                    <BrainCircuit className="w-5 h-5 text-sky-400 shrink-0" />
+                    <div>
+                       <h4 className="font-bold text-white text-[11px] uppercase tracking-wider">Metadata Synced</h4>
+                       <p className="text-[10px] text-white/40 leading-snug">Archive mapping verified.</p>
+                    </div>
+                 </div>
+
+                 <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3">
+                    <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+                    <div>
+                       <h4 className="font-bold text-white text-[11px] uppercase tracking-wider">Fusion Protocol</h4>
+                       <p className="text-[10px] text-white/40 leading-snug">Intent & performance fused.</p>
+                    </div>
+                 </div>
+
+                 <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-3">
+                    <Rocket className="w-5 h-5 text-rose-400 shrink-0" />
+                    <div>
+                       <h4 className="font-bold text-white text-[11px] uppercase tracking-wider">Archive Entry</h4>
+                       <p className="text-[10px] text-white/40 leading-snug">Permanent chapter secured.</p>
+                    </div>
+                 </div>
+              </div>
+
+              {data.videoStory && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.9 }}
+                  className="p-6 bg-gradient-to-br from-emerald-500/5 via-white/5 to-transparent border border-white/10 rounded-3xl backdrop-blur-xl relative overflow-hidden group"
+                >
+                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <FilmIcon className="w-12 h-12 text-white" />
+                  </div>
+                  <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-emerald-400 mb-3 flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    The Narrative Fusion
+                  </h4>
+                  <p className="text-base text-white/90 leading-relaxed font-medium italic serif">
+                    "{data.videoStory}"
+                  </p>
+                  <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+                     <span className="text-[8px] font-mono uppercase tracking-widest text-white/30">Auteur Synthesis // AI-Fused Narrative</span>
+                     <div className="flex gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/20" />
+                     </div>
+                  </div>
+                </motion.div>
+              )}
 
              <div className="pt-8 space-y-4">
                 <button 
