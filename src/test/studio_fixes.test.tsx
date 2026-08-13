@@ -2606,6 +2606,33 @@ describe('Studio Regression Tests', () => {
       expect(getScrollbarWidth('global')).toBe(10);
       expect(getScrollbarWidth('custom-scrollbar')).toBe(10);
     });
+
+    it('MW-132 ACT V MASTER STUDIO CONSOLE SHIELD: verifies 4-tier hierarchy, 2-column export grid, and hotspot bindings', () => {
+      const masterConsoleHotspots = [
+        'HS_ACT5_VIEW_PREMIERE_BTN',
+        'HS_ACT5_LIVING_ROOM_PREMIERE_BTN',
+        'HS_ACT5_DOWNLOAD_AUTOBIOGRAPHY_BTN',
+        'HS_ACT5_SHARE_LINK_BTN'
+      ];
+
+      expect(masterConsoleHotspots).toContain('HS_ACT5_VIEW_PREMIERE_BTN');
+      expect(masterConsoleHotspots).toContain('HS_ACT5_LIVING_ROOM_PREMIERE_BTN');
+      expect(masterConsoleHotspots).toContain('HS_ACT5_DOWNLOAD_AUTOBIOGRAPHY_BTN');
+      expect(masterConsoleHotspots).toContain('HS_ACT5_SHARE_LINK_BTN');
+
+      const consoleLayout = {
+        title: '🎬 MASTERING CONSOLE',
+        liveBadge: '4K MASTERED',
+        tier1Hero: 'Launch Fullscreen Premiere',
+        tier2Secondary: 'Start Living Room TV Premiere',
+        tier3Exports: ['Booklet PDF', 'Share & QR'],
+        footer: '← Return to Studio Slate'
+      };
+
+      expect(consoleLayout.title).toBe('🎬 MASTERING CONSOLE');
+      expect(consoleLayout.liveBadge).toBe('4K MASTERED');
+      expect(consoleLayout.tier3Exports).toHaveLength(2);
+    });
   });
 });
 

@@ -5431,27 +5431,33 @@ export default function SoloStage({
             transition={{ delay: 0.6, duration: 0.8 }}
             className="flex-1 space-y-6 max-w-xl text-left"
           >
-              {/* PRIMARY ACTION CONTROLS */}
-              <div className="space-y-3.5 bg-gradient-to-b from-slate-900/90 to-slate-950/90 p-6 rounded-[2.5rem] border border-white/10 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                 <div className="flex items-center justify-between mb-1">
-                   <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">
-                     Premiere Controls & Master Exports
+              {/* HOLLYWOOD-GRADE MASTER STUDIO CONSOLE */}
+              <div className="bg-slate-950/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl relative overflow-hidden max-w-md w-full mx-auto space-y-4">
+                 {/* Specular Edge */}
+                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+
+                 {/* Console Status Header */}
+                 <div className="flex items-center justify-between pb-1">
+                   <h4 className="text-[10px] font-mono tracking-[0.3em] text-amber-400 font-bold uppercase flex items-center gap-2">
+                     🎬 MASTERING CONSOLE
                    </h4>
-                   <span className="text-[9px] font-mono text-emerald-400/80 uppercase tracking-widest flex items-center gap-1.5">
+                   <span className="flex items-center gap-1.5 text-[9px] font-mono text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 px-2 py-0.5 rounded-full">
                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                     Ready to Stream
+                     4K MASTERED
                    </span>
                  </div>
                  
+                 {/* TIER 1: HERO ACTION - LAUNCH FULLSCREEN PREMIERE */}
                  <button 
+                   data-hotspot-id="HS_ACT5_VIEW_PREMIERE_BTN"
                    onClick={() => window.location.href = `/memory/${data.id}`} 
-                   className="w-full py-5 bg-white hover:bg-slate-100 text-slate-950 font-black rounded-2xl uppercase tracking-[0.2em] text-xs hover:scale-[1.01] active:scale-[0.99] transition-all shadow-[0_15px_35px_rgba(255,255,255,0.15)] flex items-center justify-center gap-3 cursor-pointer"
+                   className="w-full py-4 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 font-black text-xs tracking-wider uppercase rounded-2xl shadow-[0_0_25px_rgba(245,158,11,0.25)] hover:shadow-[0_0_35px_rgba(245,158,11,0.4)] transition-all flex items-center justify-center gap-2.5 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
                  >
                    <Play className="w-4 h-4 fill-current text-slate-950" />
-                   View Premiere
+                   Launch Fullscreen Premiere
                  </button>
                  
-                 {/* LIVING ROOM TV PREMIERE LAUNCHER BUTTON */}
+                 {/* TIER 2: SECONDARY ACTION - START LIVING ROOM TV PREMIERE */}
                  <div className="relative w-full">
                    <MentorshipHotspot 
                      number={1} 
@@ -5462,48 +5468,50 @@ export default function SoloStage({
                    <button 
                      data-hotspot-id="HS_ACT5_LIVING_ROOM_PREMIERE_BTN"
                      onClick={() => setShowLivingRoomCastModal(true)}
-                     className="w-full py-4.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-black rounded-2xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 hover:scale-[1.01] cursor-pointer shadow-[0_0_20px_rgba(245,158,11,0.15)]"
+                     className="w-full py-3.5 bg-slate-900/90 border border-amber-500/30 text-amber-300 font-semibold text-xs rounded-xl hover:bg-amber-500/10 hover:border-amber-400/60 transition-all flex items-center justify-center gap-2.5 cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.1)] hover:scale-[1.01]"
                    >
                      <Tv className="w-4 h-4 text-amber-400 animate-pulse" />
                      Start Living Room TV Premiere
                    </button>
                  </div>
 
-                 {/* MASTER PACKAGE DOWNLOAD BUTTON */}
-                 <div className="relative w-full">
-                   <MentorshipHotspot 
-                     number={2} 
-                     label="Export Autobiography PDF" 
-                     hotspotId="HS_ACT5_MENTOR_STEP2"
-                     className="-top-3 -left-3" 
-                   />
-                   <button 
-                     data-hotspot-id="HS_ACT5_DOWNLOAD_PACKAGE_BTN"
-                     onClick={handleDownloadPackage}
-                     className="w-full py-4.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-black rounded-2xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 cursor-pointer"
-                   >
-                     <Download className="w-4 h-4" />
-                     Download Master Narrative Package
-                   </button>
+                 {/* TIER 3: EXPORT GRID (2-COLUMN) */}
+                 <div className="grid grid-cols-2 gap-2 pt-1">
+                   <div className="relative w-full">
+                     <MentorshipHotspot 
+                       number={2} 
+                       label="Export Autobiography PDF" 
+                       hotspotId="HS_ACT5_MENTOR_STEP2"
+                       className="-top-3 -left-3" 
+                     />
+                     <button 
+                       data-hotspot-id="HS_ACT5_DOWNLOAD_AUTOBIOGRAPHY_BTN"
+                       onClick={handleDownloadPackage}
+                       className="w-full py-3 bg-slate-900/60 hover:bg-white/5 border border-white/10 text-white/80 font-bold rounded-xl text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer hover:border-white/20"
+                     >
+                       <Download className="w-3.5 h-3.5 text-white/70" />
+                       Booklet PDF
+                     </button>
+                   </div>
+
+                   <div className="relative w-full">
+                     <button 
+                       data-hotspot-id="HS_ACT5_SHARE_LINK_BTN"
+                       onClick={() => setIsShareModalOpen(true)}
+                       className="w-full py-3 bg-slate-900/60 hover:bg-white/5 border border-white/10 text-white/80 font-bold rounded-xl text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer hover:border-white/20"
+                     >
+                       <Share2 className="w-3.5 h-3.5 text-white/70" />
+                       Share & QR
+                     </button>
+                   </div>
                  </div>
 
-                 {/* SHARE CINEMA LINK & QR CODE BUTTON */}
-                 <div className="relative w-full">
-                   <button 
-                     data-hotspot-id="HS_ACT5_SHARE_CINEMA_BTN"
-                     onClick={() => setIsShareModalOpen(true)}
-                     className="w-full py-4.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 font-black rounded-2xl uppercase tracking-[0.2em] text-xs transition-all flex items-center justify-center gap-3 cursor-pointer"
-                   >
-                     <Share2 className="w-4 h-4" />
-                     Share Cinema Link & QR Code
-                   </button>
-                 </div>
-
+                 {/* FOOTER ACTION */}
                  <button 
                    onClick={() => window.location.href = '/studio'}
-                   className="w-full py-3 bg-transparent hover:bg-white/5 border border-white/5 text-white/40 hover:text-white/70 font-mono text-[10px] uppercase tracking-widest rounded-xl transition-all cursor-pointer text-center"
+                   className="text-[10px] font-mono text-white/40 hover:text-white/70 uppercase tracking-widest transition-all cursor-pointer text-center block w-full pt-2"
                  >
-                   Return to Studio Slate
+                   ← Return to Studio Slate
                  </button>
               </div>
 
