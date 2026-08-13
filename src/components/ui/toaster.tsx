@@ -21,7 +21,7 @@ export function Toaster() {
           cancelButton:
             "bg-slate-800 text-slate-100 px-3 py-1 rounded-md text-xs hover:bg-slate-700 transition-colors",
           closeButton:
-            "absolute top-2 right-2 !bg-transparent !border-none !text-sky-400/70 hover:!text-white transition-colors p-1",
+            "!bg-slate-950/80 hover:!bg-slate-900 !border !border-white/20 !text-white/80 hover:!text-white transition-all p-1 rounded-full cursor-pointer z-[99] left-[auto] right-2 top-2",
           // Base status styles
           error: "bg-red-800 border-red-500/50 shadow-[0_0_20px_rgba(153,27,27,0.3)]",
           success: "bg-emerald-800 border-emerald-500/50 shadow-[0_0_20px_rgba(6,95,70,0.3)]",

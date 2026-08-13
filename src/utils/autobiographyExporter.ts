@@ -57,7 +57,7 @@ export function downloadFusedAutobiography(memory: Memory) {
       print-color-adjust: exact !important;
     }
 
-    body {
+    html, body {
       margin: 0;
       padding: 0;
       background-color: #020617;
@@ -68,15 +68,44 @@ export function downloadFusedAutobiography(memory: Memory) {
     .page {
       width: 210mm;
       height: 297mm;
-      padding: 20mm;
+      max-height: 297mm;
+      padding: 16mm 20mm;
       position: relative;
-      page-break-after: always;
       background: radial-gradient(circle at 50% 20%, rgba(245, 158, 11, 0.12), transparent 70%), #020617;
       border: 1px solid rgba(245, 158, 11, 0.2);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .page:first-of-type {
+      page-break-after: always;
+      break-after: page;
+    }
+
+    .page:last-of-type {
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+    }
+
+    @media print {
+      html, body {
+        width: 210mm;
+        height: 297mm;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      .page {
+        border: none;
+        box-shadow: none;
+      }
+      .page:last-of-type {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
     }
 
     .header-badge {

@@ -488,14 +488,16 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                 data-hotspot-id="HS_CINEMA_DOWNLOAD_AUTOBIOGRAPHY_BTN"
                 onClick={() => {
                   downloadFusedAutobiography(memory);
-                  toast.success('Generating Offline Autobiography Keepsake PDF...', {
-                    description: 'Your 2-page heirloom document (Poster + Monologue Chapter) is ready to print or save.'
+                  toast.success('Generating Offline Autobiography Keepsake...', {
+                    description: "Your 2-page heirloom document is ready! Select 'Save as PDF' to download or choose your printer to print.",
+                    duration: 6000,
+                    dismissible: true
                   });
                 }}
                 className="px-3.5 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border border-emerald-500/30 hover:scale-105"
               >
                 <FileText className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Autobiography PDF</span>
+                <span>Print / Save PDF</span>
               </button>
 
               {/* Living Room TV Launcher Button */}

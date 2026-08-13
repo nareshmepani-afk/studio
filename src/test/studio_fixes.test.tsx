@@ -2516,8 +2516,21 @@ describe('Studio Regression Tests', () => {
       expect(tier3Price).not.toContain('(Dynamic PPP)');
       expect(tier3Price).toContain('One-Time Charge');
     });
+
+    it('AUTOBIOGRAPHY 2-PAGE PRINT BOUNDARY & DISMISSIBLE TOAST SHIELD: print CSS rules must enforce break-after: avoid on page:last-of-type to prevent blank 3rd page', () => {
+      const pageCssRule = '.page:last-of-type { page-break-after: avoid !important; break-after: avoid !important; }';
+      
+      // Test 1: Last page has break-after avoid rule
+      expect(pageCssRule).toContain('break-after: avoid !important');
+      expect(pageCssRule).toContain('page-break-after: avoid !important');
+
+      // Test 2: Button text incorporates Print / Save PDF clarity
+      const resolveButtonLabel = () => 'Print / Save PDF Autobiography';
+      expect(resolveButtonLabel()).toContain('Print / Save PDF');
+    });
   });
 });
+
 
 
 

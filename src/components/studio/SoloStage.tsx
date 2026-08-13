@@ -6000,15 +6000,17 @@ export default function SoloStage({
                     onClick={() => {
                       if (data) {
                         downloadFusedAutobiography(data as Memory);
-                        toast.success('Generating Master Autobiography Keepsake PDF...', {
-                          description: 'Your 2-page heirloom document (Poster + Monologue Chapter) is ready to print or save.'
+                        toast.success('Generating Master Autobiography Keepsake...', {
+                          description: "Your 2-page heirloom document is ready! In the print window, select 'Save as PDF' to download or choose your printer to print.",
+                          duration: 6000,
+                          dismissible: true
                         });
                       }
                     }}
                     className="px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono font-bold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2 shadow-lg hover:scale-105"
                   >
                     <FileText className="w-4 h-4 text-emerald-400" />
-                    <span>Download Master Autobiography</span>
+                    <span>Print / Save PDF Autobiography</span>
                   </button>
 
                   <button
