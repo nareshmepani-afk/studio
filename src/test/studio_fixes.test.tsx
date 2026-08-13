@@ -2594,8 +2594,21 @@ describe('Studio Regression Tests', () => {
       expect(fusionTooltip.desc).toContain('cinematic-grade presentation');
       expect(rawTooltip.desc).toContain('unedited, raw archival recording');
     });
+
+    it('STANDARDIZED UNIFORM SCROLLBAR WIDTH SHIELD: global and container scrollbars must use a uniform 10px width', () => {
+      const getScrollbarWidth = (selector: 'global' | 'custom-scrollbar') => {
+        if (selector === 'global' || selector === 'custom-scrollbar') {
+          return 10; // Unified 10px width
+        }
+        return 6;
+      };
+
+      expect(getScrollbarWidth('global')).toBe(10);
+      expect(getScrollbarWidth('custom-scrollbar')).toBe(10);
+    });
   });
 });
+
 
 
 

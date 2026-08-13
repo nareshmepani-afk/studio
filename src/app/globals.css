@@ -145,24 +145,32 @@
     box-sizing: border-box;
   }
 
-  /* Cinema Styled Scrollbars */
+  /* Cinema Styled Scrollbars - Standardized 10px Uniform Width */
+  html, body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+  }
+
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 10px;
+    height: 10px;
   }
 
   ::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.2);
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.25);
     border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
     transition: background 0.3s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.5);
+    background-clip: padding-box;
   }
 
   /* Lock Body Utility */
@@ -254,18 +262,27 @@
   .visual-bubble:hover { background-color: rgba(16, 185, 129, 0.15); border-bottom-color: rgba(16, 185, 129, 0.8); }
   .polish-bubble:hover { background-color: rgba(129, 140, 248, 0.15); border-bottom-color: rgba(129, 140, 248, 0.8); }
 
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+  }
   .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
+    width: 10px;
+    height: 10px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.2);
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.25);
     border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background 0.3s ease;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.5);
+    background-clip: padding-box;
   }
 }
 
