@@ -464,13 +464,13 @@ function CinemaContent() {
 
                 <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1">
                   <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest block">Tier 2: 31-Day Host Pass</span>
-                  <p className="text-sm font-bold text-amber-300">~£12.99 / $14.99 / Mo</p>
+                  <p className="text-sm font-bold text-amber-300">£12.99 / month</p>
                   <p className="text-[10px] text-white/60 leading-relaxed">Unlocks Parts II–VI, Family Storytelling Suite, 4K exports, and unlimited streaming.</p>
                 </div>
 
                 <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-1">
                   <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest block">Tier 3: Lifetime Heirloom Vault</span>
-                  <p className="text-sm font-bold text-emerald-300">$249.00 One-Time (Dynamic PPP)</p>
+                  <p className="text-sm font-bold text-emerald-300">£199.00 One-Time Charge</p>
                   <span className="text-[9px] font-mono text-emerald-300 font-bold bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full inline-block">
                     ☕ Equivalent to 60 local coffees — zero monthly rent forever
                   </span>

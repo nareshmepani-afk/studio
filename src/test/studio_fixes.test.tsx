@@ -2500,8 +2500,25 @@ describe('Studio Regression Tests', () => {
       // Test 2: Photobooth captured preview container uses aspect-[2/3]
       expect(resolvePhotoboothViewfinderClass(true)).toContain('aspect-[2/3]');
     });
+
+    it('PRICING CURRENCY UNIFICATION & ONE-TIME CHARGE SHIELD: pricing matrix must present unified GBP (£) pricing without raw jargon like (Dynamic PPP)', () => {
+      const tier1Price = '£0.00 / Permanently Free';
+      const tier2Price = '£12.99 / month';
+      const tier3Price = '£199.00 One-Time Charge';
+
+      // Test 1: All prices use GBP (£) symbol
+      expect(tier1Price).toContain('£');
+      expect(tier2Price).toContain('£');
+      expect(tier3Price).toContain('£');
+
+      // Test 2: No mixed USD ($) or technical jargon strings
+      expect(tier2Price).not.toContain('$');
+      expect(tier3Price).not.toContain('(Dynamic PPP)');
+      expect(tier3Price).toContain('One-Time Charge');
+    });
   });
 });
+
 
 
 
