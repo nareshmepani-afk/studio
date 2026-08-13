@@ -83,15 +83,21 @@ If the task is ambiguous or underspecified, ask the user for clarification BEFOR
 
 ---
 
-## Step 3: Model Tier Mapping
+## Step 3: Model Tier Mapping (Gemini 3.7 Upgrade)
 
 | Tier | Primary Model | Alternate (if overloaded) |
 |---|---|---|
-| 💚 Low | Gemini 3.6 Flash (Low) | Gemini 3.6 Flash (Medium) |
-| 💛 Medium | Gemini 3.6 Flash (Medium) | Gemini 3.6 Flash (High) |
-| 🟠 High | Gemini 3.6 Flash (High) | Claude Sonnet 4.6 (Thinking) |
-| 🔴 Premium | Claude Sonnet 4.6 (Thinking) | Claude Opus 4.6 (Thinking) |
-| 🟣 Ultra | Claude Opus 4.6 (Thinking) | Claude Sonnet 4.6 (Thinking) |
+| 💚 Low | Gemini 3.7 Flash (Low) | Gemini 3.7 Flash (High) |
+| 💛 Medium | Gemini 3.7 Flash (Low) | Gemini 3.7 Flash (High) |
+| 🟠 High | Gemini 3.7 Flash (High / Thinking) | Gemini 3.7 Pro |
+| 🔴 Premium | Gemini 3.7 Pro / Claude Sonnet 4.6 (Thinking) | Claude Opus 4.6 (Thinking) |
+| 🟣 Ultra | Gemini 3.7 Pro (Deep Thinking) / Claude Opus 4.6 | Claude Sonnet 4.6 (Thinking) |
+
+---
+
+## Automatic Model Detection Capability
+- **Zero-Manual-Notification Mode**: The agent automatically inspects the active session metadata and runtime context on every turn to detect the currently selected model (`Gemini 3.7 Flash (High)`, `Gemini 3.7 Flash (Low)`, `Gemini 3.7 Pro`, etc.) without requiring the user to manually announce model switches.
+- **Dynamic Pre-Gate Echo**: The pre-gate statement dynamically resolves to the exact active model detected from session metadata.
 
 ---
 
