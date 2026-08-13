@@ -105,7 +105,7 @@ function checkRateLimit(ip: string): boolean {
     return true;
   }
 
-  if (record.count >= 100) {
+  if (record.count >= 600) {
     return false;
   }
 
@@ -116,13 +116,20 @@ function checkRateLimit(ip: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Anti-Bot Edge Rate Limiting (100 req/min per IP)
-  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || '127.0.0.1';
-  if (!checkRateLimit(clientIp)) {
-    return new NextResponse('Too Many Requests - Anti-Bot Rate Limit Exceeded', { 
-      status: 429,
-      headers: { 'Retry-After': '60' }
-    });
+  // Anti-Bot Edge Rate Limiting (600 req/min per IP; exempt static assets, fonts, and telemetry)
+  const isStaticAsset = pathname.startsWith('/_next') || 
+                        pathname.startsWith('/favicon') || 
+                        pathname.startsWith('/api/telemetry') || 
+                        pathname.includes('.');
+
+  if (!isStaticAsset) {
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || '127.0.0.1';
+    if (!checkRateLimit(clientIp)) {
+      return new NextResponse('Too Many Requests - Anti-Bot Rate Limit Exceeded', { 
+        status: 429,
+        headers: { 'Retry-After': '60' }
+      });
+    }
   }
   
   const requestHeaders = new Headers(request.headers);

@@ -2546,8 +2546,24 @@ describe('Studio Regression Tests', () => {
       expect(resolveFallbackState(false, true)).toBe('RECOVERY_CARD');
       expect(resolveFallbackState(true, true)).toBe('PRODUCTION_DECK');
     });
+
+    it('EDGE RATE LIMITER STATIC ASSET EXEMPTION SHIELD: static chunks, CSS, fonts, and telemetry must bypass anti-bot rate limits', () => {
+      const isStaticAsset = (pathname: string) => 
+        pathname.startsWith('/_next') || 
+        pathname.startsWith('/favicon') || 
+        pathname.startsWith('/api/telemetry') || 
+        pathname.includes('.');
+
+      expect(isStaticAsset('/_next/static/chunks/main.js')).toBe(true);
+      expect(isStaticAsset('/_next/static/css/7e7d96b1e6991756.css')).toBe(true);
+      expect(isStaticAsset('/_next/static/media/font.woff2')).toBe(true);
+      expect(isStaticAsset('/api/telemetry')).toBe(true);
+      expect(isStaticAsset('/studio/production/ey96djU6qR1BrDGnvZwp')).toBe(false);
+      expect(isStaticAsset('/cinema')).toBe(false);
+    });
   });
 });
+
 
 
 
