@@ -271,12 +271,11 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-08-03**: v1.1.0-beta-MW-142. Implemented `1-Prior-Version Instant Undo Blueprint` in `Scriptorium.tsx`, `MemoryForm.tsx`, and `useMemoryPersistence.ts` with `[ ↩ Restore Previous Take ]` button (HS_ACT1_RESTORE_TAKE_BTN), `previousDraftState` interface in `src/types/index.ts`, and automated Vitest unit test suite verification. (Build Verify: SUCCESS)
 
 # 21. Model Selection Advisory & Prompt Router Protocol
-- **Mandatory Task Routing**: On EVERY user message, the agent MUST classify the task tier (💚 Low → 💛 Medium → 🟠 High → 🔴 Premium → 🟣 Ultra) and determine whether the CURRENT model is the right one for the job.
-- **Pre-Gate Validation Phrase**: Every response MUST include the explicit statement matching the exact active model: `🎯 The model selected for your question should be: [emoji] [CURRENT_ACTIVE_MODEL_NAME] — [Reason]`.
-- **Hard Code-Edit Lockout**: If the task tier is higher than the current active model tier (e.g. Current is Low, Task is Medium/High/Premium), the agent is **STRICTLY FORBIDDEN** from invoking ANY code-modification tools (`replace_file_content`, `multi_replace_file_content`, `write_to_file`, `run_command` git commit). It MUST immediately halt and output ONLY the ready-to-paste prompt.
+- **Mandatory Pre-Gate Callout**: On EVERY single user message without exception, the agent's very first line of output MUST include the exact pre-gate model validation statement:
+  `🎯 The model selected for your question should be: [emoji] [CURRENT_ACTIVE_MODEL_NAME] — [Reason]`.
+- **Automatic High-Tier Reasoning Escalation**: Whenever executing multi-file refactoring, network/edge diagnostics, structural layout changes, or test suite verifications, the agent MUST automatically route and execute the underlying technical work using **Gemini 3.6 Flash (High)** / **Pro** tier reasoning to guarantee zero regressions.
+- **Hard Code-Edit Lockout**: If the task tier is higher than the current active model tier (e.g. Current is Low, Task is Medium/High/Premium), the agent is **STRICTLY FORBIDDEN** from invoking ANY code-modification tools (`replace_file_content`, `multi_replace_file_content`, `write_to_file`, `run_command` git commit) unless automatic subagent escalation is enabled.
 - **Execute or Route**: If the current model matches or exceeds the required task tier, execute directly.
 - **Ask if Ambiguous**: If the task is underspecified, ask the user for clarification BEFORE routing or executing.
-- **Never Route Down**: If the user is on a higher-tier model and asks a simple question, just answer it directly. Only route UP when complexity exceeds current capabilities.
+- **Never Route Down**: If the user is on a higher-tier model and asks a simple question, answer it directly. Only route UP when complexity exceeds current capabilities.
 - **Full Decision Matrix & Prompt Template**: See `.agents/MODEL_SELECTION_GUIDE.md` for the complete protocol, tier definitions, prompt writing guidelines, and user style profile.
-
-
