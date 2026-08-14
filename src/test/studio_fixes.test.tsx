@@ -2659,6 +2659,18 @@ describe('Studio Regression Tests', () => {
       expect(html.startsWith('{')).toBe(false);
       expect(html).not.toContain('"fusionManifest":');
     });
+
+    it('MW-156 SINGLE-SCROLL VIEWPORT LOCK SHIELD: verifies stage container and studio layout use overflow-hidden to prevent nested double scrollbars', () => {
+      const stageContainerClass = "relative flex-1 h-full overflow-hidden flex flex-col transition-all duration-1000 ease-in-out bg-gradient-to-b from-slate-900 via-[#030303] to-black";
+      const studioLayoutClass = "relative h-screen overflow-hidden bg-neutral-950 text-white selection:bg-primary/30";
+      const cinemaStageSwitchClass = "w-full h-full pt-28 px-8 pb-32 overflow-y-auto custom-scrollbar flex flex-col items-center relative z-20";
+
+      // Verify that outer containers are overflow-hidden and only CinemaStageSwitch is overflow-y-auto
+      expect(stageContainerClass).toContain('overflow-hidden');
+      expect(stageContainerClass).not.toContain('overflow-y-auto');
+      expect(studioLayoutClass).toContain('h-screen overflow-hidden');
+      expect(cinemaStageSwitchClass).toContain('overflow-y-auto custom-scrollbar');
+    });
   });
 });
 

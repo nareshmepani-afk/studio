@@ -1220,7 +1220,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
                         {/* THE STAGE: CONTENT AREA WITH BLACK OUT GUARD */}
                          <div className={cn(
-                             "relative flex-1 min-h-[calc(100vh-80px)] overflow-y-auto flex flex-col transition-all duration-1000 ease-in-out bg-gradient-to-b from-slate-900 via-[#030303] to-black",
+                             "relative flex-1 h-full overflow-hidden flex flex-col transition-all duration-1000 ease-in-out bg-gradient-to-b from-slate-900 via-[#030303] to-black",
                              modality === null && (hoveredInstrument ? "blur-md brightness-50" : "blur-xl brightness-50 pointer-events-none")
                          )} data-blueprint="StageArea">
                              {currentStage === 2 && !lobbyConfirmed && !hasUnsavedTake && !memoryData?.videoUrl ? (

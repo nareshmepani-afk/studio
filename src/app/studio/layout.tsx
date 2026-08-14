@@ -41,7 +41,7 @@ export default function StudioLayout({
 
   return (
     <StudioProviders>
-      <div className="relative min-h-screen bg-neutral-950 text-white selection:bg-primary/30">
+      <div className="relative h-screen overflow-hidden bg-neutral-950 text-white selection:bg-primary/30">
         {/* Persistent Cinematic Backdrop */}
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
           <div className="absolute inset-0 bg-neutral-950" />
@@ -52,7 +52,7 @@ export default function StudioLayout({
                style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/stardust.png")' }} />
         </div>
         
-        <div className="relative z-10 flex flex-col min-h-screen">
+        <div className="relative z-10 flex flex-col h-full overflow-hidden">
           {children}
           <AnimatePresence mode="wait">
             {modal && (
