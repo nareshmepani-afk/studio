@@ -41,7 +41,7 @@ export default function StudioLayout({
 
   return (
     <StudioProviders>
-      <div className="relative h-screen overflow-hidden bg-neutral-950 text-white selection:bg-primary/30">
+      <div className="relative min-h-screen bg-neutral-950 text-white selection:bg-primary/30">
         {/* Persistent Cinematic Backdrop */}
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
           <div className="absolute inset-0 bg-neutral-950" />
@@ -52,7 +52,10 @@ export default function StudioLayout({
                style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/stardust.png")' }} />
         </div>
         
-        <div className="relative z-10 flex flex-col h-full overflow-hidden">
+        {/* MW-156-REVERT: min-h-screen prevents black-screen on hard-refresh hydration.
+            The inner Stage (ProductionDeck) handles h-full overflow-hidden independently.
+            h-screen overflow-hidden on this outer shell clips loading states to zero height. */}
+        <div className="relative z-10 flex flex-col min-h-screen">
           {children}
           <AnimatePresence mode="wait">
             {modal && (

@@ -5294,10 +5294,20 @@ export default function SoloStage({
   );
 
   const handleDownloadPackage = () => {
+    // POSTER PRIORITY: cinema posterImageUrl (Firestore) MUST come first.
+    // localPosterUrl is a transient React state set from the narrator selfie/video-frame
+    // as an Act IV auto-anchor fallback. It must NOT override the actual cinema poster key art.
+    const bookletPosterUrl =
+      data?.posterImageUrl ||
+      (data as any)?.generatedPosterUrl ||
+      (data as any)?.aiPosterUrl ||
+      localPosterUrl ||
+      data?.imageUrl;
+
     downloadFusedAutobiography({
       ...data,
       prose: data?.prose || data?.originalHook || data?.description || selectedTake || '',
-      posterImageUrl: localPosterUrl || data?.posterImageUrl || (data as any)?.selfieUrl || (data as any)?.narratorPhotoUrl || data?.imageUrl || (data as any)?.heroImageUrl
+      posterImageUrl: bookletPosterUrl
     } as any);
   };
 
