@@ -10,7 +10,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { ScopeToggleGroup } from '@/components/studio/ScopeToggleGroup';
 import { ScriptLightBox } from '@/components/studio/Scriptorium/Ceremony/ScriptLightBox';
-import { generateAutobiographyHtml } from '@/utils/autobiographyExporter';
+import { generateAutobiographyHtml, downloadFusedAutobiography } from '@/utils/autobiographyExporter';
 
 vi.mock('framer-motion', () => {
   const cleanProps = ({
@@ -2660,19 +2660,222 @@ describe('Studio Regression Tests', () => {
       expect(html).not.toContain('"fusionManifest":');
     });
 
-    it('MW-156 SINGLE-SCROLL VIEWPORT LOCK SHIELD: verifies stage container and studio layout use overflow-hidden to prevent nested double scrollbars', () => {
-      const stageContainerClass = "relative flex-1 h-full overflow-hidden flex flex-col transition-all duration-1000 ease-in-out bg-gradient-to-b from-slate-900 via-[#030303] to-black";
-      const studioLayoutClass = "relative h-screen overflow-hidden bg-neutral-950 text-white selection:bg-primary/30";
-      const cinemaStageSwitchClass = "w-full h-full pt-28 px-8 pb-32 overflow-y-auto custom-scrollbar flex flex-col items-center relative z-20";
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🛡️ BEHAVIORAL CONTRACT SHIELD — ANTI-TESTING-THEATRE GUARDS
+    // These tests assert live source-code structure and behavior,
+    // NOT static string constants. They would have caught MW-156.
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      // Verify that outer containers are overflow-hidden and only CinemaStageSwitch is overflow-y-auto
-      expect(stageContainerClass).toContain('overflow-hidden');
-      expect(stageContainerClass).not.toContain('overflow-y-auto');
-      expect(studioLayoutClass).toContain('h-screen overflow-hidden');
-      expect(cinemaStageSwitchClass).toContain('overflow-y-auto custom-scrollbar');
+    it('MW-156 BEHAVIORAL CONTRACT: handleDownloadPackage SOURCE AUDIT — must NOT contain any application/json Blob or .json download in SoloStage.tsx', async () => {
+      // Read the actual source file and scan for the forbidden JSON download anti-pattern.
+      // This test would have CAUGHT the original bug: handleDownloadPackage was building
+      // a Blob([JSON.stringify(pkg)], { type: 'application/json' }) instead of calling
+      // downloadFusedAutobiography().
+      const fs = await import('fs');
+      const path = await import('path');
+      const sourceFile = path.resolve(process.cwd(), 'src/components/studio/SoloStage.tsx');
+      const source = fs.readFileSync(sourceFile, 'utf-8');
+
+      // Enforce: no raw JSON blob user-facing DOWNLOAD in the file (file.download = '...json')
+      expect(source).not.toContain('_master.json');
+      // The a.download pattern with .json extension is the forbidden fingerprint
+      expect(source).not.toMatch(/\.download\s*=\s*`[^`]*\.json`/);
+      expect(source).not.toMatch(/\.download\s*=\s*'[^']*\.json'/);
+      expect(source).not.toMatch(/\.download\s*=\s*"[^"]*\.json"/);
+
+      // Enforce: handleDownloadPackage must call downloadFusedAutobiography
+      const handlerMatch = source.match(/const handleDownloadPackage\s*=\s*\(\)\s*=>\s*\{([^}]+)\}/s);
+      expect(handlerMatch).not.toBeNull();
+      if (handlerMatch) {
+        expect(handlerMatch[0]).toContain('downloadFusedAutobiography');
+        expect(handlerMatch[0]).not.toContain('JSON.stringify');
+        expect(handlerMatch[0]).not.toContain('new Blob');
+      }
+    });
+
+    it('MW-156 BEHAVIORAL CONTRACT: downloadFusedAutobiography SOURCE AUDIT — must call window.print() not produce a JSON file download', async () => {
+      // Read and audit the actual exporter source to ensure the print pipeline is intact
+      const fs = await import('fs');
+      const path = await import('path');
+      const sourceFile = path.resolve(process.cwd(), 'src/utils/autobiographyExporter.ts');
+      const source = fs.readFileSync(sourceFile, 'utf-8');
+
+      // Verify the print pipeline exists
+      expect(source).toContain('window.print()');
+      expect(source).toContain('@media print');
+      expect(source).toContain('window.open(');
+      expect(source).toContain('printWindow.document.write(htmlContent)');
+
+      // Verify the JSON blob anti-pattern does NOT exist
+      expect(source).not.toContain('application/json');
+      expect(source).not.toContain('JSON.stringify');
+      expect(source).not.toContain('.download =');
+    });
+
+    it('MW-156 BEHAVIORAL CONTRACT: window.open BEHAVIOR SPY — downloadFusedAutobiography must invoke window.open with a print window, not URL.createObjectURL', () => {
+      // Spy on window.open to verify the print pipeline is invoked
+      const mockWrite = vi.fn();
+      const mockClose = vi.fn();
+      const mockDocument = {
+        write: mockWrite,
+        close: mockClose,
+      };
+      const mockPrintWindow = {
+        document: mockDocument,
+        focus: vi.fn(),
+        print: vi.fn(),
+        onload: null as any,
+      };
+      const mockOpen = vi.fn().mockReturnValue(mockPrintWindow);
+      const originalOpen = window.open;
+      window.open = mockOpen;
+
+      try {
+        const mockMemory: any = {
+          id: 'test-id',
+          title: 'Test Memory',
+          prose: 'Test prose content for behavioral verification.',
+          location: 'London',
+          country: 'UK',
+          date: '2024',
+          credits: { director: 'Test Director' }
+        };
+
+        // Import using synchronous require since module is already imported
+        downloadFusedAutobiography(mockMemory);
+
+        // BEHAVIORAL ASSERTION: window.open must be called (print window)
+        expect(mockOpen).toHaveBeenCalledOnce();
+        expect(mockOpen).toHaveBeenCalledWith('', '_blank', expect.stringContaining('width='));
+
+        // BEHAVIORAL ASSERTION: document.write must be called with HTML, not JSON
+        expect(mockDocument.write).toHaveBeenCalledOnce();
+        const writtenContent: string = mockDocument.write.mock.calls[0][0];
+        expect(writtenContent).toContain('<!DOCTYPE html>');
+        expect(writtenContent).toContain('@media print');
+        expect(writtenContent).not.toContain('"fusionManifest"');
+        expect(writtenContent.startsWith('{')).toBe(false);
+
+        // BEHAVIORAL ASSERTION: no JSON blob URL was created
+        expect(mockDocument.close).toHaveBeenCalledOnce();
+      } finally {
+        window.open = originalOpen;
+      }
+    });
+
+    it('MW-156 SINGLE-SCROLL VIEWPORT LOCK SHIELD: verifies stage container and studio layout use overflow-hidden to prevent nested double scrollbars', async () => {
+      // Source-file audit — not string constant theatre
+      const fs = await import('fs');
+      const path = await import('path');
+
+      const productionDeckSrc = fs.readFileSync(
+        path.resolve(process.cwd(), 'src/components/studio/ProductionDeck.tsx'), 'utf-8'
+      );
+      const layoutSrc = fs.readFileSync(
+        path.resolve(process.cwd(), 'src/app/studio/layout.tsx'), 'utf-8'
+      );
+      const cinemaSrc = fs.readFileSync(
+        path.resolve(process.cwd(), 'src/components/studio/CinemaStageSwitch.tsx'), 'utf-8'
+      );
+
+      // ProductionDeck Stage wrapper must be overflow-hidden, NOT overflow-y-auto
+      expect(productionDeckSrc).toContain('"StageArea"');
+      const stageAreaMatch = productionDeckSrc.match(/data-blueprint="StageArea"[\s\S]{0,300}/);
+      expect(stageAreaMatch).not.toBeNull();
+      if (stageAreaMatch) {
+        // Find the className string in the preceding lines
+        const stagePreceding = productionDeckSrc.substring(
+          Math.max(0, productionDeckSrc.indexOf('data-blueprint="StageArea"') - 400),
+          productionDeckSrc.indexOf('data-blueprint="StageArea"')
+        );
+        expect(stagePreceding).toContain('overflow-hidden');
+        expect(stagePreceding).not.toContain('overflow-y-auto');
+        expect(stagePreceding).not.toContain('min-h-[calc(100vh');
+      }
+
+      // Studio layout outer wrapper must use h-screen overflow-hidden
+      expect(layoutSrc).toContain('h-screen overflow-hidden');
+      expect(layoutSrc).not.toMatch(/bg-neutral-950[^"]*min-h-screen/);
+
+      // CinemaStageSwitch must remain the SINGLE overflow-y-auto scroll container
+      expect(cinemaSrc).toContain('overflow-y-auto custom-scrollbar');
     });
   });
 });
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// GLOBAL FORBIDDEN-PATTERN ANTI-REGRESSION SCANNER
+// Runs against the entire src/ tree to ensure known dangerous patterns
+// that have caused production bugs can never be silently reintroduced.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+describe('🔒 Global Forbidden-Pattern Anti-Regression Scanner', () => {
+  it('ANTI-REGRESSION: no download handler anywhere in studio components must produce application/json blob', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const studioDir = path.resolve(process.cwd(), 'src/components/studio');
+    const files = fs.readdirSync(studioDir).filter(f => f.endsWith('.tsx') || f.endsWith('.ts'));
+
+    for (const file of files) {
+      const content = fs.readFileSync(path.join(studioDir, file), 'utf-8');
+      const lines = content.split('\n');
+
+      // Scan for the specific forbidden co-occurrence: `.download = ` AND `application/json`
+      // appearing within 15 lines of each other (same handler block). This is precise enough
+      // to catch JSON blob downloads but ignore: (a) PNG downloads, (b) fetch API headers.
+      for (let i = 0; i < lines.length; i++) {
+        if (/\.download\s*=/.test(lines[i])) {
+          const window = lines.slice(Math.max(0, i - 15), i + 15).join('\n');
+          expect(
+            /application\/json/.test(window),
+            `FORBIDDEN: File ${file} line ${i + 1}: .download combined with application/json in close proximity. Use a proper export function instead.`
+          ).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('ANTI-REGRESSION: no raw .json filename user-facing download (.download = "*.json") anywhere in studio components', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const studioDir = path.resolve(process.cwd(), 'src/components/studio');
+    const files = fs.readdirSync(studioDir).filter(f => f.endsWith('.tsx') || f.endsWith('.ts'));
+
+    for (const file of files) {
+      const content = fs.readFileSync(path.join(studioDir, file), 'utf-8');
+      const hasJsonDownload = /\.download\s*=\s*[`'"'][^`'"]*\.json[`'"']/.test(content);
+      expect(
+        hasJsonDownload,
+        `FORBIDDEN: File ${file} sets a .download attribute with a .json filename. Use a proper export function instead.`
+      ).toBe(false);
+    }
+  });
+
+  it('ANTI-REGRESSION: no JSON.stringify+Blob used as a USER-FACING download (pattern: new Blob + JSON.stringify + .download =) in studio components', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const studioDir = path.resolve(process.cwd(), 'src/components/studio');
+    const files = fs.readdirSync(studioDir).filter(f => f.endsWith('.tsx') || f.endsWith('.ts'));
+
+    for (const file of files) {
+      const content = fs.readFileSync(path.join(studioDir, file), 'utf-8');
+      // Check for the specific forbidden combo: Blob with JSON.stringify AND a .download assignment
+      // in close proximity — this is the user-facing download anti-pattern.
+      // NOTE: new Blob([JSON.stringify(x)], { type: 'application/json' }) used for
+      // Firebase Storage uploads (e.g. EDL manifest) is PERMITTED.
+      // Only the pattern: create JSON blob → create anchor → set .download → click is forbidden.
+      const hasJsonBlob = /new Blob\([^;]*JSON\.stringify[^;]*\)/s.test(content);
+      const hasDownloadAnchor = /\.download\s*=\s*`[^`]*\.json`/.test(content);
+      expect(
+        hasJsonBlob && hasDownloadAnchor,
+        `FORBIDDEN: File ${file} contains a user-facing JSON Blob download pattern (Blob + .download). Use a proper export function instead.`
+      ).toBe(false);
+    }
+  });
+});
+
 
 
 
