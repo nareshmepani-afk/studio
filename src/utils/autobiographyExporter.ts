@@ -3,14 +3,10 @@ import { format } from 'date-fns';
 import { enGB } from 'date-fns/locale';
 
 /**
- * Client-Side Fused Offline Autobiography Keepsake Exporter
- * Generates a printable 2-page heirloom document fusing Page 1 (Movie Poster Keyart & QR Code)
- * and Page 2 (Spoken Monologue Script & Sensory Blueprint) in Memory Weaver dark-slate obsidian theme.
+ * Generates the styled HTML document for the 2-page heirloom autobiography booklet.
  */
-export function downloadFusedAutobiography(memory: Memory) {
-  if (typeof window === 'undefined') return;
-
-  const director = memory.credits?.director || memory.credits?.starring || 'Naresh Mepani';
+export function generateAutobiographyHtml(memory: Memory): string {
+  const director = memory.credits?.director || memory.credits?.starring || 'A Storyteller';
   const title = memory.title || 'Biographical Memory Odyssey';
   const narrativeText = memory.prose || memory.originalHook || memory.description || '';
   
@@ -18,7 +14,7 @@ export function downloadFusedAutobiography(memory: Memory) {
   
   const fusionManifest = (memory as any).fusionManifest || {
     audioMood: (memory as any).cinematicScore || (memory as any).audioMood || "Nostalgic Acoustic Guitar & Soft String Ensemble // 72 BPM",
-    sensoryPalette: (memory as any).sensoryPalette || ((memory as any).sensoryValues ? Object.entries((memory as any).sensoryValues).map(([k,v]) => `${k}: ${v}`).join(', ') : "Smell of fresh Kutch rain, sound of steam train whistle in 1956"),
+    sensoryPalette: (memory as any).sensoryPalette || ((memory as any).sensoryValues ? Object.entries((memory as any).sensoryValues).map(([k,v]) => `${k}: ${v}`).join(', ') : "Smell of fresh rain, sound of steam train whistle"),
     emotionalTone: (memory as any).emotionalTone || (memory.emotionTags ? memory.emotionTags.join(', ') : "Reverent, Courageous, Ancestral Gratitude"),
     cohesiveScript: (memory as any).cohesiveScript || narrativeText
   };
@@ -30,19 +26,18 @@ export function downloadFusedAutobiography(memory: Memory) {
       const d = new Date(rawDateStr);
       if (!isNaN(d.getTime())) return format(d, 'd MMMM yyyy', { locale: enGB });
     }
-    return (memory as any).year ? String((memory as any).year) : '1956';
+    return (memory as any).year ? String((memory as any).year) : new Date().getFullYear().toString();
   })();
 
   const locationStr = [memory.location, memory.country].filter(Boolean).join(', ') || 'Global Archive';
-  const qrTargetUrl = `${window.location.origin}/cinema/tv?id=${memory.id || 'preview'}`;
+  const qrTargetUrl = typeof window !== 'undefined' ? `${window.location.origin}/cinema/tv?id=${memory.id || 'preview'}` : `https://dev.memoryweaver.studio/cinema/tv?id=${memory.id || 'preview'}`;
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrTargetUrl)}`;
 
-  const htmlContent = `
-<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>${title} - Memory Weaver Offline Autobiography</title>
+  <title>${title} - Memory Weaver Booklet</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;600;800&family=Playfair+Display:ital,wght@0,600;1,400&display=swap');
 
@@ -349,14 +344,22 @@ export function downloadFusedAutobiography(memory: Memory) {
   <script>
     window.onload = function() {
       setTimeout(function() {
+        window.focus();
         window.print();
       }, 500);
     };
   </script>
 </body>
-</html>
-  `;
+</html>`;
+}
 
+/**
+ * Triggers the browser print dialog for the heirloom autobiography booklet PDF.
+ */
+export function downloadFusedAutobiography(memory: Memory) {
+  if (typeof window === 'undefined') return;
+
+  const htmlContent = generateAutobiographyHtml(memory);
   const printWindow = window.open('', '_blank', 'width=900,height=1000');
   if (printWindow) {
     printWindow.document.write(htmlContent);

@@ -5294,22 +5294,11 @@ export default function SoloStage({
   );
 
   const handleDownloadPackage = () => {
-    const pkg = {
-      title: data?.title || 'Master Narrative Package',
-      prose: data?.prose || data?.description || selectedTake || '',
-      fusionManifest: data?.fusionManifest || null,
-      takes: data?.aiTakes || [],
-      opticsFilter,
-      premiereMode,
-      exportedAt: new Date().toISOString()
-    };
-    const blob = new Blob([JSON.stringify(pkg, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${(data?.title || 'narrative_package').toLowerCase().replace(/\s+/g, '_')}_master.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadFusedAutobiography({
+      ...data,
+      prose: data?.prose || data?.originalHook || data?.description || selectedTake || '',
+      posterImageUrl: localPosterUrl || data?.posterImageUrl || (data as any)?.selfieUrl || (data as any)?.narratorPhotoUrl || data?.imageUrl || (data as any)?.heroImageUrl
+    } as any);
   };
 
   const renderShowcase = () => (

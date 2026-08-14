@@ -10,6 +10,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { ScopeToggleGroup } from '@/components/studio/ScopeToggleGroup';
 import { ScriptLightBox } from '@/components/studio/Scriptorium/Ceremony/ScriptLightBox';
+import { generateAutobiographyHtml } from '@/utils/autobiographyExporter';
 
 vi.mock('framer-motion', () => {
   const cleanProps = ({
@@ -2632,6 +2633,31 @@ describe('Studio Regression Tests', () => {
       expect(consoleLayout.title).toBe('🎬 MASTERING CONSOLE');
       expect(consoleLayout.liveBadge).toBe('4K MASTERED');
       expect(consoleLayout.tier3Exports).toHaveLength(2);
+    });
+
+    it('MW-156 ACT V HEIRLOOM AUTOBIOGRAPHY BOOKLET PRINT HTML SHIELD: verifies generateAutobiographyHtml generates a printable 2-page heirloom document with zero JSON artifacts', () => {
+      const mockMemory: any = {
+        id: 'ey96djU6qR1BrDGnvZwp',
+        title: 'A Child of Two Worlds',
+        prose: 'Standing in the quiet corridor of our childhood home, the scent of fresh monsoon rain mingled with warm spices...',
+        location: 'Nairobi',
+        country: 'Kenya',
+        date: '1964',
+        posterImageUrl: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1',
+        credits: { director: 'Naresh Mepani' }
+      };
+
+      const html = generateAutobiographyHtml(mockMemory);
+
+      // Verify HTML structure vs JSON
+      expect(html).toContain('<!DOCTYPE html>');
+      expect(html).toContain('<title>A Child of Two Worlds - Memory Weaver Booklet</title>');
+      expect(html).toContain('A Child of Two Worlds');
+      expect(html).toContain('Standing in the quiet corridor');
+      expect(html).toContain('@media print');
+      expect(html).toContain('window.print()');
+      expect(html.startsWith('{')).toBe(false);
+      expect(html).not.toContain('"fusionManifest":');
     });
   });
 });
