@@ -62,14 +62,50 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   const lastLoadedId = useRef<string | null>(null);
   const lastLocalUpdateRef = useRef<number>(0);
   const deckRef = useRef<any>(null);
+  // Track the previous authenticated UID so we only clear rehydration state on
+  // a genuine user-switch (login/logout), not on same-user Firebase token refreshes.
+  // Firebase re-validates the auth token during browser events such as the system
+  // print dialog closing (Chrome tab suspension/resume), emitting a new User object
+  // with the identical UID — which previously caused a spurious full state reset.
+  const prevUidRef = useRef<string | null | undefined>(undefined);
 
-  // Reset container state when user session changes to prevent cross-login cache leaks
+  // Reset container state when the authenticated user GENUINELY changes (login/logout).
+  // Guards against two false-positive triggers:
+  //   1. Same-user Firebase token refresh: Firebase emits a new User object with the
+  //      same UID during Chrome tab resume events (e.g. after the system print dialog
+  //      closes). The UID string is identical — no state reset needed.
+  //   2. Active print session: window.__mwPrintGuard is set by autobiographyExporter
+  //      while the print dialog is open. Auth token re-validation during this window
+  //      must never clear loaded memory state or reset the studio stage.
   useEffect(() => {
-    console.log("[ProductionDeckContainer] Auth user state changed. Clearing local rehydration guards...");
+    const currentUid = user?.uid ?? null;
+
+    // Skip if this is the very first mount evaluation (prevUid === undefined)
+    if (prevUidRef.current === undefined) {
+      prevUidRef.current = currentUid;
+      return;
+    }
+
+    // Skip if the UID string has not actually changed (same-user token refresh)
+    if (prevUidRef.current === currentUid) {
+      return;
+    }
+
+    // Skip if a print operation is actively in progress
+    if (typeof window !== 'undefined' && (window as any).__mwPrintGuard === true) {
+      console.log('[ProductionDeckContainer] Auth event suppressed: print guard is active.');
+      prevUidRef.current = currentUid;
+      return;
+    }
+
+    // Genuine user change — clear all cached state to prevent cross-login data leaks
+    console.log('[ProductionDeckContainer] Auth user state changed. Clearing local rehydration guards...');
+    prevUidRef.current = currentUid;
     lastLoadedId.current = null;
     setIsReady(false);
     setIsNotFound(false);
     setSelectedProductionData(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
 
   // 4-Second Timeout Safety Guard: Prevent hanging indefinitely on a black loading screen

@@ -2693,20 +2693,25 @@ describe('Studio Regression Tests', () => {
       const sourceFile = path.resolve(process.cwd(), 'src/utils/autobiographyExporter.ts');
       const source = fs.readFileSync(sourceFile, 'utf-8');
 
-      // Verify the print pipeline exists (MW-161: iframe-based architecture)
+      // Verify the print pipeline exists (MW-161 v2: 3-layer freeze protection)
       expect(source).toContain('window.print()');
       expect(source).toContain('@media print');
-      // MW-161: primary path must use iframe, NOT window.open
+      // Layer 1: primary path must use iframe
       expect(source).toContain('iframe');
       expect(source).toContain('__mw_print_frame__');
       expect(source).toContain('iframeDoc.write(htmlContent)');
+      // Layer 2: print guard flag must be set
+      expect(source).toContain('__mwPrintGuard');
+      expect(source).toContain("(window as any).__mwPrintGuard = true");
+      expect(source).toContain('afterprint');
+      // Download function must exist
+      expect(source).toContain('downloadAutobiographyAsHtml');
       // window.open must only exist as fallback, not primary
       expect(source).toContain('// Fallback');
 
-      // Verify the JSON blob anti-pattern does NOT exist
+      // Verify the JSON blob anti-pattern does NOT exist in the PRINT function
       expect(source).not.toContain('application/json');
       expect(source).not.toContain('JSON.stringify');
-      expect(source).not.toContain('.download =');
     });
 
     it('MW-161 BEHAVIORAL CONTRACT: IFRAME PRINT ARCHITECTURE — downloadFusedAutobiography must inject a hidden <iframe> and NOT call window.open as the primary print path (prevents Firebase auth cascade on window focus)', () => {
@@ -2761,6 +2766,55 @@ describe('Studio Regression Tests', () => {
         // Clean up any frame injected during the test
         document.getElementById('__mw_print_frame__')?.remove();
       }
+    });
+
+    it('MW-161v2 SOURCE AUDIT: PRINT GUARD FLAG — downloadFusedAutobiography source must arm window.__mwPrintGuard and register afterprint listener to disarm it', async () => {
+      // JSDOM limitation: iframe.contentDocument is null when appendChild is mocked,
+      // so the fallback path runs and guard code is never reached in a JSDOM behavioral spy.
+      // We validate the guard contract via source audit instead — this verifies the actual
+      // production code path that runs in a real Chrome environment.
+      const fs = await import('fs');
+      const path = await import('path');
+      const src = fs.readFileSync(
+        path.resolve(process.cwd(), 'src/utils/autobiographyExporter.ts'),
+        'utf-8'
+      );
+
+      // Guard must be ARMED before print
+      expect(src).toContain('(window as any).__mwPrintGuard = true');
+
+      // Afterprint listener must DISARM the guard
+      expect(src).toContain("window.addEventListener('afterprint'");
+      expect(src).toContain('(window as any).__mwPrintGuard = false');
+      expect(src).toContain('clearTimeout(guardTimeout)');
+
+      // hasFired double-fire guard must be present
+      expect(src).toContain('let hasFired = false');
+      expect(src).toContain('if (hasFired) return');
+    });
+
+
+    it('MW-161v2 SOURCE AUDIT: ProductionDeckContainer must guard onAuthStateChanged against same-UID token refreshes and active print sessions', async () => {
+      // Layer 3: The auth listener in ProductionDeckContainer must:
+      // (a) Use a prevUidRef to skip re-fires where UID string is unchanged
+      // (b) Read window.__mwPrintGuard to suppress clears during print
+      const fs = await import('fs');
+      const path = await import('path');
+      const src = fs.readFileSync(
+        path.resolve(process.cwd(), 'src/components/studio/ProductionDeckContainer.tsx'),
+        'utf-8'
+      );
+
+      // Layer 3a: UID deduplication via useRef
+      expect(src).toContain('prevUidRef');
+      expect(src).toContain('prevUidRef.current === currentUid');
+
+      // Layer 3b: Print guard check
+      expect(src).toContain('__mwPrintGuard');
+      expect(src).toContain('Auth event suppressed: print guard is active');
+
+      // Genuine user change log must still exist (logout/login flow)
+      expect(src).toContain('Auth user state changed. Clearing local rehydration guards');
     });
 
     it('MW-156 SINGLE-SCROLL VIEWPORT LOCK SHIELD: verifies stage container uses overflow-hidden while outer layout uses min-h-screen to prevent hydration blackout', async () => {

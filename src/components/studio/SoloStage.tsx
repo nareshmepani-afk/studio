@@ -25,7 +25,7 @@ import {
   ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X, Wand2, Share2, Copy, Mail, FileText,
   Tv, Airplay, Cast
 } from 'lucide-react';
-import { downloadFusedAutobiography } from '@/utils/autobiographyExporter';
+import { downloadFusedAutobiography, downloadAutobiographyAsHtml } from '@/utils/autobiographyExporter';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -5483,26 +5483,54 @@ export default function SoloStage({
                        hotspotId="HS_ACT5_MENTOR_STEP2"
                        className="-top-3 -left-3" 
                      />
+                     {/* Print PDF — opens system print dialog via hidden iframe */}
                      <button 
                        data-hotspot-id="HS_ACT5_DOWNLOAD_AUTOBIOGRAPHY_BTN"
                        onClick={handleDownloadPackage}
-                       className="w-full py-3 bg-slate-900/60 hover:bg-white/5 border border-white/10 text-white/80 font-bold rounded-xl text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer hover:border-white/20"
+                       title="Open print dialog — save as PDF using your browser"
+                       className="w-full py-3 bg-slate-900/60 hover:bg-amber-500/10 border border-white/10 hover:border-amber-500/30 text-white/80 hover:text-amber-300 font-bold rounded-xl text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
                      >
-                       <Download className="w-3.5 h-3.5 text-white/70" />
-                       Booklet PDF
+                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                       Print PDF
                      </button>
                    </div>
 
                    <div className="relative w-full">
+                     {/* Download HTML — saves booklet file; user can open & Ctrl+P to PDF */}
                      <button 
-                       data-hotspot-id="HS_ACT5_SHARE_LINK_BTN"
-                       onClick={() => setIsShareModalOpen(true)}
-                       className="w-full py-3 bg-slate-900/60 hover:bg-white/5 border border-white/10 text-white/80 font-bold rounded-xl text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer hover:border-white/20"
+                       data-hotspot-id="HS_ACT5_DOWNLOAD_HTML_BTN"
+                       onClick={() => {
+                         const bookletPosterUrl =
+                           data?.posterImageUrl ||
+                           (data as any)?.generatedPosterUrl ||
+                           (data as any)?.aiPosterUrl ||
+                           localPosterUrl ||
+                           data?.imageUrl;
+                         downloadAutobiographyAsHtml({
+                           ...data,
+                           prose: data?.prose || data?.originalHook || data?.description || selectedTake || '',
+                           posterImageUrl: bookletPosterUrl
+                         } as any);
+                       }}
+                       title="Download booklet as HTML file — open in browser then Ctrl+P to save as PDF"
+                       className="w-full py-3 bg-slate-900/60 hover:bg-emerald-500/10 border border-white/10 hover:border-emerald-500/30 text-white/80 hover:text-emerald-300 font-bold rounded-xl text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
                      >
-                       <Share2 className="w-3.5 h-3.5 text-white/70" />
-                       Share & QR
+                       <Download className="w-3.5 h-3.5" />
+                       Download
                      </button>
                    </div>
+                 </div>
+
+                 {/* SHARE ROW */}
+                 <div className="pt-1">
+                   <button 
+                     data-hotspot-id="HS_ACT5_SHARE_LINK_BTN"
+                     onClick={() => setIsShareModalOpen(true)}
+                     className="w-full py-3 bg-slate-900/60 hover:bg-white/5 border border-white/10 text-white/80 font-bold rounded-xl text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer hover:border-white/20"
+                   >
+                     <Share2 className="w-3.5 h-3.5 text-white/70" />
+                     Share &amp; QR
+                   </button>
                  </div>
 
                  {/* FOOTER ACTION */}

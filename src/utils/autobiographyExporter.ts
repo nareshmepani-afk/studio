@@ -349,9 +349,6 @@ export function generateAutobiographyHtml(memory: Memory): string {
   </div>
 
   <script>
-    // afterprint fires AFTER the user completes/cancels the print dialog.
-    // We do NOT close here — let the user manually dismiss the iframe print UI,
-    // which keeps the parent window untouched (no visibilitychange events).
     window.onload = function() {
       setTimeout(function() {
         window.print();
@@ -365,18 +362,19 @@ export function generateAutobiographyHtml(memory: Memory): string {
 /**
  * Triggers the browser print dialog for the heirloom autobiography booklet PDF.
  *
- * ARCHITECTURE NOTE (MW-161): We inject a hidden <iframe> into the current document
- * rather than calling window.open('', '_blank', ...) to prevent browser freeze.
+ * ARCHITECTURE NOTE (MW-161 v2):
  *
- * Root cause of the freeze: window.open() creates a NEW browser window. When the user
- * closes it after printing, the parent window receives a 'focus' event. This triggers
- * Firebase's onAuthStateChanged listener (registered in ProductionDeckContainer), which
- * clears all rehydration guards and executes a full Firestore re-lookup. That cascade
- * fires React state resets (setStage, setSelectedTake, setProductionLocked) mid-render
- * inside the studio, causing the visible UI freeze.
+ * Layer 1 — Iframe isolation: We inject a hidden <iframe> rather than window.open()
+ * so the parent window never loses focus (avoids a focus event triggering Firebase auth).
  *
- * The iframe approach keeps all print activity isolated inside the current document —
- * the parent window never loses or regains focus, so no auth state listeners fire.
+ * Layer 2 — Print guard flag: window.__mwPrintGuard is set TRUE before iframeWindow.print()
+ * fires and is cleared by the parent window's 'afterprint' event (or a 15s safety timeout).
+ * ProductionDeckContainer reads this flag in its onAuthStateChanged effect and skips
+ * clearing rehydration state if a print is actively in progress.
+ *
+ * Layer 3 — UID deduplication in ProductionDeckContainer: The auth effect now tracks
+ * the previous UID string via a useRef and skips no-op re-fires where the UID is
+ * identical (same-user Firebase token refresh during Chrome tab suspension/resume).
  */
 export function downloadFusedAutobiography(memory: Memory) {
   if (typeof window === 'undefined') return;
@@ -396,7 +394,7 @@ export function downloadFusedAutobiography(memory: Memory) {
     'top:-9999px',
     'left:-9999px',
     'width:210mm',
-    'height:594mm',  // Two A4 pages tall so the print engine can paginate correctly
+    'height:594mm', // Two A4 pages tall so the print engine can paginate correctly
     'border:none',
     'opacity:0',
     'pointer-events:none',
@@ -423,7 +421,33 @@ export function downloadFusedAutobiography(memory: Memory) {
 
   const iframeWindow = iframe.contentWindow;
 
+  // ── LAYER 2: Print Guard ──────────────────────────────────────────────────
+  // Arm the guard BEFORE triggering print. ProductionDeckContainer reads this
+  // flag in its onAuthStateChanged effect and skips clearing rehydration guards
+  // while a print is in progress.
+  (window as any).__mwPrintGuard = true;
+
+  // Safety disarm: always release the guard after 15s regardless of print outcome
+  const guardTimeout = setTimeout(() => {
+    (window as any).__mwPrintGuard = false;
+  }, 15000);
+
+  // Disarm immediately when the print dialog is dismissed.
+  // 'afterprint' fires reliably in Chrome, Firefox, and Edge after the user
+  // accepts or cancels the print dialog — including the iframe's print call.
+  window.addEventListener('afterprint', function onAfterPrint() {
+    (window as any).__mwPrintGuard = false;
+    clearTimeout(guardTimeout);
+    window.removeEventListener('afterprint', onAfterPrint);
+  }, { once: true });
+  // ─────────────────────────────────────────────────────────────────────────
+
+  // hasFired prevents double-trigger from both onload and the safety setTimeout
+  let hasFired = false;
   const triggerPrint = () => {
+    if (hasFired) return;
+    hasFired = true;
+
     try {
       iframeWindow.print();
     } catch {
@@ -442,11 +466,42 @@ export function downloadFusedAutobiography(memory: Memory) {
   };
 
   if (iframeDoc.readyState === 'complete') {
-    // Resources already loaded — trigger immediately
     setTimeout(triggerPrint, 600);
   } else {
     iframeWindow.onload = () => setTimeout(triggerPrint, 600);
     // Safety net: if onload never fires (cross-origin resource stall), trigger after 2s
     setTimeout(triggerPrint, 2000);
   }
+}
+
+/**
+ * Downloads the heirloom booklet as a self-contained HTML file.
+ *
+ * The user can open this file in any browser and use Ctrl+P → "Save as PDF"
+ * to produce a high-quality permanent PDF archive without any server dependency.
+ * This is the "Download" counterpart to the native print-dialog approach.
+ */
+export function downloadAutobiographyAsHtml(memory: Memory) {
+  if (typeof window === 'undefined') return;
+
+  const htmlContent = generateAutobiographyHtml(memory);
+  const safeTitle = (memory.title || 'MemoryWeaverBooklet')
+    .replace(/[^a-z0-9_\-\s]/gi, '')
+    .replace(/\s+/g, '_')
+    .slice(0, 60);
+
+  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `${safeTitle}_booklet.html`;
+  anchor.style.cssText = 'position:fixed;top:-9999px;left:-9999px;';
+  document.body.appendChild(anchor);
+  anchor.click();
+
+  requestAnimationFrame(() => {
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+  });
 }
