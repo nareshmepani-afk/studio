@@ -2563,7 +2563,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 1.05 }}
-                className="w-full max-w-4xl mx-auto space-y-12 pb-32 pt-4"
+                className="w-full max-w-4xl mx-auto space-y-8 pb-8 pt-2"
               >
                 <div className="text-center space-y-4 mb-12">
                     <div className="inline-flex items-center gap-3 text-emerald-400 font-black text-[10px] uppercase tracking-[0.6em]">

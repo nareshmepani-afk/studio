@@ -1051,13 +1051,13 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
     const sidebarActualWidth = isRailRetracted ? 96 : Math.max(sidebarWidth, 96);
 
     return (
-        <div className={`w-full h-full flex flex-col relative bg-[#020617] ${modality === null ? 'overflow-hidden' : ''}`}>
+        <div className={`w-full h-[100dvh] max-h-[100dvh] flex flex-col relative bg-[#020617] overflow-hidden`}>
             {/* The PerspectiveWrapper handles the overall background color transition and the blurry interior swap */}
             <PerspectiveWrapper activeRoom={activeRoom} dominantType={dominantType}>
-                <div className="flex flex-col min-h-full relative overflow-hidden" data-blueprint="StageContainer">
-                    {/* Navigation stays static during blur transition mapped by PerspectiveWrapper */}
+                <div className="grid grid-rows-[auto_1fr_auto] h-full w-full relative overflow-hidden" data-blueprint="StudioDeckGrid">
+                    {/* ROW 1: Stage Header & Navigation */}
                     {modality !== null && (
-                        <div className="flex items-center justify-between p-4 border-b border-white/10 sticky top-0 z-50 rounded-lg backdrop-blur-md bg-black/20 mb-6">
+                        <header className="flex items-center justify-between p-3 sm:p-4 border-b border-white/10 z-20 backdrop-blur-md bg-black/40 shrink-0">
 
                             {/* Back Navigation */}
                             <TooltipProvider delayDuration={200}>
@@ -1175,11 +1175,13 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                      </Tooltip>
                                  </TooltipProvider>
                              </div>
-                        </div>
+                        </header>
                     )}
-                    <div
+
+                    {/* ROW 2: Stage Canvas & Production Rail (Sole Scroll Domain) */}
+                    <main
                         className={cn(
-                            "flex-1 grid relative overflow-hidden h-full",
+                            "min-h-0 flex-1 grid relative overflow-hidden h-full",
                             !isDragging && "transition-[grid-template-columns] duration-500 ease-in-out"
                         )}
                         style={{
@@ -1220,7 +1222,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
                         {/* THE STAGE: CONTENT AREA WITH BLACK OUT GUARD */}
                          <div className={cn(
-                             "relative flex-1 h-full overflow-hidden flex flex-col transition-all duration-1000 ease-in-out bg-gradient-to-b from-slate-900 via-[#030303] to-black",
+                             "relative flex-1 min-h-0 h-full overflow-hidden flex flex-col transition-all duration-1000 ease-in-out bg-gradient-to-b from-slate-900 via-[#030303] to-black",
                              modality === null && (hoveredInstrument ? "blur-md brightness-50" : "blur-xl brightness-50 pointer-events-none")
                          )} data-blueprint="StageArea">
                              {currentStage === 2 && !lobbyConfirmed && !hasUnsavedTake && !memoryData?.videoUrl ? (
@@ -1234,9 +1236,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                  renderRoom()
                              )}
 
-                            {/* HUD Watermark Label - Relocated to Bottom Left */}
+                            {/* HUD Watermark Label - Bottom Left */}
                             {modality !== null && (
-                                <div className="absolute bottom-6 left-6 select-none z-10 group cursor-help">
+                                <div className="absolute bottom-4 left-6 select-none z-10 group cursor-help">
                                     <div className="flex items-center gap-3 border-l border-white/10 pl-4 py-1 transition-all duration-500 group-hover:border-[var(--room-accent)] group-hover:pl-6 bg-black/0 group-hover:bg-black/20 rounded-r-lg">
                                         <span className="w-1.5 h-1.5 rounded-full bg-[var(--room-accent)] animate-pulse shadow-[0_0_8px_var(--room-accent)] group-hover:scale-125 transition-transform" />
                                         <span className="font-mono text-[10px] tracking-[0.4em] text-white/20 group-hover:text-white/80 uppercase whitespace-nowrap transition-colors">
@@ -1245,37 +1247,39 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                     </div>
                                 </div>
                             )}
-
-                             {/* PRODUCTION CONTROL BAR: THE HEARTBEAT */}
-                             {currentStage >= 0 && (
-                                 <div className={cn("transition-all duration-500", isDirectorOpen && "opacity-20 blur-sm pointer-events-none")}>
-                                     <ProductionControlBar
-                                         currentStage={currentStage}
-                                         isComplete={isActComplete}
-                                         isLowClarity={isLowClarity}
-                                         missingRequirements={missingRequirements}
-                                         onNext={handleNextAct}
-                                         onPrev={handlePrevAct}
-                                         onRetake={() => setStage(1)}
-                                         onPublish={handlePublish}
-                                         charge={currentStage === 0 ? hotClarity : totalCharge}
-                                         wordCount={wordCount}
-                                         isDocked={currentStage <= 1}
-                                         mentorActive={mentorModeActive}
-                                         isSaving={isSavingNext}
-                                         isProductionLocked={!!isProductionLocked}
-                                         isTheaterOpen={isTheaterActive}
-                                         activeRoom={activeRoom}
-                                         onSelectRoom={(room) => {
-                                           setLobbyConfirmed(true);
-                                           setActiveRoom(room);
-                                         }}
-                                     />
-                                 </div>
-                             )}
                         </div>
-                    </div>
+                    </main>
 
+                    {/* ROW 3: Pinned Production Control Bar Dock */}
+                    {currentStage >= 0 && (
+                        <footer className={cn(
+                            "w-full z-20 shrink-0 border-t border-white/10 bg-slate-950/95 backdrop-blur-2xl py-2 px-3 sm:px-4 flex items-center justify-center transition-all duration-500",
+                            isDirectorOpen && "opacity-20 blur-sm pointer-events-none"
+                        )}>
+                            <ProductionControlBar
+                                currentStage={currentStage}
+                                isComplete={isActComplete}
+                                isLowClarity={isLowClarity}
+                                missingRequirements={missingRequirements}
+                                onNext={handleNextAct}
+                                onPrev={handlePrevAct}
+                                onRetake={() => setStage(1)}
+                                onPublish={handlePublish}
+                                charge={currentStage === 0 ? hotClarity : totalCharge}
+                                wordCount={wordCount}
+                                isDocked={true}
+                                mentorActive={mentorModeActive}
+                                isSaving={isSavingNext}
+                                isProductionLocked={!!isProductionLocked}
+                                isTheaterOpen={isTheaterActive}
+                                activeRoom={activeRoom}
+                                onSelectRoom={(room) => {
+                                  setLobbyConfirmed(true);
+                                  setActiveRoom(room);
+                                }}
+                            />
+                        </footer>
+                    )}
                  </div>
             </PerspectiveWrapper>
 

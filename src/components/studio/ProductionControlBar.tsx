@@ -299,40 +299,17 @@ export const ProductionControlBar: React.FC<ProductionControlBarProps> = ({
 
   return (
     <div className={cn(
-      "z-[9999] w-full max-w-[98vw] sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl px-3 sm:px-6 pointer-events-none transition-all duration-500 ease-in-out relative",
-      isDocked ? "fixed bottom-6 left-1/2 -translate-x-1/2" : "fixed bottom-12 left-1/2 -translate-x-1/2",
+      "w-full max-w-[98vw] sm:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto pointer-events-auto transition-all duration-500 ease-in-out relative",
       (isReviewing || isDirectorOpen) && "opacity-0 invisible blur-xl grayscale scale-95 select-none pointer-events-none"
     )}>
-
-      {/* SCROLL AFFORDANCE CUE */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: [0.5, 0.95, 0.5], y: [0, 4, 0] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute -top-7 left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-[8.5px] font-mono font-bold tracking-[0.25em] text-emerald-400 uppercase pointer-events-none select-none bg-slate-950/90 backdrop-blur-md px-3.5 py-1 rounded-full border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
-      >
-        <span>Scroll For Stage Controls</span>
-        <ChevronDown className="w-3 h-3 text-emerald-400 animate-bounce" />
-      </motion.div>
-
       <motion.div 
         data-blueprint="ProductionControlBar"
         data-tier-architecture="concept-a-two-tier"
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ 
-          y: [0, -8, 0], // Subtle float
-          opacity: 1 
-        }}
-        transition={{
-          y: {
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut"
-          },
-          opacity: { duration: 0.3 }
-        }}
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3 }}
         className={cn(
-          "bg-slate-950/90 backdrop-blur-3xl border border-white/10 p-3 sm:p-4 rounded-[2rem] sm:rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.8)] ring-1 ring-white/5 flex flex-col gap-2.5 sm:gap-3 max-w-[95vw] xl:max-w-6xl mx-auto transition-all pointer-events-auto",
+          "bg-slate-950/90 backdrop-blur-3xl border border-white/10 p-2.5 sm:p-3.5 rounded-[1.5rem] sm:rounded-[2rem] shadow-[0_10px_30px_rgba(0,0,0,0.6)] ring-1 ring-white/5 flex flex-col gap-2 sm:gap-2.5 max-w-[95vw] xl:max-w-6xl mx-auto transition-all pointer-events-auto",
           (isReviewing || isDirectorOpen) ? "pointer-events-none" : "pointer-events-auto",
           !isComplete && currentStage !== 4 && "border-rose-500/20"
         )}

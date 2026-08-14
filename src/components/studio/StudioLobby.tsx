@@ -86,7 +86,7 @@ export const StudioLobby: React.FC<StudioLobbyProps> = ({ onConfirm }) => {
   const filmLeaderNumber = Math.max(1, Math.ceil(timeLeft));
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 pb-36 bg-gradient-to-b from-slate-950 via-[#04040a] to-slate-950 min-h-[calc(100vh-160px)]">
+    <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-8 bg-gradient-to-b from-slate-950 via-[#04040a] to-slate-950 w-full">
       
       {/* Title Header */}
       <div className="text-center max-w-2xl mb-8 select-none">

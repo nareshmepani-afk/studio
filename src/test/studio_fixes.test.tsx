@@ -2789,6 +2789,11 @@ describe('Studio Regression Tests', () => {
       // Studio layout outer wrapper must use min-h-screen to prevent black-screen loading freeze
       expect(layoutSrc).toContain('min-h-screen');
 
+      // ProductionDeck must use 3-row grid viewport lock (grid-rows-[auto_1fr_auto])
+      expect(productionDeckSrc).toContain('grid-rows-[auto_1fr_auto]');
+      expect(productionDeckSrc).toContain('h-[100dvh]');
+      expect(productionDeckSrc).toContain('"StudioDeckGrid"');
+
       // CinemaStageSwitch must remain the SINGLE overflow-y-auto scroll container
       expect(cinemaSrc).toContain('overflow-y-auto custom-scrollbar');
     });
