@@ -9,14 +9,14 @@ export function generateAutobiographyHtml(memory: Memory): string {
   const director = memory.credits?.director || memory.credits?.starring || 'A Storyteller';
   const title = memory.title || 'Biographical Memory Odyssey';
   const narrativeText = memory.prose || memory.originalHook || memory.description || '';
-  
+
   const posterUrl = memory.posterImageUrl || memory.imageUrl || (memory as any).posterUrl || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1000';
-  
+
   const fusionManifest = (memory as any).fusionManifest || {
-    audioMood: (memory as any).cinematicScore || (memory as any).audioMood || "Nostalgic Acoustic Guitar & Soft String Ensemble // 72 BPM",
-    sensoryPalette: (memory as any).sensoryPalette || ((memory as any).sensoryValues ? Object.entries((memory as any).sensoryValues).map(([k,v]) => `${k}: ${v}`).join(', ') : "Smell of fresh rain, sound of steam train whistle"),
-    emotionalTone: (memory as any).emotionalTone || (memory.emotionTags ? memory.emotionTags.join(', ') : "Reverent, Courageous, Ancestral Gratitude"),
-    cohesiveScript: (memory as any).cohesiveScript || narrativeText
+    audioMood: (memory as any).cinematicScore || (memory as any).audioMood || 'Nostalgic Acoustic Guitar & Soft String Ensemble // 72 BPM',
+    sensoryPalette: (memory as any).sensoryPalette || ((memory as any).sensoryValues ? Object.entries((memory as any).sensoryValues).map(([k, v]) => `${k}: ${v}`).join(', ') : 'Smell of fresh rain, sound of steam train whistle'),
+    emotionalTone: (memory as any).emotionalTone || (memory.emotionTags ? memory.emotionTags.join(', ') : 'Reverent, Courageous, Ancestral Gratitude'),
+    cohesiveScript: (memory as any).cohesiveScript || narrativeText,
   };
 
   const formattedDate = (() => {
@@ -30,7 +30,9 @@ export function generateAutobiographyHtml(memory: Memory): string {
   })();
 
   const locationStr = [memory.location, memory.country].filter(Boolean).join(', ') || 'Global Archive';
-  const qrTargetUrl = typeof window !== 'undefined' ? `${window.location.origin}/cinema/tv?id=${memory.id || 'preview'}` : `https://dev.memoryweaver.studio/cinema/tv?id=${memory.id || 'preview'}`;
+  const qrTargetUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/cinema/tv?id=${memory.id || 'preview'}`
+    : `https://dev.memoryweaver.studio/cinema/tv?id=${memory.id || 'preview'}`;
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrTargetUrl)}`;
 
   return `<!DOCTYPE html>
@@ -58,6 +60,9 @@ export function generateAutobiographyHtml(memory: Memory): string {
       background-color: #020617;
       color: #f8fafc;
       font-family: 'Inter', sans-serif;
+      /* CRITICAL: Do NOT set height or overflow:hidden here.
+         Setting height:297mm + overflow:hidden on body clamps the browser's
+         print output to exactly 1 page, swallowing page 2. */
     }
 
     .page {
@@ -87,15 +92,17 @@ export function generateAutobiographyHtml(memory: Memory): string {
 
     @media print {
       html, body {
+        /* Do NOT constrain body to 297mm height and do NOT set overflow:hidden.
+           Doing so causes the browser print engine to truncate output to 1 page. */
         width: 210mm;
-        height: 297mm;
         margin: 0;
         padding: 0;
-        overflow: hidden;
+        background-color: #020617;
       }
       .page {
         border: none;
         box-shadow: none;
+        break-inside: avoid;
       }
       .page:last-of-type {
         page-break-after: avoid !important;
@@ -297,13 +304,13 @@ export function generateAutobiographyHtml(memory: Memory): string {
       </div>
       <div class="title-block">
         <h1 class="story-title">${title}</h1>
-        <div class="director-line">STARRING & DIRECTED BY ${director} • ${formattedDate}</div>
+        <div class="director-line">STARRING &amp; DIRECTED BY ${director} &bull; ${formattedDate}</div>
       </div>
       <div class="score-pill">
-        <span class="score-text">🎼 CINEMATIC SCORE & AUDIO MOOD: ${fusionManifest.audioMood}</span>
+        <span class="score-text">🎼 CINEMATIC SCORE &amp; AUDIO MOOD: ${fusionManifest.audioMood}</span>
       </div>
     </div>
-    
+
     <div class="footer-flex">
       <div class="director-line">HOUSE OF MEMORIES ARCHIVAL COLLECTION</div>
       <div class="qr-box">
@@ -318,7 +325,7 @@ export function generateAutobiographyHtml(memory: Memory): string {
     <div>
       <div class="chapter-header">
         <h2 class="chapter-title">CHAPTER I: ${title.toUpperCase()}</h2>
-        <div class="chapter-meta">${formattedDate} • ${locationStr}</div>
+        <div class="chapter-meta">${formattedDate} &bull; ${locationStr}</div>
       </div>
 
       <div class="sensory-card">
@@ -336,17 +343,19 @@ export function generateAutobiographyHtml(memory: Memory): string {
     </div>
 
     <div class="footer-flex">
-      <div class="seal-badge">🟢 VERIFIED ARCHIVAL HEIRLOOM RECORD • MEMORY WEAVER STUDIO</div>
+      <div class="seal-badge">🟢 VERIFIED ARCHIVAL HEIRLOOM RECORD &bull; MEMORY WEAVER STUDIO</div>
       <div class="qr-label">PAGE 2 OF 2</div>
     </div>
   </div>
 
   <script>
+    // afterprint fires AFTER the user completes/cancels the print dialog.
+    // We do NOT close here — let the user manually dismiss the iframe print UI,
+    // which keeps the parent window untouched (no visibilitychange events).
     window.onload = function() {
       setTimeout(function() {
-        window.focus();
         window.print();
-      }, 500);
+      }, 600);
     };
   </script>
 </body>
@@ -355,14 +364,89 @@ export function generateAutobiographyHtml(memory: Memory): string {
 
 /**
  * Triggers the browser print dialog for the heirloom autobiography booklet PDF.
+ *
+ * ARCHITECTURE NOTE (MW-161): We inject a hidden <iframe> into the current document
+ * rather than calling window.open('', '_blank', ...) to prevent browser freeze.
+ *
+ * Root cause of the freeze: window.open() creates a NEW browser window. When the user
+ * closes it after printing, the parent window receives a 'focus' event. This triggers
+ * Firebase's onAuthStateChanged listener (registered in ProductionDeckContainer), which
+ * clears all rehydration guards and executes a full Firestore re-lookup. That cascade
+ * fires React state resets (setStage, setSelectedTake, setProductionLocked) mid-render
+ * inside the studio, causing the visible UI freeze.
+ *
+ * The iframe approach keeps all print activity isolated inside the current document —
+ * the parent window never loses or regains focus, so no auth state listeners fire.
  */
 export function downloadFusedAutobiography(memory: Memory) {
   if (typeof window === 'undefined') return;
 
   const htmlContent = generateAutobiographyHtml(memory);
-  const printWindow = window.open('', '_blank', 'width=900,height=1000');
-  if (printWindow) {
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+
+  // Clean up any previously injected print frame (defensive guard)
+  const existingFrame = document.getElementById('__mw_print_frame__');
+  if (existingFrame) existingFrame.remove();
+
+  // Create a fully hidden iframe to host the print document in-process.
+  const iframe = document.createElement('iframe');
+  iframe.id = '__mw_print_frame__';
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.cssText = [
+    'position:fixed',
+    'top:-9999px',
+    'left:-9999px',
+    'width:210mm',
+    'height:594mm',  // Two A4 pages tall so the print engine can paginate correctly
+    'border:none',
+    'opacity:0',
+    'pointer-events:none',
+    'z-index:-1',
+  ].join(';');
+
+  document.body.appendChild(iframe);
+
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+
+  if (!iframeDoc || !iframe.contentWindow) {
+    // Fallback: popup window if iframe API is unavailable (e.g. sandboxed env)
+    const fallback = window.open('', '_blank', 'width=900,height=1100');
+    if (fallback) {
+      fallback.document.write(htmlContent);
+      fallback.document.close();
+    }
+    return;
+  }
+
+  iframeDoc.open();
+  iframeDoc.write(htmlContent);
+  iframeDoc.close();
+
+  const iframeWindow = iframe.contentWindow;
+
+  const triggerPrint = () => {
+    try {
+      iframeWindow.print();
+    } catch {
+      // If iframe.print() is blocked by browser policy, fall back to popup
+      const fallback = window.open('', '_blank', 'width=900,height=1100');
+      if (fallback) {
+        fallback.document.write(htmlContent);
+        fallback.document.close();
+      }
+    } finally {
+      // Remove the hidden frame after a safe delay (3s after print trigger)
+      setTimeout(() => {
+        document.getElementById('__mw_print_frame__')?.remove();
+      }, 3000);
+    }
+  };
+
+  if (iframeDoc.readyState === 'complete') {
+    // Resources already loaded — trigger immediately
+    setTimeout(triggerPrint, 600);
+  } else {
+    iframeWindow.onload = () => setTimeout(triggerPrint, 600);
+    // Safety net: if onload never fires (cross-origin resource stall), trigger after 2s
+    setTimeout(triggerPrint, 2000);
   }
 }

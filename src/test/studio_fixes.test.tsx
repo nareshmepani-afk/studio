@@ -2693,11 +2693,15 @@ describe('Studio Regression Tests', () => {
       const sourceFile = path.resolve(process.cwd(), 'src/utils/autobiographyExporter.ts');
       const source = fs.readFileSync(sourceFile, 'utf-8');
 
-      // Verify the print pipeline exists
+      // Verify the print pipeline exists (MW-161: iframe-based architecture)
       expect(source).toContain('window.print()');
       expect(source).toContain('@media print');
-      expect(source).toContain('window.open(');
-      expect(source).toContain('printWindow.document.write(htmlContent)');
+      // MW-161: primary path must use iframe, NOT window.open
+      expect(source).toContain('iframe');
+      expect(source).toContain('__mw_print_frame__');
+      expect(source).toContain('iframeDoc.write(htmlContent)');
+      // window.open must only exist as fallback, not primary
+      expect(source).toContain('// Fallback');
 
       // Verify the JSON blob anti-pattern does NOT exist
       expect(source).not.toContain('application/json');
@@ -2705,21 +2709,19 @@ describe('Studio Regression Tests', () => {
       expect(source).not.toContain('.download =');
     });
 
-    it('MW-156 BEHAVIORAL CONTRACT: window.open BEHAVIOR SPY — downloadFusedAutobiography must invoke window.open with a print window, not URL.createObjectURL', () => {
-      // Spy on window.open to verify the print pipeline is invoked
-      const mockWrite = vi.fn();
-      const mockClose = vi.fn();
-      const mockDocument = {
-        write: mockWrite,
-        close: mockClose,
-      };
-      const mockPrintWindow = {
-        document: mockDocument,
-        focus: vi.fn(),
-        print: vi.fn(),
-        onload: null as any,
-      };
-      const mockOpen = vi.fn().mockReturnValue(mockPrintWindow);
+    it('MW-161 BEHAVIORAL CONTRACT: IFRAME PRINT ARCHITECTURE — downloadFusedAutobiography must inject a hidden <iframe> and NOT call window.open as the primary print path (prevents Firebase auth cascade on window focus)', () => {
+      // MW-161 fix: the primary print path MUST use an iframe so the parent window
+      // does not lose focus, preventing the onAuthStateChanged → Firestore re-lookup
+      // → stage reset → browser freeze cascade.
+
+      const appendedElements: HTMLElement[] = [];
+      const originalAppendChild = document.body.appendChild.bind(document.body);
+      const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
+        if (node instanceof HTMLElement) appendedElements.push(node);
+        return originalAppendChild(node);
+      });
+
+      const mockOpen = vi.fn();
       const originalOpen = window.open;
       window.open = mockOpen;
 
@@ -2734,25 +2736,30 @@ describe('Studio Regression Tests', () => {
           credits: { director: 'Test Director' }
         };
 
-        // Import using synchronous require since module is already imported
         downloadFusedAutobiography(mockMemory);
 
-        // BEHAVIORAL ASSERTION: window.open must be called (print window)
-        expect(mockOpen).toHaveBeenCalledOnce();
-        expect(mockOpen).toHaveBeenCalledWith('', '_blank', expect.stringContaining('width='));
+        // BEHAVIORAL ASSERTION 1: An iframe must be appended to the document body
+        const injectedIframe = appendedElements.find(
+          (el) => el.tagName === 'IFRAME' && el.id === '__mw_print_frame__'
+        );
+        expect(injectedIframe).toBeDefined();
 
-        // BEHAVIORAL ASSERTION: document.write must be called with HTML, not JSON
-        expect(mockDocument.write).toHaveBeenCalledOnce();
-        const writtenContent: string = mockDocument.write.mock.calls[0][0];
-        expect(writtenContent).toContain('<!DOCTYPE html>');
-        expect(writtenContent).toContain('@media print');
-        expect(writtenContent).not.toContain('"fusionManifest"');
-        expect(writtenContent.startsWith('{')).toBe(false);
+        // BEHAVIORAL ASSERTION 2: The iframe must be visually hidden (no layout shift)
+        if (injectedIframe) {
+          expect(injectedIframe.style.position).toBe('fixed');
+          expect(injectedIframe.style.opacity).toBe('0');
+          expect(injectedIframe.style.pointerEvents).toBe('none');
+        }
 
-        // BEHAVIORAL ASSERTION: no JSON blob URL was created
-        expect(mockDocument.close).toHaveBeenCalledOnce();
+        // BEHAVIORAL ASSERTION 3: window.open must NOT be called as primary path
+        // (it is only a fallback for sandboxed environments)
+        expect(mockOpen).not.toHaveBeenCalled();
+
       } finally {
+        appendChildSpy.mockRestore();
         window.open = originalOpen;
+        // Clean up any frame injected during the test
+        document.getElementById('__mw_print_frame__')?.remove();
       }
     });
 
