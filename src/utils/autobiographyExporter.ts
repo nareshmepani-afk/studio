@@ -4,8 +4,11 @@ import { enGB } from 'date-fns/locale';
 
 /**
  * Generates the styled HTML document for the 2-page heirloom autobiography booklet.
+ *
+ * @param memory The memory document data
+ * @param userEmail Optional user email to format the default PDF download filename
  */
-export function generateAutobiographyHtml(memory: Memory): string {
+export function generateAutobiographyHtml(memory: Memory, userEmail?: string): string {
   const director = memory.credits?.director || memory.credits?.starring || 'A Storyteller';
   const title = memory.title || 'Biographical Memory Odyssey';
   const narrativeText = memory.prose || memory.originalHook || memory.description || '';
@@ -35,11 +38,23 @@ export function generateAutobiographyHtml(memory: Memory): string {
     : `https://dev.memoryweaver.studio/cinema/tv?id=${memory.id || 'preview'}`;
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrTargetUrl)}`;
 
+  // Format document title which determines the suggested filename in browser "Save as PDF" dialog
+  const effectiveEmail = (userEmail || (memory as any).userEmail || '').trim();
+  const safeEmail = effectiveEmail.replace(/[^a-zA-Z0-9@._-]/g, '');
+  const safeTitle = title
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .replace(/_+/g, '_');
+
+  const docTitle = safeEmail
+    ? `${safeEmail}_${safeTitle}_booklet`
+    : `${title} - Memory Weaver Booklet`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>${title} - Memory Weaver Booklet</title>
+  <title>${docTitle}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:wght@400;600;800&family=Playfair+Display:ital,wght@0,600;1,400&display=swap');
 
@@ -347,14 +362,6 @@ export function generateAutobiographyHtml(memory: Memory): string {
       <div class="qr-label">PAGE 2 OF 2</div>
     </div>
   </div>
-
-  <script>
-    window.onload = function() {
-      setTimeout(function() {
-        window.print();
-      }, 600);
-    };
-  </script>
 </body>
 </html>`;
 }
@@ -372,14 +379,18 @@ export function generateAutobiographyHtml(memory: Memory): string {
  * ProductionDeckContainer reads this flag in its onAuthStateChanged effect and skips
  * clearing rehydration state if a print is actively in progress.
  *
- * Layer 3 — UID deduplication in ProductionDeckContainer: The auth effect now tracks
+ * Layer 3 — UID deduplication in ProductionDeckContainer: The auth effect tracks
  * the previous UID string via a useRef and skips no-op re-fires where the UID is
  * identical (same-user Firebase token refresh during Chrome tab suspension/resume).
+ *
+ * Layer 4 — Single trigger guarantee: Print is ONLY invoked via iframeWindow.print()
+ * in the parent caller, NEVER from an inline <script> in the HTML, preventing duplicate
+ * dialog prompts on cancel.
  */
-export function downloadFusedAutobiography(memory: Memory) {
+export function downloadFusedAutobiography(memory: Memory, userEmail?: string) {
   if (typeof window === 'undefined') return;
 
-  const htmlContent = generateAutobiographyHtml(memory);
+  const htmlContent = generateAutobiographyHtml(memory, userEmail);
 
   // Clean up any previously injected print frame (defensive guard)
   const existingFrame = document.getElementById('__mw_print_frame__');
@@ -411,6 +422,8 @@ export function downloadFusedAutobiography(memory: Memory) {
     if (fallback) {
       fallback.document.write(htmlContent);
       fallback.document.close();
+      fallback.focus();
+      fallback.print();
     }
     return;
   }
@@ -449,6 +462,7 @@ export function downloadFusedAutobiography(memory: Memory) {
     hasFired = true;
 
     try {
+      iframeWindow.focus();
       iframeWindow.print();
     } catch {
       // If iframe.print() is blocked by browser policy, fall back to popup
@@ -456,6 +470,8 @@ export function downloadFusedAutobiography(memory: Memory) {
       if (fallback) {
         fallback.document.write(htmlContent);
         fallback.document.close();
+        fallback.focus();
+        fallback.print();
       }
     } finally {
       // Remove the hidden frame after a safe delay (3s after print trigger)
@@ -466,36 +482,36 @@ export function downloadFusedAutobiography(memory: Memory) {
   };
 
   if (iframeDoc.readyState === 'complete') {
-    setTimeout(triggerPrint, 600);
+    setTimeout(triggerPrint, 500);
   } else {
-    iframeWindow.onload = () => setTimeout(triggerPrint, 600);
-    // Safety net: if onload never fires (cross-origin resource stall), trigger after 2s
-    setTimeout(triggerPrint, 2000);
+    iframeWindow.onload = () => setTimeout(triggerPrint, 500);
+    // Safety net: if onload never fires (cross-origin resource stall), trigger after 1.5s
+    setTimeout(triggerPrint, 1500);
   }
 }
 
 /**
  * Downloads the heirloom booklet as a self-contained HTML file.
- *
- * The user can open this file in any browser and use Ctrl+P → "Save as PDF"
- * to produce a high-quality permanent PDF archive without any server dependency.
- * This is the "Download" counterpart to the native print-dialog approach.
  */
-export function downloadAutobiographyAsHtml(memory: Memory) {
+export function downloadAutobiographyAsHtml(memory: Memory, userEmail?: string) {
   if (typeof window === 'undefined') return;
 
-  const htmlContent = generateAutobiographyHtml(memory);
+  const htmlContent = generateAutobiographyHtml(memory, userEmail);
+  const effectiveEmail = (userEmail || (memory as any).userEmail || '').trim();
+  const safeEmail = effectiveEmail.replace(/[^a-zA-Z0-9@._-]/g, '');
   const safeTitle = (memory.title || 'MemoryWeaverBooklet')
     .replace(/[^a-z0-9_\-\s]/gi, '')
     .replace(/\s+/g, '_')
     .slice(0, 60);
+
+  const filename = safeEmail ? `${safeEmail}_${safeTitle}_booklet.html` : `${safeTitle}_booklet.html`;
 
   const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
 
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = `${safeTitle}_booklet.html`;
+  anchor.download = filename;
   anchor.style.cssText = 'position:fixed;top:-9999px;left:-9999px;';
   document.body.appendChild(anchor);
   anchor.click();

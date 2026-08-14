@@ -2635,7 +2635,7 @@ describe('Studio Regression Tests', () => {
       expect(consoleLayout.tier3Exports).toHaveLength(2);
     });
 
-    it('MW-156 ACT V HEIRLOOM AUTOBIOGRAPHY BOOKLET PRINT HTML SHIELD: verifies generateAutobiographyHtml generates a printable 2-page heirloom document with zero JSON artifacts', () => {
+    it('MW-156 ACT V HEIRLOOM AUTOBIOGRAPHY BOOKLET PRINT HTML SHIELD: verifies generateAutobiographyHtml generates a printable 2-page heirloom document with zero JSON artifacts and email filename formatting', () => {
       const mockMemory: any = {
         id: 'ey96djU6qR1BrDGnvZwp',
         title: 'A Child of Two Worlds',
@@ -2647,17 +2647,18 @@ describe('Studio Regression Tests', () => {
         credits: { director: 'Naresh Mepani' }
       };
 
-      const html = generateAutobiographyHtml(mockMemory);
+      const htmlWithoutEmail = generateAutobiographyHtml(mockMemory);
+      expect(htmlWithoutEmail).toContain('<!DOCTYPE html>');
+      expect(htmlWithoutEmail).toContain('<title>A Child of Two Worlds - Memory Weaver Booklet</title>');
+      expect(htmlWithoutEmail).toContain('A Child of Two Worlds');
+      expect(htmlWithoutEmail).toContain('Standing in the quiet corridor');
+      expect(htmlWithoutEmail).toContain('@media print');
+      expect(htmlWithoutEmail.startsWith('{')).toBe(false);
+      expect(htmlWithoutEmail).not.toContain('"fusionManifest":');
 
-      // Verify HTML structure vs JSON
-      expect(html).toContain('<!DOCTYPE html>');
-      expect(html).toContain('<title>A Child of Two Worlds - Memory Weaver Booklet</title>');
-      expect(html).toContain('A Child of Two Worlds');
-      expect(html).toContain('Standing in the quiet corridor');
-      expect(html).toContain('@media print');
-      expect(html).toContain('window.print()');
-      expect(html.startsWith('{')).toBe(false);
-      expect(html).not.toContain('"fusionManifest":');
+      // Verify email-prefixed document title for browser Save as PDF default filename
+      const htmlWithEmail = generateAutobiographyHtml(mockMemory, 'nareshmepani@hotmail.com');
+      expect(htmlWithEmail).toContain('<title>nareshmepani@hotmail.com_A_Child_of_Two_Worlds_booklet</title>');
     });
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2686,7 +2687,7 @@ describe('Studio Regression Tests', () => {
       }
     });
 
-    it('MW-156 BEHAVIORAL CONTRACT: downloadFusedAutobiography SOURCE AUDIT — must call window.print() not produce a JSON file download', async () => {
+    it('MW-156 BEHAVIORAL CONTRACT: downloadFusedAutobiography SOURCE AUDIT — must call iframeWindow.print() not produce a JSON file download', async () => {
       // Read and audit the actual exporter source to ensure the print pipeline is intact
       const fs = await import('fs');
       const path = await import('path');
@@ -2694,7 +2695,7 @@ describe('Studio Regression Tests', () => {
       const source = fs.readFileSync(sourceFile, 'utf-8');
 
       // Verify the print pipeline exists (MW-161 v2: 3-layer freeze protection)
-      expect(source).toContain('window.print()');
+      expect(source).toContain('iframeWindow.print()');
       expect(source).toContain('@media print');
       // Layer 1: primary path must use iframe
       expect(source).toContain('iframe');
