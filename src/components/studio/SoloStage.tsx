@@ -5305,12 +5305,16 @@ export default function SoloStage({
       data?.imageUrl;
 
     const userEmail = user?.email || (data as any)?.userEmail || (data as any)?.email || '';
-    // Set parent document.title — Chrome uses this as the suggested PDF filename
+    // Set parent document.title — Chrome uses this as the suggested PDF filename.
+    // Format: nareshmepani@hotmail.com_A_Child_of_Two_Worlds  →  Chrome saves as .pdf
     const originalTitle = document.title;
     const safeTitle = (data?.title || 'Memory Weaver')
       .replace(/[^a-zA-Z0-9\s-]/g, '')
-      .trim();
-    document.title = `${safeTitle} - Memory Weaver`;
+      .trim()
+      .replace(/\s+/g, '_');
+    const safeEmail = userEmail.replace(/[^a-zA-Z0-9@._-]/g, '');
+    // nareshmepani@hotmail.com_A_Child_of_Two_Worlds → Chrome saves as .pdf
+    document.title = safeEmail ? `${safeEmail}_${safeTitle}` : safeTitle;
 
     // Restore title after print dialog closes (afterprint is more reliable than setTimeout)
     window.addEventListener('afterprint', () => {
