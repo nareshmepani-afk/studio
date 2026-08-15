@@ -192,15 +192,15 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 > **Origin**: Codified after MW-163 incident (2026-08-15) in which Gemini 3.7 Flash High violated Rule 7 by collapsing three separate export buttons (Print PDF, Download, Share & QR) into one, passing a Vitest suite that had insufficiently specific assertions.
 
 ## Core Principle
-**Claude Sonnet (Thinking) is the Production Gatekeeper.** Gemini Flash models are capable Executors for bounded tasks but MUST NOT make autonomous architectural decisions on files listed in the Protected Component Registry.
+**Claude Opus (Thinking) is the default first gate.** Every user question lands on Opus first. Opus either executes directly (Architect/Ultra tasks) or writes a precise, ready-to-paste prompt for the optimal downstream model. This ensures the routing decision itself receives the deepest reasoning.
 
 ## 22.1 The Four Roles
 
 | Role | Model | Responsibilities |
 |---|---|---|
-| 🏛️ **Architect** | Claude Opus (Thinking) | Systemic root-cause analysis, pre-execution brainstorming, architectural decisions, writing / amending rules in `.agents/`. Use *before* code changes when the problem is poorly understood. |
-| 🔰 **Gatekeeper** | Claude Sonnet (Thinking) | Plans diffs, reviews changes, issues final `git commit` on Protected Components, audits regressions post-Flash-delegation, day-to-day Gatekeeper. **First gate for all questions.** |
-| ⚙️ **Executor** | Gemini Flash (High / Thinking) | Executes bounded, clearly scoped tasks with explicit success criteria. May commit on non-protected files only. Requires Delegation Brief. |
+| 🏛️ **Triage & Architect** (Default) | Claude Opus (Thinking) | **First gate for ALL questions.** Analyses, classifies tier, either executes directly or writes a ready-to-paste prompt for the optimal downstream model. Handles systemic root-cause analysis, pre-execution brainstorming, architectural decisions, writing / amending rules in `.agents/`. |
+| 🔰 **Gatekeeper** | Claude Sonnet (Thinking) | Day-to-day production execution. Issues final `git commit` on Protected Components. Executes Premium-tier bug fixes, multi-file refactors, and post-delegation diff audits. |
+| ⚙️ **Executor** | Gemini Flash (High / Thinking) | Executes bounded, clearly scoped tasks with explicit success criteria from a Delegation Brief. May commit on non-Protected files only. |
 | 🔍 **Reader** | Gemini Flash (Low) | Research, file reading, grep searches, status checks, `tsc` / `vitest` output reading. Zero code writes. |
 
 > 📌 **Version Policy**: Rules reference model *families*, not version numbers (e.g. `Claude Sonnet (Thinking)`, not `Claude Sonnet 4.6`). This keeps the ruleset evergreen as model versions update.

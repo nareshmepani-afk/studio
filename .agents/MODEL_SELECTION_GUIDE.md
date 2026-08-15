@@ -10,21 +10,19 @@ Every model, regardless of tier, MUST act as an intelligent **task router** befo
 User asks a question
         │
         ▼
-┌─────────────────────────────┐
-│  STEP 1: ASSESS THE TASK    │
-│  Classify complexity tier   │
-│  Check if more info needed  │
-└──────────┬──────────────────┘
+┌─────────────────────────────────────┐
+│  Claude Opus (Thinking) — DEFAULT   │
+│  STEP 1: Analyse & classify tier    │
+│  STEP 2: Route or execute directly  │
+└──────────┬──────────────────────────┘
            │
-     ┌─────┴──────┐
-     │             │
-     ▼             ▼
- SAME MODEL    DIFFERENT MODEL
- NEEDED        NEEDED
-     │             │
-     ▼             ▼
- EXECUTE       WRITE THE PROMPT
- DIRECTLY      + RECOMMEND MODEL
+     ┌─────┼─────────────┬──────────────┐
+     │     │             │              │
+     ▼     ▼             ▼              ▼
+  ULTRA  PREMIUM      HIGH           LOW
+  Opus   Sonnet       Flash(High)    Flash(Low)
+  direct prompt→      prompt→        prompt→
+  exec   switch       switch         switch
 ```
 
 ---
@@ -90,8 +88,8 @@ If the task is ambiguous or underspecified, ask the user for clarification BEFOR
 | 💚 Low | Gemini Flash (Low) | 🔍 Reader only — no code writes |
 | 💛 Medium | Gemini Flash (Low / Medium) | ⚙️ Executor — non-Protected files only |
 | 🟠 High | Gemini Flash (High / Thinking) | ⚙️ Executor — with Delegation Brief (Rule 22.5) |
-| 🔴 Premium | **Claude Sonnet (Thinking)** | 🏛️ **Gatekeeper** — Protected Components, final commits, diff audits |
-| 🟣 Ultra | **Claude Opus (Thinking)** | 🏛️ **Architect** — Systemic root-cause, deep refactors, rule authoring, pre-execution brainstorming |
+| 🔴 Premium | **Claude Sonnet (Thinking)** | 🔰 **Gatekeeper** — Protected Components, final commits, diff audits |
+| 🟣 Ultra | **Claude Opus (Thinking)** ← DEFAULT | 🏛️ **Triage & Architect** — First gate for ALL questions. Executes directly or writes ready-to-paste prompts. |
 
 > ⚠️ **MW-163 Lesson**: Gemini Flash (High) is capable but lacks the deep Rule 7 awareness needed for Protected Components. Always use a Delegation Brief (Rule 22.5) when offloading to Flash. Flash may never autonomously edit `SoloStage.tsx`, `studio_fixes.test.tsx`, `autobiographyExporter.ts`, or any `.agents/` file.
 
