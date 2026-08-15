@@ -10,6 +10,8 @@ import { enGB } from 'date-fns/locale';
  */
 export function generateAutobiographyHtml(memory: Memory, userEmail?: string): string {
   const director = memory.credits?.director || memory.credits?.starring || 'A Storyteller';
+  const producer = memory.credits?.producer || 'House of Memories';
+  const starring = memory.credits?.starring || 'The Soul of the Story';
   const title = memory.title || 'Biographical Memory Odyssey';
   const narrativeText = memory.prose || memory.originalHook || memory.description || '';
 
@@ -125,42 +127,145 @@ export function generateAutobiographyHtml(memory: Memory, userEmail?: string): s
       }
     }
 
-    .header-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 16px;
-      border-radius: 9999px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #34d399;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      margin-bottom: 20px;
-    }
-
-    .poster-container {
+    .poster-frame {
       width: 100%;
-      height: 170mm;
+      height: 220mm;
       border-radius: 16px;
       overflow: hidden;
-      border: 2px solid rgba(245, 158, 11, 0.4);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       position: relative;
+      background: #020617;
     }
 
     .poster-img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      filter: brightness(0.9) contrast(1.1);
     }
 
-    .title-block {
-      margin-top: 15px;
-      text-align: left;
+    .poster-top-badge {
+      position: absolute;
+      top: 20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      z-index: 10;
+    }
+
+    .poster-top-badge span {
+      font-size: 9px;
+      font-family: monospace;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.4em;
+      color: #fcd34d;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+    }
+
+    .poster-top-badge .divider {
+      width: 32px;
+      height: 2px;
+      background: rgba(251, 191, 36, 0.5);
+      border-radius: 999px;
+      margin: 6px auto 0;
+    }
+
+    .poster-bottom-block {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 50px 20px 20px;
+      background: linear-gradient(to top, #020617, rgba(2,6,23,0.9), transparent);
+      text-align: center;
+      z-index: 10;
+    }
+
+    .poster-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      font-weight: 700;
+      font-style: italic;
+      color: #ffffff;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.9);
+      letter-spacing: 0.05em;
+      line-height: 1.2;
+      text-transform: uppercase;
+      margin: 0 0 8px 0;
+    }
+
+    .poster-location {
+      font-size: 11px;
+      font-family: monospace;
+      font-weight: 700;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: rgba(252, 211, 77, 0.9);
+      text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+      margin-bottom: 10px;
+    }
+
+    .poster-divider {
+      width: 64px;
+      height: 1px;
+      background: rgba(255,255,255,0.2);
+      margin: 6px auto;
+    }
+
+    .poster-credits {
+      font-size: 8.5px;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(254, 243, 199, 0.9);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      line-height: 1.6;
+    }
+
+    .poster-credits strong {
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    .poster-starring {
+      font-size: 8.5px;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #6ee7b7;
+      font-weight: 600;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      margin-top: 4px;
+    }
+
+    .poster-starring strong {
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    .poster-seal {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+      opacity: 0.9;
+    }
+
+    .poster-seal .line {
+      width: 16px;
+      height: 1px;
+      background: rgba(251, 191, 36, 0.4);
+    }
+
+    .poster-seal span {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 9px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: #fcd34d;
+      font-weight: 500;
     }
 
     .story-title {
@@ -310,16 +415,31 @@ export function generateAutobiographyHtml(memory: Memory, userEmail?: string): s
   </style>
 </head>
 <body>
-  <!-- PAGE 1: COVER MOVIE POSTER -->
+  <!-- PAGE 1: COVER MOVIE POSTER (Matching CinemaPoster Component) -->
   <div class="page">
-    <div>
-      <div class="header-badge">🌟 MEMORY WEAVER CINEMATIC ARCHIVE</div>
-      <div class="poster-container">
+    <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+      <div class="poster-frame">
         <img class="poster-img" src="${posterUrl}" alt="${title}" />
-      </div>
-      <div class="title-block">
-        <h1 class="story-title">${title}</h1>
-        <div class="director-line">STARRING &amp; DIRECTED BY ${director} &bull; ${formattedDate}</div>
+        <div class="poster-top-badge">
+          <span>AN ORIGINAL MEMORY</span>
+          <div class="divider"></div>
+        </div>
+        <div class="poster-bottom-block">
+          <h1 class="poster-title">${title}</h1>
+          <div class="poster-location">${locationStr} &bull; ${formattedDate}</div>
+          <div class="poster-divider"></div>
+          <div class="poster-credits">
+            DIRECTED BY <strong>${director.toUpperCase()}</strong> &bull; PRODUCED BY <strong>${producer.toUpperCase()}</strong>
+          </div>
+          <div class="poster-starring">
+            STARRING <strong>${starring.toUpperCase()}</strong>
+          </div>
+          <div class="poster-seal">
+            <div class="line"></div>
+            <span>Chronicle Cinema Release</span>
+            <div class="line"></div>
+          </div>
+        </div>
       </div>
       <div class="score-pill">
         <span class="score-text">🎼 CINEMATIC SCORE &amp; AUDIO MOOD: ${fusionManifest.audioMood}</span>
