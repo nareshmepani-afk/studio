@@ -86,12 +86,14 @@ If the task is ambiguous or underspecified, ask the user for clarification BEFOR
 | Tier | Model | Role |
 |---|---|---|
 | 💚 Low | Gemini Flash (Low) | 🔍 Reader only — no code writes |
-| 💛 Medium | Gemini Flash (Low / Medium) | ⚙️ Executor — non-Protected files only |
-| 🟠 High | Gemini Flash (High / Thinking) | ⚙️ Executor — with Delegation Brief (Rule 22.5) |
-| 🔴 Premium | **Claude Sonnet (Thinking)** | 🔰 **Gatekeeper** — Protected Components, final commits, diff audits |
+| 💛 Medium | Gemini Flash (Low / Medium) | ⚙️ Executor — non-Protected files only. Must run Rule 26 Self-Healing Loop. |
+| 🟠 High | Gemini Flash (High / Thinking) | ⚙️ Executor — with Delegation Brief (Rule 22.5) + Rule 26 Self-Healing Loop |
+| 🔴 Premium | **Claude Sonnet (Thinking)** | 🔰 **Gatekeeper** — Protected Components, final commits, diff audits. Runs Rule 26.3 Gatekeeper Integration Step before push. |
 | 🟣 Ultra | **Claude Opus (Thinking)** ← DEFAULT | 🏛️ **Triage & Architect** — First gate for ALL questions. Executes directly or writes ready-to-paste prompts. |
 
 > ⚠️ **MW-163 Lesson**: Gemini Flash (High) is capable but lacks the deep Rule 7 awareness needed for Protected Components. Always use a Delegation Brief (Rule 22.5) when offloading to Flash. Flash may never autonomously edit `SoloStage.tsx`, `studio_fixes.test.tsx`, `autobiographyExporter.ts`, or any `.agents/` file.
+
+> 🔄 **Rule 26 Compliance (Mandatory for Tier-3 Executors)**: All Gemini Flash executors (Medium + High) MUST run the Automated Self-Healing & Verification Loop (Rule 26) before returning output to the Tier-2 Gatekeeper. This means: (1) Run `tsc --noEmit` + targeted `vitest` + `git diff --stat` after every diff application, (2) Self-heal up to 3 iterations on compile/test failures, (3) Return a standardised Self-Healing Report (§26.4), (4) ESCALATE immediately if Protected Components, test files, or UI elements would need modification during retries.
 
 > 📌 **Version Policy**: Rules reference model *families*, not version numbers (e.g. `Claude Sonnet (Thinking)`, not `Claude Sonnet 4.6`). This keeps rules evergreen as versions update.
 

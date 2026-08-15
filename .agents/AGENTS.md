@@ -405,3 +405,197 @@ When a sprint lifecycle trigger fires (§25.2), the Studio Producer outputs this
 - `.agents/AGENTS.md` — Full ruleset and deployment milestones
 - `.agents/MODEL_SELECTION_GUIDE.md` — Model routing protocol
 ```
+
+# 26. Automated Self-Healing & Verification Loop Protocol
+
+> **Origin**: Codified 2026-08-15 by Principal Systems Architect directive. Formalises deterministic retry loops for Tier-3 executors to resolve compile/test failures autonomously before returning to the Gatekeeper — with hard invariant shields to prevent assertion weakening, Protected Component drift, and runaway token burn.
+
+## 26.1 The Execution Harness — State Machine
+
+```
+RECEIVE_BRIEF ─► APPLY_DIFF ─► VERIFY ─┬─► PACKAGE_DIFF ─► SUBMIT (✅ GREEN)
+                                        │
+                                        └─► DIAGNOSE ─┬─► PATCH ─► VERIFY (loop)
+                                                       │
+                                                       └─► ESCALATE (❌ MAX_RETRIES or INVARIANT VIOLATION)
+```
+
+### State Definitions
+
+| State | Description | Constraints |
+|---|---|---|
+| `RECEIVE_BRIEF` | Parse the Delegation Brief. Extract target files, expected hotspots, verification commands. | Executor MUST echo back the brief's scope before starting. |
+| `APPLY_DIFF` | Apply the code changes specified in the brief. | Only files listed in the brief may be modified. |
+| `VERIFY` | Run the 3-command verification pipeline (§26.3). | Must run ALL three commands — partial verification is not a PASS. |
+| `DIAGNOSE` | Read the error output. Classify as: (a) type error in modified file, (b) test regression, (c) import/dependency issue, (d) architectural mismatch. | Diagnosis must be logged in the Self-Healing Report. |
+| `PATCH` | Apply a targeted fix to resolve the diagnosed error. | **Anti-Corruption Shield (§26.2) is enforced.** Only files from the original brief's scope may be patched. |
+| `PACKAGE_DIFF` | All verifications green. Run `node scripts/generateLivingDocs.js` (if exists). Format the final diff for Gatekeeper review. | Include `git diff --stat` in the report. |
+| `ESCALATE` | Max retries exhausted OR anti-corruption constraint violated. | Must return full diagnostic trace. Executor MUST NOT attempt further fixes. |
+
+### Loop Limits
+
+| Parameter | Value | Rationale |
+|---|---|---|
+| `MAX_RETRIES` | **3** (1 initial apply + 2 self-healing retries) | First retry resolves immediate type errors. Second retry catches secondary imports/signature mismatches. If iteration 3 fails, the issue is structural — escalate. |
+| `MAX_DIFF_GROWTH` | **2× original brief scope** | If the patch surface exceeds double the files listed in the Delegation Brief, the fix is architecturally out-of-scope — escalate. |
+| `ESCALATION_TRIGGER` | Iteration 3 fails OR Protected Component touched OR test file modification attempted | Any of these conditions triggers immediate escalation — no further retries. |
+
+## 26.2 The Anti-Corruption & Invariant Shield
+
+These are **hard constraints** — violation of ANY triggers immediate `ESCALATE` with an incident flag.
+
+### 26.2.1 Test File Write-Lock
+
+> `🔒 INVARIANT: *.test.tsx, *.test.ts, *.spec.tsx, *.spec.ts files are READ-ONLY during self-healing loops UNLESS the original Delegation Brief explicitly includes "modify tests" in its scope.`
+
+**Why:** The most common agent anti-pattern is "fixing" a failing test by weakening the assertion. A test that passes because it asserts nothing is worse than a test that fails honestly.
+
+### 26.2.2 Protected Component Registry Write-Lock
+
+> `🔒 INVARIANT: During PATCH state, the executor MUST NOT modify any file listed in the Protected Component Registry (§22.2). If the diagnosis determines that a Protected Component must change to resolve the error, the executor MUST ESCALATE immediately.`
+
+### 26.2.3 Rule 7 Non-Degradation Enforcement
+
+> `🔒 INVARIANT: The executor MUST NOT, during any self-healing iteration:`
+> - Delete any button, control, or interactive element
+> - Remove any `data-hotspot-id` attribute
+> - Delete or weaken any `expect()` / `assert()` call
+> - Remove any import that was present before the brief was applied
+> - Compress or collapse UI elements to "simplify" a layout error
+>
+> `If the executor detects it would need to remove UI elements to achieve a green build, it MUST ESCALATE.`
+
+### 26.2.4 Diff Surface Audit
+
+After each `PATCH` iteration, the executor MUST run `git diff --stat HEAD` and verify:
+- Only files from the original brief's scope are modified
+- No Protected Components appear in the diff
+- No test files appear in the diff (unless brief-authorised)
+
+If any violation is detected → immediate `ESCALATE`.
+
+## 26.3 Tiered Verification Pipeline
+
+### Inner Self-Healing Loop (Tier-3 Executor, Max 3 Iterations)
+
+The executor MUST run these commands **in order**. All three must pass for an "unambiguous green":
+
+**Step 1 — Type Safety (~3-5s):**
+```bash
+node node_modules/typescript/bin/tsc --noEmit
+```
+- **PASS:** Exit code 0, no output
+- **FAIL:** Any type error output → enter `DIAGNOSE`
+
+**Step 2 — Targeted Test Suite:**
+```bash
+node --experimental-vm-modules node_modules/vitest/vitest.mjs run [target_test_file]
+```
+- `[target_test_file]` is specified in the Delegation Brief (default: `src/test/studio_fixes.test.tsx`)
+- **PASS:** All tests pass, exit code 0
+- **FAIL:** Any test failure → enter `DIAGNOSE`
+
+**Step 3 — Diff Surface Audit:**
+```bash
+git diff --stat HEAD
+```
+- **PASS:** Only files from brief scope appear + no Protected Components + no test files (unless authorised)
+- **FAIL:** Unexpected files in diff → immediate `ESCALATE`
+
+### Gatekeeper Integration Step (Tier-2, before `git push origin dev`)
+
+These run ONCE after the executor returns a GREEN report — the Gatekeeper runs them before pushing:
+
+```bash
+node scripts/generateLivingDocs.js          # Documentation manifest
+npm run build                                # Full Next.js SSR build (60-90s)
+node --experimental-vm-modules node_modules/vitest/vitest.mjs run src/test/studio_fixes.test.tsx
+```
+
+> **Note:** `npm run build` is reserved for Gatekeeper validation and briefs modifying `src/app/**` (routing, middleware, SSR layouts). It is NOT run during the inner self-healing loop due to 60-90s overhead per iteration.
+
+### False-Positive Detection
+
+An "unambiguous green" requires:
+- `tsc` exit code 0 with **empty stderr**
+- `vitest` reports **X passed (X)** with zero failures, zero skipped
+- `git diff --stat` shows **only brief-scoped files**
+
+If vitest reports "0 tests" or shows skipped tests that previously passed, this is a **false-positive** — the executor MUST flag this in the Self-Healing Report.
+
+## 26.4 Self-Healing Report Templates
+
+### On SUCCESS (✅ GREEN)
+
+The executor MUST return this format to the Gatekeeper:
+
+```markdown
+## 🔧 Self-Healing Report
+
+| Field | Value |
+|---|---|
+| **Brief** | MW-XXX: [brief title] |
+| **Iterations** | N/3 |
+| **Status** | ✅ GREEN |
+| **Files Modified** | `path/to/file.ts`, `path/to/other.tsx` |
+
+### Initial Error (Iteration 1)
+[exact error output from tsc or vitest]
+
+### Resolution Applied
+[1-2 sentence description of the fix]
+
+### Final Verification
+- `tsc --noEmit`: ✅ exit 0
+- `vitest run [file]`: ✅ X/X passed
+- `git diff --stat`: ✅ [N] files changed, [+X] insertions, [-Y] deletions
+
+### Diff Summary
+[output of git diff --stat HEAD]
+```
+
+### On FAILURE (❌ ESCALATED)
+
+```markdown
+## 🚨 Self-Healing ESCALATION
+
+| Field | Value |
+|---|---|
+| **Brief** | MW-XXX: [brief title] |
+| **Iterations Used** | 3/3 (EXHAUSTED) |
+| **Escalation Reason** | [max retries / protected component / test modification needed] |
+
+### Diagnostic Trace
+[full error output from final iteration]
+
+### Executor Analysis
+[What the executor believes the root cause is and why it cannot resolve it within scope]
+
+### Recommended Tier-2 Action
+[Specific suggestion for what Sonnet/Opus should investigate]
+```
+
+## 26.5 Delegation Brief Amendment
+
+All Delegation Briefs (written by Opus/Sonnet) MUST now include a **Verification Scope** block:
+
+```markdown
+### Verification Scope
+- **Target test file:** src/test/studio_fixes.test.tsx
+- **Test modification authorised:** NO
+- **Protected Components in scope:** [list or NONE]
+- **Expected green count:** 123/123
+```
+
+This gives the executor clear boundaries for the self-healing loop.
+
+## 26.6 Gatekeeper Post-Receipt Triage
+
+When the Gatekeeper (Sonnet) receives a Self-Healing Report:
+
+| Report Status | Gatekeeper Action |
+|---|---|
+| ✅ GREEN with `1/3` iterations | Fast-track approve — run Gatekeeper Integration Step (§26.3) and push |
+| ✅ GREEN with `2/3` iterations | Standard review — inspect the patch diff before approve |
+| ✅ GREEN with `3/3` iterations | Full diff review — examine every changed line before approve |
+| ❌ ESCALATED | Route to Opus for architectural diagnosis — do NOT attempt fix at Sonnet tier |
