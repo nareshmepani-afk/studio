@@ -2709,8 +2709,7 @@ describe('Studio Regression Tests', () => {
       expect(source).toContain('__mwPrintGuard');
       expect(source).toContain("(window as any).__mwPrintGuard = true");
       expect(source).toContain('afterprint');
-      // Download function must exist
-      expect(source).toContain('downloadAutobiographyAsHtml');
+      // MW-167: downloadAutobiographyAsHtml removed — consolidated into Print/Save PDF
       // window.open must only exist as fallback, not primary
       expect(source).toContain('// Fallback');
 

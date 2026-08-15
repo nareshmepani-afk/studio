@@ -612,34 +612,3 @@ export function downloadFusedAutobiography(memory: Memory, userEmail?: string) {
   }
 }
 
-/**
- * Downloads the heirloom booklet as a self-contained HTML file.
- */
-export function downloadAutobiographyAsHtml(memory: Memory, userEmail?: string) {
-  if (typeof window === 'undefined') return;
-
-  const htmlContent = generateAutobiographyHtml(memory, userEmail);
-  const effectiveEmail = (userEmail || (memory as any).userEmail || '').trim();
-  const safeEmail = effectiveEmail.replace(/[^a-zA-Z0-9@._-]/g, '');
-  const safeTitle = (memory.title || 'MemoryWeaverBooklet')
-    .replace(/[^a-z0-9_\-\s]/gi, '')
-    .replace(/\s+/g, '_')
-    .slice(0, 60);
-
-  const filename = safeEmail ? `${safeEmail}_${safeTitle}_booklet.html` : `${safeTitle}_booklet.html`;
-
-  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.style.cssText = 'position:fixed;top:-9999px;left:-9999px;';
-  document.body.appendChild(anchor);
-  anchor.click();
-
-  requestAnimationFrame(() => {
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
-  });
-}
