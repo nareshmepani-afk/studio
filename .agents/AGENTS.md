@@ -194,13 +194,16 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 ## Core Principle
 **Claude Sonnet (Thinking) is the Production Gatekeeper.** Gemini Flash models are capable Executors for bounded tasks but MUST NOT make autonomous architectural decisions on files listed in the Protected Component Registry.
 
-## 22.1 The Three Roles
+## 22.1 The Four Roles
 
 | Role | Model | Responsibilities |
 |---|---|---|
-| 🏛️ **Architect / Gatekeeper** | Claude Sonnet (Thinking) | Plans, reviews diffs, approves changes, issues final `git commit` on Protected Components, audits regressions, writes this ruleset |
-| ⚙️ **Executor** | Gemini Flash (High / Thinking) | Executes bounded, clearly scoped tasks with explicit success criteria. May commit on non-protected files only. |
+| 🏛️ **Architect** | Claude Opus (Thinking) | Systemic root-cause analysis, pre-execution brainstorming, architectural decisions, writing / amending rules in `.agents/`. Use *before* code changes when the problem is poorly understood. |
+| 🔰 **Gatekeeper** | Claude Sonnet (Thinking) | Plans diffs, reviews changes, issues final `git commit` on Protected Components, audits regressions post-Flash-delegation, day-to-day Gatekeeper. **First gate for all questions.** |
+| ⚙️ **Executor** | Gemini Flash (High / Thinking) | Executes bounded, clearly scoped tasks with explicit success criteria. May commit on non-protected files only. Requires Delegation Brief. |
 | 🔍 **Reader** | Gemini Flash (Low) | Research, file reading, grep searches, status checks, `tsc` / `vitest` output reading. Zero code writes. |
+
+> 📌 **Version Policy**: Rules reference model *families*, not version numbers (e.g. `Claude Sonnet (Thinking)`, not `Claude Sonnet 4.6`). This keeps the ruleset evergreen as model versions update.
 
 ## 22.2 Protected Component Registry
 

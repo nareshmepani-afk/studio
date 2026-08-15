@@ -85,20 +85,22 @@ If the task is ambiguous or underspecified, ask the user for clarification BEFOR
 
 ## Step 3: Model Tier Mapping
 
-| Tier | Primary Model | Alternate | Role |
-|---|---|---|---|
-| 💚 Low | Gemini 3.7 Flash (Low) | Gemini 3.7 Flash (High) | 🔍 Reader only — no code writes |
-| 💛 Medium | Gemini 3.7 Flash (Low) | Gemini 3.7 Flash (High) | ⚙️ Executor — non-Protected files only |
-| 🟠 High | Gemini 3.7 Flash (High / Thinking) | Gemini 3.7 Pro | ⚙️ Executor — with Delegation Brief |
-| 🔴 Premium | **Claude Sonnet 4.6 (Thinking)** | Claude Opus 4.6 (Thinking) | 🏛️ **Gatekeeper** — Protected Components |
-| 🟣 Ultra | **Claude Sonnet 4.6 (Thinking)** / Claude Opus 4.6 | — | 🏛️ **Architect** — Architecture & rules |
+| Tier | Model | Role |
+|---|---|---|
+| 💚 Low | Gemini Flash (Low) | 🔍 Reader only — no code writes |
+| 💛 Medium | Gemini Flash (Low / Medium) | ⚙️ Executor — non-Protected files only |
+| 🟠 High | Gemini Flash (High / Thinking) | ⚙️ Executor — with Delegation Brief (Rule 22.5) |
+| 🔴 Premium | **Claude Sonnet (Thinking)** | 🏛️ **Gatekeeper** — Protected Components, final commits, diff audits |
+| 🟣 Ultra | **Claude Opus (Thinking)** | 🏛️ **Architect** — Systemic root-cause, deep refactors, rule authoring, pre-execution brainstorming |
 
-> ⚠️ **MW-163 Lesson**: Gemini 3.7 Flash (High) is capable but lacks the deep Rule 7 awareness needed for Protected Components. Always use a Delegation Brief (Rule 22.5) when offloading to Flash. Flash may never autonomously edit `SoloStage.tsx`, `studio_fixes.test.tsx`, `autobiographyExporter.ts`, or any `.agents/` file.
+> ⚠️ **MW-163 Lesson**: Gemini Flash (High) is capable but lacks the deep Rule 7 awareness needed for Protected Components. Always use a Delegation Brief (Rule 22.5) when offloading to Flash. Flash may never autonomously edit `SoloStage.tsx`, `studio_fixes.test.tsx`, `autobiographyExporter.ts`, or any `.agents/` file.
+
+> 📌 **Version Policy**: Rules reference model *families*, not version numbers (e.g. `Claude Sonnet (Thinking)`, not `Claude Sonnet 4.6`). This keeps rules evergreen as versions update.
 
 ---
 
 ## Automatic Model Detection Capability
-- **Zero-Manual-Notification Mode**: The agent automatically inspects the active session metadata and runtime context on every turn to detect the currently selected model (`Gemini 3.7 Flash (High)`, `Gemini 3.7 Flash (Low)`, `Gemini 3.7 Pro`, etc.) without requiring the user to manually announce model switches.
+- **Zero-Manual-Notification Mode**: The agent automatically inspects the active session metadata and runtime context on every turn to detect the currently selected model (`Gemini Flash (High)`, `Gemini Flash (Low)`, `Claude Sonnet (Thinking)`, `Claude Opus (Thinking)`) without requiring the user to manually announce model switches.
 - **Dynamic Pre-Gate Echo**: The pre-gate statement dynamically resolves to the exact active model detected from session metadata.
 
 ---
@@ -195,12 +197,13 @@ and MemoryForm requires deep reasoning and multi-file analysis.
 > [full optimised prompt]
 ```
 
-### Example 3: User on Sonnet asks "BRAINSTORM a new feature"
+### Example 3: User on Sonnet (Thinking) asks "BRAINSTORM a new feature"
 ```
 🔀 Model Route Advisory
 Current Model: Claude Sonnet (Thinking)
 Recommended Model: 🟣 Claude Opus (Thinking)
-Reason: Creative architectural brainstorming benefits from Opus's deeper reasoning.
+Reason: Creative architectural brainstorming benefits from Opus's deeper reasoning
+and is ideal before committing to any code changes.
 
 ### Ready-to-Paste Prompt
 > ## Task: Brainstorm [feature area]...
