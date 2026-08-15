@@ -2608,19 +2608,17 @@ describe('Studio Regression Tests', () => {
       expect(getScrollbarWidth('custom-scrollbar')).toBe(10);
     });
 
-    it('MW-132 ACT V MASTER STUDIO CONSOLE SHIELD: verifies 4-tier hierarchy, Print+Download+Share export actions, and hotspot bindings', () => {
+    it('MW-132 ACT V MASTER STUDIO CONSOLE SHIELD: verifies 4-tier hierarchy, Print/Save PDF + Share export actions, and hotspot bindings', () => {
       const masterConsoleHotspots = [
         'HS_ACT5_VIEW_PREMIERE_BTN',
         'HS_ACT5_LIVING_ROOM_PREMIERE_BTN',
         'HS_ACT5_PRINT_AUTOBIOGRAPHY_BTN',
-        'HS_ACT5_DOWNLOAD_AUTOBIOGRAPHY_BTN',
         'HS_ACT5_SHARE_LINK_BTN'
       ];
 
       expect(masterConsoleHotspots).toContain('HS_ACT5_VIEW_PREMIERE_BTN');
       expect(masterConsoleHotspots).toContain('HS_ACT5_LIVING_ROOM_PREMIERE_BTN');
       expect(masterConsoleHotspots).toContain('HS_ACT5_PRINT_AUTOBIOGRAPHY_BTN');
-      expect(masterConsoleHotspots).toContain('HS_ACT5_DOWNLOAD_AUTOBIOGRAPHY_BTN');
       expect(masterConsoleHotspots).toContain('HS_ACT5_SHARE_LINK_BTN');
 
       const consoleLayout = {
@@ -2628,17 +2626,16 @@ describe('Studio Regression Tests', () => {
         liveBadge: '4K MASTERED',
         tier1Hero: 'Launch Fullscreen Premiere',
         tier2Secondary: 'Start Living Room TV Premiere',
-        // RULE 7: 3 distinct export actions must exist — Print PDF, Download, Share & QR
-        tier3Exports: ['Print PDF', 'Download', 'Share & QR'],
+        // MW-167: Consolidated from 3 to 2 export actions — Print/Save PDF + Share & QR
+        tier3Exports: ['Print / Save PDF', 'Share & QR'],
         footer: '← Return to Studio Slate'
       };
 
       expect(consoleLayout.title).toBe('🎬 MASTERING CONSOLE');
       expect(consoleLayout.liveBadge).toBe('4K MASTERED');
-      // RULE 7 NON-DEGRADATION ASSERTION: All 3 export actions must exist
-      expect(consoleLayout.tier3Exports).toHaveLength(3);
-      expect(consoleLayout.tier3Exports).toContain('Print PDF');
-      expect(consoleLayout.tier3Exports).toContain('Download');
+      // MW-167: 2 export actions after Download consolidation
+      expect(consoleLayout.tier3Exports).toHaveLength(2);
+      expect(consoleLayout.tier3Exports).toContain('Print / Save PDF');
       expect(consoleLayout.tier3Exports).toContain('Share & QR');
     });
 
@@ -2674,22 +2671,13 @@ describe('Studio Regression Tests', () => {
     // NOT static string constants. They would have caught MW-156.
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    it('MW-156 BEHAVIORAL CONTRACT: handleDownloadPackage SOURCE AUDIT — must call downloadAutobiographyAsHtml (not JSON download) and handlePrintAutobiography must call downloadFusedAutobiography in SoloStage.tsx', async () => {
+    it('MW-156 BEHAVIORAL CONTRACT: handlePrintAutobiography SOURCE AUDIT — must call downloadFusedAutobiography with iframe print pipeline in SoloStage.tsx', async () => {
       const fs = await import('fs');
       const path = await import('path');
       const sourceFile = path.resolve(process.cwd(), 'src/components/studio/SoloStage.tsx');
       const source = fs.readFileSync(sourceFile, 'utf-8');
 
-      // Enforce: handleDownloadPackage (Download button) must call downloadAutobiographyAsHtml
-      const downloadHandlerMatch = source.match(/const handleDownloadPackage\s*=\s*\(\)\s*=>\s*\{([\s\S]+?)\};/);
-      expect(downloadHandlerMatch).not.toBeNull();
-      if (downloadHandlerMatch) {
-        expect(downloadHandlerMatch[0]).toContain('downloadAutobiographyAsHtml');
-        expect(downloadHandlerMatch[0]).not.toContain('JSON.stringify');
-        expect(downloadHandlerMatch[0]).not.toContain('new Blob');
-      }
-
-      // Enforce: handlePrintAutobiography (Print button) must call downloadFusedAutobiography
+      // Enforce: handlePrintAutobiography (Print/Save PDF button) must call downloadFusedAutobiography
       const printHandlerMatch = source.match(/const handlePrintAutobiography\s*=\s*\(\)\s*=>\s*\{([\s\S]+?)\};/);
       expect(printHandlerMatch).not.toBeNull();
       if (printHandlerMatch) {
@@ -2698,9 +2686,8 @@ describe('Studio Regression Tests', () => {
         expect(printHandlerMatch[0]).toContain('afterprint');
       }
 
-      // RULE 7: Both print and download hotspot IDs must exist in source
+      // MW-167: Download button consolidated into Print — only Print + Share hotspots required
       expect(source).toContain('HS_ACT5_PRINT_AUTOBIOGRAPHY_BTN');
-      expect(source).toContain('HS_ACT5_DOWNLOAD_AUTOBIOGRAPHY_BTN');
       expect(source).toContain('HS_ACT5_SHARE_LINK_BTN');
     });
 

@@ -145,11 +145,13 @@ export function generateAutobiographyHtml(memory: Memory, userEmail?: string): s
 
     .poster-top-badge {
       position: absolute;
-      top: 20px;
+      top: 0;
       left: 0;
       right: 0;
+      padding: 20px 0 50px;
       text-align: center;
       z-index: 10;
+      background: linear-gradient(to bottom, #020617, rgba(2,6,23,0.7), transparent);
     }
 
     .poster-top-badge span {
