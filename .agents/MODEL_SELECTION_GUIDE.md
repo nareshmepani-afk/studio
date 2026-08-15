@@ -83,15 +83,17 @@ If the task is ambiguous or underspecified, ask the user for clarification BEFOR
 
 ---
 
-## Step 3: Model Tier Mapping (Gemini 3.7 Upgrade)
+## Step 3: Model Tier Mapping
 
-| Tier | Primary Model | Alternate (if overloaded) |
-|---|---|---|
-| 💚 Low | Gemini 3.7 Flash (Low) | Gemini 3.7 Flash (High) |
-| 💛 Medium | Gemini 3.7 Flash (Low) | Gemini 3.7 Flash (High) |
-| 🟠 High | Gemini 3.7 Flash (High / Thinking) | Gemini 3.7 Pro |
-| 🔴 Premium | Gemini 3.7 Pro / Claude Sonnet 4.6 (Thinking) | Claude Opus 4.6 (Thinking) |
-| 🟣 Ultra | Gemini 3.7 Pro (Deep Thinking) / Claude Opus 4.6 | Claude Sonnet 4.6 (Thinking) |
+| Tier | Primary Model | Alternate | Role |
+|---|---|---|---|
+| 💚 Low | Gemini 3.7 Flash (Low) | Gemini 3.7 Flash (High) | 🔍 Reader only — no code writes |
+| 💛 Medium | Gemini 3.7 Flash (Low) | Gemini 3.7 Flash (High) | ⚙️ Executor — non-Protected files only |
+| 🟠 High | Gemini 3.7 Flash (High / Thinking) | Gemini 3.7 Pro | ⚙️ Executor — with Delegation Brief |
+| 🔴 Premium | **Claude Sonnet 4.6 (Thinking)** | Claude Opus 4.6 (Thinking) | 🏛️ **Gatekeeper** — Protected Components |
+| 🟣 Ultra | **Claude Sonnet 4.6 (Thinking)** / Claude Opus 4.6 | — | 🏛️ **Architect** — Architecture & rules |
+
+> ⚠️ **MW-163 Lesson**: Gemini 3.7 Flash (High) is capable but lacks the deep Rule 7 awareness needed for Protected Components. Always use a Delegation Brief (Rule 22.5) when offloading to Flash. Flash may never autonomously edit `SoloStage.tsx`, `studio_fixes.test.tsx`, `autobiographyExporter.ts`, or any `.agents/` file.
 
 ---
 

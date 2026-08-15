@@ -92,101 +92,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Mandatory Spelling Mappings**:
   - `Color` -> `Colour` (`Colour Grade Filter`, `Colour Grading`, `Colour Tint`, `Colour Styling`)
   - `Favorite` -> `Favourite`
-# Rule: Systematic Probing & Diagnostic Discipline
 
-When encountering deployment, routing, or environment errors (e.g., 403, 404, 500, TLS/Auth failures), the agent must proceed strictly step-by-step through a bottom-up network and permission validation sequence before proposing code modifications or configuration writes:
-
-## 1. Trace the Error Source
-- Distinguish between Edge errors (e.g., GFE headers like "x-served-by" or server name headers) and application-layer exceptions.
-- Execute lightweight fetch/curl scripts mapping the exact headers and caching controls of the failing request.
-
-## 2. Test One Variable at a Time
-- Never attempt to fix credentials, routing, and code paths simultaneously.
-- Isolate the layers in this exact sequence:
-  1. DNS Propagation (nslookup/host checks)
-  2. TLS Handshake & SSL Certificates (verify active Cert subject/expiration)
-  3. Edge Routing and Domain Mapping (check mappings across staging/prod panels)
-  4. Ingress & IAM invoker permissions (verify Cloud Run access controls)
-  5. Application logic/environment variables
-
-## 3. Verify Every Assumption Programmatically
-- Write local scratch scripts to parse JSON configurations, environment flags, and active API tokens rather than predicting behaviour.
-- Validate that the staging and production contexts are completely isolated from one another before deploying changes.
-
-## 4. Zero Guessing & Native Diagnostics
-- Never guess the presence of system tools (like `gcloud` or `firebase` CLI) in the development shell.
-- When querying remote platform status, inspect active config directories (`~/.config/configstore/firebase-tools.json`) programmatically.
-- Avoid calling Node `fetch` on Windows development runtimes for token or log requests to prevent network engine crashes (`UV_HANDLE_CLOSING`). Instead, construct clean payload requests using Node's native `https` module.
-
-## 5. Staging-First Public Testing Protocol
-- Because of backend dependencies, all validation testing must be verified using the public staging environment (`dev.memoryweaver.studio`).
-- When changes are made, run validation locally first, commit and push to `dev` branch, and monitor the build pipeline progress.
-- Explicitly notify the user when the App Hosting staging build starts, clarify that build propagation takes 2–3 minutes, and instruct them to refresh `dev.memoryweaver.studio` to test the live updates.
-
-## 6. Telemetry & Analytics Micro-Version Tracing Rule
-- **Dynamic Version & Commit SHA Binding**: Every client event payload dispatched must include the unified application version parameter with micro-build Git SHA tracing (e.g. `v1.1.0-beta-MW-71.85f8572b`).
-- **Code-Level Audit Trails**: Telemetry version strings must dynamically resolve the short Git commit SHA (`git rev-parse --short HEAD` or `NEXT_PUBLIC_COMMIT_SHA`) to transform telemetry logs into pinpoint line-by-line audit trails for instant root-cause correlation.
-
-## 7. Universal Non-Degradation & Explicit Feature Confirmation Rule
-- **Universal Non-Degradation Across All Features**: The agent must NEVER silently alter, downgrade, approximate, or remove ANY existing user-facing feature, control, visual feedback loop, or functional capability under any circumstances.
-- **Explicit User Intent Confirmation Requirement**: If a proposed architectural change, technical refactoring, hardware constraint, or layout adjustment carries ANY risk of altering, degrading, or disabling any existing user capability, the agent MUST explicitly consult the user, detail the trade-offs, and obtain direct confirmation before proceeding.
-- **Heideggerian First-Principles Probing**: Interfaces for physical performers (standing back from screens framing themselves) must maintain seamless *Zuhandenheit* (ready-to-hand immersion). Always engineer genuine underlying technical bridges (e.g. WebRTC loopbacks, shared buffers, or hardware multiplexing) rather than compromising the narrator's essential visual feedback loop.
-
-## 8. Zero-Footprint Telemetry & Layout Integrity Rule
-- **No Structural Wrapper Injection**: Never wrap existing layout blocks or components in new HTML wrapper elements (such as unstyled `div` tags) purely to capture events or clicks. Doing so alters the CSS flex/grid layout tree, collapsing parent-child dimensions and breaking user interfaces.
-- **Global Capturing Listeners**: For broad telemetry tracking, register capturing event listeners (e.g. `window.addEventListener('click', handler, { capture: true })`) non-invasively inside React hooks or `useEffect` blocks rather than modifying JSX structures.
-- **Mandatory Structural Assertions**: Any edits affecting component returns must be verified with automated unit tests asserting that active child nodes render and resolve successfully.
-
-## 9. Test-Driven Verification & Regression Shield
-- **Natural Test Instinct**: For every new feature created, bug fixed, or behavior modified, the agent must evaluate: *"Should an automated test be created to prevent future regressions of this behavior?"*
-- **Mandatory Test Generation**: If a fix addresses a layout breakdown, routing edge case, state rehydration failure, or logical bug, a regression test MUST be added to verify that specific boundary condition remains correct and cannot break silently in future code changes.
-
-## 11. Spoken Monologue Integrity & Mandatory Post-Processing Regex Sanitization
-- **Probabilistic Prompt Guard**: LLM prompts alone are probabilistic and can hallucinate banned screenplay directives (e.g., `"Cut to a frame of..."`, `"The lens zooms..."`, `"Wide shot"`, `[Fade in]`) if prompts mention terms like "filmic" or "treatment".
-- **Mandatory Server-Side Sanitizer**: All narrative text synthesis functions (e.g. `expandWithAI`, `polishDescription`, `checkAndPolishGrammar`) MUST run generated output through a mandatory server-side regex sanitizer (`stripScreenplayCues`) to forcefully strip screenplay notes, camera movements, and stage directions before returning data to client state or UI.
-- **Prompt Tone Compliance**: When prompting models for spoken monologues, strictly instruct "authentic first-person spoken monologue" and "sensory depth" rather than film/cinema terminology.
-
-## 12. Zero-Latency Optimistic UI & Async Handshake Decoupling
-- **No Async UI Blocking**: Never block visual UI transitions (e.g., hiding/revealing toolbars, closing modals, card selections) on asynchronous cloud database network calls (`await flush(...)`).
-- **Synchronous State Flipping**: State flags that govern UI visibility (`setIsReviewing(false)`, `setIsReviewingSensory(false)`, `setIsDirectorOpen(false)`) MUST be flipped synchronously on the user's click event (0ms latency), allowing the UI to react instantly while the network save (`flush()`) proceeds in parallel or background.
-- **Safety Timeout Reset**: Any local pending state flags (`isPending`) in persistent toolbars MUST include a safety reset timer (e.g. 5 seconds) to prevent visual lockouts if a network call stalls or fails.
-
-## 14. Story Hook Fallback & Text Preservation Hierarchy
-- **Strict Resolution Priority**: Whenever displaying, querying, or persisting a memory's active narrative text across dashboard cards, lightboxes, or pre-flight briefs, code MUST evaluate text fields in this exact priority order: `prose` > `originalHook` > `description`.
-- **Placeholder Masking Shield**: Code MUST NEVER render or persist static prompt template placeholders (e.g. *"Your birthplace, family roots..."*, *"Enter the core of your memory"*, *"Select a prompt to begin"*) when `prose` or `originalHook` contain authentic user-written text.
-- **Automatic Persistence Dual-Sync**: During `flush()` and `update()` operations, whenever a user edits `prose` in the Scriptorium, persistence hooks MUST automatically synchronize `description` to match `prose`, permanently preventing stale prompt placeholders from surviving in Firestore queries.
-
-# 15. Automated Plane.so Board Synchronization & Chat Ticket Lifecycle Rule
-- **Direct API Synchronization**: The agent MUST automatically verify active `PLANE_API_KEY`, `PLANE_WORKSPACE_SLUG`, and `PLANE_PROJECT_ID` tokens in `.env.local` before asking the user to manually manage backlog tickets.
-- **Automated Ticket Creation & State Transitioning**: Whenever a new architectural decision or bug fix is finalized, the agent programmatically invokes `node scripts/plane.js create "Title" "Description"`.
-- **Interactive Chat-Driven Ticket Closure**: Following a fix, the agent MUST provide a step-by-step **Test Walkthrough Protocol** for public staging (`dev.memoryweaver.studio`). Upon user sign-off (`Pass` or `Verified`), the agent MUST programmatically run `node scripts/plane.js close <issue_id_or_seq>` to mark the ticket as `Done`.
-- **Zero Workspace Root Pollution**: The agent MUST NEVER write temporary `.js` or `.ts` scratch files into the user's project workspace directory (`C:\Users\home\studio`). All transient scripts must strictly reside inside the artifact scratch directory or execute via permanent project scripts (`scripts/plane.js`).
-
-# 16. Mandatory Production-Ready Audit & Retrospective Rule
-- **Mandatory Audit Structure**: Upon completing ANY bug fix, feature modification, or architectural refactoring, the agent MUST include a structured **Production-Ready Audit & Retrospective** in its final response.
-- **Required Retrospective Sections**:
-  1. **Root Cause & Traceability Audit**: Exact failure mechanism, line numbers, state flags, and flawed assumptions.
-  2. **Technical Fix & Architecture Audit**: File-by-file changes, state impact, and layout integrity assertions.
-  3. **Technical Retrospective**: Systemic analysis of why the bug occurred and the preventative guardrail implemented.
-  4. **Automated Regression Shield**: Concrete output from `tsc --noEmit` and `vitest` unit tests.
-  5. **Plane.so Auto-Sync**: Confirmation of ticket creation/update via Rule 15.
-
-# 17. Proactive Ideation & Architectural Suggestions Rule
-- **Continuous Pair Programming Collaboration**: The agent MUST proactively suggest creative product features, UX improvements, performance optimizations, and architectural enhancements during pair programming sessions.
-- **Milestone & Context-Driven Brainstorming**: Upon completing key bug fixes, deploy milestones, or feature implementations, the agent will present 2–3 actionable, high-craft suggestions (e.g. Teleprompter pace visualizer, story spark prompt drawers, AI movie poster synthesis) to continuously elevate the user experience.
-
-# 18. Direct Event Prop Binding vs DOM Selector Reliance Rule
-- **Direct Function Passing**: The agent MUST NEVER rely on DOM string queries (e.g., `document.querySelector('button.bg-emerald-500')`) or class-name selector matching to trigger primary workflow actions, modal closures, or stage transitions.
-- **Explicit Prop Contracts**: All child components (e.g. `Scriptorium`, `SelectionDeck`, `ScriptLightBox`) MUST receive direct function props (`onNext`, `onBackToEditor`, `onSelect`) from parent containers. Handlers MUST invoke these function props directly, providing 100% type-safe, DOM-decoupled control flow.
-
-# 19. Maximum Evidence Gathering & Mandatory Screenshot Protocol
-- **Mandatory Screenshot & Log Requirement**: For any UI transition, visual layout, or rendering bug, the agent MUST **INSIST** on receiving a live screenshot alongside full console log traces BEFORE proposing or applying code fixes.
-- **Zero-Guesswork Mandate**: The agent MUST NEVER fill in missing behavioral blanks, assume visual component behavior, or prematurely declare a bug resolved without verifying the exact rendered DOM state alongside the user.
-# 20. Mandatory UK English Orthography Standard
-- **Strict UK English Across All User-Facing UI**: All user-facing UI labels, headers, tooltips, buttons, modals, and notifications MUST strictly use British English (UK) spelling and orthography.
-- **Mandatory Spelling Mappings**:
-  - `Color` -> `Colour` (`Colour Grade Filter`, `Colour Grading`, `Colour Tint`, `Colour Styling`)
-  - `Favorite` -> `Favourite`
   - `Center` -> `Centre` (`Prompter Centre`)
   - `Theater` -> `Theatre` (`Theatre View`)
   - `Realize` -> `Realise`
@@ -280,3 +186,97 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Ask if Ambiguous**: If the task is underspecified, ask the user for clarification BEFORE routing or executing.
 - **Never Route Down**: If the user is on a higher-tier model and asks a simple question, answer it directly. Only route UP when complexity exceeds current capabilities.
 - **Full Decision Matrix & Prompt Template**: See `.agents/MODEL_SELECTION_GUIDE.md` for the complete protocol, tier definitions, prompt writing guidelines, and user style profile.
+
+# 22. Model Gate & Delegation Protocol (Incident Prevention Rule)
+
+> **Origin**: Codified after MW-163 incident (2026-08-15) in which Gemini 3.7 Flash High violated Rule 7 by collapsing three separate export buttons (Print PDF, Download, Share & QR) into one, passing a Vitest suite that had insufficiently specific assertions.
+
+## Core Principle
+**Claude Sonnet (Thinking) is the Production Gatekeeper.** Gemini Flash models are capable Executors for bounded tasks but MUST NOT make autonomous architectural decisions on files listed in the Protected Component Registry.
+
+## 22.1 The Three Roles
+
+| Role | Model | Responsibilities |
+|---|---|---|
+| 🏛️ **Architect / Gatekeeper** | Claude Sonnet (Thinking) | Plans, reviews diffs, approves changes, issues final `git commit` on Protected Components, audits regressions, writes this ruleset |
+| ⚙️ **Executor** | Gemini Flash (High / Thinking) | Executes bounded, clearly scoped tasks with explicit success criteria. May commit on non-protected files only. |
+| 🔍 **Reader** | Gemini Flash (Low) | Research, file reading, grep searches, status checks, `tsc` / `vitest` output reading. Zero code writes. |
+
+## 22.2 Protected Component Registry
+
+The following files contain irreplaceable user-facing contracts. **Gemini Flash MUST NOT make autonomous edits to these files without an explicit, line-numbered diff reviewed by Claude Sonnet (Thinking) first:**
+
+| File | Protection Reason |
+|---|---|
+| `src/components/studio/SoloStage.tsx` | Act V Master Console. Contains all export hotspot IDs and the 4-tier button hierarchy. Any JSX deletion is a Rule 7 violation. |
+| `src/components/studio/ProductionDeck.tsx` | Core Act routing, state machine, auth guard. |
+| `src/utils/autobiographyExporter.ts` | PDF filename formatting, iframe print lifecycle, booklet HTML generation. |
+| `src/test/studio_fixes.test.tsx` | Regression shield. Weakening assertions is a silent regression vector. |
+| `src/components/studio/SelectionDeck.tsx` | Vision carousel and 5-card selection contracts. |
+| `src/components/studio/Scriptorium.tsx` | Prose editor with 1-prior-version undo and prose→description dual-sync. |
+| `src/components/studio/ScriptLightBox.tsx` | Script review modal with localStorage persistence and step contracts. |
+| `.agents/AGENTS.md` | This ruleset. Only amended by Claude Sonnet (Thinking). |
+| `.agents/MODEL_SELECTION_GUIDE.md` | Model routing policy. Only amended by Claude Sonnet (Thinking). |
+
+## 22.3 Delegation Rules (What Gemini Flash CAN Safely Do)
+
+Gemini Flash is excellent and should be used aggressively for:
+
+- ✅ **New utility functions** with no side effects (e.g., new helper in `src/utils/`)
+- ✅ **New API route files** (`src/app/api/*/route.ts`)
+- ✅ **New standalone components** that don't modify existing JSX trees
+- ✅ **CSS / Tailwind adjustments** on non-Protected files
+- ✅ **Running commands**: `tsc --noEmit`, `vitest run`, `git log`, `git diff`
+- ✅ **Research tasks**: reading files, grep searches, checking build logs
+- ✅ **Writing new Plane.so tickets** via `node scripts/plane.js create`
+- ✅ **Writing new test cases** (but NOT modifying existing shield assertions)
+- ✅ **Documentation updates** outside the `.agents/` directory
+
+## 22.4 Hard Lockouts for Gemini Flash
+
+Gemini Flash is **STRICTLY FORBIDDEN** from:
+
+- ❌ **Deleting, merging, or renaming any `data-hotspot-id` attribute** without an explicit user-approved diff
+- ❌ **Reducing the count of buttons or interactive elements** in any existing UI section
+- ❌ **Modifying `handlePrintAutobiography`, `handleDownloadPackage`, or `downloadFusedAutobiography`** filename logic
+- ❌ **Weakening a Vitest assertion** (e.g., changing `toHaveLength(3)` to `toHaveLength(2)`)
+- ❌ **Issuing `git push origin main` or `git push origin dev`** on Protected Component changes without Claude Sonnet (Thinking) reviewing the diff
+- ❌ **Modifying any file in the `.agents/` directory**
+- ❌ **Issuing a `git commit --no-verify`** on Protected Component edits
+
+## 22.5 The Handoff Protocol (How to Safely Delegate)
+
+When you (as user) need to offload to Gemini Flash, Claude Sonnet MUST first produce a **Delegation Brief** containing:
+
+```markdown
+## Delegation Brief for Gemini Flash
+
+**Task:** [Exact one-line description]
+**Tier:** ⚙️ Executor
+**Files Allowed to Edit:** [Explicit list — nothing else]
+**Files FORBIDDEN from Editing:** [Explicit list — Protected Components]
+
+### Exact Instructions
+[Step-by-step, with line numbers where possible]
+
+### Success Criteria (Vitest Assertions that Must Pass)
+- [ ] `tsc --noEmit` exits with code 0
+- [ ] [specific test name] passes
+- [ ] [hotspot ID X] exists in source
+
+### What NOT to Do
+- Do NOT delete or rename any existing button or hotspot ID
+- Do NOT reduce the count of [specific UI elements]
+- Do NOT modify [protected file]
+```
+
+## 22.6 Post-Delegation Audit (Claude Sonnet Responsibility)
+
+After Gemini Flash completes its task, Claude Sonnet (Thinking) MUST:
+1. Run `git diff HEAD~1` to inspect every line changed
+2. Verify no Protected Component was touched without authorisation
+3. Verify no `data-hotspot-id` was deleted
+4. Verify no Vitest assertion was weakened
+5. Only then issue final `git push origin dev`
+
+If any violation is found, Claude Sonnet MUST immediately revert with `git revert` and file a Plane.so incident ticket before proceeding.
