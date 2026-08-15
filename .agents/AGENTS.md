@@ -24,10 +24,12 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - When querying remote platform status, inspect active config directories (`~/.config/configstore/firebase-tools.json`) programmatically.
 - Avoid calling Node `fetch` on Windows development runtimes for token or log requests to prevent network engine crashes (`UV_HANDLE_CLOSING`). Instead, construct clean payload requests using Node's native `https` module.
 
-## 5. Staging-First Public Testing Protocol
-- Because of backend dependencies, all validation testing must be verified using the public staging environment (`dev.memoryweaver.studio`).
-- When changes are made, run validation locally first, commit and push to `dev` branch, and monitor the build pipeline progress.
-- Explicitly notify the user when the App Hosting staging build starts, clarify that build propagation takes 2–3 minutes, and instruct them to refresh `dev.memoryweaver.studio` to test the live updates.
+## 5. Staging-Only Public Testing Protocol (Zero Localhost)
+- **No Localhost Testing**: The agent MUST NEVER instruct the user to test on `localhost`, `127.0.0.1`, or any local development server. The application has backend dependencies (Firebase Auth, Firestore, Cloud Functions, App Hosting) that do not function correctly in local dev mode.
+- **Exclusive Staging URL**: ALL user-facing testing and validation MUST be performed exclusively on the public staging environment: **`https://dev.memoryweaver.studio/`**.
+- **Commit-Push-Test Workflow**: When changes are made, commit and push to the `dev` branch, then instruct the user to test on `dev.memoryweaver.studio` after the build propagates.
+- **Build Propagation Notification**: Explicitly notify the user when the App Hosting staging build starts, clarify that build propagation takes 2–3 minutes, and instruct them to hard-refresh (`Ctrl+Shift+R`) `dev.memoryweaver.studio` to test the live updates.
+- **Automated Verification**: The agent may use `tsc --noEmit` and `vitest run` locally for code correctness checks, but MUST NOT treat local execution as a substitute for staging validation.
 
 ## 6. Telemetry & Analytics Micro-Version Tracing Rule
 - **Dynamic Version & Commit SHA Binding**: Every client event payload dispatched must include the unified application version parameter with micro-build Git SHA tracing (e.g. `v1.1.0-beta-MW-71.85f8572b`).

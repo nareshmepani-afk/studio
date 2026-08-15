@@ -5526,7 +5526,7 @@ export default function SoloStage({
                      <button 
                        data-hotspot-id="HS_ACT5_PRINT_AUTOBIOGRAPHY_BTN"
                        onClick={handlePrintAutobiography}
-                       title="Print 2-Page Heirloom Booklet — select 'Save as PDF' in print dialog"
+                       title="Print your 2-page heirloom booklet"
                        className="w-full py-3 bg-slate-900/60 hover:bg-amber-500/10 border border-white/10 hover:border-amber-500/30 text-white/80 hover:text-amber-300 font-bold rounded-xl text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
                      >
                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
@@ -5539,7 +5539,7 @@ export default function SoloStage({
                      <button 
                        data-hotspot-id="HS_ACT5_DOWNLOAD_AUTOBIOGRAPHY_BTN"
                        onClick={handleDownloadPackage}
-                       title="Download booklet file — open in any browser & Ctrl+P to save as PDF"
+                       title="Download your heirloom booklet"
                        className="w-full py-3 bg-slate-900/60 hover:bg-emerald-500/10 border border-white/10 hover:border-emerald-500/30 text-white/80 hover:text-emerald-300 font-bold rounded-xl text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
                      >
                        <Download className="w-3.5 h-3.5 text-emerald-400" />
@@ -6099,7 +6099,7 @@ export default function SoloStage({
                       if (data) {
                         downloadFusedAutobiography(data as Memory);
                         toast.success('Generating Master Autobiography Keepsake...', {
-                          description: "Your 2-page heirloom document is ready! In the print window, select 'Save as PDF' to download or choose your printer to print.",
+                          description: "Your 2-page heirloom document is ready! In the print window, Choose your printer or select 'Save as PDF' to save a copy.",
                           duration: 6000,
                           dismissible: true
                         });
