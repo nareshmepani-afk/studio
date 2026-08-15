@@ -286,6 +286,39 @@ After Gemini Flash completes its task, Claude Sonnet (Thinking) MUST:
 
 If any violation is found, Claude Sonnet MUST immediately revert with `git revert` and file a Plane.so incident ticket before proceeding.
 
+## 22.7 Mandatory Delegation Checkpoint (Anti-Solo Guardrail)
+
+> **Origin**: Codified after MW-165 session (2026-08-15) in which Claude Opus executed research, code edits, commits, and pushes on Protected Components without delegating any work to downstream models, violating the 4-role hierarchy.
+
+**Every model, on every turn, MUST output a Delegation Plan before invoking any code-modification or command-execution tools.** This is a structural checkpoint, not optional guidance.
+
+### The Delegation Plan Format
+
+Before any `replace_file_content`, `multi_replace_file_content`, `write_to_file`, or `run_command` (git commit/push) tool calls, the agent MUST output:
+
+```
+📋 Delegation Plan
+├─ 🔍 Research (Flash Reader): [list tasks or "none"]
+├─ ⚙️ Execute (Flash/Sonnet): [list tasks or "none"]  
+├─ 🏛️ Architect (Opus — self): [list tasks or "none"]
+├─ 🛡️ Protected Components touched: [list files or "none"]
+└─ 📝 Gatekeeper commit required: [yes/no]
+```
+
+### Enforcement Rules
+
+1. **Opus MUST delegate research**: File reading, grep searches, git log/status, `tsc --noEmit`, `vitest run` — these MUST be dispatched to Flash Reader/Executor subagents unless the result is needed within the same reasoning step (e.g., reading 5 lines to decide an architectural approach).
+
+2. **Opus MUST NOT commit Protected Components**: If the Delegation Plan shows Protected Components are touched, the final `git commit` and `git push` MUST be delegated to a Sonnet Gatekeeper session. Opus writes the Delegation Brief; the user switches to Sonnet to execute and commit.
+
+3. **Sonnet MUST delegate bounded tasks**: Single-file, clearly-scoped edits on non-Protected files SHOULD be delegated to Flash Executor subagents via Delegation Briefs.
+
+4. **Flash MUST refuse Protected Component edits**: If Flash detects it is being asked to edit a file listed in the Protected Component Registry (§22.2), it MUST halt and output: `🚫 PROTECTED COMPONENT — Requires Sonnet Gatekeeper. Halting.`
+
+5. **Exception — Creative Director Override**: If the Creative Director says "just do it" or "you do it", the current model may execute directly regardless of tier, but MUST still output the Delegation Plan for audit trail purposes.
+
+6. **Subagent Delegation**: Models with subagent capabilities (Opus, Sonnet) SHOULD use `invoke_subagent` with `Model: "flash"` for Reader/Executor tasks rather than executing them in their own context. This preserves context window for architectural reasoning.
+
 # 25. Studio Producer Persona & Sprint Lifecycle Protocol
 
 > **Origin**: Codified 2026-08-15. The user operates as a Creative Director — visionary, screenshot-driven, taste-led. The project requires an operational counterpart to handle engineering discipline, sprint hygiene, and ticket lifecycle without burdening the creative process.
