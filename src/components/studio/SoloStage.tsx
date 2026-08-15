@@ -5293,10 +5293,10 @@ export default function SoloStage({
     </div>
   );
 
-  const handleDownloadPackage = () => {
-    // POSTER PRIORITY: cinema posterImageUrl (Firestore) MUST come first.
-    // localPosterUrl is a transient React state set from the narrator selfie/video-frame
-    // as an Act IV auto-anchor fallback. It must NOT override the actual cinema poster key art.
+  // ── PRINT: Opens system print dialog via hidden iframe (no page freeze) ─────
+  // Temporarily overrides parent document.title so Chrome's Save-as-PDF dialog
+  // suggests the correct filename, then restores it via the afterprint event.
+  const handlePrintAutobiography = () => {
     const bookletPosterUrl =
       data?.posterImageUrl ||
       (data as any)?.generatedPosterUrl ||
@@ -5304,11 +5304,46 @@ export default function SoloStage({
       localPosterUrl ||
       data?.imageUrl;
 
+    const userEmail = user?.email || (data as any)?.userEmail || (data as any)?.email || '';
+    // Set parent document.title — Chrome uses this as the suggested PDF filename
+    const originalTitle = document.title;
+    const safeTitle = (data?.title || 'Memory Weaver')
+      .replace(/[^a-zA-Z0-9\s-]/g, '')
+      .trim();
+    document.title = `${safeTitle} - Memory Weaver`;
+
+    // Restore title after print dialog closes (afterprint is more reliable than setTimeout)
+    window.addEventListener('afterprint', () => {
+      document.title = originalTitle;
+    }, { once: true });
+    // Safety fallback in case afterprint never fires
+    setTimeout(() => { document.title = originalTitle; }, 15000);
+
     downloadFusedAutobiography({
       ...data,
       prose: data?.prose || data?.originalHook || data?.description || selectedTake || '',
-      posterImageUrl: bookletPosterUrl
-    } as any);
+      posterImageUrl: bookletPosterUrl,
+      userEmail
+    } as any, userEmail);
+  };
+
+  // ── DOWNLOAD: Saves a self-contained HTML booklet file to disk ───────────
+  // The user can open it in any browser and use Ctrl+P → Save as PDF.
+  const handleDownloadPackage = () => {
+    const bookletPosterUrl =
+      data?.posterImageUrl ||
+      (data as any)?.generatedPosterUrl ||
+      (data as any)?.aiPosterUrl ||
+      localPosterUrl ||
+      data?.imageUrl;
+
+    const userEmail = user?.email || (data as any)?.userEmail || (data as any)?.email || '';
+    downloadAutobiographyAsHtml({
+      ...data,
+      prose: data?.prose || data?.originalHook || data?.description || selectedTake || '',
+      posterImageUrl: bookletPosterUrl,
+      userEmail
+    } as any, userEmail);
   };
 
   const renderShowcase = () => (
@@ -5474,36 +5509,51 @@ export default function SoloStage({
                    </button>
                  </div>
 
-                 {/* TIER 3: EXPORT GRID (2-COLUMN) */}
+                 {/* TIER 3: EXPORT ACTIONS — Print PDF + Download PDF (2-column) */}
                  <div className="grid grid-cols-2 gap-2 pt-1">
                    <div className="relative w-full">
                      <MentorshipHotspot 
                        number={2} 
-                       label="Export Autobiography PDF" 
+                       label="Print Autobiography PDF" 
                        hotspotId="HS_ACT5_MENTOR_STEP2"
                        className="-top-3 -left-3" 
                      />
+                     {/* 🖨️ PRINT: Opens iframe print dialog — Chrome suggests title as filename */}
                      <button 
-                       data-hotspot-id="HS_ACT5_DOWNLOAD_AUTOBIOGRAPHY_BTN"
-                       onClick={handleDownloadPackage}
-                       title="Download & Print 2-Page Heirloom Booklet PDF"
-                       className="w-full py-3 bg-slate-900/60 hover:bg-emerald-500/10 border border-white/10 hover:border-emerald-500/30 text-white/80 hover:text-emerald-300 font-bold rounded-xl text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                       data-hotspot-id="HS_ACT5_PRINT_AUTOBIOGRAPHY_BTN"
+                       onClick={handlePrintAutobiography}
+                       title="Print 2-Page Heirloom Booklet — select 'Save as PDF' in print dialog"
+                       className="w-full py-3 bg-slate-900/60 hover:bg-amber-500/10 border border-white/10 hover:border-amber-500/30 text-white/80 hover:text-amber-300 font-bold rounded-xl text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
                      >
-                       <Download className="w-3.5 h-3.5 text-emerald-400" />
-                       Booklet PDF
+                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                       Print PDF
                      </button>
                    </div>
 
                    <div className="relative w-full">
+                     {/* 📥 DOWNLOAD: Saves self-contained HTML booklet — open & Ctrl+P to PDF */}
                      <button 
-                       data-hotspot-id="HS_ACT5_SHARE_LINK_BTN"
-                       onClick={() => setIsShareModalOpen(true)}
-                       className="w-full py-3 bg-slate-900/60 hover:bg-white/5 border border-white/10 text-white/80 font-bold rounded-xl text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer hover:border-white/20"
+                       data-hotspot-id="HS_ACT5_DOWNLOAD_AUTOBIOGRAPHY_BTN"
+                       onClick={handleDownloadPackage}
+                       title="Download booklet file — open in any browser & Ctrl+P to save as PDF"
+                       className="w-full py-3 bg-slate-900/60 hover:bg-emerald-500/10 border border-white/10 hover:border-emerald-500/30 text-white/80 hover:text-emerald-300 font-bold rounded-xl text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
                      >
-                       <Share2 className="w-3.5 h-3.5 text-white/70" />
-                       Share &amp; QR
+                       <Download className="w-3.5 h-3.5 text-emerald-400" />
+                       Download
                      </button>
                    </div>
+                 </div>
+
+                 {/* SHARE ROW — Full width below the 2-column export grid */}
+                 <div className="pt-1">
+                   <button 
+                     data-hotspot-id="HS_ACT5_SHARE_LINK_BTN"
+                     onClick={() => setIsShareModalOpen(true)}
+                     className="w-full py-3 bg-slate-900/60 hover:bg-white/5 border border-white/10 text-white/80 font-bold rounded-xl text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer hover:border-white/20"
+                   >
+                     <Share2 className="w-3.5 h-3.5 text-white/70" />
+                     Share &amp; QR
+                   </button>
                  </div>
 
                  {/* FOOTER ACTION */}
