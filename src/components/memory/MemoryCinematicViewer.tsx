@@ -302,7 +302,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
           {/* Back to Studio (Director Only) */}
           {isDirector && (
             <button
-              onClick={() => window.history.back()}
+              onClick={() => { window.location.href = `/studio/production/${memory.id}?act=5`; }}
               className="absolute top-6 left-6 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950/60 hover:bg-slate-950/80 text-white/60 hover:text-amber-400 transition-all backdrop-blur-md border border-white/10 text-[11px] font-mono uppercase tracking-wider cursor-pointer"
               title="Return to Studio"
             >
@@ -341,7 +341,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                 />
 
                 {/* CUSTOM STUDIO-STANDARD PLAYBACK SCRUBBER PILL OVERLAY */}
-                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[92%] max-w-xl bg-slate-950/90 border border-amber-500/30 rounded-2xl p-3 backdrop-blur-xl shadow-2xl flex items-center gap-3 z-40 transition-all opacity-90 group-hover:opacity-100">
+                <div className="absolute bottom-28 left-1/2 -translate-x-1/2 w-[92%] max-w-xl bg-slate-950/90 border border-amber-500/30 rounded-2xl p-3 backdrop-blur-xl shadow-2xl flex items-center gap-3 z-40 transition-all opacity-90 group-hover:opacity-100">
                   <button
                     type="button"
                     onClick={togglePlay}
