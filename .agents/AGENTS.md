@@ -599,3 +599,71 @@ When the Gatekeeper (Sonnet) receives a Self-Healing Report:
 | ✅ GREEN with `2/3` iterations | Standard review — inspect the patch diff before approve |
 | ✅ GREEN with `3/3` iterations | Full diff review — examine every changed line before approve |
 | ❌ ESCALATED | Route to Opus for architectural diagnosis — do NOT attempt fix at Sonnet tier |
+
+# 27. Mandatory Work Completion Handoff Protocol
+
+> **Origin**: Codified 2026-08-17 by Creative Director directive. The agent MUST automatically deliver a structured handoff format after completing any work item — without the Creative Director needing to prompt for it.
+
+## 27.1 Trigger
+
+This handoff is **mandatory** after:
+- Every `git push origin dev` (code shipped to staging)
+- Every governance rule codification
+- Every Plane.so ticket closure
+- Every multi-step bug fix or feature implementation
+
+## 27.2 Handoff Format
+
+The agent MUST include ALL THREE sections in this exact order:
+
+### Section 1: Creative Director Testing Checklist
+
+```markdown
+## 🎬 Creative Director Testing Checklist
+
+**Build:** `[commit hash]` deploying to `dev.memoryweaver.studio` — hard-refresh (Ctrl+Shift+R) in 2-3 mins.
+
+| # | Test | How |
+|---|---|---|
+| 1 | [Test description] | [Exact steps to verify] |
+| 2 | [Test description] | [Exact steps to verify] |
+
+**PASS / FAIL** each one when ready.
+```
+
+- Every test item MUST include concrete steps, not vague descriptions
+- If no user-facing changes were deployed (e.g. governance-only), state "No visual changes to test"
+
+### Section 2: What's Next
+
+```markdown
+## What's Next
+
+| Ticket | Task | Effort |
+|---|---|---|
+| MW-XXX | [description] | [estimate] |
+```
+
+- List the immediate next 2-4 items in priority order
+- Include sprint handoff trigger status if approaching Rule 25.2 lifecycle boundary
+
+### Section 3: Proactive Thoughts (Rule 17)
+
+```markdown
+## 💡 My Thoughts
+
+**1. [Observation].** [Actionable insight or suggestion]
+**2. [Observation].** [Actionable insight or suggestion]
+```
+
+- Minimum 2, maximum 4 proactive observations
+- Each MUST be actionable — not generic praise or filler
+- Can include: UX gaps, performance risks, architectural suggestions, upcoming blockers, feature ideas
+- Reference specific files, routes, or components when applicable
+
+## 27.3 Anti-Patterns (Hard Bans)
+
+- ❌ Never end a work session with just "Done. Committed and pushed."
+- ❌ Never omit the testing checklist after a `git push`
+- ❌ Never wait for the Creative Director to ask "what's next?" — proactively state it
+- ❌ Never provide generic thoughts like "the codebase looks good" — every observation must be specific and actionable
