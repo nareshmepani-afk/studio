@@ -560,6 +560,26 @@ describe('Studio Regression Tests', () => {
       expect(resolveTargetStage(1, undefined)).toBe(1);
     });
 
+    it('MW-175.3 ACT NAVIGATION: should resolve target stage correctly for ?act=2..5 searchParams', () => {
+      const resolveTargetStage = (savedStage: number, urlAct?: string, urlStage?: string) => {
+        if (urlAct === '1' || urlStage === '0') {
+          return 0;
+        } else if (urlAct) {
+          const actNum = parseInt(urlAct, 10);
+          if (actNum >= 2 && actNum <= 5) {
+            return actNum - 1;
+          }
+        }
+        return savedStage;
+      };
+
+      expect(resolveTargetStage(0, '5')).toBe(4); // Act V -> stage 4
+      expect(resolveTargetStage(0, '2')).toBe(1); // Act II -> stage 1
+      expect(resolveTargetStage(0, '3')).toBe(2); // Act III -> stage 2
+      expect(resolveTargetStage(0, '4')).toBe(3); // Act IV -> stage 3
+      expect(resolveTargetStage(2, 'invalid')).toBe(2); // fallback to saved
+    });
+
     it('SYNTHESIS UI SHIELD: should hide Sensory View toggle button during AI synthesis (isGeneratingDrafts === true)', () => {
       const shouldShowSensoryViewToggle = (currentStage: number, isGeneratingDrafts: boolean) => {
         return currentStage === 0 && !isGeneratingDrafts;

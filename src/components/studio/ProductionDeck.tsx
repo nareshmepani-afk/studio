@@ -174,6 +174,17 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             if (typeof window !== 'undefined' && window.history?.replaceState) {
                 window.history.replaceState({}, '', window.location.pathname);
             }
+        } else if (urlAct) {
+            // Support direct navigation to any Act (e.g. ?act=5 from Back to Studio in Cinema)
+            const actNum = parseInt(urlAct, 10);
+            if (actNum >= 2 && actNum <= 5) {
+                targetStage = actNum - 1; // act=2 → stage 1, act=5 → stage 4
+                console.log('[ProductionDeck] Explicit Act override from URL: act=' + urlAct + ' → stage ' + targetStage);
+            }
+            // Clean up sticky URL search parameters
+            if (typeof window !== 'undefined' && window.history?.replaceState) {
+                window.history.replaceState({}, '', window.location.pathname);
+            }
         }
 
         console.log("[ProductionDeck] Syncing/Rehydrating global state from Firestore memory data:", currentRefId, "target stage:", targetStage, "saved stage:", memoryData?.productionStage, "isExplicitScriptEditorRequest:", isExplicitScriptEditorRequest);
