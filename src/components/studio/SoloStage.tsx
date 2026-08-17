@@ -12,17 +12,12 @@ import {
   AlertDialogDescription, 
   AlertDialogFooter, 
   AlertDialogHeader, 
-  AlertDialogTitle, 
-  AlertDialogTrigger 
-} from "@/components/ui/alert-dialog";
+  AlertDialogTitle, } from "@/components/ui/alert-dialog";
 import { 
-  Video, Disc, Square, AlertTriangle, UploadCloud, CheckCircle2, Scissors, 
-  Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, 
-  UserCircle, Languages, Layout, Zap, Settings2, RefreshCw, CheckCircle, 
-  Rocket, PenTool, Mic, MapPin, Calendar, Tag, ArrowRight, ArrowLeft, 
+  Video, Disc, Square, AlertTriangle, CheckCircle2, Play, Pause, Camera, Loader2, Mic2, MessageSquare, Volume2, Sparkles, 
+  Languages, Layout, Zap, Settings2, RefreshCw, Rocket, Mic, Tag, ArrowLeft, 
   Film as FilmIcon, BrainCircuit, Maximize2, Minus, Plus, ChevronRight, ChevronLeft,
-  Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater, Trash2,
-  ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X, Wand2, Share2, Copy, Mail, FileText,
+  Lock, ShieldAlert, Smartphone, ShieldCheck, Lightbulb, Theater, ExternalLink, ChevronDown, ChevronUp, Download, VideoOff, X, Wand2, Share2, Copy, Mail, FileText,
   Tv, Airplay, Cast
 } from 'lucide-react';
 import { downloadFusedAutobiography } from '@/utils/autobiographyExporter';
@@ -6460,13 +6455,13 @@ export default function SoloStage({
                 <div>
                   <span className="text-[9px] font-mono font-bold text-amber-400 uppercase tracking-widest block mb-0.5">Smart TV Web Route</span>
                   <span className="text-xs font-mono text-zinc-300 font-bold truncate max-w-xs block">
-                    dev.memoryweaver.studio/cinema/tv?id={data.id}
+                    {typeof window !== 'undefined' ? window.location.host : 'memoryweaver.studio'}/cinema/tv?id={data.id}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(`https://dev.memoryweaver.studio/cinema/tv?id=${data.id}`);
+                    navigator.clipboard.writeText(`${window.location.origin}/cinema/tv?id=${data.id}`);
                     toast.success("TV Link Copied", { description: "Paste into your Smart TV browser address bar." });
                   }}
                   title="Copy the TV cinema link to your clipboard"
