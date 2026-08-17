@@ -24,7 +24,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [isMuted, setIsMuted] = useState<boolean>(false);
-  const [isSaved, setIsSaved] = useState<boolean>(true);
+  const [isSaved, setIsSaved] = useState<boolean>(false);
   const [activeViewMode, setActiveViewMode] = useState<'media' | 'poster'>('media');
   const { user } = useAuth();
   const isDirector = !!user;

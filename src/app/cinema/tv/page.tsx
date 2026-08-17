@@ -18,6 +18,7 @@ function SmartTVPlayerContent() {
   const [duration, setDuration] = useState<number>(0);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [showHud, setShowHud] = useState<boolean>(true);
+  const [showCastGuide, setShowCastGuide] = useState<boolean>(false);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch memory details
@@ -122,7 +123,14 @@ function SmartTVPlayerContent() {
     }
   };
 
-  const videoUrl = memory?.videoUrl || (memory?.productionTakes && memory?.productionTakes.find((t: any) => t.videoUrl)?.videoUrl);
+  // MW-177: Aligned video URL resolution with MemoryCinematicViewer.tsx fallback chain
+  // productionTakes[] contains AI text drafts, NOT video objects — removed that broken fallback
+  const videoUrl = memory?.videoUrl
+    || (memory as any)?.recordingUrl
+    || (memory as any)?.video
+    || memory?.mediaAttachments?.find(
+        (m: any) => m.type === 'video' || m.url?.includes('.mp4') || m.url?.includes('.webm')
+      )?.url;
 
   const formatTime = (timeInSeconds: number) => {
     const minutes = Math.floor(timeInSeconds / 60);
@@ -187,6 +195,61 @@ function SmartTVPlayerContent() {
       )}
 
       {/* Auto-Hiding 10-Foot Smart TV HUD */}
+      {/* MW-178B: Persistent Cast Guide — always visible, outside auto-hiding HUD */}
+      <div className="absolute top-4 right-4 z-50 flex flex-col items-end gap-2 pointer-events-auto">
+        <button
+          type="button"
+          data-hotspot-id="HS_CINEMA_TV_CAST_GUIDE_BTN"
+          onClick={() => setShowCastGuide(prev => !prev)}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-900/80 hover:bg-slate-800/90 backdrop-blur-md border border-amber-500/40 rounded-full text-xs font-mono font-bold text-amber-300 uppercase tracking-widest transition-all active:scale-95 shadow-lg"
+          title="How to stream this memory to your TV"
+        >
+          <Tv className="w-3.5 h-3.5" />
+          📺 Cast Guide
+        </button>
+
+        <AnimatePresence>
+          {showCastGuide && (
+            <motion.div
+              initial={{ opacity: 0, y: -8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="bg-slate-950/95 backdrop-blur-xl border border-amber-500/30 rounded-2xl p-4 shadow-2xl w-72 text-left"
+            >
+              <p className="text-[10px] font-mono tracking-[0.15em] text-amber-400 font-bold uppercase mb-3">
+                📺 How to Stream to Your TV
+              </p>
+              <ul className="text-xs text-white/70 space-y-2">
+                <li className="flex gap-2">
+                  <span className="text-amber-400 font-bold shrink-0">Chrome:</span>
+                  <span>Menu (⋮) → Cast… → Select your TV or Chromecast device</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-amber-400 font-bold shrink-0">Safari:</span>
+                  <span>Tap the AirPlay icon in the video controls to mirror to Apple TV</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-amber-400 font-bold shrink-0">Smart TV:</span>
+                  <span>Open this page URL directly in your TV's built-in browser</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-amber-400 font-bold shrink-0">HDMI:</span>
+                  <span>Connect laptop to TV via HDMI cable, then press Play</span>
+                </li>
+              </ul>
+              <button
+                type="button"
+                onClick={() => setShowCastGuide(false)}
+                className="mt-3 w-full text-center text-[10px] font-mono text-zinc-500 hover:text-zinc-300 uppercase tracking-widest transition-colors"
+              >
+                Close
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
       <AnimatePresence>
         {showHud && (
           <motion.div
