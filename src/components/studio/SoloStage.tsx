@@ -5471,7 +5471,7 @@ export default function SoloStage({
                  {/* TIER 1: HERO ACTION - LAUNCH FULLSCREEN PREMIERE */}
                  <button 
                    data-hotspot-id="HS_ACT5_VIEW_PREMIERE_BTN"
-                   onClick={() => window.location.href = `/memory/${data.id}`} 
+                   onClick={() => window.location.href = `/cinema?id=${data.id}`} 
                    className="w-full py-4 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 font-black text-xs tracking-wider uppercase rounded-2xl shadow-[0_0_25px_rgba(245,158,11,0.25)] hover:shadow-[0_0_35px_rgba(245,158,11,0.4)] transition-all flex items-center justify-center gap-2.5 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
                  >
                    <Play className="w-4 h-4 fill-current text-slate-950" />
@@ -6421,7 +6421,7 @@ export default function SoloStage({
             <div>
               <h3 className="font-headline text-2xl font-black text-white uppercase tracking-widest mb-2">Living Room TV Premiere</h3>
               <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed font-mono uppercase tracking-wider">
-                Cast your memory reel directly to living room televisions via AirPlay, Google Chromecast, or Smart TV web browser.
+                Open your cinema player, then use your browser&apos;s native cast to stream to your TV.
               </p>
             </div>
 
@@ -6436,7 +6436,8 @@ export default function SoloStage({
               >
                 <Airplay className="w-6 h-6 text-amber-400 group-hover/cast:scale-110 transition-transform" />
                 <span className="text-xs font-black text-white uppercase tracking-wider">Apple AirPlay</span>
-                <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">Apple TV / Mac / iPad</span>
+                <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">Opens Cinema Player</span>
+                <span className="text-[8px] font-mono text-zinc-500 normal-case">Use Safari&apos;s AirPlay icon in the video player</span>
               </button>
 
               <button
@@ -6449,7 +6450,8 @@ export default function SoloStage({
               >
                 <Cast className="w-6 h-6 text-amber-400 group-hover/cast:scale-110 transition-transform" />
                 <span className="text-xs font-black text-white uppercase tracking-wider">Google Chromecast</span>
-                <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">Chromecast / Android TV</span>
+                <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">Opens Cinema Player</span>
+                <span className="text-[8px] font-mono text-zinc-500 normal-case">Use Chrome menu ⋮ → Cast to stream to TV</span>
               </button>
             </div>
 
@@ -6467,6 +6469,7 @@ export default function SoloStage({
                     navigator.clipboard.writeText(`https://dev.memoryweaver.studio/cinema/tv?id=${data.id}`);
                     toast.success("TV Link Copied", { description: "Paste into your Smart TV browser address bar." });
                   }}
+                  title="Copy the TV cinema link to your clipboard"
                   className="px-4 py-2 bg-amber-500 text-slate-950 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-amber-400 transition-colors shrink-0 cursor-pointer"
                 >
                   Copy Link
