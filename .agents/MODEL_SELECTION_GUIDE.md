@@ -216,3 +216,12 @@ and is ideal before committing to any code changes.
 ### Ready-to-Paste Prompt
 > ## Task: Brainstorm [feature area]...
 ```
+
+---
+
+## Token Economy & Context Window Inflation Shield (Rule 28)
+
+1. **Context Window Dynamics**: In extended conversations (multiple checkpoints, large files), every turn resends 150k–200k+ tokens. Using expensive reasoning tiers for repetitive `PASS` / `Continue` loops burns tokens rapidly.
+2. **Workhorse Tier**: Use **Gemini 3.7 Flash (High / Medium)** as the primary engine for high-iteration debugging, test runs, UI polish, and ticket closure.
+3. **Rollover Trigger**: Once a sprint reaches ~10 tickets or is truncated by checkpoints, cut a **Sprint Handoff Brief** and initiate a fresh conversation.
+

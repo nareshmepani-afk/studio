@@ -676,4 +676,20 @@ The agent MUST include ALL THREE sections in this exact order:
 - ❌ Never end a work session with just "Done. Committed and pushed."
 - ❌ Never omit the testing checklist after a `git push`
 - ❌ Never wait for the Creative Director to ask "what's next?" — proactively state it
+
+# 28. Context Window Inflation Shield & Token Economy Protocol
+
+## 28.1 The Inflation Mechanism
+In long conversations with multiple tool calls, file views, and checkpoints, the entire message trajectory (100,000–200,000+ tokens) is processed on **every single user prompt** (even 1-word commands like `Continue` or `PASS`). This causes rapid token consumption if expensive reasoning models are used for repetitive iterative loops.
+
+## 28.2 Token-Saving Protocol & Model Allocation
+- **Iterative Execution & Verification Workhorse**: Default to **Gemini 3.7 Flash (High)** or **Gemini Flash (Medium)** for continuous debugging, test execution, UI tweaks, subagent execution (`flash_executor`), and active testing cycles to maximize speed and token efficiency.
+- **Architectural & Complex Reasoning Reserve**: Reserve **Claude Opus / Sonnet (Thinking)** for initial system design, major multi-module refactoring, or intractable state bugs where deep reasoning is strictly required.
+- **Mandatory Subagent Offload**: All mechanical code execution and broad file research MUST use Flash-tier subagents (`flash` / `flash_executor`).
+
+## 28.3 Proactive Rollover Trigger
+When a session reaches **10+ completed items** OR **encounters Checkpoint truncation**:
+- The agent MUST proactively present the **Sprint Handoff Brief** and explicitly advise the Creative Director to start a fresh conversation.
+- The agent will provide a ready-to-paste starter prompt for the new conversation to instantly re-hydrate the new session with zero context loss.
+
 - ❌ Never provide generic thoughts like "the codebase looks good" — every observation must be specific and actionable
