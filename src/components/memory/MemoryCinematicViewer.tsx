@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 import { CinemaPoster } from '@/components/memory/CinemaPoster';
 import { downloadFusedAutobiography } from '@/utils/autobiographyExporter';
+import { useAuth } from '@/hooks/useAuth';
+import { ArrowLeft } from 'lucide-react';
 
 interface MemoryCinematicViewerProps {
   memory: Memory | null;
@@ -24,6 +26,8 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isSaved, setIsSaved] = useState<boolean>(true);
   const [activeViewMode, setActiveViewMode] = useState<'media' | 'poster'>('media');
+  const { user } = useAuth();
+  const isDirector = !!user;
   const [isAirPlayAvailable, setIsAirPlayAvailable] = useState<boolean>(false);
   const [isChromecastAvailable, setIsChromecastAvailable] = useState<boolean>(false);
   const [isCasting, setIsCasting] = useState<boolean>(false);
@@ -295,6 +299,18 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
           className="relative w-full max-w-7xl h-full max-h-[90vh] bg-slate-900/40 border border-white/5 rounded-3xl overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col xl:flex-row"
         >
+          {/* Back to Studio (Director Only) */}
+          {isDirector && (
+            <button
+              onClick={() => window.history.back()}
+              className="absolute top-6 left-6 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950/60 hover:bg-slate-950/80 text-white/60 hover:text-amber-400 transition-all backdrop-blur-md border border-white/10 text-[11px] font-mono uppercase tracking-wider cursor-pointer"
+              title="Return to Studio"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Studio</span>
+            </button>
+          )}
+
           {/* Close Button */}
           <button
             onClick={onClose}
@@ -325,7 +341,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                 />
 
                 {/* CUSTOM STUDIO-STANDARD PLAYBACK SCRUBBER PILL OVERLAY */}
-                <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-[92%] max-w-xl bg-slate-950/90 border border-amber-500/30 rounded-2xl p-3 backdrop-blur-xl shadow-2xl flex items-center gap-3 z-40 transition-all opacity-90 group-hover:opacity-100">
+                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-[92%] max-w-xl bg-slate-950/90 border border-amber-500/30 rounded-2xl p-3 backdrop-blur-xl shadow-2xl flex items-center gap-3 z-40 transition-all opacity-90 group-hover:opacity-100">
                   <button
                     type="button"
                     onClick={togglePlay}
@@ -444,7 +460,8 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
               </div>
             )}
 
-            {/* FLOATING STAGE CONTROLS TOOLBAR (Share & Save) */}
+            {/* FLOATING STAGE CONTROLS TOOLBAR — Director Mode Only */}
+            {isDirector && (
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-950/95 border border-amber-500/40 rounded-full px-4 py-2 backdrop-blur-2xl shadow-[0_0_40px_rgba(245,158,11,0.25)] flex items-center gap-3 z-50">
               <div className="flex items-center gap-2 pr-3 border-r border-white/10 text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest">
                 <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
@@ -542,8 +559,8 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                     : 'bg-white/10 hover:bg-white/20 text-white border-white/10'
                 }`}
               >
-                <Bookmark className="w-3.5 h-3.5 fill-current text-amber-400" />
-                <span className="text-amber-400 font-bold">{isSaved ? 'Saved to Library ✓' : 'Save Story'}</span>
+                <Bookmark className={`w-3.5 h-3.5 fill-current ${isSaved ? 'text-slate-950' : 'text-amber-400'}`} />
+                <span className={`font-bold ${isSaved ? 'text-slate-950' : 'text-amber-400'}`}>{isSaved ? 'Saved to Library ✓' : 'Save Story'}</span>
               </button>
 
               {/* Offline 4K Video Download Button */}
@@ -566,6 +583,46 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                 </button>
               )}
             </div>
+            )}
+
+            {/* GUEST VIEWER TOOLBAR — Share & Bookmark only */}
+            {!isDirector && (
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-950/95 border border-amber-500/40 rounded-full px-4 py-2 backdrop-blur-2xl shadow-[0_0_40px_rgba(245,158,11,0.25)] flex items-center gap-3 z-50">
+              <button
+                type="button"
+                onClick={() => {
+                  const shareUrl = window.location.href;
+                  navigator.clipboard.writeText(shareUrl);
+                  toast.success('Share Link Copied!', { description: 'Share this link with family.' });
+                }}
+                className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border border-white/10 hover:scale-105"
+              >
+                <Share2 className="w-3.5 h-3.5 text-amber-400" />
+                <span>Share</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSaved(!isSaved);
+                  if (!isSaved) {
+                    toast.success('Saved to My Family Cinema Library!', {
+                      description: `"${memory.title}" has been bookmarked.`
+                    });
+                  } else {
+                    toast.info('Removed from Library');
+                  }
+                }}
+                className={`px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border hover:scale-105 ${
+                  isSaved 
+                    ? 'bg-amber-400 text-slate-950 border-amber-400 shadow-md font-black' 
+                    : 'bg-white/10 hover:bg-white/20 text-white border-white/10'
+                }`}
+              >
+                <Bookmark className={`w-3.5 h-3.5 fill-current ${isSaved ? 'text-slate-950' : 'text-amber-400'}`} />
+                <span className={`font-bold ${isSaved ? 'text-slate-950' : 'text-amber-400'}`}>{isSaved ? 'Saved ✓' : 'Save Story'}</span>
+              </button>
+            </div>
+            )}
           </div>
 
           {/* Narrative Content Section (Right/Bottom) */}

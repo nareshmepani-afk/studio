@@ -212,6 +212,18 @@ function SmartTVPlayerContent() {
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
                 <span className="text-xs font-mono font-bold text-emerald-300 uppercase tracking-widest">Smart TV Remote Active</span>
               </div>
+
+              {/* Cast Instructions */}
+              <div className="mt-3 p-3 rounded-xl bg-slate-950/60 border border-white/10 text-left max-w-xs backdrop-blur-xl">
+                <p className="text-[9px] font-mono tracking-[0.15em] text-amber-400 font-bold uppercase mb-1.5">
+                  📺 How to Stream to Your TV
+                </p>
+                <ul className="text-[10px] text-white/60 space-y-0.5 list-disc list-inside">
+                  <li><strong className="text-white/80">Chrome:</strong> Menu (⋮) → Cast → Select TV</li>
+                  <li><strong className="text-white/80">Safari:</strong> AirPlay icon in video player</li>
+                  <li><strong className="text-white/80">Smart TV:</strong> Open this URL in TV browser</li>
+                </ul>
+              </div>
             </div>
 
             {/* Bottom 10-Foot Control Deck */}
