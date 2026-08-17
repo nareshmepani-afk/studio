@@ -193,6 +193,20 @@ function CinemaContent() {
     <AuthenticatedPageWrapper>
       <div className='container mx-auto py-12 px-6 lg:px-12 max-w-7xl min-h-screen'>
         
+        {/* Back to Studio — Director Only */}
+        {user && publicMemory && (
+          <div className="mb-6">
+            <button
+              onClick={() => window.location.href = `/studio/production/${memoryIdParam}?act=5`}
+              className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-white/50 hover:text-amber-400 transition-colors cursor-pointer group"
+              title="Return to Act V Master Console"
+            >
+              <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
+              <span>Back to Studio</span>
+            </button>
+          </div>
+        )}
+
         {/* PUBLIC GUEST PASS HERO PREMIERE BANNER */}
         {publicMemory && (
           <motion.div
