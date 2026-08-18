@@ -193,7 +193,9 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         setStage(targetStage);
 
         // MW-186: Auto-transition draft → pre-release on mount if already at Act V
-        if (targetStage === 4 && memoryData?.status === 'draft' && !isExplicitScriptEditorRequest) {
+        // Also covers pre-existing memories with stale productionStage (e.g. 0) that have Act III+ artifacts
+        const isActVOrMastered = targetStage === 4 || (memoryData?.videoUrl && memoryData?.isProductionLocked);
+        if (isActVOrMastered && memoryData?.status === 'draft' && !isExplicitScriptEditorRequest) {
             handleUpdate({ status: 'pre-release' });
         }
         
@@ -934,7 +936,12 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                 const candidatePoster = (memoryData as any)?.selfieUrl || (memoryData as any)?.narratorPhotoUrl || memoryData?.imageUrl || (memoryData as any)?.heroImageUrl;
                 if (candidatePoster) {
                     console.log("[ProductionDeck] Auto-anchoring poster before advancing to Act V Premiere:", candidatePoster);
-                    handleUpdate({ posterImageUrl: candidatePoster, productionStage: next });
+                    // MW-186: Include status transition when entering Act V via poster auto-anchor
+                    const updatePayload: any = { posterImageUrl: candidatePoster, productionStage: next };
+                    if (next === 4 && memoryData?.status === 'draft') {
+                        updatePayload.status = 'pre-release';
+                    }
+                    handleUpdate(updatePayload);
                     setStage(next);
                     setShowPreFlight(false);
                     return;
