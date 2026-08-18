@@ -116,6 +116,18 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Ask, Don't Declare Uncertainty**: Instead of saying "Build status: UNCERTAIN", the agent MUST say "Could you check [specific thing] and confirm [specific question]?" — giving the user a concrete action to take.
 - **Exhaust All Diagnostic Avenues First**: Before escalating, the agent MUST attempt every available diagnostic tool (MCP tools, API calls, log inspection, version string checks). Only if ALL programmatic avenues fail should the agent escalate to the user.
 - **Never Leave Work Hanging**: Every escalation MUST include: (1) what was attempted, (2) why it failed, (3) exactly what the user needs to check, and (4) what the next step is once the answer is known.
+# 26. Model Triage & Token Economy Architecture
+- **Dual Tier-1 Entry Point (Opus 4.6 / Sonnet 4.6)**:
+  - **Claude Opus 4.6 (Thinking)**: Primary Strategic Director, Deep Architecture & Systemic Planner, High-Reasoning Pair Programming Lead.
+  - **Claude Sonnet 4.6 (Thinking)**: Agile Strategic Architect, Code Reviewer, Gatekeeper for Protected Components (Rule 22.2), and Fast-Paced Execution Lead.
+  - **Core Duty of Tier-1**: Understand user requirements, formulate airtight architecture/implementation plans, make strategic decisions, review final diffs, and orchestrate subagent workflows.
+- **Mandatory Subagent Dispatch Matrix**:
+  - **Research & Discovery (`Model: 'flash'`)**: Codebase search, file scanning, context gathering, and summarization. Never dump hundreds of lines of raw code into the Tier-1 context window; subagents must return concise $\le$ 200-token summaries.
+  - **Heavy Code Generation (`Model: 'pro'`)**: Complex multi-file refactoring, deep algorithmic pipelines, and intricate TypeScript state machines.
+  - **Rapid UI & Component Coding (`Model: 'flash'`)**: Standard React components, Tailwind styling, boilerplate, unit tests, and regression shield fixtures.
+  - **Utility & Verification (`Model: 'flash_lite'` or `'flash'`)**: Running `tsc`, `vitest`, git commits/pushes, Plane.so CLI automation, and background deployment polling.
+- **Strict Line-Bounded Inspection**: When Tier-1 models directly inspect files, they MUST use tightly bounded `StartLine` and `EndLine` slices ($\le 30$ lines) to prevent context inflation.
+- **Autonomous Subagent Error Loops**: Subagents dispatched for coding or verification must resolve their own lint/type errors internally before returning a clean "Build Verified: SUCCESS" status to Tier-1.
 
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
