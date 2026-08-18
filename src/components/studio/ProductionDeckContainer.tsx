@@ -390,6 +390,32 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     }
   }, [user, selectedProductionData?.id]);
 
+  // MW-186: Auto-transition draft → pre-release when memory has mastered artifacts
+  // This runs in the Container (not ProductionDeck) because user/auth is guaranteed available here
+  // and we can write directly to Firestore without going through the handleUpdate prop chain
+  const preReleaseTransitionRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!user || !selectedProductionData?.id) return;
+    if (preReleaseTransitionRef.current === selectedProductionData.id) return; // Already processed
+
+    const data = selectedProductionData;
+    const isActVOrMastered = (data.productionStage === 4) || (data.videoUrl && data.isProductionLocked);
+
+    if (isActVOrMastered && data.status === 'draft') {
+      preReleaseTransitionRef.current = data.id;
+      console.log('[ProductionDeckContainer] MW-186: Auto-transitioning draft → pre-release for:', data.id);
+      
+      // Direct Firestore write (bypasses handleUpdate which may fail during mount race)
+      updateDoc(doc(db, 'users', user.uid, 'memories', data.id), { status: 'pre-release' })
+        .then(() => {
+          setSelectedProductionData((prev: any) => prev ? { ...prev, status: 'pre-release' } : prev);
+          console.log('[ProductionDeckContainer] MW-186: Status updated to pre-release in Firestore');
+        })
+        .catch((err) => console.error('[ProductionDeckContainer] MW-186: Failed to update status:', err));
+    }
+  }, [user, selectedProductionData?.id, selectedProductionData?.status, selectedProductionData?.videoUrl, selectedProductionData?.isProductionLocked, selectedProductionData?.productionStage]);
+
+
   const handleClose = () => {
     if (isModal) {
       router.back();
