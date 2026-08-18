@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, Tv, Volume2, VolumeX, Sparkles, Film, ArrowLeft } from 'lucide-react';
+import { Play, Pause, Tv, Cast, X, Volume2, VolumeX, Sparkles, Film, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 function SmartTVPlayerContent() {
@@ -204,17 +204,17 @@ function SmartTVPlayerContent() {
       )}
 
       {/* Auto-Hiding 10-Foot Smart TV HUD */}
-      {/* MW-178B: Persistent Cast Guide — always visible, outside auto-hiding HUD */}
-      <div className="absolute top-4 right-4 max-w-[calc(100vw-2rem)] z-50 flex flex-col items-end gap-2 pointer-events-auto">
+      {/* Persistent Standard Cast Guide Button — always accessible */}
+      <div className="absolute top-6 right-6 max-w-[calc(100vw-3rem)] z-50 flex flex-col items-end gap-3 pointer-events-auto">
         <button
           type="button"
           data-hotspot-id="HS_CINEMA_TV_CAST_GUIDE_BTN"
           onClick={() => setShowCastGuide(prev => !prev)}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-900/80 hover:bg-slate-800/90 backdrop-blur-md border border-amber-500/40 rounded-full text-xs font-mono font-bold text-amber-300 uppercase tracking-widest transition-all active:scale-95 shadow-lg"
+          className="flex items-center gap-2.5 px-4 py-2 bg-slate-950/80 hover:bg-slate-900/95 backdrop-blur-xl border border-white/20 hover:border-amber-400/60 rounded-full text-xs font-mono font-bold text-white uppercase tracking-widest transition-all active:scale-95 shadow-2xl cursor-pointer"
           title="How to stream this memory to your TV"
         >
-          <Tv className="w-3.5 h-3.5" />
-          Cast
+          <Cast className="w-4 h-4 text-amber-400" />
+          <span>Cast to TV</span>
         </button>
 
         <AnimatePresence>
@@ -224,36 +224,39 @@ function SmartTVPlayerContent() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="bg-slate-950/95 backdrop-blur-xl border border-amber-500/30 rounded-2xl p-4 shadow-2xl w-72 text-left"
+              className="bg-slate-950/95 backdrop-blur-2xl border border-amber-500/40 rounded-2xl p-5 shadow-2xl w-80 text-left"
             >
-              <p className="text-[10px] font-mono tracking-[0.15em] text-amber-400 font-bold uppercase mb-3">
-                📺 How to Stream to Your TV
-              </p>
-              <ul className="text-xs text-white/70 space-y-2">
+              <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+                <p className="text-[10px] font-mono tracking-[0.15em] text-amber-400 font-bold uppercase flex items-center gap-1.5">
+                  <Cast className="w-3.5 h-3.5 text-amber-400" />
+                  How to Stream to Your TV
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowCastGuide(false)}
+                  className="p-1 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <ul className="text-xs text-white/80 space-y-2.5 font-sans">
                 <li className="flex gap-2">
-                  <span className="text-amber-400 font-bold shrink-0">Chrome:</span>
-                  <span>Menu (⋮) → Cast… → Select your TV or Chromecast device</span>
+                  <span className="text-amber-400 font-bold shrink-0 font-mono text-[11px]">Chrome:</span>
+                  <span>Menu (⋮) → Cast… → Select TV / Chromecast</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-amber-400 font-bold shrink-0">Safari:</span>
-                  <span>Tap the AirPlay icon in the video controls to mirror to Apple TV</span>
+                  <span className="text-amber-400 font-bold shrink-0 font-mono text-[11px]">Safari:</span>
+                  <span>Tap AirPlay icon in video controls to mirror to Apple TV</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-amber-400 font-bold shrink-0">Smart TV:</span>
-                  <span>Open this page URL directly in your TV's built-in browser</span>
+                  <span className="text-amber-400 font-bold shrink-0 font-mono text-[11px]">Smart TV:</span>
+                  <span>Open this URL directly in your TV's browser</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="text-amber-400 font-bold shrink-0">HDMI:</span>
-                  <span>Connect laptop to TV via HDMI cable, then press Play</span>
+                  <span className="text-amber-400 font-bold shrink-0 font-mono text-[11px]">HDMI:</span>
+                  <span>Connect laptop to TV via HDMI cable</span>
                 </li>
               </ul>
-              <button
-                type="button"
-                onClick={() => setShowCastGuide(false)}
-                className="mt-3 w-full text-center text-[10px] font-mono text-zinc-500 hover:text-zinc-300 uppercase tracking-widest transition-colors"
-              >
-                Close
-              </button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -283,18 +286,6 @@ function SmartTVPlayerContent() {
               <div className="flex items-center gap-3 bg-black/60 backdrop-blur-md border border-white/10 px-6 py-3 rounded-full">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
                 <span className="text-xs font-mono font-bold text-emerald-300 uppercase tracking-widest">Smart TV Remote Active</span>
-              </div>
-
-              {/* Cast Instructions */}
-              <div className="mt-3 p-3 rounded-xl bg-slate-950/60 border border-white/10 text-left max-w-xs backdrop-blur-xl">
-                <p className="text-[9px] font-mono tracking-[0.15em] text-amber-400 font-bold uppercase mb-1.5">
-                  📺 How to Stream to Your TV
-                </p>
-                <ul className="text-[10px] text-white/60 space-y-0.5 list-disc list-inside">
-                  <li><strong className="text-white/80">Chrome:</strong> Menu (⋮) → Cast → Select TV</li>
-                  <li><strong className="text-white/80">Safari:</strong> AirPlay icon in video player</li>
-                  <li><strong className="text-white/80">Smart TV:</strong> Open this URL in TV browser</li>
-                </ul>
               </div>
             </div>
 
