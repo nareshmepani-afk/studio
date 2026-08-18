@@ -41,6 +41,14 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
+  // Suppress body scroll when cinematic viewer modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   // AirPlay Target Listener
   useEffect(() => {
     const videoEl = videoRef.current;
@@ -299,15 +307,15 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
           className="relative w-full max-w-7xl h-full max-h-[90vh] bg-slate-900/40 border border-white/5 rounded-3xl overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col xl:flex-row"
         >
-          {/* Back to Studio (Director Only) */}
+          {/* Back to Cinema (Director Only) */}
           {isDirector && (
             <button
-              onClick={() => { window.location.href = `/studio/production/${memory.id}?act=5`; }}
+              onClick={onClose}
               className="absolute top-6 left-6 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950/60 hover:bg-slate-950/80 text-white/60 hover:text-amber-400 transition-all backdrop-blur-md border border-white/10 text-[11px] font-mono uppercase tracking-wider cursor-pointer"
-              title="Return to Studio"
+              title="Return to Cinema"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Studio</span>
+              <span>Back to Cinema</span>
             </button>
           )}
 

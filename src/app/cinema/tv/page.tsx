@@ -187,16 +187,20 @@ function SmartTVPlayerContent() {
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center p-12 text-center bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/40 relative">
           <div className="w-32 h-32 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-amber-300 font-bold text-4xl shadow-[0_0_80px_rgba(245,158,11,0.3)] mb-6">
-            {memory.credits?.director?.[0] || 'M'}
+            {memory.title?.[0]?.toUpperCase() || memory.credits?.director?.[0] || '⬝'}
           </div>
           <h2 className="text-4xl font-headline font-black text-amber-300 uppercase tracking-widest mb-3">{memory.title || 'Family Heirloom'}</h2>
-          <p className="text-lg text-zinc-300 max-w-2xl leading-relaxed italic font-serif">"{memory.prose || memory.originalHook || memory.description}"</p>
+          {(memory.prose || memory.originalHook || memory.description) && (
+            <p className="text-lg text-zinc-300 max-w-2xl leading-relaxed italic font-serif">
+              "{memory.prose || memory.originalHook || memory.description}"
+            </p>
+          )}
         </div>
       )}
 
       {/* Auto-Hiding 10-Foot Smart TV HUD */}
       {/* MW-178B: Persistent Cast Guide — always visible, outside auto-hiding HUD */}
-      <div className="absolute top-4 right-4 z-50 flex flex-col items-end gap-2 pointer-events-auto">
+      <div className="absolute top-4 right-4 max-w-[calc(100vw-2rem)] z-50 flex flex-col items-end gap-2 pointer-events-auto">
         <button
           type="button"
           data-hotspot-id="HS_CINEMA_TV_CAST_GUIDE_BTN"
@@ -205,7 +209,7 @@ function SmartTVPlayerContent() {
           title="How to stream this memory to your TV"
         >
           <Tv className="w-3.5 h-3.5" />
-          📺 Cast Guide
+          Cast
         </button>
 
         <AnimatePresence>
@@ -290,42 +294,44 @@ function SmartTVPlayerContent() {
             </div>
 
             {/* Bottom 10-Foot Control Deck */}
-            <div className="space-y-6 pointer-events-auto">
-              <div>
-                <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-[0.3em] block mb-1">
-                  {memory.credits?.director ? `Directed by ${memory.credits.director}` : 'Official Family Premiere'}
-                </span>
-                <h2 className="text-4xl md:text-5xl font-headline font-black text-white uppercase tracking-wider shadow-sm">
-                  {memory.title || 'Untitled Memory'}
-                </h2>
-              </div>
+            {videoUrl && (
+              <div className="space-y-6 pointer-events-auto">
+                <div>
+                  <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-[0.3em] block mb-1">
+                    {memory.credits?.director ? `Directed by ${memory.credits.director}` : 'Official Family Premiere'}
+                  </span>
+                  <h2 className="text-4xl md:text-5xl font-headline font-black text-white uppercase tracking-wider shadow-sm">
+                    {memory.title || 'Untitled Memory'}
+                  </h2>
+                </div>
 
-              {/* Scrubber & Remote Hotspot Toggle */}
-              <div className="flex items-center gap-6 bg-slate-950/80 border border-amber-500/30 rounded-3xl p-5 backdrop-blur-2xl shadow-2xl">
-                <button
-                  type="button"
-                  data-hotspot-id="HS_CINEMA_TV_REMOTE_TOGGLE"
-                  onClick={togglePlay}
-                  className="w-14 h-14 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center justify-center font-bold shrink-0 transition-transform active:scale-95 cursor-pointer shadow-xl"
-                  title="Press Enter or Space on TV remote"
-                >
-                  {isPlaying ? <Pause className="w-7 h-7 fill-current text-slate-950" /> : <Play className="w-7 h-7 fill-current ml-1 text-slate-950" />}
-                </button>
+                {/* Scrubber & Remote Hotspot Toggle */}
+                <div className="flex items-center gap-6 bg-slate-950/80 border border-amber-500/30 rounded-3xl p-5 backdrop-blur-2xl shadow-2xl">
+                  <button
+                    type="button"
+                    data-hotspot-id="HS_CINEMA_TV_REMOTE_TOGGLE"
+                    onClick={togglePlay}
+                    className="w-14 h-14 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 flex items-center justify-center font-bold shrink-0 transition-transform active:scale-95 cursor-pointer shadow-xl"
+                    title="Press Enter or Space on TV remote"
+                  >
+                    {isPlaying ? <Pause className="w-7 h-7 fill-current text-slate-950" /> : <Play className="w-7 h-7 fill-current ml-1 text-slate-950" />}
+                  </button>
 
-                <div className="flex-1 flex flex-col justify-center gap-2">
-                  <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-300 uppercase tracking-widest">
-                    <span>Press [Enter / Space] to Play/Pause • [← / →] to Seek</span>
-                    <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
-                  </div>
-                  <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-amber-500 to-amber-300 transition-all duration-200"
-                      style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
-                    />
+                  <div className="flex-1 flex flex-col justify-center gap-2">
+                    <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-300 uppercase tracking-widest">
+                      <span>Press [Enter / Space] to Play/Pause • [← / →] to Seek</span>
+                      <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-amber-500 to-amber-300 transition-all duration-200"
+                        style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

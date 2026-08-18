@@ -342,11 +342,12 @@ export function MemoryCard({ memory, onEdit, onDelete, onUnpublish, onToggleLega
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={(e) => { e.stopPropagation(); onView?.(); }}>
-                  <Maximize2 className="h-4 w-4" />
+                <Button variant="ghost" size="sm" className="h-8 px-2.5 text-primary hover:bg-primary/10 gap-1" onClick={(e) => { e.stopPropagation(); onView?.(); }}>
+                  <Maximize2 className="h-3.5 w-3.5" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Watch</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent><p>Cinematic View</p></TooltipContent>
+              <TooltipContent><p>Watch Premiere</p></TooltipContent>
             </Tooltip>
 
             <Tooltip>
