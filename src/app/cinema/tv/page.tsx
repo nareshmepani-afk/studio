@@ -30,17 +30,8 @@ function SmartTVPlayerContent() {
         return;
       }
       try {
-        // Try local saved stories first
-        const rawSaved = localStorage.getItem('mw_saved_stories');
-        if (rawSaved) {
-          const savedList = JSON.parse(rawSaved);
-          const found = savedList.find((item: any) => item.id === memoryId);
-          if (found && isMounted) {
-            setMemory(found);
-            setLoading(false);
-            return;
-          }
-        }
+        // Always fetch complete memory data from API
+        // localStorage 'mw_saved_stories' only stores minimal card metadata (no videoUrl)
         
         // Fetch via API
         const res = await fetch(`/api/guest-access?id=${memoryId}`);
@@ -186,15 +177,14 @@ function SmartTVPlayerContent() {
         />
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center p-12 text-center bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/40 relative">
-          <div className="w-32 h-32 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-amber-300 font-bold text-4xl shadow-[0_0_80px_rgba(245,158,11,0.3)] mb-6">
-            {memory.title?.[0]?.toUpperCase() || memory.credits?.director?.[0] || '⬝'}
-          </div>
+          <Film className="w-16 h-16 text-amber-400/60 mb-6" />
           <h2 className="text-4xl font-headline font-black text-amber-300 uppercase tracking-widest mb-3">{memory.title || 'Family Heirloom'}</h2>
           {(memory.prose || memory.originalHook || memory.description) && (
             <p className="text-lg text-zinc-300 max-w-2xl leading-relaxed italic font-serif">
               "{memory.prose || memory.originalHook || memory.description}"
             </p>
           )}
+          <p className="mt-6 text-sm text-zinc-500 font-mono uppercase tracking-widest">No recorded video available for this memory</p>
         </div>
       )}
 
@@ -264,7 +254,7 @@ function SmartTVPlayerContent() {
             className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-transparent to-slate-950/80 p-12 flex flex-col justify-between pointer-events-none z-30"
           >
             {/* Top 10-Foot Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pt-4">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shadow-lg">
                   <Tv className="w-6 h-6 text-amber-400 animate-pulse" />
