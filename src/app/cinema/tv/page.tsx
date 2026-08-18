@@ -124,6 +124,7 @@ function SmartTVPlayerContent() {
       )?.url;
 
   const formatTime = (timeInSeconds: number) => {
+    if (!isFinite(timeInSeconds) || timeInSeconds < 0) return '--:--';
     const minutes = Math.floor(timeInSeconds / 60);
     const seconds = Math.floor(timeInSeconds % 60);
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
@@ -166,8 +167,22 @@ function SmartTVPlayerContent() {
         <video
           ref={videoRef}
           src={videoUrl}
-          onTimeUpdate={() => videoRef.current && setCurrentTime(videoRef.current.currentTime)}
-          onLoadedMetadata={() => videoRef.current && setDuration(videoRef.current.duration)}
+          onTimeUpdate={() => {
+            if (!videoRef.current) return;
+            setCurrentTime(videoRef.current.currentTime);
+            // Fallback duration resolution for streaming WebM without header metadata
+            if ((!duration || !isFinite(duration)) && isFinite(videoRef.current.duration) && videoRef.current.duration > 0) {
+              setDuration(videoRef.current.duration);
+            }
+          }}
+          onLoadedMetadata={() => {
+            if (!videoRef.current) return;
+            if (isFinite(videoRef.current.duration) && videoRef.current.duration > 0) {
+              setDuration(videoRef.current.duration);
+            }
+          }}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
           autoPlay
           playsInline
           x-webkit-airplay="allow"
