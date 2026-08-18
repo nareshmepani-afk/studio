@@ -6,12 +6,13 @@ import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageW
 import { useAuth } from '@/hooks/useAuth';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useStudioData } from '@/hooks/studio/useStudioData';
-import { unpublishMemoryAction, getPublicMemoryAction, addGuestReactionAction, recordGuestViewAction, submitGuestQuestionAction } from '@/actions/memoryActions';
+import { unpublishMemoryAction, getPublicMemoryAction, addGuestReactionAction, recordGuestViewAction, submitGuestQuestionAction, claimSharedMemoryAction, getSharedWithMeMemoriesAction } from '@/actions/memoryActions';
 import { MemoryCard } from '@/components/memory/MemoryCard';
 import { MemoryCinematicViewer } from '@/components/memory/MemoryCinematicViewer';
 import { CinemaComingSoon } from '@/components/cinema/CinemaComingSoon';
 import { GuestRequestModal } from '@/components/cinema/GuestRequestModal';
-import { Loader2, Clapperboard, Film, Sparkles, User, Play, Heart, MessageSquare, ShieldCheck, ArrowRight, KeyRound, Unlock, Tv } from 'lucide-react';
+import { CinemaScreeningCard } from '@/components/cinema/CinemaScreeningCard';
+import { Loader2, Clapperboard, Film, Sparkles, User, Play, Heart, MessageSquare, ShieldCheck, ArrowRight, KeyRound, Unlock, Tv, Search, Filter, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { Memory } from '@/types';
 import { toast } from 'sonner';
@@ -54,6 +55,16 @@ function CinemaContent() {
   // Saved Stories Library State
   const [savedStories, setSavedStories] = useState<Array<{ id: string; title: string; director: string; savedAt: string }>>([]);
 
+  // Smart Filter State
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'mine' | 'shared'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'pre-release'>('all');
+  const [sharedByFilter, setSharedByFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Shared Memories State
+  const [sharedMemories, setSharedMemories] = useState<any[]>([]);
+  const [isLoadingShared, setIsLoadingShared] = useState(false);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem('mw_saved_stories');
@@ -61,11 +72,46 @@ function CinemaContent() {
     } catch (e) {}
   }, []);
 
-  // Compute 3-Section Memory Collections
+  useEffect(() => {
+    if (!user) return;
+    setIsLoadingShared(true);
+    getSharedWithMeMemoriesAction(user.uid)
+      .then(result => {
+        if (result.memories) setSharedMemories(result.memories);
+      })
+      .finally(() => setIsLoadingShared(false));
+  }, [user]);
+
   const allMemories = chapters.flatMap(c => c.prompts.map(p => p.memory)).filter(Boolean) as Memory[];
-  const publishedMemories = allMemories.filter(m => m.status === 'published');
-  const preReleaseMemories = allMemories.filter(m => m.status === 'pre-release');
-  // MW-186: Drafts (Acts I–IV in progress) are intentionally hidden from Cinema
+
+  // Build combined list with ownership flag
+  const ownMemories = allMemories
+    .filter(m => m.status === 'published' || m.status === 'pre-release')
+    .map(m => ({ ...m, _isOwner: true, _ownerName: '', _ownerEmail: '' }));
+
+  const sharedWithOwnership = sharedMemories.map(m => ({
+    ...m,
+    _isOwner: false,
+    _ownerName: m.ownerDisplayName || '',
+    _ownerEmail: m.ownerEmail || ''
+  }));
+
+  const combinedMemories = [...ownMemories, ...sharedWithOwnership];
+
+  // Apply filters
+  const filteredMemories = combinedMemories.filter(m => {
+    if (sourceFilter === 'mine' && !m._isOwner) return false;
+    if (sourceFilter === 'shared' && m._isOwner) return false;
+    if (statusFilter !== 'all' && m.status !== statusFilter) return false;
+    if (sharedByFilter !== 'all' && m.ownerUid !== sharedByFilter) return false;
+    if (searchQuery && !m.title?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  });
+
+  // Unique shared-by options for the filter dropdown
+  const sharedByOptions = sharedMemories
+    .filter((m, i, arr) => arr.findIndex(x => x.ownerUid === m.ownerUid) === i)
+    .map(m => ({ uid: m.ownerUid, name: m.ownerDisplayName || m.ownerEmail || m.ownerUid }));
 
   // Auto-fetch shared memory when opened via Guest Access Pass URL (?id=...)
   useEffect(() => {
@@ -83,6 +129,18 @@ function CinemaContent() {
           setPublicMemory(res.memory);
           // Do not auto-select memory on mount so guest sees hero card & pricing matrix first
           
+          // Auto-claim shared memory
+          if (user && res.memory.userId && user.uid !== res.memory.userId) {
+            claimSharedMemoryAction(memoryIdParam, user.uid)
+              .then(claimResult => {
+                if (claimResult.success) {
+                  toast.success(`🎬 Story added to your Cinema library`, {
+                    description: `"${claimResult.memoryTitle}" by ${claimResult.ownerDisplayName}`
+                  });
+                }
+              });
+          }
+
           // Increment guest view count atomically
           recordGuestViewAction(res.memory.id).then((vRes) => {
             if (vRes.success && vRes.guestViewCount) {
@@ -514,10 +572,10 @@ function CinemaContent() {
                        <User className="h-3 w-3 text-primary/60" />
                        <span className="text-[10px] uppercase font-bold tracking-widest">Director: {user?.displayName || 'Legacy Host'}</span>
                     </div>
-                    {!isGuest && stats.published > 0 && (
+                    {!isGuest && (
                       <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/10">
                          <Sparkles className="h-3 w-3 text-primary" />
-                         <span className="text-[10px] uppercase font-bold tracking-widest text-primary">{stats.published} Stories Released</span>
+                         <span className="text-[10px] uppercase font-bold tracking-widest text-primary">{filteredMemories.length} Stories Available</span>
                       </div>
                     )}
                  </div>
@@ -534,76 +592,117 @@ function CinemaContent() {
         {/* 3-SECTION CINEMA DASHBOARD ARCHITECTURE */}
         <div className="space-y-24">
 
-          {/* SECTION 1: 🌟 OFFICIAL PREMIERES */}
-          <section data-hotspot-id="HS_CINEMA_SECTION_OFFICIAL" className="space-y-8">
-            <div className="flex items-center justify-between border-b border-emerald-500/20 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
-                <h2 className="text-2xl md:text-4xl font-headline italic text-white font-bold">
-                  🌟 Official Premieres
-                </h2>
-                <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold uppercase tracking-widest rounded-full">
-                  Locked 4K Master Reels
-                </span>
-              </div>
-              <span className="text-xs font-mono text-white/40">{publishedMemories.length} Stories Released</span>
+          {/* Smart Filter Bar */}
+          <div className="mb-8 flex flex-wrap items-center gap-3">
+            {/* Source Filter */}
+            <div className="flex items-center gap-1 bg-slate-900/80 border border-white/10 rounded-xl px-1 py-1">
+              {(['all', 'mine', 'shared'] as const).map(value => (
+                <button
+                  key={value}
+                  onClick={() => setSourceFilter(value)}
+                  className={`px-4 py-2 rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition-all ${
+                    sourceFilter === value
+                      ? 'bg-amber-500 text-slate-950 shadow-lg'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  {value === 'all' ? 'All' : value === 'mine' ? 'My Productions' : 'Shared With Me'}
+                </button>
+              ))}
             </div>
 
-            {publishedMemories.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {publishedMemories.map((mem) => (
-                  <MemoryCard 
-                    key={mem.id}
-                    memory={mem}
-                    onEdit={!isGuest ? () => handleEdit(mem) : undefined}
-                    onUnpublish={!isGuest ? () => handleUnpublish(mem.id) : undefined}
-                    onView={() => setSelectedMemory(mem)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="p-8 rounded-2xl bg-black/40 border border-white/10 text-center text-white/40 text-xs font-mono">
-                No official premieres released yet. Complete Act V in Studio to release your first master reel!
-              </div>
-            )}
-          </section>
+            {/* Status Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="bg-slate-900/80 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-mono font-bold uppercase tracking-wider text-white/80 appearance-none cursor-pointer"
+            >
+              <option value="all">All Statuses</option>
+              <option value="published">🎬 Published</option>
+              <option value="pre-release">🌟 Pre-Release</option>
+            </select>
 
-          {/* SECTION 2: 🎬 PRE-RELEASE SCREENERS (Work-in-Progress & Private Shares) */}
-          <section data-hotspot-id="HS_CINEMA_SECTION_DRAFTS" className="space-y-8">
-            <div className="flex items-center justify-between border-b border-amber-500/20 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-amber-400 animate-pulse" />
-                <h2 className="text-2xl md:text-4xl font-headline italic text-white font-bold">
-                  🌟 Pre-Release Masters
-                </h2>
-                <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-mono font-bold uppercase tracking-widest rounded-full">
-                  Director Screeners
-                </span>
-              </div>
-              <span className="text-xs font-mono text-white/40">{preReleaseMemories.length} Screeners Ready</span>
+            {/* Shared By Filter (only when shared tab or all) */}
+            {sourceFilter !== 'mine' && sharedByOptions.length > 0 && (
+              <select
+                value={sharedByFilter}
+                onChange={(e) => setSharedByFilter(e.target.value)}
+                className="bg-slate-900/80 border border-white/10 rounded-xl px-4 py-2.5 text-xs font-mono font-bold uppercase tracking-wider text-white/80 appearance-none cursor-pointer"
+              >
+                <option value="all">All Directors</option>
+                {sharedByOptions.map(opt => (
+                  <option key={opt.uid} value={opt.uid}>{opt.name}</option>
+                ))}
+              </select>
+            )}
+
+            {/* Search */}
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+              <input
+                type="text"
+                placeholder="Search stories..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-xs font-mono text-white/80 placeholder:text-white/30 focus:border-amber-500/50 focus:outline-none transition-colors"
+              />
             </div>
 
-            {preReleaseMemories.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {preReleaseMemories.map((mem) => (
-                  <div key={mem.id} className="relative group">
-                    <div className="absolute top-3 right-3 z-20 px-2.5 py-1 bg-amber-500/90 text-slate-950 text-[9px] font-mono font-black uppercase tracking-widest rounded-full shadow-lg">
-                      🌟 PRE-RELEASE MASTER
-                    </div>
-                    <MemoryCard 
-                      memory={mem}
-                      onEdit={!isGuest ? () => handleEdit(mem) : undefined}
-                      onView={() => setSelectedMemory(mem)}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-8 rounded-2xl bg-black/40 border border-white/10 text-center text-white/40 text-xs font-mono">
-                No pre-release masters ready. Complete all 5 Acts in Studio to create your first screener!
-              </div>
-            )}
-          </section>
+            {/* Results Count */}
+            <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">
+              {filteredMemories.length} {filteredMemories.length === 1 ? 'Story' : 'Stories'}
+            </span>
+          </div>
+
+          {/* Poster Card Grid */}
+          {filteredMemories.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredMemories.map((memory) => (
+                <CinemaScreeningCard
+                  key={memory.id}
+                  memory={memory}
+                  isOwner={memory._isOwner}
+                  ownerDisplayName={memory._ownerName}
+                  ownerEmail={memory._ownerEmail}
+                  onView={() => {
+                    if (memory._isOwner) {
+                      setSelectedMemory(memory);
+                    } else {
+                      setPublicMemory(memory);
+                    }
+                  }}
+                  onTvPlay={() => router.push(`/cinema/tv?id=${memory.id}`)}
+                  onShare={() => {
+                    // Could open ShareDialog if owner
+                    if (memory._isOwner) {
+                      setSelectedMemory(memory);
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20 px-8">
+              <Film className="w-16 h-16 text-white/10 mx-auto mb-4" />
+              <p className="text-sm text-white/40 font-mono">
+                {sourceFilter === 'shared'
+                  ? 'No shared memories yet. When family or friends share their stories with you, they will appear here.'
+                  : sourceFilter === 'mine'
+                  ? 'Your screening room awaits. Complete Act V in Studio to premiere your first memory.'
+                  : searchQuery
+                  ? 'No memories match your search.'
+                  : 'No memories to display yet.'}
+              </p>
+              {(searchQuery || statusFilter !== 'all' || sourceFilter !== 'all' || sharedByFilter !== 'all') && (
+                <button
+                  onClick={() => { setSearchQuery(''); setStatusFilter('all'); setSourceFilter('all'); setSharedByFilter('all'); }}
+                  className="mt-4 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-white/60 hover:bg-white/10 transition-colors"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          )}
 
           {/* SECTION 3: 🔖 MY SAVED FAMILY CINEMA (Bookmarked Shared Stories) */}
           <section data-hotspot-id="HS_CINEMA_SECTION_SAVED" className="space-y-8">

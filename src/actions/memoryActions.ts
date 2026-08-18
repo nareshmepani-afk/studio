@@ -2,6 +2,7 @@
 
 import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import { Memory } from '@/types';
+import { FieldValue } from 'firebase-admin/firestore';
 import { revalidatePath } from 'next/cache';
 import { mockPrompts } from '@/lib/mockData';
 import { verifyRecaptchaToken } from '@/lib/fraud-defense';
@@ -464,3 +465,69 @@ export async function submitDraftFeedbackAction(
 
 // We need to re-import getSession here because it was removed from the top of the file
 import { getSession } from '@/lib/session';
+
+export async function claimSharedMemoryAction(memoryId: string, claimantUid: string): Promise<{ success: boolean; memoryTitle?: string; ownerDisplayName?: string; error?: string }> {
+  if (!memoryId || !claimantUid || !adminDb) {
+    return { success: false, error: 'Invalid request or database not initialized.' };
+  }
+
+  try {
+    const memoryQuery = await adminDb.collectionGroup('memories').get();
+    const targetDoc = memoryQuery.docs.find(d => d.id === memoryId);
+
+    if (!targetDoc || !targetDoc.exists) {
+      return { success: false, error: 'Memory story not found.' };
+    }
+
+    const data = targetDoc.data() as Memory;
+
+    if (data.status === 'draft') {
+      return { success: false, error: 'This memory is not available for claiming.' };
+    }
+
+    if (data.userId === claimantUid) {
+      return { success: false, error: 'You cannot claim your own memory.' };
+    }
+
+    await targetDoc.ref.update({
+      sharedWith: FieldValue.arrayUnion(claimantUid)
+    });
+
+    const userDoc = await adminDb.collection('users').doc(data.userId).get();
+    const ownerDisplayName = userDoc.exists ? userDoc.data()?.displayName || userDoc.data()?.name || 'Memory Weaver Director' : 'Memory Weaver Director';
+
+    return { success: true, memoryTitle: data.title, ownerDisplayName };
+  } catch (error: any) {
+    console.error('[claimSharedMemoryAction] Error claiming shared memory:', error);
+    return { success: false, error: error?.message || 'Failed to claim shared memory.' };
+  }
+}
+
+export async function getSharedWithMeMemoriesAction(uid: string): Promise<{ memories: any[]; error?: string }> {
+  if (!uid || !adminDb) {
+    return { memories: [], error: 'Invalid request or database not initialized.' };
+  }
+
+  try {
+    const memoriesQuery = await adminDb.collectionGroup('memories')
+      .where('sharedWith', 'array-contains', uid)
+      .where('status', 'in', ['published', 'pre-release'])
+      .get();
+
+    const memories = memoriesQuery.docs.map(doc => {
+      const data = doc.data();
+      const ownerUid = doc.ref.parent.parent?.id;
+      return {
+        id: doc.id,
+        ...data,
+        ownerUid,
+        ownerPath: ownerUid ? `users/${ownerUid}/memories` : undefined
+      };
+    });
+
+    return { memories };
+  } catch (error: any) {
+    console.error('[getSharedWithMeMemoriesAction] Error fetching shared memories:', error);
+    return { memories: [], error: error?.message || 'Failed to fetch shared memories.' };
+  }
+}

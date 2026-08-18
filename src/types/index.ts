@@ -114,6 +114,7 @@ export interface Memory {
   cameraActive?: boolean;
   videoStory?: string; // Fused narrative from Hook + Transcript
   guestViewCount?: number;
+  sharedWith?: string[]; // UIDs of users who claimed access via share link
   vaultTier?: 'free' | 'host_pass' | 'lifetime_vault';
   passcode?: string;
   optionalPasscode?: string;
