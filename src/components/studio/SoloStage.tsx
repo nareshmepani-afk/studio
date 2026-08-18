@@ -5457,10 +5457,29 @@ export default function SoloStage({
                    <h4 className="text-[10px] font-mono tracking-[0.3em] text-amber-400 font-bold uppercase flex items-center gap-2">
                      🎬 MASTERING CONSOLE
                    </h4>
-                   <span className="flex items-center gap-1.5 text-[9px] font-mono text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                     4K MASTERED
-                   </span>
+                   <div className="flex items-center gap-2">
+                     {/* MW-186: Dynamic Lifecycle Status Badge */}
+                     {data?.status === 'published' ? (
+                       <span className="flex items-center gap-1.5 text-[9px] font-mono text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                         🎬 LIVE IN CINEMA
+                       </span>
+                     ) : data?.status === 'pre-release' ? (
+                       <span className="flex items-center gap-1.5 text-[9px] font-mono text-violet-400 bg-violet-950/50 border border-violet-500/30 px-2 py-0.5 rounded-full">
+                         <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                         🌟 PRE-RELEASE
+                       </span>
+                     ) : (
+                       <span className="flex items-center gap-1.5 text-[9px] font-mono text-amber-400 bg-amber-950/50 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                         🛠️ IN PRODUCTION
+                       </span>
+                     )}
+                     <span className="flex items-center gap-1.5 text-[9px] font-mono text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                       4K MASTERED
+                     </span>
+                   </div>
                  </div>
                  
                  {/* TIER 1: HERO ACTION - LAUNCH FULLSCREEN PREMIERE */}
