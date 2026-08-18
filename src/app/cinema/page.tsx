@@ -64,7 +64,8 @@ function CinemaContent() {
   // Compute 3-Section Memory Collections
   const allMemories = chapters.flatMap(c => c.prompts.map(p => p.memory)).filter(Boolean) as Memory[];
   const publishedMemories = allMemories.filter(m => m.status === 'published');
-  const draftMemories = allMemories.filter(m => m.status !== 'published');
+  const preReleaseMemories = allMemories.filter(m => m.status === 'pre-release');
+  // MW-186: Drafts (Acts I–IV in progress) are intentionally hidden from Cinema
 
   // Auto-fetch shared memory when opened via Guest Access Pass URL (?id=...)
   useEffect(() => {
@@ -573,21 +574,21 @@ function CinemaContent() {
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-amber-400 animate-pulse" />
                 <h2 className="text-2xl md:text-4xl font-headline italic text-white font-bold">
-                  🎬 Pre-Release Screeners
+                  🌟 Pre-Release Masters
                 </h2>
                 <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-mono font-bold uppercase tracking-widest rounded-full">
-                  Private Family Cuts
+                  Director Screeners
                 </span>
               </div>
-              <span className="text-xs font-mono text-white/40">{draftMemories.length} Screeners Active</span>
+              <span className="text-xs font-mono text-white/40">{preReleaseMemories.length} Screeners Ready</span>
             </div>
 
-            {draftMemories.length > 0 ? (
+            {preReleaseMemories.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {draftMemories.map((mem) => (
+                {preReleaseMemories.map((mem) => (
                   <div key={mem.id} className="relative group">
                     <div className="absolute top-3 right-3 z-20 px-2.5 py-1 bg-amber-500/90 text-slate-950 text-[9px] font-mono font-black uppercase tracking-widest rounded-full shadow-lg">
-                      🎬 PRE-RELEASE DRAFT
+                      🌟 PRE-RELEASE MASTER
                     </div>
                     <MemoryCard 
                       memory={mem}
@@ -599,7 +600,7 @@ function CinemaContent() {
               </div>
             ) : (
               <div className="p-8 rounded-2xl bg-black/40 border border-white/10 text-center text-white/40 text-xs font-mono">
-                No active pre-release screeners in production.
+                No pre-release masters ready. Complete all 5 Acts in Studio to create your first screener!
               </div>
             )}
           </section>

@@ -135,7 +135,7 @@ export function useStudioData(userId: string | undefined) {
         };
       });
 
-      const publishedCount = correlatedPrompts.filter(p => p.memory?.status === 'published').length;
+      const publishedCount = correlatedPrompts.filter(p => p.memory?.status === 'published' || p.memory?.status === 'pre-release').length;
       const isCompleted = publishedCount === group.prompts.length && group.prompts.length > 0;
 
       // Dynamic Title Logic
@@ -167,11 +167,13 @@ export function useStudioData(userId: string | undefined) {
   // Global Publish Stats
   const stats = useMemo(() => {
     const published = memories.filter(m => m.status === 'published').length;
+    const preRelease = memories.filter(m => m.status === 'pre-release').length;
     const drafts = memories.filter(m => m.status === 'draft').length;
     const totalPossible = mockPromptGroups.reduce((acc, g) => acc + g.prompts.length, 0);
 
     return {
       published,
+      preRelease,
       drafts,
       totalPossible,
       completionPercentage: Math.round((published / totalPossible) * 100),

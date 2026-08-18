@@ -47,7 +47,7 @@ type PromptCardProps = {
   onToggleFlagPrompt: (promptId: string) => void;
   canAccess: boolean;
   memoryDescription?: string;
-  status?: 'draft' | 'published' | 'completed';
+  status?: 'draft' | 'pre-release' | 'published' | 'completed';
   prompt?: Prompt;
   parentPrompt?: Prompt;
   isRecommended?: boolean;
@@ -200,6 +200,10 @@ export function PromptCard(props: PromptCardProps) {
                       {status === 'published' ? (
                         <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-green-500/20 text-green-500 border border-green-500/30 text-[9px] font-black uppercase tracking-widest">
                           <Rocket className="w-2.5 h-2.5" /> Cinema
+                        </div>
+                      ) : status === 'pre-release' ? (
+                        <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-violet-500/20 text-violet-400 border border-violet-500/30 text-[9px] font-black uppercase tracking-widest">
+                          <Film className="w-2.5 h-2.5" /> Pre-Release
                         </div>
                       ) : (
                         <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/20 text-amber-500 border border-amber-500/30 text-[9px] font-black uppercase tracking-widest">

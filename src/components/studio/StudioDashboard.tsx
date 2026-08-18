@@ -236,7 +236,7 @@ export function StudioDashboard({
           <StatCard 
             icon={<MonitorPlay className="w-5 h-5" />} 
             label="Recorded" 
-            value={stats.published + stats.drafts} 
+            value={stats.published + (stats.preRelease || 0) + stats.drafts} 
             subLabel={`${stats.completionPercentage}% Published`}
             color="green"
           />

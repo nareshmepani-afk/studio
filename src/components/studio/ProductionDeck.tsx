@@ -191,6 +191,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         
         // 1. Sync stage - Restore from saved database state or URL override
         setStage(targetStage);
+
+        // MW-186: Auto-transition draft → pre-release on mount if already at Act V
+        if (targetStage === 4 && memoryData?.status === 'draft' && !isExplicitScriptEditorRequest) {
+            handleUpdate({ status: 'pre-release' });
+        }
         
         // 2. Sync modality (default to 'pen' if missing to prevent dock unmounting)
         if (memoryData?.modality) {
@@ -940,6 +945,10 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             setShowPreFlight(false); // Reset pre-flight
             if ((memoryData?.productionStage || 0) < next) {
                 handleUpdate({ productionStage: next });
+            }
+            // MW-186: Auto-transition draft → pre-release when entering Act V
+            if (next === 4 && memoryData?.status === 'draft') {
+                handleUpdate({ status: 'pre-release' });
             }
         }
     }, [

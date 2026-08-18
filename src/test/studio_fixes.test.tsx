@@ -1829,25 +1829,37 @@ describe('Studio Regression Tests', () => {
       expect(vaultDisplay).toBe('£195.00');
     });
 
-    it('MW-122 PRE-RELEASE SCREENERS & 3-SECTION CINEMA DASHBOARD SHIELD: should correctly partition memories into Official Premieres, Pre-Release Screeners, and Saved Cinema', () => {
+    it('MW-122 PRE-RELEASE SCREENERS & 3-SECTION CINEMA DASHBOARD SHIELD: should correctly partition memories into Official Premieres, Pre-Release Masters, and hidden Drafts', () => {
       const memories = [
         { id: 'm1', title: 'Arrival in Kenya', status: 'published' },
         { id: 'm2', title: 'Childhood Memories', status: 'draft' },
         { id: 'm3', title: 'School Days in Madhapur', status: 'published' },
-        { id: 'm4', title: 'Voyage across Oceans', status: 'draft' }
+        { id: 'm4', title: 'Voyage across Oceans', status: 'draft' },
+        { id: 'm5', title: 'The Wedding', status: 'pre-release' }
       ];
 
       const publishedMemories = memories.filter(m => m.status === 'published');
-      const draftMemories = memories.filter(m => m.status !== 'published');
+      const preReleaseMemories = memories.filter(m => m.status === 'pre-release');
+      const draftMemories = memories.filter(m => m.status === 'draft');
 
+      // MW-186: 3-tier partition
       expect(publishedMemories.length).toBe(2);
       expect(publishedMemories[0].title).toBe('Arrival in Kenya');
       expect(publishedMemories[1].title).toBe('School Days in Madhapur');
 
+      expect(preReleaseMemories.length).toBe(1);
+      expect(preReleaseMemories[0].title).toBe('The Wedding');
+
+      // Drafts are hidden from Cinema — only visible in Studio
       expect(draftMemories.length).toBe(2);
       expect(draftMemories[0].title).toBe('Childhood Memories');
       expect(draftMemories[1].title).toBe('Voyage across Oceans');
+
+      // MW-186: Unpublish reverts to 'pre-release', not 'draft'
+      const unpublished = { ...publishedMemories[0], status: 'pre-release' };
+      expect(unpublished.status).toBe('pre-release');
     });
+
 
     it('MW-122 DRAFT FEEDBACK ACTION SHIELD: should format private draft feedback notes payload', () => {
       const memoryId = 'm2';

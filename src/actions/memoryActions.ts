@@ -172,7 +172,7 @@ export async function cleanupAndMigrateMemories(): Promise<{ success: boolean; m
             if (!data.status) {
                 batch.update(docSnap.ref, { status: 'draft' });
                 migratedCount++;
-            } else if (data.status !== 'draft' && data.status !== 'published') {
+            } else if (data.status !== 'draft' && data.status !== 'published' && data.status !== 'pre-release') {
                 // Should not happen with new enum, but for safety
                 batch.update(docSnap.ref, { status: 'draft' });
                 migratedCount++;
@@ -262,14 +262,14 @@ export async function unpublishMemoryAction(memoryId: string): Promise<{ success
     try {
         const docRef = adminDb.collection('users').doc(session.uid).collection('memories').doc(memoryId);
         await docRef.update({ 
-            status: 'draft',
+            status: 'pre-release',
             updatedAt: new Date().toISOString()
         });
         
         revalidatePath('/cinema');
         revalidatePath('/studio');
         
-        return { success: true, message: "Memory reverted to draft." };
+        return { success: true, message: "Memory reverted to pre-release." };
     } catch (error: any) {
         return { success: false, message: error.message || "Failed to revert to draft." };
     }

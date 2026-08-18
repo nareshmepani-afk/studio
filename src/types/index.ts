@@ -77,7 +77,7 @@ export interface Memory {
   date: string;
   createdAt: string;
   updatedAt: string;
-  status?: 'draft' | 'published' | 'completed';
+  status?: 'draft' | 'pre-release' | 'published' | 'completed';
   mediaAttachments?: MediaAttachment[];
   imageUrl?: string;
   isLegacy?: boolean;

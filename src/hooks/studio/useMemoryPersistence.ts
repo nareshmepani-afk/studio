@@ -320,7 +320,7 @@ export function useMemoryPersistence({
           productionTakes: s.productionTakes || currentData?.productionTakes || undefined,
           previousDraftState: s.previousDraftState !== undefined ? s.previousDraftState : (currentData?.previousDraftState || undefined),
           isReviewing: s.isReviewing ?? false,
-          status: 'draft' as const // status is usually managed elsewhere but we keep it safe
+          status: ((s as any).status || currentData?.status || 'draft') as 'draft' | 'pre-release' | 'published' | 'completed' // MW-186: Preserve existing status during flush
         };
 
         console.log("[useMemoryPersistence] Manual Flush Delta package ready:", {

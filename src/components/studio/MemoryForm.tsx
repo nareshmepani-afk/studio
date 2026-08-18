@@ -1061,11 +1061,11 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     try {
       const res = await unpublishMemoryAction(data.id);
       if (res.success) {
-        toast.success("Moved to Draft", { 
-          description: "This memory has been removed from the Cinema and returned to Studio drafts.",
+        toast.success("Moved to Pre-Release", { 
+          description: "This memory has been removed from Cinema and returned to pre-release.",
           icon: <Edit3 className="w-4 h-4 text-amber-500" />
         });
-        update(prev => ({ ...prev, status: 'draft' }));
+        update(prev => ({ ...prev, status: 'pre-release' }));
       } else {
         toast.error("Failed to unpublish", { description: res.message });
       }
