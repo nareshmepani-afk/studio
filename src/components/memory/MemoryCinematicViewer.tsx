@@ -12,6 +12,7 @@ import { CinemaPoster } from '@/components/memory/CinemaPoster';
 import { downloadFusedAutobiography } from '@/utils/autobiographyExporter';
 import { useAuth } from '@/hooks/useAuth';
 import { ArrowLeft } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface MemoryCinematicViewerProps {
   memory: Memory | null;
@@ -231,12 +232,21 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
 
   const handleTimeUpdate = () => {
     if (!videoRef.current) return;
-    setCurrentTime(videoRef.current.currentTime);
+    setCurrentTime(videoRef.current.currentTime || 0);
+    const d = videoRef.current.duration;
+    if (isFinite(d) && !isNaN(d) && d > 0 && (!isFinite(duration) || duration === 0)) {
+      setDuration(d);
+    }
   };
 
   const handleLoadedMetadata = () => {
     if (!videoRef.current) return;
-    setDuration(videoRef.current.duration || 0);
+    const d = videoRef.current.duration;
+    if (isFinite(d) && !isNaN(d) && d > 0) {
+      setDuration(d);
+    } else {
+      setDuration(0);
+    }
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -263,6 +273,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
   };
 
   const formatTime = (timeInSeconds: number) => {
+    if (!isFinite(timeInSeconds) || isNaN(timeInSeconds) || timeInSeconds < 0) return '00:00';
     const mins = Math.floor(timeInSeconds / 60);
     const secs = Math.floor(timeInSeconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -366,7 +377,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                     <input
                       type="range"
                       min={0}
-                      max={duration || 100}
+                      max={duration > 0 && isFinite(duration) ? duration : (currentTime > 0 ? currentTime + 10 : 100)}
                       value={currentTime}
                       onChange={handleSeek}
                       className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-400"
@@ -382,28 +393,47 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                     >
                       {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
                     </button>
-                    <button
-                      type="button"
-                      data-hotspot-id="HS_CINEMA_CAST_AIRPLAY_BTN"
-                      onClick={triggerAirPlay}
-                      className="p-1.5 rounded-lg bg-white/5 hover:bg-amber-500/20 text-white/80 hover:text-amber-300 transition-all cursor-pointer"
-                      title="Cast via Apple AirPlay"
-                    >
-                      <Airplay className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      data-hotspot-id="HS_CINEMA_CAST_CHROMECAST_BTN"
-                      onClick={triggerChromecast}
-                      className="p-1.5 rounded-lg bg-white/5 hover:bg-amber-500/20 text-white/80 hover:text-amber-300 transition-all cursor-pointer"
-                      title="Cast via Google Chromecast"
-                    >
-                      <Cast className="w-3.5 h-3.5" />
-                    </button>
+                    <TooltipProvider delayDuration={150}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            data-hotspot-id="HS_CINEMA_CAST_AIRPLAY_BTN"
+                            onClick={triggerAirPlay}
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-amber-500/20 text-white/80 hover:text-amber-300 transition-all cursor-pointer"
+                          >
+                            <Airplay className="w-3.5 h-3.5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="bg-slate-950/95 border border-white/10 p-2.5 text-xs text-white max-w-xs shadow-2xl z-[10002] rounded-xl">
+                          <p className="font-mono text-[9px] font-bold text-amber-400 uppercase tracking-widest mb-1">AirPlay Streaming</p>
+                          <p className="text-[10px] text-white/70">Mirror playback directly to Apple TV or AirPlay 2 compatible screens.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider delayDuration={150}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            data-hotspot-id="HS_CINEMA_CAST_CHROMECAST_BTN"
+                            onClick={triggerChromecast}
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-amber-500/20 text-white/80 hover:text-amber-300 transition-all cursor-pointer"
+                          >
+                            <Cast className="w-3.5 h-3.5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="bg-slate-950/95 border border-white/10 p-2.5 text-xs text-white max-w-xs shadow-2xl z-[10002] rounded-xl">
+                          <p className="font-mono text-[9px] font-bold text-amber-400 uppercase tracking-widest mb-1">Google Cast</p>
+                          <p className="text-[10px] text-white/70">Stream master reel to Chromecast or Android TV devices.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <button
                       type="button"
                       onClick={toggleFullscreen}
                       className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 hover:text-white transition-colors cursor-pointer"
+                      title="Fullscreen"
                     >
                       <Maximize2 className="w-3.5 h-3.5" />
                     </button>
@@ -526,27 +556,44 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
               </button>
 
               {/* Living Room TV Launcher Button */}
-              <button
-                type="button"
-                data-hotspot-id="HS_CINEMA_TV_LAUNCHER_BTN"
-                onClick={() => {
-                  if (videoRef.current && (videoRef.current as any).webkitShowPlaybackTargetPicker) {
-                    triggerAirPlay();
-                  } else if ((window as any).cast?.framework) {
-                    triggerChromecast();
-                  } else {
-                    window.open(`/cinema/tv?id=${memory.id}`, '_blank');
-                    toast.info("Smart TV Cinema Mode Launched", {
-                      description: "Opened 10-foot player route (/cinema/tv) optimized for Smart TV remotes."
-                    });
-                  }
-                }}
-                className="px-3.5 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border border-amber-500/40 hover:scale-105"
-                title="Cast to Living Room TV or launch Smart TV mode"
-              >
-                <Tv className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                <span>Cast to TV</span>
-              </button>
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      data-hotspot-id="HS_CINEMA_TV_LAUNCHER_BTN"
+                      onClick={() => {
+                        if (videoRef.current && (videoRef.current as any).webkitShowPlaybackTargetPicker) {
+                          triggerAirPlay();
+                        } else if ((window as any).cast?.framework) {
+                          triggerChromecast();
+                        } else {
+                          window.open(`/cinema/tv?id=${memory.id}`, '_blank');
+                          toast.info("Smart TV Cinema Mode Launched", {
+                            description: "Opened 10-foot player route (/cinema/tv) optimized for Smart TV remotes."
+                          });
+                        }
+                      }}
+                      className="px-3.5 py-1.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer border border-amber-500/40 hover:scale-105"
+                    >
+                      <Tv className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                      <span>Cast to TV</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="bg-slate-950/95 border border-white/10 p-3.5 text-left max-w-xs backdrop-blur-xl shadow-2xl z-[10002] rounded-xl">
+                    <p className="text-[10px] font-mono tracking-[0.15em] text-amber-400 font-bold uppercase mb-2 flex items-center gap-1.5">
+                      <Tv className="w-3.5 h-3.5" />
+                      How to Stream to Your TV
+                    </p>
+                    <ul className="text-[11px] text-white/70 space-y-1 list-disc list-inside font-sans">
+                      <li><strong className="text-white/90">Chrome:</strong> Menu (⋮) → Cast → Select TV</li>
+                      <li><strong className="text-white/90">Safari:</strong> Tap AirPlay icon in video controls</li>
+                      <li><strong className="text-white/90">Smart TV:</strong> Open TV player mode directly</li>
+                      <li><strong className="text-white/90">HDMI:</strong> Connect laptop to TV via HDMI cable</li>
+                    </ul>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               {/* Save / Bookmark Button */}
               <button
