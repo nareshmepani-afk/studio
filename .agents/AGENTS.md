@@ -111,6 +111,12 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Interactive Beat Seek Contracts**: Emotional Beats timestamp buttons inside `DirectorsNotepad` MUST pass explicit time values to `onSeek` callbacks and provide hover tooltips (`"Click timestamp to seek master video playback to [time]"`).
 - **Ambient Soundtrack Player Integration**: Fusion Protocol tabs inside `DirectorsNotepad` MUST provide an embedded ambient soundtrack player card allowing users to audition and toggle background scores with real-time visual waveform feedback and clear play/pause tooltips.
 
+# 25. Zero Uncertainty — Team Escalation Protocol
+- **We Are a Team of Three**: The user, Claude (Gatekeeper), and the agent operate as a collaborative team. The agent MUST NEVER declare a status as "uncertain" or "unknown" and leave it unresolved. If the agent cannot programmatically verify a state (e.g., build deployment, data integrity, Firestore document status), it MUST immediately escalate to the team with a clear, actionable question.
+- **Ask, Don't Declare Uncertainty**: Instead of saying "Build status: UNCERTAIN", the agent MUST say "Could you check [specific thing] and confirm [specific question]?" — giving the user a concrete action to take.
+- **Exhaust All Diagnostic Avenues First**: Before escalating, the agent MUST attempt every available diagnostic tool (MCP tools, API calls, log inspection, version string checks). Only if ALL programmatic avenues fail should the agent escalate to the user.
+- **Never Leave Work Hanging**: Every escalation MUST include: (1) what was attempted, (2) why it failed, (3) exactly what the user needs to check, and (4) what the next step is once the answer is known.
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
 - **2026-07-04**: v1.1.0-beta-MW-70. Resolved MFA loader lockout, expanded TOTP key length to 16 characters, corrected QR code URI literal colon separator, and added setup page console diagnostics. (Build Verify: SUCCESS)
