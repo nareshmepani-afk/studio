@@ -242,9 +242,20 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
 
   const handleLoadedMetadata = () => {
     if (!videoRef.current) return;
-    const d = videoRef.current.duration;
+    const v = videoRef.current;
+    const d = v.duration;
     if (isFinite(d) && !isNaN(d) && d > 0) {
       setDuration(d);
+    } else if (d === Infinity || isNaN(d) || d <= 0) {
+      // Chromium WebM duration calculation fix: seeking forces decoder to compute duration
+      v.currentTime = 1e101;
+      v.ontimeupdate = function() {
+        v.ontimeupdate = null;
+        v.currentTime = 0;
+        if (isFinite(v.duration) && v.duration > 0) {
+          setDuration(v.duration);
+        }
+      };
     } else {
       setDuration(0);
     }

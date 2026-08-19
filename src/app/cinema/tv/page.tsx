@@ -13,13 +13,7 @@ function SmartTVPlayerContent() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [memory, setMemory] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
-  const [duration, setDuration] = useState<number>(0);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
-  const [showHud, setShowHud] = useState<boolean>(true);
-  const [showCastGuide, setShowCastGuide] = useState<boolean>(false);
-  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch memory details
   useEffect(() => {
@@ -50,11 +44,54 @@ function SmartTVPlayerContent() {
     return () => { isMounted = false; };
   }, [memoryId]);
 
+  const fallbackDuration = (memory as any)?.duration || 
+    memory?.mediaAttachments?.find((m: any) => m.duration)?.duration || 
+    0;
+  const [duration, setDuration] = useState(fallbackDuration);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showHud, setShowHud] = useState(true);
+  const [showCastGuide, setShowCastGuide] = useState(false);
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync duration if memory changes
+  useEffect(() => {
+    if (fallbackDuration > 0 && (!duration || duration === 0)) {
+      setDuration(fallbackDuration);
+    }
+  }, [fallbackDuration]);
+
+  const handleLoadedMetadata = () => {
+    if (!videoRef.current) return;
+    const v = videoRef.current;
+    const d = v.duration;
+    if (isFinite(d) && !isNaN(d) && d > 0) {
+      setDuration(d);
+    } else if (d === Infinity || isNaN(d) || d <= 0) {
+      // Chromium WebM duration calculation fix: seeking forces decoder to compute duration
+      v.currentTime = 1e101;
+      v.ontimeupdate = function() {
+        v.ontimeupdate = null;
+        v.currentTime = 0;
+        if (isFinite(v.duration) && v.duration > 0) {
+          setDuration(v.duration);
+        }
+      };
+    }
+  };
+
+  const formatTime = (timeInSeconds: number) => {
+    if (!isFinite(timeInSeconds) || isNaN(timeInSeconds) || timeInSeconds < 0) return '0:00';
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+
   // Handle inactivity timer to auto-hide 10-foot HUD after 3 seconds
   const resetInactivityTimer = () => {
     setShowHud(true);
-    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
-    inactivityTimerRef.current = setTimeout(() => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => {
       if (isPlaying) {
         setShowHud(false);
       }
@@ -67,7 +104,7 @@ function SmartTVPlayerContent() {
     window.addEventListener('mousemove', handleMouseMove);
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     };
   }, [isPlaying]);
 
@@ -123,15 +160,6 @@ function SmartTVPlayerContent() {
         (m: any) => m.type === 'video' || m.url?.includes('.mp4') || m.url?.includes('.webm')
       )?.url;
 
-  const formatTime = (timeInSeconds: number, isDuration = false) => {
-    if (!isFinite(timeInSeconds) || isNaN(timeInSeconds) || timeInSeconds < 0 || (isDuration && timeInSeconds === 0)) {
-      return isDuration ? '--:--' : '0:00';
-    }
-    const minutes = Math.floor(timeInSeconds / 60);
-    const seconds = Math.floor(timeInSeconds % 60);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-  };
-
   if (loading) {
     return (
       <div className="w-screen h-screen bg-slate-950 flex flex-col items-center justify-center text-white font-sans p-8">
@@ -173,22 +201,12 @@ function SmartTVPlayerContent() {
             if (!videoRef.current) return;
             setCurrentTime(videoRef.current.currentTime);
             // Fallback duration resolution for streaming WebM without header metadata
-            if ((!duration || !isFinite(duration)) && isFinite(videoRef.current.duration) && videoRef.current.duration > 0) {
+            if ((!duration || !isFinite(duration) || duration === 0) && isFinite(videoRef.current.duration) && videoRef.current.duration > 0) {
               setDuration(videoRef.current.duration);
             }
           }}
-          onLoadedMetadata={() => {
-            if (!videoRef.current) return;
-            if (isFinite(videoRef.current.duration) && videoRef.current.duration > 0) {
-              setDuration(videoRef.current.duration);
-            }
-          }}
-          onDurationChange={() => {
-            if (!videoRef.current) return;
-            if (isFinite(videoRef.current.duration) && videoRef.current.duration > 0) {
-              setDuration(videoRef.current.duration);
-            }
-          }}
+          onLoadedMetadata={handleLoadedMetadata}
+          onDurationChange={handleLoadedMetadata}
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
           autoPlay
@@ -324,7 +342,7 @@ function SmartTVPlayerContent() {
                   <div className="flex-1 flex flex-col justify-center gap-2">
                     <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-300 uppercase tracking-widest">
                       <span>Press [Enter / Space] to Play/Pause • [← / →] to Seek</span>
-                      <span>{formatTime(currentTime)} / {formatTime(duration, true)}</span>
+                      <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
                     </div>
                     <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
                       <div
