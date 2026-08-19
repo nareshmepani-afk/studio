@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CalendarDays, MapPin, Heart, Share2, Download, Maximize2, Layers, Play, Pause, Volume2, VolumeX, Bookmark, Music, Sparkles, Eye, Smile, FileText, Cast, Airplay, Tv } from 'lucide-react';
 import type { Memory } from '@/types';
@@ -275,6 +275,36 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
     setIsMuted(!isMuted);
   };
 
+  // ACT IV FORMULA: Comprehensive Effective Video Duration Resolver
+  const effectiveVideoDuration = useMemo(() => {
+    // 1. Direct state duration if finite and > 0
+    if (duration && isFinite(duration) && duration > 0) {
+      return duration;
+    }
+    // 2. Direct video element duration
+    if (videoRef.current?.duration && isFinite(videoRef.current.duration) && videoRef.current.duration > 0) {
+      return videoRef.current.duration;
+    }
+    // 3. Sum of recordedSegments EDL tracks
+    if ((memory as any)?.recordedSegments && (memory as any).recordedSegments.length > 0) {
+      const sum = (memory as any).recordedSegments.reduce((acc: number, seg: any) => acc + (seg.duration || 0), 0);
+      if (sum > 0) return sum;
+    }
+    // 4. Firestore data.videoDuration, duration, or mediaAttachments
+    if ((memory as any)?.videoDuration && isFinite((memory as any).videoDuration) && (memory as any).videoDuration > 0) {
+      return (memory as any).videoDuration;
+    }
+    if ((memory as any)?.duration && isFinite((memory as any).duration) && (memory as any).duration > 0) {
+      return (memory as any).duration;
+    }
+    const mediaDur = memory?.mediaAttachments?.find((m: any) => m.duration)?.duration;
+    if (mediaDur && isFinite(mediaDur) && mediaDur > 0) {
+      return mediaDur;
+    }
+    // 5. Dynamic fallback: current playback time if video is playing
+    return currentTime > 0 ? currentTime : 0;
+  }, [duration, currentTime, memory]);
+
   const toggleFullscreen = () => {
     if (!videoRef.current) return;
     if (document.fullscreenElement) {
@@ -284,11 +314,12 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
     }
   };
 
-  const formatTime = (timeInSeconds: number) => {
-    if (!isFinite(timeInSeconds) || isNaN(timeInSeconds) || timeInSeconds < 0) return '00:00';
-    const mins = Math.floor(timeInSeconds / 60);
-    const secs = Math.floor(timeInSeconds % 60);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const formatTime = (seconds: number) => {
+    if (!seconds || isNaN(seconds) || !isFinite(seconds) || seconds < 0) return '00:00';
+    const totalSeconds = Math.floor(seconds);
+    const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+    const s = (totalSeconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
   };
 
   if (!memory) return null;
@@ -386,12 +417,12 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                   <div className="flex-1 flex flex-col justify-center gap-1">
                     <div className="flex items-center justify-between text-[9px] font-mono font-bold text-amber-300/80 uppercase tracking-widest">
                       <span>Playback Scrubber</span>
-                      <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
+                      <span>{formatTime(currentTime)} / {formatTime(effectiveVideoDuration)}</span>
                     </div>
                     <input
                       type="range"
                       min={0}
-                      max={duration > 0 && isFinite(duration) ? duration : (currentTime > 0 ? currentTime + 10 : 100)}
+                      max={effectiveVideoDuration > 0 && isFinite(effectiveVideoDuration) ? effectiveVideoDuration : (currentTime > 0 ? currentTime + 10 : 100)}
                       value={currentTime}
                       onChange={handleSeek}
                       className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-400"

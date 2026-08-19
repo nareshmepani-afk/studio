@@ -44,47 +44,84 @@ function SmartTVPlayerContent() {
     return () => { isMounted = false; };
   }, [memoryId]);
 
-  const fallbackDuration = (memory as any)?.duration || 
-    memory?.mediaAttachments?.find((m: any) => m.duration)?.duration || 
-    0;
-  const [duration, setDuration] = useState(fallbackDuration);
+  const [duration, setDuration] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [showHud, setShowHud] = useState(true);
   const [showCastGuide, setShowCastGuide] = useState(false);
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Sync duration if memory changes
-  useEffect(() => {
-    if (fallbackDuration > 0 && (!duration || duration === 0)) {
-      setDuration(fallbackDuration);
-    }
-  }, [fallbackDuration]);
+  // ACT IV FORMULA: Exact 2-digit zero-padded time formatter
+  const formatTime = (seconds: number) => {
+    if (!seconds || isNaN(seconds) || !isFinite(seconds) || seconds < 0) return '00:00';
+    const totalSeconds = Math.floor(seconds);
+    const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+    const s = (totalSeconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
 
-  const handleLoadedMetadata = () => {
-    if (!videoRef.current) return;
-    const v = videoRef.current;
-    const d = v.duration;
-    if (isFinite(d) && !isNaN(d) && d > 0) {
-      setDuration(d);
-    } else if (d === Infinity || isNaN(d) || d <= 0) {
-      // Chromium WebM duration calculation fix: seeking forces decoder to compute duration
-      v.currentTime = 1e101;
-      v.ontimeupdate = function() {
-        v.ontimeupdate = null;
-        v.currentTime = 0;
-        if (isFinite(v.duration) && v.duration > 0) {
-          setDuration(v.duration);
-        }
-      };
+  // ACT IV FORMULA: Comprehensive Effective Video Duration Resolver
+  const effectiveVideoDuration = React.useMemo(() => {
+    // 1. Direct state duration if finite and > 0
+    if (duration && isFinite(duration) && duration > 0) {
+      return duration;
+    }
+    // 2. Direct video element duration
+    if (videoRef.current?.duration && isFinite(videoRef.current.duration) && videoRef.current.duration > 0) {
+      return videoRef.current.duration;
+    }
+    // 3. Sum of recordedSegments EDL tracks
+    if (memory?.recordedSegments && memory.recordedSegments.length > 0) {
+      const sum = memory.recordedSegments.reduce((acc: number, seg: any) => acc + (seg.duration || 0), 0);
+      if (sum > 0) return sum;
+    }
+    // 4. Firestore data.videoDuration, duration, or mediaAttachments
+    if ((memory as any)?.videoDuration && isFinite((memory as any).videoDuration) && (memory as any).videoDuration > 0) {
+      return (memory as any).videoDuration;
+    }
+    if ((memory as any)?.duration && isFinite((memory as any).duration) && (memory as any).duration > 0) {
+      return (memory as any).duration;
+    }
+    const mediaDur = memory?.mediaAttachments?.find((m: any) => m.duration)?.duration;
+    if (mediaDur && isFinite(mediaDur) && mediaDur > 0) {
+      return mediaDur;
+    }
+    // 5. Dynamic fallback: current playback time if video is playing
+    return currentTime > 0 ? currentTime : 0;
+  }, [duration, currentTime, memory]);
+
+  // ACT IV FORMULA: Fast-seek WebM Chromium Duration Decoder Handler
+  const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    const vid = e.currentTarget;
+    if (!vid) return;
+
+    if (vid.duration && isFinite(vid.duration) && vid.duration > 0) {
+      setDuration(vid.duration);
+    } else if (vid.duration === Infinity) {
+      try {
+        vid.currentTime = 1e101;
+        const onTimeUpdateTemp = () => {
+          vid.removeEventListener('timeupdate', onTimeUpdateTemp);
+          vid.currentTime = 0;
+          if (vid.duration && isFinite(vid.duration) && vid.duration > 0) {
+            setDuration(vid.duration);
+          }
+        };
+        vid.addEventListener('timeupdate', onTimeUpdateTemp);
+      } catch (err) {
+        console.warn("[MediaEngine] WebM duration seek fallback:", err);
+      }
     }
   };
 
-  const formatTime = (timeInSeconds: number) => {
-    if (!isFinite(timeInSeconds) || isNaN(timeInSeconds) || timeInSeconds < 0) return '0:00';
-    const minutes = Math.floor(timeInSeconds / 60);
-    const seconds = Math.floor(timeInSeconds % 60);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  // ACT IV FORMULA: Time Update with duration sync
+  const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    const vid = e.currentTarget;
+    const time = vid.currentTime;
+    setCurrentTime(time);
+    if (vid.duration && isFinite(vid.duration) && vid.duration > 0 && duration !== vid.duration) {
+      setDuration(vid.duration);
+    }
   };
 
   // Handle inactivity timer to auto-hide 10-foot HUD after 3 seconds
@@ -197,14 +234,7 @@ function SmartTVPlayerContent() {
         <video
           ref={videoRef}
           src={videoUrl}
-          onTimeUpdate={() => {
-            if (!videoRef.current) return;
-            setCurrentTime(videoRef.current.currentTime);
-            // Fallback duration resolution for streaming WebM without header metadata
-            if ((!duration || !isFinite(duration) || duration === 0) && isFinite(videoRef.current.duration) && videoRef.current.duration > 0) {
-              setDuration(videoRef.current.duration);
-            }
-          }}
+          onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onDurationChange={handleLoadedMetadata}
           onPlay={() => setIsPlaying(true)}
@@ -342,12 +372,12 @@ function SmartTVPlayerContent() {
                   <div className="flex-1 flex flex-col justify-center gap-2">
                     <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-300 uppercase tracking-widest">
                       <span>Press [Enter / Space] to Play/Pause • [← / →] to Seek</span>
-                      <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
+                      <span>{formatTime(currentTime)} / {formatTime(effectiveVideoDuration)}</span>
                     </div>
                     <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-amber-500 to-amber-300 transition-all duration-200"
-                        style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+                        style={{ width: `${(currentTime / (effectiveVideoDuration || 1)) * 100}%` }}
                       />
                     </div>
                   </div>
