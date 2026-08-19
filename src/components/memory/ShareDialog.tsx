@@ -121,7 +121,7 @@ export function ShareDialog({ memory, onClose }: ShareDialogProps) {
   }, [contacts, searchQuery]);
 
   const handleGenerateLink = () => {
-    const link = `${window.location.origin}/share/${memory.id}`;
+    const link = `${window.location.origin}/cinema?id=${memory.id}`;
     setShareLink(link);
     toast.success("Share link generated!", {
       description: "You can now copy the link to share it.",

@@ -16,8 +16,8 @@ type CombinedUser = FirebaseUser & Partial<UserAccount & Director>;
 interface AuthContextType {
   user: CombinedUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, redirectTo?: string) => Promise<void>;
+  register: (name: string, email: string, password: string, redirectTo?: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUserProfileInFirestore: (data: Partial<User>) => Promise<void>;
   isAuthenticated: boolean;
@@ -103,14 +103,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, redirectTo?: string) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       // Surgical Refresh
       const idToken = await userCredential.user.getIdToken();
       await createSessionAction(idToken);
       router.refresh();
-      router.push('/studio');
+
+      // Determine redirect destination from parameter, query string, or default
+      let target = redirectTo;
+      if (!target && typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        target = params.get('redirect') || params.get('redirectTo') || undefined;
+      }
+
+      router.push(target || '/studio');
       toast.success('Login Successful', { description: "Welcome back!" });
     } catch (error: any) {
       toast.error('Login Failed', { description: error.message });
@@ -118,7 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [router]);
 
-  const register = useCallback(async (name: string, email: string, password: string) => {
+  const register = useCallback(async (name: string, email: string, password: string, redirectTo?: string) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
@@ -151,7 +159,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await createSessionAction(idToken);
       router.refresh();
       
-      router.push('/studio');
+      let target = redirectTo;
+      if (!target && typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        target = params.get('redirect') || params.get('redirectTo') || undefined;
+      }
+
+      router.push(target || '/studio');
       toast.success('Registration Successful', { description: "Welcome to Memory Weaver!" });
     } catch (error: any) {
       console.error('Registration failed:', error);

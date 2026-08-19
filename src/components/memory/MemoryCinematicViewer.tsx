@@ -42,13 +42,14 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
-  // Suppress body scroll when cinematic viewer modal is open
+  // Suppress body scroll ONLY when cinematic viewer modal is actively viewing a memory
   useEffect(() => {
+    if (!memory) return;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
     };
-  }, []);
+  }, [memory]);
 
   // AirPlay Target Listener
   useEffect(() => {
@@ -278,6 +279,8 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
     const secs = Math.floor(timeInSeconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  if (!memory) return null;
 
   return (
     <AnimatePresence>

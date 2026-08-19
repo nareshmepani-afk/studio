@@ -349,7 +349,10 @@ function CinemaContent() {
                     <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
                       <button
                         type="button"
-                        onClick={() => router.push('/login')}
+                        onClick={() => {
+                          const currentUrl = typeof window !== 'undefined' ? (window.location.pathname + window.location.search) : '/cinema';
+                          router.push(`/login?redirect=${encodeURIComponent(currentUrl)}`);
+                        }}
                         className="w-full sm:w-auto px-6 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <span>Sign In for Free Guest Access</span>
@@ -555,16 +558,16 @@ function CinemaContent() {
         )}
 
         {/* Cinematic Header Section */}
-        <div className="relative mb-20">
+        <div className="relative mb-10">
            <div className="absolute -top-32 -left-32 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
            
-           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 relative z-10">
-              <div className="space-y-4">
+           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
+              <div className="space-y-3">
                  <div className="inline-flex items-center gap-2 group">
                     <span className="h-px w-10 bg-primary/40 group-hover:w-16 transition-all duration-700" />
                     <span className="text-[11px] uppercase tracking-[0.5em] text-primary font-black">A Chronicle Cinema Production</span>
                  </div>
-                 <h1 className='text-6xl md:text-9xl font-headline italic tracking-tighter bg-gradient-to-br from-white via-white/95 to-white/30 bg-clip-text text-transparent drop-shadow-2xl'>
+                 <h1 className='text-5xl md:text-7xl font-headline italic tracking-tight bg-gradient-to-br from-white via-white/95 to-white/30 bg-clip-text text-transparent drop-shadow-2xl'>
                     The Memory Cinema
                  </h1>
                  <div className="flex items-center gap-4 text-white/40">
@@ -590,7 +593,7 @@ function CinemaContent() {
         </div>
 
         {/* 3-SECTION CINEMA DASHBOARD ARCHITECTURE */}
-        <div className="space-y-24">
+        <div className="space-y-12">
 
           {/* Smart Filter Bar */}
           <div className="mb-8 flex flex-wrap items-center gap-3">
@@ -766,10 +769,12 @@ function CinemaContent() {
         </div>
       </div>
 
-      <MemoryCinematicViewer 
-        memory={selectedMemory} 
-        onClose={() => setSelectedMemory(null)} 
-      />
+      {selectedMemory && (
+        <MemoryCinematicViewer 
+          memory={selectedMemory} 
+          onClose={() => setSelectedMemory(null)} 
+        />
+      )}
 
       {requestModalState && (
         <GuestRequestModal 

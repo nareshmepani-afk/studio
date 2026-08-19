@@ -5458,23 +5458,49 @@ export default function SoloStage({
                      🎬 MASTERING CONSOLE
                    </h4>
                    <div className="flex items-center gap-2">
-                     {/* MW-186: Dynamic Lifecycle Status Badge */}
-                     {data?.status === 'published' ? (
-                       <span className="flex items-center gap-1.5 text-[9px] font-mono text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                         🎬 LIVE IN CINEMA
-                       </span>
-                     ) : data?.status === 'pre-release' ? (
-                       <span className="flex items-center gap-1.5 text-[9px] font-mono text-violet-400 bg-violet-950/50 border border-violet-500/30 px-2 py-0.5 rounded-full">
-                         <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-                         🌟 PRE-RELEASE
-                       </span>
-                     ) : (
-                       <span className="flex items-center gap-1.5 text-[9px] font-mono text-amber-400 bg-amber-950/50 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                         🛠️ IN PRODUCTION
-                       </span>
-                     )}
+                      {/* MW-186: Dynamic Lifecycle Status Badge */}
+                      <TooltipProvider delayDuration={150}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help">
+                              {data?.status === 'published' ? (
+                                <span className="flex items-center gap-1.5 text-[9px] font-mono text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                  🎬 LIVE IN CINEMA
+                                </span>
+                              ) : data?.status === 'pre-release' ? (
+                                <span className="flex items-center gap-1.5 text-[9px] font-mono text-violet-400 bg-violet-950/50 border border-violet-500/30 px-2 py-0.5 rounded-full">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                                  🌟 PRE-RELEASE
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1.5 text-[9px] font-mono text-amber-400 bg-amber-950/50 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                  🛠️ IN PRODUCTION
+                                </span>
+                              )}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-slate-950/95 border border-white/10 p-3 text-xs text-white max-w-xs shadow-2xl z-[10002] rounded-xl">
+                            {data?.status === 'published' ? (
+                              <div>
+                                <p className="font-mono text-[9px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Official Cinema Release</p>
+                                <p className="text-[10px] text-white/70">This memory is published and available in your public Cinema screening room.</p>
+                              </div>
+                            ) : data?.status === 'pre-release' ? (
+                              <div>
+                                <p className="font-mono text-[9px] font-bold text-violet-400 uppercase tracking-widest mb-1">Private Screener Active</p>
+                                <p className="text-[10px] text-white/70">Share this screener link with family and collaborators to gather private feedback before releasing officially to the Cinema.</p>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="font-mono text-[9px] font-bold text-amber-400 uppercase tracking-widest mb-1">Production in Progress</p>
+                                <p className="text-[10px] text-white/70">Complete Act V to master your video reel and enter Pre-Release.</p>
+                              </div>
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                      <span className="flex items-center gap-1.5 text-[9px] font-mono text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 px-2 py-0.5 rounded-full">
                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                        4K MASTERED

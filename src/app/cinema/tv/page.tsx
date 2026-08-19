@@ -123,8 +123,10 @@ function SmartTVPlayerContent() {
         (m: any) => m.type === 'video' || m.url?.includes('.mp4') || m.url?.includes('.webm')
       )?.url;
 
-  const formatTime = (timeInSeconds: number) => {
-    if (!isFinite(timeInSeconds) || timeInSeconds < 0) return '--:--';
+  const formatTime = (timeInSeconds: number, isDuration = false) => {
+    if (!isFinite(timeInSeconds) || isNaN(timeInSeconds) || timeInSeconds < 0 || (isDuration && timeInSeconds === 0)) {
+      return isDuration ? '--:--' : '0:00';
+    }
     const minutes = Math.floor(timeInSeconds / 60);
     const seconds = Math.floor(timeInSeconds % 60);
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
@@ -176,6 +178,12 @@ function SmartTVPlayerContent() {
             }
           }}
           onLoadedMetadata={() => {
+            if (!videoRef.current) return;
+            if (isFinite(videoRef.current.duration) && videoRef.current.duration > 0) {
+              setDuration(videoRef.current.duration);
+            }
+          }}
+          onDurationChange={() => {
             if (!videoRef.current) return;
             if (isFinite(videoRef.current.duration) && videoRef.current.duration > 0) {
               setDuration(videoRef.current.duration);
@@ -316,7 +324,7 @@ function SmartTVPlayerContent() {
                   <div className="flex-1 flex flex-col justify-center gap-2">
                     <div className="flex items-center justify-between text-xs font-mono font-bold text-amber-300 uppercase tracking-widest">
                       <span>Press [Enter / Space] to Play/Pause • [← / →] to Seek</span>
-                      <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
+                      <span>{formatTime(currentTime)} / {formatTime(duration, true)}</span>
                     </div>
                     <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
                       <div
