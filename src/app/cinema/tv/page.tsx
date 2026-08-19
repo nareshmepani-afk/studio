@@ -46,6 +46,7 @@ function SmartTVPlayerContent() {
 
   const [duration, setDuration] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [showHud, setShowHud] = useState(true);
   const [showCastGuide, setShowCastGuide] = useState(false);
@@ -188,13 +189,19 @@ function SmartTVPlayerContent() {
     }
   };
 
-  // MW-177: Aligned video URL resolution with MemoryCinematicViewer.tsx fallback chain
-  // productionTakes[] contains AI text drafts, NOT video objects — removed that broken fallback
+  // Aligned video URL resolution with MemoryCinematicViewer.tsx fallback chain
   const videoUrl = memory?.videoUrl
     || (memory as any)?.recordingUrl
     || (memory as any)?.video
     || memory?.mediaAttachments?.find(
         (m: any) => m.type === 'video' || m.url?.includes('.mp4') || m.url?.includes('.webm')
+      )?.url;
+
+  const posterImageUrl = memory?.posterImageUrl 
+    || memory?.imageUrl 
+    || (memory as any)?.posterUrl 
+    || memory?.mediaAttachments?.find(
+        (m: any) => m.type === 'image' || m.url?.endsWith('.jpg') || m.url?.endsWith('.png') || m.url?.endsWith('.webp')
       )?.url;
 
   if (loading) {
@@ -231,21 +238,73 @@ function SmartTVPlayerContent() {
     <div className="w-screen h-screen bg-black overflow-hidden relative font-sans select-none">
       {/* 4K Background Player */}
       {videoUrl ? (
-        <video
-          ref={videoRef}
-          src={videoUrl}
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={handleLoadedMetadata}
-          onDurationChange={handleLoadedMetadata}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          autoPlay
-          playsInline
-          x-webkit-airplay="allow"
-          controlsList="nodownload"
-          className="w-full h-full object-contain cursor-pointer"
-          onClick={togglePlay}
-        />
+        <div className="relative w-full h-full">
+          <video
+            ref={videoRef}
+            src={videoUrl}
+            poster={posterImageUrl}
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleLoadedMetadata}
+            onDurationChange={handleLoadedMetadata}
+            onLoadStart={() => setIsBuffering(true)}
+            onWaiting={() => setIsBuffering(true)}
+            onCanPlay={() => setIsBuffering(false)}
+            onPlaying={() => {
+              setIsPlaying(true);
+              setIsBuffering(false);
+            }}
+            onPause={() => setIsPlaying(false)}
+            autoPlay
+            playsInline
+            x-webkit-airplay="allow"
+            controlsList="nodownload"
+            className="w-full h-full object-contain cursor-pointer"
+            onClick={togglePlay}
+          />
+
+          {/* Atmospheric Cinematic Buffering Overlay (Zero Blank Box) */}
+          <AnimatePresence>
+            {isBuffering && (
+              <motion.div
+                initial={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6 }}
+                className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950/85 backdrop-blur-md p-8 text-center pointer-events-none"
+              >
+                {/* Soft Poster Blur Backdrop */}
+                {posterImageUrl && (
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center opacity-25 filter blur-3xl scale-110 pointer-events-none"
+                    style={{ backgroundImage: `url(${posterImageUrl})` }}
+                  />
+                )}
+                
+                {/* Ambient Center Glow */}
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/15 via-transparent to-transparent pointer-events-none" />
+
+                {/* Animated Film Reel Spinner */}
+                <div className="relative mb-6 z-10">
+                  <div className="w-20 h-20 rounded-full border-4 border-amber-500/20 border-t-amber-400 animate-spin shadow-[0_0_50px_rgba(245,158,11,0.25)]" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Film className="w-8 h-8 text-amber-400 animate-pulse" />
+                  </div>
+                </div>
+
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest mb-3 z-10 shadow-lg">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  <span>Buffering 4K Master Reel</span>
+                </div>
+
+                <h3 className="text-2xl md:text-4xl font-headline font-black text-white uppercase tracking-wider mb-2 z-10">
+                  {memory.title || 'Family Heirloom'}
+                </h3>
+                <p className="text-xs font-mono text-zinc-400 uppercase tracking-widest max-w-md z-10">
+                  Synchronizing video stream & cinematic audio score...
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center p-12 text-center bg-gradient-to-br from-slate-950 via-slate-900 to-amber-950/40 relative">
           <Film className="w-16 h-16 text-amber-400/60 mb-6" />
