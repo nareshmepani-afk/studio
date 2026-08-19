@@ -494,9 +494,9 @@ export async function claimSharedMemoryAction(memoryId: string, claimantUid: str
     const alreadyClaimed = sharedWithList.includes(claimantUid);
 
     if (!alreadyClaimed) {
-      await targetDoc.ref.update({
+      await targetDoc.ref.set({
         sharedWith: FieldValue.arrayUnion(claimantUid)
-      });
+      }, { merge: true });
     }
 
     let ownerDisplayName = 'Memory Weaver Director';
@@ -519,24 +519,47 @@ export async function getSharedWithMeMemoriesAction(uid: string): Promise<{ memo
     return { memories: [], error: 'Invalid request or database not initialized.' };
   }
 
+  const db = adminDb;
+
   try {
-    const memoriesQuery = await adminDb.collectionGroup('memories')
+    // Query with single-field collectionGroup index on sharedWith (requires zero custom composite indexes)
+    const memoriesQuery = await db.collectionGroup('memories')
       .where('sharedWith', 'array-contains', uid)
-      .where('status', 'in', ['published', 'pre-release'])
       .get();
 
-    const memories = memoriesQuery.docs.map(doc => {
+    const candidateDocs = memoriesQuery.docs.map(doc => {
       const data = doc.data();
-      const ownerUid = doc.ref.parent.parent?.id;
+      const ownerUid = data.userId || doc.ref.parent.parent?.id;
       return {
         id: doc.id,
         ...data,
         ownerUid,
         ownerPath: ownerUid ? `users/${ownerUid}/memories` : undefined
-      };
-    });
+      } as any;
+    }).filter(m => m.status === 'published' || m.status === 'pre-release');
 
-    return { memories };
+    // Resolve owner display names and emails for each shared memory
+    const memoriesWithOwners = await Promise.all(candidateDocs.map(async (m) => {
+      let ownerDisplayName = 'Memory Weaver Director';
+      let ownerEmail = '';
+      if (m.ownerUid) {
+        try {
+          const userDoc = await db.collection('users').doc(m.ownerUid).get();
+          if (userDoc.exists) {
+            const uData = userDoc.data();
+            ownerDisplayName = uData?.displayName || uData?.name || 'Memory Weaver Director';
+            ownerEmail = uData?.email || '';
+          }
+        } catch (e) {}
+      }
+      return {
+        ...m,
+        ownerDisplayName,
+        ownerEmail
+      };
+    }));
+
+    return { memories: memoriesWithOwners };
   } catch (error: any) {
     console.error('[getSharedWithMeMemoriesAction] Error fetching shared memories:', error);
     return { memories: [], error: error?.message || 'Failed to fetch shared memories.' };
