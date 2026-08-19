@@ -129,6 +129,16 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Strict Line-Bounded Inspection**: When Tier-1 models directly inspect files, they MUST use tightly bounded `StartLine` and `EndLine` slices ($\le 30$ lines) to prevent context inflation.
 - **Autonomous Subagent Error Loops**: Subagents dispatched for coding or verification must resolve their own lint/type errors internally before returning a clean "Build Verified: SUCCESS" status to Tier-1.
 
+# 27. Dual-Sweep Cognitive Protocol (Adversarial Pre-Mortem Discipline)
+- **Mandatory 2-Pass Reasoning Before Execution**: The agent MUST perform a dual-sweep reasoning cycle before proposing architectural writes, edits, or multi-component fixes:
+  - **Sweep 1: Topology & Root-Cause Tracing**: Map the end-to-end failure path across UI state, server actions, URL parameters, and database schemas. Formulate the primary architectural solution.
+  - **Sweep 2: The Adversarial Crucible (Pre-Mortem Gate)**: Actively red-team the proposed solution against 4 non-negotiable stress tests before writing a single line of code:
+    1. **Boundary Gate**: What happens if props, data arrays, or video metadata are `null`, `undefined`, empty string `""`, `0`, or `[]`?
+    2. **Global Lifecycle Gate**: Does this component or effect touch global DOM/body state (e.g. `document.body.style.overflow`), leave hanging listeners, or break flex/grid layouts?
+    3. **E2E Handshake Gate**: Does the state flow survive hard browser refreshes (`Ctrl+Shift+R`), auth redirects (e.g. `?redirect=`), and cross-session deep links?
+    4. **Universal Non-Degradation Gate (Rule 7)**: Does this modification alter, remove, or degrade ANY existing user capability, visual feedback loop, or performance guarantee?
+- **Zero-Guesswork Execution**: Only once Sweep 2 passes all 4 gates without ambiguity may code modifications be applied.
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
 - **2026-07-04**: v1.1.0-beta-MW-70. Resolved MFA loader lockout, expanded TOTP key length to 16 characters, corrected QR code URI literal colon separator, and added setup page console diagnostics. (Build Verify: SUCCESS)
