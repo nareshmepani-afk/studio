@@ -14,6 +14,8 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { APP_VERSION } from '@/config/version';
+import { auth } from '@/lib/firebase';
+import { sendEmailVerification } from 'firebase/auth';
 
 export function SettingsPageContent({ 
   initialDirectorPassStatus, 
@@ -33,9 +35,31 @@ export function SettingsPageContent({
   const [directorPassStatus, setDirectorPassStatus] = useState(initialDirectorPassStatus);
   const [activationDateStr, setActivationDateStr] = useState(initialDirectorPassActivationDate);
   const [isPending, startTransition] = useTransition();
+  const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [clickCount, setClickCount] = useState(0);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [telemetryId, setTelemetryId] = useState('');
+
+  const isEmailVerified = auth.currentUser?.emailVerified ?? false;
+
+  const handleSendVerificationEmail = async () => {
+    if (!auth.currentUser) return;
+    setIsSendingVerification(true);
+    try {
+      await sendEmailVerification(auth.currentUser);
+      toast.success("Verification Email Dispatched", { 
+        description: `A secure verification link has been sent to ${auth.currentUser.email}.`,
+        icon: <CheckCircle className="h-4 w-4 text-emerald-400" />
+      });
+    } catch (error: any) {
+      console.error("Verification email failed:", error);
+      toast.error("Could Not Send Verification Link", { 
+        description: error.message || "Please try again later." 
+      });
+    } finally {
+      setIsSendingVerification(false);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -172,6 +196,45 @@ export function SettingsPageContent({
                   </div>
                 </div>
               </div>
+
+              {/* Soft Verification Banner (Option B) */}
+              {!isEmailVerified && (
+                <div className="mt-4 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-amber-500/20 rounded-xl text-amber-400 shrink-0">
+                      <Mail className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-amber-300">
+                        Email Verification Recommended
+                      </h4>
+                      <p className="text-xs text-zinc-300 mt-0.5">
+                        Verify your email (<span className="text-white font-mono">{userEmail}</span>) to secure your master vault and enable instant account recovery.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSendVerificationEmail}
+                    disabled={isSendingVerification}
+                    className="bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/40 text-amber-300 text-xs font-mono uppercase tracking-wider shrink-0 cursor-pointer"
+                  >
+                    {isSendingVerification ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                        <span>Sending Link...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
+                        <span>Send Verification Link</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
           </section>
 

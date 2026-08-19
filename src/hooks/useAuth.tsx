@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type { User, Director, UserAccount } from '@/types'; 
 import { createSessionAction, deleteSessionAction } from '@/actions/createSessionAction';
+import { sendWelcomeEmailAction } from '@/actions/sendWelcomeEmailAction';
 import localforage from 'localforage';
 
 type CombinedUser = FirebaseUser & Partial<UserAccount & Director>;
@@ -160,13 +161,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       router.refresh();
       
       let target = redirectTo;
+      let claimedMemoryId: string | undefined;
       if (!target && typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
         target = params.get('redirect') || params.get('redirectTo') || undefined;
+        claimedMemoryId = params.get('id') || undefined;
+      } else if (target && target.includes('?id=')) {
+        try {
+          const url = new URL(target, 'http://dummy.com');
+          claimedMemoryId = url.searchParams.get('id') || undefined;
+        } catch(e) {}
       }
 
+      // Option A: Non-blocking Welcome Email dispatch via Resend
+      sendWelcomeEmailAction({
+        email,
+        name,
+        claimedMemoryId
+      }).catch(err => console.warn('[useAuth] Welcome email background dispatch failed:', err));
+
       router.push(target || '/studio');
-      toast.success('Registration Successful', { description: "Welcome to Memory Weaver!" });
+      toast.success('Registration Successful', { description: "Welcome to Memory Weaver Studio!" });
     } catch (error: any) {
       console.error('Registration failed:', error);
       toast.error('Registration Failed', { description: error.message });
