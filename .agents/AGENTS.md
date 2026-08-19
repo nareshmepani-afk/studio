@@ -24,12 +24,16 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - When querying remote platform status, inspect active config directories (`~/.config/configstore/firebase-tools.json`) programmatically.
 - Avoid calling Node `fetch` on Windows development runtimes for token or log requests to prevent network engine crashes (`UV_HANDLE_CLOSING`). Instead, construct clean payload requests using Node's native `https` module.
 
-## 5. Staging-Only Public Testing Protocol (Zero Localhost)
+## 5. Staging-Only Public Testing Protocol & Mandatory Rollout Verification Gate
 - **No Localhost Testing**: The agent MUST NEVER instruct the user to test on `localhost`, `127.0.0.1`, or any local development server. The application has backend dependencies (Firebase Auth, Firestore, Cloud Functions, App Hosting) that do not function correctly in local dev mode.
 - **Exclusive Staging URL**: ALL user-facing testing and validation MUST be performed exclusively on the public staging environment: **`https://dev.memoryweaver.studio/`**.
-- **Commit-Push-Test Workflow**: When changes are made, commit and push to the `dev` branch, then instruct the user to test on `dev.memoryweaver.studio` after the build propagates.
-- **Mandatory Build Verification Gate**: After every `git push`, the agent MUST verify that Firebase App Hosting has picked up the new commit by checking the rollout status (via Firebase Console MCP tools, `apphosting_list_backends`, or `apphosting_fetch_logs`). The agent MUST NOT tell the user "ready to test" or "hard-refresh to verify" until the new build is confirmed as deploying or deployed. If no new build appears within ~2 minutes of pushing, the agent MUST flag this to the user and recommend clicking "Create rollout" in the Firebase Console to manually trigger deployment. This prevents the user from testing stale builds and mistakenly reporting bugs as unfixed.
-- **Build Propagation Notification**: Explicitly notify the user when the App Hosting staging build starts, clarify that build propagation takes 2–3 minutes, and instruct them to hard-refresh (`Ctrl+Shift+R`) `dev.memoryweaver.studio` to test the live updates.
+- **The Checklist Release Lock (Zero Premature Handover)**: The agent is STRICTLY FORBIDDEN from presenting any Testing Checklist, QA instructions, test links, or "Ready to test" message to the user until a programmatic live probe against `https://dev.memoryweaver.studio/api/version` confirms that the active `commitSha` matches the newly committed Git SHA.
+- **Commit-Push-Poll Workflow**:
+  1. Commit and push code to the `dev` branch.
+  2. The agent MUST NOT output the test checklist or declare the fix ready in the push turn.
+  3. The agent MUST initiate an automated polling check against `https://dev.memoryweaver.studio/api/version` (via Node `https` probe or `schedule` tool).
+  4. If `/api/version` still returns the older `commitSha`, the agent must inform the user of the pending rollout status and advise checking Firebase Console Rollouts if a manual trigger is needed, while holding the checklist locked.
+  5. ONLY when `/api/version` returns the exact target `commitSha` may the agent unlock and present the Testing Checklist to the user.
 - **Automated Verification**: The agent may use `tsc --noEmit` and `vitest run` locally for code correctness checks, but MUST NOT treat local execution as a substitute for staging validation.
 
 ## 6. Telemetry & Analytics Micro-Version Tracing Rule
