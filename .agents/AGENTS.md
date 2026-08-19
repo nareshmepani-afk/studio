@@ -37,9 +37,9 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
   1. **Pre-Push Build**: Run `npm.cmd run build` locally. Confirm all 33+ routes compile with exit code 0. Fix any errors before pushing.
   2. **Push to Dev**: Commit and push code to the `dev` branch.
   3. **Zero-Checklist Response**: In the push response, the agent MUST NOT output or link any checklist. The agent only reports the pushed commit SHA and initiates rollout verification.
-  4. **Fail-Fast Automated Polling (Max 4-Minute Bounded Window)**:
-     - The agent polls `https://dev.memoryweaver.studio/api/version` (max 4 minutes, capped at 8 iterations).
-     - If `/api/version` does not update within 4 minutes, the agent MUST immediately terminate all timer tasks, alert the user of a build delay/failure, request a quick check of Firebase Console Rollouts, and explain next steps rather than looping silently.
+  4. **Automated Continuous Polling**:
+     - The agent sets up automated recurring polling against `https://dev.memoryweaver.studio/api/version` (using `schedule` with recurring cron e.g. every 1-2 minutes or one-shot timers) to autonomously monitor deployment progress.
+     - The agent continues polling until `/api/version` confirms the rollout, only escalating to the user if a remote build error is detected.
   5. **Rollout Verified Handoff**: ONLY after `/api/version` returns the exact target `commitSha` may the agent generate/update the Testing Checklist and hand off to the user for staging verification.
 
 ## 6. Telemetry & Analytics Micro-Version Tracing Rule
