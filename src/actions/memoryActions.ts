@@ -466,7 +466,7 @@ export async function submitDraftFeedbackAction(
 // We need to re-import getSession here because it was removed from the top of the file
 import { getSession } from '@/lib/session';
 
-export async function claimSharedMemoryAction(memoryId: string, claimantUid: string): Promise<{ success: boolean; memoryTitle?: string; ownerDisplayName?: string; error?: string }> {
+export async function claimSharedMemoryAction(memoryId: string, claimantUid: string): Promise<{ success: boolean; alreadyClaimed?: boolean; isOwner?: boolean; memoryTitle?: string; ownerDisplayName?: string; error?: string }> {
   if (!memoryId || !claimantUid || !adminDb) {
     return { success: false, error: 'Invalid request or database not initialized.' };
   }
@@ -480,23 +480,34 @@ export async function claimSharedMemoryAction(memoryId: string, claimantUid: str
     }
 
     const data = targetDoc.data() as Memory;
+    const ownerUid = data.userId || targetDoc.ref.parent.parent?.id;
 
     if (data.status === 'draft') {
       return { success: false, error: 'This memory is not available for claiming.' };
     }
 
-    if (data.userId === claimantUid) {
-      return { success: false, error: 'You cannot claim your own memory.' };
+    if (ownerUid && ownerUid === claimantUid) {
+      return { success: false, isOwner: true, error: 'You are the director of this memory.' };
     }
 
-    await targetDoc.ref.update({
-      sharedWith: FieldValue.arrayUnion(claimantUid)
-    });
+    const sharedWithList: string[] = Array.isArray((data as any).sharedWith) ? (data as any).sharedWith : [];
+    const alreadyClaimed = sharedWithList.includes(claimantUid);
 
-    const userDoc = await adminDb.collection('users').doc(data.userId).get();
-    const ownerDisplayName = userDoc.exists ? userDoc.data()?.displayName || userDoc.data()?.name || 'Memory Weaver Director' : 'Memory Weaver Director';
+    if (!alreadyClaimed) {
+      await targetDoc.ref.update({
+        sharedWith: FieldValue.arrayUnion(claimantUid)
+      });
+    }
 
-    return { success: true, memoryTitle: data.title, ownerDisplayName };
+    let ownerDisplayName = 'Memory Weaver Director';
+    if (ownerUid) {
+      const userDoc = await adminDb.collection('users').doc(ownerUid).get();
+      if (userDoc.exists) {
+        ownerDisplayName = userDoc.data()?.displayName || userDoc.data()?.name || 'Memory Weaver Director';
+      }
+    }
+
+    return { success: true, alreadyClaimed, memoryTitle: data.title, ownerDisplayName };
   } catch (error: any) {
     console.error('[claimSharedMemoryAction] Error claiming shared memory:', error);
     return { success: false, error: error?.message || 'Failed to claim shared memory.' };

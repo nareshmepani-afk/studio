@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthenticatedPageWrapper } from '@/components/layout/AuthenticatedPageWrapper';
 import { useAuth } from '@/hooks/useAuth';
@@ -113,6 +113,8 @@ function CinemaContent() {
     .filter((m, i, arr) => arr.findIndex(x => x.ownerUid === m.ownerUid) === i)
     .map(m => ({ uid: m.ownerUid, name: m.ownerDisplayName || m.ownerEmail || m.ownerUid }));
 
+  const claimedMemoryIdsRef = useRef<Set<string>>(new Set());
+
   // Auto-fetch shared memory when opened via Guest Access Pass URL (?id=...)
   useEffect(() => {
     if (!memoryIdParam) {
@@ -127,19 +129,6 @@ function CinemaContent() {
       .then((res) => {
         if (isMounted && res.success && res.memory) {
           setPublicMemory(res.memory);
-          // Do not auto-select memory on mount so guest sees hero card & pricing matrix first
-          
-          // Auto-claim shared memory
-          if (user && res.memory.userId && user.uid !== res.memory.userId) {
-            claimSharedMemoryAction(memoryIdParam, user.uid)
-              .then(claimResult => {
-                if (claimResult.success) {
-                  toast.success(`🎬 Story added to your Cinema library`, {
-                    description: `"${claimResult.memoryTitle}" by ${claimResult.ownerDisplayName}`
-                  });
-                }
-              });
-          }
 
           // Increment guest view count atomically
           recordGuestViewAction(res.memory.id).then((vRes) => {
@@ -156,6 +145,31 @@ function CinemaContent() {
 
     return () => { isMounted = false; };
   }, [memoryIdParam]);
+
+  // Reactive Auto-Claim Shared Memory for authenticated Collaborators (MW-187 / MW-189)
+  useEffect(() => {
+    if (!user || !memoryIdParam) return;
+    if (claimedMemoryIdsRef.current.has(memoryIdParam)) return;
+
+    claimSharedMemoryAction(memoryIdParam, user.uid)
+      .then(claimResult => {
+        if (claimResult.success) {
+          claimedMemoryIdsRef.current.add(memoryIdParam);
+          if (!claimResult.alreadyClaimed) {
+            toast.success(`🎬 Story added to your Cinema library`, {
+              description: `"${claimResult.memoryTitle || 'Family Story'}" by ${claimResult.ownerDisplayName || 'Storyteller'}`
+            });
+          }
+          // Immediately refresh shared memories collection in state
+          getSharedWithMeMemoriesAction(user.uid).then(res => {
+            if (res.memories) setSharedMemories(res.memories);
+          });
+        } else if (claimResult.isOwner) {
+          claimedMemoryIdsRef.current.add(memoryIdParam);
+        }
+      })
+      .catch(err => console.error('[CinemaPage] Auto-claim error:', err));
+  }, [user, memoryIdParam]);
 
   const handleSubmitQuestion = async () => {
     const targetId = publicMemory?.id || selectedMemory?.id || memoryIdParam;

@@ -5501,10 +5501,23 @@ export default function SoloStage({
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                     <span className="flex items-center gap-1.5 text-[9px] font-mono text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                       4K MASTERED
-                     </span>
+
+                      <TooltipProvider delayDuration={150}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="flex items-center gap-1.5 text-[9px] font-mono text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 px-2 py-0.5 rounded-full cursor-help">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              4K MASTERED
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-slate-950/95 border border-white/10 p-3 text-xs text-white max-w-xs shadow-2xl z-[10002] rounded-xl">
+                            <div>
+                              <p className="font-mono text-[9px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Hollywood-Grade Master</p>
+                              <p className="text-[10px] text-white/70">Master reel is fully stitched in 4K resolution with synchronized ambient audio score and theatrical video delivery.</p>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                    </div>
                  </div>
                  
