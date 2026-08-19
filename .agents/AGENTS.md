@@ -41,6 +41,10 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
      - The agent sets up automated recurring polling against `https://dev.memoryweaver.studio/api/version` (using `schedule` with recurring cron e.g. every 1-2 minutes or one-shot timers) to autonomously monitor deployment progress.
      - The agent continues polling until `/api/version` confirms the rollout, only escalating to the user if a remote build error is detected.
   5. **Rollout Verified Handoff**: ONLY after `/api/version` returns the exact target `commitSha` may the agent generate/update the Testing Checklist and hand off to the user for staging verification.
+- **Mandatory Fully-Qualified Test URLs & Zero Placeholder Policy**:
+  - Whenever generating, updating, or presenting ANY Testing Checklist, test steps, or test instructions (both in chat responses and in interactive checklist artifacts), the agent MUST NEVER output relative paths (e.g. `/cinema/tv?id=...`) or truncated ellipsis placeholders (`...`).
+  - Every test item MUST specify the complete, fully-qualified public staging URL (e.g. `https://dev.memoryweaver.studio/cinema/tv?id=ey96djU6qR1BrDGnvZwp`) containing the active sample memory ID or target route.
+  - In interactive checklist artifacts (`qa_checklist_interactive.html`), each individual test item card MUST render a dedicated, clickable `🔗 Open Test Route ↗` button pointing directly to that fully-qualified URL.
 
 ## 6. Telemetry & Analytics Micro-Version Tracing Rule
 - **Dynamic Version & Commit SHA Binding**: Every client event payload dispatched must include the unified application version parameter with micro-build Git SHA tracing (e.g. `v1.1.0-beta-MW-71.85f8572b`).
