@@ -734,9 +734,66 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 }}
                 >
-                   <Badge className="bg-primary/20 text-primary border-primary/30 mb-4 px-3 py-1 font-bold tracking-wider uppercase text-[10px]">
-                     Cinematic Experience
-                   </Badge>
+                    {/* Act V Status Badges Header */}
+                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                      <TooltipProvider delayDuration={150}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help">
+                              {memory.status === 'published' ? (
+                                <span className="flex items-center gap-1.5 text-[9px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                  🎬 LIVE IN CINEMA
+                                </span>
+                              ) : memory.status === 'pre-release' ? (
+                                <span className="flex items-center gap-1.5 text-[9px] font-mono font-bold text-violet-400 bg-violet-950/60 border border-violet-500/30 px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                                  🌟 PRE-RELEASE
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1.5 text-[9px] font-mono font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                  🛠️ IN PRODUCTION
+                                </span>
+                              )}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-slate-950/95 border border-white/10 p-3 text-xs text-white max-w-xs shadow-2xl z-[10002] rounded-xl">
+                            {memory.status === 'published' ? (
+                              <div>
+                                <p className="font-mono text-[9px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Official Cinema Release</p>
+                                <p className="text-[10px] text-white/70">This memory is published and available in your public Cinema screening room.</p>
+                              </div>
+                            ) : memory.status === 'pre-release' ? (
+                              <div>
+                                <p className="font-mono text-[9px] font-bold text-violet-400 uppercase tracking-widest mb-1">Private Screener Active</p>
+                                <p className="text-[10px] text-white/70">Share this screener link with family and collaborators to gather private feedback before releasing officially to the Cinema.</p>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="font-mono text-[9px] font-bold text-amber-400 uppercase tracking-widest mb-1">Production in Progress</p>
+                                <p className="text-[10px] text-white/70">Complete Act V to master your video reel and enter Pre-Release.</p>
+                              </div>
+                            )}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <TooltipProvider delayDuration={150}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="flex items-center gap-1.5 text-[9px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm cursor-help">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              ✨ 4K MASTERED
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-slate-950/95 border border-white/10 p-2.5 text-xs text-white max-w-xs shadow-2xl z-[10002] rounded-xl">
+                            <p className="font-mono text-[9px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Hollywood-Grade Master</p>
+                            <p className="text-[10px] text-white/70">Rendered with ultra high-definition video master reel & synced audio score.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                     <h1 className="text-4xl md:text-5xl font-headline leading-tight text-white font-bold mb-4">
                       {memory.title}
                     </h1>

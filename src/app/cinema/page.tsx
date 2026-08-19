@@ -301,12 +301,24 @@ function CinemaContent() {
 
               {/* Story Details & Premiere Launcher */}
               <div className="flex-1 space-y-6 text-left">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
                   <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[9px] font-mono font-bold uppercase tracking-widest rounded-full">
                     🎟️ Guest Access Pass Active
                   </span>
-                  <span className="text-[10px] text-white/40 font-mono uppercase tracking-widest">
-                    A Memory Weaver Selection
+                  {publicMemory.status === 'published' ? (
+                    <span className="flex items-center gap-1.5 text-[9px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      🎬 LIVE IN CINEMA
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 text-[9px] font-mono font-bold text-violet-400 bg-violet-950/60 border border-violet-500/30 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                      <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                      🌟 PRE-RELEASE
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1.5 text-[9px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    ✨ 4K MASTERED
                   </span>
                 </div>
 
