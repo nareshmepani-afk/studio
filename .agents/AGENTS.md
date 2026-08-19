@@ -27,14 +27,19 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 ## 5. Staging-Only Public Testing Protocol & Mandatory Rollout Verification Gate
 - **No Localhost Testing**: The agent MUST NEVER instruct the user to test on `localhost`, `127.0.0.1`, or any local development server. The application has backend dependencies (Firebase Auth, Firestore, Cloud Functions, App Hosting) that do not function correctly in local dev mode.
 - **Exclusive Staging URL**: ALL user-facing testing and validation MUST be performed exclusively on the public staging environment: **`https://dev.memoryweaver.studio/`**.
+- **Mandatory Pre-Push Local Production Build Gate (`npm.cmd run build`)**:
+  - `tsc --noEmit` alone is INSUFFICIENT because it does not execute Next.js ESLint checks (e.g. `react-hooks/rules-of-hooks`), SSG static page prerendering, or bundle trace collection.
+  - Before running `git push` on ANY deployment-bound commit, the agent MUST execute `npm.cmd run build` (or `npm run build`) locally and confirm that all 33+ routes compile cleanly to exit code 0. Pushing code that has not passed a full local `npm.cmd run build` is strictly prohibited.
 - **The Checklist Release Lock (Zero Premature Handover)**: The agent is STRICTLY FORBIDDEN from presenting any Testing Checklist, QA instructions, test links, or "Ready to test" message to the user until a programmatic live probe against `https://dev.memoryweaver.studio/api/version` confirms that the active `commitSha` matches the newly committed Git SHA.
 - **Commit-Push-Poll Workflow**:
-  1. Commit and push code to the `dev` branch.
-  2. The agent MUST NOT output the test checklist or declare the fix ready in the push turn.
-  3. The agent MUST initiate an automated polling check against `https://dev.memoryweaver.studio/api/version` (via Node `https` probe or `schedule` tool).
-  4. If `/api/version` still returns the older `commitSha`, the agent must inform the user of the pending rollout status and advise checking Firebase Console Rollouts if a manual trigger is needed, while holding the checklist locked.
-  5. ONLY when `/api/version` returns the exact target `commitSha` may the agent unlock and present the Testing Checklist to the user.
-- **Automated Verification**: The agent may use `tsc --noEmit` and `vitest run` locally for code correctness checks, but MUST NOT treat local execution as a substitute for staging validation.
+  1. **Pre-Push Build**: Run `npm.cmd run build` locally. Fix any ESLint, Hook, or type errors.
+  2. **Push to Dev**: Commit and push code to the `dev` branch.
+  3. **Checklist Lock**: The agent MUST NOT output the test checklist or declare the fix ready in the push turn.
+  4. **Automated Probe**: Initiate automated polling against `https://dev.memoryweaver.studio/api/version` (via Node `https` probe or `schedule` tool).
+  5. **Fail-Fast Loop Termination Guard (Max 4-Minute Bounded Window)**:
+     - Polling loops MUST NEVER run indefinitely. Polling is strictly capped at 4 minutes (max 8 iterations at 30s intervals).
+     - If `/api/version` does not update within 4 minutes, the agent MUST immediately terminate all timer tasks, alert the user of a build delay/failure, request a quick check of Firebase Console Rollouts, and explain next steps rather than looping silently.
+  6. **Release Checklist**: ONLY when `/api/version` returns the exact target `commitSha` may the agent unlock and present the Testing Checklist to the user.
 
 ## 6. Telemetry & Analytics Micro-Version Tracing Rule
 - **Dynamic Version & Commit SHA Binding**: Every client event payload dispatched must include the unified application version parameter with micro-build Git SHA tracing (e.g. `v1.1.0-beta-MW-71.85f8572b`).
