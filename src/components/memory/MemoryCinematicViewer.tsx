@@ -33,6 +33,36 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
   const [isChromecastAvailable, setIsChromecastAvailable] = useState<boolean>(false);
   const [isCasting, setIsCasting] = useState<boolean>(false);
 
+  // ACT IV FORMULA: Comprehensive Effective Video Duration Resolver
+  const effectiveVideoDuration = useMemo(() => {
+    // 1. Direct state duration if finite and > 0
+    if (duration && isFinite(duration) && duration > 0) {
+      return duration;
+    }
+    // 2. Direct video element duration
+    if (videoRef.current?.duration && isFinite(videoRef.current.duration) && videoRef.current.duration > 0) {
+      return videoRef.current.duration;
+    }
+    // 3. Sum of recordedSegments EDL tracks
+    if ((memory as any)?.recordedSegments && (memory as any).recordedSegments.length > 0) {
+      const sum = (memory as any).recordedSegments.reduce((acc: number, seg: any) => acc + (seg.duration || 0), 0);
+      if (sum > 0) return sum;
+    }
+    // 4. Firestore data.videoDuration, duration, or mediaAttachments
+    if ((memory as any)?.videoDuration && isFinite((memory as any).videoDuration) && (memory as any).videoDuration > 0) {
+      return (memory as any).videoDuration;
+    }
+    if ((memory as any)?.duration && isFinite((memory as any).duration) && (memory as any).duration > 0) {
+      return (memory as any).duration;
+    }
+    const mediaDur = memory?.mediaAttachments?.find((m: any) => m.duration)?.duration;
+    if (mediaDur && isFinite(mediaDur) && mediaDur > 0) {
+      return mediaDur;
+    }
+    // 5. Dynamic fallback: current playback time if video is playing
+    return currentTime > 0 ? currentTime : 0;
+  }, [duration, currentTime, memory]);
+
   // Close on Escape key
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -176,18 +206,16 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
     }
   }, [memory?.id]);
 
-  if (!memory) return null;
-
   // Resolve video, audio, and image assets across all memory schema fields
-  const videoUrl = memory.videoUrl || (memory as any).recordingUrl || (memory as any).video || memory.mediaAttachments?.find(m => m.type === 'video' || m.url?.includes('.mp4') || m.url?.includes('.webm'))?.url;
-  const audioUrl = (memory as any).audioUrl || memory.mediaAttachments?.find(m => m.type === 'audio' || m.url?.includes('.mp3') || m.url?.includes('.wav'))?.url;
-  const imageUrl = memory.posterImageUrl || memory.imageUrl || (memory as any).posterUrl || memory.mediaAttachments?.find(m => m.type === 'image' || m.url?.endsWith('.jpg') || m.url?.endsWith('.png') || m.url?.endsWith('.webp'))?.url;
+  const videoUrl = memory?.videoUrl || (memory as any)?.recordingUrl || (memory as any)?.video || memory?.mediaAttachments?.find(m => m.type === 'video' || m.url?.includes('.mp4') || m.url?.includes('.webm'))?.url;
+  const audioUrl = (memory as any)?.audioUrl || memory?.mediaAttachments?.find(m => m.type === 'audio' || m.url?.includes('.mp3') || m.url?.includes('.wav'))?.url;
+  const imageUrl = memory?.posterImageUrl || memory?.imageUrl || (memory as any)?.posterUrl || memory?.mediaAttachments?.find(m => m.type === 'image' || m.url?.endsWith('.jpg') || m.url?.endsWith('.png') || m.url?.endsWith('.webp'))?.url;
 
-  const locationString = [memory.location, memory.country].filter(Boolean).join(', ');
+  const locationString = [memory?.location, memory?.country].filter(Boolean).join(', ');
 
   // Robust Date Resolution (Year, Date, Timeframe Scope)
   const formattedDate = (() => {
-    if (memory.date) {
+    if (memory?.date) {
       const rawDateStr = String(memory.date).trim();
       if (/^\d{4}$/.test(rawDateStr)) {
         return rawDateStr;
@@ -197,7 +225,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
         return format(d, 'd MMMM yyyy', { locale: enGB });
       }
     }
-    if ((memory as any).year) {
+    if ((memory as any)?.year) {
       const year = (memory as any).year;
       const month = (memory as any).month;
       const day = (memory as any).day;
@@ -205,19 +233,19 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
       if (month) return `${month} ${year}`;
       return `${year}`;
     }
-    if ((memory as any).timeframeScope) {
+    if ((memory as any)?.timeframeScope) {
       return (memory as any).timeframeScope;
     }
     return 'Date Unknown';
   })();
 
-  const narrativeText = memory.prose || memory.originalHook || memory.description || '';
+  const narrativeText = memory?.prose || memory?.originalHook || memory?.description || '';
 
-  const fusionManifest = (memory as any).fusionManifest || {
-    audioMood: (memory as any).cinematicScore || (memory as any).audioMood || "Nostalgic Acoustic Guitar & Soft String Ensemble // 72 BPM",
-    sensoryPalette: (memory as any).sensoryPalette || ((memory as any).sensoryValues ? Object.entries((memory as any).sensoryValues).map(([k,v]) => `${k}: ${v}`).join(', ') : "Smell of fresh Kutch rain, sound of steam train whistle in 1956"),
-    emotionalTone: (memory as any).emotionalTone || (memory.emotionTags ? memory.emotionTags.join(', ') : "Reverent, Courageous, Ancestral Gratitude"),
-    cohesiveScript: (memory as any).cohesiveScript || narrativeText
+  const fusionManifest = (memory as any)?.fusionManifest || {
+    audioMood: (memory as any)?.cinematicScore || (memory as any)?.audioMood || "Nostalgic Acoustic Guitar & Soft String Ensemble // 72 BPM",
+    sensoryPalette: (memory as any)?.sensoryPalette || ((memory as any)?.sensoryValues ? Object.entries((memory as any)?.sensoryValues).map(([k,v]) => `${k}: ${v}`).join(', ') : "Smell of fresh Kutch rain, sound of steam train whistle in 1956"),
+    emotionalTone: (memory as any)?.emotionalTone || (memory?.emotionTags ? memory.emotionTags.join(', ') : "Reverent, Courageous, Ancestral Gratitude"),
+    cohesiveScript: (memory as any)?.cohesiveScript || narrativeText
   };
 
   const togglePlay = () => {
@@ -274,36 +302,6 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
     videoRef.current.muted = !isMuted;
     setIsMuted(!isMuted);
   };
-
-  // ACT IV FORMULA: Comprehensive Effective Video Duration Resolver
-  const effectiveVideoDuration = useMemo(() => {
-    // 1. Direct state duration if finite and > 0
-    if (duration && isFinite(duration) && duration > 0) {
-      return duration;
-    }
-    // 2. Direct video element duration
-    if (videoRef.current?.duration && isFinite(videoRef.current.duration) && videoRef.current.duration > 0) {
-      return videoRef.current.duration;
-    }
-    // 3. Sum of recordedSegments EDL tracks
-    if ((memory as any)?.recordedSegments && (memory as any).recordedSegments.length > 0) {
-      const sum = (memory as any).recordedSegments.reduce((acc: number, seg: any) => acc + (seg.duration || 0), 0);
-      if (sum > 0) return sum;
-    }
-    // 4. Firestore data.videoDuration, duration, or mediaAttachments
-    if ((memory as any)?.videoDuration && isFinite((memory as any).videoDuration) && (memory as any).videoDuration > 0) {
-      return (memory as any).videoDuration;
-    }
-    if ((memory as any)?.duration && isFinite((memory as any).duration) && (memory as any).duration > 0) {
-      return (memory as any).duration;
-    }
-    const mediaDur = memory?.mediaAttachments?.find((m: any) => m.duration)?.duration;
-    if (mediaDur && isFinite(mediaDur) && mediaDur > 0) {
-      return mediaDur;
-    }
-    // 5. Dynamic fallback: current playback time if video is playing
-    return currentTime > 0 ? currentTime : 0;
-  }, [duration, currentTime, memory]);
 
   const toggleFullscreen = () => {
     if (!videoRef.current) return;
