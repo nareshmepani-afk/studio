@@ -37,9 +37,11 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
   1. **Pre-Push Build**: Run `npm.cmd run build` locally. Confirm all 33+ routes compile with exit code 0. Fix any errors before pushing.
   2. **Push to Dev**: Commit and push code to the `dev` branch.
   3. **Zero-Checklist Response**: In the push response, the agent MUST NOT output or link any checklist. The agent only reports the pushed commit SHA and initiates rollout verification.
-  4. **Automated Continuous Polling**:
-     - The agent sets up automated recurring polling against `https://dev.memoryweaver.studio/api/version` (using `schedule` with recurring cron e.g. every 1-2 minutes or one-shot timers) to autonomously monitor deployment progress.
-     - The agent continues polling until `/api/version` confirms the rollout, only escalating to the user if a remote build error is detected.
+  4. **Automated Continuous Polling (Calibrated 5-Minute Initial Window)**:
+     - Cloud Build compilation, container packaging, and edge traffic routing on Firebase App Hosting consistently takes ~4.5 to 5.0 minutes.
+     - The agent MUST set the initial poll timer for **4.5 to 5 minutes (`DurationSeconds: 270` to `300`)** immediately upon pushing. Do NOT use 30s or 45s micro-intervals to avoid spamming the user with incremental wakeups.
+     - If `/api/version` has not yet updated after the initial 5-minute window, schedule subsequent check-ins every **60 seconds (`DurationSeconds: 60`)** until the rollout completes.
+     - The agent continues polling autonomously until `/api/version` confirms the rollout, only escalating to the user if a remote build error is detected.
   5. **Rollout Verified Handoff**: ONLY after `/api/version` returns the exact target `commitSha` may the agent generate/update the Testing Checklist and hand off to the user for staging verification.
 - **Mandatory Fully-Qualified Test URLs & Zero Placeholder Policy**:
   - Whenever generating, updating, or presenting ANY Testing Checklist, test steps, or test instructions (both in chat responses and in interactive checklist artifacts), the agent MUST NEVER output relative paths (e.g. `/cinema/tv?id=...`) or truncated ellipsis placeholders (`...`).
