@@ -30,16 +30,17 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Mandatory Pre-Push Local Production Build Gate (`npm.cmd run build`)**:
   - `tsc --noEmit` alone is INSUFFICIENT because it does not execute Next.js ESLint checks (e.g. `react-hooks/rules-of-hooks`), SSG static page prerendering, or bundle trace collection.
   - Before running `git push` on ANY deployment-bound commit, the agent MUST execute `npm.cmd run build` (or `npm run build`) locally and confirm that all 33+ routes compile cleanly to exit code 0. Pushing code that has not passed a full local `npm.cmd run build` is strictly prohibited.
-- **The Checklist Release Lock (Zero Premature Handover)**: The agent is STRICTLY FORBIDDEN from presenting any Testing Checklist, QA instructions, test links, or "Ready to test" message to the user until a programmatic live probe against `https://dev.memoryweaver.studio/api/version` confirms that the active `commitSha` matches the newly committed Git SHA.
-- **Commit-Push-Poll Workflow**:
-  1. **Pre-Push Build**: Run `npm.cmd run build` locally. Fix any ESLint, Hook, or type errors.
+- **The Checklist Release Lock (Absolute Zero Premature Handover)**:
+  - **TOTAL PROHIBITION**: The agent is STRICTLY FORBIDDEN from creating, updating, linking, referencing, or presenting ANY Testing Checklist, test steps, test URLs, or "Ready to test" message to the user until a programmatic live probe against `https://dev.memoryweaver.studio/api/version` confirms that the active `commitSha` matches the newly committed Git SHA.
+  - Outputting ANY checklist artifact, HTML link, or test questionnaire before `/api/version` confirms the rollout is an immediate violation of this rule.
+- **Strict 5-Step Commit-Push-Verification Workflow**:
+  1. **Pre-Push Build**: Run `npm.cmd run build` locally. Confirm all 33+ routes compile with exit code 0. Fix any errors before pushing.
   2. **Push to Dev**: Commit and push code to the `dev` branch.
-  3. **Checklist Lock**: The agent MUST NOT output the test checklist or declare the fix ready in the push turn.
-  4. **Automated Probe**: Initiate automated polling against `https://dev.memoryweaver.studio/api/version` (via Node `https` probe or `schedule` tool).
-  5. **Fail-Fast Loop Termination Guard (Max 4-Minute Bounded Window)**:
-     - Polling loops MUST NEVER run indefinitely. Polling is strictly capped at 4 minutes (max 8 iterations at 30s intervals).
+  3. **Zero-Checklist Response**: In the push response, the agent MUST NOT output or link any checklist. The agent only reports the pushed commit SHA and initiates rollout verification.
+  4. **Fail-Fast Automated Polling (Max 4-Minute Bounded Window)**:
+     - The agent polls `https://dev.memoryweaver.studio/api/version` (max 4 minutes, capped at 8 iterations).
      - If `/api/version` does not update within 4 minutes, the agent MUST immediately terminate all timer tasks, alert the user of a build delay/failure, request a quick check of Firebase Console Rollouts, and explain next steps rather than looping silently.
-  6. **Release Checklist**: ONLY when `/api/version` returns the exact target `commitSha` may the agent unlock and present the Testing Checklist to the user.
+  5. **Rollout Verified Handoff**: ONLY after `/api/version` returns the exact target `commitSha` may the agent generate/update the Testing Checklist and hand off to the user for staging verification.
 
 ## 6. Telemetry & Analytics Micro-Version Tracing Rule
 - **Dynamic Version & Commit SHA Binding**: Every client event payload dispatched must include the unified application version parameter with micro-build Git SHA tracing (e.g. `v1.1.0-beta-MW-71.85f8572b`).
