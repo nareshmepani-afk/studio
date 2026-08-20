@@ -493,11 +493,24 @@ export async function claimSharedMemoryAction(memoryId: string, claimantUid: str
     const sharedWithList: string[] = Array.isArray((data as any).sharedWith) ? (data as any).sharedWith : [];
     const alreadyClaimed = sharedWithList.includes(claimantUid);
 
+    // 1. Update memory document sharedWith array
     if (!alreadyClaimed) {
       await targetDoc.ref.set({
         sharedWith: FieldValue.arrayUnion(claimantUid)
       }, { merge: true });
     }
+
+    // 2. Dual-Write: Write instant-access pointer to claimant's private subcollection (Zero-Index architecture)
+    await adminDb.collection('users').doc(claimantUid).collection('sharedMemories').doc(memoryId).set({
+      memoryId,
+      ownerUid: ownerUid || '',
+      ownerPath: targetDoc.ref.path,
+      title: data.title || '',
+      chapterTitle: data.chapterTitle || '',
+      posterImageUrl: data.posterImageUrl || data.imageUrl || '',
+      status: data.status || 'published',
+      claimedAt: new Date().toISOString()
+    }, { merge: true });
 
     let ownerDisplayName = 'Memory Weaver Director';
     if (ownerUid) {
@@ -522,21 +535,60 @@ export async function getSharedWithMeMemoriesAction(uid: string): Promise<{ memo
   const db = adminDb;
 
   try {
-    // Query with single-field collectionGroup index on sharedWith (requires zero custom composite indexes)
-    const memoriesQuery = await db.collectionGroup('memories')
-      .where('sharedWith', 'array-contains', uid)
-      .get();
+    // 1. Primary Strategy: Query user's private sharedMemories subcollection (Instant & requires zero composite indexes)
+    const subcollectionSnap = await db.collection('users').doc(uid).collection('sharedMemories').get();
+    
+    let candidateDocs: any[] = [];
 
-    const candidateDocs = memoriesQuery.docs.map(doc => {
-      const data = doc.data();
-      const ownerUid = data.userId || doc.ref.parent.parent?.id;
-      return {
-        id: doc.id,
-        ...data,
-        ownerUid,
-        ownerPath: ownerUid ? `users/${ownerUid}/memories` : undefined
-      } as any;
-    }).filter(m => m.status === 'published' || m.status === 'pre-release');
+    if (!subcollectionSnap.empty) {
+      // Fetch fresh full memory records from pointers
+      const memoryPromises = subcollectionSnap.docs.map(async (pDoc) => {
+        const pointerData = pDoc.data();
+        try {
+          if (pointerData.ownerPath) {
+            const fullDoc = await db.doc(pointerData.ownerPath).get();
+            if (fullDoc.exists) {
+              const fullData = fullDoc.data() as any;
+              return {
+                id: fullDoc.id,
+                ...fullData,
+                ownerUid: pointerData.ownerUid || fullData.userId || fullDoc.ref.parent.parent?.id,
+                ownerPath: pointerData.ownerPath
+              };
+            }
+          }
+        } catch (e) {
+          console.warn(`[getSharedWithMeMemoriesAction] Error reading memory path ${pointerData.ownerPath}:`, e);
+        }
+        return {
+          id: pDoc.id,
+          ...pointerData
+        };
+      });
+
+      const resolved = await Promise.all(memoryPromises);
+      candidateDocs = resolved.filter(m => m && (m.status === 'published' || m.status === 'pre-release'));
+    } else {
+      // 2. Fallback Strategy: CollectionGroup query with single-field index
+      try {
+        const memoriesQuery = await db.collectionGroup('memories')
+          .where('sharedWith', 'array-contains', uid)
+          .get();
+
+        candidateDocs = memoriesQuery.docs.map(doc => {
+          const data = doc.data();
+          const ownerUid = data.userId || doc.ref.parent.parent?.id;
+          return {
+            id: doc.id,
+            ...data,
+            ownerUid,
+            ownerPath: ownerUid ? `users/${ownerUid}/memories/${doc.id}` : doc.ref.path
+          } as any;
+        }).filter(m => m.status === 'published' || m.status === 'pre-release');
+      } catch (cgErr: any) {
+        console.warn('[getSharedWithMeMemoriesAction] CollectionGroup query fallback failed (likely pending index exemption):', cgErr.message);
+      }
+    }
 
     // UID Deduplication: Batch fetch unique director profiles once
     const uniqueOwnerUids = Array.from(new Set(candidateDocs.map(m => m.ownerUid).filter(Boolean))) as string[];
@@ -562,8 +614,8 @@ export async function getSharedWithMeMemoriesAction(uid: string): Promise<{ memo
       const profile = m.ownerUid ? userProfilesMap[m.ownerUid] : undefined;
       return {
         ...m,
-        ownerDisplayName: profile?.displayName || 'Memory Weaver Director',
-        ownerEmail: profile?.email || ''
+        ownerDisplayName: profile?.displayName || m.ownerDisplayName || 'Memory Weaver Director',
+        ownerEmail: profile?.email || m.ownerEmail || ''
       };
     });
 
