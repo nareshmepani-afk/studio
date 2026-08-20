@@ -13,6 +13,7 @@ import { CinemaComingSoon } from '@/components/cinema/CinemaComingSoon';
 import { GuestRequestModal } from '@/components/cinema/GuestRequestModal';
 import { CinemaScreeningCard } from '@/components/cinema/CinemaScreeningCard';
 import { DirectorAccessRosterModal } from '@/components/cinema/DirectorAccessRosterModal';
+import { CinemaShareModal } from '@/components/cinema/CinemaShareModal';
 import { Loader2, Clapperboard, Film, Sparkles, User, Play, Heart, MessageSquare, ShieldCheck, ArrowRight, KeyRound, Unlock, Tv, Search, Filter, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { Memory } from '@/types';
@@ -35,6 +36,7 @@ function CinemaContent() {
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
   const [publicMemory, setPublicMemory] = useState<Memory | null>(null);
   const [rosterMemory, setRosterMemory] = useState<Memory | null>(null);
+  const [shareModalMemory, setShareModalMemory] = useState<Memory | null>(null);
   const [rosterCounts, setRosterCounts] = useState<Record<string, number>>({});
   const [isFetchingPublic, setIsFetchingPublic] = useState<boolean>(!!memoryIdParam);
   const [requestModalState, setRequestModalState] = useState<{ isOpen: boolean; promptId: string; promptTitle: string } | null>(null);
@@ -719,7 +721,7 @@ function CinemaContent() {
                     }}
                     onTvPlay={() => router.push(`/cinema/tv?id=${memory.id}`)}
                     onManageAccess={memory._isOwner ? () => setRosterMemory(memory) : undefined}
-                    onShare={memory._isOwner ? () => setRosterMemory(memory) : undefined}
+                    onShare={memory._isOwner ? () => setShareModalMemory(memory) : undefined}
                   />
                 );
               })}
@@ -913,6 +915,15 @@ function CinemaContent() {
           onRosterUpdate={(memId, newCount) => {
             setRosterCounts(prev => ({ ...prev, [memId]: newCount }));
           }}
+        />
+      )}
+
+      {/* Multi-Channel Share & QR Code Portal Modal (MW-187 / MW-190) */}
+      {shareModalMemory && (
+        <CinemaShareModal
+          isOpen={!!shareModalMemory}
+          onClose={() => setShareModalMemory(null)}
+          memory={shareModalMemory}
         />
       )}
     </AuthenticatedPageWrapper>

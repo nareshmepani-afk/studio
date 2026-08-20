@@ -5,7 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { getMemoryAudienceRosterAction, revokeMemoryAccessAction, type CollaboratorProfile } from '@/actions/memoryActions';
-import { Users, UserX, Copy, Check, ShieldCheck, Film, Loader2, Calendar, Mail, User } from 'lucide-react';
+import { Users, UserX, Copy, Check, ShieldCheck, Film, Loader2, Calendar, Mail, User, Share2, QrCode } from 'lucide-react';
+import { CinemaShareModal } from './CinemaShareModal';
 import { toast } from 'sonner';
 import type { Memory } from '@/types';
 import { format } from 'date-fns';
@@ -29,6 +30,7 @@ export function DirectorAccessRosterModal({
   const [revokingUid, setRevokingUid] = useState<string | null>(null);
   const [confirmRevokeUid, setConfirmRevokeUid] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (!isOpen || !memory?.id) {
@@ -144,13 +146,13 @@ export function DirectorAccessRosterModal({
           </div>
 
           <Button
-            onClick={handleCopyShareLink}
+            onClick={() => setIsShareModalOpen(true)}
             variant="outline"
             size="sm"
-            className="shrink-0 bg-white/5 border-white/10 hover:bg-white/10 hover:border-amber-500/40 text-white text-xs font-mono rounded-xl h-9 gap-1.5 transition-all"
+            className="shrink-0 bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-400 text-xs font-mono rounded-xl h-9 gap-1.5 transition-all cursor-pointer"
           >
-            {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-400" />}
-            <span>{copiedLink ? 'Copied' : 'Share Link'}</span>
+            <Share2 className="w-3.5 h-3.5 text-amber-400" />
+            <span>Share & QR Code</span>
           </Button>
         </div>
 
@@ -162,12 +164,21 @@ export function DirectorAccessRosterModal({
               <span className="text-xs font-mono uppercase tracking-wider">Loading audience roster...</span>
             </div>
           ) : roster.length === 0 ? (
-            <div className="py-12 px-4 rounded-2xl bg-white/[0.02] border border-dashed border-white/10 text-center space-y-2">
+            <div className="py-10 px-4 rounded-2xl bg-white/[0.02] border border-dashed border-white/10 text-center space-y-3">
               <Users className="w-8 h-8 text-white/20 mx-auto" />
               <p className="text-xs font-mono text-white/60">No collaborators have claimed access yet.</p>
-              <p className="text-[10px] font-mono text-white/40 max-w-xs mx-auto">
+              <p className="text-[10px] font-mono text-white/40 max-w-xs mx-auto leading-relaxed">
                 Share your screening link with family members or friends. When they claim it, their name and email will appear here.
               </p>
+              <Button
+                onClick={() => setIsShareModalOpen(true)}
+                variant="outline"
+                size="sm"
+                className="mt-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-mono font-bold text-xs rounded-xl h-9 gap-1.5 transition-all cursor-pointer shadow-lg"
+              >
+                <Share2 className="w-3.5 h-3.5 text-slate-950" />
+                <span>Open Share & QR Portal</span>
+              </Button>
             </div>
           ) : (
             roster.map((collaborator) => {
@@ -270,6 +281,13 @@ export function DirectorAccessRosterModal({
         </div>
 
       </DialogContent>
+
+      {/* Multi-Channel Share & QR Code Portal Modal */}
+      <CinemaShareModal 
+        isOpen={isShareModalOpen} 
+        onClose={() => setIsShareModalOpen(false)} 
+        memory={memory} 
+      />
     </Dialog>
   );
 }
