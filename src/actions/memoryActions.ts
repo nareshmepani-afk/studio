@@ -538,26 +538,34 @@ export async function getSharedWithMeMemoriesAction(uid: string): Promise<{ memo
       } as any;
     }).filter(m => m.status === 'published' || m.status === 'pre-release');
 
-    // Resolve owner display names and emails for each shared memory
-    const memoriesWithOwners = await Promise.all(candidateDocs.map(async (m) => {
-      let ownerDisplayName = 'Memory Weaver Director';
-      let ownerEmail = '';
-      if (m.ownerUid) {
-        try {
-          const userDoc = await db.collection('users').doc(m.ownerUid).get();
-          if (userDoc.exists) {
-            const uData = userDoc.data();
-            ownerDisplayName = uData?.displayName || uData?.name || 'Memory Weaver Director';
-            ownerEmail = uData?.email || '';
-          }
-        } catch (e) {}
+    // UID Deduplication: Batch fetch unique director profiles once
+    const uniqueOwnerUids = Array.from(new Set(candidateDocs.map(m => m.ownerUid).filter(Boolean))) as string[];
+
+    const userProfilesMap: Record<string, { displayName: string; email: string }> = {};
+    await Promise.all(uniqueOwnerUids.map(async (ownerId) => {
+      try {
+        const userDoc = await db.collection('users').doc(ownerId).get();
+        if (userDoc.exists) {
+          const uData = userDoc.data();
+          userProfilesMap[ownerId] = {
+            displayName: uData?.displayName || uData?.name || 'Memory Weaver Director',
+            email: uData?.email || ''
+          };
+        }
+      } catch (e) {
+        console.warn(`[getSharedWithMeMemoriesAction] Could not fetch profile for ${ownerId}:`, e);
       }
+    }));
+
+    // Map profiles back to candidate docs instantaneously from in-memory dictionary
+    const memoriesWithOwners = candidateDocs.map(m => {
+      const profile = m.ownerUid ? userProfilesMap[m.ownerUid] : undefined;
       return {
         ...m,
-        ownerDisplayName,
-        ownerEmail
+        ownerDisplayName: profile?.displayName || 'Memory Weaver Director',
+        ownerEmail: profile?.email || ''
       };
-    }));
+    });
 
     return { memories: memoriesWithOwners };
   } catch (error: any) {
