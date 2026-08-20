@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Memory } from '@/types';
-import { Film, Play, Clapperboard, Users, Tv, Share2, Sparkles } from 'lucide-react';
+import { Film, Play, Clapperboard, Users, Cast, Share2, Sparkles } from 'lucide-react';
 import { CinemaPoster } from '@/components/memory/CinemaPoster';
 
 interface CinemaScreeningCardProps {
@@ -115,7 +115,7 @@ export function CinemaScreeningCard({
             className="p-2.5 rounded-full bg-slate-900/90 border border-white/20 text-white hover:bg-amber-400 hover:text-slate-950 hover:border-amber-400 backdrop-blur-md transition-all shadow-lg pointer-events-auto cursor-pointer active:scale-95"
             title="Cast to Living Room TV"
           >
-            <Tv className="w-4 h-4" />
+            <Cast className="w-4 h-4" />
           </button>
         )}
         {onManageAccess ? (
