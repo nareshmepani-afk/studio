@@ -14,6 +14,7 @@ interface CinemaScreeningCardProps {
   onView: () => void;
   onTvPlay?: () => void;
   onShare?: () => void;
+  onManageAccess?: () => void;
 }
 
 export function CinemaScreeningCard({
@@ -24,7 +25,10 @@ export function CinemaScreeningCard({
   onView,
   onTvPlay,
   onShare,
+  onManageAccess,
 }: CinemaScreeningCardProps) {
+  const sharedCount = Array.isArray((memory as any).sharedWith) ? (memory as any).sharedWith.length : 0;
+
   return (
     <motion.div
       whileHover={{ scale: 1.03 }}
@@ -52,15 +56,35 @@ export function CinemaScreeningCard({
         )}
       </div>
 
-      {/* 3. Top Right Ownership Badge */}
-      <div className="absolute top-3 right-3 z-30 pointer-events-none">
+      {/* 3. Top Right Ownership & Governance Badge */}
+      <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5">
         {isOwner ? (
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-950/80 border border-amber-500/40 text-amber-300 backdrop-blur-md shadow-lg">
-            <Clapperboard className="w-3 h-3 text-amber-400" />
-            <span className="font-mono text-[9px] font-bold uppercase tracking-wider">My Production</span>
-          </div>
+          <>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-950/80 border border-amber-500/40 text-amber-300 backdrop-blur-md shadow-lg pointer-events-none">
+              <Clapperboard className="w-3 h-3 text-amber-400" />
+              <span className="font-mono text-[9px] font-bold uppercase tracking-wider">My Production</span>
+            </div>
+            {onManageAccess && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onManageAccess();
+                }}
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md text-[9px] font-mono font-bold uppercase tracking-wider transition-all shadow-lg pointer-events-auto cursor-pointer active:scale-95 ${
+                  sharedCount > 0
+                    ? 'bg-cyan-950/90 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900/90 hover:border-cyan-400'
+                    : 'bg-slate-900/80 border border-white/20 text-white/60 hover:text-amber-300 hover:border-amber-400/50 hover:bg-slate-900'
+                }`}
+                title={sharedCount > 0 ? `Shared with ${sharedCount} collaborator${sharedCount === 1 ? '' : 's'}. Click to manage access.` : 'Share this story with family & collaborators.'}
+              >
+                <Users className="w-2.5 h-2.5" />
+                <span>{sharedCount > 0 ? sharedCount : 'Share'}</span>
+              </button>
+            )}
+          </>
         ) : (
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 backdrop-blur-md shadow-lg">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 backdrop-blur-md shadow-lg pointer-events-none">
             <Users className="w-3 h-3 text-cyan-400" />
             <span className="font-mono text-[9px] font-bold uppercase tracking-wider">
               {ownerDisplayName ? `From ${ownerDisplayName}` : 'Shared'}
@@ -94,7 +118,19 @@ export function CinemaScreeningCard({
             <Tv className="w-4 h-4" />
           </button>
         )}
-        {onShare && (
+        {onManageAccess ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onManageAccess();
+            }}
+            className="p-2.5 rounded-full bg-slate-900/90 border border-white/20 text-white hover:bg-amber-400 hover:text-slate-950 hover:border-amber-400 backdrop-blur-md transition-all shadow-lg pointer-events-auto cursor-pointer active:scale-95"
+            title={sharedCount > 0 ? `Manage Access (${sharedCount} Collaborators)` : 'Share Story Link'}
+          >
+            <Users className="w-4 h-4" />
+          </button>
+        ) : onShare ? (
           <button
             type="button"
             onClick={(e) => {
@@ -106,7 +142,7 @@ export function CinemaScreeningCard({
           >
             <Share2 className="w-4 h-4" />
           </button>
-        )}
+        ) : null}
       </div>
     </motion.div>
   );

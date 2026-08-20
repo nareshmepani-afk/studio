@@ -625,3 +625,160 @@ export async function getSharedWithMeMemoriesAction(uid: string): Promise<{ memo
     return { memories: [], error: error?.message || 'Failed to fetch shared memories.' };
   }
 }
+
+export interface CollaboratorProfile {
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+  claimedAt?: string;
+}
+
+/**
+ * Director Governance: Fetch audience roster of all collaborators who have claimed access to a memory.
+ */
+export async function getMemoryAudienceRosterAction(
+  memoryId: string,
+  callerUid?: string
+): Promise<{ success: boolean; roster?: CollaboratorProfile[]; memoryTitle?: string; error?: string }> {
+  if (!memoryId || !adminDb) {
+    return { success: false, error: 'Invalid request or database not initialized.' };
+  }
+
+  const session = await getSession();
+  const activeUid = session?.uid || callerUid;
+
+  if (!activeUid) {
+    return { success: false, error: 'Unauthorized. Please sign in to view audience roster.' };
+  }
+
+  try {
+    const memoryQuery = await adminDb.collectionGroup('memories').get();
+    const targetDoc = memoryQuery.docs.find(d => d.id === memoryId);
+
+    if (!targetDoc || !targetDoc.exists) {
+      return { success: false, error: 'Memory story not found.' };
+    }
+
+    const data = targetDoc.data() as Memory;
+    const ownerUid = data.userId || targetDoc.ref.parent.parent?.id;
+
+    // Verify requesting user is the owner
+    if (ownerUid !== activeUid) {
+      return { success: false, error: 'Unauthorized: Only the director can view the audience roster.' };
+    }
+
+    const sharedWithList: string[] = Array.isArray((data as any).sharedWith) ? (data as any).sharedWith : [];
+
+    if (sharedWithList.length === 0) {
+      return { success: true, roster: [], memoryTitle: data.title };
+    }
+
+    // Batch fetch collaborator profiles and claimed timestamps
+    const roster: CollaboratorProfile[] = await Promise.all(
+      sharedWithList.map(async (collabUid) => {
+        let displayName = 'Family Collaborator';
+        let email = '';
+        let photoURL = '';
+        let claimedAt = '';
+
+        try {
+          // 1. Fetch user doc
+          const userDoc = await adminDb!.collection('users').doc(collabUid).get();
+          if (userDoc.exists) {
+            const uData = userDoc.data();
+            displayName = uData?.displayName || uData?.name || displayName;
+            email = uData?.email || email;
+            photoURL = uData?.photoURL || '';
+          }
+
+          // 2. Fetch claimed pointer for timestamp
+          const pointerDoc = await adminDb!.collection('users').doc(collabUid).collection('sharedMemories').doc(memoryId).get();
+          if (pointerDoc.exists) {
+            claimedAt = pointerDoc.data()?.claimedAt || '';
+          }
+        } catch (err) {
+          console.warn(`[getMemoryAudienceRosterAction] Error fetching details for collaborator ${collabUid}:`, err);
+        }
+
+        return {
+          uid: collabUid,
+          displayName,
+          email,
+          photoURL,
+          claimedAt
+        };
+      })
+    );
+
+    return { success: true, roster, memoryTitle: data.title };
+  } catch (error: any) {
+    console.error('[getMemoryAudienceRosterAction] Error fetching audience roster:', error);
+    return { success: false, error: error?.message || 'Failed to fetch audience roster.' };
+  }
+}
+
+/**
+ * Director Governance: Atomically revoke a collaborator's access to a shared memory.
+ * Uses atomic batch execution to ensure both the memory.sharedWith array and the recipient pointer are cleaned up.
+ */
+export async function revokeMemoryAccessAction(
+  memoryId: string,
+  targetUid: string,
+  callerUid?: string
+): Promise<{ success: boolean; message: string; remainingCount?: number }> {
+  if (!memoryId || !targetUid || !adminDb) {
+    return { success: false, message: 'Invalid parameters or database not initialized.' };
+  }
+
+  const session = await getSession();
+  const activeUid = session?.uid || callerUid;
+
+  if (!activeUid) {
+    return { success: false, message: 'Unauthorized. Please sign in to revoke access.' };
+  }
+
+  try {
+    const memoryQuery = await adminDb.collectionGroup('memories').get();
+    const targetDoc = memoryQuery.docs.find(d => d.id === memoryId);
+
+    if (!targetDoc || !targetDoc.exists) {
+      return { success: false, message: 'Memory story not found.' };
+    }
+
+    const data = targetDoc.data() as Memory;
+    const ownerUid = data.userId || targetDoc.ref.parent.parent?.id;
+
+    if (ownerUid !== activeUid) {
+      return { success: false, message: 'Unauthorized: Only the director can revoke access to this memory.' };
+    }
+
+    const currentSharedWith: string[] = Array.isArray((data as any).sharedWith) ? (data as any).sharedWith : [];
+    const remainingCount = Math.max(0, currentSharedWith.filter(u => u !== targetUid).length);
+
+    // Atomic Batch Execution: Remove UID from memory doc + delete pointer from recipient's subcollection
+    const batch = adminDb.batch();
+    const memoryRef = targetDoc.ref;
+    const pointerRef = adminDb.collection('users').doc(targetUid).collection('sharedMemories').doc(memoryId);
+
+    batch.update(memoryRef, {
+      sharedWith: FieldValue.arrayRemove(targetUid)
+    });
+    batch.delete(pointerRef);
+
+    await batch.commit();
+
+    revalidatePath('/cinema');
+    revalidatePath('/studio');
+
+    return {
+      success: true,
+      message: 'Access successfully revoked.',
+      remainingCount
+    };
+  } catch (error: any) {
+    console.error('[revokeMemoryAccessAction] Error revoking access:', error);
+    return { success: false, message: error?.message || 'Failed to revoke access.' };
+  }
+}
+

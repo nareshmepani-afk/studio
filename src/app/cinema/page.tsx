@@ -12,6 +12,7 @@ import { MemoryCinematicViewer } from '@/components/memory/MemoryCinematicViewer
 import { CinemaComingSoon } from '@/components/cinema/CinemaComingSoon';
 import { GuestRequestModal } from '@/components/cinema/GuestRequestModal';
 import { CinemaScreeningCard } from '@/components/cinema/CinemaScreeningCard';
+import { DirectorAccessRosterModal } from '@/components/cinema/DirectorAccessRosterModal';
 import { Loader2, Clapperboard, Film, Sparkles, User, Play, Heart, MessageSquare, ShieldCheck, ArrowRight, KeyRound, Unlock, Tv, Search, Filter, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { Memory } from '@/types';
@@ -33,6 +34,8 @@ function CinemaContent() {
   
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
   const [publicMemory, setPublicMemory] = useState<Memory | null>(null);
+  const [rosterMemory, setRosterMemory] = useState<Memory | null>(null);
+  const [rosterCounts, setRosterCounts] = useState<Record<string, number>>({});
   const [isFetchingPublic, setIsFetchingPublic] = useState<boolean>(!!memoryIdParam);
   const [requestModalState, setRequestModalState] = useState<{ isOpen: boolean; promptId: string; promptTitle: string } | null>(null);
 
@@ -686,29 +689,35 @@ function CinemaContent() {
           {/* Poster Card Grid */}
           {filteredMemories.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredMemories.map((memory) => (
-                <CinemaScreeningCard
-                  key={memory.id}
-                  memory={memory}
-                  isOwner={memory._isOwner}
-                  ownerDisplayName={memory._ownerName}
-                  ownerEmail={memory._ownerEmail}
-                  onView={() => {
-                    if (memory._isOwner) {
-                      setSelectedMemory(memory);
-                    } else {
-                      setPublicMemory(memory);
-                    }
-                  }}
-                  onTvPlay={() => router.push(`/cinema/tv?id=${memory.id}`)}
-                  onShare={() => {
-                    // Could open ShareDialog if owner
-                    if (memory._isOwner) {
-                      setSelectedMemory(memory);
-                    }
-                  }}
-                />
-              ))}
+              {filteredMemories.map((memory) => {
+                const effectiveSharedCount = rosterCounts[memory.id] !== undefined
+                  ? rosterCounts[memory.id]
+                  : (Array.isArray((memory as any).sharedWith) ? (memory as any).sharedWith.length : 0);
+                const memoryWithCount = {
+                  ...memory,
+                  sharedWith: new Array(effectiveSharedCount).fill('')
+                };
+
+                return (
+                  <CinemaScreeningCard
+                    key={memory.id}
+                    memory={memoryWithCount}
+                    isOwner={memory._isOwner}
+                    ownerDisplayName={memory._ownerName}
+                    ownerEmail={memory._ownerEmail}
+                    onView={() => {
+                      if (memory._isOwner) {
+                        setSelectedMemory(memory);
+                      } else {
+                        setPublicMemory(memory);
+                      }
+                    }}
+                    onTvPlay={() => router.push(`/cinema/tv?id=${memory.id}`)}
+                    onManageAccess={memory._isOwner ? () => setRosterMemory(memory) : undefined}
+                    onShare={memory._isOwner ? () => setRosterMemory(memory) : undefined}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-20 px-8">
@@ -888,6 +897,18 @@ function CinemaContent() {
             </div>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Director's Audience Roster & Access Governance Modal (MW-190) */}
+      {rosterMemory && (
+        <DirectorAccessRosterModal
+          isOpen={!!rosterMemory}
+          onClose={() => setRosterMemory(null)}
+          memory={rosterMemory}
+          onRosterUpdate={(memId, newCount) => {
+            setRosterCounts(prev => ({ ...prev, [memId]: newCount }));
+          }}
+        />
       )}
     </AuthenticatedPageWrapper>
   );
