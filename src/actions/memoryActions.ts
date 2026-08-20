@@ -603,6 +603,14 @@ export async function getSharedWithMeMemoriesAction(uid: string): Promise<{ memo
             displayName: uData?.displayName || uData?.name || 'Memory Weaver Director',
             email: uData?.email || ''
           };
+        } else if (adminAuth) {
+          try {
+            const authUser = await adminAuth.getUser(ownerId);
+            userProfilesMap[ownerId] = {
+              displayName: authUser.displayName || 'Memory Weaver Director',
+              email: authUser.email || ''
+            };
+          } catch (e) {}
         }
       } catch (e) {
         console.warn(`[getSharedWithMeMemoriesAction] Could not fetch profile for ${ownerId}:`, e);
@@ -690,6 +698,13 @@ export async function getMemoryAudienceRosterAction(
             displayName = uData?.displayName || uData?.name || displayName;
             email = uData?.email || email;
             photoURL = uData?.photoURL || '';
+          } else if (adminAuth) {
+            try {
+              const authUser = await adminAuth.getUser(collabUid);
+              displayName = authUser.displayName || displayName;
+              email = authUser.email || email;
+              photoURL = authUser.photoURL || '';
+            } catch (authErr) {}
           }
 
           // 2. Fetch claimed pointer for timestamp
