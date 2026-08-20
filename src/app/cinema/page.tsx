@@ -69,11 +69,16 @@ function CinemaContent() {
   const [isLoadingShared, setIsLoadingShared] = useState(false);
 
   useEffect(() => {
+    if (!user?.uid) {
+      setSavedStories([]);
+      return;
+    }
     try {
-      const raw = localStorage.getItem('mw_saved_stories');
+      const userKey = `mw_saved_stories_${user.uid}`;
+      const raw = localStorage.getItem(userKey) || localStorage.getItem('mw_saved_stories');
       if (raw) setSavedStories(JSON.parse(raw));
     } catch (e) {}
-  }, []);
+  }, [user?.uid]);
 
   useEffect(() => {
     if (!user) return;

@@ -190,6 +190,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [router]);
 
   const logout = useCallback(async () => {
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.clear();
+        // Clear non-namespaced legacy keys to prevent crossover between logins
+        localStorage.removeItem('mw_saved_stories');
+      }
+    } catch (e) {
+      console.warn('[useAuth] Storage cleanup error during logout:', e);
+    }
     await signOut(auth);
     await deleteSessionAction();
     setUser(null);

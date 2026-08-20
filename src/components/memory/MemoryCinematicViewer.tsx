@@ -189,7 +189,8 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
   useEffect(() => {
     if (!memory?.id) return;
     try {
-      const rawSaved = localStorage.getItem('mw_saved_stories');
+      const storageKey = user?.uid ? `mw_saved_stories_${user.uid}` : 'mw_saved_stories';
+      const rawSaved = localStorage.getItem(storageKey);
       const savedList: Array<any> = rawSaved ? JSON.parse(rawSaved) : [];
       if (!savedList.some(item => item.id === memory.id)) {
         savedList.unshift({
@@ -199,12 +200,12 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
           posterImageUrl: memory.posterImageUrl || memory.imageUrl || '',
           savedAt: new Date().toISOString()
         });
-        localStorage.setItem('mw_saved_stories', JSON.stringify(savedList));
+        localStorage.setItem(storageKey, JSON.stringify(savedList));
       }
     } catch (err) {
       console.warn('[MemoryCinematicViewer] Auto-save error:', err);
     }
-  }, [memory?.id]);
+  }, [memory?.id, user?.uid]);
 
   // Resolve video, audio, and image assets across all memory schema fields
   const videoUrl = memory?.videoUrl || (memory as any)?.recordingUrl || (memory as any)?.video || memory?.mediaAttachments?.find(m => m.type === 'video' || m.url?.includes('.mp4') || m.url?.includes('.webm'))?.url;
