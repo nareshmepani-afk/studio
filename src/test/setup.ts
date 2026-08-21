@@ -25,6 +25,59 @@ const localStorageMock = (() => {
 
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
+import { vi } from 'vitest';
+
+// Mock firebase-admin
+vi.mock('firebase-admin/app', () => ({
+  initializeApp: vi.fn(() => ({ name: '[DEFAULT]', getOrInitService: vi.fn() })),
+  getApps: vi.fn(() => [{ name: '[DEFAULT]', getOrInitService: vi.fn() }]),
+  getApp: vi.fn(() => ({ name: '[DEFAULT]', getOrInitService: vi.fn() })),
+  cert: vi.fn(),
+}));
+
+vi.mock('firebase-admin/firestore', () => ({
+  getFirestore: vi.fn(() => ({
+    collection: vi.fn(() => ({
+      doc: vi.fn(() => ({
+        get: vi.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+        set: vi.fn().mockResolvedValue({}),
+        collection: vi.fn(() => ({
+          get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+        })),
+      })),
+    })),
+    collectionGroup: vi.fn(() => ({
+      where: vi.fn().mockReturnThis(),
+      get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+    })),
+    doc: vi.fn(() => ({
+      get: vi.fn().mockResolvedValue({ exists: false, data: () => ({}) }),
+      set: vi.fn().mockResolvedValue({}),
+    })),
+  })),
+  FieldValue: {
+    arrayUnion: vi.fn((x) => x),
+    arrayRemove: vi.fn((x) => x),
+    serverTimestamp: vi.fn(() => new Date().toISOString()),
+  },
+}));
+
+vi.mock('firebase-admin/storage', () => ({
+  getStorage: vi.fn(() => ({
+    bucket: vi.fn(() => ({
+      file: vi.fn(() => ({
+        getSignedUrl: vi.fn().mockResolvedValue(['https://mock-storage.url']),
+      })),
+    })),
+  })),
+}));
+
+vi.mock('firebase-admin/auth', () => ({
+  getAuth: vi.fn(() => ({
+    getUser: vi.fn().mockResolvedValue({ displayName: 'Mock User', email: 'mock@example.com' }),
+  })),
+}));
+
 // Extends Vitest's expect method with methods from react-testing-library
 expect.extend(matchers);
 

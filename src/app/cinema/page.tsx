@@ -280,14 +280,26 @@ function CinemaContent() {
         {/* Top Controls when viewing a shared memory pass */}
         {publicMemory && (
           <div className="mb-6 flex items-center justify-between gap-4">
-            {user && (
+            {user && (user.uid === publicMemory.userId || user.uid === (publicMemory as any).ownerUid) ? (
               <button
-                onClick={() => window.location.href = `/studio/production/${memoryIdParam}?act=5`}
+                onClick={() => router.push(`/studio/production/${publicMemory.id}?act=5`)}
                 className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-white/50 hover:text-amber-400 transition-colors cursor-pointer group"
                 title="Return to Act V Master Console"
               >
                 <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
                 <span>Back to Studio</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setPublicMemory(null);
+                  router.push('/cinema');
+                }}
+                className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-white/50 hover:text-amber-400 transition-colors cursor-pointer group"
+                title="Return to Cinema Screening Room"
+              >
+                <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
+                <span>Back to Cinema</span>
               </button>
             )}
             <button
