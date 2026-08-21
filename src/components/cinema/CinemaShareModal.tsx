@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
-import { X, Share2, Copy, MessageSquare, Mail, QrCode } from 'lucide-react';
+import { X, Share2, Copy, Check, MessageSquare, Mail } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { toast } from 'sonner';
 import type { Memory } from '@/types';
@@ -28,14 +28,48 @@ export function CinemaShareModal({ isOpen, onClose, memory }: CinemaShareModalPr
     ? `${window.location.origin}/cinema?id=${memory.id}`
     : `https://dev.memoryweaver.studio/cinema?id=${memory.id}`;
 
-  const handleCopyCinemaLink = () => {
-    if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(cinemaShareUrl);
+  const handleCopyCinemaLink = async () => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(cinemaShareUrl);
+      } else {
+        // Fallback for non-secure contexts or permission restrictions
+        const textArea = document.createElement('textarea');
+        textArea.value = cinemaShareUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
       setIsCopied(true);
-      toast.success('Share Link Copied to Clipboard!', {
-        description: 'You can now share this direct family story link with loved ones.'
+      toast.success('🎬 Share Link Copied to Clipboard!', {
+        description: cinemaShareUrl
       });
-      setTimeout(() => setIsCopied(false), 2000);
+      setTimeout(() => setIsCopied(false), 2500);
+    } catch (err) {
+      console.warn('[CinemaShareModal] Direct clipboard write failed, attempting fallback...', err);
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = cinemaShareUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setIsCopied(true);
+        toast.success('🎬 Share Link Copied to Clipboard!');
+        setTimeout(() => setIsCopied(false), 2500);
+      } catch (fallbackErr) {
+        console.error('[CinemaShareModal] Copy failed:', fallbackErr);
+        toast.error('Could not auto-copy link. Please copy manually from the box.');
+      }
     }
   };
 
@@ -51,7 +85,7 @@ export function CinemaShareModal({ isOpen, onClose, memory }: CinemaShareModalPr
   };
 
   const modalContent = (
-    <div className="fixed inset-0 z-[25000] bg-slate-950/90 backdrop-blur-2xl flex items-center justify-center p-4 select-none animate-fade-in">
+    <div className="fixed inset-0 z-[25000] bg-slate-950/90 backdrop-blur-2xl flex items-center justify-center p-4 animate-fade-in">
       <motion.div 
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -106,15 +140,23 @@ export function CinemaShareModal({ isOpen, onClose, memory }: CinemaShareModalPr
         {/* Unique Link & Multi-Channel Action Bar */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 p-3 bg-slate-950/90 rounded-xl border border-white/10">
-            <span className="text-xs font-mono text-amber-400 truncate flex-1 px-2">
-              {cinemaShareUrl}
-            </span>
+            <input
+              type="text"
+              readOnly
+              value={cinemaShareUrl}
+              onClick={(e) => (e.target as HTMLInputElement).select()}
+              className="text-xs font-mono text-amber-400 bg-transparent truncate flex-1 px-2 border-0 outline-none select-all cursor-text"
+            />
             <button
               type="button"
               onClick={handleCopyCinemaLink}
-              className="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-mono font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-md"
+              className={`px-3.5 py-2 text-[10px] font-mono font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-md ${
+                isCopied 
+                  ? 'bg-emerald-500 text-slate-950' 
+                  : 'bg-amber-400 hover:bg-amber-300 text-slate-950 active:scale-95'
+              }`}
             >
-              <Copy className="w-3.5 h-3.5" />
+              {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{isCopied ? 'Copied!' : 'Copy Link'}</span>
             </button>
           </div>
@@ -124,7 +166,7 @@ export function CinemaShareModal({ isOpen, onClose, memory }: CinemaShareModalPr
             <button
               type="button"
               onClick={handleShareWhatsApp}
-              className="py-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="py-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
             >
               <MessageSquare className="w-4 h-4 text-emerald-400" />
               <span>Share to WhatsApp</span>
@@ -133,7 +175,7 @@ export function CinemaShareModal({ isOpen, onClose, memory }: CinemaShareModalPr
             <button
               type="button"
               onClick={handleShareEmail}
-              className="py-3 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-400 text-[10px] font-mono font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="py-3 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-400 text-[10px] font-mono font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
             >
               <Mail className="w-4 h-4 text-sky-400" />
               <span>Send via Email</span>
