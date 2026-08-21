@@ -38,6 +38,7 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
   const [mounted, setMounted] = useState<boolean>(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [isVideoBuffering, setIsVideoBuffering] = useState<boolean>(false);
 
   useEffect(() => {
     setMounted(true);
@@ -429,8 +430,12 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                 <video
                   ref={videoRef}
                   src={videoUrl}
+                  poster={memory.posterImageUrl || memory.imageUrl}
                   onTimeUpdate={handleTimeUpdate}
                   onLoadedMetadata={handleLoadedMetadata}
+                  onWaiting={() => setIsVideoBuffering(true)}
+                  onPlaying={() => setIsVideoBuffering(false)}
+                  onCanPlay={() => setIsVideoBuffering(false)}
                   onClick={togglePlay}
                   x-webkit-airplay="allow"
                   controlsList="nodownload"
@@ -438,6 +443,16 @@ export function MemoryCinematicViewer({ memory, onClose }: MemoryCinematicViewer
                   preload="auto"
                   autoPlay={false}
                 />
+
+                {/* Atmospheric Buffering Reel Spinner */}
+                {isVideoBuffering && (
+                  <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm flex flex-col items-center justify-center gap-3 z-30 pointer-events-none animate-fade-in">
+                    <div className="w-12 h-12 rounded-full border-3 border-amber-500/20 border-t-amber-400 animate-spin" />
+                    <span className="text-[10px] font-mono text-amber-300 font-bold uppercase tracking-widest">
+                      Buffering 4K Master Reel...
+                    </span>
+                  </div>
+                )}
 
                 {/* CUSTOM STUDIO-STANDARD PLAYBACK SCRUBBER PILL OVERLAY */}
                 <div className="absolute bottom-28 left-1/2 -translate-x-1/2 w-[92%] max-w-xl bg-slate-950/90 border border-amber-500/30 rounded-2xl p-3 backdrop-blur-xl shadow-2xl flex items-center gap-3 z-40 transition-all opacity-90 group-hover:opacity-100">

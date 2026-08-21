@@ -226,39 +226,37 @@ export function DirectorAccessRosterModal({
                   </div>
 
                   {/* Revoke Action */}
-                  <div className="shrink-0 flex items-center gap-2">
+                  <div className="shrink-0 flex items-center justify-end">
                     {isConfirming ? (
-                      <div className="flex items-center gap-1.5">
-                        <Button
+                      <div className="flex items-center gap-1.5 bg-rose-950/60 border border-rose-500/40 p-1 rounded-xl">
+                        <button
+                          type="button"
                           onClick={() => handleRevoke(collaborator)}
                           disabled={isRevoking}
-                          size="sm"
-                          className="bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-mono font-bold rounded-xl h-8 px-3 gap-1 shadow-lg"
+                          className="bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-mono font-bold rounded-lg h-7 px-2.5 flex items-center gap-1 shadow-md transition-all active:scale-95 cursor-pointer"
                         >
                           {isRevoking ? <Loader2 className="w-3 h-3 animate-spin" /> : <UserX className="w-3 h-3" />}
                           <span>Confirm</span>
-                        </Button>
-                        <Button
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => setConfirmRevokeUid(null)}
                           disabled={isRevoking}
-                          variant="ghost"
-                          size="sm"
-                          className="text-white/40 hover:text-white text-[11px] font-mono rounded-xl h-8 px-2"
+                          className="text-white/60 hover:text-white text-[11px] font-mono rounded-lg h-7 px-2 hover:bg-white/10 transition-colors cursor-pointer"
                         >
                           Cancel
-                        </Button>
+                        </button>
                       </div>
                     ) : (
-                      <Button
+                      <button
+                        type="button"
                         onClick={() => setConfirmRevokeUid(collaborator.uid)}
-                        variant="ghost"
-                        size="sm"
-                        className="text-rose-400/80 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 text-xs font-mono rounded-xl h-8 px-2.5 gap-1.5 transition-all"
+                        className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 hover:border-rose-500/50 text-rose-400 hover:text-rose-300 text-xs font-mono font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer active:scale-95"
                         title="Revoke screening access"
                       >
-                        <UserX className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Revoke</span>
-                      </Button>
+                        <UserX className="w-3.5 h-3.5 text-rose-400" />
+                        <span>Revoke</span>
+                      </button>
                     )}
                   </div>
                 </div>

@@ -695,19 +695,38 @@ export async function getMemoryAudienceRosterAction(
           const userDoc = await adminDb!.collection('users').doc(collabUid).get();
           if (userDoc.exists) {
             const uData = userDoc.data();
-            displayName = uData?.displayName || uData?.name || displayName;
-            email = uData?.email || email;
+            if (uData?.displayName && uData.displayName.trim()) displayName = uData.displayName.trim();
+            else if (uData?.name && uData.name.trim()) displayName = uData.name.trim();
+            if (uData?.email) email = uData.email;
             photoURL = uData?.photoURL || '';
-          } else if (adminAuth) {
+          }
+
+          // 2. If displayName or email is missing, query Firebase Auth
+          if ((!displayName || displayName === 'Family Collaborator' || !email) && adminAuth) {
             try {
               const authUser = await adminAuth.getUser(collabUid);
-              displayName = authUser.displayName || displayName;
-              email = authUser.email || email;
-              photoURL = authUser.photoURL || '';
+              if (authUser.displayName && authUser.displayName.trim()) {
+                displayName = authUser.displayName.trim();
+              }
+              if (!email && authUser.email) {
+                email = authUser.email;
+              }
+              if (!photoURL && authUser.photoURL) {
+                photoURL = authUser.photoURL;
+              }
             } catch (authErr) {}
           }
 
-          // 2. Fetch claimed pointer for timestamp
+          // 3. If displayName is STILL default or missing, derive a human-friendly name from email
+          if ((!displayName || displayName === 'Family Collaborator') && email) {
+            const emailPrefix = email.split('@')[0];
+            const formatted = emailPrefix
+              .replace(/[._-]/g, ' ')
+              .replace(/\b\w/g, c => c.toUpperCase());
+            displayName = formatted || 'Family Collaborator';
+          }
+
+          // 4. Fetch claimed pointer for timestamp
           const pointerDoc = await adminDb!.collection('users').doc(collabUid).collection('sharedMemories').doc(memoryId).get();
           if (pointerDoc.exists) {
             claimedAt = pointerDoc.data()?.claimedAt || '';
