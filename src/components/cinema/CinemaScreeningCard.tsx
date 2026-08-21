@@ -39,8 +39,8 @@ export function CinemaScreeningCard({
       {/* 1. Underlying Theatrical Film Poster (Identical to Studio Act V Showcase) */}
       <CinemaPoster memory={memory} className="w-full h-full border-0 rounded-2xl pointer-events-none" />
 
-      {/* 2. Top Header Badges Bar (Status & Ownership Attribution) */}
-      <div className="absolute top-3.5 inset-x-3.5 z-30 flex items-center justify-between gap-2 pointer-events-auto">
+      {/* 2. Top Header Badges Bar (Status & Ownership Attribution) - Elevated to z-50 */}
+      <div className="absolute top-3.5 inset-x-3.5 z-50 flex items-center justify-between gap-2 pointer-events-auto">
         
         {/* Left: Status Badge with Rich Tooltip */}
         <TooltipProvider delayDuration={150}>
@@ -171,8 +171,8 @@ export function CinemaScreeningCard({
         </div>
       </div>
 
-      {/* 3. Hover Play Overlay */}
-      <div className="absolute inset-0 z-40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 bg-slate-950/60 backdrop-blur-sm transition-all duration-300">
+      {/* 3. Hover Play Overlay (z-20 pointer-events-none so top & bottom controls remain unhindered) */}
+      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 bg-slate-950/60 backdrop-blur-sm transition-all duration-300 pointer-events-none">
         <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center shadow-[0_0_30px_rgba(245,158,11,0.6)] transform scale-90 group-hover:scale-100 transition-transform duration-300">
           <Play className="w-7 h-7 fill-current text-slate-950 ml-1" />
         </div>
