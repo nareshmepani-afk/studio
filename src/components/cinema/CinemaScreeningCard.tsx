@@ -82,53 +82,59 @@ export function CinemaScreeningCard({
           </Tooltip>
         </TooltipProvider>
 
-        {/* Right: Ownership & Attribution Badge with Email Tooltip */}
+        {/* Right: Ownership & Attribution Badge with Tooltips */}
         <div className="flex items-center gap-1.5 min-w-0 shrink">
           {isOwner ? (
-            <>
-              <TooltipProvider delayDuration={150}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-950/90 border border-amber-500/40 text-amber-300 backdrop-blur-md shadow-lg shrink-0 cursor-help">
-                      <Clapperboard className="w-2.5 h-2.5 text-amber-400" />
-                      <span className="font-mono text-[8px] font-bold uppercase tracking-wider">My Production</span>
+            <TooltipProvider delayDuration={150}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {onManageAccess ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onManageAccess();
+                      }}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-md text-[9px] font-mono font-bold uppercase tracking-wider transition-all shadow-lg pointer-events-auto cursor-pointer active:scale-95 shrink-0 ${
+                        sharedCount > 0
+                          ? 'bg-cyan-950/90 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900 hover:border-cyan-400'
+                          : 'bg-amber-950/90 border border-amber-500/40 text-amber-300 hover:bg-amber-900/90 hover:border-amber-400'
+                      }`}
+                    >
+                      {sharedCount > 0 ? (
+                        <>
+                          <Users className="w-3 h-3 text-cyan-400" />
+                          <span>Shared ({sharedCount})</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clapperboard className="w-3 h-3 text-amber-400" />
+                          <span>Share Link</span>
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-950/90 border border-amber-500/40 text-amber-300 backdrop-blur-md shadow-lg shrink-0 cursor-help">
+                      <Clapperboard className="w-3 h-3 text-amber-400" />
+                      <span className="font-mono text-[9px] font-bold uppercase tracking-wider">My Production</span>
                     </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="bg-slate-950/95 border border-white/10 p-2 text-xs text-white shadow-2xl z-[10000] rounded-xl font-mono">
-                    <p className="text-[9px] text-amber-300 font-bold uppercase tracking-wider">Your Story Production</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {onManageAccess && (
-                <TooltipProvider delayDuration={150}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onManageAccess();
-                        }}
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md text-[8px] font-mono font-bold uppercase tracking-wider transition-all shadow-lg pointer-events-auto cursor-pointer active:scale-95 shrink-0 ${
-                          sharedCount > 0
-                            ? 'bg-cyan-950/90 border border-cyan-500/50 text-cyan-300 hover:bg-cyan-900 hover:border-cyan-400'
-                            : 'bg-slate-900/90 border border-white/20 text-white/70 hover:text-amber-300 hover:border-amber-400/50 hover:bg-slate-900'
-                        }`}
-                      >
-                        <Users className="w-2.5 h-2.5" />
-                        <span>{sharedCount > 0 ? sharedCount : 'Share'}</span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="bg-slate-950/95 border border-white/10 p-2 text-xs text-white shadow-2xl z-[10000] rounded-xl font-mono">
-                      <p className="text-[9px] text-white/80">
-                        {sharedCount > 0 ? `Shared with ${sharedCount} collaborator${sharedCount === 1 ? '' : 's'}. Click to manage access.` : 'Click to share with family & collaborators.'}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </>
+                  )}
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="bg-slate-950/95 border border-white/10 p-2.5 text-xs text-white max-w-xs shadow-2xl z-[10000] rounded-xl font-mono">
+                  {sharedCount > 0 ? (
+                    <div>
+                      <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest mb-0.5">👥 Audience & Access Roster</p>
+                      <p className="text-[9px] text-white/70">Shared with {sharedCount} collaborator{sharedCount === 1 ? '' : 's'}. Click to view names, emails & manage access.</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-0.5">🎬 Your Production</p>
+                      <p className="text-[9px] text-white/70">Click to open the Share & QR portal to invite family & collaborators.</p>
+                    </div>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           ) : (
             <TooltipProvider delayDuration={150}>
               <Tooltip>
