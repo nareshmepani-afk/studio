@@ -143,7 +143,15 @@ export function Navbar() {
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Link href="/cinema" className={`${navLinkClass} ${pathname === '/cinema' ? activeNavLinkClass : ''}`}>
+                      <Link 
+                        href="/cinema" 
+                        onClick={() => {
+                          if (pathname === '/cinema') {
+                            router.push('/cinema');
+                          }
+                        }}
+                        className={`${navLinkClass} ${pathname === '/cinema' ? activeNavLinkClass : ''}`}
+                      >
                         <Film className="mr-1.5 h-4 w-4 text-primary" strokeWidth={2.5} /> Memory Cinema
                       </Link>
                     </TooltipTrigger>

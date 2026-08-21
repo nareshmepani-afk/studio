@@ -129,6 +129,7 @@ function CinemaContent() {
   useEffect(() => {
     if (!memoryIdParam) {
       setIsFetchingPublic(false);
+      setPublicMemory(null);
       return;
     }
 
@@ -276,16 +277,28 @@ function CinemaContent() {
     <AuthenticatedPageWrapper>
       <div className='container mx-auto py-12 px-6 lg:px-12 max-w-7xl min-h-screen'>
         
-        {/* Back to Studio — Director Only */}
-        {user && publicMemory && (
-          <div className="mb-6">
+        {/* Top Controls when viewing a shared memory pass */}
+        {publicMemory && (
+          <div className="mb-6 flex items-center justify-between gap-4">
+            {user && (
+              <button
+                onClick={() => window.location.href = `/studio/production/${memoryIdParam}?act=5`}
+                className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-white/50 hover:text-amber-400 transition-colors cursor-pointer group"
+                title="Return to Act V Master Console"
+              >
+                <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
+                <span>Back to Studio</span>
+              </button>
+            )}
             <button
-              onClick={() => window.location.href = `/studio/production/${memoryIdParam}?act=5`}
-              className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-white/50 hover:text-amber-400 transition-colors cursor-pointer group"
-              title="Return to Act V Master Console"
+              onClick={() => {
+                setPublicMemory(null);
+                router.push('/cinema');
+              }}
+              className="ml-auto flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-500/40 text-white/70 hover:text-white text-[10px] font-mono uppercase tracking-wider transition-all cursor-pointer"
             >
-              <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
-              <span>Back to Studio</span>
+              <span>Explore All Cinema Stories</span>
+              <span>→</span>
             </button>
           </div>
         )}
