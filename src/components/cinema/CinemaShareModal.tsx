@@ -1,11 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { motion } from 'framer-motion';
-import { X, Share2, Copy, Check, MessageSquare, Mail } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Share2, Copy, Check, MessageSquare, Mail } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import type { Memory } from '@/types';
 
 interface CinemaShareModalProps {
@@ -15,43 +20,42 @@ interface CinemaShareModalProps {
 }
 
 export function CinemaShareModal({ isOpen, onClose, memory }: CinemaShareModalProps) {
-  const [mounted, setMounted] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!isOpen || !memory) return null;
+  if (!memory) return null;
 
   const cinemaShareUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/cinema?id=${memory.id}`
     : `https://dev.memoryweaver.studio/cinema?id=${memory.id}`;
 
   const handleCopyCinemaLink = async () => {
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
+    let copied = false;
+
+    // 1. Try modern async Clipboard API
+    if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
+      try {
         await navigator.clipboard.writeText(cinemaShareUrl);
-      } else {
-        // Fallback for non-secure contexts or permission restrictions
-        const textArea = document.createElement('textarea');
-        textArea.value = cinemaShareUrl;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
+        copied = true;
+      } catch (err) {
+        console.warn('[CinemaShareModal] navigator.clipboard.writeText failed, falling back to input selection', err);
       }
-      setIsCopied(true);
-      toast.success('🎬 Share Link Copied to Clipboard!', {
-        description: cinemaShareUrl
-      });
-      setTimeout(() => setIsCopied(false), 2500);
-    } catch (err) {
-      console.warn('[CinemaShareModal] Direct clipboard write failed, attempting fallback...', err);
+    }
+
+    // 2. Fallback: Select input element inside the active dialog
+    if (!copied && inputRef.current) {
+      try {
+        inputRef.current.focus();
+        inputRef.current.select();
+        inputRef.current.setSelectionRange(0, 99999);
+        copied = document.execCommand('copy');
+      } catch (fallbackErr) {
+        console.warn('[CinemaShareModal] execCommand copy fallback failed', fallbackErr);
+      }
+    }
+
+    // 3. Fallback: Offscreen textarea
+    if (!copied) {
       try {
         const textArea = document.createElement('textarea');
         textArea.value = cinemaShareUrl;
@@ -61,15 +65,25 @@ export function CinemaShareModal({ isOpen, onClose, memory }: CinemaShareModalPr
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        document.execCommand('copy');
+        copied = document.execCommand('copy');
         document.body.removeChild(textArea);
-        setIsCopied(true);
-        toast.success('🎬 Share Link Copied to Clipboard!');
-        setTimeout(() => setIsCopied(false), 2500);
-      } catch (fallbackErr) {
-        console.error('[CinemaShareModal] Copy failed:', fallbackErr);
-        toast.error('Could not auto-copy link. Please copy manually from the box.');
+      } catch (offscreenErr) {
+        console.error('[CinemaShareModal] All copy methods failed', offscreenErr);
       }
+    }
+
+    if (copied) {
+      setIsCopied(true);
+      toast.success('🎬 Share Link Copied to Clipboard!', {
+        description: cinemaShareUrl
+      });
+      setTimeout(() => setIsCopied(false), 2500);
+    } else {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.select();
+      }
+      toast.info('Press Ctrl+C to copy the highlighted link');
     }
   };
 
@@ -84,37 +98,28 @@ export function CinemaShareModal({ isOpen, onClose, memory }: CinemaShareModalPr
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   };
 
-  const modalContent = (
-    <div className="fixed inset-0 z-[25000] bg-slate-950/90 backdrop-blur-2xl flex items-center justify-center p-4 animate-fade-in">
-      <motion.div 
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        className="w-full max-w-lg bg-slate-900 border-2 border-amber-500/50 rounded-3xl p-6 shadow-[0_0_80px_rgba(245,158,11,0.3)] space-y-6 relative"
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent 
+        className="sm:max-w-lg bg-slate-900 border-2 border-amber-500/50 rounded-3xl p-6 shadow-[0_0_80px_rgba(245,158,11,0.3)] space-y-6 text-white z-[30000]"
+        data-hotspot-id="HS_CINEMA_SHARE_MODAL"
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <DialogHeader className="border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400">
               <Share2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-black font-headline text-white uppercase tracking-wider">
+              <DialogTitle className="text-sm font-black font-headline text-white uppercase tracking-wider text-left">
                 Memory Weaver Cinema Portal
-              </h3>
-              <p className="text-[10px] font-mono text-white/50 uppercase tracking-widest">
+              </DialogTitle>
+              <DialogDescription className="text-[10px] font-mono text-white/50 uppercase tracking-widest text-left">
                 Unique Share Link & Scannable Key Art QR Code
-              </p>
+              </DialogDescription>
             </div>
           </div>
-          <button 
-            type="button" 
-            onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-xl text-white/60 hover:text-white transition-all cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        </DialogHeader>
 
         {/* QR Code Display Card */}
         <div className="flex flex-col items-center justify-center gap-4 p-6 bg-slate-950/80 rounded-2xl border border-amber-500/30">
@@ -141,22 +146,29 @@ export function CinemaShareModal({ isOpen, onClose, memory }: CinemaShareModalPr
         <div className="space-y-4">
           <div className="flex items-center gap-2 p-3 bg-slate-950/90 rounded-xl border border-white/10">
             <input
+              ref={inputRef}
               type="text"
               readOnly
               value={cinemaShareUrl}
-              onClick={(e) => (e.target as HTMLInputElement).select()}
+              onClick={() => {
+                if (inputRef.current) {
+                  inputRef.current.select();
+                }
+              }}
               className="text-xs font-mono text-amber-400 bg-transparent truncate flex-1 px-2 border-0 outline-none select-all cursor-text"
+              data-hotspot-id="HS_CINEMA_SHARE_URL_INPUT"
             />
             <button
               type="button"
               onClick={handleCopyCinemaLink}
+              data-hotspot-id="HS_CINEMA_SHARE_COPY_BTN"
               className={`px-3.5 py-2 text-[10px] font-mono font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-md ${
                 isCopied 
                   ? 'bg-emerald-500 text-slate-950' 
                   : 'bg-amber-400 hover:bg-amber-300 text-slate-950 active:scale-95'
               }`}
             >
-              {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {isCopied ? <Check className="w-3.5 h-3.5 text-slate-950" /> : <Copy className="w-3.5 h-3.5 text-slate-950" />}
               <span>{isCopied ? 'Copied!' : 'Copy Link'}</span>
             </button>
           </div>
@@ -166,6 +178,7 @@ export function CinemaShareModal({ isOpen, onClose, memory }: CinemaShareModalPr
             <button
               type="button"
               onClick={handleShareWhatsApp}
+              data-hotspot-id="HS_CINEMA_SHARE_WHATSAPP_BTN"
               className="py-3 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
             >
               <MessageSquare className="w-4 h-4 text-emerald-400" />
@@ -175,6 +188,7 @@ export function CinemaShareModal({ isOpen, onClose, memory }: CinemaShareModalPr
             <button
               type="button"
               onClick={handleShareEmail}
+              data-hotspot-id="HS_CINEMA_SHARE_EMAIL_BTN"
               className="py-3 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-sky-400 text-[10px] font-mono font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
             >
               <Mail className="w-4 h-4 text-sky-400" />
@@ -182,12 +196,9 @@ export function CinemaShareModal({ isOpen, onClose, memory }: CinemaShareModalPr
             </button>
           </div>
         </div>
-      </motion.div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
-
-  if (!mounted || typeof document === 'undefined') return null;
-  return createPortal(modalContent, document.body);
 }
 
 export default CinemaShareModal;

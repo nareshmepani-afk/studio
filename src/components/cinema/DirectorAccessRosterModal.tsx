@@ -149,6 +149,7 @@ export function DirectorAccessRosterModal({
             onClick={() => setIsShareModalOpen(true)}
             variant="outline"
             size="sm"
+            data-hotspot-id="HS_CINEMA_ROSTER_HEADER_SHARE_BTN"
             className="shrink-0 bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-400 text-xs font-mono rounded-xl h-9 gap-1.5 transition-all cursor-pointer"
           >
             <Share2 className="w-3.5 h-3.5 text-amber-400" />
@@ -174,6 +175,7 @@ export function DirectorAccessRosterModal({
                 onClick={() => setIsShareModalOpen(true)}
                 variant="outline"
                 size="sm"
+                data-hotspot-id="HS_CINEMA_ROSTER_OPEN_PORTAL_BTN"
                 className="mt-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-mono font-bold text-xs rounded-xl h-9 gap-1.5 transition-all cursor-pointer shadow-lg"
               >
                 <Share2 className="w-3.5 h-3.5 text-slate-950" />
