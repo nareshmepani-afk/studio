@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { listAdminUsers, toggleAdminUserStatus, inviteAdminUser } from '@/app/admin/actions';
+import { retriggerClientOnboardingPassAction } from '@/app/admin/emailActions';
 import { 
   ShieldCheck, 
   ShieldAlert, 
@@ -10,7 +11,8 @@ import {
   ToggleLeft, 
   ToggleRight, 
   Mail,
-  UserCheck
+  UserCheck,
+  Send
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,6 +27,7 @@ export default function AccessSupport() {
   const [loading, setLoading] = useState(true);
   const [inviting, setInviting] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [retriggering, setRetriggering] = useState<string | null>(null);
   const [newEmail, setNewEmail] = useState('');
 
   const fetchUsers = async () => {
@@ -90,6 +93,27 @@ export default function AccessSupport() {
       toast.error('Write Refused', { description: 'Security toggle write-path failed.' });
     } finally {
       setToggling(null);
+    }
+  };
+
+  const handleRetriggerPass = async (email: string) => {
+    setRetriggering(email);
+    try {
+      const res = await retriggerClientOnboardingPassAction(email);
+      if (res.success) {
+        toast.success('Onboarding Pass Dispatched', { 
+          description: `Welcome Host Pass email delivered to ${email}` 
+        });
+      } else {
+        toast.error('Dispatch Failed', { 
+          description: res.error || 'Failed to deliver client onboarding pass.' 
+        });
+      }
+    } catch (err: any) {
+      console.error('[AccessSupport:Retrigger] Error:', err);
+      toast.error('Dispatch Network Error', { description: err?.message || 'Server action failed.' });
+    } finally {
+      setRetriggering(null);
     }
   };
 
@@ -209,29 +233,45 @@ export default function AccessSupport() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => handleToggle(user.email)}
-                        disabled={toggling !== null}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition duration-200 ${
-                          user.isActive
-                            ? 'border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/20'
-                            : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/20'
-                        }`}
-                      >
-                        {toggling === user.email ? (
-                          <RefreshCw className="h-3 w-3 animate-spin" />
-                        ) : user.isActive ? (
-                          <>
-                            <ToggleRight className="h-3.5 w-3.5" />
-                            Suspend
-                          </>
-                        ) : (
-                          <>
-                            <ToggleLeft className="h-3.5 w-3.5" />
-                            Activate
-                          </>
-                        )}
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleRetriggerPass(user.email)}
+                          disabled={retriggering !== null || toggling !== null}
+                          title="Re-send Welcome Host Pass email"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-amber-500/20 bg-amber-500/5 text-amber-300 hover:bg-amber-500/20 text-[10px] font-bold uppercase tracking-wider transition duration-200 disabled:opacity-50"
+                        >
+                          {retriggering === user.email ? (
+                            <RefreshCw className="h-3 w-3 animate-spin text-amber-400" />
+                          ) : (
+                            <Send className="h-3 w-3 text-amber-400" />
+                          )}
+                          Re-send Pass
+                        </button>
+
+                        <button
+                          onClick={() => handleToggle(user.email)}
+                          disabled={toggling !== null || retriggering !== null}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider transition duration-200 ${
+                            user.isActive
+                              ? 'border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/20'
+                              : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/20'
+                          }`}
+                        >
+                          {toggling === user.email ? (
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                          ) : user.isActive ? (
+                            <>
+                              <ToggleRight className="h-3.5 w-3.5" />
+                              Suspend
+                            </>
+                          ) : (
+                            <>
+                              <ToggleLeft className="h-3.5 w-3.5" />
+                              Activate
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

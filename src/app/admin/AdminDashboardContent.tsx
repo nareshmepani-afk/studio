@@ -9,11 +9,13 @@ import {
   TrendingUp, 
   Cpu,
   ShieldCheck,
-  Server
+  Server,
+  Mail
 } from 'lucide-react';
 import { DevOpsConsole } from '@/components/admin/DevOpsConsole';
 import { BusinessConsole } from '@/components/admin/BusinessConsole';
 import { AccessConsole } from '@/components/admin/AccessConsole';
+import { EmailOperationsConsole } from '@/components/admin/EmailOperationsConsole';
 import KnowledgeHub from '@/components/admin/KnowledgeHub';
 import { getBackendEnvironmentDetails } from './actions';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,7 +24,7 @@ import { useRouter } from 'next/navigation';
 export default function AdminDashboardContent() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [activeSuite, setActiveSuite] = useState<'devops' | 'business' | 'access' | 'knowledge'>('devops');
+  const [activeSuite, setActiveSuite] = useState<'devops' | 'business' | 'access' | 'email' | 'knowledge'>('devops');
   const [envInfo, setEnvInfo] = useState<{ projectId: string; envContext: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV'; label: string } | null>(null);
 
   useEffect(() => {
@@ -164,6 +166,18 @@ export default function AdminDashboardContent() {
               </button>
 
               <button
+                onClick={() => setActiveSuite('email')}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-200 ${
+                  activeSuite === 'email' 
+                    ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300' 
+                    : 'border border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                }`}
+              >
+                <Mail className="h-4 w-4 text-amber-400" />
+                Email Operations
+              </button>
+
+              <button
                 onClick={() => setActiveSuite('knowledge')}
                 className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md border transition-all ${
                   activeSuite === 'knowledge'
@@ -216,11 +230,15 @@ export default function AdminDashboardContent() {
                   {activeSuite === 'devops' && 'DevOps & Operations'}
                   {activeSuite === 'business' && 'Business Analytics'}
                   {activeSuite === 'access' && 'Customer Support & Access'}
+                  {activeSuite === 'email' && 'Email Operations & Live Dispatcher'}
+                  {activeSuite === 'knowledge' && 'Living Knowledge Hub'}
                 </h2>
                 <p className="text-slate-400 text-sm leading-relaxed">
                   {activeSuite === 'devops' && 'Monitor resilience memory structures, local IndexedDB states, WebRTC signaling integrity, and routing traces.'}
                   {activeSuite === 'business' && 'View subscription tier tracking, user adoption quotas, and API analytics telemetry.'}
                   {activeSuite === 'access' && 'Manage client authentication tokens, inspect permission passes, and execute administrative bypasses.'}
+                  {activeSuite === 'email' && 'Dispatch 1-click test emails across all 4 production templates, inspect live Resend API delivery receipts with SPF/DKIM validation, and audit Obsidian-Gold HTML rendering.'}
+                  {activeSuite === 'knowledge' && 'Search, filter, and inspect compiled business rules, operational playbooks, subscription tier pricing, and lifecycle policies.'}
                 </p>
               </div>
             </section>
@@ -230,6 +248,7 @@ export default function AdminDashboardContent() {
               {activeSuite === 'devops' && <DevOpsConsole />}
               {activeSuite === 'business' && <BusinessConsole />}
               {activeSuite === 'access' && <AccessConsole />}
+              {activeSuite === 'email' && <EmailOperationsConsole />}
               {activeSuite === 'knowledge' && <KnowledgeHub />}
             </div>
 
