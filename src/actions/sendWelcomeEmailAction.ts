@@ -63,21 +63,19 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
       color: #ffffff !important;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
-    /* Outlook.com / Hotmail Dark Mode Override Protection */
+    /* Outlook.com / Hotmail Pure Black Theme Protection */
     [data-ogsc] .mw-bg { background-color: #000000 !important; }
-    [data-ogsc] .mw-card { background-color: #080d1a !important; border-color: #f59e0b !important; }
-    [data-ogsc] .mw-header { background-color: #020617 !important; }
-    [data-ogsc] .mw-box { background-color: #030712 !important; border-color: #1e293b !important; }
+    [data-ogsc] .mw-card { background-color: #000000 !important; border-color: #f59e0b !important; }
+    [data-ogsc] .mw-box { background-color: #09090b !important; border-color: #27272a !important; }
     [data-ogsc] .mw-text-white { color: #ffffff !important; }
     [data-ogsc] .mw-text-gold { color: #f59e0b !important; }
     [data-ogsc] .mw-text-emerald { color: #10b981 !important; }
-    [data-ogsc] .mw-text-muted { color: #94a3b8 !important; }
+    [data-ogsc] .mw-text-muted { color: #a1a1aa !important; }
     [data-ogsc] .mw-btn { background-color: #f59e0b !important; color: #000000 !important; }
 
     [data-ogsb] .mw-bg { background-color: #000000 !important; }
-    [data-ogsb] .mw-card { background-color: #080d1a !important; }
-    [data-ogsb] .mw-header { background-color: #020617 !important; }
-    [data-ogsb] .mw-box { background-color: #030712 !important; }
+    [data-ogsb] .mw-card { background-color: #000000 !important; }
+    [data-ogsb] .mw-box { background-color: #09090b !important; }
     [data-ogsb] .mw-btn { background-color: #f59e0b !important; }
   </style>
 </head>
@@ -86,19 +84,19 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
   <table class="mw-bg" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #000000; width: 100%; margin: 0; padding: 40px 16px;">
     <tr>
       <td align="center" valign="top">
-        <!-- Main Card Container -->
-        <table class="mw-card" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #080d1a; border: 2px solid #f59e0b; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95);">
+        <!-- Main Card Container (Pure Obsidian Black) -->
+        <table class="mw-card" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #000000; border: 2px solid #f59e0b; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 70px rgba(0, 0, 0, 1);">
           
-          <!-- Header Banner (Obsidian Top) -->
+          <!-- Header Banner (Seamless Black) -->
           <tr>
-            <td class="mw-header" style="background-color: #020617; padding: 36px 32px 24px 32px; border-bottom: 2px solid #1e293b; text-align: center;">
-              <div class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 8px;">
+            <td class="mw-bg" style="background-color: #000000; padding: 40px 32px 24px 32px; border-bottom: 1px solid #27272a; text-align: center;">
+              <div class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 10px;">
                 🎬 MEMORY WEAVER STUDIO // PRODUCTION SUITE
               </div>
-              <h1 class="mw-text-white" style="margin: 0; font-size: 26px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">
+              <h1 class="mw-text-white" style="margin: 0; font-size: 28px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">
                 PRODUCTION HUB INITIALISED
               </h1>
-              <p class="mw-text-muted" style="margin: 8px 0 0 0; font-size: 12px; color: #94a3b8; font-family: 'Courier New', Courier, monospace;">
+              <p class="mw-text-muted" style="margin: 8px 0 0 0; font-size: 12px; color: #a1a1aa; font-family: 'Courier New', Courier, monospace;">
                 Host Pass Active • 6-Month Complimentary Studio Access
               </p>
             </td>
@@ -106,24 +104,24 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
 
           <!-- Welcome Body -->
           <tr>
-            <td style="padding: 32px 32px 24px 32px;">
+            <td style="padding: 32px 32px 24px 32px; background-color: #000000;">
               <p class="mw-text-white" style="margin: 0 0 16px 0; font-size: 16px; line-height: 24px; color: #ffffff;">
                 Greetings Director <strong class="mw-text-gold" style="color: #f59e0b;">${name || 'Storyteller'}</strong>,
               </p>
-              <p class="mw-text-muted" style="margin: 0 0 24px 0; font-size: 14px; line-height: 22px; color: #cbd5e1;">
+              <p class="mw-text-muted" style="margin: 0 0 24px 0; font-size: 14px; line-height: 22px; color: #d4d4d8;">
                 Your personal cinematic studio has been provisioned. You now have full access to our Hollywood-grade autobiographical preservation tools to capture, refine, and broadcast living family oral histories.
               </p>
 
               <!-- Credentials Box -->
-              <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #030712; border: 1px solid #1e293b; border-radius: 16px; margin-bottom: 28px;">
+              <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #09090b; border: 1px solid #27272a; border-radius: 16px; margin-bottom: 28px;">
                 <tr>
-                  <td style="padding: 14px 16px; border-bottom: 1px solid #1e293b;">
+                  <td style="padding: 14px 18px; border-bottom: 1px solid #27272a;">
                     <span class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Tier Status</span>
                     <strong class="mw-text-white" style="font-size: 14px; color: #ffffff;">🌟 6-Month Director Host Pass (Complimentary)</strong>
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding: 14px 16px;">
+                  <td style="padding: 14px 18px;">
                     <span class="mw-text-emerald" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Storage Allocation</span>
                     <strong class="mw-text-white" style="font-size: 14px; color: #ffffff;">📦 5.0 GB 4K Cloud Master Vault</strong>
                   </td>
@@ -135,33 +133,33 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
                 🚀 The 3-Step Production Kickstart:
               </h3>
 
-              <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 28px; background-color: #030712; border: 1px solid #1e293b; border-radius: 16px;">
+              <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 28px; background-color: #09090b; border: 1px solid #27272a; border-radius: 16px;">
                 <tr>
-                  <td class="mw-text-white" style="padding: 12px 14px; font-size: 13px; line-height: 20px; color: #f8fafc;">
+                  <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5;">
                     <strong class="mw-text-gold" style="color: #f59e0b;">1. Act I (Scriptorium):</strong> Capture your authentic spoken monologue or choose a family spark prompt to ignite your narrative memory.
                   </td>
                 </tr>
                 <tr>
-                  <td class="mw-text-white" style="padding: 12px 14px; font-size: 13px; line-height: 20px; color: #f8fafc; border-top: 1px solid #1e293b;">
+                  <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #27272a;">
                     <strong class="mw-text-gold" style="color: #f59e0b;">2. Acts III &amp; IV (Soundstage):</strong> Record your video take with live teleprompter guidance and AI sensory soundtrack synchronisation.
                   </td>
                 </tr>
                 <tr>
-                  <td class="mw-text-white" style="padding: 12px 14px; font-size: 13px; line-height: 20px; color: #f8fafc; border-top: 1px solid #1e293b;">
+                  <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #27272a;">
                     <strong class="mw-text-gold" style="color: #f59e0b;">3. Act V (Cinema Premiere):</strong> Generate 4K movie posters, invite family with private passcodes, or stream directly to Smart TVs.
                   </td>
                 </tr>
               </table>
 
-              <!-- Action Button (Bulletproof Table-Based Outlook CTA) -->
+              <!-- Action Button (Vibrant Hollywood Gold CTA) -->
               <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 12px;">
                 <tr>
                   <td align="center">
                     <table border="0" cellspacing="0" cellpadding="0">
                       <tr>
                         <td align="center" style="background-color: #f59e0b; border-radius: 12px;">
-                          <a href="${studioUrl}" target="_blank" class="mw-btn" style="background-color: #f59e0b; border: 1px solid #f59e0b; border-radius: 12px; color: #000000; display: inline-block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 900; line-height: 18px; text-align: center; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; padding: 16px 36px;">
-                            🎙️ Enter Your Production Studio
+                          <a href="${studioUrl}" target="_blank" class="mw-btn" style="background-color: #f59e0b; border: 1px solid #f59e0b; border-radius: 12px; color: #000000; display: inline-block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 900; line-height: 18px; text-align: center; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; padding: 16px 40px; box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);">
+                            🎙️ ENTER YOUR PRODUCTION STUDIO
                           </a>
                         </td>
                       </tr>
@@ -171,7 +169,7 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
                 ${claimedMemoryId ? `
                 <tr>
                   <td align="center" style="padding-top: 12px;">
-                    <a href="${cinemaUrl}" style="display: inline-block; background-color: #030712; color: #ffffff; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; text-decoration: none; padding: 12px 28px; border-radius: 12px; text-align: center; border: 1px solid #334155;">
+                    <a href="${cinemaUrl}" style="display: inline-block; background-color: #09090b; color: #ffffff; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; text-decoration: none; padding: 12px 28px; border-radius: 12px; text-align: center; border: 1px solid #27272a;">
                       🎬 Watch Claimed Memory ${claimedMemoryTitle ? `("${claimedMemoryTitle}")` : ''}
                     </a>
                   </td>
@@ -181,13 +179,13 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
             </td>
           </tr>
 
-          <!-- Footer -->
+          <!-- Footer (Concierge Direct Support) -->
           <tr>
-            <td class="mw-header" style="background-color: #020617; padding: 24px 32px; border-top: 2px solid #1e293b; text-align: center; font-size: 11px; color: #94a3b8; line-height: 18px;">
+            <td class="mw-bg" style="background-color: #000000; padding: 24px 32px; border-top: 1px solid #27272a; text-align: center; font-size: 11px; color: #71717a; line-height: 18px;">
               <p class="mw-text-white" style="margin: 0 0 8px 0; font-family: 'Courier New', Courier, monospace; font-weight: 700; color: #ffffff;">
                 Memory Weaver Studio • Preserving Family Legacies in 4K
               </p>
-              <p class="mw-text-muted" style="margin: 0; color: #94a3b8;">
+              <p class="mw-text-muted" style="margin: 0; color: #a1a1aa;">
                 Have questions or need assistance? Reply directly to this email or contact our director concierge at <a href="mailto:studio@memoryweaver.studio" class="mw-text-gold" style="color: #f59e0b; text-decoration: none; font-weight: 700;">studio@memoryweaver.studio</a>.
               </p>
             </td>
