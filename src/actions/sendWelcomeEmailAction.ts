@@ -87,11 +87,21 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
         <!-- Main Card Container (Pure Obsidian Black) -->
         <table class="mw-card" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #000000; border: 2px solid #f59e0b; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 70px rgba(0, 0, 0, 1);">
           
-          <!-- Header Banner (Seamless Black) -->
+          <!-- Header Banner with Logo -->
           <tr>
             <td class="mw-bg" style="background-color: #000000; padding: 40px 32px 24px 32px; border-bottom: 1px solid #27272a; text-align: center;">
+              
+              <!-- Logo Medallion -->
+              <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 16px;">
+                <tr>
+                  <td align="center" style="width: 56px; height: 56px; background-color: #09090b; border: 1.5px solid rgba(245, 158, 11, 0.4); border-radius: 18px; text-align: center;">
+                    <img src="https://dev.memoryweaver.studio/icon.svg" width="32" height="32" alt="Memory Weaver Logo" style="display: block; margin: 0 auto;" />
+                  </td>
+                </tr>
+              </table>
+
               <div class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 10px;">
-                🎬 MEMORY WEAVER STUDIO // PRODUCTION SUITE
+                MEMORY WEAVER STUDIO // PRODUCTION SUITE
               </div>
               <h1 class="mw-text-white" style="margin: 0; font-size: 28px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">
                 PRODUCTION HUB INITIALISED
@@ -128,25 +138,30 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
                 </tr>
               </table>
 
-              <!-- 3-Step Production Kickstart -->
+              <!-- The 5-Act Cinematic Journey -->
               <h3 class="mw-text-gold" style="margin: 0 0 16px 0; font-size: 13px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Courier New', Courier, monospace;">
-                🚀 The 3-Step Production Kickstart:
+                🎬 The 5-Act Production Journey:
               </h3>
 
               <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 28px; background-color: #09090b; border: 1px solid #27272a; border-radius: 16px;">
                 <tr>
                   <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5;">
-                    <strong class="mw-text-gold" style="color: #f59e0b;">1. Act I (Scriptorium):</strong> Capture your authentic spoken monologue or choose a family spark prompt to ignite your narrative memory.
+                    <strong class="mw-text-gold" style="color: #f59e0b;">1. Act I (Scriptorium):</strong> Draft your authentic spoken monologue or choose a family spark prompt to ignite your narrative memory.
                   </td>
                 </tr>
                 <tr>
                   <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #27272a;">
-                    <strong class="mw-text-gold" style="color: #f59e0b;">2. Acts III &amp; IV (Soundstage):</strong> Record your video take with live teleprompter guidance and AI sensory soundtrack synchronisation.
+                    <strong class="mw-text-gold" style="color: #f59e0b;">2. Act II (Director's Briefing):</strong> Calibrate lighting, rehearse spoken pacing, and review sensory word anchors before stepping on stage.
                   </td>
                 </tr>
                 <tr>
                   <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #27272a;">
-                    <strong class="mw-text-gold" style="color: #f59e0b;">3. Act V (Cinema Premiere):</strong> Generate 4K movie posters, invite family with private passcodes, or stream directly to Smart TVs.
+                    <strong class="mw-text-gold" style="color: #f59e0b;">3. Acts III &amp; IV (Soundstage &amp; Director's Cut):</strong> Record your 4K video take with live teleprompter guidance and AI sensory soundtrack synchronisation.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #27272a;">
+                    <strong class="mw-text-gold" style="color: #f59e0b;">4. Act V (Cinema Premiere):</strong> Generate 4K movie posters, invite family with private passcodes, or stream directly to Smart TVs.
                   </td>
                 </tr>
               </table>
