@@ -67,6 +67,7 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
     [data-ogsc] .mw-bg { background-color: #000000 !important; }
     [data-ogsc] .mw-card { background-color: #000000 !important; border-color: #f59e0b !important; }
     [data-ogsc] .mw-box { background-color: #09090b !important; border-color: #27272a !important; }
+    [data-ogsc] .mw-logo-box { background-color: #000000 !important; border-color: #1e293b !important; }
     [data-ogsc] .mw-text-white { color: #ffffff !important; }
     [data-ogsc] .mw-text-gold { color: #f59e0b !important; }
     [data-ogsc] .mw-text-emerald { color: #10b981 !important; }
@@ -76,6 +77,7 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
     [data-ogsb] .mw-bg { background-color: #000000 !important; }
     [data-ogsb] .mw-card { background-color: #000000 !important; }
     [data-ogsb] .mw-box { background-color: #09090b !important; }
+    [data-ogsb] .mw-logo-box { background-color: #000000 !important; }
     [data-ogsb] .mw-btn { background-color: #f59e0b !important; }
   </style>
 </head>
@@ -87,15 +89,15 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
         <!-- Main Card Container (Pure Obsidian Black) -->
         <table class="mw-card" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #000000; border: 2px solid #f59e0b; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 70px rgba(0, 0, 0, 1);">
           
-          <!-- Header Banner with Logo -->
+          <!-- Header Banner with Pure Black Logo Medallion -->
           <tr>
             <td class="mw-bg" style="background-color: #000000; padding: 40px 32px 24px 32px; border-bottom: 1px solid #27272a; text-align: center;">
               
-              <!-- Logo Medallion -->
+              <!-- Pure Black Logo Box -->
               <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 16px;">
                 <tr>
-                  <td align="center" style="width: 56px; height: 56px; background-color: #09090b; border: 1.5px solid rgba(245, 158, 11, 0.4); border-radius: 18px; text-align: center;">
-                    <img src="https://dev.memoryweaver.studio/icon.svg" width="32" height="32" alt="Memory Weaver Logo" style="display: block; margin: 0 auto;" />
+                  <td class="mw-logo-box" align="center" style="width: 56px; height: 56px; background-color: #000000; border: 1.5px solid #1e293b; border-radius: 18px; text-align: center;">
+                    <img src="https://dev.memoryweaver.studio/icon.svg" width="32" height="32" alt="Memory Weaver Logo" style="display: block; margin: 0 auto; background-color: #000000;" />
                   </td>
                 </tr>
               </table>
