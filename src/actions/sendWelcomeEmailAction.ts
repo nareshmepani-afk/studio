@@ -188,7 +188,7 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
                 Memory Weaver Studio • Preserving Family Legacies in 4K
               </p>
               <p class="mw-text-muted" style="margin: 0; color: #94a3b8;">
-                Need assistance? Press <code class="mw-text-gold" style="background-color: #0f172a; color: #f59e0b; padding: 3px 8px; border-radius: 6px; font-weight: bold; border: 1px solid #334155; font-family: monospace;">Ctrl + /</code> (or <code class="mw-text-gold" style="background-color: #0f172a; color: #f59e0b; padding: 3px 8px; border-radius: 6px; font-weight: bold; border: 1px solid #334155; font-family: monospace;">⌘ + /</code> on Mac) anywhere in the Studio to open instant remote support &amp; feedback.
+                Have questions or need assistance? Reply directly to this email or contact our director concierge at <a href="mailto:studio@memoryweaver.studio" class="mw-text-gold" style="color: #f59e0b; text-decoration: none; font-weight: 700;">studio@memoryweaver.studio</a>.
               </p>
             </td>
           </tr>
