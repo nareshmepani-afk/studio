@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import LoginForm from '@/components/auth/LoginForm';
@@ -72,10 +73,25 @@ export default function LoginContent() {
           </div>
         </div>
 
-        {/* Footer Credit */}
-        <p className="mt-12 text-center text-[10px] text-white/20 uppercase tracking-[0.3em] font-black">
-          © 2026 Studio Productions • Version 2.4.0
-        </p>
+        {/* Footer Credit & Legal Links */}
+        <div className="mt-12 flex flex-col items-center gap-3">
+          <div className="flex items-center gap-4 text-xs text-white/40">
+            <Link href="/legal/terms" className="hover:text-white/70 transition-colors">
+              Terms
+            </Link>
+            <span>•</span>
+            <Link href="/legal/privacy" className="hover:text-white/70 transition-colors">
+              Privacy
+            </Link>
+            <span>•</span>
+            <Link href="/legal/cookies" className="hover:text-white/70 transition-colors">
+              Cookies
+            </Link>
+          </div>
+          <p className="text-center text-[10px] text-white/20 uppercase tracking-[0.3em] font-black">
+            © 2024–2026 Memory Weaver
+          </p>
+        </div>
       </motion.div>
     </div>
   );

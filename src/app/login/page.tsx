@@ -1,7 +1,14 @@
+import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { Suspense } from 'react';
 import LoginContent from './LoginContent';
 import AdminLoginPage from '../admin/login/page';
+
+export const metadata: Metadata = {
+  title: 'Sign In',
+  description:
+    'Sign in to your Memory Weaver production studio. Access your spoken memoirs, Family Cinema, and generational archive.',
+};
 
 export const dynamic = 'force-dynamic';
 

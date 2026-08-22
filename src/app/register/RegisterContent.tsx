@@ -24,6 +24,7 @@ export default function RegisterContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const { register, loading: authLoading } = useAuth();
 
   const isStagingBypassAllowed = typeof window !== 'undefined' && (
@@ -59,6 +60,10 @@ export default function RegisterContent() {
     }
     if (!name.trim()) {
         toast.error("Name Required", { description: "Please enter your name." });
+        return;
+    }
+    if (!agreedToTerms) {
+        toast.error("Terms Acceptance Required", { description: "Please agree to the Terms of Service and Privacy Policy to continue." });
         return;
     }
 
@@ -218,6 +223,27 @@ export default function RegisterContent() {
                       suppressHydrationWarning={true}
                     />
                   </div>
+                </div>
+
+                <div className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                  <input
+                    type="checkbox"
+                    id="terms-consent"
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    disabled={isLoading}
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-white/5 text-primary focus:ring-primary/30 accent-primary cursor-pointer"
+                  />
+                  <label htmlFor="terms-consent" className="text-xs leading-relaxed text-white/50 cursor-pointer">
+                    I agree to the{' '}
+                    <Link href="/legal/terms" className="text-primary hover:text-sky-400 underline underline-offset-2 transition-colors" target="_blank">
+                      Terms of Service
+                    </Link>{' '}
+                    and{' '}
+                    <Link href="/legal/privacy" className="text-primary hover:text-sky-400 underline underline-offset-2 transition-colors" target="_blank">
+                      Privacy Policy
+                    </Link>
+                  </label>
                 </div>
 
                 <Button 

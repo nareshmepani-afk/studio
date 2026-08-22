@@ -99,7 +99,7 @@ export function Navbar() {
             </TooltipContent>
           </Tooltip>
           
-          {(isAuthenticated || isGuestDirectorView) && (
+          {(isAuthenticated || isGuestDirectorView) ? (
             <nav className="flex flex-1 items-center space-x-4 lg:space-x-6">
               {isGuestDirectorView ? (
                 // Focused Guest Director View
@@ -161,6 +161,27 @@ export function Navbar() {
                   </Tooltip>
                 </>
               )}
+            </nav>
+          ) : (
+            <nav className="hidden flex-1 items-center space-x-4 md:flex lg:space-x-6">
+              <Link
+                href="/how-it-works"
+                className={`${navLinkClass} ${pathname === '/how-it-works' ? activeNavLinkClass : ''}`}
+              >
+                How It Works
+              </Link>
+              <Link
+                href="/pricing"
+                className={`${navLinkClass} ${pathname === '/pricing' ? activeNavLinkClass : ''}`}
+              >
+                Pricing
+              </Link>
+              <Link
+                href="/contact"
+                className={`${navLinkClass} ${pathname === '/contact' ? activeNavLinkClass : ''}`}
+              >
+                Contact
+              </Link>
             </nav>
           )}
 

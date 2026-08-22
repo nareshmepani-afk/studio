@@ -1,5 +1,12 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import RegisterContent from './RegisterContent';
+
+export const metadata: Metadata = {
+  title: 'Register',
+  description:
+    'Create your Memory Weaver account and claim your complimentary 6-Month Director Host Pass. Begin preserving your family stories today.',
+};
 
 export const dynamic = 'force-dynamic';
 

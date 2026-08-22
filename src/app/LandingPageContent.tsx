@@ -53,12 +53,6 @@ const pillars = [
   },
 ];
 
-const fadeInUp = {
-  initial: { opacity: 0, y: 24 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
-};
-
 export default function LandingPageContent() {
   const { isAuthenticated, loading } = useAuth();
 
@@ -67,7 +61,12 @@ export default function LandingPageContent() {
       <CinematicBackground>
         <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-8 lg:p-12">
           <div className="w-full max-w-5xl text-center">
-            <motion.div {...fadeInUp} className="relative group">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+              className="relative group"
+            >
               <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-3xl rounded-[40px] border border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.8)]" />
 
               <div className="relative p-8 md:p-16 lg:p-20 flex flex-col items-center">

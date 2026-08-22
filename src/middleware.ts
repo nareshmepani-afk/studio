@@ -330,6 +330,16 @@ export async function middleware(request: NextRequest) {
 
   response.headers.set('x-trace-id', traceId);
 
+  // X-Robots-Tag: Prevent search engines from indexing private screening routes
+  const hasScreeningId = request.nextUrl.searchParams.has('id');
+  if (
+    (pathname === '/cinema' && hasScreeningId) ||
+    (pathname === '/cinema/tv' && hasScreeningId) ||
+    pathname.startsWith('/share/')
+  ) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  }
+
   return response;
 }
 
