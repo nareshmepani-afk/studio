@@ -44,6 +44,13 @@ export default function AdminDashboardContent() {
       } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
         activeEnv = 'LOCAL-DEV';
       }
+
+      // Rehydrate active suite from URL search params (?suite=email or ?tab=access)
+      const urlParams = new URLSearchParams(window.location.search);
+      const suiteParam = urlParams.get('suite') || urlParams.get('tab');
+      if (suiteParam && ['devops', 'business', 'access', 'email', 'knowledge'].includes(suiteParam)) {
+        setActiveSuite(suiteParam as any);
+      }
     }
 
     getBackendEnvironmentDetails()
