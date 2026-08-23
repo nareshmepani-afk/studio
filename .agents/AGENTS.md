@@ -235,6 +235,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-08-17**: v1.1.0-beta-MW-176. Fixed /cinema/tv "No Media to Play" root cause: added GET /api/guest-access?id= handler (inline adminDb collectionGroup query) — route previously had POST-only, causing silent 405 → memory=null on TV player. (Build Verify: SUCCESS)
 - **2026-08-17**: v1.1.0-beta-MW-177. Aligned /cinema/tv videoUrl resolution with MemoryCinematicViewer fallback chain (recordingUrl → video → mediaAttachments); removed dead productionTakes[].videoUrl fallback (AI text objects, not video). (Build Verify: SUCCESS)
 - **2026-08-17**: v1.1.0-beta-MW-178. Cinema UX: isSaved defaults to false in MemoryCinematicViewer (Bookmark shows 'Save Story' on first open); added persistent 📺 Cast Guide pill + expandable panel (HS_CINEMA_TV_CAST_GUIDE_BTN) outside auto-hiding HUD on /cinema/tv. (Build Verify: SUCCESS)
+- **2026-08-23**: v1.1.0-beta-MW-193. Admin Email Operations & Live Template Dispatcher Suite in admin.memoryweaver.studio; 4 core Obsidian-Gold email templates, sendAdminTestEmailAction, retriggerClientOnboardingPassAction, getDomainDnsDiagnosticsAction, live sandboxed iframe preview, and Access Support integration. (Build Verify: SUCCESS)
 
 # 21. Model Selection Advisory & Prompt Router Protocol
 - **Mandatory Pre-Gate Callout**: On EVERY single user message without exception, the agent's very first line of output MUST include the exact pre-gate model validation statement:
@@ -670,26 +671,36 @@ This handoff is **mandatory** after:
 - Every Plane.so ticket closure
 - Every multi-step bug fix or feature implementation
 
-## 27.2 Handoff Format
+## 27.2 Handoff Format (Mandatory Interactive HTML + Chat Dual-Delivery)
 
-The agent MUST include ALL THREE sections in this exact order:
+The agent MUST execute the following sequence upon staging rollout verification:
+1. **Compile & Save Interactive HTML Artifact**: The agent MUST first write the complete interactive `qa_checklist_interactive.html` artifact to `<appDataDir>\brain\<conversation-id>/qa_checklist_interactive.html`. The artifact MUST include:
+   - Dedicated `[ 🔗 Open Test Route ↗ ]` buttons pointing to complete, fully-qualified URLs.
+   - Interactive `[ ✓ PASS ]` and `[ ✗ FAIL ]` state buttons.
+   - Per-test observation and feedback note input fields.
+   - `localStorage` persistence and live progress circle counter.
+   - `[ 📋 Copy Report to Chat ]` 1-click markdown copy button.
+2. **Deliver 3-Section Chat Response**: The agent MUST include ALL THREE sections in this exact order:
 
 ### Section 1: Creative Director Testing Checklist
 
 ```markdown
 ## 🎬 Creative Director Testing Checklist
 
-**Build:** `[commit hash]` deploying to `dev.memoryweaver.studio` — hard-refresh (Ctrl+Shift+R) in 2-3 mins.
+👉 **[Open Interactive Creative Director QA Checklist (`qa_checklist_interactive.html`)](file:///path/to/qa_checklist_interactive.html)**
 
-| # | Test | How |
-|---|---|---|
-| 1 | [Test description] | [Exact steps to verify] |
-| 2 | [Test description] | [Exact steps to verify] |
+**Build:** `[commit hash]` deploying to `dev.memoryweaver.studio` / `admin.memoryweaver.studio` — hard-refresh (Ctrl+Shift+R).
+
+| # | Test | How | Fully-Qualified Test URL |
+|---|---|---|---|
+| 1 | [Test description] | [Exact steps to verify] | https://dev.memoryweaver.studio/... |
+| 2 | [Test description] | [Exact steps to verify] | https://dev.memoryweaver.studio/... |
 
 **PASS / FAIL** each one when ready.
 ```
 
 - Every test item MUST include concrete steps, not vague descriptions
+- Every test item MUST provide a complete, non-truncated fully-qualified URL
 - If no user-facing changes were deployed (e.g. governance-only), state "No visual changes to test"
 
 ### Section 2: What's Next
@@ -697,9 +708,9 @@ The agent MUST include ALL THREE sections in this exact order:
 ```markdown
 ## What's Next
 
-| Ticket | Task | Effort |
-|---|---|---|
-| MW-XXX | [description] | [estimate] |
+| Ticket | Task | Effort | Status |
+|---|---|---|---|
+| MW-XXX | [description] | [estimate] | [status] |
 ```
 
 - List the immediate next 2-4 items in priority order
@@ -723,6 +734,8 @@ The agent MUST include ALL THREE sections in this exact order:
 
 - ❌ Never end a work session with just "Done. Committed and pushed."
 - ❌ Never omit the testing checklist after a `git push`
+- ❌ Never output only a markdown table in chat without synchronously generating and linking the interactive `qa_checklist_interactive.html` artifact
+- ❌ Never output relative paths (e.g. `/cinema/tv`) or truncated URLs (`...`) in checklist tables
 - ❌ Never wait for the Creative Director to ask "what's next?" — proactively state it
 
 # 28. Context Window Inflation Shield & Token Economy Protocol
