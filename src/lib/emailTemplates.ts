@@ -66,7 +66,7 @@ export const EMAIL_TEMPLATES_CATALOG: EmailTemplateMetadata[] = [
     description: 'Security gateway access recovery email with 1-hour expiration guard and direct link.',
     defaultProps: {
       email: 'director@memoryweaver.studio',
-      resetLink: 'https://dev.memoryweaver.studio/auth/reset-password?token=mw_sec_99382b_demo',
+      resetLink: 'https://dev.memoryweaver.studio/auth/reset-password?token=SAMPLE_TOKEN',
       expiresInMinutes: '60'
     },
     availableTags: ['{{email}}', '{{resetLink}}', '{{expiresInMinutes}}']
