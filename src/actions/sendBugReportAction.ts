@@ -2,6 +2,7 @@
 
 import { Resend } from 'resend';
 import { APP_VERSION } from '@/config/version';
+import { STUDIO_EMAILS, STUDIO_EMAIL_SENDERS } from '@/config/emailConfig';
 
 interface BugReportPayload {
   description: string;
@@ -32,9 +33,9 @@ export async function sendBugReportAction(payload: BugReportPayload): Promise<{ 
 
     // 1. Send Support Ticket Email
     await resend.emails.send({
-      from: 'support@memoryweaver.studio',
-      to: 'support@memoryweaver.studio',
-      replyTo: diagnostics.userEmail !== 'unauthenticated' ? diagnostics.userEmail : 'support@memoryweaver.studio',
+      from: STUDIO_EMAIL_SENDERS.SUPPORT,
+      to: STUDIO_EMAILS.SUPPORT,
+      replyTo: diagnostics.userEmail !== 'unauthenticated' ? diagnostics.userEmail : STUDIO_EMAILS.SUPPORT,
       subject: `[BUG REPORT - FAST TRACK] Trace: ${diagnostics.traceId}`,
       html: `
         <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 650px; margin: 0 auto; color: #f8fafc; background-color: #0b0f19; border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);">
@@ -128,7 +129,7 @@ export async function sendBugReportAction(payload: BugReportPayload): Promise<{ 
     const hasValidEmail = diagnostics.userEmail && diagnostics.userEmail !== 'unauthenticated' && diagnostics.userEmail.includes('@');
     if (hasValidEmail) {
       await resend.emails.send({
-        from: 'support@memoryweaver.studio',
+        from: STUDIO_EMAIL_SENDERS.SUPPORT,
         to: diagnostics.userEmail,
         subject: `We've received your bug report [Trace: ${diagnostics.traceId}]`,
         html: `

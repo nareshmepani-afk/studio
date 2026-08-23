@@ -3,6 +3,7 @@
 import { Resend } from 'resend';
 import { getSession, verifyAdminWhitelist } from '@/lib/session';
 import { EmailTemplateId, renderEmailTemplateById, renderWelcomeHostPassEmail } from '@/lib/emailTemplates';
+import { STUDIO_EMAILS, STUDIO_EMAIL_SENDERS } from '@/config/emailConfig';
 import dns from 'dns/promises';
 
 export interface EmailDispatchReceipt {
@@ -192,9 +193,9 @@ export async function sendAdminTestEmailAction(params: {
 
     const resend = new Resend(resendApiKey);
     const dispatchResult = await resend.emails.send({
-      from: 'Memory Weaver Studio <studio@memoryweaver.studio>',
+      from: STUDIO_EMAIL_SENDERS.STUDIO,
       to: trimmedEmail,
-      replyTo: 'support@memoryweaver.studio',
+      replyTo: STUDIO_EMAILS.SUPPORT,
       subject,
       html
     });
@@ -300,9 +301,9 @@ export async function retriggerClientOnboardingPassAction(
 
     const resend = new Resend(resendApiKey);
     const dispatchResult = await resend.emails.send({
-      from: 'Memory Weaver Studio <studio@memoryweaver.studio>',
+      from: STUDIO_EMAIL_SENDERS.STUDIO,
       to: trimmedEmail,
-      replyTo: 'support@memoryweaver.studio',
+      replyTo: STUDIO_EMAILS.SUPPORT,
       subject,
       html
     });
@@ -399,3 +400,262 @@ export async function getDomainDnsDiagnosticsAction(): Promise<DomainDiagnostics
     };
   }
 }
+
+export interface BatchRecipientItem {
+  id: string;
+  email: string;
+  props: Record<string, any>;
+}
+
+export interface BatchChunkDispatchResult {
+  success: boolean;
+  chunkIndex?: number;
+  results: Array<{
+    id: string;
+    receipt: EmailDispatchReceipt;
+  }>;
+  processedCount: number;
+  deliveredCount: number;
+  failedCount: number;
+  simulatedCount: number;
+  timestamp: string;
+  error?: string;
+}
+
+/**
+ * MW-194: Rate-Limited Chunked Batch Email Dispatcher
+ * Dispatches bounded chunks of 5-10 recipients per server action call with Resend API rate limiting.
+ */
+export async function sendAdminBatchChunkAction(params: {
+  templateId: EmailTemplateId;
+  recipients: BatchRecipientItem[];
+  chunkIndex?: number;
+  delayMsBetweenEmails?: number;
+}): Promise<BatchChunkDispatchResult> {
+  const timestamp = new Date().toISOString();
+  const { templateId, recipients, chunkIndex = 0, delayMsBetweenEmails = 150 } = params;
+
+  try {
+    const session = await getSession();
+    if (!session || !session.email) {
+      return {
+        success: false,
+        chunkIndex,
+        results: [],
+        processedCount: 0,
+        deliveredCount: 0,
+        failedCount: 0,
+        simulatedCount: 0,
+        timestamp,
+        error: 'Unauthorized administrative session. Access to batch engine denied.'
+      };
+    }
+
+    const authCheck = await verifyAdminWhitelist(session.email);
+    if (!authCheck.isValid) {
+      return {
+        success: false,
+        chunkIndex,
+        results: [],
+        processedCount: 0,
+        deliveredCount: 0,
+        failedCount: 0,
+        simulatedCount: 0,
+        timestamp,
+        error: 'Access denied. Administrator whitelist verification failed.'
+      };
+    }
+
+    // Keep payload bounded to maximum 10 recipients per request (Directive 1)
+    const boundedRecipients = recipients.slice(0, 10);
+    const dnsStatus = await queryDomainDns();
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const isSimulated = !resendApiKey;
+
+    const results: Array<{ id: string; receipt: EmailDispatchReceipt }> = [];
+    let deliveredCount = 0;
+    let failedCount = 0;
+    let simulatedCount = 0;
+
+    let resendClient: Resend | null = null;
+    if (!isSimulated) {
+      resendClient = new Resend(resendApiKey);
+    }
+
+    for (let i = 0; i < boundedRecipients.length; i++) {
+      const item = boundedRecipients[i];
+      const itemTimestamp = new Date().toISOString();
+      const rawEmail = (item.email || '').trim().toLowerCase();
+
+      // Pacing interval between requests within chunk
+      if (i > 0 && delayMsBetweenEmails > 0) {
+        await new Promise(r => setTimeout(r, delayMsBetweenEmails));
+      }
+
+      if (!rawEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail)) {
+        failedCount++;
+        results.push({
+          id: item.id,
+          receipt: {
+            success: false,
+            status: 'FAILED',
+            templateId,
+            targetEmail: rawEmail || 'missing@invalid',
+            subject: '',
+            timestamp: itemTimestamp,
+            spfValid: false,
+            dkimValid: false,
+            dmarcValid: false,
+            error: 'Invalid or missing recipient email address.'
+          }
+        });
+        continue;
+      }
+
+      try {
+        const { subject, html } = renderEmailTemplateById(templateId, item.props);
+
+        if (isSimulated) {
+          simulatedCount++;
+          results.push({
+            id: item.id,
+            receipt: {
+              success: true,
+              messageId: `sim_batch_${Math.random().toString(36).substring(2, 10)}_${Date.now()}`,
+              status: 'SIMULATED',
+              templateId,
+              targetEmail: rawEmail,
+              subject,
+              timestamp: itemTimestamp,
+              spfValid: dnsStatus.spfValid,
+              dkimValid: dnsStatus.dkimValid,
+              dmarcValid: dnsStatus.dmarcValid,
+              dnsDetails: {
+                spfRecord: dnsStatus.spfRecord,
+                dkimRecord: dnsStatus.dkimRecord,
+                dmarcRecord: dnsStatus.dmarcRecord
+              }
+            }
+          });
+        } else if (resendClient) {
+          const dispatchRes = await resendClient.emails.send({
+            from: 'Memory Weaver Studio <studio@memoryweaver.studio>',
+            to: rawEmail,
+            replyTo: 'support@memoryweaver.studio',
+            subject,
+            html
+          });
+
+          if (dispatchRes.error) {
+            failedCount++;
+            results.push({
+              id: item.id,
+              receipt: {
+                success: false,
+                status: 'FAILED',
+                templateId,
+                targetEmail: rawEmail,
+                subject,
+                timestamp: itemTimestamp,
+                spfValid: dnsStatus.spfValid,
+                dkimValid: dnsStatus.dkimValid,
+                dmarcValid: dnsStatus.dmarcValid,
+                error: dispatchRes.error.message || 'Resend API batch dispatch error.'
+              }
+            });
+          } else {
+            deliveredCount++;
+            results.push({
+              id: item.id,
+              receipt: {
+                success: true,
+                messageId: dispatchRes.data?.id || `mw_batch_${Date.now()}_${i}`,
+                status: 'DELIVERED',
+                templateId,
+                targetEmail: rawEmail,
+                subject,
+                timestamp: itemTimestamp,
+                spfValid: dnsStatus.spfValid,
+                dkimValid: dnsStatus.dkimValid,
+                dmarcValid: dnsStatus.dmarcValid,
+                dnsDetails: {
+                  spfRecord: dnsStatus.spfRecord,
+                  dkimRecord: dnsStatus.dkimRecord,
+                  dmarcRecord: dnsStatus.dmarcRecord
+                }
+              }
+            });
+          }
+        }
+      } catch (err: any) {
+        failedCount++;
+        results.push({
+          id: item.id,
+          receipt: {
+            success: false,
+            status: 'FAILED',
+            templateId,
+            targetEmail: rawEmail,
+            subject: '',
+            timestamp: itemTimestamp,
+            spfValid: false,
+            dkimValid: false,
+            dmarcValid: false,
+            error: err?.message || 'Unexpected batch recipient dispatch exception.'
+          }
+        });
+      }
+    }
+
+    return {
+      success: true,
+      chunkIndex,
+      results,
+      processedCount: results.length,
+      deliveredCount,
+      failedCount,
+      simulatedCount,
+      timestamp
+    };
+  } catch (error: any) {
+    console.error('[sendAdminBatchChunkAction] Fatal error:', error);
+    return {
+      success: false,
+      chunkIndex,
+      results: [],
+      processedCount: 0,
+      deliveredCount: 0,
+      failedCount: 0,
+      simulatedCount: 0,
+      timestamp,
+      error: error?.message || 'Server action chunk processing failure.'
+    };
+  }
+}
+
+/**
+ * Converts batch execution receipts into a downloadable CSV report.
+ */
+export async function generateBatchAuditCsv(receipts: Array<{ id: string; receipt?: EmailDispatchReceipt }>): Promise<string> {
+  const headers = ['Recipient Email', 'Status', 'Message ID', 'Subject', 'Timestamp', 'SPF', 'DKIM', 'DMARC', 'Error'];
+  const rows = receipts.map(item => {
+    const r = item.receipt;
+    if (!r) {
+      return [`"N/A"`, `"QUEUED"`, `""`, `""`, `""`, `""`, `""`, `""`, `""`];
+    }
+    return [
+      `"${(r.targetEmail || '').replace(/"/g, '""')}"`,
+      `"${r.status}"`,
+      `"${(r.messageId || '').replace(/"/g, '""')}"`,
+      `"${(r.subject || '').replace(/"/g, '""')}"`,
+      `"${r.timestamp}"`,
+      `"${r.spfValid ? 'PASSED' : 'FAILED'}"`,
+      `"${r.dkimValid ? 'VERIFIED' : 'FAILED'}"`,
+      `"${r.dmarcValid ? 'ENFORCED' : 'FAILED'}"`,
+      `"${(r.error || '').replace(/"/g, '""')}"`
+    ].join(',');
+  });
+
+  return [headers.join(','), ...rows].join('\r\n');
+}
+

@@ -2,6 +2,7 @@
 
 import { Resend } from 'resend';
 import { headers } from 'next/headers';
+import { STUDIO_EMAILS, STUDIO_EMAIL_SENDERS } from '@/config/emailConfig';
 
 interface WelcomeEmailParams {
   email: string;
@@ -203,7 +204,7 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
                 Memory Weaver Studio • Preserving Family Legacies in 4K
               </p>
               <p class="mw-text-muted" style="margin: 0; color: #a1a1aa;">
-                Have questions or need assistance? Reply directly to this email or contact our director concierge at <a href="mailto:studio@memoryweaver.studio" class="mw-text-gold" style="color: #f59e0b; text-decoration: none; font-weight: 700;">studio@memoryweaver.studio</a>.
+                Have questions or need assistance? Reply directly to this email or contact our director concierge at <a href="mailto:${STUDIO_EMAILS.STUDIO}" class="mw-text-gold" style="color: #f59e0b; text-decoration: none; font-weight: 700;">${STUDIO_EMAILS.STUDIO}</a>.
               </p>
             </td>
           </tr>
@@ -217,7 +218,7 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
     `;
 
     await resend.emails.send({
-      from: 'studio@memoryweaver.studio',
+      from: STUDIO_EMAIL_SENDERS.STUDIO,
       to: email,
       subject: '🎬 Welcome to Memory Weaver Studio — Production Hub Initialised',
       html: emailHtml,

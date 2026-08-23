@@ -18,6 +18,13 @@ export const BUSINESS_MANIFEST = {
       priceMonthlyGbp: 12.99,
       priceMonthlyUsd: 14.99,
       promotionalTrialMonths: 6
+    },
+    generational_vault: {
+      name: "Generational Vault (Lifetime)",
+      priceMonthlyGbp: 195.00,
+      priceMonthlyUsd: 249.00,
+      featuresLocked: [],
+      demoScript: "100GB_VAULT_PERPETUAL"
     }
   },
   userLifecycles: {
@@ -143,6 +150,25 @@ export const BUSINESS_MANIFEST = {
         "Render casting controls with HS_CINEMA_CAST_AIRPLAY_BTN and HS_CINEMA_CAST_CHROMECAST_BTN.",
         "Build 10-foot lean-back Smart TV portal route (/cinema/tv) with TV remote key handlers bound to HS_CINEMA_TV_REMOTE_TOGGLE.",
         "Integrate HS_ACT5_LIVING_ROOM_PREMIERE_BTN launcher and Living Room Premiere Casting Modal in Act V."
+      ]
+    },
+    MW_84_COOKIE_CONSENT_ARCHITECTURE: {
+      context: "Public Visitor Cookie Consent (PECR / UK GDPR) vs Registered Director SaaS Contractual Agreement.",
+      resolutionSteps: [
+        "Unauthenticated visitors viewing public marketing routes (/, /pricing, /how-it-works, /contact) receive the binary CookieConsentDock ([ Accept All ] vs [ Reject All ]).",
+        "Clicking 'Reject All' updates GA4 Consent Mode v2 (analytics_storage: 'denied') and writes mw_consent cookie without blocking any site navigation.",
+        "Registered Directors inside private studio routes (/studio, /dashboard, /settings) are NOT interrupted by cookie banners; their account creation checkbox ('I agree to Terms & Privacy') establishes legal contract under UK GDPR Article 6(1)(b).",
+        "Essential session cookies (__session) and first-party operational telemetry (/api/telemetry) operate under Contractual Necessity & Legitimate Interest to prevent video render loss and ensure recording stability.",
+        "Users can inspect live status or modify cookie preferences at any time via the Interactive Preference Manager on /legal/cookies or inside Studio /settings."
+      ]
+    },
+    MW_84_PUBLISHED_AUTOBIOGRAPHY_COMPLIANCE: {
+      context: "Published Autobiography Distribution Paradigm, Search Engine Screener Shield, and Zero-AI-Training Guarantee.",
+      resolutionSteps: [
+        "Published family memoirs operate on a physical-to-digital Published Autobiography model: scanning poster QR codes or opening /cinema?id=... streams in 4K with zero login walls.",
+        "Edge Middleware (src/middleware.ts) automatically injects 'X-Robots-Tag: noindex, nofollow' on all parameterized screening routes (/cinema?id=..., /cinema/tv?id=..., /share/...) to keep private family memoirs out of search engines.",
+        "The Privacy Policy (/legal/privacy) establishes an immutable Zero-AI-Training Guarantee: user voice recordings, private transcripts, and archival imagery are never used to train third-party machine learning models.",
+        "Directors retain absolute sovereign control via the Master Kill Switch: [ Unpublish ] immediately deactivates all public QR codes and streaming URLs globally, while [ Delete ] permanently purges all cloud storage assets."
       ]
     }
   }

@@ -8,6 +8,7 @@
 | :--- | :---: | :---: | :--- | :--- |
 | **Sandbox Preview** (`sandbox`) | £0.00 | $0.00 | `CLOUD_STORAGE`, `FIREBASE_WRITE`, `CLOUD_STITCHING` | Demo Script: `p_einstein` |
 | **Director Pass** (`director`) | £12.99 | $14.99 | None | Promotional Trial: 6 months |
+| **Generational Vault (Lifetime)** (`generational_vault`) | £195.00 | $249.00 |  | Demo Script: `100GB_VAULT_PERPETUAL` |
 
 ### 🔒 USER LIFECYCLE ACCESS STATE MATRIX
 
@@ -147,4 +148,27 @@
 3. Render casting controls with HS_CINEMA_CAST_AIRPLAY_BTN and HS_CINEMA_CAST_CHROMECAST_BTN.
 4. Build 10-foot lean-back Smart TV portal route (/cinema/tv) with TV remote key handlers bound to HS_CINEMA_TV_REMOTE_TOGGLE.
 5. Integrate HS_ACT5_LIVING_ROOM_PREMIERE_BTN launcher and Living Room Premiere Casting Modal in Act V.
+
+### Playbook: MW_84_COOKIE_CONSENT_ARCHITECTURE
+
+**Context:**
+> Public Visitor Cookie Consent (PECR / UK GDPR) vs Registered Director SaaS Contractual Agreement.
+
+**Resolution Steps:**
+1. Unauthenticated visitors viewing public marketing routes (/, /pricing, /how-it-works, /contact) receive the binary CookieConsentDock ([ Accept All ] vs [ Reject All ]).
+2. Clicking 'Reject All' updates GA4 Consent Mode v2 (analytics_storage: 'denied') and writes mw_consent cookie without blocking any site navigation.
+3. Registered Directors inside private studio routes (/studio, /dashboard, /settings) are NOT interrupted by cookie banners; their account creation checkbox ('I agree to Terms & Privacy') establishes legal contract under UK GDPR Article 6(1)(b).
+4. Essential session cookies (__session) and first-party operational telemetry (/api/telemetry) operate under Contractual Necessity & Legitimate Interest to prevent video render loss and ensure recording stability.
+5. Users can inspect live status or modify cookie preferences at any time via the Interactive Preference Manager on /legal/cookies or inside Studio /settings.
+
+### Playbook: MW_84_PUBLISHED_AUTOBIOGRAPHY_COMPLIANCE
+
+**Context:**
+> Published Autobiography Distribution Paradigm, Search Engine Screener Shield, and Zero-AI-Training Guarantee.
+
+**Resolution Steps:**
+1. Published family memoirs operate on a physical-to-digital Published Autobiography model: scanning poster QR codes or opening /cinema?id=... streams in 4K with zero login walls.
+2. Edge Middleware (src/middleware.ts) automatically injects 'X-Robots-Tag: noindex, nofollow' on all parameterized screening routes (/cinema?id=..., /cinema/tv?id=..., /share/...) to keep private family memoirs out of search engines.
+3. The Privacy Policy (/legal/privacy) establishes an immutable Zero-AI-Training Guarantee: user voice recordings, private transcripts, and archival imagery are never used to train third-party machine learning models.
+4. Directors retain absolute sovereign control via the Master Kill Switch: [ Unpublish ] immediately deactivates all public QR codes and streaming URLs globally, while [ Delete ] permanently purges all cloud storage assets.
 

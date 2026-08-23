@@ -1,6 +1,7 @@
 'use server';
 
 import { Resend } from 'resend';
+import { STUDIO_EMAILS, STUDIO_EMAIL_SENDERS } from '@/config/emailConfig';
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
@@ -19,24 +20,27 @@ export async function sendContactAction(
       return { success: false, error: 'All fields are required.' };
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-      return { success: false, error: 'Please provide a valid email address.' };
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.email)) {
+      return { success: false, error: 'Please enter a valid email address.' };
     }
 
     if (data.message.length > 5000) {
       return { success: false, error: 'Message must be under 5,000 characters.' };
     }
 
+    // Rate limiting: max 3 submissions per email per hour
     const now = Date.now();
-    const record = rateLimitMap.get(data.email);
-    if (record && now < record.resetTime) {
-      if (record.count >= 5) {
+    const userLimit = rateLimitMap.get(data.email);
+    if (userLimit && now < userLimit.resetTime) {
+      if (userLimit.count >= 3) {
         return {
           success: false,
-          error: 'Too many submissions. Please try again later.',
+          error: 'Too many requests. Please try again later.',
         };
       }
-      record.count += 1;
+      userLimit.count += 1;
     } else {
       rateLimitMap.set(data.email, { count: 1, resetTime: now + 3600000 });
     }
@@ -46,15 +50,15 @@ export async function sendContactAction(
       console.warn('[sendContactAction] RESEND_API_KEY is not configured');
       return {
         success: false,
-        error: 'Email service is currently unavailable. Please contact support@memoryweaver.studio directly.',
+        error: `Email service is currently unavailable. Please contact ${STUDIO_EMAILS.SUPPORT} directly.`,
       };
     }
 
     const resend = new Resend(resendApiKey);
 
     await resend.emails.send({
-      from: 'Memory Weaver Contact <noreply@memoryweaver.studio>',
-      to: ['support@memoryweaver.studio'],
+      from: STUDIO_EMAIL_SENDERS.CONTACT,
+      to: [STUDIO_EMAILS.SUPPORT],
       replyTo: data.email,
       subject: `[Contact] ${data.category}: ${data.name}`,
       html: `
