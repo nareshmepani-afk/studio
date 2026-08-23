@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+
+const CONSENT_COOKIE_NAME = 'mw_consent';
+const CONSENT_MAX_AGE = 33696000; // 13 months in seconds
 
 export function CookiesContent() {
   const [consent, setConsent] = useState<boolean | null>(null);
@@ -8,27 +12,42 @@ export function CookiesContent() {
   useEffect(() => {
     // Read current consent from cookie
     const getConsentCookie = () => {
-      const match = document.cookie.match(new RegExp('(^| )mw_consent=([^;]+)'));
-      if (match) {
-        return match[2] === 'true';
+      if (typeof document === 'undefined') return null;
+      const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${CONSENT_COOKIE_NAME}=([^;]*)`));
+      if (!match) return null;
+      try {
+        const parsed = JSON.parse(decodeURIComponent(match[1]));
+        if (typeof parsed === 'object' && parsed !== null && 'analytics' in parsed) {
+          return Boolean(parsed.analytics);
+        }
+        return Boolean(parsed);
+      } catch {
+        return match[1] === 'true';
       }
-      return null;
     };
     setConsent(getConsentCookie());
   }, []);
 
   const handleConsentChange = (accepted: boolean) => {
-    // Set cookie for 13 months
-    const maxAge = 60 * 60 * 24 * 395; // ~13 months
-    document.cookie = `mw_consent=${accepted}; path=/; max-age=${maxAge}; SameSite=Lax`;
+    const value = JSON.stringify({ analytics: accepted, timestamp: Date.now() });
+    document.cookie = `${CONSENT_COOKIE_NAME}=${encodeURIComponent(value)}; path=/; max-age=${CONSENT_MAX_AGE}; SameSite=Lax`;
     setConsent(accepted);
-    
+
     // Update gtag consent if gtag is available
     if (typeof window !== 'undefined' && (window as any).gtag) {
       (window as any).gtag('consent', 'update', {
-        analytics_storage: accepted ? 'granted' : 'denied'
+        analytics_storage: accepted ? 'granted' : 'denied',
       });
     }
+
+    toast.success(
+      accepted ? 'Analytics cookies accepted' : 'Analytics cookies rejected',
+      {
+        description: accepted
+          ? 'Anonymised usage analytics enabled.'
+          : 'Optional analytics cookies have been blocked.',
+      }
+    );
   };
 
   return (
@@ -133,11 +152,24 @@ export function CookiesContent() {
           </button>
         </div>
         
-        {consent !== null && (
-          <p className="mt-4 mb-0 text-xs text-amber-500/80">
-            Your preferences have been saved.
-          </p>
-        )}
+        <div className="mt-5 flex items-center gap-2 text-xs">
+          <span className="text-white/40">Current Setting:</span>
+          {consent === true && (
+            <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Analytics Allowed
+            </span>
+          )}
+          {consent === false && (
+            <span className="inline-flex items-center gap-1.5 font-semibold text-amber-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+              Analytics Blocked (Privacy Shield Active)
+            </span>
+          )}
+          {consent === null && (
+            <span className="text-white/40">No preference recorded</span>
+          )}
+        </div>
       </div>
 
       <hr className="my-8 border-white/10" />

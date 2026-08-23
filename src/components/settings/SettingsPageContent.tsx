@@ -12,6 +12,7 @@ import { Loader2, CheckCircle, XCircle, User, Mail, ShieldCheck, Ticket, Zap, In
 import { motion } from 'framer-motion';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
 import { APP_VERSION } from '@/config/version';
 import { auth } from '@/lib/firebase';
@@ -343,6 +344,39 @@ export function SettingsPageContent({
                     </div>
                   )}
                </div>
+            </div>
+          </section>
+
+          {/* Privacy & Legal Controls */}
+          <section className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl p-6 sm:p-8 space-y-4">
+            <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-2">
+              <div>
+                <h2 className="text-lg font-bold text-white font-headline">Privacy & Legal Controls</h2>
+                <p className="text-xs text-white/40">Review terms, privacy protections, and manage cookie preferences</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              <Link
+                href="/legal/terms"
+                className="flex items-center justify-between p-3.5 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-amber-500/20 text-xs text-white/70 hover:text-white transition-all group"
+              >
+                <span>Terms of Service</span>
+                <span className="text-amber-500/60 group-hover:text-amber-400">↗</span>
+              </Link>
+              <Link
+                href="/legal/privacy"
+                className="flex items-center justify-between p-3.5 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-amber-500/20 text-xs text-white/70 hover:text-white transition-all group"
+              >
+                <span>Privacy Policy</span>
+                <span className="text-amber-500/60 group-hover:text-amber-400">↗</span>
+              </Link>
+              <Link
+                href="/legal/cookies"
+                className="flex items-center justify-between p-3.5 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-amber-500/20 text-xs text-white/70 hover:text-white transition-all group"
+              >
+                <span>Cookie Preferences</span>
+                <span className="text-amber-500/60 group-hover:text-amber-400">⚙</span>
+              </Link>
             </div>
           </section>
 
