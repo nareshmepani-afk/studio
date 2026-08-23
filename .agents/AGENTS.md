@@ -755,3 +755,21 @@ When a session reaches **10+ completed items** OR **encounters Checkpoint trunca
 - The agent will provide a ready-to-paste starter prompt for the new conversation to instantly re-hydrate the new session with zero context loss.
 
 - ❌ Never provide generic thoughts like "the codebase looks good" — every observation must be specific and actionable
+
+# 29. Living Knowledge Hub Continuous Governance & Manifest Synchronization Rule
+
+## 29.1 Mandatory Manifest Audit Upon Ticket / Sprint Completion
+Whenever delivering a new feature, subscription change, integration capability, architectural refactoring, or operational policy (e.g. Email Dispatcher, Cloud Storage Vault quotas, AI Weaver prompt policies, DNS deliverability records), the agent MUST verify whether new business rules, operational constraints, or support playbooks should be registered in `src/config/businessRules.ts`.
+
+## 29.2 Required Manifest Entities
+1. **Subscription & Feature Limits**: If features or tier quotas change (e.g. 4K Vault size, batch export limits, trial lengths), update `BUSINESS_MANIFEST.tiers`.
+2. **Operational & Support Playbooks**: If new failure modes, external APIs (e.g. Resend, Cloudflare, WebRTC, Firebase App Hosting), or troubleshooting workflows are introduced, add a dedicated playbook under `BUSINESS_MANIFEST.supportPlaybooks` detailing the operational context and step-by-step resolution procedures.
+3. **User Lifecycle Access States**: If user gating, paywall intercept rules, or permission vectors change, update `BUSINESS_MANIFEST.userLifecycles`.
+
+## 29.3 Automatic Build & UI Synchronization
+- Running `npm.cmd run build` automatically compiles `src/config/businessRules.ts` via `node scripts/generateLivingDocs.js` into both `docs/living-manifest.md` (repository documentation) and `src/app/admin/living-manifest.json` (runtime data store for the live `/admin?suite=knowledge` UI).
+- The agent must verify that the compiled manifest produces clean search index entries without syntax errors.
+
+## 29.4 Retrospective & Audit Enforcement (Rule 16 Integration)
+The final **Production-Ready Audit & Retrospective** (Rule 16) MUST explicitly confirm Living Knowledge Hub synchronization status:
+`Living Knowledge Hub: SYNCHRONIZED (src/config/businessRules.ts -> docs/living-manifest.md & admin?suite=knowledge)`

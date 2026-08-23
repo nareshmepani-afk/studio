@@ -170,8 +170,29 @@ export const BUSINESS_MANIFEST = {
         "The Privacy Policy (/legal/privacy) establishes an immutable Zero-AI-Training Guarantee: user voice recordings, private transcripts, and archival imagery are never used to train third-party machine learning models.",
         "Directors retain absolute sovereign control via the Master Kill Switch: [ Unpublish ] immediately deactivates all public QR codes and streaming URLs globally, while [ Delete ] permanently purges all cloud storage assets."
       ]
+    },
+    MW_193_EMAIL_OPERATIONS_AND_DNS_DELIVERABILITY: {
+      context: "Email Operations Suite, 4 Core Obsidian-Gold Templates, and DNS Deliverability Records (SPF / DKIM / DMARC).",
+      resolutionSteps: [
+        "Email Operations Console (/admin?suite=email) provides 1-click test dispatches across all 4 production templates (Welcome Host Pass, Collaborator Invite, Password Reset, Premiere Notification).",
+        "Domain deliverability relies on verified TXT records: SPF (v=spf1 include:resend.com include:_spf.google.com ~all), DKIM RSA-2048 (resend._domainkey.memoryweaver.studio), and DMARC (v=DMARC1; p=reject; rua=mailto:dmarc@memoryweaver.studio).",
+        "Dual-directional email routing uses Cloudflare Email Routing for inbound mail forwarding to personal destinations, and Resend SMTP credentials (smtp.resend.com, Port 465/587) for outbound dispatches.",
+        "Access Support Console (/admin?suite=access) enables 1-tap re-triggering of complimentary Host Passes with direct secure server action authorization."
+      ]
+    },
+    MW_194_BULK_EMAIL_DISPATCH_AND_QUEUE_PACING: {
+      context: "Bulk Email Audience Ingestion, Rate-Limited Queue Pacing, and Live Transmission Receipt Streaming.",
+      resolutionSteps: [
+        "Audience Ingestion supports RFC 4180 CSV uploads and raw text pasting with automated header synonym mapping (email, name, claimedMemoryTitle, role, passcode, etc.) and RFC regex validation.",
+        "Case-insensitive deduplication preserves the first valid contact instance while marking duplicates as SKIPPED to prevent spamming recipients.",
+        "Server actions (sendAdminBatchChunkAction) enforce strict bounding to 5–10 recipients per request to prevent serverless execution timeouts.",
+        "Frontend modal orchestrates queue pacing velocities: Gentle (2 emails/sec, 500ms delay), Standard (5 emails/sec, 200ms delay), and Turbo (10 emails/sec, 100ms delay) to prevent Resend API HTTP 429 rate limit exceptions.",
+        "Discrete per-recipient state tracking (PENDING, IN_FLIGHT, DELIVERED, SIMULATED, FAILED, SKIPPED) guarantees pause/resume idempotency with zero duplicate dispatches.",
+        "Operators can export comprehensive delivery audit reports (.csv) containing message IDs, timestamps, SPF/DKIM verification tags, and failure details."
+      ]
     }
   }
 } as const;
 
 export type BusinessManifest = typeof BUSINESS_MANIFEST;
+
