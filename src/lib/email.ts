@@ -1,6 +1,8 @@
 'use server';
 
 import { Resend } from 'resend';
+import { renderPasswordResetEmail } from '@/lib/emailTemplates';
+import { STUDIO_EMAIL_SENDERS } from '@/config/emailConfig';
 
 /**
  * Sends a password reset email using the Resend service.
@@ -8,15 +10,19 @@ import { Resend } from 'resend';
  * @param link The password reset link to include in the email.
  */
 export async function sendPasswordResetEmail(email: string, link: string): Promise<void> {
-  // The RESEND_API_KEY must be set in your environment variables for this to work.
   const resend = new Resend(process.env.RESEND_API_KEY);
+  const { subject, html } = renderPasswordResetEmail({
+    email,
+    resetLink: link,
+    expiresInMinutes: 60,
+  });
   
   try {
     await resend.emails.send({
-      from: 'studio@memoryweaver.studio',
+      from: STUDIO_EMAIL_SENDERS.STUDIO,
       to: email,
-      subject: 'Reset Your Memory Weaver Password',
-      html: `<p>Click the link to reset your password: <a href="${link}">Reset Password</a></p>`,
+      subject,
+      html,
     });
     console.log(`Password reset email successfully sent to ${email}`);
   } catch (error) {

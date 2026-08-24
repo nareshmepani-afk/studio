@@ -167,29 +167,29 @@ function renderEmailWrapper({
   <table class="mw-bg" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #000000; width: 100%; margin: 0; padding: 40px 16px;">
     <tr>
       <td align="center" valign="top">
-        <!-- Main Card Container (Pure Obsidian Black) -->
-        <table class="mw-card" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #030712; border: 1px solid #1e293b; border-radius: 20px; overflow: hidden; box-shadow: 0 30px 70px rgba(0, 0, 0, 1);">
+        <!-- Main Card Container (Pure Obsidian Black with Gold Border) -->
+        <table class="mw-card" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; width: 100%; background-color: #000000; border: 2px solid #f59e0b; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);">
           
-          <!-- Header Banner with Pure Black Logo Medallion -->
+          <!-- Header Banner with Logo Medallion -->
           <tr>
-            <td class="mw-bg" style="background-color: #030712; padding: 36px 28px 20px 28px; border-bottom: 1px solid #111827; text-align: center;">
+            <td class="mw-bg" style="background-color: #000000; padding: 28px 24px 18px 24px; border-bottom: 1px solid #27272a; text-align: center;">
               
-              <!-- Pure Black Logo Box -->
-              <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 14px;">
+              <!-- Logo Medallion -->
+              <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 12px;">
                 <tr>
-                  <td class="mw-logo-box" align="center" style="width: 48px; height: 48px; background-color: #000000; border: 1px solid #1e293b; border-radius: 14px; text-align: center;">
-                    <img src="https://dev.memoryweaver.studio/icon.svg" width="28" height="28" alt="Memory Weaver Logo" style="display: block; margin: 0 auto; background-color: #000000;" />
+                  <td class="mw-logo-box" align="center" style="width: 48px; height: 48px; background-color: #09090b; border: 1.5px solid #f59e0b; border-radius: 14px; text-align: center;">
+                    <img src="https://dev.memoryweaver.studio/icon.svg" width="28" height="28" alt="Memory Weaver Logo" style="display: block; margin: 0 auto; background-color: transparent;" />
                   </td>
                 </tr>
               </table>
 
-              <div class="mw-text-gold" style="display: inline-block; background-color: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 3px 10px; border-radius: 9999px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-family: monospace;">
+              <div class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 6px;">
                 ${categoryBadge}
               </div>
-              <h1 class="mw-text-white" style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">
+              <h1 class="mw-text-white" style="margin: 0; font-size: 20px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">
                 ${title}
               </h1>
-              <p class="mw-text-muted" style="margin: 6px 0 0 0; font-size: 12px; color: #64748b; font-family: monospace;">
+              <p class="mw-text-muted" style="margin: 6px 0 0 0; font-size: 12px; color: #a1a1aa; font-family: 'Courier New', Courier, monospace;">
                 ${subtitle}
               </p>
             </td>
@@ -197,18 +197,18 @@ function renderEmailWrapper({
 
           <!-- Main Body Content -->
           <tr>
-            <td style="padding: 28px 24px 20px 24px; background-color: #030712;">
+            <td style="padding: 24px; font-size: 14px; line-height: 1.6; background-color: #000000;">
               ${contentHtml}
 
-              <!-- Action Buttons (App-Style Pill Shape) -->
+              <!-- Action Buttons -->
               ${ctaText && ctaUrl ? `
-              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 28px; margin-bottom: 12px;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 22px; margin-bottom: 8px;">
                 <tr>
                   <td align="center">
                     <table border="0" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td align="center" style="background-color: #f59e0b; border-radius: 9999px;">
-                          <a href="${ctaUrl}" target="_blank" class="mw-btn" style="background-color: #f59e0b; border: 1px solid #f59e0b; border-radius: 9999px; color: #000000; display: inline-block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; font-weight: 800; line-height: 18px; text-align: center; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; padding: 13px 32px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.25);">
+                        <td align="center" style="background-color: #f59e0b; border-radius: 8px;">
+                          <a href="${ctaUrl}" target="_blank" class="mw-btn" style="background-color: #f59e0b; border: 1px solid #f59e0b; border-radius: 8px; color: #000000; display: inline-block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; font-weight: 800; line-height: 18px; text-align: center; text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 26px;">
                             ${ctaText}
                           </a>
                         </td>
@@ -218,8 +218,8 @@ function renderEmailWrapper({
                 </tr>
                 ${secondaryCtaText && secondaryCtaUrl ? `
                 <tr>
-                  <td align="center" style="padding-top: 12px;">
-                    <a href="${secondaryCtaUrl}" target="_blank" style="display: inline-block; background-color: #0f172a; color: #e2e8f0; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; text-decoration: none; padding: 10px 24px; border-radius: 9999px; text-align: center; border: 1px solid #334155;">
+                  <td align="center" style="padding-top: 10px;">
+                    <a href="${secondaryCtaUrl}" target="_blank" style="display: inline-block; background-color: #09090b; color: #e2e8f0; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; text-decoration: none; padding: 10px 22px; border-radius: 8px; text-align: center; border: 1px solid #27272a;">
                       ${secondaryCtaText}
                     </a>
                   </td>
@@ -230,15 +230,11 @@ function renderEmailWrapper({
             </td>
           </tr>
 
-          <!-- Footer (Seamless Dark, No Grey Box) -->
+          <!-- Footer -->
           <tr>
-            <td class="mw-bg" style="background-color: #030712; padding: 20px 24px; border-top: 1px solid #111827; text-align: center; font-size: 11px; color: #64748b; line-height: 18px;">
-              <p class="mw-text-white" style="margin: 0 0 6px 0; font-family: monospace; font-weight: 700; color: #94a3b8;">
-                Memory Weaver Studio • Preserving Family Legacies in 4K
-              </p>
-              <p class="mw-text-muted" style="margin: 0; color: #475569;">
-                ${footerNote || 'Have questions? Contact concierge at <a href="mailto:studio@memoryweaver.studio" class="mw-text-gold" style="color: #f59e0b; text-decoration: none; font-weight: 700;">studio@memoryweaver.studio</a>.'}
-              </p>
+            <td class="mw-bg" style="background-color: #09090b; padding: 14px 20px; border-top: 1px solid #27272a; text-align: center; font-size: 10px; color: #71717a; text-transform: uppercase; letter-spacing: 0.15em; font-family: 'Courier New', Courier, monospace;">
+              ${footerNote ? `<p style="margin: 0 0 6px 0; text-transform: none; letter-spacing: normal; color: #71717a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px;">${footerNote}</p>` : ''}
+              Memory Weaver Studio • Confidential &amp; Bespoke Archiving
             </td>
           </tr>
 
