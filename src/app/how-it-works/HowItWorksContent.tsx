@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PublicPageShell } from '@/components/public/PublicPageShell';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { PenTool, Mic, Wand2, Tv, Archive, Smartphone, Cast, QrCode, ArrowRight } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { PenTool, Mic, Wand2, Tv, Archive, Smartphone, Cast, QrCode, ArrowRight, Clapperboard } from 'lucide-react';
 
 const acts = [
   {
@@ -67,6 +68,7 @@ const acts = [
 
 export function HowItWorksContent() {
   const [activeAct, setActiveAct] = useState<number>(1);
+  const { user } = useAuth();
 
   return (
     <PublicPageShell>
@@ -98,57 +100,72 @@ export function HowItWorksContent() {
             <div className="absolute left-6 md:left-[2.1rem] top-8 bottom-8 w-px bg-white/5" />
             
             {acts.map((act) => {
-              const isActive = activeAct === act.id;
+              const isExpanded = activeAct === act.id;
               const Icon = act.icon;
+              
               return (
-                <div key={act.id} className="relative z-10 pl-16 md:pl-24">
-                  <button
+                <div 
+                  key={act.id} 
+                  className={`relative pl-16 md:pl-20 transition-all duration-300 ${
+                    isExpanded ? 'opacity-100' : 'opacity-60 hover:opacity-80'
+                  }`}
+                >
+                  {/* Step Marker */}
+                  <button 
                     onClick={() => setActiveAct(act.id)}
-                    className="absolute left-0 md:left-4 top-2 w-12 h-12 rounded-full border border-white/10 bg-[#121212] flex items-center justify-center transition-colors group hover:border-amber-500/50 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    aria-expanded={isActive}
-                  >
-                    <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-amber-500' : 'text-neutral-500 group-hover:text-amber-400'}`} />
-                  </button>
-                  
-                  <div 
-                    className={`cursor-pointer group rounded-2xl border transition-all duration-300 overflow-hidden ${
-                      isActive 
-                        ? 'bg-[#121212] border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.05)]' 
-                        : 'bg-transparent border-transparent hover:bg-[#121212]/50'
+                    className={`absolute left-0 top-0 w-12 h-12 md:w-[4.2rem] md:h-[4.2rem] rounded-2xl flex items-center justify-center border transition-all duration-300 z-10 ${
+                      isExpanded 
+                        ? 'bg-amber-500/10 border-amber-500 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.2)]' 
+                        : 'bg-neutral-900 border-white/10 text-neutral-400 hover:border-white/20'
                     }`}
-                    onClick={() => setActiveAct(act.id)}
                   >
-                    <div className="p-6 md:p-8">
-                      <h3 className={`text-2xl md:text-3xl font-serif transition-colors ${isActive ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-200'}`}>
+                    <Icon className="w-5 h-5 md:w-6 md:h-6" />
+                  </button>
+
+                  {/* Step Content */}
+                  <div 
+                    onClick={() => setActiveAct(act.id)}
+                    className={`p-6 sm:p-8 rounded-3xl border cursor-pointer transition-all duration-300 ${
+                      isExpanded 
+                        ? 'bg-neutral-900/60 border-amber-500/30 backdrop-blur-md shadow-2xl' 
+                        : 'bg-neutral-950/40 border-white/5 hover:border-white/10'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-xl sm:text-2xl font-serif text-white font-medium">
                         {act.title}
                       </h3>
-                      
-                      <AnimatePresence>
-                        {isActive && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="pt-4 space-y-6">
-                              <p className="text-lg text-neutral-300 leading-relaxed">
-                                {act.description}
-                              </p>
-                              <ul className="space-y-3">
-                                {act.features.map((feature, idx) => (
-                                  <li key={idx} className="flex items-start text-neutral-400">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 mr-3 flex-shrink-0" />
-                                    <span>{feature}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                      <span className="text-xs font-mono text-neutral-500 uppercase tracking-widest">
+                        Phase 0{act.id}
+                      </span>
                     </div>
+                    
+                    <p className="text-neutral-400 text-sm sm:text-base leading-relaxed mb-4">
+                      {act.description}
+                    </p>
+
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pt-4 border-t border-white/5 grid sm:grid-cols-3 gap-4">
+                            {act.features.map((feature, idx) => (
+                              <div key={idx} className="bg-white/5 p-4 rounded-xl border border-white/5 flex items-start space-x-3">
+                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
+                                <span className="text-xs text-neutral-300 font-light leading-snug">
+                                  {feature}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
               );
@@ -156,17 +173,23 @@ export function HowItWorksContent() {
           </section>
 
           {/* Smart TV Flow */}
-          <section className="bg-[#121212] rounded-3xl border border-white/5 p-8 md:p-12 text-center">
-            <h2 className="text-3xl font-serif text-white mb-12">Seamless Smart TV Screening</h2>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-4">
+          <section className="bg-neutral-900/40 border border-white/5 rounded-3xl p-8 sm:p-12 backdrop-blur-md space-y-12">
+            <div className="text-center space-y-3 max-w-2xl mx-auto">
+              <h3 className="text-2xl sm:text-3xl font-serif text-white">Smart TV Living Room Experience</h3>
+              <p className="text-sm text-neutral-400 font-light">
+                Zero friction, zero logins. Designed specifically for grandparents and family gatherings on the largest screen in the home.
+              </p>
+            </div>
+
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12 relative text-center">
               <div className="flex flex-col items-center space-y-4 max-w-[200px]">
                 <div className="w-20 h-20 rounded-2xl bg-neutral-900 border border-white/10 flex items-center justify-center text-amber-500 shadow-lg">
                   <QrCode className="w-10 h-10" />
                 </div>
-                <h4 className="font-medium text-white text-lg">Scan QR</h4>
-                <p className="text-sm text-neutral-500">From your unique physical poster</p>
+                <h4 className="font-medium text-white text-lg">Scan QR Code</h4>
+                <p className="text-sm text-neutral-500">From the printed memoir poster or digital pass</p>
               </div>
-              
+
               <ArrowRight className="w-8 h-8 text-neutral-700 hidden md:block" />
               <div className="h-8 w-px bg-neutral-700 md:hidden" />
 
@@ -175,7 +198,7 @@ export function HowItWorksContent() {
                   <Smartphone className="w-10 h-10" />
                 </div>
                 <h4 className="font-medium text-white text-lg">Open on Mobile</h4>
-                <p className="text-sm text-neutral-500">Zero login required for family</p>
+                <p className="text-sm text-neutral-500">Instantly loads playback options with no sign-in</p>
               </div>
 
               <ArrowRight className="w-8 h-8 text-neutral-700 hidden md:block" />
@@ -194,9 +217,16 @@ export function HowItWorksContent() {
           {/* CTA */}
           <section className="text-center py-12">
             <h2 className="text-4xl font-serif text-white mb-8">Ready to begin your production?</h2>
-            <Link href="/register">
-              <Button size="lg" className="bg-amber-500 hover:bg-amber-400 text-neutral-950 font-medium px-8 py-6 text-lg rounded-xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:shadow-[0_0_30px_rgba(245,158,11,0.4)]">
-                Start Your Production
+            <Link href={user ? "/studio" : "/register"}>
+              <Button size="lg" className="bg-amber-500 hover:bg-amber-400 text-neutral-950 font-medium px-8 py-6 text-lg rounded-xl transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:shadow-[0_0_30px_rgba(245,158,11,0.4)] flex items-center gap-2 mx-auto">
+                {user ? (
+                  <>
+                    <Clapperboard className="w-5 h-5" />
+                    Enter Your Studio
+                  </>
+                ) : (
+                  "Start Your Production"
+                )}
               </Button>
             </Link>
           </section>

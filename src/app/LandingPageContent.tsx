@@ -281,9 +281,15 @@ export default function LandingPageContent() {
               Every new Director receives a complimentary 6-Month Director Host Pass with full
               5-Act studio access, AI narrative synthesis, and 5 GB of 4K cloud storage.
             </p>
-            <Link href="/register">
-              <button className="px-10 sm:px-12 py-3.5 sm:py-4 bg-amber-500 text-black rounded-full font-black text-sm uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(245,158,11,0.3)] hover:scale-105 active:scale-95 hover:bg-amber-400 transition-all">
-                Claim Your Free Pass
+            <Link href={isAuthenticated ? "/studio" : "/register"}>
+              <button className="px-10 sm:px-12 py-3.5 sm:py-4 bg-amber-500 text-black rounded-full font-black text-sm uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(245,158,11,0.3)] hover:scale-105 active:scale-95 hover:bg-amber-400 transition-all flex items-center justify-center gap-2 mx-auto">
+                {isAuthenticated ? (
+                  <>
+                    <Clapperboard className="w-4 h-4" /> Enter Memory Studio
+                  </>
+                ) : (
+                  "Claim Your Free Pass"
+                )}
               </button>
             </Link>
             <p className="mt-4 text-xs text-white/20">

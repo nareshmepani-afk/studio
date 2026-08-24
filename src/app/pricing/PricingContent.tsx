@@ -6,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { motion } from 'framer-motion';
 import { Check, Coffee, Sparkles } from 'lucide-react';
 import { StorageCalculator } from '@/components/public/StorageCalculator';
+import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 
 const PRICING_TIERS = [
@@ -109,23 +110,25 @@ const FAQS = [
 ];
 
 export function PricingContent() {
+  const { user } = useAuth();
+
   return (
     <PublicPageShell>
-      <div className="bg-[#050505] min-h-screen text-[#E5E5E5]">
-        <div className="container mx-auto px-4 py-24 sm:py-32">
+      <div className="bg-[#050505] min-h-screen text-[#E5E5E5] py-20 px-6 sm:px-8 lg:px-12 font-sans selection:bg-amber-500/30">
+        <div className="max-w-7xl mx-auto">
           
-          <div className="mx-auto max-w-4xl text-center mb-16">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-amber-400 mb-6">
+              <Coffee className="w-3.5 h-3.5" />
+              <span>Purchasing Power Parity Active • Prices shown for United Kingdom</span>
+            </div>
+            
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-amber-400 mb-8">
-                <Coffee className="h-4 w-4" />
-                <span>Purchasing Power Parity Active • Prices shown for United Kingdom</span>
-              </div>
-              
-              <h1 className="font-serif text-5xl font-medium tracking-tight sm:text-6xl text-white mb-6">
+              <h1 className="font-serif text-4xl sm:text-6xl font-medium text-white mb-6 tracking-tight">
                 Preserve Your Story for Generations
               </h1>
               
@@ -137,61 +140,68 @@ export function PricingContent() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-24">
-            {PRICING_TIERS.map((tier, index) => (
-              <motion.div
-                key={tier.name}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className={`relative flex flex-col rounded-2xl p-8 backdrop-blur-sm bg-neutral-900/50 border transition-all ${
-                  tier.isFeatured
-                    ? 'border-amber-500/50 shadow-[0_0_30px_-5px_rgba(245,158,11,0.15)] scale-100 xl:scale-105 z-10'
-                    : 'border-white/10'
-                }`}
-              >
-                {tier.badge && (
-                  <div className={`absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-xs font-semibold ${
-                    tier.isFeatured ? 'bg-amber-500 text-black' : 'bg-neutral-800 text-neutral-300 border border-white/10'
-                  }`}>
-                    {tier.isFeatured && <Sparkles className="inline-block w-3 h-3 mr-1 mb-0.5" />}
-                    {tier.badge}
+            {PRICING_TIERS.map((tier, index) => {
+              const targetHref = tier.disabled ? '#' : (user ? '/studio' : tier.href);
+              const buttonText = tier.disabled 
+                ? tier.cta 
+                : (user ? (tier.isFeatured ? 'Enter Your Studio' : 'Open Studio') : tier.cta);
+
+              return (
+                <motion.div
+                  key={tier.name}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className={`relative flex flex-col rounded-2xl p-8 backdrop-blur-sm bg-neutral-900/50 border transition-all ${
+                    tier.isFeatured
+                      ? 'border-amber-500/50 shadow-[0_0_30px_-5px_rgba(245,158,11,0.15)] scale-100 xl:scale-105 z-10'
+                      : 'border-white/10'
+                  }`}
+                >
+                  {tier.badge && (
+                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-xs font-semibold ${
+                      tier.isFeatured ? 'bg-amber-500 text-black' : 'bg-neutral-800 text-neutral-300 border border-white/10'
+                    }`}>
+                      {tier.isFeatured && <Sparkles className="inline-block w-3 h-3 mr-1 mb-0.5" />}
+                      {tier.badge}
+                    </div>
+                  )}
+                  
+                  <div className="mb-8">
+                    <h3 className="font-serif text-2xl font-medium text-white mb-2">{tier.name}</h3>
+                    <div className="text-xl font-medium text-neutral-200 mb-4">{tier.price}</div>
+                    <p className="text-sm text-neutral-400 h-10">{tier.description}</p>
                   </div>
-                )}
-                
-                <div className="mb-8">
-                  <h3 className="font-serif text-2xl font-medium text-white mb-2">{tier.name}</h3>
-                  <div className="text-xl font-medium text-neutral-200 mb-4">{tier.price}</div>
-                  <p className="text-sm text-neutral-400 h-10">{tier.description}</p>
-                </div>
-                
-                <ul className="flex-1 space-y-4 mb-8">
-                  {tier.features.map((feature, i) => (
-                    <li key={i} className="flex gap-3 text-sm text-neutral-300">
-                      <Check className="h-5 w-5 shrink-0 text-emerald-500" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                
-                <div className="mt-auto">
-                  <Button
-                    asChild={!tier.disabled}
-                    disabled={tier.disabled}
-                    variant={tier.isFeatured ? 'default' : tier.ctaVariant}
-                    className={`w-full mb-3 ${
-                      tier.isFeatured ? 'bg-amber-500 hover:bg-amber-400 text-black font-semibold' : ''
-                    }`}
-                  >
-                    {tier.disabled ? (
-                      <span>{tier.cta}</span>
-                    ) : (
-                      <Link href={tier.href}>{tier.cta}</Link>
-                    )}
-                  </Button>
-                  <p className="text-xs text-center text-neutral-500">{tier.microcopy}</p>
-                </div>
-              </motion.div>
-            ))}
+                  
+                  <ul className="flex-1 space-y-4 mb-8">
+                    {tier.features.map((feature, i) => (
+                      <li key={i} className="flex gap-3 text-sm text-neutral-300">
+                        <Check className="h-5 w-5 shrink-0 text-emerald-500" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <div className="mt-auto">
+                    <Button
+                      asChild={!tier.disabled}
+                      disabled={tier.disabled}
+                      variant={tier.isFeatured ? 'default' : tier.ctaVariant}
+                      className={`w-full mb-3 ${
+                        tier.isFeatured ? 'bg-amber-500 hover:bg-amber-400 text-black font-semibold' : ''
+                      }`}
+                    >
+                      {tier.disabled ? (
+                        <span>{tier.cta}</span>
+                      ) : (
+                        <Link href={targetHref}>{buttonText}</Link>
+                      )}
+                    </Button>
+                    <p className="text-xs text-center text-neutral-500">{tier.microcopy}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
 
           <div className="mb-24">
@@ -204,9 +214,10 @@ export function PricingContent() {
             </div>
           </div>
 
-          <div className="max-w-3xl mx-auto mb-24">
+          <div className="mb-24 max-w-3xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="font-serif text-3xl font-medium text-white mb-4">Frequently Asked Questions</h2>
+              <p className="text-neutral-400">Everything you need to know about our plans and archival preservation</p>
             </div>
             <Accordion type="single" collapsible className="w-full">
               {FAQS.map((faq, index) => (
@@ -233,7 +244,9 @@ export function PricingContent() {
                 Your first 6 months of comprehensive studio access are on us.
               </p>
               <Button asChild size="lg" className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-lg px-8 h-14 relative z-10">
-                <Link href="/register">Start Free — Claim Your 6-Month Director Host Pass</Link>
+                <Link href={user ? "/studio" : "/register"}>
+                  {user ? "Enter Memory Studio" : "Start Free — Claim Your 6-Month Director Host Pass"}
+                </Link>
               </Button>
             </div>
           </div>

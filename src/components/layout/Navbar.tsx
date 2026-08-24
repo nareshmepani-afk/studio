@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, Video, Settings, Film, History, Home, UserCircle2, Clapperboard, Lock } from 'lucide-react';
+import { LogOut, Video, Settings, Film, History, Home, UserCircle2, Clapperboard, Lock, BookOpen, Coffee, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter, usePathname } from 'next/navigation';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -100,7 +100,7 @@ export function Navbar() {
           </Tooltip>
           
           {(isAuthenticated || isGuestDirectorView) ? (
-            <nav className="flex flex-1 items-center space-x-4 lg:space-x-6">
+            <nav className="flex flex-1 items-center space-x-3 sm:space-x-4 lg:space-x-6 overflow-x-auto no-scrollbar">
               {isGuestDirectorView ? (
                 // Focused Guest Director View
                  <Tooltip>
@@ -159,6 +159,27 @@ export function Navbar() {
                       View your cinematic gallery
                     </TooltipContent>
                   </Tooltip>
+
+                  <div className="hidden md:flex items-center space-x-3 sm:space-x-4 lg:space-x-6 pl-2 border-l border-white/10">
+                    <Link
+                      href="/how-it-works"
+                      className={`${navLinkClass} ${pathname === '/how-it-works' ? activeNavLinkClass : ''}`}
+                    >
+                      How It Works
+                    </Link>
+                    <Link
+                      href="/pricing"
+                      className={`${navLinkClass} ${pathname === '/pricing' ? activeNavLinkClass : ''}`}
+                    >
+                      Pricing
+                    </Link>
+                    <Link
+                      href="/contact"
+                      className={`${navLinkClass} ${pathname === '/contact' ? activeNavLinkClass : ''}`}
+                    >
+                      Contact
+                    </Link>
+                  </div>
                 </>
               )}
             </nav>
@@ -225,6 +246,18 @@ export function Navbar() {
                     <DropdownMenuItem onClick={() => router.push('/settings')}>
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Settings</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/how-it-works')}>
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      <span>How It Works</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/pricing')}>
+                      <Coffee className="mr-2 h-4 w-4" />
+                      <span>Pricing & Plans</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/contact')}>
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      <span>Contact Support</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => router.push('/')}>
                       <Home className="mr-2 h-4 w-4" />
