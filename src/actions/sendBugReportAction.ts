@@ -23,19 +23,16 @@ export async function sendBugReportAction(payload: BugReportPayload): Promise<{ 
   try {
     const { description, diagnostics } = payload;
     
-    // Construct Google Cloud Log Explorer URLs
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID || 'memory-weaver-8rk9t';
-    const traceQuery = `resource.type="global"\njsonPayload.traceId="${diagnostics.traceId}"`;
-    const userQuery = `resource.type="global"\njsonPayload.userId="${diagnostics.userId}"`;
-    
-    const gcpTraceUrl = `https://console.cloud.google.com/logs/query;query=${encodeURIComponent(traceQuery)}?project=${projectId}`;
-    const gcpUserUrl = `https://console.cloud.google.com/logs/query;query=${encodeURIComponent(userQuery)}?project=${projectId}`;
+    // Construct Domain-Aligned Diagnostic URLs (Matching sending domain to satisfy spam heuristics)
+    const studioTraceUrl = `https://dev.memoryweaver.studio/admin?traceId=${encodeURIComponent(diagnostics.traceId)}`;
+    const studioUserUrl = `https://dev.memoryweaver.studio/admin?userId=${encodeURIComponent(diagnostics.userId)}`;
 
-    // 1. Send Support Ticket Email (From noreply@ to support@ to prevent loop suppression)
+    // 1. Send Support Ticket Email (To director@ to avoid Resend bounce suppression on support@)
+    const supportAlertRecipient = process.env.INTERNAL_SUPPORT_ALERT_EMAIL || STUDIO_EMAILS.DIRECTOR;
     await resend.emails.send({
-      from: STUDIO_EMAIL_SENDERS.NOREPLY,
-      to: STUDIO_EMAILS.SUPPORT,
-      replyTo: diagnostics.userEmail !== 'unauthenticated' ? diagnostics.userEmail : STUDIO_EMAILS.SUPPORT,
+      from: STUDIO_EMAIL_SENDERS.STUDIO,
+      to: supportAlertRecipient,
+      replyTo: diagnostics.userEmail !== 'unauthenticated' ? diagnostics.userEmail : STUDIO_EMAILS.DIRECTOR,
       subject: `[BUG REPORT - FAST TRACK] Trace: ${diagnostics.traceId}`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #ffffff; background-color: #030712; border: 1px solid #1e293b; border-radius: 20px; overflow: hidden; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9);">
@@ -73,16 +70,16 @@ export async function sendBugReportAction(payload: BugReportPayload): Promise<{ 
               </div>
             </div>
 
-            <!-- Fast Track Action Buttons -->
+            <!-- Fast Track Action Buttons (Domain-Aligned URLs) -->
             <div style="margin-bottom: 20px; background: #000000; border: 1px solid #1e293b; padding: 18px; border-radius: 14px; text-align: center;">
               <span style="font-size: 10px; color: #f59e0b; font-weight: 800; display: block; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1.5px; font-family: monospace;">
-                CLOUD TRACE DIAGNOSTICS
+                STUDIO TELEMETRY BRIDGE
               </span>
-              <a href="${gcpTraceUrl}" target="_blank" style="display: inline-block; background-color: #f59e0b; color: #000000; font-weight: 800; font-size: 12px; text-decoration: none; padding: 10px 22px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25); margin: 4px;">
-                Inspect Traces in GCP Console ↗
+              <a href="${studioTraceUrl}" target="_blank" style="display: inline-block; background-color: #f59e0b; color: #000000; font-weight: 800; font-size: 12px; text-decoration: none; padding: 10px 22px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25); margin: 4px;">
+                Inspect Telemetry in Studio Console ↗
               </a>
-              <a href="${gcpUserUrl}" target="_blank" style="display: inline-block; background-color: #0f172a; color: #e2e8f0; border: 1px solid #334155; font-weight: 700; font-size: 12px; text-decoration: none; padding: 10px 18px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 1px; margin: 4px;">
-                Filter User Logs ↗
+              <a href="${studioUserUrl}" target="_blank" style="display: inline-block; background-color: #0f172a; color: #e2e8f0; border: 1px solid #334155; font-weight: 700; font-size: 12px; text-decoration: none; padding: 10px 18px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 1px; margin: 4px;">
+                Filter User Activity Logs ↗
               </a>
             </div>
 

@@ -62,8 +62,8 @@ export const STUDIO_EMAIL_SENDERS = {
   STUDIO: 'Memory Weaver Studio <studio@memoryweaver.studio>',
   SUPPORT: 'Memory Weaver Support <support@memoryweaver.studio>',
   DIRECTOR: 'Memory Weaver Director Concierge <director@memoryweaver.studio>',
-  NOREPLY: 'Memory Weaver <noreply@memoryweaver.studio>',
-  CONTACT: 'Memory Weaver Contact <noreply@memoryweaver.studio>',
+  NOREPLY: 'Memory Weaver Studio <studio@memoryweaver.studio>',
+  CONTACT: 'Memory Weaver Support <support@memoryweaver.studio>',
 } as const;
 
 /**

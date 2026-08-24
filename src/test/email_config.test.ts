@@ -64,8 +64,8 @@ describe('Centralized Email Configuration & Domain Routing Directory', () => {
       expect(STUDIO_EMAIL_SENDERS.STUDIO).toBe('Memory Weaver Studio <studio@memoryweaver.studio>');
       expect(STUDIO_EMAIL_SENDERS.SUPPORT).toBe('Memory Weaver Support <support@memoryweaver.studio>');
       expect(STUDIO_EMAIL_SENDERS.DIRECTOR).toBe('Memory Weaver Director Concierge <director@memoryweaver.studio>');
-      expect(STUDIO_EMAIL_SENDERS.NOREPLY).toBe('Memory Weaver <noreply@memoryweaver.studio>');
-      expect(STUDIO_EMAIL_SENDERS.CONTACT).toBe('Memory Weaver Contact <noreply@memoryweaver.studio>');
+      expect(STUDIO_EMAIL_SENDERS.NOREPLY).toBe('Memory Weaver Studio <studio@memoryweaver.studio>');
+      expect(STUDIO_EMAIL_SENDERS.CONTACT).toBe('Memory Weaver Support <support@memoryweaver.studio>');
     });
 
     it('should define complete metadata for all directory entries', () => {
@@ -130,7 +130,7 @@ describe('Centralized Email Configuration & Domain Routing Directory', () => {
       );
     });
 
-    it('sendBugReportAction dispatches using STUDIO_EMAIL_SENDERS.NOREPLY to STUDIO_EMAILS.SUPPORT', async () => {
+    it('sendBugReportAction dispatches using STUDIO_EMAIL_SENDERS.STUDIO to STUDIO_EMAILS.DIRECTOR', async () => {
       const res = await sendBugReportAction({
         description: 'Test fast-track bug report',
         diagnostics: {
@@ -145,11 +145,11 @@ describe('Centralized Email Configuration & Domain Routing Directory', () => {
       });
 
       expect(res.success).toBe(true);
-      // 1. Support alert (From noreply@ to prevent loop suppression)
+      // 1. Support alert (From studio@ to director@ to prevent loop suppression & bounce blocks)
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
-          from: STUDIO_EMAIL_SENDERS.NOREPLY,
-          to: STUDIO_EMAILS.SUPPORT,
+          from: STUDIO_EMAIL_SENDERS.STUDIO,
+          to: STUDIO_EMAILS.DIRECTOR,
           replyTo: 'director@example.com',
           subject: expect.stringContaining('mw_trace_test_999'),
         })
