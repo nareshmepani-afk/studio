@@ -130,7 +130,7 @@ describe('Centralized Email Configuration & Domain Routing Directory', () => {
       );
     });
 
-    it('sendBugReportAction dispatches using STUDIO_EMAIL_SENDERS.SUPPORT to STUDIO_EMAILS.SUPPORT', async () => {
+    it('sendBugReportAction dispatches using STUDIO_EMAIL_SENDERS.NOREPLY to STUDIO_EMAILS.SUPPORT', async () => {
       const res = await sendBugReportAction({
         description: 'Test fast-track bug report',
         diagnostics: {
@@ -145,10 +145,10 @@ describe('Centralized Email Configuration & Domain Routing Directory', () => {
       });
 
       expect(res.success).toBe(true);
-      // 1. Support alert
+      // 1. Support alert (From noreply@ to prevent loop suppression)
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
-          from: STUDIO_EMAIL_SENDERS.SUPPORT,
+          from: STUDIO_EMAIL_SENDERS.NOREPLY,
           to: STUDIO_EMAILS.SUPPORT,
           replyTo: 'director@example.com',
           subject: expect.stringContaining('mw_trace_test_999'),

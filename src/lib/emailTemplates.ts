@@ -275,15 +275,15 @@ export function renderWelcomeHostPassEmail(params?: {
     </p>
 
     <!-- Credentials Box -->
-    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #09090b; border: 1px solid #27272a; border-radius: 16px; margin-bottom: 28px;">
+    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #000000; border: 1px solid #27272a; border-left: 4px solid #f59e0b; border-radius: 14px; margin-bottom: 28px;">
       <tr>
-        <td style="padding: 14px 18px; border-bottom: 1px solid #27272a;">
+        <td style="padding: 16px 20px; border-bottom: 1px solid #18181b;">
           <span class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Tier Status</span>
           <strong class="mw-text-white" style="font-size: 14px; color: #ffffff;">🌟 6-Month Director Host Pass (Complimentary)</strong>
         </td>
       </tr>
       <tr>
-        <td style="padding: 14px 18px;">
+        <td style="padding: 16px 20px;">
           <span class="mw-text-emerald" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Storage Allocation</span>
           <strong class="mw-text-white" style="font-size: 14px; color: #ffffff;">📦 5.0 GB 4K Cloud Master Vault</strong>
         </td>
@@ -291,28 +291,28 @@ export function renderWelcomeHostPassEmail(params?: {
     </table>
 
     <!-- The 5-Act Cinematic Journey -->
-    <h3 class="mw-text-gold" style="margin: 0 0 16px 0; font-size: 13px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Courier New', Courier, monospace;">
+    <h3 class="mw-text-gold" style="margin: 0 0 16px 0; font-size: 12px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Courier New', Courier, monospace;">
       🎬 The 5-Act Production Journey:
     </h3>
 
-    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px; background-color: #09090b; border: 1px solid #27272a; border-radius: 16px;">
+    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px; background-color: #000000; border: 1px solid #27272a; border-left: 4px solid #f59e0b; border-radius: 14px;">
       <tr>
         <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5;">
           <strong class="mw-text-gold" style="color: #f59e0b;">1. Act I (Scriptorium):</strong> Draft your authentic spoken monologue or choose a family spark prompt to ignite your narrative memory.
         </td>
       </tr>
       <tr>
-        <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #27272a;">
+        <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #18181b;">
           <strong class="mw-text-gold" style="color: #f59e0b;">2. Act II (Director's Briefing):</strong> Calibrate lighting, rehearse spoken pacing, and review sensory word anchors before stepping on stage.
         </td>
       </tr>
       <tr>
-        <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #27272a;">
+        <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #18181b;">
           <strong class="mw-text-gold" style="color: #f59e0b;">3. Acts III &amp; IV (Soundstage &amp; Director's Cut):</strong> Record your 4K video take with live teleprompter guidance and AI sensory soundtrack synchronisation.
         </td>
       </tr>
       <tr>
-        <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #27272a;">
+        <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #18181b;">
           <strong class="mw-text-gold" style="color: #f59e0b;">4. Act V (Cinema Premiere):</strong> Generate 4K movie posters, invite family with private passcodes, or stream directly to Smart TVs.
         </td>
       </tr>
@@ -362,15 +362,15 @@ export function renderCollaboratorInviteEmail(params?: {
     </p>
 
     <!-- Session Invitation Card -->
-    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #09090b; border: 1px solid #27272a; border-radius: 16px; margin-bottom: 28px;">
+    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #000000; border: 1px solid #27272a; border-left: 4px solid #f59e0b; border-radius: 14px; margin-bottom: 28px;">
       <tr>
-        <td style="padding: 16px 20px; border-bottom: 1px solid #27272a;">
+        <td style="padding: 16px 20px; border-bottom: 1px solid #18181b;">
           <span class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Production Title</span>
           <strong class="mw-text-white" style="font-size: 16px; color: #ffffff;">🎬 "${memoryTitle}"</strong>
         </td>
       </tr>
       <tr>
-        <td style="padding: 14px 20px; border-bottom: 1px solid #27272a;">
+        <td style="padding: 14px 20px; border-bottom: 1px solid #18181b;">
           <span class="mw-text-emerald" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Assigned Role</span>
           <strong class="mw-text-white" style="font-size: 14px; color: #ffffff;">✨ ${role}</strong>
         </td>
@@ -378,7 +378,7 @@ export function renderCollaboratorInviteEmail(params?: {
       <tr>
         <td style="padding: 14px 20px;">
           <span class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Stage Passcode</span>
-          <code style="font-family: 'Courier New', Courier, monospace; font-size: 20px; font-weight: 900; color: #f59e0b; letter-spacing: 4px; display: inline-block; background-color: #18181b; padding: 4px 12px; border-radius: 8px; border: 1px solid #3f3f46;">${passcode}</code>
+          <code style="font-family: 'Courier New', Courier, monospace; font-size: 20px; font-weight: 900; color: #f59e0b; letter-spacing: 4px; display: inline-block; background-color: #09090b; padding: 4px 12px; border-radius: 8px; border: 1px solid #27272a;">${passcode}</code>
         </td>
       </tr>
     </table>
@@ -431,13 +431,13 @@ export function renderPasswordResetEmail(params?: {
     </p>
 
     <!-- Security Advisory Box -->
-    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #09090b; border: 1px solid #3f3f46; border-radius: 16px; margin-bottom: 24px;">
+    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #000000; border: 1px solid #27272a; border-left: 4px solid #f59e0b; border-radius: 14px; margin-bottom: 24px;">
       <tr>
         <td style="padding: 16px 20px;">
           <div class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">
             ⚠️ Security Notice
           </div>
-          <p style="margin: 0; font-size: 12px; line-height: 18px; color: #a1a1aa;">
+          <p style="margin: 0; font-size: 12px; line-height: 18px; color: #d4d4d8;">
             This single-use reset link expires in <strong style="color: #ffffff;">${expiresInMinutes} minutes</strong>. If you did not initiate this request, your account remains secure and no action is required.
           </p>
         </td>

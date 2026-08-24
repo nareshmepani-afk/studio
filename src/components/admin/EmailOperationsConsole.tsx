@@ -77,9 +77,14 @@ export function EmailOperationsConsole() {
   };
 
   const handleSelectAsTarget = (addr: string) => {
+    setActiveSubTab('test');
     setTargetEmail(addr);
-    toast.info(`Set test recipient to ${addr}`);
-    window.scrollTo({ top: 300, behavior: 'smooth' });
+    toast.success(`Target Recipient Set: ${addr}`, {
+      description: 'Switched to 1-Click Test Dispatcher with pre-filled recipient address.'
+    });
+    setTimeout(() => {
+      window.scrollTo({ top: 400, behavior: 'smooth' });
+    }, 50);
   };
 
   // Initialize recipient and template props

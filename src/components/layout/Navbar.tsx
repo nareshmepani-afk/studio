@@ -217,6 +217,13 @@ export function Navbar() {
               </div>
             ) : isAuthenticated ? (
               <>
+                {!isStudio && (
+                  <Link href="/studio" className="hidden sm:inline-flex">
+                    <Button className="h-8 px-3.5 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95">
+                      <Clapperboard className="w-3.5 h-3.5" /> Enter Studio Stage ↗
+                    </Button>
+                  </Link>
+                )}
                 <DropdownMenu>
                   <Tooltip>
                     <TooltipTrigger asChild>

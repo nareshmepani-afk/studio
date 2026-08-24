@@ -31,9 +31,9 @@ export async function sendBugReportAction(payload: BugReportPayload): Promise<{ 
     const gcpTraceUrl = `https://console.cloud.google.com/logs/query;query=${encodeURIComponent(traceQuery)}?project=${projectId}`;
     const gcpUserUrl = `https://console.cloud.google.com/logs/query;query=${encodeURIComponent(userQuery)}?project=${projectId}`;
 
-    // 1. Send Support Ticket Email
+    // 1. Send Support Ticket Email (From noreply@ to support@ to prevent loop suppression)
     await resend.emails.send({
-      from: STUDIO_EMAIL_SENDERS.SUPPORT,
+      from: STUDIO_EMAIL_SENDERS.NOREPLY,
       to: STUDIO_EMAILS.SUPPORT,
       replyTo: diagnostics.userEmail !== 'unauthenticated' ? diagnostics.userEmail : STUDIO_EMAILS.SUPPORT,
       subject: `[BUG REPORT - FAST TRACK] Trace: ${diagnostics.traceId}`,
