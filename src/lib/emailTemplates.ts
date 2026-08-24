@@ -168,28 +168,28 @@ function renderEmailWrapper({
     <tr>
       <td align="center" valign="top">
         <!-- Main Card Container (Pure Obsidian Black) -->
-        <table class="mw-card" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #000000; border: 2px solid #f59e0b; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 70px rgba(0, 0, 0, 1);">
+        <table class="mw-card" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #030712; border: 1px solid #1e293b; border-radius: 20px; overflow: hidden; box-shadow: 0 30px 70px rgba(0, 0, 0, 1);">
           
           <!-- Header Banner with Pure Black Logo Medallion -->
           <tr>
-            <td class="mw-bg" style="background-color: #000000; padding: 40px 32px 24px 32px; border-bottom: 1px solid #27272a; text-align: center;">
+            <td class="mw-bg" style="background-color: #030712; padding: 36px 28px 20px 28px; border-bottom: 1px solid #111827; text-align: center;">
               
               <!-- Pure Black Logo Box -->
-              <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 16px;">
+              <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 14px;">
                 <tr>
-                  <td class="mw-logo-box" align="center" style="width: 56px; height: 56px; background-color: #000000; border: 1.5px solid #1e293b; border-radius: 18px; text-align: center;">
-                    <img src="https://dev.memoryweaver.studio/icon.svg" width="32" height="32" alt="Memory Weaver Logo" style="display: block; margin: 0 auto; background-color: #000000;" />
+                  <td class="mw-logo-box" align="center" style="width: 48px; height: 48px; background-color: #000000; border: 1px solid #1e293b; border-radius: 14px; text-align: center;">
+                    <img src="https://dev.memoryweaver.studio/icon.svg" width="28" height="28" alt="Memory Weaver Logo" style="display: block; margin: 0 auto; background-color: #000000;" />
                   </td>
                 </tr>
               </table>
 
-              <div class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 10px;">
+              <div class="mw-text-gold" style="display: inline-block; background-color: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #f59e0b; padding: 3px 10px; border-radius: 9999px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; font-family: monospace;">
                 ${categoryBadge}
               </div>
-              <h1 class="mw-text-white" style="margin: 0; font-size: 26px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">
+              <h1 class="mw-text-white" style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">
                 ${title}
               </h1>
-              <p class="mw-text-muted" style="margin: 8px 0 0 0; font-size: 12px; color: #a1a1aa; font-family: 'Courier New', Courier, monospace;">
+              <p class="mw-text-muted" style="margin: 6px 0 0 0; font-size: 12px; color: #64748b; font-family: monospace;">
                 ${subtitle}
               </p>
             </td>
@@ -197,18 +197,18 @@ function renderEmailWrapper({
 
           <!-- Main Body Content -->
           <tr>
-            <td style="padding: 32px 32px 24px 32px; background-color: #000000;">
+            <td style="padding: 28px 24px 20px 24px; background-color: #030712;">
               ${contentHtml}
 
-              <!-- Action Buttons -->
+              <!-- Action Buttons (App-Style Pill Shape) -->
               ${ctaText && ctaUrl ? `
               <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 28px; margin-bottom: 12px;">
                 <tr>
                   <td align="center">
                     <table border="0" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td align="center" style="background-color: #f59e0b; border-radius: 12px;">
-                          <a href="${ctaUrl}" target="_blank" class="mw-btn" style="background-color: #f59e0b; border: 1px solid #f59e0b; border-radius: 12px; color: #000000; display: inline-block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 900; line-height: 18px; text-align: center; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; padding: 16px 36px; box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);">
+                        <td align="center" style="background-color: #f59e0b; border-radius: 9999px;">
+                          <a href="${ctaUrl}" target="_blank" class="mw-btn" style="background-color: #f59e0b; border: 1px solid #f59e0b; border-radius: 9999px; color: #000000; display: inline-block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; font-weight: 800; line-height: 18px; text-align: center; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; padding: 13px 32px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.25);">
                             ${ctaText}
                           </a>
                         </td>
@@ -218,8 +218,8 @@ function renderEmailWrapper({
                 </tr>
                 ${secondaryCtaText && secondaryCtaUrl ? `
                 <tr>
-                  <td align="center" style="padding-top: 14px;">
-                    <a href="${secondaryCtaUrl}" target="_blank" style="display: inline-block; background-color: #09090b; color: #ffffff; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; text-decoration: none; padding: 12px 28px; border-radius: 12px; text-align: center; border: 1px solid #27272a;">
+                  <td align="center" style="padding-top: 12px;">
+                    <a href="${secondaryCtaUrl}" target="_blank" style="display: inline-block; background-color: #0f172a; color: #e2e8f0; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; text-decoration: none; padding: 10px 24px; border-radius: 9999px; text-align: center; border: 1px solid #334155;">
                       ${secondaryCtaText}
                     </a>
                   </td>
@@ -230,14 +230,14 @@ function renderEmailWrapper({
             </td>
           </tr>
 
-          <!-- Footer (Concierge Direct Support) -->
+          <!-- Footer (Seamless Dark, No Grey Box) -->
           <tr>
-            <td class="mw-bg" style="background-color: #000000; padding: 24px 32px; border-top: 1px solid #27272a; text-align: center; font-size: 11px; color: #71717a; line-height: 18px;">
-              <p class="mw-text-white" style="margin: 0 0 8px 0; font-family: 'Courier New', Courier, monospace; font-weight: 700; color: #ffffff;">
+            <td class="mw-bg" style="background-color: #030712; padding: 20px 24px; border-top: 1px solid #111827; text-align: center; font-size: 11px; color: #64748b; line-height: 18px;">
+              <p class="mw-text-white" style="margin: 0 0 6px 0; font-family: monospace; font-weight: 700; color: #94a3b8;">
                 Memory Weaver Studio • Preserving Family Legacies in 4K
               </p>
-              <p class="mw-text-muted" style="margin: 0; color: #a1a1aa;">
-                ${footerNote || 'Have questions or need assistance? Reply directly to this email or contact our director concierge at <a href="mailto:studio@memoryweaver.studio" class="mw-text-gold" style="color: #f59e0b; text-decoration: none; font-weight: 700;">studio@memoryweaver.studio</a>.'}
+              <p class="mw-text-muted" style="margin: 0; color: #475569;">
+                ${footerNote || 'Have questions? Contact concierge at <a href="mailto:studio@memoryweaver.studio" class="mw-text-gold" style="color: #f59e0b; text-decoration: none; font-weight: 700;">studio@memoryweaver.studio</a>.'}
               </p>
             </td>
           </tr>
@@ -275,44 +275,44 @@ export function renderWelcomeHostPassEmail(params?: {
     </p>
 
     <!-- Credentials Box -->
-    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #000000; border: 1px solid #27272a; border-left: 4px solid #f59e0b; border-radius: 14px; margin-bottom: 28px;">
+    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #000000; border: 1px solid #1e293b; border-radius: 12px; margin-bottom: 24px;">
       <tr>
-        <td style="padding: 16px 20px; border-bottom: 1px solid #18181b;">
-          <span class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Tier Status</span>
+        <td style="padding: 14px 18px; border-bottom: 1px solid #111827;">
+          <span class="mw-text-gold" style="font-family: monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 1.5px; display: block; margin-bottom: 4px;">Tier Status</span>
           <strong class="mw-text-white" style="font-size: 14px; color: #ffffff;">🌟 6-Month Director Host Pass (Complimentary)</strong>
         </td>
       </tr>
       <tr>
-        <td style="padding: 16px 20px;">
-          <span class="mw-text-emerald" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Storage Allocation</span>
+        <td style="padding: 14px 18px;">
+          <span class="mw-text-emerald" style="font-family: monospace; font-size: 10px; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 1.5px; display: block; margin-bottom: 4px;">Storage Allocation</span>
           <strong class="mw-text-white" style="font-size: 14px; color: #ffffff;">📦 5.0 GB 4K Cloud Master Vault</strong>
         </td>
       </tr>
     </table>
 
     <!-- The 5-Act Cinematic Journey -->
-    <h3 class="mw-text-gold" style="margin: 0 0 16px 0; font-size: 12px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Courier New', Courier, monospace;">
+    <h3 class="mw-text-gold" style="margin: 0 0 14px 0; font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 1.5px; font-family: monospace;">
       🎬 The 5-Act Production Journey:
     </h3>
 
-    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px; background-color: #000000; border: 1px solid #27272a; border-left: 4px solid #f59e0b; border-radius: 14px;">
+    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px; background-color: #000000; border: 1px solid #1e293b; border-radius: 12px;">
       <tr>
-        <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5;">
+        <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #e2e8f0;">
           <strong class="mw-text-gold" style="color: #f59e0b;">1. Act I (Scriptorium):</strong> Draft your authentic spoken monologue or choose a family spark prompt to ignite your narrative memory.
         </td>
       </tr>
       <tr>
-        <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #18181b;">
+        <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #e2e8f0; border-top: 1px solid #111827;">
           <strong class="mw-text-gold" style="color: #f59e0b;">2. Act II (Director's Briefing):</strong> Calibrate lighting, rehearse spoken pacing, and review sensory word anchors before stepping on stage.
         </td>
       </tr>
       <tr>
-        <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #18181b;">
+        <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #e2e8f0; border-top: 1px solid #111827;">
           <strong class="mw-text-gold" style="color: #f59e0b;">3. Acts III &amp; IV (Soundstage &amp; Director's Cut):</strong> Record your 4K video take with live teleprompter guidance and AI sensory soundtrack synchronisation.
         </td>
       </tr>
       <tr>
-        <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #18181b;">
+        <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #e2e8f0; border-top: 1px solid #111827;">
           <strong class="mw-text-gold" style="color: #f59e0b;">4. Act V (Cinema Premiere):</strong> Generate 4K movie posters, invite family with private passcodes, or stream directly to Smart TVs.
         </td>
       </tr>
@@ -357,37 +357,37 @@ export function renderCollaboratorInviteEmail(params?: {
     <p class="mw-text-white" style="margin: 0 0 16px 0; font-size: 16px; line-height: 24px; color: #ffffff;">
       You have been invited by <strong class="mw-text-gold" style="color: #f59e0b;">${inviterName}</strong> to collaborate on an archival memory production.
     </p>
-    <p class="mw-text-muted" style="margin: 0 0 24px 0; font-size: 14px; line-height: 22px; color: #d4d4d8;">
+    <p class="mw-text-muted" style="margin: 0 0 24px 0; font-size: 14px; line-height: 22px; color: #94a3b8;">
       Memory Weaver Studio enables family members and co-directors to contribute oral reflections, shape scripts in real-time, and preserve multi-generational stories in 4K resolution.
     </p>
 
     <!-- Session Invitation Card -->
-    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #000000; border: 1px solid #27272a; border-left: 4px solid #f59e0b; border-radius: 14px; margin-bottom: 28px;">
+    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #000000; border: 1px solid #1e293b; border-radius: 12px; margin-bottom: 24px;">
       <tr>
-        <td style="padding: 16px 20px; border-bottom: 1px solid #18181b;">
-          <span class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Production Title</span>
-          <strong class="mw-text-white" style="font-size: 16px; color: #ffffff;">🎬 "${memoryTitle}"</strong>
+        <td style="padding: 14px 18px; border-bottom: 1px solid #111827;">
+          <span class="mw-text-gold" style="font-family: monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 1.5px; display: block; margin-bottom: 4px;">Production Title</span>
+          <strong class="mw-text-white" style="font-size: 15px; color: #ffffff;">🎬 "${memoryTitle}"</strong>
         </td>
       </tr>
       <tr>
-        <td style="padding: 14px 20px; border-bottom: 1px solid #18181b;">
-          <span class="mw-text-emerald" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Assigned Role</span>
+        <td style="padding: 14px 18px; border-bottom: 1px solid #111827;">
+          <span class="mw-text-emerald" style="font-family: monospace; font-size: 10px; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 1.5px; display: block; margin-bottom: 4px;">Assigned Role</span>
           <strong class="mw-text-white" style="font-size: 14px; color: #ffffff;">✨ ${role}</strong>
         </td>
       </tr>
       <tr>
-        <td style="padding: 14px 20px;">
-          <span class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Stage Passcode</span>
-          <code style="font-family: 'Courier New', Courier, monospace; font-size: 20px; font-weight: 900; color: #f59e0b; letter-spacing: 4px; display: inline-block; background-color: #09090b; padding: 4px 12px; border-radius: 8px; border: 1px solid #27272a;">${passcode}</code>
+        <td style="padding: 14px 18px;">
+          <span class="mw-text-gold" style="font-family: monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 1.5px; display: block; margin-bottom: 4px;">Stage Passcode</span>
+          <code style="font-family: monospace; font-size: 18px; font-weight: 900; color: #f59e0b; letter-spacing: 3px; display: inline-block; background-color: #000000; padding: 3px 10px; border-radius: 6px; border: 1px solid #1e293b;">${passcode}</code>
         </td>
       </tr>
     </table>
 
     <!-- Production Guide -->
-    <h3 class="mw-text-gold" style="margin: 0 0 14px 0; font-size: 12px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Courier New', Courier, monospace;">
+    <h3 class="mw-text-gold" style="margin: 0 0 12px 0; font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 1.5px; font-family: monospace;">
       🎙️ What you will do in the studio:
     </h3>
-    <ul style="margin: 0 0 24px 0; padding-left: 20px; color: #d4d4d8; font-size: 13px; line-height: 22px;">
+    <ul style="margin: 0 0 24px 0; padding-left: 20px; color: #94a3b8; font-size: 13px; line-height: 22px;">
       <li>Review the storyteller's spoken monologue draft in the Scriptorium.</li>
       <li>Provide real-time feedback and prompt suggestions during live rehearsals.</li>
       <li>Record your own perspective to weave into the final multi-angle master cut.</li>
@@ -426,18 +426,18 @@ export function renderPasswordResetEmail(params?: {
     <p class="mw-text-white" style="margin: 0 0 16px 0; font-size: 16px; line-height: 24px; color: #ffffff;">
       A password reset request has been received for your Memory Weaver Studio account (<strong class="mw-text-gold" style="color: #f59e0b;">${email}</strong>).
     </p>
-    <p class="mw-text-muted" style="margin: 0 0 24px 0; font-size: 14px; line-height: 22px; color: #d4d4d8;">
+    <p class="mw-text-muted" style="margin: 0 0 24px 0; font-size: 14px; line-height: 22px; color: #94a3b8;">
       To restore access to your studio and encrypted master reels, click the secure verification link below.
     </p>
 
     <!-- Security Advisory Box -->
-    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #000000; border: 1px solid #27272a; border-left: 4px solid #f59e0b; border-radius: 14px; margin-bottom: 24px;">
+    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #000000; border: 1px solid #1e293b; border-radius: 12px; margin-bottom: 24px;">
       <tr>
         <td style="padding: 16px 20px;">
-          <div class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">
+          <div class="mw-text-gold" style="font-family: monospace; font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;">
             ⚠️ Security Notice
           </div>
-          <p style="margin: 0; font-size: 12px; line-height: 18px; color: #d4d4d8;">
+          <p style="margin: 0; font-size: 12px; line-height: 18px; color: #94a3b8;">
             This single-use reset link expires in <strong style="color: #ffffff;">${expiresInMinutes} minutes</strong>. If you did not initiate this request, your account remains secure and no action is required.
           </p>
         </td>
@@ -448,7 +448,7 @@ export function renderPasswordResetEmail(params?: {
     <p style="margin: 24px 0 8px 0; font-size: 11px; color: #71717a; text-transform: uppercase; letter-spacing: 1px; font-family: 'Courier New', Courier, monospace;">
       Or copy and paste this link into your browser:
     </p>
-    <div style="background-color: #09090b; border: 1px solid #27272a; border-radius: 10px; padding: 10px 14px; word-break: break-all; font-family: 'Courier New', Courier, monospace; font-size: 11px; color: #a1a1aa;">
+    <div style="background-color: #000000; border: 1px solid #1e293b; border-radius: 8px; padding: 10px 14px; word-break: break-all; font-family: monospace; font-size: 11px; color: #fbbf24;">
       ${resetLink}
     </div>
   `;
@@ -491,30 +491,30 @@ export function renderPremiereNotificationEmail(params?: {
     <p class="mw-text-white" style="margin: 0 0 16px 0; font-size: 16px; line-height: 24px; color: #ffffff;">
       Dear <strong class="mw-text-gold" style="color: #f59e0b;">${recipientName}</strong>,
     </p>
-    <p class="mw-text-muted" style="margin: 0 0 24px 0; font-size: 14px; line-height: 22px; color: #d4d4d8;">
+    <p class="mw-text-muted" style="margin: 0 0 24px 0; font-size: 14px; line-height: 22px; color: #94a3b8;">
       <strong class="mw-text-gold" style="color: #f59e0b;">${hostName}</strong> invites you to the exclusive private screening of their newly finished cinematic oral history chronicle.
     </p>
 
     <!-- Premiere Feature Poster Box -->
-    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #09090b; border: 1.5px solid #f59e0b; border-radius: 18px; margin-bottom: 28px; overflow: hidden;">
+    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #000000; border: 1px solid #1e293b; border-radius: 12px; margin-bottom: 24px; overflow: hidden;">
       <tr>
-        <td style="padding: 20px; background: linear-gradient(180deg, rgba(245, 158, 11, 0.1) 0%, rgba(9, 9, 11, 1) 100%);">
-          <span class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 2.5px; display: block; margin-bottom: 6px;">
+        <td style="padding: 20px; background-color: #000000;">
+          <span class="mw-text-gold" style="font-family: monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 6px;">
             🌟 CHRONICLE CINEMA RELEASE • ACT V
           </span>
-          <h2 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 900; color: #ffffff; text-transform: uppercase; letter-spacing: -0.3px;">
+          <h2 style="margin: 0 0 6px 0; font-size: 18px; font-weight: 800; color: #ffffff; text-transform: uppercase; letter-spacing: -0.3px;">
             ${memoryTitle}
           </h2>
-          <p style="margin: 0; font-size: 12px; color: #a1a1aa; font-family: 'Courier New', Courier, monospace;">
+          <p style="margin: 0; font-size: 12px; color: #64748b; font-family: monospace;">
             Directed by ${hostName} • Release Year: ${releaseYear} • Duration: ${runtime}
           </p>
         </td>
       </tr>
       <tr>
-        <td style="padding: 16px 20px; border-top: 1px solid #27272a;">
+        <td style="padding: 14px 18px; border-top: 1px solid #111827;">
           <table width="100%" border="0" cellspacing="0" cellpadding="0">
             <tr>
-              <td style="font-size: 12px; color: #e4e4e7; line-height: 20px;">
+              <td style="font-size: 12px; color: #e2e8f0; line-height: 20px;">
                 📺 <strong>Living Room TV &amp; Cinema Ready:</strong> Includes 4K Master Video Reel, Spatial Audio Soundtrack, and interactive digital Keepsake.
               </td>
             </tr>
@@ -524,13 +524,13 @@ export function renderPremiereNotificationEmail(params?: {
     </table>
 
     <!-- Smart TV Streaming Guide -->
-    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #09090b; border: 1px solid #27272a; border-radius: 14px; margin-bottom: 24px;">
+    <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #000000; border: 1px solid #1e293b; border-radius: 12px; margin-bottom: 24px;">
       <tr>
         <td style="padding: 14px 18px;">
-          <span class="mw-text-emerald" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 1.5px; display: block; margin-bottom: 4px;">
+          <span class="mw-text-emerald" style="font-family: monospace; font-size: 10px; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 1.5px; display: block; margin-bottom: 4px;">
             📺 Lean-Back TV Experience
           </span>
-          <p style="margin: 0; font-size: 12px; line-height: 18px; color: #a1a1aa;">
+          <p style="margin: 0; font-size: 12px; line-height: 18px; color: #94a3b8;">
             Open on your mobile device or laptop to stream directly to your Living Room TV via AirPlay or Google Cast.
           </p>
         </td>
