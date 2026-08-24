@@ -38,77 +38,80 @@ export async function sendBugReportAction(payload: BugReportPayload): Promise<{ 
       replyTo: diagnostics.userEmail !== 'unauthenticated' ? diagnostics.userEmail : STUDIO_EMAILS.SUPPORT,
       subject: `[BUG REPORT - FAST TRACK] Trace: ${diagnostics.traceId}`,
       html: `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 650px; margin: 0 auto; color: #f8fafc; background-color: #0b0f19; border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);">
-          <!-- Header -->
-          <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(11, 15, 25, 0) 100%); padding: 30px 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); position: relative;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-              <span style="background-color: rgba(245, 158, 11, 0.1); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.2em; font-family: monospace;">
-                FAST TRACK DIAGNOSTICS
-              </span>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 620px; margin: 0 auto; color: #ffffff; background-color: #000000; border: 2px solid #f59e0b; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9);">
+          <!-- Header Banner with Logo Medallion -->
+          <div style="background-color: #000000; padding: 36px 28px 24px 28px; border-bottom: 1px solid #27272a; text-align: center;">
+            <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 14px;">
+              <tr>
+                <td align="center" style="width: 52px; height: 52px; background-color: #09090b; border: 1.5px solid #f59e0b; border-radius: 16px; text-align: center;">
+                  <img src="https://dev.memoryweaver.studio/icon.svg" width="30" height="30" alt="Memory Weaver Studio" style="display: block; margin: 0 auto;" />
+                </td>
+              </tr>
+            </table>
+            <div style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 8px;">
+              FAST TRACK DIAGNOSTICS
             </div>
-            <h2 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; font-style: italic; letter-spacing: -0.02em;">
-              New Studio Support Ticket
-            </h2>
-            <p style="color: #94a3b8; font-size: 14px; margin: 6px 0 0 0;">
-              Trace ID: <span style="font-family: monospace; color: #fbbf24; font-weight: bold;">${diagnostics.traceId}</span>
+            <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase;">
+              Studio Support Ticket
+            </h1>
+            <p style="margin: 6px 0 0 0; font-size: 12px; color: #a1a1aa; font-family: 'Courier New', Courier, monospace;">
+              TRACE ID: <span style="color: #fbbf24; font-weight: bold;">${diagnostics.traceId}</span>
             </p>
           </div>
           
           <!-- Content Body -->
-          <div style="padding: 24px;">
-            <!-- Feedback -->
+          <div style="padding: 28px 24px; background-color: #000000;">
+            <!-- Feedback Box -->
             <div style="margin-bottom: 24px;">
-              <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold; letter-spacing: 0.1em; display: block; margin-bottom: 8px;">
-                User Feedback
+              <span style="font-size: 11px; text-transform: uppercase; color: #a1a1aa; font-weight: 800; letter-spacing: 0.1em; display: block; margin-bottom: 8px; font-family: 'Courier New', Courier, monospace;">
+                PATRON FEEDBACK
               </span>
-              <div style="background-color: rgba(255, 255, 255, 0.02); border-left: 4px solid #f59e0b; padding: 16px; border-radius: 8px; font-size: 15px; line-height: 1.6; color: #e2e8f0; white-space: pre-wrap;">${description}</div>
+              <div style="background-color: #09090b; border-left: 3px solid #f59e0b; padding: 16px; border-radius: 8px; font-size: 14px; line-height: 1.6; color: #e2e8f0; border: 1px solid #27272a; border-left: 3px solid #f59e0b; white-space: pre-wrap;">${description}</div>
             </div>
 
             <!-- Fast Track Action Buttons -->
-            <div style="margin-bottom: 28px; background: rgba(245, 158, 11, 0.05); border: 1px dashed rgba(245, 158, 11, 0.3); padding: 18px; border-radius: 12px; text-align: center;">
-              <span style="font-size: 12px; color: #fbbf24; font-weight: bold; display: block; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
-                🔍 Cloud Trace Analysis
+            <div style="margin-bottom: 24px; background: #09090b; border: 1px solid #27272a; padding: 20px; border-radius: 14px; text-align: center;">
+              <span style="font-size: 11px; color: #f59e0b; font-weight: 800; display: block; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.15em; font-family: 'Courier New', Courier, monospace;">
+                CLOUD TRACE DIAGNOSTICS
               </span>
-              <div style="display: inline-block; width: 100%;">
-                <a href="${gcpTraceUrl}" target="_blank" style="display: inline-block; background-color: #f59e0b; color: #000000; font-weight: 800; font-size: 12px; text-decoration: none; padding: 12px 24px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); margin: 5px;">
-                  View Session Traces in GCP Console
-                </a>
-                <a href="${gcpUserUrl}" target="_blank" style="display: inline-block; background-color: rgba(255, 255, 255, 0.05); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.1); font-weight: 700; font-size: 12px; text-decoration: none; padding: 12px 20px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.05em; margin: 5px;">
-                  Filter Logs by User ID
-                </a>
-              </div>
+              <a href="${gcpTraceUrl}" target="_blank" style="display: inline-block; background-color: #f59e0b; color: #000000; font-weight: 800; font-size: 12px; text-decoration: none; padding: 12px 24px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35); margin: 4px;">
+                Inspect Traces in GCP Console ↗
+              </a>
+              <a href="${gcpUserUrl}" target="_blank" style="display: inline-block; background-color: #18181b; color: #e2e8f0; border: 1px solid #3f3f46; font-weight: 700; font-size: 12px; text-decoration: none; padding: 12px 20px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.05em; margin: 4px;">
+                Filter User Logs ↗
+              </a>
             </div>
 
-            <!-- Diagnostics Table -->
-            <div style="margin-bottom: 20px;">
-              <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold; letter-spacing: 0.1em; display: block; margin-bottom: 8px;">
-                Metadata & Session Vectors
+            <!-- Diagnostics Metadata Table -->
+            <div style="margin-bottom: 16px;">
+              <span style="font-size: 11px; text-transform: uppercase; color: #a1a1aa; font-weight: 800; letter-spacing: 0.1em; display: block; margin-bottom: 8px; font-family: 'Courier New', Courier, monospace;">
+                SESSION TELEMETRY
               </span>
-              <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; background-color: rgba(0, 0, 0, 0.2); border-radius: 8px; overflow: hidden;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; background-color: #09090b; border: 1px solid #27272a; border-radius: 10px; overflow: hidden;">
                 <tbody>
-                  <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-                    <td style="padding: 10px 14px; color: #64748b; font-weight: 600; width: 120px;">User Email</td>
-                    <td style="padding: 10px 14px; color: #e2e8f0; font-family: monospace;">${diagnostics.userEmail}</td>
+                  <tr style="border-bottom: 1px solid #18181b;">
+                    <td style="padding: 10px 14px; color: #71717a; font-weight: 700; width: 110px;">User Email</td>
+                    <td style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.userEmail}</td>
                   </tr>
-                  <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-                    <td style="padding: 10px 14px; color: #64748b; font-weight: 600;">User ID</td>
-                    <td style="padding: 10px 14px; color: #e2e8f0; font-family: monospace;">${diagnostics.userId}</td>
+                  <tr style="border-bottom: 1px solid #18181b;">
+                    <td style="padding: 10px 14px; color: #71717a; font-weight: 700;">User ID</td>
+                    <td style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.userId}</td>
                   </tr>
-                  <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-                    <td style="padding: 10px 14px; color: #64748b; font-weight: 600;">Path location</td>
-                    <td style="padding: 10px 14px; color: #e2e8f0; font-family: monospace;">${diagnostics.path}</td>
+                  <tr style="border-bottom: 1px solid #18181b;">
+                    <td style="padding: 10px 14px; color: #71717a; font-weight: 700;">Path</td>
+                    <td style="padding: 10px 14px; color: #fbbf24; font-family: monospace;">${diagnostics.path}</td>
                   </tr>
-                  <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-                    <td style="padding: 10px 14px; color: #64748b; font-weight: 600;">Code Version</td>
-                    <td style="padding: 10px 14px; color: #e2e8f0; font-family: monospace;">${diagnostics.version}</td>
+                  <tr style="border-bottom: 1px solid #18181b;">
+                    <td style="padding: 10px 14px; color: #71717a; font-weight: 700;">Version</td>
+                    <td style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.version}</td>
                   </tr>
-                  <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-                    <td style="padding: 10px 14px; color: #64748b; font-weight: 600;">Timestamp</td>
-                    <td style="padding: 10px 14px; color: #e2e8f0; font-family: monospace;">${diagnostics.timestamp}</td>
+                  <tr style="border-bottom: 1px solid #18181b;">
+                    <td style="padding: 10px 14px; color: #71717a; font-weight: 700;">Timestamp</td>
+                    <td style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.timestamp}</td>
                   </tr>
                   <tr>
-                    <td style="padding: 10px 14px; color: #64748b; font-weight: 600; vertical-align: top;">User Agent</td>
-                    <td style="padding: 10px 14px; color: #94a3b8; font-size: 11px; font-family: monospace; line-height: 1.4;">${diagnostics.userAgent}</td>
+                    <td style="padding: 10px 14px; color: #71717a; font-weight: 700; vertical-align: top;">User Agent</td>
+                    <td style="padding: 10px 14px; color: #a1a1aa; font-size: 11px; font-family: monospace; line-height: 1.4;">${diagnostics.userAgent}</td>
                   </tr>
                 </tbody>
               </table>
@@ -116,8 +119,8 @@ export async function sendBugReportAction(payload: BugReportPayload): Promise<{ 
           </div>
           
           <!-- Footer -->
-          <div style="background-color: rgba(0, 0, 0, 0.3); border-top: 1px solid rgba(255, 255, 255, 0.05); padding: 20px; text-align: center;">
-            <p style="font-size: 10px; color: #64748b; margin: 0; text-transform: uppercase; letter-spacing: 0.15em;">
+          <div style="background-color: #09090b; border-top: 1px solid #27272a; padding: 18px; text-align: center;">
+            <p style="font-size: 10px; color: #71717a; margin: 0; text-transform: uppercase; letter-spacing: 0.15em; font-family: 'Courier New', Courier, monospace;">
               Sent via Telemetry Engine ${APP_VERSION} • Memory Weaver Studio
             </p>
           </div>
@@ -133,42 +136,59 @@ export async function sendBugReportAction(payload: BugReportPayload): Promise<{ 
         to: diagnostics.userEmail,
         subject: `We've received your bug report [Trace: ${diagnostics.traceId}]`,
         html: `
-          <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; color: #f8fafc; background-color: #0b0f19; border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);">
-            <!-- Header -->
-            <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(11, 15, 25, 0) 100%); padding: 30px 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-              <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.01em;">
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #ffffff; background-color: #000000; border: 2px solid #f59e0b; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9);">
+            <!-- Header Banner with Logo Medallion -->
+            <div style="background-color: #000000; padding: 36px 28px 24px 28px; border-bottom: 1px solid #27272a; text-align: center;">
+              <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 14px;">
+                <tr>
+                  <td align="center" style="width: 52px; height: 52px; background-color: #09090b; border: 1.5px solid #f59e0b; border-radius: 16px; text-align: center;">
+                    <img src="https://dev.memoryweaver.studio/icon.svg" width="30" height="30" alt="Memory Weaver Studio" style="display: block; margin: 0 auto;" />
+                  </td>
+                </tr>
+              </table>
+              <div style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 8px;">
+                STUDIO SUPPORT DESK
+              </div>
+              <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase;">
                 Report Logged Successfully
-              </h2>
-              <p style="color: #94a3b8; font-size: 13px; margin: 6px 0 0 0;">
-                Our engineering team has been notified under tracking trace: <span style="font-family: monospace; color: #fbbf24;">${diagnostics.traceId}</span>
+              </h1>
+              <p style="margin: 6px 0 0 0; font-size: 12px; color: #a1a1aa; font-family: 'Courier New', Courier, monospace;">
+                TRACE ID: <span style="color: #fbbf24; font-weight: bold;">${diagnostics.traceId}</span>
               </p>
             </div>
             
             <!-- Content -->
-            <div style="padding: 24px; line-height: 1.6; font-size: 14px;">
-              <p style="color: #e2e8f0; margin-top: 0;">Hi there,</p>
+            <div style="padding: 28px 24px; line-height: 1.6; font-size: 14px; background-color: #000000;">
+              <p style="color: #ffffff; margin-top: 0; font-weight: 600;">Dear Patron,</p>
               
-              <p style="color: #94a3b8;">
-                Thank you for helping us improve Memory Weaver Studio. We've received your feedback regarding the issue encountered on path <code style="font-family: monospace; color: #fbbf24; background: rgba(245,158,11,0.05); padding: 2px 6px; border-radius: 4px;">${diagnostics.path}</code>.
+              <p style="color: #d4d4d8;">
+                Thank you for helping us preserve absolute craftsmanship at Memory Weaver Studio. We have received your report regarding the session on <code style="font-family: monospace; color: #fbbf24; background: #18181b; border: 1px solid #27272a; padding: 2px 6px; border-radius: 4px;">${diagnostics.path}</code>.
               </p>
 
-              <div style="background-color: rgba(255, 255, 255, 0.02); border-left: 3px solid #f59e0b; padding: 14px; border-radius: 6px; color: #cbd5e1; font-style: italic; margin: 20px 0;">
+              <div style="background-color: #09090b; border: 1px solid #27272a; border-left: 3px solid #f59e0b; padding: 16px; border-radius: 8px; color: #e4e4e7; font-style: italic; margin: 20px 0;">
                 "${description}"
               </div>
 
-              <p style="color: #94a3b8;">
-                Using our <strong>[FAST TRACK]</strong> system, we have bundled secure, anonymous telemetry parameters (such as the exception stack trace and application version state) and sent them directly to our diagnostics dashboard. We will trace this session signature immediately to isolate the root cause.
+              <p style="color: #a1a1aa; font-size: 13px;">
+                Using our <strong style="color: #ffffff;">Fast-Track Diagnostic Shield</strong>, we have captured anonymous telemetry parameters (including error vectors and application state) and dispatched them directly to the engineering bridge to isolate the issue.
               </p>
 
-              <p style="color: #94a3b8; margin-bottom: 0;">
-                If you have any further questions, simply reply to this email to reach our support desk.
+              <!-- CTA Button -->
+              <div style="margin: 24px 0; text-align: center;">
+                <a href="https://dev.memoryweaver.studio/studio" style="display: inline-block; background-color: #f59e0b; color: #000000; font-weight: 800; font-size: 13px; text-decoration: none; padding: 13px 28px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);">
+                  Return to Studio Production Desk ↗
+                </a>
+              </div>
+
+              <p style="color: #71717a; font-size: 12px; margin-bottom: 0; border-top: 1px solid #18181b; padding-top: 16px;">
+                If you have any further notes, simply reply to this email to reach your assigned concierge.
               </p>
             </div>
 
             <!-- Footer -->
-            <div style="background-color: rgba(0, 0, 0, 0.2); border-top: 1px solid rgba(255, 255, 255, 0.05); padding: 18px; text-align: center;">
-              <p style="font-size: 11px; color: #64748b; margin: 0;">
-                Memory Weaver Studio Support • Auto-Validation Shield Enabled
+            <div style="background-color: #09090b; border-top: 1px solid #27272a; padding: 18px; text-align: center;">
+              <p style="font-size: 10px; color: #71717a; margin: 0; text-transform: uppercase; letter-spacing: 0.15em; font-family: 'Courier New', Courier, monospace;">
+                Memory Weaver Studio • Confidential & Bespoke Archiving
               </p>
             </div>
           </div>

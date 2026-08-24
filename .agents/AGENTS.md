@@ -153,7 +153,18 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
     2. **Global Lifecycle Gate**: Does this component or effect touch global DOM/body state (e.g. `document.body.style.overflow`), leave hanging listeners, or break flex/grid layouts?
     3. **E2E Handshake Gate**: Does the state flow survive hard browser refreshes (`Ctrl+Shift+R`), auth redirects (e.g. `?redirect=`), and cross-session deep links?
     4. **Universal Non-Degradation Gate (Rule 7)**: Does this modification alter, remove, or degrade ANY existing user capability, visual feedback loop, or performance guarantee?
-- **Zero-Guesswork Execution**: Only once Sweep 2 passes all 4 gates without ambiguity may code modifications be applied.
+# 30. Mandatory Interactive QA Verification Artifact Standard (`qa_checklist_interactive.html`)
+- **Strict Prohibition of Raw Text / Chat Step Lists**: The agent is **STRICTLY FORBIDDEN** from presenting testing checklists, QA step lists, or verification questionnaires as plain chat text or raw markdown bullet lists in chat mode.
+- **Exclusive Interactive Artifact Handoff**: ALL staging verification handoffs MUST be delivered exclusively via the standalone interactive HTML artifact: `qa_checklist_interactive.html` generated in the active artifact directory (`<appDataDir>\brain\<conversation-id>/qa_checklist_interactive.html`) and adhering strictly to the Master Framework in `qa_interactive_framework.md`.
+- **Mandatory Master Framework Inclusions**:
+  1. **Zero Placeholders**: Every single test item MUST provide the complete, fully-qualified public staging URL (e.g. `https://dev.memoryweaver.studio/cinema/tv?id=ey96djU6qR1BrDGnvZwp` or `https://dev.memoryweaver.studio/how-it-works`). Never output truncated relative paths (`/cinema?id=...`).
+  2. **Dedicated Per-Test Route Buttons**: Clickable `[ 🔗 Open Test Route ↗ ]` rendered on every test card.
+  3. **Per-Test Telemetry Vector Ingestion Box**: Dedicated paste input box on EVERY test card auto-parsing `traceId`, `userId`, `userEmail`, `path`, `version` into live glowing visual chips (`🏷️ Trace`, `👤 User`, `🆔 UID`, `📍 Path`, `🔖 Ver`) with 0ms targeted DOM updating without losing textarea focus.
+  4. **Per-Test Screenshot Attachment Engine**: `[ 📷 Add Screenshot ]` dropzone on every card with Base64 in-browser storage, persistent thumbnail strip, delete controls (`×`), and full-screen image Lightbox modal.
+  5. **Header HUD with Telemetry & Latency**: Dynamic circular SVG progress ring (0–100%), numerical completion fraction, live `[ ⚡ Ping Edge ]` latency meter against `/api/version`, and Global Session Telemetry paste box.
+  6. **1-Click Markdown Report Generator**: `[ 📋 Copy Markdown Report ]` button formatting structured markdown with pass/fail counts, notes, attachment tallies, and per-test telemetry lines ready to paste directly into chat.
+  7. **State Portability & LocalStorage**: Automatic namespaced `localStorage` persistence, `[ 💾 Export State ]` and `[ 📂 Import State ]` JSON session transfer, and `[ Reset ]` confirmation.
+- **Prerequisite Deployment Gate (Rule 5)**: The artifact MUST NOT be generated, linked, or handed off until a programmatic live probe against `https://dev.memoryweaver.studio/api/version` confirms that the active `commitSha` matches the newly committed Git SHA.
 
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
@@ -237,6 +248,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **2026-08-17**: v1.1.0-beta-MW-178. Cinema UX: isSaved defaults to false in MemoryCinematicViewer (Bookmark shows 'Save Story' on first open); added persistent 📺 Cast Guide pill + expandable panel (HS_CINEMA_TV_CAST_GUIDE_BTN) outside auto-hiding HUD on /cinema/tv. (Build Verify: SUCCESS)
 - **2026-08-23**: v1.1.0-beta-MW-193. Admin Email Operations & Live Template Dispatcher Suite in admin.memoryweaver.studio; 4 core Obsidian-Gold email templates, sendAdminTestEmailAction, retriggerClientOnboardingPassAction, getDomainDnsDiagnosticsAction, live sandboxed iframe preview, and Access Support integration. (Build Verify: SUCCESS, User Sign-Off: VERIFIED)
 - **2026-08-23**: v1.1.0-beta-MW-194. Bulk Email Dispatch & Audience Batching Engine in admin.memoryweaver.studio suite=email; RFC 4180 audience CSV ingestion parser, tag auto-detection & deduplication, chunked rate-limited batch dispatcher with Resend API queue pacing, live streaming batch progress modal with individual delivery receipts & pause/resume idempotency, and automated Vitest regression shield. (Build Verify: SUCCESS)
+- **2026-08-23**: v1.1.0-beta-MW-194. Zero-Cost Dual-Directional Email Infrastructure & Centralized Domain Registry (studio@, support@, director@, dmarc@, noreply@); Cloudflare Email Routing inbound, Resend SMTP outbound via Gmail Send-As with automatic reply privacy shield, verified live round-trip delivery (SPF: PASS, DKIM: PASS, DMARC: PASS), and 38 Vitest automated regression tests. (Build Verify: SUCCESS, User Sign-Off: VERIFIED)
 
 # 21. Model Selection Advisory & Prompt Router Protocol
 - **Mandatory Pre-Gate Callout**: On EVERY single user message without exception, the agent's very first line of output MUST include the exact pre-gate model validation statement:
