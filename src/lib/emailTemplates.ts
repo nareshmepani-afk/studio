@@ -162,22 +162,22 @@ export function renderEmailWrapper({
     [data-ogsb] .mw-btn { background-color: #f59e0b !important; }
   </style>
 </head>
-<body class="mw-bg" style="margin: 0; padding: 0; background-color: #000000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ffffff;">
+<body class="mw-bg" bgcolor="#000000" style="margin: 0; padding: 0; background-color: #000000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ffffff;">
   <!-- Full Screen Wrapper -->
-  <table class="mw-bg" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #000000; width: 100%; margin: 0; padding: 40px 16px;">
+  <table class="mw-bg" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#000000" style="background-color: #000000; width: 100%; margin: 0; padding: 40px 16px;">
     <tr>
-      <td align="center" valign="top">
+      <td align="center" valign="top" bgcolor="#000000">
         <!-- Main Card Container (Pure Obsidian Black with Gold Border) -->
-        <table class="mw-card" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 580px; width: 100%; background-color: #000000; border: 2px solid #f59e0b; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);">
+        <table class="mw-card" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#000000" style="max-width: 580px; width: 100%; background-color: #000000; border: 2px solid #f59e0b; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);">
           
           <!-- Header Banner with Logo Medallion -->
           <tr>
-            <td class="mw-bg" style="background-color: #000000; padding: 28px 24px 18px 24px; border-bottom: 1px solid #27272a; text-align: center;">
+            <td class="mw-bg" bgcolor="#000000" style="background-color: #000000; padding: 28px 24px 18px 24px; border-bottom: 1px solid #27272a; text-align: center;">
               
               <!-- Logo Medallion -->
               <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 12px;">
                 <tr>
-                  <td class="mw-logo-box" align="center" style="width: 48px; height: 48px; background-color: #09090b; border: 1.5px solid #f59e0b; border-radius: 14px; text-align: center;">
+                  <td class="mw-logo-box" align="center" bgcolor="#09090b" style="width: 48px; height: 48px; background-color: #09090b; border: 1.5px solid #f59e0b; border-radius: 14px; text-align: center;">
                     <img src="https://dev.memoryweaver.studio/icon.svg" width="28" height="28" alt="Memory Weaver Logo" style="display: block; margin: 0 auto; background-color: transparent;" />
                   </td>
                 </tr>
@@ -197,7 +197,7 @@ export function renderEmailWrapper({
 
           <!-- Main Body Content -->
           <tr>
-            <td style="padding: 24px; font-size: 14px; line-height: 1.6; background-color: #000000;">
+            <td bgcolor="#000000" style="padding: 24px; font-size: 14px; line-height: 1.6; background-color: #000000;">
               ${contentHtml}
 
               <!-- Action Buttons -->
@@ -207,7 +207,7 @@ export function renderEmailWrapper({
                   <td align="center">
                     <table border="0" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td align="center" style="background-color: #f59e0b; border-radius: 8px;">
+                        <td align="center" bgcolor="#f59e0b" style="background-color: #f59e0b; border-radius: 8px;">
                           <a href="${ctaUrl}" target="_blank" class="mw-btn" style="background-color: #f59e0b; border: 1px solid #f59e0b; border-radius: 8px; color: #000000; display: inline-block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; font-weight: 800; line-height: 18px; text-align: center; text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 26px;">
                             ${ctaText}
                           </a>
@@ -232,7 +232,7 @@ export function renderEmailWrapper({
 
           <!-- Footer -->
           <tr>
-            <td class="mw-bg" style="background-color: #09090b; padding: 14px 20px; border-top: 1px solid #27272a; text-align: center; font-size: 10px; color: #71717a; text-transform: uppercase; letter-spacing: 0.15em; font-family: 'Courier New', Courier, monospace;">
+            <td class="mw-bg" bgcolor="#09090b" style="background-color: #09090b; padding: 14px 20px; border-top: 1px solid #27272a; text-align: center; font-size: 10px; color: #71717a; text-transform: uppercase; letter-spacing: 0.15em; font-family: 'Courier New', Courier, monospace;">
               ${footerNote ? `<p style="margin: 0 0 6px 0; text-transform: none; letter-spacing: normal; color: #71717a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px;">${footerNote}</p>` : ''}
               Memory Weaver Studio • Confidential &amp; Bespoke Archiving
             </td>

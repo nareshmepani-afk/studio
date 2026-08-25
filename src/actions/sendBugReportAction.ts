@@ -35,9 +35,9 @@ export async function sendBugReportAction(payload: BugReportPayload): Promise<{ 
         <span class="mw-text-muted" style="font-size: 10px; text-transform: uppercase; color: #a1a1aa; font-weight: 800; letter-spacing: 1.5px; display: block; margin-bottom: 8px; font-family: 'Courier New', Courier, monospace;">
           PATRON FEEDBACK
         </span>
-        <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #09090b; border: 1px solid #27272a; border-left: 3px solid #f59e0b; border-radius: 8px;">
+        <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#09090b" style="background-color: #09090b; border: 1px solid #27272a; border-left: 3px solid #f59e0b; border-radius: 8px;">
           <tr>
-            <td class="mw-text-muted" style="padding: 14px 18px; color: #e4e4e7; font-style: italic; font-family: Georgia, serif; font-size: 14px; line-height: 22px; white-space: pre-wrap;">
+            <td class="mw-text-muted" bgcolor="#09090b" style="padding: 14px 18px; color: #e4e4e7; font-style: italic; font-family: Georgia, serif; font-size: 14px; line-height: 22px; white-space: pre-wrap;">
               "${description}"
             </td>
           </tr>
@@ -49,31 +49,31 @@ export async function sendBugReportAction(payload: BugReportPayload): Promise<{ 
         <span class="mw-text-muted" style="font-size: 10px; text-transform: uppercase; color: #a1a1aa; font-weight: 800; letter-spacing: 1.5px; display: block; margin-bottom: 8px; font-family: 'Courier New', Courier, monospace;">
           SESSION TELEMETRY
         </span>
-        <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; background-color: #09090b; border: 1px solid #27272a; border-radius: 10px; overflow: hidden;">
+        <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#09090b" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; background-color: #09090b; border: 1px solid #27272a; border-radius: 10px; overflow: hidden;">
           <tbody>
             <tr style="border-bottom: 1px solid #18181b;">
-              <td class="mw-text-muted" style="padding: 10px 14px; color: #71717a; font-weight: 700; width: 110px;">User Email</td>
-              <td class="mw-text-white" style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.userEmail}</td>
+              <td class="mw-text-muted" bgcolor="#09090b" style="padding: 10px 14px; color: #71717a; font-weight: 700; width: 110px;">User Email</td>
+              <td class="mw-text-white" bgcolor="#09090b" style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.userEmail}</td>
             </tr>
             <tr style="border-bottom: 1px solid #18181b;">
-              <td class="mw-text-muted" style="padding: 10px 14px; color: #71717a; font-weight: 700;">User ID</td>
-              <td class="mw-text-white" style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.userId}</td>
+              <td class="mw-text-muted" bgcolor="#09090b" style="padding: 10px 14px; color: #71717a; font-weight: 700;">User ID</td>
+              <td class="mw-text-white" bgcolor="#09090b" style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.userId}</td>
             </tr>
             <tr style="border-bottom: 1px solid #18181b;">
-              <td class="mw-text-muted" style="padding: 10px 14px; color: #71717a; font-weight: 700;">Path</td>
-              <td class="mw-text-gold" style="padding: 10px 14px; color: #fbbf24; font-family: monospace;">${diagnostics.path}</td>
+              <td class="mw-text-muted" bgcolor="#09090b" style="padding: 10px 14px; color: #71717a; font-weight: 700;">Path</td>
+              <td class="mw-text-gold" bgcolor="#09090b" style="padding: 10px 14px; color: #fbbf24; font-family: monospace;">${diagnostics.path}</td>
             </tr>
             <tr style="border-bottom: 1px solid #18181b;">
-              <td class="mw-text-muted" style="padding: 10px 14px; color: #71717a; font-weight: 700;">Version</td>
-              <td class="mw-text-white" style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.version}</td>
+              <td class="mw-text-muted" bgcolor="#09090b" style="padding: 10px 14px; color: #71717a; font-weight: 700;">Version</td>
+              <td class="mw-text-white" bgcolor="#09090b" style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.version}</td>
             </tr>
             <tr style="border-bottom: 1px solid #18181b;">
-              <td class="mw-text-muted" style="padding: 10px 14px; color: #71717a; font-weight: 700;">Timestamp</td>
-              <td class="mw-text-white" style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.timestamp}</td>
+              <td class="mw-text-muted" bgcolor="#09090b" style="padding: 10px 14px; color: #71717a; font-weight: 700;">Timestamp</td>
+              <td class="mw-text-white" bgcolor="#09090b" style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.timestamp}</td>
             </tr>
             <tr>
-              <td class="mw-text-muted" style="padding: 10px 14px; color: #71717a; font-weight: 700; vertical-align: top;">User Agent</td>
-              <td class="mw-text-muted" style="padding: 10px 14px; color: #a1a1aa; font-size: 11px; font-family: monospace; line-height: 1.4;">${diagnostics.userAgent}</td>
+              <td class="mw-text-muted" bgcolor="#09090b" style="padding: 10px 14px; color: #71717a; font-weight: 700; vertical-align: top;">User Agent</td>
+              <td class="mw-text-muted" bgcolor="#09090b" style="padding: 10px 14px; color: #a1a1aa; font-size: 11px; font-family: monospace; line-height: 1.4;">${diagnostics.userAgent}</td>
             </tr>
           </tbody>
         </table>
@@ -113,9 +113,9 @@ export async function sendBugReportAction(payload: BugReportPayload): Promise<{ 
         </p>
 
         <!-- Obsidian-Gold Quote Box (Outlook/Hotmail Inversion Shield) -->
-        <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #09090b; border: 1px solid #27272a; border-left: 3px solid #f59e0b; border-radius: 8px; margin: 18px 0;">
+        <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#09090b" style="background-color: #09090b; border: 1px solid #27272a; border-left: 3px solid #f59e0b; border-radius: 8px; margin: 18px 0;">
           <tr>
-            <td class="mw-text-muted" style="padding: 14px 18px; color: #e4e4e7; font-style: italic; font-family: Georgia, serif; font-size: 14px; line-height: 22px; white-space: pre-wrap;">
+            <td class="mw-text-muted" bgcolor="#09090b" style="padding: 14px 18px; color: #e4e4e7; font-style: italic; font-family: Georgia, serif; font-size: 14px; line-height: 22px; white-space: pre-wrap;">
               "${description}"
             </td>
           </tr>
