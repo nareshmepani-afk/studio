@@ -20,6 +20,7 @@ export interface UnifiedChapter {
 export interface CorrelatedPrompt {
   id: string;
   title: string;
+  subtitle?: string;
   description: string;
   memory?: Memory;
   requests: StoryRequest[];
@@ -126,10 +127,24 @@ export function useStudioData(userId: string | undefined) {
         }
         const promptRequests = requests.filter(r => r.promptId === p.id);
         
+        let promptTitle = p.title;
+        let promptSubtitle: string | undefined = undefined;
+        let promptDescription = p.description;
+
+        if (mode === 'gu') {
+          promptTitle = p.text.gu.split(' – ')[0] || p.title;
+          promptDescription = p.text.gu.split(' – ')[1] || p.description;
+        } else if (mode === 'dual') {
+          promptTitle = p.title;
+          promptSubtitle = p.text.gu.split(' – ')[0] || undefined;
+          promptDescription = p.description;
+        }
+
         return {
           id: p.id,
-          title: mode === 'gu' ? (p.text.gu.split(' – ')[0] || p.title) : p.title,
-          description: mode === 'gu' ? (p.text.gu.split(' – ')[1] || p.description) : p.description,
+          title: promptTitle,
+          subtitle: promptSubtitle,
+          description: promptDescription,
           memory,
           requests: promptRequests,
         };

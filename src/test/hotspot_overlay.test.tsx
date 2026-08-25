@@ -72,4 +72,26 @@ describe('HotspotOverlay Component tests', () => {
       expect(queryByText(/HOTSPOT OVERLAY ACTIVE/)).toBeNull();
     });
   });
+
+  it('activates automatically when hotspots=true is in URL', async () => {
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: {
+        search: '?hotspots=true',
+        href: 'http://localhost/studio?hotspots=true'
+      }
+    });
+
+    const { getByText } = render(
+      <div>
+        <HotspotOverlay />
+        <button data-hotspot-id="HS_TEST_RECORD">Record</button>
+      </div>
+    );
+
+    await waitFor(() => {
+      expect(getByText(/HOTSPOT OVERLAY ACTIVE/)).toBeDefined();
+      expect(getByText('HS_TEST_RECORD')).toBeDefined();
+    });
+  });
 });

@@ -35,10 +35,10 @@ import { cn } from '@/lib/utils';
 import { Prompt } from '@/types';
 import StudioChapterContent from '../studio/StudioChapterContent';
 
-// Prop types
 type PromptCardProps = {
   promptId: string;
   promptText: string;
+  promptSubtitle?: string;
   storyScript: string;
   isCompleted: boolean;
   isFlaggedForReuse: boolean;
@@ -88,6 +88,7 @@ export function PromptCard(props: PromptCardProps) {
   const {
     promptId,
     promptText,
+    promptSubtitle,
     isCompleted,
     isFlaggedForReuse,
     onStartChapter,
@@ -135,7 +136,7 @@ export function PromptCard(props: PromptCardProps) {
   );
 
   const cardTitleClasses = cn(
-    "font-headline font-bold text-lg leading-tight transition-colors mb-2 italic",
+    "font-headline font-bold text-lg leading-tight transition-colors mb-1 italic",
     isCompleted ? 'text-white' : 'text-white/70 group-hover:text-white',
     !canAccess && 'text-white/20'
   );
@@ -167,7 +168,7 @@ export function PromptCard(props: PromptCardProps) {
   );
 
   const cardContent = (
-      <div className={cardClasses}>
+      <div className={cardClasses} data-hotspot-id={`HS_PROMPT_CARD_${promptId}`}>
         {/* The Link Overlay for Intercepting Routes */}
         <Link 
           href={`/studio/production/${promptId}${isCompleted ? '?act=1' : ''}`}
@@ -228,6 +229,11 @@ export function PromptCard(props: PromptCardProps) {
               <h3 className={cardTitleClasses}>
                 {promptText}
               </h3>
+              {promptSubtitle && (
+                <p className="text-xs text-primary/80 font-medium italic -mt-0.5 mb-2">
+                  {promptSubtitle}
+                </p>
+              )}
             </header>
 
             <section className="flex-grow">

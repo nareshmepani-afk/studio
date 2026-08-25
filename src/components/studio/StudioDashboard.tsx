@@ -170,8 +170,8 @@ export function StudioDashboard({
     <div className="relative flex-1 pb-20">
       <div className="container relative z-10 mx-auto pt-10 px-4 max-w-7xl">
         {/* Header Section */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6 pb-8 border-b border-white/10">
-          <div className="space-y-4">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6 pb-8 border-b border-white/10" data-hotspot-id="HS_STUDIO_HEADER_SECTION">
+          <div className="space-y-4" data-hotspot-id="HS_STUDIO_HEADER_TITLE">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-primary/20 rounded-xl border border-primary/30 shadow-[0_0_20px_rgba(var(--primary),0.3)]">
                 <Clapperboard className="h-10 w-10 text-primary" />
@@ -193,6 +193,7 @@ export function StudioDashboard({
                       variant="outline"
                       onClick={handleCleanupMigration}
                       disabled={isCleaning}
+                      data-hotspot-id="HS_STUDIO_OPTIMIZE_BTN"
                       className="w-full md:w-auto border-dashed border-amber-500/30 text-amber-500/80 hover:bg-amber-500/10 hover:text-amber-500 transition-all font-bold tracking-tight"
                     >
                       {isCleaning ? <RefreshCcw className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
@@ -211,12 +212,13 @@ export function StudioDashboard({
         </header>
 
         {/* Master Control Stats Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-16">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-16" data-hotspot-id="HS_STUDIO_STATS_ROW">
           <StatCard 
             icon={<LayoutDashboard className="w-5 h-5" />} 
             label="Total Chapters" 
             value={stats.totalPossible} 
             color="primary"
+            dataHotspotId="HS_STUDIO_STAT_TOTAL_CHAPTERS"
           />
           <StatCard 
             icon={<MonitorPlay className="w-5 h-5" />} 
@@ -224,18 +226,21 @@ export function StudioDashboard({
             value={stats.published + (stats.preRelease || 0) + stats.drafts} 
             subLabel={`${stats.completionPercentage}% Published`}
             color="green"
+            dataHotspotId="HS_STUDIO_STAT_RECORDED"
           />
           <StatCard 
             icon={<Clock className="w-5 h-5" />} 
             label="Studio Drafts" 
             value={stats.drafts} 
             color="amber"
+            dataHotspotId="HS_STUDIO_STAT_DRAFTS"
           />
           <StatCard 
             icon={<History className="w-5 h-5" />} 
             label="Cinema Releases" 
             value={stats.published} 
             color="primary"
+            dataHotspotId="HS_STUDIO_STAT_RELEASES"
           />
         </div>
 
@@ -286,11 +291,16 @@ export function StudioDashboard({
               return (
                 <section key={chapter.id} className="relative">
                   <div className="flex items-center gap-6 mb-12">
-                     <div className="flex flex-col">
+                     <div className="flex flex-col" data-hotspot-id={`HS_STUDIO_CHAPTER_HEADER_${chapter.id}`}>
                         <span className="text-[10px] uppercase tracking-[0.5em] text-primary/60 font-black mb-1">Production Stage</span>
                         <h2 className="font-headline text-4xl italic text-white tracking-tight">
                           {chapter.title}
                         </h2>
+                        {chapter.subtitle && (
+                          <p className="text-xl text-primary/85 font-medium italic mt-1">
+                            {chapter.subtitle}
+                          </p>
+                        )}
                      </div>
                      <div className="h-px flex-grow bg-gradient-to-r from-white/10 to-transparent" />
                   </div>
@@ -314,6 +324,7 @@ export function StudioDashboard({
                           <PromptCard
                             promptId={cp.id}
                             promptText={cp.title}
+                            promptSubtitle={cp.subtitle}
                             storyScript={storyScripts[cp.id] || "No script available."}
                             isCompleted={isCompleted}
                             isRecommended={cp.id === recommendedPromptId}
@@ -349,6 +360,7 @@ export function StudioDashboard({
                       <Tooltip delayDuration={canAccessGroup ? 300 : 0}>
                         <TooltipTrigger asChild>
                           <div 
+                            data-hotspot-id={`HS_STUDIO_ADD_CUSTOM_MEMORY_${chapter.id}`}
                             onClick={() => {
                               const hasActivePass = directorPassStatus === 'free_host_pass_active' || directorPassStatus === 'paid_host_pass_active';
                               if (!hasActivePass) {
@@ -426,7 +438,21 @@ export function StudioDashboard({
   );
 }
 
-function StatCard({ icon, label, value, subLabel, color = 'primary' }: { icon: React.ReactNode, label: string, value: string | number, subLabel?: string, color?: 'primary' | 'green' | 'amber' }) {
+function StatCard({ 
+  icon, 
+  label, 
+  value, 
+  subLabel, 
+  color = 'primary',
+  dataHotspotId
+}: { 
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  subLabel?: string;
+  color?: 'primary' | 'green' | 'amber';
+  dataHotspotId?: string;
+}) {
   const colorMap = {
     primary: 'border-primary/20 text-primary bg-primary/5',
     green: 'border-green-500/20 text-green-500 bg-green-500/5',
@@ -434,7 +460,10 @@ function StatCard({ icon, label, value, subLabel, color = 'primary' }: { icon: R
   };
 
   return (
-    <div className={cn("p-6 rounded-[32px] border backdrop-blur-md shadow-2xl relative overflow-hidden group", colorMap[color])}>
+    <div 
+      data-hotspot-id={dataHotspotId}
+      className={cn("p-6 rounded-[32px] border backdrop-blur-md shadow-2xl relative overflow-hidden group", colorMap[color])}
+    >
       <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
         {React.isValidElement(icon) && React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "w-24 h-24" })}
       </div>

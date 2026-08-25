@@ -101,7 +101,7 @@ export function Navbar() {
         <div className="container flex h-16 items-center">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Link href={isAuthenticated ? "/studio" : "/"} className="mr-6 flex items-center space-x-2" aria-label="Memory Weaver Homepage">
+              <Link href={isAuthenticated ? "/studio" : "/"} data-hotspot-id="HS_NAV_LOGO" className="mr-6 flex items-center space-x-2" aria-label="Memory Weaver Homepage">
                 <Film className="h-6 w-6 text-primary ml-2" /> 
                 <span className="font-headline text-xl font-bold">Memory Weaver</span>
               </Link>
@@ -132,6 +132,7 @@ export function Navbar() {
                     <TooltipTrigger asChild>
                       {!hasDirectorPass ? (
                         <div 
+                          data-hotspot-id="HS_NAV_MEMORY_STUDIO"
                           onClick={() => toast.info("Premium Feature", { 
                             description: "Memory Studio belongs to the Director. Upgrade your account to start your own cinematic journey!",
                             action: {
@@ -144,7 +145,7 @@ export function Navbar() {
                            <Clapperboard className="mr-1.5 h-4 w-4" strokeWidth={2.5} /> Memory Studio 
                         </div>
                       ) : (
-                        <Link href="/studio" className={`${navLinkClass} ${(pathname === '/studio' || pathname?.startsWith('/add-memory')) ? activeNavLinkClass : ''}`}> 
+                        <Link href="/studio" data-hotspot-id="HS_NAV_MEMORY_STUDIO" className={`${navLinkClass} ${(pathname === '/studio' || pathname?.startsWith('/add-memory')) ? activeNavLinkClass : ''}`}> 
                           <Clapperboard className="mr-1.5 h-4 w-4" strokeWidth={2.5} /> Memory Studio 
                         </Link>
                       )}
@@ -157,6 +158,7 @@ export function Navbar() {
                     <TooltipTrigger asChild>
                       <Link 
                         href="/cinema" 
+                        data-hotspot-id="HS_NAV_MEMORY_CINEMA"
                         onClick={() => {
                           if (pathname === '/cinema') {
                             router.push('/cinema');
@@ -221,8 +223,14 @@ export function Navbar() {
           <div className="flex items-center ml-auto space-x-2 sm:space-x-4">
             <StudioUpgradeBadge />
             {isStudio && <OpticsPrivacyShield />}
-            {isStudioWorkspace && <LanguageToggle />}
-            <ThemeToggle />
+            {isStudioWorkspace && (
+              <div data-hotspot-id="HS_NAV_LANGUAGE_TOGGLE">
+                <LanguageToggle />
+              </div>
+            )}
+            <div data-hotspot-id="HS_NAV_THEME_TOGGLE">
+              <ThemeToggle />
+            </div>
             {isGuestDirectorView ? (
               <div className="px-3 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold uppercase tracking-widest rounded-full">
                 Guest Remote
@@ -240,7 +248,7 @@ export function Navbar() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="relative h-8 w-8 rounded-full" aria-label="User account and settings">
+                        <Button variant="ghost" data-hotspot-id="HS_NAV_USER_PROFILE" className="relative h-8 w-8 rounded-full" aria-label="User account and settings">
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={user.avatarUrl || user.photoURL || undefined} alt={user.displayName || user.email || 'User'} />
                             <AvatarFallback>
