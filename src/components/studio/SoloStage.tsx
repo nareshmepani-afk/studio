@@ -2188,10 +2188,20 @@ export default function SoloStage({
   }, [playAudio]);
 
   useEffect(() => {
-    if (productionStage === 2 && !hasSeenTour) {
+    // Only auto-open the onboarding briefing for brand new unrecorded memories!
+    // If the user already has recorded footage or has progressed past initial capture, NEVER auto-open.
+    const hasExistingFootage = Boolean(
+      (recordedSegments && recordedSegments.length > 0) ||
+      data?.videoUrl ||
+      (data?.productionTakes && data.productionTakes.length > 0) ||
+      data?.isProductionLocked ||
+      (data?.productionStage && data.productionStage > 2)
+    );
+
+    if (productionStage === 2 && !hasSeenTour && !hasExistingFootage) {
       setIsBriefingOpen(true);
     }
-  }, [productionStage, hasSeenTour]);
+  }, [productionStage, hasSeenTour, recordedSegments, data]);
 
   // Listen for Table Read complete event to trigger AI Director's UK-English rehearsal note
   useEffect(() => {
@@ -2216,6 +2226,18 @@ export default function SoloStage({
 
   useEffect(() => {
     if (showRestorePrompt) return;
+    const hasExistingFootage = Boolean(
+      (recordedSegments && recordedSegments.length > 0) ||
+      data?.videoUrl ||
+      (data?.productionTakes && data.productionTakes.length > 0) ||
+      data?.isProductionLocked ||
+      (data?.productionStage && data.productionStage > 2)
+    );
+    if (hasExistingFootage) {
+      hasPlayedMentorCue.current = true;
+      return;
+    }
+
     if (productionStage === 2 && !isBriefingOpen && hasSeenTour && !hasPlayedMentorCue.current) {
       hasPlayedMentorCue.current = true;
       console.log("[SoloStage] tech-scout ceremony entered. Synthesizing Stage Manager whisper...");
@@ -2232,7 +2254,7 @@ export default function SoloStage({
       };
       playMentorCue();
     }
-  }, [productionStage, isBriefingOpen, hasSeenTour, playAudio, showRestorePrompt]);
+  }, [productionStage, isBriefingOpen, hasSeenTour, playAudio, showRestorePrompt, recordedSegments, data]);
 
   const triggerNextQuestion = async () => {
     if (isSynthesizing) return;
