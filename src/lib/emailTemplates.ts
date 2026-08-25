@@ -90,7 +90,7 @@ export const EMAIL_TEMPLATES_CATALOG: EmailTemplateMetadata[] = [
 ];
 
 // Reusable Obsidian-Gold Email Wrapper
-function renderEmailWrapper({
+export function renderEmailWrapper({
   title,
   subtitle,
   categoryBadge,
@@ -148,7 +148,7 @@ function renderEmailWrapper({
     [data-ogsc] .mw-bg { background-color: #000000 !important; }
     [data-ogsc] .mw-card { background-color: #000000 !important; border-color: #f59e0b !important; }
     [data-ogsc] .mw-box { background-color: #09090b !important; border-color: #27272a !important; }
-    [data-ogsc] .mw-logo-box { background-color: #000000 !important; border-color: #1e293b !important; }
+    [data-ogsc] .mw-logo-box { background-color: #09090b !important; border-color: #f59e0b !important; }
     [data-ogsc] .mw-text-white { color: #ffffff !important; }
     [data-ogsc] .mw-text-gold { color: #f59e0b !important; }
     [data-ogsc] .mw-text-emerald { color: #10b981 !important; }
@@ -158,7 +158,7 @@ function renderEmailWrapper({
     [data-ogsb] .mw-bg { background-color: #000000 !important; }
     [data-ogsb] .mw-card { background-color: #000000 !important; }
     [data-ogsb] .mw-box { background-color: #09090b !important; }
-    [data-ogsb] .mw-logo-box { background-color: #000000 !important; }
+    [data-ogsb] .mw-logo-box { background-color: #09090b !important; }
     [data-ogsb] .mw-btn { background-color: #f59e0b !important; }
   </style>
 </head>

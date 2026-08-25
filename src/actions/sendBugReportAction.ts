@@ -3,6 +3,7 @@
 import { Resend } from 'resend';
 import { APP_VERSION } from '@/config/version';
 import { STUDIO_EMAILS, STUDIO_EMAIL_SENDERS } from '@/config/emailConfig';
+import { renderEmailWrapper } from '@/lib/emailTemplates';
 
 interface BugReportPayload {
   description: string;
@@ -27,6 +28,70 @@ export async function sendBugReportAction(payload: BugReportPayload): Promise<{ 
     const studioTraceUrl = `https://dev.memoryweaver.studio/admin?traceId=${encodeURIComponent(diagnostics.traceId)}`;
     const studioUserUrl = `https://dev.memoryweaver.studio/admin?userId=${encodeURIComponent(diagnostics.userId)}`;
 
+    // 1. Support Alert HTML (Rendered via renderEmailWrapper for 100% Outlook dark mode protection)
+    const alertContentHtml = `
+      <!-- Feedback Box -->
+      <div style="margin-bottom: 20px;">
+        <span class="mw-text-muted" style="font-size: 10px; text-transform: uppercase; color: #a1a1aa; font-weight: 800; letter-spacing: 1.5px; display: block; margin-bottom: 8px; font-family: 'Courier New', Courier, monospace;">
+          PATRON FEEDBACK
+        </span>
+        <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #09090b; border: 1px solid #27272a; border-left: 3px solid #f59e0b; border-radius: 8px;">
+          <tr>
+            <td class="mw-text-muted" style="padding: 14px 18px; color: #e4e4e7; font-style: italic; font-family: Georgia, serif; font-size: 14px; line-height: 22px; white-space: pre-wrap;">
+              "${description}"
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Diagnostics Metadata Table -->
+      <div style="margin-bottom: 16px;">
+        <span class="mw-text-muted" style="font-size: 10px; text-transform: uppercase; color: #a1a1aa; font-weight: 800; letter-spacing: 1.5px; display: block; margin-bottom: 8px; font-family: 'Courier New', Courier, monospace;">
+          SESSION TELEMETRY
+        </span>
+        <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; background-color: #09090b; border: 1px solid #27272a; border-radius: 10px; overflow: hidden;">
+          <tbody>
+            <tr style="border-bottom: 1px solid #18181b;">
+              <td class="mw-text-muted" style="padding: 10px 14px; color: #71717a; font-weight: 700; width: 110px;">User Email</td>
+              <td class="mw-text-white" style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.userEmail}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #18181b;">
+              <td class="mw-text-muted" style="padding: 10px 14px; color: #71717a; font-weight: 700;">User ID</td>
+              <td class="mw-text-white" style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.userId}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #18181b;">
+              <td class="mw-text-muted" style="padding: 10px 14px; color: #71717a; font-weight: 700;">Path</td>
+              <td class="mw-text-gold" style="padding: 10px 14px; color: #fbbf24; font-family: monospace;">${diagnostics.path}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #18181b;">
+              <td class="mw-text-muted" style="padding: 10px 14px; color: #71717a; font-weight: 700;">Version</td>
+              <td class="mw-text-white" style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.version}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #18181b;">
+              <td class="mw-text-muted" style="padding: 10px 14px; color: #71717a; font-weight: 700;">Timestamp</td>
+              <td class="mw-text-white" style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.timestamp}</td>
+            </tr>
+            <tr>
+              <td class="mw-text-muted" style="padding: 10px 14px; color: #71717a; font-weight: 700; vertical-align: top;">User Agent</td>
+              <td class="mw-text-muted" style="padding: 10px 14px; color: #a1a1aa; font-size: 11px; font-family: monospace; line-height: 1.4;">${diagnostics.userAgent}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    const alertHtml = renderEmailWrapper({
+      title: 'STUDIO SUPPORT TICKET',
+      subtitle: `TRACE ID: ${diagnostics.traceId}`,
+      categoryBadge: 'FAST TRACK DIAGNOSTICS',
+      contentHtml: alertContentHtml,
+      ctaText: '🔍 INSPECT TELEMETRY IN STUDIO CONSOLE ↗',
+      ctaUrl: studioTraceUrl,
+      secondaryCtaText: 'FILTER USER ACTIVITY LOGS ↗',
+      secondaryCtaUrl: studioUserUrl,
+      footerNote: `Sent via Telemetry Engine ${APP_VERSION}`
+    });
+
     // 1. Send Support Ticket Email (To director@ to avoid Resend bounce suppression on support@)
     const supportAlertRecipient = process.env.INTERNAL_SUPPORT_ALERT_EMAIL || STUDIO_EMAILS.DIRECTOR;
     await resend.emails.send({
@@ -34,165 +99,51 @@ export async function sendBugReportAction(payload: BugReportPayload): Promise<{ 
       to: supportAlertRecipient,
       replyTo: diagnostics.userEmail !== 'unauthenticated' ? diagnostics.userEmail : STUDIO_EMAILS.DIRECTOR,
       subject: `[BUG REPORT - FAST TRACK] Trace: ${diagnostics.traceId}`,
-      html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; color: #ffffff; background-color: #000000; border: 2px solid #f59e0b; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);">
-          <!-- Header Banner with Logo Medallion -->
-          <div style="background-color: #000000; padding: 28px 24px 18px 24px; border-bottom: 1px solid #27272a; text-align: center;">
-            <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 12px;">
-              <tr>
-                <td align="center" style="width: 48px; height: 48px; background-color: #09090b; border: 1.5px solid #f59e0b; border-radius: 14px; text-align: center;">
-                  <img src="https://dev.memoryweaver.studio/icon.svg" width="28" height="28" alt="Memory Weaver Studio" style="display: block; margin: 0 auto;" />
-                </td>
-              </tr>
-            </table>
-            <div style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 6px;">
-              FAST TRACK DIAGNOSTICS
-            </div>
-            <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase;">
-              Studio Support Ticket
-            </h1>
-            <p style="margin: 6px 0 0 0; font-size: 12px; color: #a1a1aa; font-family: 'Courier New', Courier, monospace;">
-              TRACE ID: <span style="color: #fbbf24; font-weight: bold;">${diagnostics.traceId}</span>
-            </p>
-          </div>
-          
-          <!-- Content Body -->
-          <div style="padding: 24px; font-size: 14px; line-height: 1.6; background-color: #000000;">
-            <!-- Feedback Box (App Style) -->
-            <div style="margin-bottom: 20px;">
-              <span style="font-size: 10px; text-transform: uppercase; color: #a1a1aa; font-weight: 800; letter-spacing: 1.5px; display: block; margin-bottom: 8px; font-family: 'Courier New', Courier, monospace;">
-                PATRON FEEDBACK
-              </span>
-              <div style="background-color: #09090b; border: 1px solid #27272a; border-left: 3px solid #f59e0b; padding: 14px 18px; border-radius: 8px; color: #e4e4e7; font-style: italic; font-family: Georgia, serif; white-space: pre-wrap;">
-                "${description}"
-              </div>
-            </div>
-
-            <!-- Fast Track Action Buttons (Domain-Aligned URLs) -->
-            <div style="margin-bottom: 20px; background: #09090b; border: 1px solid #27272a; padding: 18px; border-radius: 14px; text-align: center;">
-              <span style="font-size: 10px; color: #f59e0b; font-weight: 800; display: block; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Courier New', Courier, monospace;">
-                STUDIO TELEMETRY BRIDGE
-              </span>
-              <a href="${studioTraceUrl}" target="_blank" style="display: inline-block; background-color: #f59e0b; color: #000000; font-weight: 800; font-size: 12px; text-decoration: none; padding: 10px 22px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.05em; margin: 4px;">
-                Inspect Telemetry in Studio Console ↗
-              </a>
-              <a href="${studioUserUrl}" target="_blank" style="display: inline-block; background-color: #18181b; color: #e2e8f0; border: 1px solid #3f3f46; font-weight: 700; font-size: 12px; text-decoration: none; padding: 10px 18px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.05em; margin: 4px;">
-                Filter User Activity Logs ↗
-              </a>
-            </div>
-
-            <!-- Diagnostics Metadata Table -->
-            <div style="margin-bottom: 16px;">
-              <span style="font-size: 10px; text-transform: uppercase; color: #a1a1aa; font-weight: 800; letter-spacing: 1.5px; display: block; margin-bottom: 8px; font-family: 'Courier New', Courier, monospace;">
-                SESSION TELEMETRY
-              </span>
-              <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; background-color: #09090b; border: 1px solid #27272a; border-radius: 10px; overflow: hidden;">
-                <tbody>
-                  <tr style="border-bottom: 1px solid #18181b;">
-                    <td style="padding: 10px 14px; color: #71717a; font-weight: 700; width: 110px;">User Email</td>
-                    <td style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.userEmail}</td>
-                  </tr>
-                  <tr style="border-bottom: 1px solid #18181b;">
-                    <td style="padding: 10px 14px; color: #71717a; font-weight: 700;">User ID</td>
-                    <td style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.userId}</td>
-                  </tr>
-                  <tr style="border-bottom: 1px solid #18181b;">
-                    <td style="padding: 10px 14px; color: #71717a; font-weight: 700;">Path</td>
-                    <td style="padding: 10px 14px; color: #fbbf24; font-family: monospace;">${diagnostics.path}</td>
-                  </tr>
-                  <tr style="border-bottom: 1px solid #18181b;">
-                    <td style="padding: 10px 14px; color: #71717a; font-weight: 700;">Version</td>
-                    <td style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.version}</td>
-                  </tr>
-                  <tr style="border-bottom: 1px solid #18181b;">
-                    <td style="padding: 10px 14px; color: #71717a; font-weight: 700;">Timestamp</td>
-                    <td style="padding: 10px 14px; color: #e4e4e7; font-family: monospace;">${diagnostics.timestamp}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 10px 14px; color: #71717a; font-weight: 700; vertical-align: top;">User Agent</td>
-                    <td style="padding: 10px 14px; color: #a1a1aa; font-size: 11px; font-family: monospace; line-height: 1.4;">${diagnostics.userAgent}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          
-          <!-- Footer -->
-          <div style="background-color: #09090b; border-top: 1px solid #27272a; padding: 14px; text-align: center;">
-            <p style="font-size: 10px; color: #71717a; margin: 0; text-transform: uppercase; letter-spacing: 0.15em; font-family: 'Courier New', Courier, monospace;">
-              Sent via Telemetry Engine ${APP_VERSION} • Memory Weaver Studio
-            </p>
-          </div>
-        </div>
-      `,
+      html: alertHtml,
     });
 
     // 2. If the user is authenticated, send a beautiful confirmation receipt
     const hasValidEmail = diagnostics.userEmail && diagnostics.userEmail !== 'unauthenticated' && diagnostics.userEmail.includes('@');
     if (hasValidEmail) {
+      const receiptContentHtml = `
+        <p class="mw-text-white" style="color: #ffffff; margin-top: 0; font-weight: 600; font-size: 15px;">Dear Patron,</p>
+        
+        <p class="mw-text-muted" style="color: #d4d4d8; font-size: 14px; line-height: 22px;">
+          Thank you for helping us preserve absolute craftsmanship at Memory Weaver Studio. We have received your report regarding the session on <code class="mw-box" style="font-family: monospace; color: #fbbf24; background-color: #09090b; border: 1px solid #27272a; padding: 2px 6px; border-radius: 4px;">${diagnostics.path}</code>.
+        </p>
+
+        <!-- Obsidian-Gold Quote Box (Outlook/Hotmail Inversion Shield) -->
+        <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #09090b; border: 1px solid #27272a; border-left: 3px solid #f59e0b; border-radius: 8px; margin: 18px 0;">
+          <tr>
+            <td class="mw-text-muted" style="padding: 14px 18px; color: #e4e4e7; font-style: italic; font-family: Georgia, serif; font-size: 14px; line-height: 22px; white-space: pre-wrap;">
+              "${description}"
+            </td>
+          </tr>
+        </table>
+
+        <p class="mw-text-muted" style="color: #a1a1aa; font-size: 13px; line-height: 20px;">
+          Using our <strong class="mw-text-white" style="color: #ffffff;">Fast-Track Diagnostic Shield</strong>, we have captured anonymous telemetry parameters (including error vectors and application state) and dispatched them directly to the engineering bridge to isolate the issue.
+        </p>
+
+        <p class="mw-text-muted" style="color: #71717a; font-size: 12px; margin-bottom: 0; border-top: 1px solid #18181b; padding-top: 14px;">
+          If you have any further notes, simply reply to this email to reach your assigned concierge.
+        </p>
+      `;
+
+      const receiptHtml = renderEmailWrapper({
+        title: 'REPORT LOGGED SUCCESSFULLY',
+        subtitle: `TRACE ID: ${diagnostics.traceId}`,
+        categoryBadge: 'STUDIO SUPPORT DESK',
+        contentHtml: receiptContentHtml,
+        ctaText: 'RETURN TO STUDIO PRODUCTION DESK ↗',
+        ctaUrl: 'https://dev.memoryweaver.studio/studio',
+      });
+
       await resend.emails.send({
         from: STUDIO_EMAIL_SENDERS.SUPPORT,
         to: diagnostics.userEmail,
         subject: `We've received your bug report [Trace: ${diagnostics.traceId}]`,
-        html: `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 580px; margin: 0 auto; color: #ffffff; background-color: #000000; border: 2px solid #f59e0b; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);">
-            <!-- Header Banner with Logo Medallion -->
-            <div style="background-color: #000000; padding: 28px 24px 18px 24px; border-bottom: 1px solid #27272a; text-align: center;">
-              <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 12px;">
-                <tr>
-                  <td align="center" style="width: 48px; height: 48px; background-color: #09090b; border: 1.5px solid #f59e0b; border-radius: 14px; text-align: center;">
-                    <img src="https://dev.memoryweaver.studio/icon.svg" width="28" height="28" alt="Memory Weaver Studio" style="display: block; margin: 0 auto;" />
-                  </td>
-                </tr>
-              </table>
-              <div style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 6px;">
-                STUDIO SUPPORT DESK
-              </div>
-              <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase;">
-                Report Logged Successfully
-              </h1>
-              <p style="margin: 6px 0 0 0; font-size: 12px; color: #a1a1aa; font-family: 'Courier New', Courier, monospace;">
-                TRACE ID: <span style="color: #fbbf24; font-weight: bold;">${diagnostics.traceId}</span>
-              </p>
-            </div>
-            
-            <!-- Content -->
-            <div style="padding: 24px; font-size: 14px; line-height: 1.6; background-color: #000000;">
-              <p style="color: #ffffff; margin-top: 0; font-weight: 600;">Dear Patron,</p>
-              
-              <p style="color: #d4d4d8;">
-                Thank you for helping us preserve absolute craftsmanship at Memory Weaver Studio. We have received your report regarding the session on <code style="font-family: monospace; color: #fbbf24; background: #09090b; border: 1px solid #27272a; padding: 2px 6px; border-radius: 4px;">${diagnostics.path}</code>.
-              </p>
-
-              <!-- Obsidian-Gold Quote Box -->
-              <div style="background-color: #09090b; border: 1px solid #27272a; border-left: 3px solid #f59e0b; padding: 14px 18px; border-radius: 8px; color: #e4e4e7; font-style: italic; margin: 18px 0; font-family: Georgia, serif;">
-                "${description}"
-              </div>
-
-              <p style="color: #a1a1aa; font-size: 13px;">
-                Using our <strong style="color: #ffffff;">Fast-Track Diagnostic Shield</strong>, we have captured anonymous telemetry parameters (including error vectors and application state) and dispatched them directly to the engineering bridge to isolate the issue.
-              </p>
-
-              <!-- CTA Button -->
-              <div style="margin: 22px 0; text-align: center;">
-                <a href="https://dev.memoryweaver.studio/studio" style="display: inline-block; background-color: #f59e0b; color: #000000; font-weight: 800; font-size: 12px; text-decoration: none; padding: 12px 26px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.05em;">
-                  Return to Studio Production Desk ↗
-                </a>
-              </div>
-
-              <p style="color: #71717a; font-size: 12px; margin-bottom: 0; border-top: 1px solid #18181b; padding-top: 14px;">
-                If you have any further notes, simply reply to this email to reach your assigned concierge.
-              </p>
-            </div>
-
-            <!-- Footer -->
-            <div style="background-color: #09090b; border-top: 1px solid #27272a; padding: 14px; text-align: center;">
-              <p style="font-size: 10px; color: #71717a; margin: 0; text-transform: uppercase; letter-spacing: 0.15em; font-family: 'Courier New', Courier, monospace;">
-                Memory Weaver Studio • Confidential & Bespoke Archiving
-              </p>
-            </div>
-          </div>
-        `,
+        html: receiptHtml,
       });
       console.log(`[Bug Report] Confirmation email sent to ${diagnostics.userEmail}`);
     }
