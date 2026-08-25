@@ -63,9 +63,9 @@ export async function sendContactAction(
         <span class="mw-text-muted" style="font-size: 10px; text-transform: uppercase; color: #a1a1aa; font-weight: 800; letter-spacing: 1.5px; display: block; margin-bottom: 8px; font-family: 'Courier New', Courier, monospace;">
           PATRON MESSAGE
         </span>
-        <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #09090b; border: 1px solid #27272a; border-left: 3px solid #f59e0b; border-radius: 8px;">
+        <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#000000" style="background-color: #000000; border: 1px solid #27272a; border-left: 3px solid #f59e0b; border-radius: 8px;">
           <tr>
-            <td class="mw-text-muted" style="padding: 14px 18px; color: #e4e4e7; font-style: italic; font-family: Georgia, serif; font-size: 14px; line-height: 22px; white-space: pre-wrap;">
+            <td class="mw-text-muted" bgcolor="#000000" style="padding: 14px 18px; color: #e4e4e7; font-style: italic; font-family: Georgia, serif; font-size: 14px; line-height: 22px; white-space: pre-wrap;">
               "${data.message}"
             </td>
           </tr>
@@ -77,19 +77,19 @@ export async function sendContactAction(
         <span class="mw-text-muted" style="font-size: 10px; text-transform: uppercase; color: #a1a1aa; font-weight: 800; letter-spacing: 1.5px; display: block; margin-bottom: 8px; font-family: 'Courier New', Courier, monospace;">
           SUBMISSION DETAILS
         </span>
-        <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; background-color: #09090b; border: 1px solid #27272a; border-radius: 10px; overflow: hidden;">
+        <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#000000" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; background-color: #000000; border: 1px solid #27272a; border-radius: 10px; overflow: hidden;">
           <tbody>
             <tr style="border-bottom: 1px solid #18181b;">
-              <td class="mw-text-muted" style="padding: 10px 14px; color: #71717a; font-weight: 700; width: 110px;">Name</td>
-              <td class="mw-text-white" style="padding: 10px 14px; color: #ffffff; font-weight: 600;">${data.name}</td>
+              <td class="mw-text-muted" bgcolor="#000000" style="padding: 10px 14px; color: #71717a; font-weight: 700; width: 110px;">Name</td>
+              <td class="mw-text-white" bgcolor="#000000" style="padding: 10px 14px; color: #ffffff; font-weight: 600;">${data.name}</td>
             </tr>
             <tr style="border-bottom: 1px solid #18181b;">
-              <td class="mw-text-muted" style="padding: 10px 14px; color: #71717a; font-weight: 700;">Email</td>
-              <td class="mw-text-gold" style="padding: 10px 14px; color: #fbbf24; font-family: monospace;"><a href="mailto:${data.email}" style="color: #fbbf24; text-decoration: none;">${data.email}</a></td>
+              <td class="mw-text-muted" bgcolor="#000000" style="padding: 10px 14px; color: #71717a; font-weight: 700;">Email</td>
+              <td class="mw-text-gold" bgcolor="#000000" style="padding: 10px 14px; color: #fbbf24; font-family: monospace;"><a href="mailto:${data.email}" style="color: #fbbf24; text-decoration: none;">${data.email}</a></td>
             </tr>
             <tr>
-              <td class="mw-text-muted" style="padding: 10px 14px; color: #71717a; font-weight: 700;">Category</td>
-              <td class="mw-text-white" style="padding: 10px 14px; color: #e4e4e7;">${data.category}</td>
+              <td class="mw-text-muted" bgcolor="#000000" style="padding: 10px 14px; color: #71717a; font-weight: 700;">Category</td>
+              <td class="mw-text-white" bgcolor="#000000" style="padding: 10px 14px; color: #e4e4e7;">${data.category}</td>
             </tr>
           </tbody>
         </table>

@@ -147,8 +147,8 @@ export function renderEmailWrapper({
     /* Outlook.com / Hotmail Pure Black Theme Protection */
     [data-ogsc] .mw-bg { background-color: #000000 !important; }
     [data-ogsc] .mw-card { background-color: #000000 !important; border-color: #f59e0b !important; }
-    [data-ogsc] .mw-box { background-color: #09090b !important; border-color: #27272a !important; }
-    [data-ogsc] .mw-logo-box { background-color: #09090b !important; border-color: #f59e0b !important; }
+    [data-ogsc] .mw-box { background-color: #000000 !important; border-color: #27272a !important; }
+    [data-ogsc] .mw-logo-box { background-color: #000000 !important; border-color: #f59e0b !important; }
     [data-ogsc] .mw-text-white { color: #ffffff !important; }
     [data-ogsc] .mw-text-gold { color: #f59e0b !important; }
     [data-ogsc] .mw-text-emerald { color: #10b981 !important; }
@@ -157,8 +157,8 @@ export function renderEmailWrapper({
 
     [data-ogsb] .mw-bg { background-color: #000000 !important; }
     [data-ogsb] .mw-card { background-color: #000000 !important; }
-    [data-ogsb] .mw-box { background-color: #09090b !important; }
-    [data-ogsb] .mw-logo-box { background-color: #09090b !important; }
+    [data-ogsb] .mw-box { background-color: #000000 !important; }
+    [data-ogsb] .mw-logo-box { background-color: #000000 !important; }
     [data-ogsb] .mw-btn { background-color: #f59e0b !important; }
   </style>
 </head>
@@ -177,7 +177,7 @@ export function renderEmailWrapper({
               <!-- Logo Medallion -->
               <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 12px;">
                 <tr>
-                  <td class="mw-logo-box" align="center" bgcolor="#09090b" style="width: 48px; height: 48px; background-color: #09090b; border: 1.5px solid #f59e0b; border-radius: 14px; text-align: center;">
+                  <td class="mw-logo-box" align="center" bgcolor="#000000" style="width: 48px; height: 48px; background-color: #000000; border: 1.5px solid #f59e0b; border-radius: 14px; text-align: center;">
                     <img src="https://dev.memoryweaver.studio/icon.svg" width="28" height="28" alt="Memory Weaver Logo" style="display: block; margin: 0 auto; background-color: transparent;" />
                   </td>
                 </tr>
@@ -219,7 +219,7 @@ export function renderEmailWrapper({
                 ${secondaryCtaText && secondaryCtaUrl ? `
                 <tr>
                   <td align="center" style="padding-top: 10px;">
-                    <a href="${secondaryCtaUrl}" target="_blank" style="display: inline-block; background-color: #09090b; color: #e2e8f0; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; text-decoration: none; padding: 10px 22px; border-radius: 8px; text-align: center; border: 1px solid #27272a;">
+                    <a href="${secondaryCtaUrl}" target="_blank" style="display: inline-block; background-color: #000000; color: #e2e8f0; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; text-decoration: none; padding: 10px 22px; border-radius: 8px; text-align: center; border: 1px solid #27272a;">
                       ${secondaryCtaText}
                     </a>
                   </td>
@@ -232,7 +232,7 @@ export function renderEmailWrapper({
 
           <!-- Footer -->
           <tr>
-            <td class="mw-bg" bgcolor="#09090b" style="background-color: #09090b; padding: 14px 20px; border-top: 1px solid #27272a; text-align: center; font-size: 10px; color: #71717a; text-transform: uppercase; letter-spacing: 0.15em; font-family: 'Courier New', Courier, monospace;">
+            <td class="mw-bg" bgcolor="#000000" style="background-color: #000000; padding: 14px 20px; border-top: 1px solid #27272a; text-align: center; font-size: 10px; color: #71717a; text-transform: uppercase; letter-spacing: 0.15em; font-family: 'Courier New', Courier, monospace;">
               ${footerNote ? `<p style="margin: 0 0 6px 0; text-transform: none; letter-spacing: normal; color: #71717a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px;">${footerNote}</p>` : ''}
               Memory Weaver Studio • Confidential &amp; Bespoke Archiving
             </td>

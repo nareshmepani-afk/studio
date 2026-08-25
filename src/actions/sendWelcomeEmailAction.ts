@@ -67,7 +67,7 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
     /* Outlook.com / Hotmail Pure Black Theme Protection */
     [data-ogsc] .mw-bg { background-color: #000000 !important; }
     [data-ogsc] .mw-card { background-color: #000000 !important; border-color: #f59e0b !important; }
-    [data-ogsc] .mw-box { background-color: #09090b !important; border-color: #27272a !important; }
+    [data-ogsc] .mw-box { background-color: #000000 !important; border-color: #27272a !important; }
     [data-ogsc] .mw-logo-box { background-color: #000000 !important; border-color: #1e293b !important; }
     [data-ogsc] .mw-text-white { color: #ffffff !important; }
     [data-ogsc] .mw-text-gold { color: #f59e0b !important; }
@@ -77,27 +77,27 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
 
     [data-ogsb] .mw-bg { background-color: #000000 !important; }
     [data-ogsb] .mw-card { background-color: #000000 !important; }
-    [data-ogsb] .mw-box { background-color: #09090b !important; }
+    [data-ogsb] .mw-box { background-color: #000000 !important; }
     [data-ogsb] .mw-logo-box { background-color: #000000 !important; }
     [data-ogsb] .mw-btn { background-color: #f59e0b !important; }
   </style>
 </head>
-<body class="mw-bg" style="margin: 0; padding: 0; background-color: #000000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ffffff;">
+<body class="mw-bg" bgcolor="#000000" style="margin: 0; padding: 0; background-color: #000000; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ffffff;">
   <!-- Full Screen Wrapper -->
-  <table class="mw-bg" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #000000; width: 100%; margin: 0; padding: 40px 16px;">
+  <table class="mw-bg" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#000000" style="background-color: #000000; width: 100%; margin: 0; padding: 40px 16px;">
     <tr>
-      <td align="center" valign="top">
+      <td align="center" valign="top" bgcolor="#000000">
         <!-- Main Card Container (Pure Obsidian Black) -->
-        <table class="mw-card" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #000000; border: 2px solid #f59e0b; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 70px rgba(0, 0, 0, 1);">
+        <table class="mw-card" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#000000" style="max-width: 600px; width: 100%; background-color: #000000; border: 2px solid #f59e0b; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 70px rgba(0, 0, 0, 1);">
           
           <!-- Header Banner with Pure Black Logo Medallion -->
           <tr>
-            <td class="mw-bg" style="background-color: #000000; padding: 40px 32px 24px 32px; border-bottom: 1px solid #27272a; text-align: center;">
+            <td class="mw-bg" bgcolor="#000000" style="background-color: #000000; padding: 40px 32px 24px 32px; border-bottom: 1px solid #27272a; text-align: center;">
               
               <!-- Pure Black Logo Box -->
               <table border="0" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 16px;">
                 <tr>
-                  <td class="mw-logo-box" align="center" style="width: 56px; height: 56px; background-color: #000000; border: 1.5px solid #1e293b; border-radius: 18px; text-align: center;">
+                  <td class="mw-logo-box" align="center" bgcolor="#000000" style="width: 56px; height: 56px; background-color: #000000; border: 1.5px solid #1e293b; border-radius: 18px; text-align: center;">
                     <img src="https://dev.memoryweaver.studio/icon.svg" width="32" height="32" alt="Memory Weaver Logo" style="display: block; margin: 0 auto; background-color: #000000;" />
                   </td>
                 </tr>
@@ -117,7 +117,7 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
 
           <!-- Welcome Body -->
           <tr>
-            <td style="padding: 32px 32px 24px 32px; background-color: #000000;">
+            <td bgcolor="#000000" style="padding: 32px 32px 24px 32px; background-color: #000000;">
               <p class="mw-text-white" style="margin: 0 0 16px 0; font-size: 16px; line-height: 24px; color: #ffffff;">
                 Greetings Director <strong class="mw-text-gold" style="color: #f59e0b;">${name || 'Storyteller'}</strong>,
               </p>
@@ -126,15 +126,15 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
               </p>
 
               <!-- Credentials Box -->
-              <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #09090b; border: 1px solid #27272a; border-radius: 16px; margin-bottom: 28px;">
+              <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#000000" style="background-color: #000000; border: 1px solid #27272a; border-radius: 16px; margin-bottom: 28px;">
                 <tr>
-                  <td style="padding: 14px 18px; border-bottom: 1px solid #27272a;">
+                  <td bgcolor="#000000" style="padding: 14px 18px; border-bottom: 1px solid #27272a;">
                     <span class="mw-text-gold" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #f59e0b; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Tier Status</span>
                     <strong class="mw-text-white" style="font-size: 14px; color: #ffffff;">🌟 6-Month Director Host Pass (Complimentary)</strong>
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding: 14px 18px;">
+                  <td bgcolor="#000000" style="padding: 14px 18px;">
                     <span class="mw-text-emerald" style="font-family: 'Courier New', Courier, monospace; font-size: 10px; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 4px;">Storage Allocation</span>
                     <strong class="mw-text-white" style="font-size: 14px; color: #ffffff;">📦 5.0 GB 4K Cloud Master Vault</strong>
                   </td>
@@ -146,24 +146,24 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
                 🎬 The 5-Act Production Journey:
               </h3>
 
-              <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 28px; background-color: #09090b; border: 1px solid #27272a; border-radius: 16px;">
+              <table class="mw-box" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#000000" style="margin-bottom: 28px; background-color: #000000; border: 1px solid #27272a; border-radius: 16px;">
                 <tr>
-                  <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5;">
+                  <td class="mw-text-white" bgcolor="#000000" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5;">
                     <strong class="mw-text-gold" style="color: #f59e0b;">1. Act I (Scriptorium):</strong> Draft your authentic spoken monologue or choose a family spark prompt to ignite your narrative memory.
                   </td>
                 </tr>
                 <tr>
-                  <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #27272a;">
+                  <td class="mw-text-white" bgcolor="#000000" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #27272a;">
                     <strong class="mw-text-gold" style="color: #f59e0b;">2. Act II (Director's Briefing):</strong> Calibrate lighting, rehearse spoken pacing, and review sensory word anchors before stepping on stage.
                   </td>
                 </tr>
                 <tr>
-                  <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #27272a;">
+                  <td class="mw-text-white" bgcolor="#000000" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #27272a;">
                     <strong class="mw-text-gold" style="color: #f59e0b;">3. Acts III &amp; IV (Soundstage &amp; Director's Cut):</strong> Record your 4K video take with live teleprompter guidance and AI sensory soundtrack synchronisation.
                   </td>
                 </tr>
                 <tr>
-                  <td class="mw-text-white" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #27272a;">
+                  <td class="mw-text-white" bgcolor="#000000" style="padding: 14px 18px; font-size: 13px; line-height: 20px; color: #f4f4f5; border-top: 1px solid #27272a;">
                     <strong class="mw-text-gold" style="color: #f59e0b;">4. Act V (Cinema Premiere):</strong> Generate 4K movie posters, invite family with private passcodes, or stream directly to Smart TVs.
                   </td>
                 </tr>
@@ -175,7 +175,7 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
                   <td align="center">
                     <table border="0" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td align="center" style="background-color: #f59e0b; border-radius: 12px;">
+                        <td align="center" bgcolor="#f59e0b" style="background-color: #f59e0b; border-radius: 12px;">
                           <a href="${studioUrl}" target="_blank" class="mw-btn" style="background-color: #f59e0b; border: 1px solid #f59e0b; border-radius: 12px; color: #000000; display: inline-block; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 900; line-height: 18px; text-align: center; text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; padding: 16px 40px; box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);">
                             🎙️ ENTER YOUR PRODUCTION STUDIO
                           </a>
@@ -187,7 +187,7 @@ export async function sendWelcomeEmailAction(params: WelcomeEmailParams) {
                 ${claimedMemoryId ? `
                 <tr>
                   <td align="center" style="padding-top: 12px;">
-                    <a href="${cinemaUrl}" style="display: inline-block; background-color: #09090b; color: #ffffff; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; text-decoration: none; padding: 12px 28px; border-radius: 12px; text-align: center; border: 1px solid #27272a;">
+                    <a href="${cinemaUrl}" style="display: inline-block; background-color: #000000; color: #ffffff; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; text-decoration: none; padding: 12px 28px; border-radius: 12px; text-align: center; border: 1px solid #27272a;">
                       🎬 Watch Claimed Memory ${claimedMemoryTitle ? `("${claimedMemoryTitle}")` : ''}
                     </a>
                   </td>
