@@ -12,8 +12,6 @@ import { cleanupAndMigrateMemories } from '@/actions/memoryActions';
 import { premiumPromptIds } from '@/lib/premiumPrompts';
 import { cn } from '@/lib/utils';
 
-// UI Components
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PromptCard } from '@/components/prompts/PromptCard';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -26,7 +24,6 @@ import { stripScreenplayCues } from '@/lib/sanitizer';
 import { 
   Film, 
   Loader2, 
-  Languages, 
   Plus, 
   Lock, 
   Clapperboard, 
@@ -65,7 +62,6 @@ export function StudioDashboard({
   isGuest?: boolean;
   sessionId?: string;
 }) {
-  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'gu'>('en');
   const router = useRouter();
   const { user } = useAuth();
   
@@ -190,18 +186,7 @@ export function StudioDashboard({
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-            <Select value={currentLanguage} onValueChange={(value) => setCurrentLanguage(value as 'en' | 'gu')}>
-              <SelectTrigger className="w-full md:w-44 bg-white/10 border-white/20 hover:bg-white/20 transition-all text-white font-bold tracking-tight shadow-xl">
-                <Languages className="mr-2 h-4 w-4 text-primary" />
-                <SelectValue placeholder="Language" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="gu">ગુજરાતી (Gujarati)</SelectItem>
-              </SelectContent>
-            </Select>
-
-              <TooltipProvider>
+            <TooltipProvider>
                 <Tooltip delayDuration={300}>
                   <TooltipTrigger asChild>
                     <Button

@@ -52,14 +52,16 @@ export function HotspotOverlay() {
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'h') {
+      // Support Ctrl+H, Ctrl+Shift+H, Cmd+H (Mac), and Cmd+Shift+H across all browsers
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'h') {
         e.preventDefault();
+        e.stopPropagation();
         setIsActive((prev) => !prev);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
   }, []);
 
   useEffect(() => {
