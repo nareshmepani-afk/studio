@@ -82,27 +82,48 @@ describe('Navbar Route Isolation & Admin Masking', () => {
   });
 
   describe('Public & Studio Route Rendering', () => {
-    it('renders navigation links on homepage (/)', () => {
+    it('renders navigation links on homepage (/) without LanguageToggle', () => {
       mockUsePathname.mockReturnValue('/');
       render(<Navbar />);
       expect(screen.getByText('Memory Weaver')).toBeInTheDocument();
       expect(screen.getByText('How It Works')).toBeInTheDocument();
       expect(screen.getByText('Pricing')).toBeInTheDocument();
       expect(screen.getByText('Contact')).toBeInTheDocument();
+      expect(screen.queryByLabelText(/Current language mode/i)).not.toBeInTheDocument();
     });
 
-    it('renders navigation links on consumer login (/login)', () => {
+    it('renders navigation links on consumer login (/login) without LanguageToggle', () => {
       mockUsePathname.mockReturnValue('/login');
       render(<Navbar />);
       expect(screen.getByText('Memory Weaver')).toBeInTheDocument();
       expect(screen.getByText('How It Works')).toBeInTheDocument();
+      expect(screen.queryByLabelText(/Current language mode/i)).not.toBeInTheDocument();
     });
 
-    it('renders navigation links on /pricing', () => {
+    it('renders navigation links on /pricing without LanguageToggle', () => {
       mockUsePathname.mockReturnValue('/pricing');
       render(<Navbar />);
       expect(screen.getByText('Memory Weaver')).toBeInTheDocument();
       expect(screen.getByText('Pricing')).toBeInTheDocument();
+      expect(screen.queryByLabelText(/Current language mode/i)).not.toBeInTheDocument();
+    });
+
+    it('renders LanguageToggle on /studio workspace', () => {
+      mockUsePathname.mockReturnValue('/studio');
+      render(<Navbar />);
+      expect(screen.getByLabelText(/Current language mode/i)).toBeInTheDocument();
+    });
+
+    it('renders LanguageToggle on /dashboard workspace', () => {
+      mockUsePathname.mockReturnValue('/dashboard');
+      render(<Navbar />);
+      expect(screen.getByLabelText(/Current language mode/i)).toBeInTheDocument();
+    });
+
+    it('renders LanguageToggle on /create workspace', () => {
+      mockUsePathname.mockReturnValue('/create');
+      render(<Navbar />);
+      expect(screen.getByLabelText(/Current language mode/i)).toBeInTheDocument();
     });
   });
 });

@@ -236,6 +236,27 @@ export interface Prompt {
   sensoryPrompts?: SensoryPromptTemplate[];
 }
 
+export interface LocalizedPromptText {
+  title: string;
+  description: string;
+  sensoryCues?: string[];
+}
+
+export interface LocalizedPrompt {
+  id: string;
+  chapterId: string;
+  eraCoordinates?: string;
+  en: LocalizedPromptText;
+  native?: LocalizedPromptText & {
+    languageCode: 'gu' | 'pa' | 'hi' | 'ur' | 'es' | 'zh';
+    scriptName: string;
+  };
+  transliteration?: {
+    title: string;
+    description: string;
+  };
+}
+
 export interface PromptGroup {
   id: string;
   title: { en: string; gu: string };

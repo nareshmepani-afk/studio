@@ -68,6 +68,14 @@ export function Navbar() {
 
   const isAuthenticated = !!user;
   const isStudio = pathname?.startsWith('/studio') || pathname?.startsWith('/add-memory');
+  const isStudioWorkspace = 
+    pathname?.startsWith('/studio') || 
+    pathname?.startsWith('/dashboard') || 
+    pathname?.startsWith('/create') || 
+    pathname?.startsWith('/add-memory') ||
+    pathname?.startsWith('/review') ||
+    pathname?.startsWith('/requests') ||
+    pathname?.startsWith('/interviewer');
   const isInterviewer = pathname?.startsWith('/interviewer');
   
   // PREMIUM ACCESS LOGIC: Check if the user has a valid Director Pass
@@ -213,7 +221,7 @@ export function Navbar() {
           <div className="flex items-center ml-auto space-x-2 sm:space-x-4">
             <StudioUpgradeBadge />
             {isStudio && <OpticsPrivacyShield />}
-            <LanguageToggle />
+            {isStudioWorkspace && <LanguageToggle />}
             <ThemeToggle />
             {isGuestDirectorView ? (
               <div className="px-3 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold uppercase tracking-widest rounded-full">
