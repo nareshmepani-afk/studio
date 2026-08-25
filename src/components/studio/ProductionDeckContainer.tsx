@@ -5,7 +5,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useStudioData } from '@/hooks/studio/useStudioData';
 import { storyScripts } from '@/lib/storyScripts';
-import { doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import ProductionDeck from './ProductionDeck';
 import { Loader2, Plus, AlertCircle } from 'lucide-react';
@@ -105,7 +105,7 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     setIsReady(false);
     setIsNotFound(false);
     setSelectedProductionData(null);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [user?.uid]);
 
   // 4-Second Timeout Safety Guard: Prevent hanging indefinitely on a black loading screen
@@ -125,9 +125,9 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
     return () => clearTimeout(timer);
   }, [isReady, promptId, selectedProductionData]);
 
-  // Direct Firestore Document Resolution:
-  // If promptId is a document ID (e.g. ey96djU6qR1BrDGnvZwp), fetch the document directly from Firestore
-  // on mount so direct URL navigation & parallel tabs load in <100ms without waiting for user collection queries.
+  // Direct Firestore Document / Prompt Resolution:
+  // If promptId is a document ID or a prompt ID (e.g. p1), fetch directly from Firestore on mount
+  // so direct URL navigation & parallel tabs load in <100ms without waiting for full collection listeners.
   useEffect(() => {
     let active = true;
 
@@ -135,9 +135,12 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
       if (!promptId || isReady || (selectedProductionData?.id === promptId && isReady)) return;
 
       try {
-        console.log(`[ProductionDeckContainer] Executing direct Firestore lookup for document ID "${promptId}"...`);
+        console.log(`[ProductionDeckContainer] Executing direct Firestore lookup for prompt/document ID "${promptId}"...`);
+        
+        // 1. Direct document lookup in root collection
         let docSnap = await getDoc(doc(db, 'memories', promptId));
 
+        // 2. Direct document lookup in user collection
         if (!docSnap.exists() && user?.uid) {
           docSnap = await getDoc(doc(db, 'users', user.uid, 'memories', promptId));
         }
@@ -149,6 +152,24 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
           setIsReady(true);
           setIsNotFound(false);
           lastLoadedId.current = promptId;
+          return;
+        }
+
+        // 3. Direct promptId query in user's memories (e.g. promptId is "p1", "p2", etc.)
+        if (active && user?.uid) {
+          const userMemQuery = query(collection(db, 'users', user.uid, 'memories'), where('promptId', '==', promptId));
+          const userMemSnap = await getDocs(userMemQuery);
+          
+          if (active && !userMemSnap.empty) {
+            const foundDoc = userMemSnap.docs[0];
+            const fetchedMemory = { id: foundDoc.id, ...foundDoc.data() };
+            console.log(`[ProductionDeckContainer] Direct promptId query succeeded for "${promptId}". Found document ID: "${foundDoc.id}", Title: "${(fetchedMemory as any).title}", Stage: ${(fetchedMemory as any).productionStage}`);
+            setSelectedProductionData(fetchedMemory);
+            setIsReady(true);
+            setIsNotFound(false);
+            lastLoadedId.current = promptId;
+            return;
+          }
         }
       } catch (err) {
         console.warn("[ProductionDeckContainer] Direct document resolution warning:", err);
@@ -189,7 +210,9 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   }, [promptId]);
 
   useEffect(() => {
-    if (studioLoading || authLoading || !chapters.length) return;
+    // CRITICAL: If auth is loading, or studio data is loading for an authenticated user, wait!
+    // Never prematurely initialize a blank template draft while user memories are loading in flight!
+    if (authLoading || (user && studioLoading) || !chapters.length) return;
 
     const chapterPrompts = chapters.flatMap(c => c.prompts);
     const isTemplateId = chapterPrompts.some(p => p.id === promptId);

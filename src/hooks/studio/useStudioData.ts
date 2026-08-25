@@ -34,7 +34,7 @@ export function useStudioData(userId: string | undefined) {
   }, [mode]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [requests, setRequests] = useState<StoryRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(userId !== 'guest' && userId !== undefined);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Guard refs to track last known data strings
   const lastMemoriesJSON = useRef<string>('');
@@ -43,16 +43,16 @@ export function useStudioData(userId: string | undefined) {
   const hasSkippedRef = useRef(false);
 
   useEffect(() => {
-    // If auth is still loading, wait before making any 'guest' decisions
-    if (loading) return;
+    // If auth is still loading, keep loading state true and wait
+    if (loading) {
+      setIsLoading(true);
+      return;
+    }
 
     if (!userId || userId === 'guest') {
       setMemories([]);
       setRequests([]);
-      if (!hasSkippedRef.current) {
-        hasSkippedRef.current = true;
-        setIsLoading(false);
-      }
+      setIsLoading(false);
       return;
     }
     
