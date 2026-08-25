@@ -6,7 +6,7 @@ import { PublicPageShell } from '@/components/public/PublicPageShell';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { PenTool, Mic, Wand2, Tv, Archive, Smartphone, Cast, QrCode, ArrowRight, Clapperboard } from 'lucide-react';
+import { PenTool, Mic, Wand2, Tv, Archive, Smartphone, Cast, QrCode, ArrowRight, Clapperboard, ChevronDown } from 'lucide-react';
 
 const acts = [
   {
@@ -107,40 +107,58 @@ export function HowItWorksContent() {
                 <div 
                   key={act.id} 
                   className={`relative pl-16 md:pl-20 transition-all duration-300 ${
-                    isExpanded ? 'opacity-100' : 'opacity-60 hover:opacity-80'
+                    isExpanded ? 'opacity-100' : 'opacity-70 hover:opacity-100'
                   }`}
                 >
-                  {/* Step Marker */}
+                  {/* Step Marker Button */}
                   <button 
-                    onClick={() => setActiveAct(act.id)}
-                    className={`absolute left-0 top-0 w-12 h-12 md:w-[4.2rem] md:h-[4.2rem] rounded-2xl flex items-center justify-center border transition-all duration-300 z-10 ${
+                    type="button"
+                    aria-expanded={isExpanded}
+                    aria-label={`Toggle ${act.title}`}
+                    onClick={() => setActiveAct(prev => prev === act.id ? 0 : act.id)}
+                    className={`absolute left-0 top-0 w-12 h-12 md:w-[4.2rem] md:h-[4.2rem] rounded-2xl flex items-center justify-center border transition-all duration-300 z-10 cursor-pointer ${
                       isExpanded 
                         ? 'bg-amber-500/10 border-amber-500 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.2)]' 
-                        : 'bg-neutral-900 border-white/10 text-neutral-400 hover:border-white/20'
+                        : 'bg-neutral-900 border-white/10 text-neutral-400 hover:border-amber-500/40 hover:text-white'
                     }`}
                   >
                     <Icon className="w-5 h-5 md:w-6 md:h-6" />
                   </button>
 
-                  {/* Step Content */}
+                  {/* Step Content Card */}
                   <div 
-                    onClick={() => setActiveAct(act.id)}
-                    className={`p-6 sm:p-8 rounded-3xl border cursor-pointer transition-all duration-300 ${
+                    onClick={() => setActiveAct(prev => prev === act.id ? 0 : act.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setActiveAct(prev => prev === act.id ? 0 : act.id);
+                      }
+                    }}
+                    className={`p-6 sm:p-8 rounded-3xl border cursor-pointer transition-all duration-300 select-none ${
                       isExpanded 
-                        ? 'bg-neutral-900/60 border-amber-500/30 backdrop-blur-md shadow-2xl' 
-                        : 'bg-neutral-950/40 border-white/5 hover:border-white/10'
+                        ? 'bg-neutral-900/60 border-amber-500/30 backdrop-blur-md shadow-2xl ring-1 ring-amber-500/20' 
+                        : 'bg-neutral-950/40 border-white/5 hover:border-white/15 hover:bg-neutral-900/30'
                     }`}
                   >
                     <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-xl sm:text-2xl font-serif text-white font-medium">
-                        {act.title}
-                      </h3>
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-xl sm:text-2xl font-serif text-white font-medium">
+                          {act.title}
+                        </h3>
+                        <ChevronDown 
+                          className={`w-4 h-4 text-neutral-400 transition-transform duration-300 ${
+                            isExpanded ? 'rotate-180 text-amber-400' : 'text-neutral-500'
+                          }`} 
+                        />
+                      </div>
                       <span className="text-xs font-mono text-neutral-500 uppercase tracking-widest">
                         Phase 0{act.id}
                       </span>
                     </div>
                     
-                    <p className="text-neutral-400 text-sm sm:text-base leading-relaxed mb-4">
+                    <p className="text-neutral-400 text-sm sm:text-base leading-relaxed mb-4 font-light">
                       {act.description}
                     </p>
 
@@ -155,8 +173,11 @@ export function HowItWorksContent() {
                         >
                           <div className="pt-4 border-t border-white/5 grid sm:grid-cols-3 gap-4">
                             {act.features.map((feature, idx) => (
-                              <div key={idx} className="bg-white/5 p-4 rounded-xl border border-white/5 flex items-start space-x-3">
-                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
+                              <div 
+                                key={idx} 
+                                className="bg-white/5 p-4 rounded-xl border border-white/5 flex items-start space-x-3 transition-colors hover:bg-white/10 hover:border-amber-500/20"
+                              >
+                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
                                 <span className="text-xs text-neutral-300 font-light leading-snug">
                                   {feature}
                                 </span>
