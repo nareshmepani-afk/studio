@@ -28,8 +28,12 @@ export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Standalone popout pages should be bezel-less and distraction-free without main app Navbar
-  if (pathname === '/studio/teleprompter-popout' || pathname === '/studio/remote-camera') {
+  // Standalone popouts and administrative suites should be distraction-free without consumer app Navbar
+  if (
+    pathname === '/studio/teleprompter-popout' || 
+    pathname === '/studio/remote-camera' ||
+    pathname?.startsWith('/admin')
+  ) {
     return null;
   }
 
