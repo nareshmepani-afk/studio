@@ -5,9 +5,9 @@ import LoginContent from './LoginContent';
 import AdminLoginPage from '../admin/login/page';
 
 export const metadata: Metadata = {
-  title: 'Sign In',
+  title: 'Director Sign In',
   description:
-    'Sign in to your Memory Weaver production studio. Access your spoken memoirs, Family Cinema, and generational archive.',
+    'Sign in to your Memory Weaver Director Studio. Access your spoken memoirs, Family Cinema, and generational archive.',
 };
 
 export const dynamic = 'force-dynamic';
