@@ -77,10 +77,10 @@ const PRICING_TIERS: PricingTierItem[] = [
       'Unlimited streaming',
       'Custom scene creation',
     ],
-    cta: 'Upgrade to Director Pass',
+    cta: 'Buy 31-Day Pass',
     href: '#',
     ctaVariant: 'secondary',
-    microcopy: '~3.5 local coffees per month',
+    microcopy: 'One-off • 31 days access • Zero recurring commitment',
     isCheckoutAction: true,
   },
   {

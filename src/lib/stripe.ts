@@ -37,18 +37,17 @@ export interface TierPricingConfig {
 export const PRICING_TIERS_CONFIG: Record<CheckoutTier, TierPricingConfig> = {
   director: {
     name: '31-Day Director Pass',
-    description: 'Full 5-Act Studio, 15 GB 4K Cloud Vault, AI Narrative Synthesis & Unlimited 4K Cinema Streaming.',
-    mode: 'subscription',
+    description: 'Full 5-Act Studio, 15 GB 4K Cloud Vault, AI Narrative Synthesis & Unlimited 4K Cinema Streaming (31 Days Studio Access • Single Non-Recurring Transaction).',
+    mode: 'payment',
     amount: {
-      gbp: 1299, // £12.99/month
-      usd: 1499, // $14.99/month
+      gbp: 1299, // £12.99 one-off
+      usd: 1499, // $14.99 one-off
     },
-    interval: 'month',
     storageQuotaBytes: 15 * 1024 * 1024 * 1024, // 15 GB
   },
   generational_vault: {
     name: 'Generational Vault (Lifetime)',
-    description: 'Permanent 100 GB Generational Cloud Vault, Offline Archive Export, All Future Studio Enhancements & Zero Rent Forever.',
+    description: 'Permanent 100 GB Generational Cloud Vault, Offline Archive Export, All Future Studio Enhancements & Zero Rent Forever (Perpetual Lifetime Access).',
     mode: 'payment',
     amount: {
       gbp: 19500, // £195.00 one-time
@@ -105,6 +104,7 @@ export async function getOrCreateStripeCustomer(params: {
 
 /**
  * Creates a customized Stripe Checkout session for Director Pass or Generational Vault.
+ * Both tiers operate under mode: 'payment' for fixed-duration and lifetime access (matching Section 5 of Terms of Service).
  */
 export async function createStripeCheckoutSession(params: {
   uid: string;

@@ -297,7 +297,7 @@ export interface UserAccount {
   vaultQuotaGb?: number;
   flaggedPrompts?: string[];
   isPremium?: boolean;
-  membershipTier?: 'sandbox' | 'director_complimentary' | 'director_monthly' | 'generational_vault';
+  membershipTier?: 'sandbox' | 'director_complimentary' | 'director_pass' | 'director_monthly' | 'generational_vault';
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   stripeSessionId?: string;

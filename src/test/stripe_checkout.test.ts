@@ -3,17 +3,17 @@ import { PRICING_TIERS_CONFIG, getOrCreateStripeCustomer, createStripeCheckoutSe
 import { POST as webhookPost } from '@/app/api/webhooks/stripe/route';
 import { NextRequest } from 'next/server';
 
-describe('MW-85: Stripe Payment & Generational Vault Engine', () => {
+describe('MW-85: Stripe Payment & Generational Vault Engine (Option B: One-Off Pass)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('Pricing Tiers Configuration Matrix', () => {
-    it('configures Director Pass with monthly subscription and 15GB vault quota', () => {
+  describe('Pricing Tiers Configuration Matrix (Option B: Fixed-Duration One-Time Pass)', () => {
+    it('configures 31-Day Director Pass with one-time payment mode (no recurring subscription)', () => {
       const director = PRICING_TIERS_CONFIG.director;
       expect(director).toBeDefined();
-      expect(director.mode).toBe('subscription');
-      expect(director.interval).toBe('month');
+      expect(director.mode).toBe('payment');
+      expect(director.interval).toBeUndefined();
       expect(director.amount.gbp).toBe(1299); // £12.99
       expect(director.amount.usd).toBe(1499); // $14.99
       expect(director.storageQuotaBytes).toBe(15 * 1024 * 1024 * 1024);

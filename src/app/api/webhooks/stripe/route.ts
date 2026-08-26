@@ -68,11 +68,20 @@ export async function POST(req: NextRequest) {
 
         const isLifetime = tier === 'generational_vault';
         const now = new Date();
-        const thirtyOneDaysLater = new Date(now.getTime() + 31 * 24 * 60 * 60 * 1000);
+
+        let newExpiryDate: string | null = null;
+        if (!isLifetime) {
+          // Cumulative 31-day pass extension calculation
+          const existingExpiryStr = userData?.paidDirectorPassExpiryDate;
+          const existingExpiry = existingExpiryStr ? new Date(existingExpiryStr) : null;
+          const baseDate = (existingExpiry && existingExpiry.getTime() > now.getTime()) ? existingExpiry : now;
+          const extendedDate = new Date(baseDate.getTime() + 31 * 24 * 60 * 60 * 1000);
+          newExpiryDate = extendedDate.toISOString();
+        }
 
         const updates: Record<string, any> = {
           directorPassStatus: 'paid_host_pass_active',
-          membershipTier: isLifetime ? 'generational_vault' : 'director_monthly',
+          membershipTier: isLifetime ? 'generational_vault' : 'director_pass',
           vaultQuotaGb: isLifetime ? 100 : 15,
           storageQuota: {
             total: newTotalQuotaBytes,
@@ -81,7 +90,7 @@ export async function POST(req: NextRequest) {
           stripeCustomerId: session.customer ? String(session.customer) : (userData?.stripeCustomerId || null),
           stripeSessionId: session.id,
           lastPaymentDate: now.toISOString(),
-          paidDirectorPassExpiryDate: isLifetime ? null : thirtyOneDaysLater.toISOString(),
+          paidDirectorPassExpiryDate: newExpiryDate,
         };
 
         if (session.subscription) {
