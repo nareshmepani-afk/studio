@@ -789,3 +789,18 @@ Whenever delivering a new feature, subscription change, integration capability, 
 ## 29.4 Retrospective & Audit Enforcement (Rule 16 Integration)
 The final **Production-Ready Audit & Retrospective** (Rule 16) MUST explicitly confirm Living Knowledge Hub synchronization status:
 `Living Knowledge Hub: SYNCHRONIZED (src/config/businessRules.ts -> docs/living-manifest.md & admin?suite=knowledge)`
+
+# 31. Legal Suite Version & Effective Date Synchronization Standard
+
+## 31.1 Single Source of Truth (`src/lib/legalConfig.ts`)
+- All legal document titles, routes, applicable laws, version strings (`v1.2.0`), and last-updated timestamps MUST strictly reside within `src/lib/legalConfig.ts` (`LEGAL_CONFIG`).
+- Code MUST NEVER hardcode static date strings (e.g. `"21 August 2026"`) directly within layout components or page bodies.
+
+## 31.2 Mandatory Date & Version Bump on Legal Modifications
+- Whenever any clause, subprocessor table, or operational policy is modified across `/legal/terms`, `/legal/privacy`, or `/legal/cookies`, the agent MUST:
+  1. Update `LEGAL_CONFIG[doc].lastUpdated` to the active commit/release date in **British English (UK) format: `DD Month YYYY`** (e.g. `26 August 2026`).
+  2. Increment the patch or minor version string (`version: 'v1.2.0'`).
+  3. Ensure the automated regression test in `src/test/legal_terms_contracts.test.ts` validates the date formatting and route metadata resolution.
+
+## 31.3 Dynamic Context-Aware Header HUD
+- `LegalLayoutContent.tsx` must dynamically read `getLegalMetaForPath(pathname)` to render the active document's exact `lastUpdated` date and version badge in the top header HUD without visual redundancy in the article body.

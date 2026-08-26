@@ -54,8 +54,7 @@ export function CookiesContent() {
 
   return (
     <article className="prose prose-invert max-w-none prose-headings:font-serif prose-headings:tracking-tight prose-headings:text-white prose-p:leading-relaxed prose-p:text-white/70 prose-li:text-white/70 prose-strong:text-white/95 prose-a:text-amber-400 prose-a:no-underline hover:prose-a:underline">
-      <h1 className="text-3xl sm:text-4xl font-serif font-bold text-white mb-2">Cookie &amp; Local Storage Policy</h1>
-      <p className="text-sm text-zinc-400 mb-8">Last updated: 21 August 2026</p>
+      <h1 className="text-3xl sm:text-4xl font-serif font-bold text-white mb-6">Cookie &amp; Local Storage Policy</h1>
 
       <p className="lead text-base sm:text-lg text-white/80 leading-relaxed mb-8">
         Memory Weaver Studio (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) uses cookies, local storage tokens, and browser 

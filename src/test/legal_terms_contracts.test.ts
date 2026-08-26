@@ -178,4 +178,28 @@ describe('Terms of Service Legal Contract Shield', () => {
     });
   });
 
+  // --------------------------------------------------------------------------
+  // SECTION 4: LEGAL SUITE METADATA & EFFECTIVE DATE SYNCHRONIZATION
+  // --------------------------------------------------------------------------
+  describe('Legal Config & Effective Date Synchronization Standard', () => {
+    it('maintains valid British English formatted lastUpdated dates and versioning', async () => {
+      const { LEGAL_CONFIG, getLegalMetaForPath } = await import('@/lib/legalConfig');
+
+      expect(LEGAL_CONFIG.terms.lastUpdated).toMatch(/^\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}$/);
+      expect(LEGAL_CONFIG.privacy.lastUpdated).toMatch(/^\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}$/);
+      expect(LEGAL_CONFIG.cookies.lastUpdated).toMatch(/^\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}$/);
+
+      expect(LEGAL_CONFIG.terms.applicableLaw).toContain('England and Wales');
+      expect(LEGAL_CONFIG.privacy.applicableLaw).toContain('UK GDPR');
+      expect(LEGAL_CONFIG.cookies.applicableLaw).toContain('UK PECR');
+
+      // Test route matching
+      expect(getLegalMetaForPath('/legal/terms').id).toBe('terms');
+      expect(getLegalMetaForPath('/legal/privacy').id).toBe('privacy');
+      expect(getLegalMetaForPath('/legal/cookies').id).toBe('cookies');
+      expect(getLegalMetaForPath('/legal').id).toBe('terms');
+      expect(getLegalMetaForPath(null).id).toBe('terms');
+    });
+  });
+
 });

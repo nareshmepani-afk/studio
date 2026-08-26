@@ -10,8 +10,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <article className="prose prose-invert max-w-none prose-headings:font-serif prose-headings:tracking-tight prose-headings:text-white prose-p:leading-relaxed prose-p:text-white/70 prose-li:text-white/70 prose-strong:text-white/95 prose-a:text-amber-400 prose-a:no-underline hover:prose-a:underline">
-      <h1 className="text-3xl sm:text-4xl font-serif font-bold text-white mb-2">Privacy Policy</h1>
-      <p className="text-sm text-zinc-400 mb-8">Last updated: 21 August 2026</p>
+      <h1 className="text-3xl sm:text-4xl font-serif font-bold text-white mb-6">Privacy Policy</h1>
 
       {/* The Zero-AI-Training Guarantee Callout */}
       <div className="my-8 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-6 backdrop-blur-sm shadow-xl shadow-amber-500/5 not-prose">

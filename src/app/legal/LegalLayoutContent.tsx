@@ -4,17 +4,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { PublicPageShell } from '@/components/public/PublicPageShell';
 import { Scale, Shield, Cookie, ChevronRight, Home } from 'lucide-react';
-
-const LEGAL_LAST_UPDATED = '21 August 2026';
+import { getLegalMetaForPath, LEGAL_CONFIG } from '@/lib/legalConfig';
 
 const legalPages = [
-  { href: '/legal/terms', label: 'Terms of Service', icon: Scale },
-  { href: '/legal/privacy', label: 'Privacy Policy', icon: Shield },
-  { href: '/legal/cookies', label: 'Cookie Policy', icon: Cookie },
+  { href: LEGAL_CONFIG.terms.route, label: LEGAL_CONFIG.terms.title, icon: Scale },
+  { href: LEGAL_CONFIG.privacy.route, label: LEGAL_CONFIG.privacy.title, icon: Shield },
+  { href: LEGAL_CONFIG.cookies.route, label: LEGAL_CONFIG.cookies.title, icon: Cookie },
 ];
 
 export function LegalLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const currentMeta = getLegalMetaForPath(pathname);
 
   return (
     <PublicPageShell narrowWidth className="py-12">
@@ -29,7 +29,7 @@ export function LegalLayoutContent({ children }: { children: React.ReactNode }) 
           <>
             <ChevronRight className="h-3 w-3" />
             <span className="text-white/80 font-medium">
-              {legalPages.find((p) => p.href === pathname)?.label || 'Policy'}
+              {currentMeta.shortTitle}
             </span>
           </>
         )}
@@ -37,9 +37,12 @@ export function LegalLayoutContent({ children }: { children: React.ReactNode }) 
 
       {/* Header Badges & Audio Summary Hook */}
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <div className="inline-flex items-center rounded-full border border-amber-500/20 bg-amber-500/5 px-3 py-1">
-          <span className="text-xs font-medium text-amber-500/80">
-            Last Updated: {LEGAL_LAST_UPDATED}
+        <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/5 px-3 py-1">
+          <span className="text-xs font-medium text-amber-500/90">
+            Last Updated: {currentMeta.lastUpdated}
+          </span>
+          <span className="text-[10px] font-mono font-semibold text-amber-400/60 bg-amber-500/10 px-1.5 py-0.2 rounded-full">
+            {currentMeta.version}
           </span>
         </div>
         <div 
