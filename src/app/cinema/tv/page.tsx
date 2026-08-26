@@ -176,8 +176,17 @@ function SmartTVPlayerContent() {
         videoRef.current.pause();
         setIsPlaying(false);
       } else {
-        videoRef.current.play();
-        setIsPlaying(true);
+        setIsBuffering(true);
+        videoRef.current.play()
+          .then(() => {
+            setIsPlaying(true);
+            setIsBuffering(false);
+          })
+          .catch((err) => {
+            console.warn('[SmartTV] Play failed:', err);
+            setIsPlaying(false);
+            setIsBuffering(false);
+          });
       }
     }
   };
@@ -203,6 +212,33 @@ function SmartTVPlayerContent() {
     || memory?.mediaAttachments?.find(
         (m: any) => m.type === 'image' || m.url?.endsWith('.jpg') || m.url?.endsWith('.png') || m.url?.endsWith('.webp')
       )?.url;
+
+  // Autoplay handler with graceful fallback for browser policies
+  useEffect(() => {
+    if (videoUrl && videoRef.current) {
+      setIsBuffering(true);
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+            setIsBuffering(false);
+          })
+          .catch((err) => {
+            console.warn('[SmartTV] Autoplay blocked by browser policy, waiting for user gesture:', err);
+            setIsPlaying(false);
+            setIsBuffering(false);
+          });
+      }
+
+      // Safety timeout: ensure buffering overlay never gets permanently stuck
+      const safetyTimeout = setTimeout(() => {
+        setIsBuffering(false);
+      }, 5000);
+
+      return () => clearTimeout(safetyTimeout);
+    }
+  }, [videoUrl]);
 
   if (loading) {
     return (
@@ -238,7 +274,7 @@ function SmartTVPlayerContent() {
     <div className="w-screen h-screen bg-black overflow-hidden relative font-sans select-none">
       {/* 4K Background Player */}
       {videoUrl ? (
-        <div className="relative w-full h-full">
+        <div className="relative w-full h-full cursor-pointer" onClick={togglePlay}>
           <video
             ref={videoRef}
             src={videoUrl}
@@ -254,13 +290,31 @@ function SmartTVPlayerContent() {
               setIsBuffering(false);
             }}
             onPause={() => setIsPlaying(false)}
-            autoPlay
             playsInline
             x-webkit-airplay="allow"
             controlsList="nodownload"
-            className="w-full h-full object-contain cursor-pointer"
-            onClick={togglePlay}
+            className="w-full h-full object-contain"
           />
+
+          {/* Big Center Play Prompt when Paused */}
+          <AnimatePresence>
+            {!isPlaying && !isBuffering && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.25 }}
+                className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/40 backdrop-blur-xs"
+              >
+                <div className="w-24 h-24 rounded-full bg-amber-400/90 text-slate-950 flex items-center justify-center shadow-[0_0_50px_rgba(245,158,11,0.5)] transform transition-transform hover:scale-110 mb-4">
+                  <Play className="w-12 h-12 fill-current ml-1.5" />
+                </div>
+                <span className="text-sm font-mono font-bold text-amber-300 uppercase tracking-widest bg-black/60 px-4 py-1.5 rounded-full border border-amber-500/30">
+                  Press [OK / Space] or Click to Play
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Atmospheric Cinematic Buffering Overlay (Zero Blank Box) */}
           <AnimatePresence>
@@ -269,7 +323,7 @@ function SmartTVPlayerContent() {
                 initial={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.6 }}
-                className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950/85 backdrop-blur-md p-8 text-center pointer-events-none"
+                className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950/85 backdrop-blur-md p-8 text-center"
               >
                 {/* Soft Poster Blur Backdrop */}
                 {posterImageUrl && (
@@ -299,7 +353,7 @@ function SmartTVPlayerContent() {
                   {memory.title || 'Family Heirloom'}
                 </h3>
                 <p className="text-xs font-mono text-zinc-400 uppercase tracking-widest max-w-md z-10">
-                  Synchronizing video stream & cinematic audio score...
+                  Synchronizing video stream &amp; cinematic audio score...
                 </p>
               </motion.div>
             )}

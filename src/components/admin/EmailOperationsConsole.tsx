@@ -87,10 +87,18 @@ export function EmailOperationsConsole() {
     }, 50);
   };
 
-  // Initialize recipient and template props
+  // Initialize recipient, template props, and subtab from URL
   useEffect(() => {
     if (user?.email && !targetEmail) {
       setTargetEmail(user.email);
+    }
+
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sub = urlParams.get('subtab') || urlParams.get('sub') || urlParams.get('tab');
+      if (sub === 'bulk' || sub === 'test' || sub === 'directory') {
+        setActiveSubTab(sub);
+      }
     }
   }, [user, targetEmail]);
 
