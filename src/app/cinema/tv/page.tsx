@@ -198,6 +198,34 @@ function SmartTVPlayerContent() {
     }
   };
 
+  const handleNativeCast = async () => {
+    if (!videoRef.current) return;
+    const vid = videoRef.current as any;
+
+    // 1. W3C Remote Playback API (Native Google Cast prompt in Google Chrome & Edge)
+    if (vid.remote && typeof vid.remote.prompt === 'function') {
+      try {
+        await vid.remote.prompt();
+        return;
+      } catch (err: any) {
+        console.info('[SmartTV] Remote Playback prompt dismissed or fallback needed:', err?.message);
+      }
+    }
+
+    // 2. WebKit Playback Target Picker (Apple AirPlay in Safari macOS / iOS)
+    if (typeof vid.webkitShowPlaybackTargetPicker === 'function') {
+      try {
+        vid.webkitShowPlaybackTargetPicker();
+        return;
+      } catch (err) {
+        console.info('[SmartTV] AirPlay target picker dismissed or fallback needed:', err);
+      }
+    }
+
+    // 3. Fallback: Toggle instructional guide if direct programmatic hardware prompt is unsupported
+    setShowCastGuide(prev => !prev);
+  };
+
   // Aligned video URL resolution with MemoryCinematicViewer.tsx fallback chain
   const videoUrl = memory?.videoUrl
     || (memory as any)?.recordingUrl
@@ -378,9 +406,9 @@ function SmartTVPlayerContent() {
         <button
           type="button"
           data-hotspot-id="HS_CINEMA_TV_CAST_GUIDE_BTN"
-          onClick={() => setShowCastGuide(prev => !prev)}
+          onClick={handleNativeCast}
           className="flex items-center gap-2.5 px-4 py-2 bg-slate-950/80 hover:bg-slate-900/95 backdrop-blur-xl border border-white/20 hover:border-amber-400/60 rounded-full text-xs font-mono font-bold text-white uppercase tracking-widest transition-all active:scale-95 shadow-2xl cursor-pointer"
-          title="How to stream this memory to your TV"
+          title="Direct Google Cast or AirPlay device picker"
         >
           <Cast className="w-4 h-4 text-amber-400" />
           <span>Cast to TV</span>
