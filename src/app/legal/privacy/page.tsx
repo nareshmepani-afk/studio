@@ -4,110 +4,168 @@ import { Shield } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Privacy Policy',
   description:
-    'Privacy Policy for Memory Weaver. Learn how we protect your data, our zero-AI-training guarantee, and your rights under UK GDPR.',
+    'Privacy Policy for Memory Weaver Studio — UK GDPR compliance, Zero-AI-Training Guarantee, data retention schedules, and subprocessor transparency.',
 };
 
 export default function PrivacyPage() {
   return (
-    <div>
-      <h1>Privacy Policy</h1>
-      <p className="lead text-lg text-white/60">
-        This Privacy Policy explains how Memory Weaver collects, uses, and protects your personal data.
-      </p>
+    <article className="prose prose-invert max-w-none prose-headings:font-serif prose-headings:tracking-tight prose-headings:text-white prose-p:leading-relaxed prose-p:text-white/70 prose-li:text-white/70 prose-strong:text-white/95 prose-a:text-amber-400 prose-a:no-underline hover:prose-a:underline">
+      <h1 className="text-3xl sm:text-4xl font-serif font-bold text-white mb-2">Privacy Policy</h1>
+      <p className="text-sm text-zinc-400 mb-8">Last updated: 21 August 2026</p>
 
-      <hr className="my-8 border-white/10" />
-
-      <h2>1. Introduction & Data Controller</h2>
-      <p>
-        Memory Weaver ("we", "us", "our") is the data controller responsible for your personal information. We are based in the United Kingdom and are committed to protecting your privacy in accordance with the UK Data Protection Act 2018 and the UK General Data Protection Regulation (UK GDPR).
-      </p>
-
-      <div className="my-8 rounded-xl border-2 border-amber-500/50 bg-amber-500/10 p-6 shadow-lg shadow-amber-500/5">
-        <div className="mb-4 flex items-center gap-3">
-          <div className="rounded-full bg-amber-500/20 p-2">
-            <Shield className="h-6 w-6 text-amber-500" />
+      {/* The Zero-AI-Training Guarantee Callout */}
+      <div className="my-8 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-6 backdrop-blur-sm shadow-xl shadow-amber-500/5 not-prose">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="rounded-full bg-amber-500/20 p-2 text-amber-400">
+            <Shield className="h-5 w-5" />
           </div>
-          <h3 className="m-0 text-xl font-medium text-amber-400">Zero-AI-Training Guarantee</h3>
+          <h3 className="text-amber-400 text-base font-semibold uppercase tracking-wider m-0">
+            The Zero-AI-Training Guarantee
+          </h3>
         </div>
-        <p className="m-0 text-amber-100/90 leading-relaxed font-medium">
-          Your voice recordings, private transcripts, and uploaded imagery are NEVER used to train third-party artificial intelligence or machine learning foundation models. Your stories belong to you.
+        <p className="text-zinc-200 text-sm leading-relaxed m-0">
+          Your voice recordings, private transcripts, uploaded family media, and personal oral memoirs are{' '}
+          <strong className="text-white font-semibold">never used to train, retrain, or improve public or third-party artificial intelligence foundation models</strong>.{' '}
+          All automated processing is performed through secure, isolated enterprise API pipelines with zero-data-retention agreements. Your life story belongs exclusively to you and your family.
         </p>
       </div>
 
-      <h2>2. Data We Collect</h2>
-      <p>We collect and process the following categories of personal data:</p>
-      <ul>
-        <li><strong>Account Information:</strong> Name, email address, password, and profile details.</li>
-        <li><strong>Content Data:</strong> Voice recordings, media uploads (photos, videos), and text inputs for your memoirs.</li>
-        <li><strong>Usage Analytics:</strong> Information on how you interact with our platform to improve user experience.</li>
-        <li><strong>Device Information:</strong> IP address, browser type, operating system, and unique device identifiers.</li>
-      </ul>
-
-      <h2>3. How We Use Your Data</h2>
-      <p>We process your personal data under the following lawful bases:</p>
-      <ul>
-        <li><strong>Contractual Necessity:</strong> To provide our services, manage your account, and deliver customer support.</li>
-        <li><strong>Consent:</strong> When you voluntarily opt-in to marketing communications or analytics tracking.</li>
-        <li><strong>Legitimate Interest:</strong> To improve our platform, ensure security, and prevent fraud.</li>
-      </ul>
-
-      <h2>4. Data Sharing & Third-Party Processors</h2>
+      <h2>1. Data Controller &amp; Overview</h2>
       <p>
-        We do not sell your personal data. We share data only with trusted third-party processors who assist us in operating our service. These include:
+        Memory Weaver Studio (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) is the Data Controller responsible for your personal data. 
+        We operate in the United Kingdom and manage all personal data strictly in compliance with the{' '}
+        <strong>UK General Data Protection Regulation (UK GDPR)</strong> and the <strong>Data Protection Act 2018</strong>.
       </p>
+
+      <h2>2. Categories of Personal Data We Process</h2>
+      <p>We collect and process the following categories of data when you use the Service:</p>
       <ul>
-        <li><strong>Firebase & Google Cloud Platform:</strong> For secure hosting and data storage.</li>
-        <li><strong>Resend:</strong> For transactional email delivery.</li>
-        <li><strong>Stream.io:</strong> For real-time video communication infrastructure.</li>
-        <li><strong>Google reCAPTCHA:</strong> For anti-bot protection and security.</li>
+        <li>
+          <strong>Account &amp; Identity Data:</strong> Full name, email address, encrypted authentication tokens, 
+          profile image, and account preferences.
+        </li>
+        <li>
+          <strong>Oral History &amp; Creative Media:</strong> Spoken audio recordings, AI-generated transcriptions, 
+          written narrative drafts, biographical details, uploaded family photographs, video assets, and mastered 4K presentation reels.
+        </li>
+        <li>
+          <strong>Non-Biometric Processing Notice:</strong> Audio recordings are collected and processed solely for narrative transcription, audio normalization, and archival presentation playback. We do not extract biometric identifiers, facial geometry, or unique voiceprints for biometric identification purposes.
+        </li>
+        <li>
+          <strong>Technical &amp; Device Data:</strong> Internet Protocol (IP) address, browser client details, operating system, and session telemetry required for video streaming optimization.
+        </li>
+        <li>
+          <strong>Aggregated Analytics:</strong> Privacy-friendly usage telemetry collected strictly with your consent via our Cookie Consent Dock.
+        </li>
       </ul>
+
+      <h2>3. Lawful Bases for Processing</h2>
+      <p>Under UK GDPR Article 6, we process your personal data under the following lawful bases:</p>
+      <ul>
+        <li>
+          <strong>Performance of a Contract:</strong> To provision your Studio account, process spoken audio into mastered memoirs, generate vector print booklets, and maintain your private screening room.
+        </li>
+        <li>
+          <strong>Legitimate Interests:</strong> To protect platform integrity, prevent spam or abuse, enforce rate limits on shared screening links, and maintain cloud infrastructure security.
+        </li>
+        <li>
+          <strong>Explicit Consent:</strong> To initialize analytics telemetry cookies and send optional production newsletters or marketing updates. You may withdraw consent at any time.
+        </li>
+      </ul>
+
+      <h2>4. Third-Party Subprocessors &amp; Data Sharing</h2>
+      <p>
+        We do not sell, rent, or trade your personal data. We transfer data strictly to vetted third-party 
+        infrastructure partners (&quot;Subprocessors&quot;) bound by stringent Data Processing Agreements (DPAs):
+      </p>
+
+      <div className="overflow-x-auto my-6 not-prose">
+        <table className="min-w-full text-left text-sm text-zinc-300 border border-zinc-800 rounded-xl overflow-hidden">
+          <thead className="bg-zinc-900 text-zinc-100 font-semibold border-b border-zinc-800">
+            <tr>
+              <th className="p-3.5">Subprocessor</th>
+              <th className="p-3.5">Processing Purpose</th>
+              <th className="p-3.5">Location</th>
+              <th className="p-3.5">Transfer Safeguard</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-zinc-800 bg-neutral-950/60">
+            <tr className="hover:bg-white/[0.02]">
+              <td className="p-3.5 font-mono text-xs text-amber-400">Google Cloud Platform &amp; Firebase</td>
+              <td className="p-3.5 text-zinc-300">Encrypted Cloud Storage, Firestore Databases, Identity Auth</td>
+              <td className="p-3.5 text-zinc-400">UK / EU / US</td>
+              <td className="p-3.5 text-zinc-400">UK International Data Transfer Addendum / SCCs</td>
+            </tr>
+            <tr className="hover:bg-white/[0.02]">
+              <td className="p-3.5 font-mono text-xs text-amber-400">Enterprise AI Inference Partners</td>
+              <td className="p-3.5 text-zinc-300">Automated Audio Transcription &amp; Thematic Narrative Structuring</td>
+              <td className="p-3.5 text-zinc-400">US / EU</td>
+              <td className="p-3.5 text-zinc-400">Zero-Data-Retention Enterprise API Terms &amp; SCCs</td>
+            </tr>
+            <tr className="hover:bg-white/[0.02]">
+              <td className="p-3.5 font-mono text-xs text-amber-400">Resend Inc.</td>
+              <td className="p-3.5 text-zinc-300">Transactional Email Dispatch (Host Passes, Screening Invites)</td>
+              <td className="p-3.5 text-zinc-400">US</td>
+              <td className="p-3.5 text-zinc-400">Standard Contractual Clauses (SCCs)</td>
+            </tr>
+            <tr className="hover:bg-white/[0.02]">
+              <td className="p-3.5 font-mono text-xs text-amber-400">Stream.io</td>
+              <td className="p-3.5 text-zinc-300">Real-Time Video Delivery Infrastructure</td>
+              <td className="p-3.5 text-zinc-400">EU / US</td>
+              <td className="p-3.5 text-zinc-400">Standard Contractual Clauses (SCCs)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <h2>5. Your Rights Under UK GDPR</h2>
-      <p>You have the following rights regarding your personal data:</p>
+      <p>You hold the following enforceable rights regarding your personal information:</p>
       <ul>
-        <li><strong>Right of Access:</strong> Request a copy of your personal data.</li>
-        <li><strong>Right to Rectification:</strong> Correct inaccurate or incomplete data.</li>
-        <li><strong>Right to Erasure (Right to be Forgotten):</strong> Request deletion of your data.</li>
-        <li><strong>Right to Data Portability:</strong> Receive your data in a structured, machine-readable format.</li>
-        <li><strong>Right to Object:</strong> Object to processing based on legitimate interests or for direct marketing.</li>
-        <li><strong>Right to Restriction:</strong> Request limited processing of your data.</li>
-        <li><strong>Withdraw Consent:</strong> Withdraw consent at any time where processing is based on consent.</li>
+        <li><strong>Right of Access:</strong> Request a full copy of all personal data and transcripts held in your account.</li>
+        <li><strong>Right to Rectification:</strong> Edit and correct incomplete or inaccurate narrative information.</li>
+        <li><strong>Right to Erasure (&quot;Right to be Forgotten&quot;):</strong> Request the complete deletion of your account, media, transcripts, and storage allocations.</li>
+        <li><strong>Right to Data Portability:</strong> Export your narrative manuscripts, audio tracks, and key art in structured, portable formats.</li>
+        <li><strong>Right to Object &amp; Restrict:</strong> Object to specific data processing operations or restrict processing while disputes are investigated.</li>
       </ul>
 
-      <h2>6. Data Retention</h2>
-      <p>We retain your data for as long as necessary to fulfil the purposes outlined in this policy:</p>
+      <h2>6. Data Retention &amp; Deletion Schedules</h2>
       <ul>
-        <li>Account data is retained while your account remains active.</li>
-        <li>Voice recordings and content are retained until you choose to delete them.</li>
-        <li>Analytics data is retained for up to 26 months.</li>
-        <li>When you delete your account or content, data is purged from our active systems and backups within 30 days.</li>
+        <li><strong>Active Productions:</strong> Your narrative media and archival recordings are retained for as long as your account remains active.</li>
+        <li><strong>User-Initiated Deletion:</strong> When you delete a memory or close your account, all primary media files and transcripts are irrevocably purged from active databases immediately, with complete expulsion from encrypted backup rotations within 30 days.</li>
+        <li><strong>Telemetry &amp; Analytics:</strong> Aggregated analytics data collected with consent is retained for a maximum duration of 14 months before automated deletion.</li>
       </ul>
 
       <h2>7. International Data Transfers</h2>
       <p>
-        Your data is primarily stored within Google Cloud UK/EU regions. Where data is transferred outside the UK or EEA, we ensure appropriate safeguards are in place, such as Standard Contractual Clauses, to protect your privacy.
+        While our primary customer data clusters are anchored in UK and EU cloud regions, select processing operations (such as transactional email dispatch and enterprise API transcription) utilize infrastructure located in the United States. All overseas data transfers are governed by UK-approved <strong>Standard Contractual Clauses (SCCs)</strong> and the <strong>UK International Data Transfer Addendum</strong> to guarantee equivalent levels of protection.
       </p>
 
-      <h2>8. Children's Privacy</h2>
+      <h2>8. Protection of Minors</h2>
       <p>
-        Our service is not directed at children under the age of 16. We do not knowingly collect personal data from children under 16 without parental consent.
+        The Service is designed for adult storytellers and family biographers aged 16 and older. We do not knowingly collect or solicit personal data from children under the age of 16. If we discover that personal information of a child under 16 has been collected without verified parental consent, we will promptly delete the data.
       </p>
 
-      <h2>9. Contact the Data Protection Officer</h2>
+      <h2>9. Data Protection Officer &amp; Enquiries</h2>
       <p>
-        If you have any questions, concerns, or wish to exercise your rights, please contact our Data Protection Officer at: <a href="mailto:support@memoryweaver.studio">support@memoryweaver.studio</a>.
+        To exercise any of your statutory rights, or to submit queries regarding our data protection safeguards, please contact our Data Protection Lead:
+      </p>
+      <p className="font-mono text-amber-400 bg-neutral-900/60 p-4 rounded-xl border border-white/10 not-prose">
+        Email: support@memoryweaver.studio<br />
+        Subject Line: Data Subject Access Request / Privacy Enquiry
       </p>
 
-      <h2>10. Complaints</h2>
+      <h2>10. Supervisory Authority &amp; Complaints</h2>
       <p>
-        If you believe we have not adequately addressed your concerns, you have the right to lodge a complaint with the Information Commissioner's Office (ICO), the UK supervisory authority for data protection.
+        You have the right to lodge a complaint at any time with the UK supervisory authority for data privacy:
       </p>
-
-      <hr className="my-8 border-white/10" />
-
-      <p className="text-sm text-white/40">
-        We may update this Privacy Policy periodically. We will notify you of any significant changes via email or an in-app notification.
-      </p>
-    </div>
+      <div className="text-sm text-zinc-300 bg-neutral-900/60 p-4 rounded-xl border border-white/10 not-prose">
+        <strong className="text-white">Information Commissioner&apos;s Office (ICO)</strong><br />
+        Wycliffe House, Water Lane, Wilmslow, Cheshire, SK9 5AF<br />
+        Helpline: 0303 123 1113 | Website:{' '}
+        <a href="https://ico.org.uk" target="_blank" rel="noopener noreferrer" className="text-amber-400 underline hover:text-amber-300">
+          ico.org.uk
+        </a>
+      </div>
+    </article>
   );
 }
