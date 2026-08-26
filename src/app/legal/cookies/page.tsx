@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import { CookiesContent } from './CookiesContent';
 
 export const metadata: Metadata = {
-  title: 'Cookie Policy',
+  title: 'Cookie & Local Storage Policy',
   description:
-    'Cookie Policy for Memory Weaver. Transparent breakdown of essential and analytics cookies, with interactive preference management.',
+    'Cookie & Local Storage Policy for Memory Weaver Studio — UK PECR and GDPR compliance, technical cookie inventory, browser caching, and interactive consent controls.',
 };
 
 export default function CookiesPage() {
