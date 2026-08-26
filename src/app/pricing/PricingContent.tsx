@@ -1,16 +1,35 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { PublicPageShell } from '@/components/public/PublicPageShell';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { motion } from 'framer-motion';
-import { Check, Coffee, Sparkles } from 'lucide-react';
+import { Check, Coffee, Sparkles, Loader2, ArrowRight } from 'lucide-react';
 import { StorageCalculator } from '@/components/public/StorageCalculator';
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
-const PRICING_TIERS = [
+interface PricingTierItem {
+  id: 'sandbox' | 'complimentary' | 'director' | 'generational_vault';
+  name: string;
+  price: string;
+  description: string;
+  badge?: string;
+  isFeatured?: boolean;
+  features: string[];
+  cta: string;
+  href: string;
+  ctaVariant: 'outline' | 'default' | 'secondary';
+  microcopy: string;
+  isCheckoutAction?: boolean;
+}
+
+const PRICING_TIERS: PricingTierItem[] = [
   {
+    id: 'sandbox',
     name: 'Sandbox',
     price: 'Free forever',
     description: 'Perfect for trying out the storytelling experience.',
@@ -22,10 +41,11 @@ const PRICING_TIERS = [
     ],
     cta: 'Try Free',
     href: '/register',
-    ctaVariant: 'outline' as const,
+    ctaVariant: 'outline',
     microcopy: 'No time limit',
   },
   {
+    id: 'complimentary',
     name: '6-Month Director Host Pass',
     price: '£0 — Complimentary',
     description: 'Everything you need to capture and publish a complete family memoir.',
@@ -41,27 +61,30 @@ const PRICING_TIERS = [
     ],
     cta: 'Claim Your Free Pass',
     href: '/register',
-    ctaVariant: 'default' as const,
+    ctaVariant: 'default',
     microcopy: 'One-time claim per account • No credit card required',
   },
   {
+    id: 'director',
     name: '31-Day Director Pass',
     price: '£12.99 / ~3.5× ☕',
     description: 'Extend your studio access to polish and add more stories.',
     features: [
       'Everything in Free Pass',
       'Family Storytelling Suite',
+      '15 GB 4K cloud vault',
       '4K exhibition exports',
       'Unlimited streaming',
       'Custom scene creation',
     ],
-    cta: 'Coming Soon',
+    cta: 'Upgrade to Director Pass',
     href: '#',
-    disabled: true,
-    ctaVariant: 'secondary' as const,
+    ctaVariant: 'secondary',
     microcopy: '~3.5 local coffees per month',
+    isCheckoutAction: true,
   },
   {
+    id: 'generational_vault',
     name: 'Generational Vault',
     price: '£195 / ~60× ☕',
     description: 'Secure your family legacy with permanent, lifetime archival storage.',
@@ -73,11 +96,11 @@ const PRICING_TIERS = [
       'All future Studio enhancements',
       'Priority production support',
     ],
-    cta: 'Coming Soon',
+    cta: 'Claim Lifetime Vault',
     href: '#',
-    disabled: true,
-    ctaVariant: 'secondary' as const,
+    ctaVariant: 'secondary',
     microcopy: '~60 local coffees — zero monthly rent forever',
+    isCheckoutAction: true,
   },
 ];
 
@@ -111,6 +134,57 @@ const FAQS = [
 
 export function PricingContent() {
   const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [loadingTier, setLoadingTier] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (searchParams.get('checkout') === 'cancelled') {
+      toast.info('Checkout Cancelled', {
+        description: 'Your account and billing status have not been charged.',
+      });
+    }
+  }, [searchParams]);
+
+  const handleCheckout = async (tier: 'director' | 'generational_vault') => {
+    if (!user) {
+      router.push(`/login?from=${encodeURIComponent(`/pricing?tier=${tier}`)}`);
+      return;
+    }
+
+    try {
+      setLoadingTier(tier);
+      toast.loading('Initiating secure Stripe Checkout...', { id: 'checkout-toast' });
+
+      const response = await fetch('/api/checkout/create-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tier,
+          currency: 'gbp',
+          returnUrl: window.location.href,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.url) {
+        throw new Error(data.error || 'Failed to initialize checkout session');
+      }
+
+      toast.success('Redirecting to Stripe...', { id: 'checkout-toast' });
+      window.location.href = data.url;
+    } catch (err: any) {
+      console.error('Checkout error:', err);
+      toast.error('Checkout Error', {
+        id: 'checkout-toast',
+        description: err.message || 'Could not connect to payment processor. Please try again.',
+      });
+      setLoadingTier(null);
+    }
+  };
 
   return (
     <PublicPageShell>
@@ -141,10 +215,8 @@ export function PricingContent() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-24">
             {PRICING_TIERS.map((tier, index) => {
-              const targetHref = tier.disabled ? '#' : (user ? '/studio' : tier.href);
-              const buttonText = tier.disabled 
-                ? tier.cta 
-                : (user ? (tier.isFeatured ? 'Enter Your Studio' : 'Open Studio') : tier.cta);
+              const isCheckout = tier.isCheckoutAction;
+              const isLoading = loadingTier === tier.id;
 
               return (
                 <motion.div
@@ -183,20 +255,39 @@ export function PricingContent() {
                   </ul>
                   
                   <div className="mt-auto">
-                    <Button
-                      asChild={!tier.disabled}
-                      disabled={tier.disabled}
-                      variant={tier.isFeatured ? 'default' : tier.ctaVariant}
-                      className={`w-full mb-3 ${
-                        tier.isFeatured ? 'bg-amber-500 hover:bg-amber-400 text-black font-semibold' : ''
-                      }`}
-                    >
-                      {tier.disabled ? (
-                        <span>{tier.cta}</span>
-                      ) : (
-                        <Link href={targetHref}>{buttonText}</Link>
-                      )}
-                    </Button>
+                    {isCheckout ? (
+                      <Button
+                        type="button"
+                        onClick={() => handleCheckout(tier.id as 'director' | 'generational_vault')}
+                        disabled={isLoading}
+                        variant={tier.ctaVariant}
+                        className="w-full mb-3 bg-amber-500 hover:bg-amber-400 text-black font-semibold cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            <span>Connecting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>{tier.cta}</span>
+                            <ArrowRight className="w-4 h-4 ml-1.5" />
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        asChild
+                        variant={tier.isFeatured ? 'default' : tier.ctaVariant}
+                        className={`w-full mb-3 ${
+                          tier.isFeatured ? 'bg-amber-500 hover:bg-amber-400 text-black font-semibold' : ''
+                        }`}
+                      >
+                        <Link href={user ? '/studio' : tier.href}>
+                          {user ? (tier.isFeatured ? 'Enter Your Studio' : 'Open Studio') : tier.cta}
+                        </Link>
+                      </Button>
+                    )}
                     <p className="text-xs text-center text-neutral-500">{tier.microcopy}</p>
                   </div>
                 </motion.div>

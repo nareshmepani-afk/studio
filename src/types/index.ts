@@ -294,8 +294,14 @@ export interface UserAccount {
   paidDirectorPassExpiryDate?: string;
   storageUsedBytes?: number;
   storageQuota?: StorageQuota;
+  vaultQuotaGb?: number;
   flaggedPrompts?: string[];
   isPremium?: boolean;
+  membershipTier?: 'sandbox' | 'director_complimentary' | 'director_monthly' | 'generational_vault';
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  stripeSessionId?: string;
+  lastPaymentDate?: string;
 }
 
 export type ActionResponse = {

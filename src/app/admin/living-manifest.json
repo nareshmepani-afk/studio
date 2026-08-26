@@ -24,6 +24,12 @@
     "content": "Data visibility: Allowed. Write protection: Blocked. Primary CTA: Renew / Upgrade Pass."
   },
   {
+    "id": "playbook-MW_85_STRIPE_PAYMENTS",
+    "category": "Support Playbooks",
+    "title": "Operational Resolution Playbook: MW_85_STRIPE_PAYMENTS",
+    "content": "Context background: Stripe Checkout session initiation, Webhook pass reconciliation, and Generational Vault Lifetime activation.. Action instructions: Ensure STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET are configured in environment variables. Webhooks at /api/webhooks/stripe read raw request body text to prevent signature mismatch. Webhook handlers enforce idempotency by recording session IDs under users/{uid}/payments/{session.id}. Storage quotas are updated to 15GB (Director) or 100GB (Generational Vault) while preserving existing storageUsedBytes. Self-serve billing portal is accessible at /api/billing/portal for managing subscriptions and receipts."
+  },
+  {
     "id": "playbook-MW_66_GUEST_INTERCEPT",
     "category": "Support Playbooks",
     "title": "Operational Resolution Playbook: MW_66_GUEST_INTERCEPT",

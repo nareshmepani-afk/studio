@@ -47,6 +47,16 @@ export const BUSINESS_MANIFEST = {
     }
   },
   supportPlaybooks: {
+    MW_85_STRIPE_PAYMENTS: {
+      context: "Stripe Checkout session initiation, Webhook pass reconciliation, and Generational Vault Lifetime activation.",
+      resolutionSteps: [
+        "Ensure STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET are configured in environment variables.",
+        "Webhooks at /api/webhooks/stripe read raw request body text to prevent signature mismatch.",
+        "Webhook handlers enforce idempotency by recording session IDs under users/{uid}/payments/{session.id}.",
+        "Storage quotas are updated to 15GB (Director) or 100GB (Generational Vault) while preserving existing storageUsedBytes.",
+        "Self-serve billing portal is accessible at /api/billing/portal for managing subscriptions and receipts."
+      ]
+    },
     MW_66_GUEST_INTERCEPT: {
       context: "Guest encounters DirectorialUpsellDialog.tsx due to database write blocks.",
       resolutionSteps: [

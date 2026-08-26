@@ -1,4 +1,3 @@
-
 import { SettingsPageContent } from '@/components/settings/SettingsPageContent';
 import { getSession } from '@/lib/session';
 import { adminDb } from '@/lib/firebase-admin';
@@ -53,12 +52,19 @@ export default async function SettingsPage() {
       </AuthenticatedPageWrapper>
     );
   }
+
+  const membershipTier = userData?.membershipTier || 'sandbox';
+  const vaultQuotaGb = userData?.vaultQuotaGb || (membershipTier === 'generational_vault' ? 100 : (userData?.directorPassStatus === 'paid_host_pass_active' ? 15 : 5));
+  const hasStripeCustomer = Boolean(userData?.stripeCustomerId);
   
   return (
     <AuthenticatedPageWrapper>
       <SettingsPageContent 
         initialDirectorPassStatus={userData?.directorPassStatus || 'inactive'} 
         initialDirectorPassActivationDate={userData?.directorPassActivationDate} 
+        membershipTier={membershipTier}
+        vaultQuotaGb={vaultQuotaGb}
+        hasStripeCustomer={hasStripeCustomer}
         userEmail={session.email || ''}
         userName={session.displayName || ''}
       />

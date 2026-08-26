@@ -20,6 +20,18 @@
 
 ## Support Playbooks
 
+### Playbook: MW_85_STRIPE_PAYMENTS
+
+**Context:**
+> Stripe Checkout session initiation, Webhook pass reconciliation, and Generational Vault Lifetime activation.
+
+**Resolution Steps:**
+1. Ensure STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET are configured in environment variables.
+2. Webhooks at /api/webhooks/stripe read raw request body text to prevent signature mismatch.
+3. Webhook handlers enforce idempotency by recording session IDs under users/{uid}/payments/{session.id}.
+4. Storage quotas are updated to 15GB (Director) or 100GB (Generational Vault) while preserving existing storageUsedBytes.
+5. Self-serve billing portal is accessible at /api/billing/portal for managing subscriptions and receipts.
+
 ### Playbook: MW_66_GUEST_INTERCEPT
 
 **Context:**
