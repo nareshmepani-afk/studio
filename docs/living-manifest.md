@@ -32,6 +32,18 @@
 4. Storage quotas are updated to 15GB (Director) or 100GB (Generational Vault) while preserving existing storageUsedBytes.
 5. Self-serve billing portal is accessible at /api/billing/portal for managing subscriptions and receipts.
 
+### Playbook: MW_86_GIFT_UNBOXING
+
+**Context:**
+> Gift Voucher Code Generation, Vector PDF Keepsakes & Act V Cinematic Unboxing Protocol.
+
+**Resolution Steps:**
+1. Voucher tokens use Base32 Crockford format MW-[TIER]-[4-CHAR]-[4-CHAR] (excluding 0, O, I, L, 1).
+2. Public endpoint /api/gift/verify enforces strict IP-based rate limiting (max 5 failed lookups per hour).
+3. Unboxing cinematic decouples envelope reveal from redemption; status remains 'unredeemed' until explicit claim and auth.
+4. Printable 5x7 heirloom vector PDFs are synthesized using lightweight JS engines (@react-pdf/renderer or pdf-lib) without headless Chromium.
+5. Video and audio greetings are decoupled from checkout and uploaded asynchronously via the post-purchase /gift/dedication hub.
+
 ### Playbook: MW_66_GUEST_INTERCEPT
 
 **Context:**

@@ -116,8 +116,13 @@ This is the unified backlog and historical log for all **MW-*** ticket definitio
 *   `[x]` **MW-66 / MW-144:** `Act V Dual-Reel Mode & Master Narrative Package Export` (*Status:* **Verified**)
 *   `[x]` **MW-67 / MW-34:** `1-Prior-Version Instant Undo Button` (*Status:* **Verified**)
 *   `[x]` **MW-68 / MW-145:** `Scriptorium Prose Preservation on Stage Advance` (*Status:* **Verified**)
+*   `[x]` **MW-85:** `Stripe Checkout & Generational Vault Payments (Option B: One-Off Pass)` (*Status:* **Verified**)
 
 ### 🚀 Outstanding Sprint 4 & Phase 2 Roadmap Items (V2 Remaining)
+*   `[ ]` **MW-86:** `Gift Voucher Engine & Act V Heirloom Unboxing Protocol` (*Status:* **Todo**)
+    *   *Description:* Base32 Crockford gift voucher generation, 5"x7" vector PDF keepsake generator via pure JS, rate-limited public verification endpoint, decoupled /unboxing/[code] cinematic wax-seal experience, post-checkout async audio/video dedication hub, and automated giver notification loop.
+*   `[ ]` **MW-217:** `Google Cast CAF SDK & AirPlay Suite` (*Status:* **Todo**)
+*   `[ ]` **MW-218:** `Multi-Language Heritage Pack Selector` (*Status:* **Todo**)
 *   `[ ]` **MW-9:** `[V6.6] Implement Git Hash Injection for Version Verification` (*Status:* **Todo**)
 *   `[ ]` **MW-10:** `Refactor Storyteller View to be Ad-Blocker Proof (Fetch-First Strategy)` (*Status:* **Todo**)
 *   `[ ]` **MW-19:** `[Phase 2] Autonomous Virtual Studio Crew (AI Guest Director & Real-Time Score Curator)` (*Status:* **Todo**)

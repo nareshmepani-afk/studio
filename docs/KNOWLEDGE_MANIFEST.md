@@ -92,4 +92,10 @@
 - **Solution**: Inject descriptive `data-hotspot-id` attributes directly into DOM nodes. Manage interaction capture globally at the component root using event delegation via `e.target.closest('[data-hotspot-id]')`. Pipe captured clicks asynchronously to Firestore under the `system_logs` collection alongside active session variables, strictly adhering to telemetry rules (e.g. appending `version: "1.0.0-MW-69"`).
 - **Overlay Rendering**: Render visual layout indicators using a `pointer-events-none` overlay fixed to the viewport. Recalculate target positions dynamically via `getBoundingClientRect()` on window `scroll` (using capturing listeners to trap internal scroll events) and `resize` events.
 
+### 11. Stripe Monetisation Architecture & Option B One-Time Pass Standard
+- **Constraint**: Section 5 of Memory Weaver Terms of Service mandates that paid studio passes (31-Day Director Pass, Generational Vault) operate strictly as single, non-recurring transactions with no automatic renewals or recurring subscription drips.
+- **Rule**: Always configure Stripe checkout sessions with `mode: 'payment'`. Never use `mode: 'subscription'` or recurring intervals for director passes. On `checkout.session.completed`, the webhook calculates cumulative extensions: `baseDate = (currentExpiry > now ? currentExpiry : now) + 31 days`.
+- **Security & Idempotency**: Stripe webhook handler reads raw request text (`await req.text()`) to prevent signature corruption, checks `users/{uid}/payments/{session.id}` for idempotency before writing, preserves existing storage usage (`storageQuota.used`), and self-serve billing portal disables subscription cancellation controls since payments are non-recurring.
+- **Operational Guide**: See [STRIPE_SETUP_GUIDE.md](file:///c:/Users/home/studio/docs/STRIPE_SETUP_GUIDE.md) for full staging and production key management and Secret Manager setup.
+
 

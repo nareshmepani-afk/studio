@@ -30,6 +30,12 @@
     "content": "Context background: Stripe Checkout session initiation, Webhook pass reconciliation, and Generational Vault Lifetime activation.. Action instructions: Ensure STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET are configured in environment variables. Webhooks at /api/webhooks/stripe read raw request body text to prevent signature mismatch. Webhook handlers enforce idempotency by recording session IDs under users/{uid}/payments/{session.id}. Storage quotas are updated to 15GB (Director) or 100GB (Generational Vault) while preserving existing storageUsedBytes. Self-serve billing portal is accessible at /api/billing/portal for managing subscriptions and receipts."
   },
   {
+    "id": "playbook-MW_86_GIFT_UNBOXING",
+    "category": "Support Playbooks",
+    "title": "Operational Resolution Playbook: MW_86_GIFT_UNBOXING",
+    "content": "Context background: Gift Voucher Code Generation, Vector PDF Keepsakes & Act V Cinematic Unboxing Protocol.. Action instructions: Voucher tokens use Base32 Crockford format MW-[TIER]-[4-CHAR]-[4-CHAR] (excluding 0, O, I, L, 1). Public endpoint /api/gift/verify enforces strict IP-based rate limiting (max 5 failed lookups per hour). Unboxing cinematic decouples envelope reveal from redemption; status remains 'unredeemed' until explicit claim and auth. Printable 5x7 heirloom vector PDFs are synthesized using lightweight JS engines (@react-pdf/renderer or pdf-lib) without headless Chromium. Video and audio greetings are decoupled from checkout and uploaded asynchronously via the post-purchase /gift/dedication hub."
+  },
+  {
     "id": "playbook-MW_66_GUEST_INTERCEPT",
     "category": "Support Playbooks",
     "title": "Operational Resolution Playbook: MW_66_GUEST_INTERCEPT",

@@ -57,6 +57,16 @@ export const BUSINESS_MANIFEST = {
         "Self-serve billing portal is accessible at /api/billing/portal for managing subscriptions and receipts."
       ]
     },
+    MW_86_GIFT_UNBOXING: {
+      context: "Gift Voucher Code Generation, Vector PDF Keepsakes & Act V Cinematic Unboxing Protocol.",
+      resolutionSteps: [
+        "Voucher tokens use Base32 Crockford format MW-[TIER]-[4-CHAR]-[4-CHAR] (excluding 0, O, I, L, 1).",
+        "Public endpoint /api/gift/verify enforces strict IP-based rate limiting (max 5 failed lookups per hour).",
+        "Unboxing cinematic decouples envelope reveal from redemption; status remains 'unredeemed' until explicit claim and auth.",
+        "Printable 5x7 heirloom vector PDFs are synthesized using lightweight JS engines (@react-pdf/renderer or pdf-lib) without headless Chromium.",
+        "Video and audio greetings are decoupled from checkout and uploaded asynchronously via the post-purchase /gift/dedication hub."
+      ]
+    },
     MW_66_GUEST_INTERCEPT: {
       context: "Guest encounters DirectorialUpsellDialog.tsx due to database write blocks.",
       resolutionSteps: [
