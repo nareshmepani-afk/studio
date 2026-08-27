@@ -130,5 +130,11 @@
     "category": "Support Playbooks",
     "title": "Operational Resolution Playbook: MW_194_BULK_EMAIL_DISPATCH_AND_QUEUE_PACING",
     "content": "Context background: Bulk Email Audience Ingestion, Rate-Limited Queue Pacing, and Live Transmission Receipt Streaming.. Action instructions: Audience Ingestion supports RFC 4180 CSV uploads and raw text pasting with automated header synonym mapping (email, name, claimedMemoryTitle, role, passcode, etc.) and RFC regex validation. Case-insensitive deduplication preserves the first valid contact instance while marking duplicates as SKIPPED to prevent spamming recipients. Server actions (sendAdminBatchChunkAction) enforce strict bounding to 5–10 recipients per request to prevent serverless execution timeouts. Frontend modal orchestrates queue pacing velocities: Gentle (2 emails/sec, 500ms delay), Standard (5 emails/sec, 200ms delay), and Turbo (10 emails/sec, 100ms delay) to prevent Resend API HTTP 429 rate limit exceptions. Discrete per-recipient state tracking (PENDING, IN_FLIGHT, DELIVERED, SIMULATED, FAILED, SKIPPED) guarantees pause/resume idempotency with zero duplicate dispatches. Operators can export comprehensive delivery audit reports (.csv) containing message IDs, timestamps, SPF/DKIM verification tags, and failure details."
+  },
+  {
+    "id": "playbook-MW_87_STAGING_ACCESS_SECURITY",
+    "category": "Support Playbooks",
+    "title": "Operational Resolution Playbook: MW_87_STAGING_ACCESS_SECURITY",
+    "content": "Context background: Staging Sandbox Access Security, Perimeter Gatekeeper, and 30-Day Session Management.. Action instructions: Default Staging Access Passcode: 'MW-STAGE-2026' (case-insensitive). Edge Middleware (src/middleware.ts) intercepts all unauthenticated requests to dev.memoryweaver.studio and redirects to the /staging-lock entrance. Entering the valid passcode triggers /api/auth/staging-unlock with crypto.timingSafeEqual constant-time verification and issues a 30-day HttpOnly cookie (mw_staging_access_token). Authorized team members can view this passcode inside the Backstage Living Knowledge Hub (/admin?suite=knowledge) behind Admin TOTP MFA protection. Exempt routes: /api/version, /api/webhooks/stripe, /api/dev/ping, /_next/*, /favicon.ico, /icon.svg, and /images/* to keep deployment monitoring and Stripe webhooks uninterrupted."
   }
 ]

@@ -102,7 +102,7 @@ export default function StagingLockContent() {
                 type="password"
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
-                placeholder="Enter passcode (e.g. MW-STAGE-2026)..."
+                placeholder="Enter access passcode..."
                 autoFocus
                 disabled={loading || success}
                 className="w-full bg-black/70 border border-white/15 focus:border-amber-500/70 rounded-xl px-4 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none transition-all font-mono tracking-wider"

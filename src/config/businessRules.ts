@@ -210,6 +210,16 @@ export const BUSINESS_MANIFEST = {
         "Discrete per-recipient state tracking (PENDING, IN_FLIGHT, DELIVERED, SIMULATED, FAILED, SKIPPED) guarantees pause/resume idempotency with zero duplicate dispatches.",
         "Operators can export comprehensive delivery audit reports (.csv) containing message IDs, timestamps, SPF/DKIM verification tags, and failure details."
       ]
+    },
+    MW_87_STAGING_ACCESS_SECURITY: {
+      context: "Staging Sandbox Access Security, Perimeter Gatekeeper, and 30-Day Session Management.",
+      resolutionSteps: [
+        "Default Staging Access Passcode: 'MW-STAGE-2026' (case-insensitive).",
+        "Edge Middleware (src/middleware.ts) intercepts all unauthenticated requests to dev.memoryweaver.studio and redirects to the /staging-lock entrance.",
+        "Entering the valid passcode triggers /api/auth/staging-unlock with crypto.timingSafeEqual constant-time verification and issues a 30-day HttpOnly cookie (mw_staging_access_token).",
+        "Authorized team members can view this passcode inside the Backstage Living Knowledge Hub (/admin?suite=knowledge) behind Admin TOTP MFA protection.",
+        "Exempt routes: /api/version, /api/webhooks/stripe, /api/dev/ping, /_next/*, /favicon.ico, /icon.svg, and /images/* to keep deployment monitoring and Stripe webhooks uninterrupted."
+      ]
     }
   }
 } as const;

@@ -220,3 +220,15 @@
 5. Discrete per-recipient state tracking (PENDING, IN_FLIGHT, DELIVERED, SIMULATED, FAILED, SKIPPED) guarantees pause/resume idempotency with zero duplicate dispatches.
 6. Operators can export comprehensive delivery audit reports (.csv) containing message IDs, timestamps, SPF/DKIM verification tags, and failure details.
 
+### Playbook: MW_87_STAGING_ACCESS_SECURITY
+
+**Context:**
+> Staging Sandbox Access Security, Perimeter Gatekeeper, and 30-Day Session Management.
+
+**Resolution Steps:**
+1. Default Staging Access Passcode: 'MW-STAGE-2026' (case-insensitive).
+2. Edge Middleware (src/middleware.ts) intercepts all unauthenticated requests to dev.memoryweaver.studio and redirects to the /staging-lock entrance.
+3. Entering the valid passcode triggers /api/auth/staging-unlock with crypto.timingSafeEqual constant-time verification and issues a 30-day HttpOnly cookie (mw_staging_access_token).
+4. Authorized team members can view this passcode inside the Backstage Living Knowledge Hub (/admin?suite=knowledge) behind Admin TOTP MFA protection.
+5. Exempt routes: /api/version, /api/webhooks/stripe, /api/dev/ping, /_next/*, /favicon.ico, /icon.svg, and /images/* to keep deployment monitoring and Stripe webhooks uninterrupted.
+
