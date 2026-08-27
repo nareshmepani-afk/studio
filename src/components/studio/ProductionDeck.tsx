@@ -450,6 +450,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
 
     const router = useRouter();
     const groupId = searchParams.get('groupId');
+    const isDemoMode = memoryData?.promptId === 'p_einstein' || groupId === 'historical-showcase';
 
     // PERSISTENCE: Initialize from localStorage on mount
     useEffect(() => {
@@ -974,7 +975,7 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
         setSynthesisError(null);
         setReviewDrafts([]);
 
-        if (formRef.current?.flush) {
+        if (!isDemoMode && formRef.current?.flush) {
             setIsSavingNext(true);
             try {
                 // Pass overrides to flush so Firestore is updated synchronously with isReviewing: false
@@ -985,8 +986,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                 setIsSavingNext(false);
             }
         }
+        if (isDemoMode) {
+            router.push('/studio');
+        }
         onClose?.();
-    }, [onClose, setIsReviewing, setIsGeneratingDrafts, setSynthesisError, setReviewDrafts]);
+    }, [onClose, setIsReviewing, setIsGeneratingDrafts, setSynthesisError, setReviewDrafts, isDemoMode, router]);
 
     useImperativeHandle(ref, () => ({
         handleExit
@@ -1082,6 +1086,33 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
             {/* The PerspectiveWrapper handles the overall background color transition and the blurry interior swap */}
             <PerspectiveWrapper activeRoom={activeRoom} dominantType={dominantType}>
                 <div className="grid grid-rows-[auto_1fr_auto] h-full w-full relative overflow-hidden" data-blueprint="StudioDeckGrid">
+                    {/* TOP: Historical Sandbox Banner */}
+                    {isDemoMode && (
+                        <div className="w-full bg-gradient-to-r from-indigo-950/95 via-purple-950/95 to-indigo-950/95 border-b border-indigo-500/30 px-3 sm:px-5 py-2 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs z-30 shadow-lg backdrop-blur-md shrink-0">
+                            <div className="flex items-center gap-2 text-indigo-200">
+                                <span className="p-1 rounded-md bg-indigo-500/20 border border-indigo-500/40 text-indigo-300">
+                                    🧪
+                                </span>
+                                <span className="font-semibold">
+                                    Historical Sandbox Mode
+                                </span>
+                                <span className="text-indigo-300/70 hidden md:inline">
+                                    — Changes are not saved to your personal vault.
+                                </span>
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    toast.info("Exited Demo Mode", { description: "Starting your personal studio story." });
+                                    await handleExit();
+                                    router.push('/studio');
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 hover:text-white border border-indigo-500/40 hover:border-indigo-400/60 font-bold transition-all text-[11px] uppercase tracking-wider shrink-0 cursor-pointer"
+                            >
+                                Exit Demo &amp; Start My Story &rarr;
+                            </button>
+                        </div>
+                    )}
+
                     {/* ROW 1: Stage Header & Navigation */}
                     {modality !== null && (
                         <header className="flex items-center justify-between p-3 sm:p-4 border-b border-white/10 z-20 backdrop-blur-md bg-black/40 shrink-0">
@@ -1092,6 +1123,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                 <TooltipTrigger asChild>
                                   <button
                                       onClick={async () => {
+                                          if (isDemoMode) {
+                                              toast.info("Exited Demo Mode");
+                                              await handleExit();
+                                              return;
+                                          }
                                           toast.info("Securing Draft...", { duration: 1500 });
                                           await handleExit();
                                           toast.success("Draft Saved", { description: "Your progress is secure." });
@@ -1186,6 +1222,11 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                                          <TooltipTrigger asChild>
                                              <button
                                                  onClick={async () => {
+                                                     if (isDemoMode) {
+                                                         toast.info("Exited Demo Mode");
+                                                         await handleExit();
+                                                         return;
+                                                     }
                                                      toast.info("Securing Draft...", { duration: 1500 });
                                                      await handleExit();
                                                      toast.success("Draft Saved", { description: "Your progress is secure." });

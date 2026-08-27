@@ -383,6 +383,12 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
       const cleanData = JSON.parse(JSON.stringify(dataToSave));
 
       if (!memoryId) {
+        // DEMO SANDBOX SHIELD: Do not auto-spawn empty Firestore documents for historical demo templates
+        if (promptId === 'p_einstein' || selectedProductionData?.promptId === 'p_einstein') {
+          console.log("[ProductionDeckContainer] Demo sandbox session active. Skipping Firestore document creation to preserve user vault isolation.");
+          return;
+        }
+
         // If no ID yet, we must save the FULL resolved data to create the document
         const fullData = JSON.parse(JSON.stringify(resolvedData));
         const { id: __, ...cleanFullData } = fullData;

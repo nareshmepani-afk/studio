@@ -37,7 +37,8 @@ import {
   ArrowRight,
   Monitor,
   Maximize,
-  Settings2
+  Settings2,
+  FlaskConical
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -185,29 +186,54 @@ export function StudioDashboard({
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          <div className="flex flex-row items-center gap-3 w-full sm:w-auto">
+            {/* Einstein Demo Quick-Start Button */}
             <TooltipProvider>
-                <Tooltip delayDuration={300}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      onClick={handleCleanupMigration}
-                      disabled={isCleaning}
-                      data-hotspot-id="HS_STUDIO_OPTIMIZE_BTN"
-                      className="w-full md:w-auto border-dashed border-amber-500/30 text-amber-500/80 hover:bg-amber-500/10 hover:text-amber-500 transition-all font-bold tracking-tight"
-                    >
-                      {isCleaning ? <RefreshCcw className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                      {isCleaning ? 'Optimizing...' : 'Optimize Studio'}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-[300px] p-3 text-xs leading-relaxed bg-neutral-900 border-white/10 text-white shadow-2xl">
-                    <div className="flex gap-2">
-                      <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-                      <p>Optimize your workspace by removing empty draft shells and migrating legacy memories.</p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push('/studio/production/p_einstein')}
+                    data-hotspot-id="HS_STUDIO_TRY_DEMO_BTN"
+                    className="flex-1 sm:flex-none border border-indigo-500/40 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 hover:text-white hover:border-indigo-400/60 transition-all font-bold tracking-tight shadow-[0_0_15px_rgba(99,102,241,0.15)]"
+                  >
+                    <FlaskConical className="w-4 h-4 mr-2 text-indigo-400 shrink-0" />
+                    <span className="hidden sm:inline">✨ Try Einstein Demo</span>
+                    <span className="inline sm:hidden">🧪 Demo</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[300px] p-3 text-xs leading-relaxed bg-neutral-900 border-white/10 text-white shadow-2xl">
+                  <div className="flex gap-2">
+                    <FlaskConical className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <p>Test-drive the complete 5-Act Studio, teleprompter, and sensory anchors with Albert Einstein&apos;s spacetime memoir.</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={handleCleanupMigration}
+                    disabled={isCleaning}
+                    data-hotspot-id="HS_STUDIO_OPTIMIZE_BTN"
+                    className="flex-1 sm:flex-none border-dashed border-amber-500/30 text-amber-500/80 hover:bg-amber-500/10 hover:text-amber-500 transition-all font-bold tracking-tight"
+                  >
+                    {isCleaning ? <RefreshCcw className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                    <span className="hidden sm:inline">{isCleaning ? 'Optimizing...' : 'Optimize Studio'}</span>
+                    <span className="inline sm:hidden">{isCleaning ? '...' : 'Optimize'}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[300px] p-3 text-xs leading-relaxed bg-neutral-900 border-white/10 text-white shadow-2xl">
+                  <div className="flex gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                    <p>Optimize your workspace by removing empty draft shells and migrating legacy memories.</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </header>
 
