@@ -6,6 +6,7 @@ import { StudioProviders } from "./StudioProviders";
 import { AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { HotspotOverlay } from "@/components/studio/HotspotOverlay";
+import { cn } from "@/lib/utils";
 import "../globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -39,9 +40,11 @@ export default function StudioLayout({
     );
   }
 
+  const isProductionRoute = pathname?.startsWith('/studio/production');
+
   return (
     <StudioProviders>
-      <div className="relative min-h-screen bg-neutral-950 text-white selection:bg-primary/30">
+      <div className={cn("relative bg-neutral-950 text-white selection:bg-primary/30", isProductionRoute ? "h-[100dvh] max-h-[100dvh] overflow-hidden" : "min-h-screen")}>
         {/* Persistent Cinematic Backdrop */}
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
           <div className="absolute inset-0 bg-neutral-950" />
@@ -52,10 +55,9 @@ export default function StudioLayout({
                style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/stardust.png")' }} />
         </div>
         
-        {/* MW-156-REVERT: min-h-screen prevents black-screen on hard-refresh hydration.
-            The inner Stage (ProductionDeck) handles h-full overflow-hidden independently.
-            h-screen overflow-hidden on this outer shell clips loading states to zero height. */}
-        <div className="relative z-10 flex flex-col min-h-screen">
+        {/* MW-156-REVERT: min-h-screen prevents black-screen on hard-refresh hydration for dashboard.
+            When in production suite, h-[100dvh] overflow-hidden ensures sole-scroll domain inside stage. */}
+        <div className={cn("relative z-10 flex flex-col", isProductionRoute ? "h-[100dvh] max-h-[100dvh] overflow-hidden" : "min-h-screen")}>
           {children}
           <AnimatePresence mode="wait">
             {modal && (

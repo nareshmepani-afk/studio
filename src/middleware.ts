@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import * as jose from 'jose';
 import { SESSION_COOKIE_NAME } from './lib/constants';
+import { STAGING_COOKIE_NAME, isValidStagingToken } from './lib/stagingAuth';
 import { serverLog } from './utils/telemetry/serverLogger';
 
 const GUEST_SECRET = new TextEncoder().encode(process.env.GUEST_SESSION_SECRET || '');
@@ -152,6 +153,46 @@ export async function middleware(request: NextRequest) {
 
   const targetProto = (request.headers.get("x-forwarded-proto") || request.nextUrl.protocol || "https").replace(':', '');
   const targetDomain = hostname ? `${targetProto}://${hostname}` : request.url;
+
+  // MW-87: Staging Passcode Perimeter Gate (dev.memoryweaver.studio & memory-weaver-dev)
+  const isStagingHost = 
+    hostname.includes('dev.memoryweaver.studio') || 
+    hostname.includes('memory-weaver-dev') ||
+    (process.env.NEXT_PUBLIC_APP_URL || '').includes('dev.memoryweaver.studio');
+
+  if (isStagingHost) {
+    const isStagingExempt = 
+      isStaticAsset ||
+      pathname.startsWith('/_next') ||
+      pathname.startsWith('/staging-lock') ||
+      pathname.startsWith('/api/auth/staging-unlock') ||
+      pathname.startsWith('/api/version') ||
+      pathname.startsWith('/api/dev/ping') ||
+      pathname.startsWith('/api/webhooks/') ||
+      pathname.startsWith('/api/telemetry') ||
+      pathname === '/robots.txt' ||
+      pathname === '/sitemap.xml' ||
+      pathname === '/favicon.ico' ||
+      pathname === '/icon.svg' ||
+      pathname.startsWith('/images') ||
+      pathname.includes('.');
+
+    if (!isStagingExempt) {
+      const stagingToken = request.cookies.get(STAGING_COOKIE_NAME)?.value;
+      const isAuthorized = await isValidStagingToken(stagingToken);
+
+      if (!isAuthorized) {
+        const lockUrl = new URL('/staging-lock', targetDomain);
+        const fromParam = pathname + (request.nextUrl.search || '');
+        if (fromParam && fromParam !== '/' && fromParam !== '/staging-lock') {
+          lockUrl.searchParams.set('from', fromParam);
+        }
+        const lockResponse = NextResponse.redirect(lockUrl);
+        lockResponse.headers.set('x-trace-id', traceId);
+        return lockResponse;
+      }
+    }
+  }
 
   const isAdminSubdomain = hostname.startsWith('admin.');
   const isAdminPath = pathname.startsWith('/admin');

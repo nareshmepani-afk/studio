@@ -549,8 +549,8 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
           className={cn(
             "fixed z-[40] bg-slate-950 border-white/10 shadow-2xl overflow-hidden flex flex-col transition-all duration-500",
             layoutMode === 'takeover' 
-              ? "inset-0 top-16 h-[calc(100vh-64px)] border-t shadow-[0_0_50px_rgba(0,0,0,0.5)]" 
-              : "top-16 right-0 bottom-0 w-full md:w-[75%] h-[calc(100vh-64px)] border-l"
+              ? "inset-0 h-[100dvh] max-h-[100dvh] border-t shadow-[0_0_50px_rgba(0,0,0,0.5)]" 
+              : "top-0 right-0 bottom-0 w-full md:w-[75%] h-[100dvh] max-h-[100dvh] border-l"
           )}
         >
           {containerContent}
@@ -560,28 +560,8 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
-      <div className="flex items-center p-4 border-b border-white/10">
-        <TooltipProvider delayDuration={200}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                onClick={handleExitTrigger} 
-                variant="ghost" 
-                className="text-white/60 hover:text-white"
-              >
-                &larr; Exit to Studio
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="bg-slate-900 border border-white/20 text-slate-200 text-xs px-3 py-1.5 rounded-lg shadow-xl z-[100]">
-              Return to main Memory Weaver Studio dashboard
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-      <div className="flex-1 overflow-hidden">
-        {containerContent}
-      </div>
+    <div className="w-full h-[100dvh] max-h-[100dvh] overflow-hidden bg-slate-950 flex flex-col">
+      {containerContent}
     </div>
   );
 }
