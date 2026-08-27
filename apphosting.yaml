@@ -35,4 +35,8 @@ env:
     secret: RESEND_API_KEY
   - variable: GUEST_SESSION_SECRET
     secret: GUEST_SESSION_SECRET
+  - variable: STRIPE_SECRET_KEY
+    secret: STRIPE_SECRET_KEY
+  - variable: STRIPE_WEBHOOK_SECRET
+    secret: STRIPE_WEBHOOK_SECRET
 
