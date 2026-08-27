@@ -28,10 +28,13 @@ export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Standalone popouts and administrative suites should be distraction-free without consumer app Navbar
+  // Standalone popouts, full-screen production suites, and administrative portals should be distraction-free without consumer app Navbar
   if (
     pathname === '/studio/teleprompter-popout' || 
     pathname === '/studio/remote-camera' ||
+    pathname?.startsWith('/studio/production') ||
+    pathname?.startsWith('/studio/chapter') ||
+    pathname?.startsWith('/cinema/tv') ||
     pathname?.startsWith('/admin')
   ) {
     return null;

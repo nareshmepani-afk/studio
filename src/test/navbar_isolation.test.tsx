@@ -67,7 +67,7 @@ describe('Navbar Route Isolation & Admin Masking', () => {
     });
   });
 
-  describe('Distraction-Free Popout Suppression', () => {
+  describe('Distraction-Free Production Suite & Popout Suppression', () => {
     it('returns null on /studio/teleprompter-popout', () => {
       mockUsePathname.mockReturnValue('/studio/teleprompter-popout');
       const { container } = render(<Navbar />);
@@ -76,6 +76,24 @@ describe('Navbar Route Isolation & Admin Masking', () => {
 
     it('returns null on /studio/remote-camera', () => {
       mockUsePathname.mockReturnValue('/studio/remote-camera');
+      const { container } = render(<Navbar />);
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('returns null on /studio/production/[id] to prevent double toolbar overlap', () => {
+      mockUsePathname.mockReturnValue('/studio/production/p_einstein');
+      const { container } = render(<Navbar />);
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('returns null on /studio/chapter/[promptId]', () => {
+      mockUsePathname.mockReturnValue('/studio/chapter/p_einstein_1');
+      const { container } = render(<Navbar />);
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('returns null on /cinema/tv dedicated theatre view', () => {
+      mockUsePathname.mockReturnValue('/cinema/tv');
       const { container } = render(<Navbar />);
       expect(container.firstChild).toBeNull();
     });
