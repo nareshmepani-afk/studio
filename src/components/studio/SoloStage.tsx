@@ -1005,6 +1005,12 @@ export default function SoloStage({
   };
 
   const handleStitchAndApprove = async (edl: any[]) => {
+    // DEMO SANDBOX SHIELD: Keep demo takes purely in-memory (blobUrls) and block cloud storage uploads
+    if (data?.promptId === 'p_einstein' || data?.id === 'p_einstein') {
+      setUpsellFeature("cloud stitching & 4K vault publishing");
+      setIsUpsellOpen(true);
+      return;
+    }
     if (checkGuestAndUpsell("video stitching & cinema publishing")) return;
     if (edl.length === 0) return;
     
