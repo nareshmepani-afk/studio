@@ -136,10 +136,10 @@ export const storyScripts: Record<string, string> = {
   fs6_1: `Record a message for your children or grandchildren (or future generations) to hear in the future. What wisdom, hopes, or advice would you like to share with them?`,
   fs6_2: `What do you want them to know about you, your life, and the times you lived in? Speak from the heart.`,
   p25_1: "Tell your own story. What memory do you want to record today?",
-  p_einstein: `Let\'s explore the space-time of your memory. Think about a moment when time seemed to stand still, or when your imagination took flight beyond the bounds of everyday knowledge. We\'ll examine the thoughts that sparked your curiosity and the theories of life you\'ve developed along the way. When you\'re ready, tell us about the relativity of your own journey.`,
-  p_einstein_1: `Let\'s begin with the concept of time. Can you describe a specific moment where time seemed to slow down or stand still for you?`,
-  p_einstein_2: `And thinking about imagination, when was a time your mind wandered beyond the limits of what was known, sparking a new direction or creative break?`,
-  p_einstein_3: `What was the sensory anchor of that realization—perhaps the physical feel of an object in your hand, or the atmosphere of the room where the idea struck?`,
+  p_einstein: `I was five years old, sick in bed, when my father placed a small brass pocket compass in my trembling hand. No matter which way I turned the casing, that mysterious needle remained stubbornly fixed to the unseen north. In that quiet room, beneath the cold brass and glass, I realised something behind things had to be hidden—something deeply hidden.`,
+  p_einstein_1: `I was five years old, sick in bed, when my father placed a small brass pocket compass in my trembling hand. No matter which way I turned the casing, that mysterious needle remained stubbornly fixed to the unseen north. In that quiet room, beneath the cold brass and glass, I realised something behind things had to be hidden—something deeply hidden.`,
+  p_einstein_2: `As a sixteen-year-old schoolboy gazing up at the Bernese Alps, a question seized me: What if a boy could run alongside a beam of light? Would time freeze? Would the waves stand still like frozen glass? That single daydream shattered every clock in Europe.`,
+  p_einstein_3: `In the Bern patent office, between examining patents for gravel sorting machines and synchronised railway clocks, the world fell into place. The physical touch of Swiss patent papers and the ticking clocks on the wall became the sensory crucible of relativity.`,
 };
 
 export const defaultStoryScriptFallback = "Remember to pause and take your time answering, letting your thoughts flow naturally. Good luck with your video or Audio project!";

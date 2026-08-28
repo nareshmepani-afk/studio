@@ -4,49 +4,50 @@
   "isPublic": true,
   "authorId": "system_seed",
   "title": "Albert Einstein: Spacetime & Imagination",
-  "description": "Reconstruct early foundations and creative milestones from Albert Einstein's historical timeline.",
-  "prose": "Let's explore the space-time of your memory. Think about a moment when time seemed to stand still, or when your imagination took flight beyond the bounds of everyday knowledge. We'll examine the thoughts that sparked your curiosity and the theories of life you've developed along the way. When you're ready, tell us about the relativity of your own journey.",
-  "age": 26,
-  "narratorAgeAtTime": 26,
-  "year": 1905,
+  "originalHook": "Before the equations, before the Nobel, before spacetime—there was only a boy, a trembling brass compass, and the invisible wonder of the unseen world.",
+  "description": "I was five years old, sick in bed, when my father placed a small brass pocket compass in my trembling hand. No matter which way I turned the casing, that mysterious needle remained stubbornly fixed to the unseen north. In that quiet room, beneath the cold brass and glass, I realised something behind things had to be hidden—something deeply hidden.",
+  "prose": "I was five years old, sick in bed, when my father placed a small brass pocket compass in my trembling hand. No matter which way I turned the casing, that mysterious needle remained stubbornly fixed to the unseen north. In that quiet room, beneath the cold brass and glass, I realised something behind things had to be hidden—something deeply hidden.",
+  "age": 5,
+  "narratorAgeAtTime": 5,
+  "year": 1884,
   "dateComponents": {
-    "day": "1",
-    "month": "January",
-    "year": "1905"
+    "day": "14",
+    "month": "March",
+    "year": "1884"
   },
-  "span": "1 Year (Annus Mirabilis)",
-  "timeframe": "1905",
-  "timeframeScope": "Year",
+  "span": "1 Childhood Afternoon",
+  "timeframe": "1884",
+  "timeframeScope": "Event",
   "durationQuantity": 1,
-  "durationUnit": "years",
-  "location": "Bern, Switzerland (Swiss Patent Office)",
-  "narratorLocationAtEvent": "Bern, Switzerland (Swiss Patent Office)",
-  "mood": "Reflective & Visionary",
+  "durationUnit": "days",
+  "location": "Munich, Germany (Family Residence)",
+  "narratorLocationAtEvent": "Munich, Germany (Family Residence)",
+  "mood": "Wonder & Awe",
   "sensory": {
-    "visual": "Pocket Compass Needle",
-    "soundscape": "Patent Office Clock Ticking",
-    "texture": "Crisp Swiss Patent Documents"
+    "visual": "Trembling Magnetic Needle (Unseen North)",
+    "soundscape": "Munich Bedroom Rain & Linens",
+    "texture": "Cold Brass Pocket Compass"
   },
   "sensoryConfig": [
-    { "id": "visual", "label": "Visual Anchor (Sight)", "placeholder": "e.g. Pocket Compass Needle", "anchor": "Pocket Compass Needle" },
-    { "id": "soundscape", "label": "Soundscape (Hearing)", "placeholder": "e.g. Patent Office Clock Ticking", "anchor": "Patent Office Clock Ticking" },
-    { "id": "texture", "label": "Tactile Anchor (Touch)", "placeholder": "e.g. Crisp Swiss Patent Documents", "anchor": "Crisp Swiss Patent Documents" }
+    { "id": "texture", "type": "tactile", "label": "Tactile Anchor (Touch)", "placeholder": "e.g. Cold Brass Pocket Compass", "anchor": "Cold Brass Pocket Compass" },
+    { "id": "visual", "type": "visual", "label": "Visual Anchor (Sight)", "placeholder": "e.g. Trembling Magnetic Needle", "anchor": "Trembling Magnetic Needle (Unseen North)" },
+    { "id": "soundscape", "type": "auditory", "label": "Soundscape (Atmosphere)", "placeholder": "e.g. Munich Bedroom Rain & Linens", "anchor": "Munich Bedroom Rain & Linens" }
   ],
   "acts": {
     "act1": {
-      "title": "Act I: Ulm Birthplace & Foundations (1879)",
-      "prompt": "Let's begin with the concept of time. Can you describe a specific moment where time seemed to slow down or stand still for you?",
-      "milestoneAnchor": "The pocket compass at age five"
+      "title": "Act I: The Inciting Memory (The Cold Needle)",
+      "prompt": "I was five years old, sick in bed, when my father placed a small brass pocket compass in my trembling hand. No matter which way I turned the casing, that mysterious needle remained stubbornly fixed to the unseen north. In that quiet room, beneath the cold brass and glass, I realised something behind things had to be hidden—something deeply hidden.",
+      "milestoneAnchor": "The brass pocket compass at age five (Munich, 1884)"
     },
     "act2": {
-      "title": "Act II: Aarau Imagination & Light Speed Experiment (1895)",
-      "prompt": "And thinking about imagination, when was a time your mind wandered beyond the limits of what was known, sparking a new direction or creative break?",
-      "milestoneAnchor": "Chasing a light beam through spacetime"
+      "title": "Act II: The Deep Weave (The Light Beam Chase)",
+      "prompt": "As a sixteen-year-old schoolboy gazing up at the Bernese Alps, a question seized me: What if a boy could run alongside a beam of light? Would time freeze? Would the waves stand still like frozen glass? That single daydream shattered every clock in Europe.",
+      "milestoneAnchor": "Chasing a light beam through spacetime (Aarau, 1895)"
     },
     "act3": {
-      "title": "Act III: Bern Patent Office Sensory Anchors (1905)",
-      "prompt": "What was the sensory anchor of that realization—perhaps the physical feel of an object in your hand, or the atmosphere of the room where the idea struck?",
-      "milestoneAnchor": "Physical touch of patent papers and ticking walls"
+      "title": "Act III: The Sensory Capture (The Miracle Year)",
+      "prompt": "In the Bern patent office, between examining patents for gravel sorting machines and synchronised railway clocks, the world fell into place. The physical touch of Swiss patent papers and the ticking clocks on the wall became the sensory crucible of relativity.",
+      "milestoneAnchor": "Physical touch of patent papers and ticking walls (Bern, 1905)"
     }
   },
   "createdAt": "2026-06-29T19:53:00.000Z"

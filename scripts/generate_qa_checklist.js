@@ -830,18 +830,21 @@ if (require.main === module) {
       },
       {
         category: 'Sandbox Resilience',
-        title: '✨ Try Einstein Demo Quick-Start & Vault Isolation',
-        instructions: 'Click "✨ Try Einstein Demo" in Studio Header. Confirm pre-loaded sample memory loads with rich documentary-grade anchors: <code class="text-amber-300">Age: 26</code>, <code class="text-amber-300">Year: 1905</code>, <code class="text-amber-300">Span: 1 Year (Annus Mirabilis)</code>, <code class="text-amber-300">Location: Bern Patent Office</code>, and rich sensory anchors (Pocket Compass, Clock Ticking, Patent Documents).',
-        url: 'https://dev.memoryweaver.studio/studio',
+        title: '✨ Try Einstein Demo Quick-Start (The Magnetic Compass) & Vault Isolation',
+        instructions: 'Click "✨ Try Einstein Demo" in Studio Header or open <code class="text-amber-300">/studio/production/p_einstein</code>. Confirm pre-loaded sample memory loads with authentic spoken monologue: <em>"I was five years old, sick in bed, when my father placed a small brass pocket compass in my trembling hand..."</em> and rich documentary anchors: <code class="text-amber-300">Age: 5</code>, <code class="text-amber-300">Year: 1884</code>, <code class="text-amber-300">Span: 1 Childhood Afternoon</code>, <code class="text-amber-300">Location: Munich Residence</code>, and rich sensory anchors (Cold Brass Pocket Compass, Trembling Needle, Munich Bedroom Linens).',
+        url: 'https://dev.memoryweaver.studio/studio/production/p_einstein',
         governingRules: [
-          'Rule 7: Universal Non-Degradation Across All Features',
-          'Ephemeral Memory Isolation & Zero-Leak Shield'
+          'Rule 11: Spoken Monologue Integrity & Server-Side Sanitizer',
+          'Rule 14: Story Hook Fallback & Text Preservation Hierarchy',
+          'Rule 20: Mandatory UK English Orthography (realised)'
         ],
         testData: [
-          { label: 'Studio Entry Route', value: 'https://dev.memoryweaver.studio/studio' },
-          { label: 'Biographical Anchors', value: 'I WAS: 26 • YEAR: 1905 • SPAN: 1 Year (Annus Mirabilis)' },
-          { label: 'Location Anchor', value: 'Bern, Switzerland (Swiss Patent Office)' },
-          { label: 'Sensory Anchors', value: 'Pocket Compass Needle, Patent Office Clock Ticking, Crisp Patent Documents' }
+          { label: 'Direct Production Route', value: 'https://dev.memoryweaver.studio/studio/production/p_einstein' },
+          { label: 'Story Hook', value: 'Before the equations, before the Nobel, before spacetime—there was only a boy, a trembling brass compass, and the invisible wonder of the unseen world.' },
+          { label: 'Spoken Monologue', value: 'I was five years old, sick in bed, when my father placed a small brass pocket compass in my trembling hand. No matter which way I turned the casing, that mysterious needle remained stubbornly fixed to the unseen north. In that quiet room, beneath the cold brass and glass, I realised something behind things had to be hidden—something deeply hidden.' },
+          { label: 'Biographical Anchors', value: 'I WAS: 5 • YEAR: 1884 • SPAN: 1 Childhood Afternoon' },
+          { label: 'Location Anchor', value: 'Munich, Germany (Family Residence)' },
+          { label: 'Sensory Anchors', value: 'Cold Brass Pocket Compass, Trembling Magnetic Needle (Unseen North), Munich Bedroom Rain & Linens' }
         ]
       }
     ]

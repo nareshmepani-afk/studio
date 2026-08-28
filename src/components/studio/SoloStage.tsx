@@ -1030,27 +1030,28 @@ export default function SoloStage({
         const memoriesRef = collection(db, 'users', user.uid, 'memories');
         const cleanEinsteinTemplate = {
           title: "Albert Einstein: Spacetime & Imagination",
-          description: "Reconstruct early foundations and creative milestones from Albert Einstein's historical timeline.",
+          originalHook: "Before the equations, before the Nobel, before spacetime—there was only a boy, a trembling brass compass, and the invisible wonder of the unseen world.",
+          description: data?.description || "I was five years old, sick in bed, when my father placed a small brass pocket compass in my trembling hand. No matter which way I turned the casing, that mysterious needle remained stubbornly fixed to the unseen north. In that quiet room, beneath the cold brass and glass, I realised something behind things had to be hidden—something deeply hidden.",
           promptId: "p_einstein",
           status: "draft",
-          prose: data?.prose || "",
+          prose: data?.prose || "I was five years old, sick in bed, when my father placed a small brass pocket compass in my trembling hand. No matter which way I turned the casing, that mysterious needle remained stubbornly fixed to the unseen north. In that quiet room, beneath the cold brass and glass, I realised something behind things had to be hidden—something deeply hidden.",
           sensoryConfig: data?.sensoryConfig || [],
           sensory: data?.sensory || {
-            visual: "Pocket Compass Needle",
-            soundscape: "Patent Office Clock Ticking",
-            texture: "Crisp Swiss Patent Documents"
+            texture: "Cold Brass Pocket Compass",
+            visual: "Trembling Magnetic Needle (Unseen North)",
+            soundscape: "Munich Bedroom Rain & Linens"
           },
-          age: 26,
-          narratorAgeAtTime: 26,
-          year: 1905,
-          dateComponents: { day: "1", month: "January", year: "1905" },
-          span: "1 Year (Annus Mirabilis)",
-          timeframe: "1905",
-          timeframeScope: "Year",
+          age: 5,
+          narratorAgeAtTime: 5,
+          year: 1884,
+          dateComponents: { day: "14", month: "March", year: "1884" },
+          span: "1 Childhood Afternoon",
+          timeframe: "1884",
+          timeframeScope: "Event",
           durationQuantity: 1,
-          durationUnit: "years",
-          location: "Bern, Switzerland (Swiss Patent Office)",
-          narratorLocationAtEvent: "Bern, Switzerland (Swiss Patent Office)",
+          durationUnit: "days",
+          location: "Munich, Germany (Family Residence)",
+          narratorLocationAtEvent: "Munich, Germany (Family Residence)",
           productionStage: 1, // Advance to recording stage
           createdAt: new Date().toISOString()
         };

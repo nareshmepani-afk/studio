@@ -64,7 +64,7 @@ const SEED_CATALOG: Record<string, string[]> = {
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const DAYS = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
-const YEARS = Array.from({ length: 130 }, (_, i) => (2026 - i).toString());
+const YEARS = Array.from({ length: 150 }, (_, i) => (2026 - i).toString());
 
 export const ACT_TITLES = [
   "Act I: The Inciting Memory",
