@@ -11,7 +11,7 @@ export function getStagingPasscode(): string {
  * Fully compatible with Next.js Edge Runtime, Node.js, and Browser Web Crypto.
  */
 export async function computeStagingToken(passcode: string): Promise<string> {
-  const normalized = (passcode || '').trim();
+  const normalized = (passcode || '').trim().toUpperCase();
   const data = new TextEncoder().encode(`${normalized}:${TOKEN_SALT}`);
   
   if (typeof crypto !== 'undefined' && crypto.subtle) {

@@ -43,7 +43,7 @@ export default function StagingLockContent() {
       // Brief delay for visual feedback before seamless redirect
       setTimeout(() => {
         window.location.href = destination;
-      }, 500);
+      }, 900);
     } catch (err: any) {
       console.error('[StagingLock] Network error:', err);
       setError('Network error validating passcode. Please try again.');

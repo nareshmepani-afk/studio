@@ -152,7 +152,6 @@ export async function createStripeCheckoutSession(params: {
     client_reference_id: uid,
     customer_email: undefined, // omitted when customer ID is specified
     mode: tierConfig.mode,
-    payment_method_types: ['card'],
     line_items: [
       {
         price_data: priceData,

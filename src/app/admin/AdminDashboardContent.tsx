@@ -10,7 +10,8 @@ import {
   Cpu,
   ShieldCheck,
   Server,
-  Mail
+  Mail,
+  LogOut
 } from 'lucide-react';
 import { DevOpsConsole } from '@/components/admin/DevOpsConsole';
 import { BusinessConsole } from '@/components/admin/BusinessConsole';
@@ -22,7 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 
 export default function AdminDashboardContent() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const router = useRouter();
   const [activeSuite, setActiveSuite] = useState<'devops' | 'business' | 'access' | 'email' | 'knowledge'>('devops');
   const [envInfo, setEnvInfo] = useState<{ projectId: string; envContext: 'LIVE-PRODUCTION' | 'DEV-APP' | 'LOCAL-DEV'; label: string } | null>(null);
@@ -72,6 +73,15 @@ export default function AdminDashboardContent() {
       });
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+    router.push('/admin/login');
+  };
+
   if (authLoading || !user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-slate-400 font-mono text-sm">
@@ -97,7 +107,7 @@ export default function AdminDashboardContent() {
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {envInfo ? (
               <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border transition-all duration-300 ${
                 envInfo.envContext === 'LIVE-PRODUCTION' 
@@ -123,6 +133,14 @@ export default function AdminDashboardContent() {
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
               SYSTEM SECURE
             </span>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-800 bg-slate-900/60 hover:bg-rose-500/10 hover:border-rose-500/30 text-slate-400 hover:text-rose-400 text-xs font-mono font-medium transition-all cursor-pointer shadow-sm"
+              title="Log Out of Admin Hub"
+            >
+              <LogOut className="h-3 w-3" />
+              <span>Log Out</span>
+            </button>
           </div>
         </div>
       </header>
@@ -197,6 +215,16 @@ export default function AdminDashboardContent() {
                 </svg>
                 Knowledge Hub
               </button>
+
+              <div className="pt-2 border-t border-slate-800/60 mt-2">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium rounded-xl border border-transparent text-slate-400 hover:bg-rose-500/10 hover:border-rose-500/20 hover:text-rose-400 transition-all cursor-pointer"
+                >
+                  <LogOut className="h-3.5 w-3.5 text-rose-400" />
+                  <span>Log Out of Admin Hub</span>
+                </button>
+              </div>
             </div>
 
             {/* Quick Stats/Info */}

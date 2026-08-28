@@ -57,7 +57,7 @@ export async function setSessionCookie(sessionCookie: string, expiresIn: number)
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    sameSite: "strict",
+    sameSite: "lax",
   });
 }
 
