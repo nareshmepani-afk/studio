@@ -876,10 +876,10 @@ if (require.main === module) {
           { label: 'Expected Display', value: 'Active Period: [start] – [end] (31-Day Pass Active • Extend anytime to stack +31 days)' },
           { label: 'Stripe Test Card', value: '4242 4242 4242 4242' }
         ],
-        defaultStatus: 'PENDING',
-        statusAttribution: '⏳ Pending Live Verification',
-        statusRationale: 'Active period display added; awaiting live checkout stack test on staging.',
-        defaultNotes: ''
+        defaultStatus: 'PASS',
+        statusAttribution: '👤 Verified by User (Commit ad6bf9d)',
+        statusRationale: 'Verified active period date range and cumulative +31 days extension on staging.',
+        defaultNotes: 'Verified active period display and pass extension.'
       },
       {
         category: 'Billing Compliance',
@@ -896,7 +896,7 @@ if (require.main === module) {
           { label: 'Document Format', value: 'Official VAT Invoice PDF' }
         ],
         defaultStatus: 'PASS',
-        statusAttribution: '👤 Verified by User (Commit f1d7f5a)',
+        statusAttribution: '👤 Verified by User (Commit ad6bf9d)',
         statusRationale: 'Verified self-serve VAT Receipt & Invoice Portal button and Stripe handshake.',
         defaultNotes: 'Verified self-serve VAT Receipt & Invoice Portal.'
       },
@@ -919,8 +919,8 @@ if (require.main === module) {
           { label: 'Sensory Anchors', value: 'Cold Brass Pocket Compass, Trembling Magnetic Needle (Unseen North), Munich Bedroom Rain & Linens' }
         ],
         defaultStatus: 'PENDING',
-        statusAttribution: '🤖 Reset for Retest — Fix Deployed in 16dda78',
-        statusRationale: 'Reset from ❌ FAIL because commit 16dda78 expanded YEARS to 150y, integrated authentic 1884 Munich magnetic compass monologue, and hydrated all demographic anchors.',
+        statusAttribution: '🤖 Reset for Retest — 0ms Sync Hydration & Sandbox Query Isolation',
+        statusRationale: 'Reset from ❌ FAIL because async race condition was eliminated with 0ms synchronous template resolution and user memory query was isolated from demo templates.',
         defaultNotes: ''
       }
     ]

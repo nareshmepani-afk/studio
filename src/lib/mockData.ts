@@ -883,27 +883,27 @@ export const mockPromptGroups: PromptGroup[] = [
     prompts: [
       {
         id: 'p_einstein',
-        title: 'Einsteinian Space-Time',
-        description: 'Explore the relativity of time and the bounds of imagination.',
+        title: 'Albert Einstein: Spacetime & Imagination',
+        description: 'Before the equations, before the Nobel, before spacetime—there was only a boy, a trembling brass compass, and the invisible wonder of the unseen world.',
         text: {
-          en: 'Einsteinian Space-Time - Time, relativity, and imagination',
-          gu: 'Einsteinian Space-Time - Time, relativity, and imagination',
+          en: 'Before the equations, before the Nobel, before spacetime—there was only a boy, a trembling brass compass, and the invisible wonder of the unseen world.',
+          gu: 'Before the equations, before the Nobel, before spacetime—there was only a boy, a trembling brass compass, and the invisible wonder of the unseen world.',
         },
         sensoryPrompts: [
           {
             id: 'sense1',
-            label: 'Scent of old paper and chalk dust',
-            placeholder: 'e.g. Dusty chalkboards, library books...'
+            label: 'Cold Brass Pocket Compass',
+            placeholder: 'e.g. Cold metallic casing resting in a child’s trembling hand...'
           },
           {
             id: 'sense2',
-            label: 'Sound of a ticking watch',
-            placeholder: 'e.g. Rhythm of clockwork, deep silence...'
+            label: 'Trembling Magnetic Needle (Unseen North)',
+            placeholder: 'e.g. Slender needle stubbornly pointing to the mysterious north...'
           },
           {
             id: 'sense3',
-            label: 'Feeling of a magnetic compass',
-            placeholder: 'e.g. Cold brass, a needle pointing north...'
+            label: 'Munich Bedroom Rain & Linens',
+            placeholder: 'e.g. Quiet rain against the glass, warmth of sickbed blankets...'
           }
         ],
         isFlaggedForReuse: false,

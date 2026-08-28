@@ -12,7 +12,7 @@ import { Loader2, Plus, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { resolveTemplateFixtureAsync } from '@/utils/templateResolver';
+import { resolveTemplateFixture, resolveTemplateFixtureAsync } from '@/utils/templateResolver';
 import { MobilePortalOverlay } from './overlays/MobilePortalOverlay';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -156,7 +156,8 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         }
 
         // 3. Direct promptId query in user's memories (e.g. promptId is "p1", "p2", etc.)
-        if (active && user?.uid) {
+        // DEMO SANDBOX ISOLATION: Never match historical demo templates (e.g. p_einstein) to user memories
+        if (active && user?.uid && promptId !== 'p_einstein') {
           const userMemQuery = query(collection(db, 'users', user.uid, 'memories'), where('promptId', '==', promptId));
           const userMemSnap = await getDocs(userMemQuery);
           
@@ -321,8 +322,8 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         const draftScript = templateId ? storyScripts[templateId] : '';
         const draftFormattedProse = draftScript ? `<p>${draftScript.split('\\n').join('</p><p>')}</p>` : '';
 
-        // Hydrate dynamically using the resolved asynchronous template state
-        const resolvedTemplate = resolvedAsyncTemplate;
+        // Hydrate dynamically using synchronous fixture registry (0ms) or resolved asynchronous template state
+        const resolvedTemplate = resolveTemplateFixture(templateId) || resolvedAsyncTemplate;
         
         let initialSensoryConfig: any[] = [];
         let initialProse = draftFormattedProse;
@@ -335,20 +336,21 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
         memoryToEdit = {
           title: resolvedTemplate ? resolvedTemplate.title : (template?.title || ''),
           description: resolvedTemplate ? resolvedTemplate.description : (template?.description || ''),
+          originalHook: resolvedTemplate?.originalHook || (resolvedTemplate ? resolvedTemplate.description : (template?.description || '')),
           promptId: templateId,
           status: 'draft',
           prose: initialProse,
           sensoryConfig: initialSensoryConfig,
           sensory: resolvedTemplate?.sensory || undefined,
-          narratorAgeAtTime: resolvedTemplate?.narratorAgeAtTime !== undefined ? resolvedTemplate.narratorAgeAtTime : (resolvedTemplate?.age ?? 26),
-          age: resolvedTemplate?.age ?? resolvedTemplate?.narratorAgeAtTime ?? 26,
-          dateComponents: resolvedTemplate?.dateComponents || (resolvedTemplate?.year ? { day: '1', month: 'January', year: String(resolvedTemplate.year) } : undefined),
-          year: resolvedTemplate?.year ? Number(resolvedTemplate.year) : undefined,
-          timeframeScope: resolvedTemplate?.timeframeScope || 'Year',
+          narratorAgeAtTime: resolvedTemplate?.narratorAgeAtTime !== undefined ? resolvedTemplate.narratorAgeAtTime : (resolvedTemplate?.age ?? 5),
+          age: resolvedTemplate?.age ?? resolvedTemplate?.narratorAgeAtTime ?? 5,
+          dateComponents: resolvedTemplate?.dateComponents || (resolvedTemplate?.year ? { day: '14', month: 'March', year: String(resolvedTemplate.year) } : undefined),
+          year: resolvedTemplate?.year ? Number(resolvedTemplate.year) : 1884,
+          timeframeScope: resolvedTemplate?.timeframeScope || '1 Childhood Afternoon',
           durationQuantity: resolvedTemplate?.durationQuantity ?? 1,
-          durationUnit: resolvedTemplate?.durationUnit || 'years',
-          location: resolvedTemplate?.location || resolvedTemplate?.narratorLocationAtEvent || '',
-          narratorLocationAtEvent: resolvedTemplate?.narratorLocationAtEvent || resolvedTemplate?.location || '',
+          durationUnit: resolvedTemplate?.durationUnit || 'days',
+          location: resolvedTemplate?.location || resolvedTemplate?.narratorLocationAtEvent || 'Munich, Germany (Family Residence)',
+          narratorLocationAtEvent: resolvedTemplate?.narratorLocationAtEvent || resolvedTemplate?.location || 'Munich, Germany (Family Residence)',
           acts: resolvedTemplate?.acts,
           modality: searchParams.get('modality') === 'vocal' ? 'voice' : (searchParams.get('modality') === 'scribe' ? 'pen' : null)
         };
