@@ -166,7 +166,13 @@ export async function createStripeCheckoutSession(params: {
     success_url: successUrl,
     cancel_url: cancelUrl,
     billing_address_collection: 'auto',
-    allow_promotion_codes: true,
+    allow_promotion_codes: false,
+    submit_type: 'pay',
+    custom_text: {
+      submit: {
+        message: 'Your memory studio access and 4K cloud vault activate immediately upon completion.',
+      },
+    },
   };
 
   return await stripe.checkout.sessions.create(sessionParams);
