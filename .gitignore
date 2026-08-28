@@ -33,7 +33,7 @@ test-results/
 !jest.config.js
 !*.rules
 !*.json
-!scripts/generateLivingDocs.js
+!scripts/*.js
 scratch/
 !tailwind.config.js
 !postcss.config.js

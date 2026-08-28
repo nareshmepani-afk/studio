@@ -446,137 +446,139 @@ export function SettingsPageContent({
                  )}
                </div>
 
-               {/* Action / Upgrade Options Box */}
-               <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-6 relative overflow-hidden">
-                  {effectiveStatus === 'inactive' && !activationDateStr ? (
-                     <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="max-w-md">
-                           <h3 className="text-white font-bold mb-1">Activate Complimentary Pass</h3>
-                           <p className="text-sm text-white/40 leading-relaxed">Unlock all story prompts and premium cinema exports for 6 months. No credit card required to start.</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <Button 
-                            onClick={handleActivateFreePass} 
-                            disabled={isPending} 
-                            className="bg-amber-500 text-black font-extrabold px-6 h-12 rounded-xl hover:brightness-110 shadow-[0_0_20px_rgba(245,158,11,0.2)] shrink-0 cursor-pointer"
-                          >
-                            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4 fill-current" />} 
-                            Claim 6-Month Pass
-                          </Button>
-                          <Button
-                            onClick={() => handleCheckout('generational_vault')}
-                            disabled={Boolean(isCheckoutLoading)}
-                            variant="outline"
-                            className="border-amber-500/30 bg-amber-500/10 text-amber-300 font-bold px-5 h-12 rounded-xl hover:bg-amber-500/20 shrink-0 cursor-pointer"
-                          >
-                            {isCheckoutLoading === 'generational_vault' ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Crown className="h-4 w-4 mr-1.5" />}
-                            Lifetime Vault (£195)
-                          </Button>
-                        </div>
-                     </div>
-                  ) : effectiveStatus === 'free_host_pass_active' ? (
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="max-w-md">
-                           <h3 className="text-white font-bold mb-1 font-headline">Complimentary Access Active</h3>
-                           <p className="text-sm text-white/40 leading-relaxed">Your 6-month pass is active (Period: {passPeriodText}). You can extend with a 31-Day Pass or upgrade to the 100 GB Lifetime Generational Vault.</p>
-                        </div>
-                        <div className="flex flex-col sm:flex-row items-center gap-3">
-                          <Button
-                            onClick={() => handleCheckout('director')}
-                            disabled={Boolean(isCheckoutLoading)}
-                            variant="outline"
-                            className="border-white/20 bg-white/5 text-white font-bold px-5 h-12 rounded-xl hover:bg-white/10 shrink-0 cursor-pointer w-full sm:w-auto"
-                          >
-                            {isCheckoutLoading === 'director' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
-                            Extend 31 Days (£12.99)
-                          </Button>
-                          <Button
-                            onClick={() => handleCheckout('generational_vault')}
-                            disabled={Boolean(isCheckoutLoading)}
-                            className="bg-amber-500 text-black font-bold px-6 h-12 rounded-xl hover:brightness-110 shadow-[0_0_20px_rgba(245,158,11,0.2)] shrink-0 cursor-pointer w-full sm:w-auto"
-                          >
-                            {isCheckoutLoading === 'generational_vault' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Crown className="h-4 w-4 mr-2" />}
-                            Unlock Lifetime Vault (£195)
-                          </Button>
-                        </div>
-                     </div>
-                  ) : effectiveStatus === 'paid_host_pass_active' ? (
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="max-w-md">
-                           <h3 className="text-white font-bold mb-1 font-headline">31-Day Director Pass Active</h3>
-                           <p className="text-sm text-white/40 leading-relaxed">Your studio access is active. Click below to add 31 more days cumulatively or upgrade to permanent Lifetime Vault access.</p>
-                        </div>
-                        <div className="flex flex-col sm:flex-row items-center gap-3">
-                          <Button
-                            onClick={() => handleCheckout('director')}
-                            disabled={Boolean(isCheckoutLoading)}
-                            className="bg-amber-500 text-black font-extrabold px-6 h-12 rounded-xl hover:brightness-110 shadow-[0_0_20px_rgba(245,158,11,0.2)] shrink-0 cursor-pointer w-full sm:w-auto"
-                          >
-                            {isCheckoutLoading === 'director' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2 fill-current" />}
-                            Extend 31 Days (£12.99)
-                          </Button>
-                          <Button
-                            onClick={() => handleCheckout('generational_vault')}
-                            disabled={Boolean(isCheckoutLoading)}
-                            variant="outline"
-                            className="border-amber-500/40 bg-amber-500/10 text-amber-300 font-bold px-6 h-12 rounded-xl hover:bg-amber-500/20 shrink-0 cursor-pointer w-full sm:w-auto"
-                          >
-                            {isCheckoutLoading === 'generational_vault' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Crown className="h-4 w-4 mr-2" />}
-                            Lifetime Vault (£195)
-                          </Button>
-                        </div>
-                     </div>
-                  ) : effectiveStatus === 'free_host_pass_expired' || effectiveStatus === 'paid_host_pass_expired' || activationDateStr ? (
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="max-w-md">
-                           <h3 className="text-rose-400 font-bold mb-1 font-headline">Pass Expired — Renew Studio Access</h3>
-                           <p className="text-sm text-white/40 leading-relaxed">Your prior pass period has ended ({passPeriodText}). Buy a 31-Day Pass or lock in lifetime access with the Generational Vault.</p>
-                        </div>
-                        <div className="flex flex-col sm:flex-row items-center gap-3">
-                          <Button
-                            onClick={() => handleCheckout('director')}
-                            disabled={Boolean(isCheckoutLoading)}
-                            className="bg-amber-500 text-black font-extrabold px-6 h-12 rounded-xl hover:brightness-110 shadow-[0_0_20px_rgba(245,158,11,0.2)] shrink-0 cursor-pointer w-full sm:w-auto"
-                          >
-                            {isCheckoutLoading === 'director' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2 fill-current" />}
-                            Buy 31-Day Pass (£12.99)
-                          </Button>
-                          <Button
-                            onClick={() => handleCheckout('generational_vault')}
-                            disabled={Boolean(isCheckoutLoading)}
-                            variant="outline"
-                            className="border-amber-500/40 bg-amber-500/10 text-amber-300 font-bold px-6 h-12 rounded-xl hover:bg-amber-500/20 shrink-0 cursor-pointer w-full sm:w-auto"
-                          >
-                            {isCheckoutLoading === 'generational_vault' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Crown className="h-4 w-4 mr-2" />}
-                            Lifetime Vault (£195)
-                          </Button>
-                        </div>
-                     </div>
-                  ) : (
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-amber-400">
-                      <div className="flex items-center gap-3">
-                        <Crown className="h-6 w-6 text-amber-400 shrink-0" />
-                        <div>
-                          <h3 className="font-bold text-white font-headline">Perpetual Generational Vault Verified</h3>
-                          <p className="text-xs text-white/40">You have permanent, unrestricted 100 GB archival storage with priority support.</p>
-                        </div>
+                {/* Action / Upgrade Options Box */}
+                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-6 relative overflow-hidden">
+                   {effectiveStatus === 'inactive' && !activationDateStr ? (
+                      <div className="space-y-4">
+                         <div>
+                            <h3 className="text-white font-bold mb-1.5 font-headline">Activate Complimentary Pass</h3>
+                            <p className="text-sm text-white/50 leading-relaxed max-w-2xl">Unlock all story prompts and premium cinema exports for 6 months. No credit card required to start.</p>
+                         </div>
+                         <div className="flex flex-wrap items-center gap-3 pt-1">
+                           <Button 
+                             onClick={handleActivateFreePass} 
+                             disabled={isPending} 
+                             className="bg-amber-500 text-black font-extrabold px-6 h-12 rounded-xl hover:brightness-110 shadow-[0_0_20px_rgba(245,158,11,0.2)] shrink-0 cursor-pointer"
+                           >
+                             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4 fill-current" />} 
+                             Claim 6-Month Pass
+                           </Button>
+                           <Button
+                             onClick={() => handleCheckout('generational_vault')}
+                             disabled={Boolean(isCheckoutLoading)}
+                             variant="outline"
+                             className="border-amber-500/30 bg-amber-500/10 text-amber-300 font-bold px-5 h-12 rounded-xl hover:bg-amber-500/20 shrink-0 cursor-pointer"
+                           >
+                             {isCheckoutLoading === 'generational_vault' ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Crown className="h-4 w-4 mr-1.5" />}
+                             Lifetime Vault (£195)
+                           </Button>
+                         </div>
                       </div>
-                      {hasStripeCustomer && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleOpenBillingPortal}
-                          disabled={isPortalLoading}
-                          className="bg-white/5 hover:bg-white/10 border-white/10 text-white text-xs font-mono uppercase tracking-wider shrink-0 cursor-pointer"
-                        >
-                          {isPortalLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <CreditCard className="h-3.5 w-3.5 mr-1.5 text-amber-400" />}
-                          <span>View Receipts & Tax Invoices ↗</span>
-                        </Button>
-                      )}
-                    </div>
-                  )}
-               </div>
+                   ) : effectiveStatus === 'free_host_pass_active' ? (
+                     <div className="space-y-4">
+                         <div>
+                            <h3 className="text-white font-bold mb-1.5 font-headline">Complimentary Access Active</h3>
+                            <p className="text-sm text-white/50 leading-relaxed max-w-2xl">Your 6-month pass is active (Period: {passPeriodText}). You can extend with a 31-Day Pass or upgrade to the 100 GB Lifetime Generational Vault.</p>
+                         </div>
+                         <div className="flex flex-wrap items-center gap-3 pt-1">
+                           <Button
+                             onClick={() => handleCheckout('director')}
+                             disabled={Boolean(isCheckoutLoading)}
+                             variant="outline"
+                             className="border-white/20 bg-white/5 text-white font-bold px-5 h-12 rounded-xl hover:bg-white/10 shrink-0 cursor-pointer"
+                           >
+                             {isCheckoutLoading === 'director' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+                             Extend 31 Days (£12.99)
+                           </Button>
+                           <Button
+                             onClick={() => handleCheckout('generational_vault')}
+                             disabled={Boolean(isCheckoutLoading)}
+                             className="bg-amber-500 text-black font-bold px-6 h-12 rounded-xl hover:brightness-110 shadow-[0_0_20px_rgba(245,158,11,0.2)] shrink-0 cursor-pointer"
+                           >
+                             {isCheckoutLoading === 'generational_vault' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Crown className="h-4 w-4 mr-2" />}
+                             Unlock Lifetime Vault (£195)
+                           </Button>
+                         </div>
+                      </div>
+                   ) : effectiveStatus === 'paid_host_pass_active' ? (
+                     <div className="space-y-4">
+                         <div>
+                            <h3 className="text-white font-bold mb-1.5 font-headline">31-Day Director Pass Active</h3>
+                            <p className="text-sm text-white/50 leading-relaxed max-w-2xl">Your studio access is active. Click below to add 31 more days cumulatively or upgrade to permanent Lifetime Vault access.</p>
+                         </div>
+                         <div className="flex flex-wrap items-center gap-3 pt-1">
+                           <Button
+                             onClick={() => handleCheckout('director')}
+                             disabled={Boolean(isCheckoutLoading)}
+                             className="bg-amber-500 text-black font-extrabold px-6 h-12 rounded-xl hover:brightness-110 shadow-[0_0_20px_rgba(245,158,11,0.2)] shrink-0 cursor-pointer"
+                           >
+                             {isCheckoutLoading === 'director' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2 fill-current" />}
+                             Extend 31 Days (£12.99)
+                           </Button>
+                           <Button
+                             onClick={() => handleCheckout('generational_vault')}
+                             disabled={Boolean(isCheckoutLoading)}
+                             variant="outline"
+                             className="border-amber-500/40 bg-amber-500/10 text-amber-300 font-bold px-6 h-12 rounded-xl hover:bg-amber-500/20 shrink-0 cursor-pointer"
+                           >
+                             {isCheckoutLoading === 'generational_vault' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Crown className="h-4 w-4 mr-2" />}
+                             Lifetime Vault (£195)
+                           </Button>
+                         </div>
+                      </div>
+                   ) : effectiveStatus === 'free_host_pass_expired' || effectiveStatus === 'paid_host_pass_expired' || activationDateStr ? (
+                     <div className="space-y-4">
+                         <div>
+                            <h3 className="text-rose-400 font-bold mb-1.5 font-headline">Pass Expired — Renew Studio Access</h3>
+                            <p className="text-sm text-white/50 leading-relaxed max-w-2xl">Your prior pass period has ended ({passPeriodText}). Buy a 31-Day Pass or lock in lifetime access with the Generational Vault.</p>
+                         </div>
+                         <div className="flex flex-wrap items-center gap-3 pt-1">
+                           <Button
+                             onClick={() => handleCheckout('director')}
+                             disabled={Boolean(isCheckoutLoading)}
+                             className="bg-amber-500 text-black font-extrabold px-6 h-12 rounded-xl hover:brightness-110 shadow-[0_0_20px_rgba(245,158,11,0.2)] shrink-0 cursor-pointer"
+                           >
+                             {isCheckoutLoading === 'director' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2 fill-current" />}
+                             Buy 31-Day Pass (£12.99)
+                           </Button>
+                           <Button
+                             onClick={() => handleCheckout('generational_vault')}
+                             disabled={Boolean(isCheckoutLoading)}
+                             variant="outline"
+                             className="border-amber-500/40 bg-amber-500/10 text-amber-300 font-bold px-6 h-12 rounded-xl hover:bg-amber-500/20 shrink-0 cursor-pointer"
+                           >
+                             {isCheckoutLoading === 'generational_vault' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Crown className="h-4 w-4 mr-2" />}
+                             Lifetime Vault (£195)
+                           </Button>
+                         </div>
+                      </div>
+                   ) : (
+                     <div className="space-y-4 text-amber-400">
+                       <div className="flex items-start gap-3.5">
+                         <Crown className="h-6 w-6 text-amber-400 shrink-0 mt-0.5" />
+                         <div>
+                           <h3 className="font-bold text-white font-headline">Perpetual Generational Vault Verified</h3>
+                           <p className="text-xs text-white/50 mt-1 leading-relaxed max-w-2xl">You have permanent, unrestricted 100 GB archival storage with priority support.</p>
+                         </div>
+                       </div>
+                       {hasStripeCustomer && (
+                         <div className="pt-1">
+                           <Button
+                             type="button"
+                             variant="outline"
+                             size="sm"
+                             onClick={handleOpenBillingPortal}
+                             disabled={isPortalLoading}
+                             className="bg-white/5 hover:bg-white/10 border-white/10 text-white text-xs font-mono uppercase tracking-wider shrink-0 cursor-pointer"
+                           >
+                             {isPortalLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <CreditCard className="h-3.5 w-3.5 mr-1.5 text-amber-400" />}
+                             <span>View Receipts & Tax Invoices ↗</span>
+                           </Button>
+                         </div>
+                       )}
+                     </div>
+                   )}
+                </div>
             </div>
           </section>
 
