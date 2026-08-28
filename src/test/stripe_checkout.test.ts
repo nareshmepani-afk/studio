@@ -3,6 +3,10 @@ import { PRICING_TIERS_CONFIG, getOrCreateStripeCustomer, createStripeCheckoutSe
 import { POST as webhookPost } from '@/app/api/webhooks/stripe/route';
 import { NextRequest } from 'next/server';
 
+vi.mock('@/lib/session', () => ({
+  getSession: vi.fn().mockResolvedValue(null),
+}));
+
 describe('MW-85: Stripe Payment & Generational Vault Engine (Option B: One-Off Pass)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -110,6 +114,15 @@ describe('MW-85: Stripe Payment & Generational Vault Engine (Option B: One-Off P
       const json = await res.json();
       expect(res.status).toBe(200);
       expect(json.duplicate).toBe(true);
+    });
+  });
+
+  describe('Session Verification Route (/api/checkout/verify-session)', () => {
+    it('returns 401 when user is unauthenticated', async () => {
+      const { GET: verifyGet } = await import('@/app/api/checkout/verify-session/route');
+      const req = new NextRequest('https://dev.memoryweaver.studio/api/checkout/verify-session?session_id=cs_test_123');
+      const res = await verifyGet(req);
+      expect(res.status).toBe(401);
     });
   });
 });

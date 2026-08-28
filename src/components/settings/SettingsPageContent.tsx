@@ -55,6 +55,9 @@ export function SettingsPageContent({
   
   const [directorPassStatus, setDirectorPassStatus] = useState(initialDirectorPassStatus);
   const [activationDateStr, setActivationDateStr] = useState(initialDirectorPassActivationDate);
+  const [currentMembershipTier, setCurrentMembershipTier] = useState(membershipTier);
+  const [currentVaultQuotaGb, setCurrentVaultQuotaGb] = useState(vaultQuotaGb);
+  const [hasStripeCustomerState, setHasStripeCustomerState] = useState(hasStripeCustomer);
   const [isPending, startTransition] = useTransition();
   const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [isCheckoutLoading, setIsCheckoutLoading] = useState<string | null>(null);
@@ -95,39 +98,64 @@ export function SettingsPageContent({
     }
   }, []);
 
-  // Check for successful Stripe checkout return
+  // Check for successful Stripe checkout return with Dual-Handshake Instant Sync
   useEffect(() => {
     const checkoutStatus = searchParams.get('checkout');
     const tier = searchParams.get('tier');
     const sessionId = searchParams.get('session_id');
 
     if (checkoutStatus === 'success') {
-      const tierTitle = tier === 'generational_vault' ? 'Generational Vault Lifetime' : 'Director Pass';
+      const isLifetime = tier === 'generational_vault';
+      const tierTitle = isLifetime ? 'Generational Vault Lifetime' : '31-Day Director Pass';
+      
+      // 1. Optimistic immediate UI update (0ms latency)
+      setDirectorPassStatus('paid_host_pass_active');
+      setCurrentMembershipTier(isLifetime ? 'generational_vault' : 'director_monthly');
+      setCurrentVaultQuotaGb(isLifetime ? 100 : 15);
+      setHasStripeCustomerState(true);
+
       toast.success('Payment Confirmed!', {
         description: `Your ${tierTitle} is active. Welcome to the director suite.`,
         icon: <CheckCircle className="h-4 w-4 text-amber-400" />,
       });
-      // Revalidate route silently
+
+      // 2. Dual handshake: verify session directly against Stripe & persist to Firestore
+      if (sessionId) {
+        fetch(`/api/checkout/verify-session?session_id=${encodeURIComponent(sessionId)}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success) {
+              if (data.membershipTier) setCurrentMembershipTier(data.membershipTier);
+              if (data.vaultQuotaGb) setCurrentVaultQuotaGb(data.vaultQuotaGb);
+              if (data.directorPassStatus) setDirectorPassStatus(data.directorPassStatus);
+              if (data.hasStripeCustomer) setHasStripeCustomerState(true);
+            }
+          })
+          .catch((err) => console.warn('Background session verification notice:', err));
+      }
+
+      // 3. Clean query params from URL without dropping session
       router.replace('/settings');
+      router.refresh();
     }
   }, [searchParams, router]);
 
   // Compute active vs expired based on activation date (6 months)
   const isPassExpired = useMemo(() => {
-    if (membershipTier === 'generational_vault') return false;
+    if (currentMembershipTier === 'generational_vault') return false;
     if (directorPassStatus !== 'free_host_pass_active' || !activationDateStr) return false;
     const activationDate = new Date(activationDateStr);
     const sixMonthsLater = new Date(activationDate);
     sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
     return new Date() > sixMonthsLater;
-  }, [directorPassStatus, activationDateStr, membershipTier]);
+  }, [directorPassStatus, activationDateStr, currentMembershipTier]);
 
   // Determine the effective status
   const effectiveStatus = useMemo(() => {
-    if (membershipTier === 'generational_vault') return 'generational_vault_active';
+    if (currentMembershipTier === 'generational_vault') return 'generational_vault_active';
     if (isPassExpired) return 'free_host_pass_expired';
     return directorPassStatus;
-  }, [membershipTier, isPassExpired, directorPassStatus]);
+  }, [currentMembershipTier, isPassExpired, directorPassStatus]);
 
   const passPeriodText = useMemo(() => {
     if (!activationDateStr) return '';
@@ -415,7 +443,7 @@ export function SettingsPageContent({
                      </h3>
                      <div className="flex items-center gap-2 mt-1.5 text-xs text-white/50">
                        <HardDrive className="h-3.5 w-3.5 text-amber-400/70" />
-                       <span>Storage Vault Quota: <strong className="text-white font-mono">{vaultQuotaGb} GB</strong> (4K Cloud Preservation)</span>
+                       <span>Storage Vault Quota: <strong className="text-white font-mono">{currentVaultQuotaGb} GB</strong> (4K Cloud Preservation)</span>
                      </div>
                      <p className="text-xs text-white/40 mt-2 leading-relaxed">
                        {effectiveStatus === 'inactive' && 'Your account is on the Free Preview. Claim your complimentary pass or unlock the Generational Vault to preserve memories in full 4K.'}
@@ -427,23 +455,23 @@ export function SettingsPageContent({
                    </div>
                  </div>
 
-                 {hasStripeCustomer && (
-                   <Button
-                     type="button"
-                     variant="outline"
-                     size="sm"
-                     onClick={handleOpenBillingPortal}
-                     disabled={isPortalLoading}
-                     className="bg-white/5 hover:bg-white/10 border-white/10 text-white text-xs font-mono uppercase tracking-wider shrink-0 cursor-pointer"
-                   >
-                     {isPortalLoading ? (
-                       <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-                     ) : (
-                       <CreditCard className="h-3.5 w-3.5 mr-1.5 text-amber-400" />
-                     )}
-                     <span>Billing & Invoices ↗</span>
-                   </Button>
-                 )}
+                  {Boolean(hasStripeCustomerState || currentMembershipTier === 'generational_vault' || directorPassStatus === 'paid_host_pass_active') && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleOpenBillingPortal}
+                      disabled={isPortalLoading}
+                      className="bg-white/5 hover:bg-white/10 border-white/10 text-white text-xs font-mono uppercase tracking-wider shrink-0 cursor-pointer"
+                    >
+                      {isPortalLoading ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                      ) : (
+                        <CreditCard className="h-3.5 w-3.5 mr-1.5 text-amber-400" />
+                      )}
+                      <span>Billing & Invoices ↗</span>
+                    </Button>
+                  )}
                </div>
 
                 {/* Action / Upgrade Options Box */}
@@ -561,21 +589,19 @@ export function SettingsPageContent({
                            <p className="text-xs text-white/50 mt-1 leading-relaxed max-w-2xl">You have permanent, unrestricted 100 GB archival storage with priority support.</p>
                          </div>
                        </div>
-                       {hasStripeCustomer && (
-                         <div className="pt-1">
-                           <Button
-                             type="button"
-                             variant="outline"
-                             size="sm"
-                             onClick={handleOpenBillingPortal}
-                             disabled={isPortalLoading}
-                             className="bg-white/5 hover:bg-white/10 border-white/10 text-white text-xs font-mono uppercase tracking-wider shrink-0 cursor-pointer"
-                           >
-                             {isPortalLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <CreditCard className="h-3.5 w-3.5 mr-1.5 text-amber-400" />}
-                             <span>View Receipts & Tax Invoices ↗</span>
-                           </Button>
-                         </div>
-                       )}
+                       <div className="pt-1">
+                         <Button
+                           type="button"
+                           variant="outline"
+                           size="sm"
+                           onClick={handleOpenBillingPortal}
+                           disabled={isPortalLoading}
+                           className="bg-white/5 hover:bg-white/10 border-white/10 text-white text-xs font-mono uppercase tracking-wider shrink-0 cursor-pointer"
+                         >
+                           {isPortalLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <CreditCard className="h-3.5 w-3.5 mr-1.5 text-amber-400" />}
+                           <span>View Receipts & Tax Invoices ↗</span>
+                         </Button>
+                       </div>
                      </div>
                    )}
                 </div>

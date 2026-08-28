@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/session';
 import { adminDb } from '@/lib/firebase-admin';
-import { createStripeBillingPortalSession } from '@/lib/stripe';
+import { createStripeBillingPortalSession, getOrCreateStripeCustomer } from '@/lib/stripe';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     const userDoc = await adminDb.collection('users').doc(session.uid).get();
     const userData = userDoc.data();
-    const customerId = userData?.stripeCustomerId;
+    let customerId = userData?.stripeCustomerId;
 
     const origin =
       req.headers.get('origin') ||
@@ -33,10 +33,18 @@ export async function POST(req: NextRequest) {
       'https://dev.memoryweaver.studio';
 
     if (!customerId) {
-      return NextResponse.json(
-        { error: 'No active Stripe billing profile found. Please purchase a pass or vault tier first.' },
-        { status: 404 }
-      );
+      if (session.email) {
+        customerId = await getOrCreateStripeCustomer({
+          uid: session.uid,
+          email: session.email,
+          displayName: session.displayName,
+        });
+      } else {
+        return NextResponse.json(
+          { error: 'No active Stripe billing profile found. Please purchase a pass or vault tier first.' },
+          { status: 404 }
+        );
+      }
     }
 
     const returnUrl = `${origin}/settings`;

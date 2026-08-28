@@ -6,9 +6,16 @@
   "title": "Albert Einstein: Spacetime & Imagination",
   "description": "Reconstruct early foundations and creative milestones from Albert Einstein's historical timeline.",
   "prose": "Let's explore the space-time of your memory. Think about a moment when time seemed to stand still, or when your imagination took flight beyond the bounds of everyday knowledge. We'll examine the thoughts that sparked your curiosity and the theories of life you've developed along the way. When you're ready, tell us about the relativity of your own journey.",
+  "age": 26,
+  "year": 1905,
+  "span": "1 Year (Annus Mirabilis)",
+  "timeframe": "1905",
+  "location": "Bern, Switzerland (Patent Office)",
+  "mood": "Reflective & Visionary",
   "sensoryConfig": [
-    { "type": "visual", "anchor": "Compass Needle" },
-    { "type": "auditory", "anchor": "Classroom Clock Ticking" }
+    { "type": "visual", "anchor": "Pocket Compass Needle" },
+    { "type": "auditory", "anchor": "Patent Office Clock Ticking" },
+    { "type": "tactile", "anchor": "Crisp Swiss Patent Documents" }
   ],
   "acts": {
     "act1": {

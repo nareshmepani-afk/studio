@@ -1035,6 +1035,11 @@ export default function SoloStage({
           status: "draft",
           prose: data?.prose || "",
           sensoryConfig: data?.sensoryConfig || [],
+          age: 26,
+          year: 1905,
+          span: "1 Year (Annus Mirabilis)",
+          timeframe: "1905",
+          location: "Bern, Switzerland (Patent Office)",
           productionStage: 1, // Advance to recording stage
           createdAt: new Date().toISOString()
         };
