@@ -64,7 +64,7 @@ const SEED_CATALOG: Record<string, string[]> = {
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const DAYS = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
-const YEARS = Array.from({ length: 100 }, (_, i) => (2026 - i).toString());
+const YEARS = Array.from({ length: 130 }, (_, i) => (2026 - i).toString());
 
 export const ACT_TITLES = [
   "Act I: The Inciting Memory",
@@ -290,17 +290,17 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     }
     return null;
   }, [data?.promptId]);
-  const [location, setLocation] = useState(data?.location || '');
+  const [location, setLocation] = useState(data?.narratorLocationAtEvent || data?.location || '');
   const [country, setCountry] = useState(data?.country && data.country !== 'none' ? data.country : '');
   const [tags, setTags] = useState<string[]>(data?.tags || []);
-  const [day, setDay] = useState(data?.dateComponents?.day || 'none');
-  const [month, setMonth] = useState(data?.dateComponents?.month || 'none');
-  const [year, setYear] = useState(data?.dateComponents?.year || 'none');
+  const [day, setDay] = useState(data?.dateComponents?.day ? String(data.dateComponents.day) : 'none');
+  const [month, setMonth] = useState(data?.dateComponents?.month ? String(data.dateComponents.month) : 'none');
+  const [year, setYear] = useState(data?.dateComponents?.year ? String(data.dateComponents.year) : (data?.year ? String(data.year) : 'none'));
   const [timeframeScope, setTimeframeScopeLocal] = useState<TimeframeScope>(data?.timeframeScope || 'Year');
   const [durationQuantity, setDurationQuantityLocal] = useState<number>(data?.durationQuantity || 1);
   const [durationUnit, setDurationUnitLocal] = useState<'days' | 'months' | 'years'>(data?.durationUnit || 'years');
   const [narratorAgeAtTime, setNarratorAgeAtTimeLocal] = useState<number>(() => {
-    const val = data?.narratorAgeAtTime !== undefined ? data.narratorAgeAtTime : 25;
+    const val = data?.narratorAgeAtTime !== undefined ? data.narratorAgeAtTime : (data?.age !== undefined ? data.age : 26);
     console.log("[MemoryForm] Initializing narratorAgeAtTimeLocal:", val, "for data.id:", data?.id);
     return val;
   });
@@ -537,12 +537,16 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
        }, 0);
     }
 
-    if (data?.location !== undefined && data.location !== location && lastFocusedField !== 'metadata') setLocation(data.location);
+    const loc = data?.narratorLocationAtEvent || data?.location;
+    if (loc !== undefined && loc !== location && lastFocusedField !== 'metadata') setLocation(loc);
     if (data?.country !== undefined && data.country !== country && lastFocusedField !== 'metadata') setCountry(data.country);
     
     if (data?.dateComponents && lastFocusedField !== 'metadata') {
-      if (data.dateComponents.day !== undefined && data.dateComponents.day !== day) setDay(data.dateComponents.day);
-      if (data.dateComponents.year !== undefined && data.dateComponents.year !== year) setYear(data.dateComponents.year);
+      if (data.dateComponents.day !== undefined && String(data.dateComponents.day) !== day) setDay(String(data.dateComponents.day));
+      if (data.dateComponents.month !== undefined && String(data.dateComponents.month) !== month) setMonth(String(data.dateComponents.month));
+      if (data.dateComponents.year !== undefined && String(data.dateComponents.year) !== year) setYear(String(data.dateComponents.year));
+    } else if (data?.year !== undefined && String(data.year) !== year && lastFocusedField !== 'metadata') {
+      setYear(String(data.year));
     }
 
     if (data?.timeframeScope !== undefined && data.timeframeScope !== timeframeScope) setTimeframeScopeLocal(data.timeframeScope);
@@ -551,6 +555,8 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
     if (data?.narratorAgeAtTime !== undefined && data.narratorAgeAtTime !== narratorAgeAtTime) {
       console.log("[MemoryForm] Syncing age FROM prop:", data.narratorAgeAtTime, "CURRENT local:", narratorAgeAtTime);
       setNarratorAgeAtTimeLocal(data.narratorAgeAtTime);
+    } else if (data?.age !== undefined && data.age !== narratorAgeAtTime) {
+      setNarratorAgeAtTimeLocal(data.age);
     }
 
     if (data?.scriptBlocks && JSON.stringify(data.scriptBlocks) !== JSON.stringify(scriptBlocks)) {

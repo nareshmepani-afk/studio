@@ -7,15 +7,30 @@
   "description": "Reconstruct early foundations and creative milestones from Albert Einstein's historical timeline.",
   "prose": "Let's explore the space-time of your memory. Think about a moment when time seemed to stand still, or when your imagination took flight beyond the bounds of everyday knowledge. We'll examine the thoughts that sparked your curiosity and the theories of life you've developed along the way. When you're ready, tell us about the relativity of your own journey.",
   "age": 26,
+  "narratorAgeAtTime": 26,
   "year": 1905,
+  "dateComponents": {
+    "day": "1",
+    "month": "January",
+    "year": "1905"
+  },
   "span": "1 Year (Annus Mirabilis)",
   "timeframe": "1905",
-  "location": "Bern, Switzerland (Patent Office)",
+  "timeframeScope": "Year",
+  "durationQuantity": 1,
+  "durationUnit": "years",
+  "location": "Bern, Switzerland (Swiss Patent Office)",
+  "narratorLocationAtEvent": "Bern, Switzerland (Swiss Patent Office)",
   "mood": "Reflective & Visionary",
+  "sensory": {
+    "visual": "Pocket Compass Needle",
+    "soundscape": "Patent Office Clock Ticking",
+    "texture": "Crisp Swiss Patent Documents"
+  },
   "sensoryConfig": [
-    { "type": "visual", "anchor": "Pocket Compass Needle" },
-    { "type": "auditory", "anchor": "Patent Office Clock Ticking" },
-    { "type": "tactile", "anchor": "Crisp Swiss Patent Documents" }
+    { "id": "visual", "label": "Visual Anchor (Sight)", "placeholder": "e.g. Pocket Compass Needle", "anchor": "Pocket Compass Needle" },
+    { "id": "soundscape", "label": "Soundscape (Hearing)", "placeholder": "e.g. Patent Office Clock Ticking", "anchor": "Patent Office Clock Ticking" },
+    { "id": "texture", "label": "Tactile Anchor (Touch)", "placeholder": "e.g. Crisp Swiss Patent Documents", "anchor": "Crisp Swiss Patent Documents" }
   ],
   "acts": {
     "act1": {

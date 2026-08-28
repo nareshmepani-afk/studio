@@ -99,6 +99,13 @@ export interface Memory {
   };
   timeframeScope?: TimeframeScope;
   narratorAgeAtTime?: number;
+  age?: number;
+  year?: number | string;
+  span?: string;
+  timeframe?: string;
+  mood?: string;
+  acts?: any;
+  narratorLocationAtEvent?: string;
   durationQuantity?: number;
   durationUnit?: 'days' | 'months' | 'years';
   prose?: string;

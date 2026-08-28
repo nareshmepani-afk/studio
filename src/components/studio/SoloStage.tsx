@@ -1035,11 +1035,22 @@ export default function SoloStage({
           status: "draft",
           prose: data?.prose || "",
           sensoryConfig: data?.sensoryConfig || [],
+          sensory: data?.sensory || {
+            visual: "Pocket Compass Needle",
+            soundscape: "Patent Office Clock Ticking",
+            texture: "Crisp Swiss Patent Documents"
+          },
           age: 26,
+          narratorAgeAtTime: 26,
           year: 1905,
+          dateComponents: { day: "1", month: "January", year: "1905" },
           span: "1 Year (Annus Mirabilis)",
           timeframe: "1905",
-          location: "Bern, Switzerland (Patent Office)",
+          timeframeScope: "Year",
+          durationQuantity: 1,
+          durationUnit: "years",
+          location: "Bern, Switzerland (Swiss Patent Office)",
+          narratorLocationAtEvent: "Bern, Switzerland (Swiss Patent Office)",
           productionStage: 1, // Advance to recording stage
           createdAt: new Date().toISOString()
         };
