@@ -166,6 +166,20 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
   7. **State Portability & LocalStorage**: Automatic namespaced `localStorage` persistence, `[ 💾 Export State ]` and `[ 📂 Import State ]` JSON session transfer, and `[ Reset ]` confirmation.
 - **Prerequisite Deployment Gate (Rule 5)**: The artifact MUST NOT be generated, linked, or handed off until a programmatic live probe against `https://dev.memoryweaver.studio/api/version` confirms that the active `commitSha` matches the newly committed Git SHA.
 
+# 30.1. QA Status State Preservation, Cross-Commit State Migration & Status Lineage Protocol
+- **Zero Status Loss Principle**: When the user submits a QA Verification Suite report in chat, the agent MUST treat that evaluation as the definitive source of truth. Test statuses, feedback notes, observations, telemetry, and attachments MUST NEVER be wiped, discarded, or silently reset when regenerating the QA checklist artifact for a new commit SHA.
+- **Cross-Commit State Migration Bridge in Browser Storage**:
+  - The client-side storage engine in `qa_checklist_interactive.html` MUST NOT use isolated, ephemeral storage keys that abandon previous results when `commitSha` changes.
+  - When loading a new commit version, the engine MUST check for previous test session data across all prior commit keys (and a unified persistent session store `mw_qa_state_v1_latest`) and seamlessly migrate existing evaluations (Statuses, Notes, Telemetry Vectors, Screenshots) into the new version.
+- **Mandatory Status Attribution & Lineage Field**:
+  - Every test card MUST render an explicit **Status Attribution & Lineage** badge and a **Status Rationale** description explaining *why* the test is currently in that state:
+    1. `✅ PASS — Verified by User (Commit [SHA])`: Retained from previous user QA submission because the test passed and was unaffected by recent changes.
+    2. `⏳ RE-TEST — Fix Deployed by Agent (Commit [SHA])`: Reset from `❌ FAIL` because a targeted code fix was deployed. The card MUST display a dedicated summary of what was fixed and what to verify.
+    3. `⏳ PENDING — Awaiting Verification`: Newly introduced test or untested path awaiting evaluation.
+    4. `⚠️ BACKLOG — Tracked in Backlog ([Ticket ID])`: Deferred to a documented backlog item.
+- **Permanent Test Suite State Sync in Generator Scripts**:
+  - Whenever generating or modifying `scripts/generate_qa_checklist.js`, the agent MUST synchronize the default test suite definitions with the user's latest verified results and provide explicit `statusAttribution` and `statusRationale` entries for each test item.
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
 - **2026-07-04**: v1.1.0-beta-MW-70. Resolved MFA loader lockout, expanded TOTP key length to 16 characters, corrected QR code URI literal colon separator, and added setup page console diagnostics. (Build Verify: SUCCESS)

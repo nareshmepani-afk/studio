@@ -225,6 +225,22 @@ function generateQAChecklistHtml(config) {
         </div>
       </div>` : ''}
 
+      <!-- STATUS ATTRIBUTION & RATIONALE -->
+      ${t.statusAttribution || t.statusRationale ? `
+      <div class="mb-4 p-3.5 rounded-xl bg-gray-950/70 border border-gray-800 flex items-start gap-3">
+        <div class="mt-0.5 text-base shrink-0">${t.defaultStatus === 'PASS' ? '🛡️' : (t.defaultStatus === 'RETEST' ? '🔄' : (t.defaultStatus === 'FAIL' ? '❌' : '⏳'))}</div>
+        <div class="space-y-1 overflow-hidden flex-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-[10px] font-mono uppercase font-bold text-amber-400">Status Attribution:</span>
+            <span class="text-xs font-mono font-semibold text-gray-200 px-2 py-0.5 rounded bg-gray-900 border border-gray-800">${t.statusAttribution || 'Unassigned'}</span>
+          </div>
+          ${t.statusRationale ? `
+          <div class="text-xs text-gray-400 font-sans leading-relaxed">
+            <span class="text-[10px] font-mono uppercase text-gray-500 mr-1">Status Rationale:</span>${t.statusRationale}
+          </div>` : ''}
+        </div>
+      </div>` : ''}
+
       <!-- STATUS BUTTONS TRIPLET -->
       <div class="flex items-center gap-2 pt-2 pb-4 border-b border-gray-800/60">
         <button onclick="setStatus(${num}, 'PASS')" id="btn-${num}-PASS" class="btn-pass flex-1 sm:flex-initial px-4 py-2 rounded-xl border border-gray-800 bg-gray-900/60 text-xs font-bold text-gray-400 hover:text-emerald-400 hover:border-emerald-500/50 transition">
@@ -315,18 +331,44 @@ function generateQAChecklistHtml(config) {
 
     function init() {
       try {
-        const saved = localStorage.getItem(STORAGE_KEY);
+        let saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+          // Cross-Commit Migration: Check for latest session or prior commit keys
+          saved = localStorage.getItem('mw_qa_state_v1_latest');
+          if (!saved) {
+            const commitKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+              const k = localStorage.key(i);
+              if (k && k.startsWith('mw_qa_state_v1_commit_')) {
+                commitKeys.push(k);
+              }
+            }
+            if (commitKeys.length > 0) {
+              commitKeys.sort().reverse();
+              saved = localStorage.getItem(commitKeys[0]);
+            }
+          }
+        }
+
         if (saved) {
           state = JSON.parse(saved);
-          if (!state.screenshots) state.screenshots = {};
-        } else {
-          // Preload default statuses if provided in test metadata
-          TEST_METADATA.forEach((t, idx) => {
-            const num = idx + 1;
-            if (t.defaultStatus) state.statuses[num] = t.defaultStatus;
-            if (t.defaultNotes) state.notes[num] = t.defaultNotes;
-          });
         }
+
+        // Hydrate from metadata for any unassigned fields or retest triggers
+        TEST_METADATA.forEach((t, idx) => {
+          const num = idx + 1;
+          if (state.statuses[num] === undefined && t.defaultStatus) {
+            state.statuses[num] = t.defaultStatus;
+          }
+          if (!state.notes[num] && t.defaultNotes) {
+            state.notes[num] = t.defaultNotes;
+          }
+        });
+
+        if (!state.screenshots) state.screenshots = {};
+        if (!state.notes) state.notes = {};
+        if (!state.telemetry) state.telemetry = {};
+        if (!state.statuses) state.statuses = {};
       } catch (e) {
         console.error('State load error:', e);
       }
@@ -364,6 +406,7 @@ function generateQAChecklistHtml(config) {
     function saveState() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        localStorage.setItem('mw_qa_state_v1_latest', JSON.stringify(state));
       } catch (e) {
         console.warn('Storage quota exceeded or error:', e);
       }
@@ -631,9 +674,16 @@ function generateQAChecklistHtml(config) {
       for (let i = 1; i <= TOTAL_TESTS; i++) {
         const s = state.statuses[i] || 'PENDING';
         const icon = s === 'PASS' ? '✅ PASS' : s === 'FAIL' ? '❌ FAIL' : s === 'BACKLOG' ? '⚠️ BACKLOG' : '⏳ PENDING';
-        const title = TEST_METADATA[i - 1]?.title || \`Test \${i}\`;
+        const meta = TEST_METADATA[i - 1];
+        const title = meta?.title || \`Test \${i}\`;
         
         md += \`#### \${icon} — Test \${i}: \${title}\\n\`;
+        if (meta?.statusAttribution) {
+          md += \`- **Attribution**: \${meta.statusAttribution}\\n\`;
+        }
+        if (meta?.statusRationale) {
+          md += \`- **Status Rationale**: \${meta.statusRationale}\\n\`;
+        }
         if (state.notes[i] && state.notes[i].trim()) {
           md += \`- **Feedback / Notes**: \${state.notes[i].trim()}\\n\`;
         }
@@ -726,6 +776,8 @@ if (require.main === module) {
           { label: 'Masked Placeholder', value: 'Enter access passcode...' }
         ],
         defaultStatus: 'PASS',
+        statusAttribution: '👤 Verified by User (Commit fe57798)',
+        statusRationale: 'Verified clean placeholder with zero leaked hints on staging.',
         defaultNotes: 'Verified clean placeholder with zero leaked hints.'
       },
       {
@@ -743,6 +795,8 @@ if (require.main === module) {
           { label: 'Session Cookie Token', value: 'staging_access_granted (30 Days)' }
         ],
         defaultStatus: 'PASS',
+        statusAttribution: '👤 Verified by User (Commit fe57798)',
+        statusRationale: 'Verified case-insensitivity and 900ms visual confirmation toast.',
         defaultNotes: 'Verified case-insensitivity and 900ms visual confirmation.'
       },
       {
@@ -760,6 +814,8 @@ if (require.main === module) {
           { label: 'Logout Destination', value: 'https://dev.memoryweaver.studio/admin/login' }
         ],
         defaultStatus: 'PASS',
+        statusAttribution: '👤 Verified by User (Commit fe57798)',
+        statusRationale: 'Verified Living Knowledge Hub documentation and new Log Out button.',
         defaultNotes: 'Verified Living Knowledge Hub documentation and new Log Out button.'
       },
       {
@@ -779,7 +835,11 @@ if (require.main === module) {
           { label: 'UK Postal Code', value: 'SW1A 1AA' },
           { label: 'Transaction Amount', value: '£12.99 GBP' },
           { label: 'Expected Return Route', value: 'https://dev.memoryweaver.studio/settings?checkout=success' }
-        ]
+        ],
+        defaultStatus: 'PASS',
+        statusAttribution: '👤 Verified by User (Commit f1d7f5a)',
+        statusRationale: 'Verified clean checkout and direct settings return with plan display.',
+        defaultNotes: 'After stripe payment has proceed the screen returns back. Shows active plan.'
       },
       {
         category: 'Vault Upgrades',
@@ -796,7 +856,11 @@ if (require.main === module) {
           { label: 'SKU Tier', value: 'Generational Vault Lifetime Archival' },
           { label: 'Transaction Amount', value: '£195.00 GBP' },
           { label: 'Vault Quota Unlocked', value: '100 GB Permanent Storage' }
-        ]
+        ],
+        defaultStatus: 'PASS',
+        statusAttribution: '👤 Verified by User (Commit f1d7f5a)',
+        statusRationale: 'Verified Generational Vault Lifetime Archival checkout and active tier display.',
+        defaultNotes: 'Verified Generational Vault tier display and checkout.'
       },
       {
         category: 'Pass Stacking Logic',
@@ -811,7 +875,11 @@ if (require.main === module) {
           { label: 'Action Button', value: 'Extend 31 Days' },
           { label: 'Expected Display', value: 'Active Period: [start] – [end] (31-Day Pass Active • Extend anytime to stack +31 days)' },
           { label: 'Stripe Test Card', value: '4242 4242 4242 4242' }
-        ]
+        ],
+        defaultStatus: 'PENDING',
+        statusAttribution: '⏳ Pending Live Verification',
+        statusRationale: 'Active period display added; awaiting live checkout stack test on staging.',
+        defaultNotes: ''
       },
       {
         category: 'Billing Compliance',
@@ -826,7 +894,11 @@ if (require.main === module) {
           { label: 'Button Label', value: 'Manage Billing & Download VAT Invoices ↗' },
           { label: 'Portal Gateway', value: 'Stripe Customer Billing Portal' },
           { label: 'Document Format', value: 'Official VAT Invoice PDF' }
-        ]
+        ],
+        defaultStatus: 'PASS',
+        statusAttribution: '👤 Verified by User (Commit f1d7f5a)',
+        statusRationale: 'Verified self-serve VAT Receipt & Invoice Portal button and Stripe handshake.',
+        defaultNotes: 'Verified self-serve VAT Receipt & Invoice Portal.'
       },
       {
         category: 'Sandbox Resilience',
@@ -845,7 +917,11 @@ if (require.main === module) {
           { label: 'Biographical Anchors', value: 'I WAS: 5 • YEAR: 1884 • SPAN: 1 Childhood Afternoon' },
           { label: 'Location Anchor', value: 'Munich, Germany (Family Residence)' },
           { label: 'Sensory Anchors', value: 'Cold Brass Pocket Compass, Trembling Magnetic Needle (Unseen North), Munich Bedroom Rain & Linens' }
-        ]
+        ],
+        defaultStatus: 'PENDING',
+        statusAttribution: '🤖 Reset for Retest — Fix Deployed in 16dda78',
+        statusRationale: 'Reset from ❌ FAIL because commit 16dda78 expanded YEARS to 150y, integrated authentic 1884 Munich magnetic compass monologue, and hydrated all demographic anchors.',
+        defaultNotes: ''
       }
     ]
   };
