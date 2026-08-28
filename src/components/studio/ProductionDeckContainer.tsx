@@ -339,6 +339,13 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
           status: 'draft',
           prose: initialProse,
           sensoryConfig: initialSensoryConfig,
+          narratorAgeAtTime: resolvedTemplate?.narratorAgeAtTime !== undefined ? resolvedTemplate.narratorAgeAtTime : 25,
+          dateComponents: resolvedTemplate?.dateComponents || (resolvedTemplate?.year ? { year: Number(resolvedTemplate.year) } : undefined),
+          timeframeScope: resolvedTemplate?.timeframeScope || 'event_scene',
+          durationQuantity: resolvedTemplate?.durationQuantity ?? 1,
+          durationUnit: resolvedTemplate?.durationUnit || 'years',
+          narratorLocationAtEvent: resolvedTemplate?.narratorLocationAtEvent || '',
+          acts: resolvedTemplate?.acts,
           modality: searchParams.get('modality') === 'vocal' ? 'voice' : (searchParams.get('modality') === 'scribe' ? 'pen' : null)
         };
     }

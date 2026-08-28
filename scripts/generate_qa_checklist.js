@@ -801,7 +801,7 @@ if (require.main === module) {
       {
         category: 'Pass Stacking Logic',
         title: 'MW-85: Cumulative Pass Stacking ("Extend 31 Days")',
-        instructions: 'With an active pass expiring in the future, click "Extend 31 Days" in <code class="text-amber-300">/settings</code>. Verify webhook calculates <code class="text-emerald-400">newExpiry = currentExpiry + 31 days</code> rather than overwriting from today.',
+        instructions: 'With an active 31-day pass, verify that <code class="text-amber-300">/settings</code> displays the exact date range: <code class="text-emerald-400">Active Period: [start] – [end] (31-Day Pass Active • Extend anytime to stack +31 days)</code>. Click "Extend 31 Days", complete checkout with test card, and verify the return URL updates the active period by +31 days cumulatively.',
         url: 'https://dev.memoryweaver.studio/settings',
         governingRules: [
           'MW-85: Non-Destructive Cumulative Timestamp Math',
@@ -809,21 +809,21 @@ if (require.main === module) {
         ],
         testData: [
           { label: 'Action Button', value: 'Extend 31 Days' },
-          { label: 'Expiry Formula', value: 'newExpiry = currentExpiry + 31 Days' },
+          { label: 'Expected Display', value: 'Active Period: [start] – [end] (31-Day Pass Active • Extend anytime to stack +31 days)' },
           { label: 'Stripe Test Card', value: '4242 4242 4242 4242' }
         ]
       },
       {
         category: 'Billing Compliance',
         title: 'MW-85: Self-Serve VAT Receipt & Invoice Portal',
-        instructions: 'In <code class="text-amber-300">/settings</code>, click "Manage Billing & Download VAT Invoices". Verify seamless redirect to Stripe Billing Portal to download official VAT invoice PDFs.',
+        instructions: 'In <code class="text-amber-300">/settings</code>, click the button labelled <strong class="text-white">"Manage Billing & Download VAT Invoices ↗"</strong> in either the Active Membership Tier card or the Generational Vault / Director Pass box. Verify instant seamless redirect to the Stripe Customer Billing Portal.',
         url: 'https://dev.memoryweaver.studio/settings',
         governingRules: [
           'Stripe Billing Customer Portal Handshake',
           'Rule 20: Mandatory UK English Orthography'
         ],
         testData: [
-          { label: 'Settings Button', value: 'Manage Billing & Download VAT Invoices' },
+          { label: 'Button Label', value: 'Manage Billing & Download VAT Invoices ↗' },
           { label: 'Portal Gateway', value: 'Stripe Customer Billing Portal' },
           { label: 'Document Format', value: 'Official VAT Invoice PDF' }
         ]
@@ -831,7 +831,7 @@ if (require.main === module) {
       {
         category: 'Sandbox Resilience',
         title: '✨ Try Einstein Demo Quick-Start & Vault Isolation',
-        instructions: 'Click "✨ Try Einstein Demo" in Studio Header. Confirm pre-loaded sample memory loads in 100% ephemeral client-memory state with zero unauthorized Firestore draft creation.',
+        instructions: 'Click "✨ Try Einstein Demo" in Studio Header. Confirm pre-loaded sample memory loads with rich documentary-grade anchors: <code class="text-amber-300">Age: 26</code>, <code class="text-amber-300">Year: 1905</code>, <code class="text-amber-300">Span: 1 Year (Annus Mirabilis)</code>, <code class="text-amber-300">Location: Bern Patent Office</code>, and rich sensory anchors (Pocket Compass, Clock Ticking, Patent Documents).',
         url: 'https://dev.memoryweaver.studio/studio',
         governingRules: [
           'Rule 7: Universal Non-Degradation Across All Features',
@@ -839,8 +839,9 @@ if (require.main === module) {
         ],
         testData: [
           { label: 'Studio Entry Route', value: 'https://dev.memoryweaver.studio/studio' },
-          { label: 'Demo Memory Sample', value: 'Albert Einstein — Relativity & Legacy' },
-          { label: 'Sample Document ID', value: 'ey96djU6qR1BrDGnvZwp' }
+          { label: 'Biographical Anchors', value: 'I WAS: 26 • YEAR: 1905 • SPAN: 1 Year (Annus Mirabilis)' },
+          { label: 'Location Anchor', value: 'Bern, Switzerland (Swiss Patent Office)' },
+          { label: 'Sensory Anchors', value: 'Pocket Compass Needle, Patent Office Clock Ticking, Crisp Patent Documents' }
         ]
       }
     ]

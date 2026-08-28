@@ -62,6 +62,8 @@ export default async function SettingsPage() {
       <SettingsPageContent 
         initialDirectorPassStatus={userData?.directorPassStatus || 'inactive'} 
         initialDirectorPassActivationDate={userData?.directorPassActivationDate} 
+        paidDirectorPassExpiryDate={userData?.paidDirectorPassExpiryDate}
+        lastPaymentDate={userData?.lastPaymentDate}
         membershipTier={membershipTier}
         vaultQuotaGb={vaultQuotaGb}
         hasStripeCustomer={hasStripeCustomer}

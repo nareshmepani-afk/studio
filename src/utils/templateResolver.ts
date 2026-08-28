@@ -3,6 +3,14 @@ export interface ResolvedTemplateData {
   description: string;
   prose: string;
   sensoryConfig: any[];
+  narratorAgeAtTime?: number;
+  dateComponents?: { year?: number; month?: number; day?: number };
+  timeframeScope?: string;
+  durationQuantity?: number;
+  durationUnit?: string;
+  narratorLocationAtEvent?: string;
+  acts?: any;
+  [key: string]: any;
 }
 
 /**
@@ -30,6 +38,14 @@ export async function resolveTemplateFixtureAsync(templateId: string): Promise<R
       description: data.description || '',
       prose: data.prose || '',
       sensoryConfig: Array.isArray(data.sensoryConfig) ? data.sensoryConfig : [],
+      narratorAgeAtTime: data.narratorAgeAtTime ?? data.age ?? 26,
+      dateComponents: data.dateComponents || (data.year ? { year: Number(data.year) } : { year: 1905 }),
+      timeframeScope: data.timeframeScope || 'event_scene',
+      durationQuantity: data.durationQuantity ?? 1,
+      durationUnit: data.durationUnit || 'years',
+      narratorLocationAtEvent: data.narratorLocationAtEvent || data.location || 'Bern, Switzerland (Swiss Patent Office)',
+      acts: data.acts,
+      ...data,
     };
   } catch (e) {
     console.error(`[TemplateResolver] Async load failure for template ID: ${templateId}`, e);
