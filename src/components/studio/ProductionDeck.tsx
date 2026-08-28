@@ -841,8 +841,8 @@ const ProductionDeck = React.forwardRef<any, ProductionDeckProps>(({
                 console.log("[ProductionDeck] Setting isReviewing to true. Entering SelectionDeck...");
                 setIsReviewing(true);
                 setIsGeneratingDrafts(false); // SUCCESS: Close overlay
-                toast.success("Visions Synthesized", {
-                    description: "The Director has prepared three distinct paths for your memory."
+                toast.success("Visions Synthesised", {
+                    description: `The Director has prepared ${completeDrafts.length} distinct paths for your memory.`
                 });
 
                 // Construct fresh aiTakes map from newly synthesized visions

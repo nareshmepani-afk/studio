@@ -163,9 +163,10 @@ export const SelectionDeck = ({
 
   const isActII = currentStage === 1;
   const headerTitle = isActII ? "The Deep Weave" : "Director's Cut";
+  const countWord = drafts?.length ? (drafts.length === 5 ? 'five' : drafts.length) : 'five';
   const headerSubtitle = isActII 
-    ? "The AI Weaver has synthesised three sensory interpretations of your script" 
-    : "The Director has prepared three narrative interpretations of your memory";
+    ? `The AI Weaver has synthesised ${countWord} sensory interpretations of your script` 
+    : `The Director has prepared ${countWord} narrative interpretations of your memory`;
   const temporalNoteLabel = isActII 
     ? "Director's Sensory Note" 
     : "Director's Temporal Note";

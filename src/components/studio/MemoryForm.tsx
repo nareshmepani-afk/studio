@@ -994,7 +994,7 @@ export const MemoryForm = React.forwardRef<any, MemoryFormProps>(({
         setAiTakes(results);
         setIsReviewingSensory(true);
         toast.success("Sensory Weave Completed", {
-          description: "The Director has generated three sensory takes. Review and select your performance blueprint."
+          description: "The Director has generated the sensory takes. Review and select your performance blueprint."
         });
       } else {
         throw new Error("The Weaver returned no sensory takes. Recalibrating...");
