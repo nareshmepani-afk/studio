@@ -27,6 +27,19 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-forwarded-for',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
+}
+
 export async function GET(req: NextRequest) {
   return NextResponse.json({
     status: 'online',
@@ -39,21 +52,21 @@ export async function GET(req: NextRequest) {
       body: { code: 'MW-VAULT-XXXX-XXXX' },
     },
     version: '1.1.0-beta',
-  });
+  }, { headers: CORS_HEADERS });
 }
 
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown-ip';
     if (!checkRateLimit(ip)) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429, headers: CORS_HEADERS });
     }
 
     const body = await req.json().catch(() => ({}));
     const { code } = body;
 
     if (!code || typeof code !== 'string') {
-      return NextResponse.json({ valid: false });
+      return NextResponse.json({ valid: false }, { headers: CORS_HEADERS });
     }
 
     const normalisedCode = normaliseVoucherCode(code);
@@ -67,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     if (!voucherSnap.exists) {
       // Track failed attempt on the IP's rate limit only (no doc to update)
-      return NextResponse.json({ valid: false });
+      return NextResponse.json({ valid: false }, { headers: CORS_HEADERS });
     }
 
     const voucher = voucherSnap.data() as GiftVoucherDocument;
@@ -82,9 +95,9 @@ export async function POST(req: NextRequest) {
       unboxingLanguage: voucher.unboxingLanguage,
     };
 
-    return NextResponse.json(result);
+    return NextResponse.json(result, { headers: CORS_HEADERS });
   } catch (error: any) {
     console.error('Error verifying gift voucher:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: CORS_HEADERS });
   }
 }

@@ -1,5 +1,18 @@
 import { NextResponse } from 'next/server';
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
+}
+
 export async function GET() {
   const version = process.env.NEXT_PUBLIC_APP_VERSION || 'v1.1.0-beta';
   const commitSha = 
@@ -20,6 +33,7 @@ export async function GET() {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
         'Pragma': 'no-cache',
+        ...CORS_HEADERS,
       },
     }
   );

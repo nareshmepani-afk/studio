@@ -124,16 +124,17 @@ function generateQAChecklistHtml(config) {
         <div class="space-y-1">
           <div class="text-xs font-mono text-gray-400 uppercase tracking-wider">Completion Status</div>
           <div id="tally-display" class="text-sm font-bold text-gray-200">0 Pass • 0 Fail • 0 Backlog • ${totalTests} Pend</div>
-          <div class="flex items-center gap-2 pt-1">
-            <button id="btn-ping" onclick="pingEdge()" class="text-[11px] font-mono px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-amber-400 border border-gray-700 flex items-center gap-1 transition">
-              <span>⚡ Ping Edge</span>
-              <span id="ping-latency" class="text-gray-400"></span>
+          <div class="flex items-center gap-2 pt-1 flex-wrap">
+            <button id="btn-ping" onclick="pingEdge()" class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-amber-400 border border-gray-700 flex items-center gap-1.5 transition whitespace-nowrap cursor-pointer shadow">
+              <span id="ping-icon">⚡</span>
+              <span>Ping Edge</span>
+              <span id="ping-latency" class="text-xs font-bold text-emerald-400"></span>
             </button>
-            <button onclick="scrollToNextPending()" class="text-[11px] font-mono px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-amber-300 border border-gray-700 transition">
-              🎯 Next Test
+            <button onclick="scrollToNextPending()" class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-amber-300 border border-gray-700 flex items-center gap-1 transition whitespace-nowrap cursor-pointer">
+              <span>🎯 Next Test</span>
             </button>
-            <button onclick="resetAll()" class="text-[11px] font-mono px-2 py-0.5 rounded bg-gray-800 hover:bg-rose-950/40 text-gray-400 hover:text-rose-400 border border-gray-700 transition">
-              Reset
+            <button onclick="resetAll()" class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-rose-950/40 text-gray-400 hover:text-rose-400 border border-gray-700 transition whitespace-nowrap cursor-pointer">
+              <span>Reset</span>
             </button>
           </div>
         </div>
@@ -735,16 +736,34 @@ function generateQAChecklistHtml(config) {
     }
 
     async function pingEdge() {
+      const btn = document.getElementById('btn-ping');
+      const icon = document.getElementById('ping-icon');
       const latencyEl = document.getElementById('ping-latency');
-      latencyEl.textContent = '...';
+      if (icon) icon.textContent = '⏳';
+      if (latencyEl) {
+        latencyEl.className = 'text-xs font-mono text-amber-400';
+        latencyEl.textContent = '...';
+      }
+      if (btn) btn.disabled = true;
+
       const t0 = performance.now();
       try {
-        const res = await fetch('${environmentUrl}/api/version', { cache: 'no-store' });
+        const res = await fetch('${environmentUrl}/api/version', { cache: 'no-store', mode: 'cors' });
         const data = await res.json();
         const latency = Math.round(performance.now() - t0);
-        latencyEl.textContent = \`(\${latency}ms • SHA \${data.commitSha})\`;
+        if (icon) icon.textContent = '⚡';
+        if (latencyEl) {
+          latencyEl.className = 'text-xs font-mono font-bold text-emerald-400';
+          latencyEl.textContent = \`(\${latency}ms • \${data.commitSha})\`;
+        }
       } catch (e) {
-        latencyEl.textContent = '(Edge error)';
+        if (icon) icon.textContent = '⚠️';
+        if (latencyEl) {
+          latencyEl.className = 'text-xs font-mono text-rose-400';
+          latencyEl.textContent = \`(Error: \${e.message})\`;
+        }
+      } finally {
+        if (btn) btn.disabled = false;
       }
     }
 
