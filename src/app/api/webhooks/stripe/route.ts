@@ -2,8 +2,83 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getStripe, PRICING_TIERS_CONFIG, CheckoutTier } from '@/lib/stripe';
 import { adminDb } from '@/lib/firebase-admin';
 import Stripe from 'stripe';
+import { generateVoucherCode } from '@/lib/voucherTokens';
+import type { GiftVoucherDocument, GiftTier, DeliveryMode, UnboxingLanguage } from '@/types/gift';
 
 export const dynamic = 'force-dynamic';
+
+async function createGiftVoucherFromSession(
+  session: Stripe.Checkout.Session,
+  giverUid: string,
+  eventId: string
+): Promise<void> {
+  if (!adminDb) throw new Error('Database unavailable');
+
+  const metadata = session.metadata || {};
+  const tier = (metadata.tier as GiftTier) || 'director';
+
+  // Generate unique Crockford Base32 voucher code
+  const code = await generateVoucherCode(tier);
+
+  const now = new Date().toISOString();
+
+  const voucherDoc: GiftVoucherDocument = {
+    code,
+    tier,
+    vaultQuotaGb: tier === 'generational_vault' ? 100 : 15,
+    durationDays: tier === 'generational_vault' ? null : 31,
+    status: 'unredeemed',
+    giverUid,
+    giverName: metadata.giverName || 'Anonymous',
+    giverEmail: metadata.giverEmail || session.customer_details?.email || '',
+    giftMessage: metadata.giftMessage || '',
+    giverMediaUrl: null,
+    recipientName: metadata.recipientName || '',
+    recipientEmail: metadata.recipientEmail || null,
+    deliveryMode: (metadata.deliveryMode as DeliveryMode) || 'instant_link',
+    scheduledDeliveryDate: metadata.scheduledDeliveryDate || null,
+    unboxingLanguage: (metadata.unboxingLanguage as UnboxingLanguage) || 'en',
+    isFounderMint: false,
+    stripeSessionId: session.id,
+    stripePaymentIntentId: session.payment_intent ? String(session.payment_intent) : null,
+    amountPaid: session.amount_total || 0,
+    currency: (session.currency as 'gbp' | 'usd') || 'gbp',
+    purchasedAt: now,
+    redeemedByUid: null,
+    redeemedByEmail: null,
+    redeemedAt: null,
+    failedAttempts: 0,
+    lastAttemptAt: null,
+    expiresAt: null,
+  };
+
+  // Atomic write: voucher document + giver payment audit ledger
+  const batch = adminDb.batch();
+
+  // Create the gift voucher document
+  const voucherRef = adminDb.collection('gift_vouchers').doc(code);
+  batch.set(voucherRef, voucherDoc);
+
+  // Record payment under giver's audit ledger
+  const giverRef = adminDb.collection('users').doc(giverUid);
+  const paymentRef = giverRef.collection('payments').doc(session.id);
+  batch.set(paymentRef, {
+    sessionId: session.id,
+    stripeCustomerId: session.customer || null,
+    tier,
+    amountTotal: session.amount_total,
+    currency: session.currency,
+    paymentStatus: session.payment_status,
+    createdAt: now,
+    customerEmail: session.customer_details?.email || metadata.giverEmail || null,
+    eventId,
+    type: 'gift_purchase',
+    giftVoucherCode: code,
+    recipientName: metadata.recipientName || '',
+  });
+
+  await batch.commit();
+}
 
 export async function POST(req: NextRequest) {
   const stripe = getStripe();
@@ -56,6 +131,15 @@ export async function POST(req: NextRequest) {
         if (existingPayment.exists) {
           console.log(`Duplicate event detected: session ${session.id} already processed for UID ${uid}`);
           return NextResponse.json({ received: true, duplicate: true });
+        }
+
+        // ── Gift Purchase Detection & Fork ──────────────────────────────────
+        const isGift = session.metadata?.isGift === 'true';
+
+        if (isGift) {
+          await createGiftVoucherFromSession(session, uid, event.id);
+          console.log(`🎁 Gift voucher created for session ${session.id} by giver UID ${uid}`);
+          break;
         }
 
         const userDoc = await userRef.get();

@@ -46,5 +46,11 @@ service cloud.firestore {
          request.auth.token.email.matches('.*@googlemail\\.com$') ||
          request.auth.token.email.matches('.*@hotmail\\.com$'));
     }
+
+    // Gift Vouchers — all operations via Admin SDK (server-side only).
+    // Client-side access is denied; all reads/writes go through API endpoints.
+    match /gift_vouchers/{voucherCode} {
+      allow read, write: if false;
+    }
   }
 }
