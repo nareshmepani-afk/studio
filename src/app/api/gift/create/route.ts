@@ -6,6 +6,19 @@ import { GiftVoucherDocument, GiftTier, DeliveryMode, UnboxingLanguage } from '@
 
 export const dynamic = 'force-dynamic';
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-internal-key',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
+}
+
 export async function GET(req: NextRequest) {
   return NextResponse.json({
     status: 'online',
@@ -13,7 +26,7 @@ export async function GET(req: NextRequest) {
     method: 'POST (Admin / Internal)',
     description: 'Memory Weaver Internal Gift Voucher Creation API',
     version: '1.1.0-beta',
-  });
+  }, { headers: CORS_HEADERS });
 }
 
 export async function POST(req: NextRequest) {
@@ -34,7 +47,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!isAuthorized) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: CORS_HEADERS });
     }
 
     const body = await req.json();
@@ -57,18 +70,18 @@ export async function POST(req: NextRequest) {
     } = body;
 
     if (!tier || !['director', 'generational_vault'].includes(tier)) {
-      return NextResponse.json({ error: 'Invalid tier' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid tier' }, { status: 400, headers: CORS_HEADERS });
     }
 
     let code = '';
     if (vanityCode) {
       const validation = validateVanityCode(vanityCode);
       if (!validation.valid) {
-        return NextResponse.json({ error: validation.reason }, { status: 400 });
+        return NextResponse.json({ error: validation.reason }, { status: 400, headers: CORS_HEADERS });
       }
       const exists = await checkCodeExists(vanityCode.toUpperCase());
       if (exists) {
-        return NextResponse.json({ error: 'Vanity code already exists' }, { status: 409 });
+        return NextResponse.json({ error: 'Vanity code already exists' }, { status: 409, headers: CORS_HEADERS });
       }
       code = vanityCode.toUpperCase();
     } else {
@@ -110,12 +123,12 @@ export async function POST(req: NextRequest) {
 
     await adminDb.collection('gift_vouchers').doc(code).set(voucherDoc);
 
-    return NextResponse.json({ code, tier });
+    return NextResponse.json({ code, tier }, { headers: CORS_HEADERS });
   } catch (error: any) {
     console.error('Error creating gift voucher:', error);
     return NextResponse.json(
       { error: error?.message || 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: CORS_HEADERS }
     );
   }
 }

@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 // Simple in-memory rate limiter
 const ipRequests = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const MAX_REQUESTS_PER_IP = 5;
+const MAX_REQUESTS_PER_IP = 60;
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();

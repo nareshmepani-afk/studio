@@ -5,6 +5,19 @@ import { GiftVoucherDocument, RedemptionResult } from '@/types/gift';
 
 export const dynamic = 'force-dynamic';
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
+}
+
 export async function GET(req: NextRequest) {
   return NextResponse.json({
     status: 'online',
@@ -17,21 +30,21 @@ export async function GET(req: NextRequest) {
       body: { code: 'MW-VAULT-XXXX-XXXX' },
     },
     version: '1.1.0-beta',
-  });
+  }, { headers: CORS_HEADERS });
 }
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session?.uid || !session?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: CORS_HEADERS });
     }
 
     const body = await req.json();
     const { code } = body;
 
     if (!code || typeof code !== 'string') {
-      return NextResponse.json({ error: 'Invalid code provided' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid code provided' }, { status: 400, headers: CORS_HEADERS });
     }
 
     if (!adminDb) {
@@ -111,13 +124,13 @@ export async function POST(req: NextRequest) {
       } as RedemptionResult;
     });
 
-    return NextResponse.json({ success: true, ...result });
+    return NextResponse.json({ success: true, ...result }, { headers: CORS_HEADERS });
 
   } catch (error: any) {
     console.error('Error redeeming gift voucher:', error);
     if (error.status && error.code) {
-      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.status, headers: CORS_HEADERS });
     }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: CORS_HEADERS });
   }
 }

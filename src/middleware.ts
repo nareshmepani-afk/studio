@@ -169,6 +169,7 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith('/api/version') ||
       pathname.startsWith('/api/dev/ping') ||
       pathname.startsWith('/api/webhooks/') ||
+      pathname.startsWith('/api/gift/') ||
       pathname.startsWith('/api/telemetry') ||
       pathname === '/robots.txt' ||
       pathname === '/sitemap.xml' ||
