@@ -82,5 +82,20 @@ This document codifies the critical lessons learned from our development Sprints
 2. Provide a non-destructive side-by-side comparison popover (`[ 👁️ View Original Spark ]`) allowing performers to contrast raw input vs synthesized output.
 3. Guarantee a 1-click restoration safeguard (`[ ↩ Restore Original Spark ]`) so storytellers retain ultimate narrative agency over their memories.
 
+---
 
+### Lesson 9: On Unbroken Autonomous Pipeline Execution, Dual-Method API Parity, and Local QA Artifact Resilience
 
+**Verdict:** The Sealed Ceremony
+**User Feedback:** "Why did I have to remind you of this rule?" & "With lessons learnt have you updated Agent.md, this has to be a continous model?"
+**Root Cause:**
+1. **Pipeline Hesitation**: After running `npm.cmd run build` successfully, I treated the sprint completion as a stopping point and asked for user signal instead of autonomously executing commit -> push -> 280s poll -> verify `/api/version` -> generate interactive QA artifact handoff end-to-end.
+2. **Missing GET Diagnostic Parity**: Creating POST mutation routes without friendly GET handlers resulted in browser `405 Method Not Allowed` when opened directly by the user.
+3. **Cross-Commit Array Index Collision**: Using numeric array indices (`state.statuses[i]`) across commits caused newly added tests to inherit PASS statuses from previous tests.
+4. **Local `file:///` CORS Blocking**: Standalone HTML artifacts loaded from local filesystem paths had background `fetch()` calls blocked due to missing `Access-Control-Allow-Origin: *` headers on `/api/version` and `/api/gift/*`.
+
+**The Protocol:**
+1. **Unbroken Pipeline Mandate (Rule 5)**: When `npm.cmd run build` passes with exit code 0, immediately and autonomously commit, push, poll, verify edge rollout, and output the interactive QA artifact. Never ask for permission to finish the release gate.
+2. **Dual-Method API Standard (Rule 32)**: Every operational API route MUST provide an informative, self-documenting GET handler returning HTTP 200 JSON status and schema rather than leaving GET unhandled.
+3. **Title-Based Lineage (Rule 30.1)**: Cross-commit QA state migration MUST match tests strictly by exact test `title`, keeping new tests in `UNTESTED` state.
+4. **Universal CORS & Interactive Probes (Rule 33)**: Diagnostic endpoints must send permissive CORS headers (`Access-Control-Allow-Origin: *`), and interactive QA cards must embed `[ ⚡ Send Live Probe ]` execution harnesses for 1-click verification.
