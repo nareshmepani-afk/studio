@@ -35,14 +35,17 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
   - Outputting ANY checklist artifact, HTML link, or test questionnaire before `/api/version` confirms the rollout is an immediate violation of this rule.
 - **Strict 5-Step Commit-Push-Verification Workflow**:
   1. **Pre-Push Build**: Run `npm.cmd run build` locally. Confirm all 33+ routes compile with exit code 0. Fix any errors before pushing.
-  2. **Push to Dev**: Commit and push code to the `dev` branch.
-  3. **Zero-Checklist Response**: In the push response, the agent MUST NOT output or link any checklist. The agent only reports the pushed commit SHA and initiates rollout verification.
-  4. **Automated Continuous Polling (Calibrated 5-Minute Initial Window)**:
+  2. **Unbroken Autonomous Execution Mandate (Zero Premature Pauses or Inquiries)**:
+     - Upon `npm.cmd run build` exiting 0, the agent is **STRICTLY FORBIDDEN** from halting the workflow, asking the user "Should I proceed with commit?", or pausing for user authorization.
+     - The agent MUST immediately and autonomously execute `git add`, `git commit`, and `git push origin dev`, report the pushed commit SHA, initiate the calibrated poll timer, probe `/api/version`, and deliver the interactive QA artifact handoff end-to-end.
+  3. **Push to Dev**: Commit and push code to the `dev` branch.
+  4. **Zero-Checklist Response**: In the push response, the agent MUST NOT output or link any checklist. The agent only reports the pushed commit SHA and initiates rollout verification.
+  5. **Automated Continuous Polling (Calibrated 5-Minute Initial Window)**:
      - Cloud Build compilation, container packaging, and edge traffic routing on Firebase App Hosting consistently takes ~4.5 to 5.0 minutes.
      - The agent MUST set the initial poll timer for **4.5 to 5 minutes (`DurationSeconds: 270` to `300`)** immediately upon pushing. Do NOT use 30s or 45s micro-intervals to avoid spamming the user with incremental wakeups.
      - If `/api/version` has not yet updated after the initial 5-minute window, schedule subsequent check-ins every **60 seconds (`DurationSeconds: 60`)** until the rollout completes.
      - The agent continues polling autonomously until `/api/version` confirms the rollout, only escalating to the user if a remote build error is detected.
-  5. **Rollout Verified Handoff**: ONLY after `/api/version` returns the exact target `commitSha` may the agent generate/update the Testing Checklist and hand off to the user for staging verification.
+  6. **Rollout Verified Handoff**: ONLY after `/api/version` returns the exact target `commitSha` may the agent generate/update the Testing Checklist and hand off to the user for staging verification.
 - **Mandatory Fully-Qualified Test URLs & Zero Placeholder Policy**:
   - Whenever generating, updating, or presenting ANY Testing Checklist, test steps, or test instructions (both in chat responses and in interactive checklist artifacts), the agent MUST NEVER output relative paths (e.g. `/cinema/tv?id=...`) or truncated ellipsis placeholders (`...`).
   - Every test item MUST specify the complete, fully-qualified public staging URL (e.g. `https://dev.memoryweaver.studio/cinema/tv?id=ey96djU6qR1BrDGnvZwp`) containing the active sample memory ID or target route.
@@ -171,6 +174,7 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Cross-Commit State Migration Bridge in Browser Storage**:
   - The client-side storage engine in `qa_checklist_interactive.html` MUST NOT use isolated, ephemeral storage keys that abandon previous results when `commitSha` changes.
   - When loading a new commit version, the engine MUST check for previous test session data across all prior commit keys (and a unified persistent session store `mw_qa_state_v1_latest`) and seamlessly migrate existing evaluations (Statuses, Notes, Telemetry Vectors, Screenshots) into the new version.
+  - **Strict Title-Based Lineage & True Untested Initialisation**: Cross-commit state migration MUST match tests strictly by exact test `title` (or signature), NEVER by numeric array indices (`state.statuses[i]`). Brand-new tests in a sprint/release MUST initialize cleanly in `UNTESTED` (Pending) state without inheriting previous tests' PASS statuses.
 - **Mandatory Status Attribution & Lineage Field**:
   - Every test card MUST render an explicit **Status Attribution & Lineage** badge and a **Status Rationale** description explaining *why* the test is currently in that state:
     1. `✅ PASS — Verified by User (Commit [SHA])`: Retained from previous user QA submission because the test passed and was unaffected by recent changes.
@@ -838,3 +842,36 @@ The final **Production-Ready Audit & Retrospective** (Rule 16) MUST explicitly c
 
 ## 31.3 Dynamic Context-Aware Header HUD
 - `LegalLayoutContent.tsx` must dynamically read `getLegalMetaForPath(pathname)` to render the active document's exact `lastUpdated` date and version badge in the top header HUD without visual redundancy in the article body.
+
+# 32. Dual-Method API Diagnostic Architecture Standard (GET & POST Parity)
+
+## 32.1 Absolute Prohibition of Unhandled HTTP 405 Method Not Allowed
+- When an API endpoint primarily ingests `POST` mutation payloads (e.g. `/api/gift/verify`, `/api/gift/redeem`, `/api/gift/create`, `/api/checkout/*`), the agent MUST NEVER leave the `GET` route unhandled.
+- Leaving `GET` unhandled causes Next.js App Router to return `HTTP 405 Method Not Allowed` when opened directly in a browser tab or inspected during verification.
+
+## 32.2 Mandatory Self-Documenting GET Handlers
+- Every operational and domain API route MUST export an informative `GET` handler returning an HTTP 200 JSON object with:
+  1. `status: 'online'`
+  2. `endpoint`: Canonical route path (e.g. `'/api/gift/verify'`)
+  3. `method`: Primary accepted HTTP method (e.g. `'POST'`)
+  4. `description`: Clear English description of the endpoint's purpose
+  5. `usage`: Exact JSON schema, required headers, and sample body parameters
+  6. `version`: Application semantic version string
+
+# 33. Universal File Origin (`file:///`) CORS & In-Browser Interactive API Probe Standard
+
+## 33.1 Permissive Diagnostic CORS for Local QA Verification
+- Diagnostic and public verification endpoints (such as `/api/version`, `/api/dev/ping`, `/api/gift/verify`) MUST include permissive CORS response headers:
+  - `'Access-Control-Allow-Origin': '*'`
+  - `'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'`
+  - `'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-forwarded-for'`
+- Endpoints MUST export a dedicated `export async function OPTIONS()` preflight handler returning `HTTP 204 No Content` with identical CORS headers.
+- This ensures that standalone interactive QA artifacts opened via local filesystem URLs (`file:///C:/Users/.../qa_checklist_interactive.html`) can successfully execute live edge probes without silent browser CORS blocks.
+
+## 33.2 In-Card Interactive Live API Probe Harness
+- For all backend API test cases in `qa_checklist_interactive.html`, the test card MUST render a dedicated **`[ ⚡ Send Live Probe ]`** execution harness.
+- Clicking the probe button executes a real-time `fetch()` against the live edge endpoint, rendering:
+  1. Exact HTTP status code, status text, and round-trip millisecond latency.
+  2. Live formatted JSON response output in a syntax-highlighted code container.
+  3. A 1-click `[ 📋 Copy JSON ]` action button.
+
