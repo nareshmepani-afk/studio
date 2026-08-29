@@ -915,13 +915,14 @@ if (require.main === module) {
           { label: 'Story Hook', value: 'Before the equations, before the Nobel, before spacetime—there was only a boy, a trembling brass compass, and the invisible wonder of the unseen world.' },
           { label: 'Spoken Monologue', value: 'I was five years old, sick in bed, when my father placed a small brass pocket compass in my trembling hand. No matter which way I turned the casing, that mysterious needle remained stubbornly fixed to the unseen north. In that quiet room, beneath the cold brass and glass, I realised something behind things had to be hidden—something deeply hidden.' },
           { label: 'Biographical Anchors', value: 'I WAS: 5 • YEAR: 1884 • SPAN: 1 Childhood Afternoon' },
-          { label: 'Location Anchor', value: 'Munich, Germany (Family Residence)' },
+          { label: 'Location Anchor', value: 'Munich (Family Residence)' },
+          { label: 'Country Anchor', value: 'Germany' },
           { label: 'Sensory Anchors', value: 'Cold Brass Pocket Compass, Trembling Magnetic Needle (Unseen North), Munich Bedroom Rain & Linens' }
         ],
-        defaultStatus: 'PENDING',
-        statusAttribution: '🤖 Reset for Retest — 0ms Sync Hydration & Sandbox Query Isolation',
-        statusRationale: 'Reset from ❌ FAIL because async race condition was eliminated with 0ms synchronous template resolution and user memory query was isolated from demo templates.',
-        defaultNotes: ''
+        defaultStatus: 'PASS',
+        statusAttribution: '👤 Verified by User (Commit d727b68)',
+        statusRationale: 'Verified authentic 1884 Munich magnetic compass monologue, demographic anchors, and 0ms sync hydration on staging.',
+        defaultNotes: 'COUNTRY - GERMANY'
       }
     ]
   };

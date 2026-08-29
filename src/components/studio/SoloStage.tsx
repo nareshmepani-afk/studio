@@ -1050,7 +1050,8 @@ export default function SoloStage({
           timeframeScope: "Event",
           durationQuantity: 1,
           durationUnit: "days",
-          location: "Munich, Germany (Family Residence)",
+          location: "Munich (Family Residence)",
+          country: "Germany",
           narratorLocationAtEvent: "Munich, Germany (Family Residence)",
           productionStage: 1, // Advance to recording stage
           createdAt: new Date().toISOString()

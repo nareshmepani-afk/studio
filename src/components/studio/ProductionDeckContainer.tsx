@@ -349,7 +349,8 @@ export function ProductionDeckContainer({ promptId, isModal = false }: Productio
           timeframeScope: resolvedTemplate?.timeframeScope || '1 Childhood Afternoon',
           durationQuantity: resolvedTemplate?.durationQuantity ?? 1,
           durationUnit: resolvedTemplate?.durationUnit || 'days',
-          location: resolvedTemplate?.location || resolvedTemplate?.narratorLocationAtEvent || 'Munich, Germany (Family Residence)',
+          location: resolvedTemplate?.location || resolvedTemplate?.narratorLocationAtEvent || 'Munich (Family Residence)',
+          country: resolvedTemplate?.country || 'Germany',
           narratorLocationAtEvent: resolvedTemplate?.narratorLocationAtEvent || resolvedTemplate?.location || 'Munich, Germany (Family Residence)',
           acts: resolvedTemplate?.acts,
           modality: searchParams.get('modality') === 'vocal' ? 'voice' : (searchParams.get('modality') === 'scribe' ? 'pen' : null)
