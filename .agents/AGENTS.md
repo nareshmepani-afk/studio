@@ -180,6 +180,26 @@ When encountering deployment, routing, or environment errors (e.g., 403, 404, 50
 - **Permanent Test Suite State Sync in Generator Scripts**:
   - Whenever generating or modifying `scripts/generate_qa_checklist.js`, the agent MUST synchronize the default test suite definitions with the user's latest verified results and provide explicit `statusAttribution` and `statusRationale` entries for each test item.
 
+# 30.2. Mandatory Line-by-Line QA Ingestion Sweep & Actionable Observation Protocol
+- **The Zero-Skipped-Notes Mandate**: When the user submits ANY QA Verification Suite report, markdown summary, or test feedback (whether 1 test or 10 tests), the agent is **STRICTLY FORBIDDEN** from merely reading the top-level summary line (e.g. `8 Passed | 0 Failed`) and assuming all tests require zero action.
+- **Systematic Line-by-Line Ingestion Sweep**:
+  - The agent MUST parse and audit EVERY individual test card in the report line-by-line, regardless of whether the card is marked `✅ PASS`, `❌ FAIL`, or `⏳ PENDING`.
+  - The agent MUST inspect and evaluate:
+    1. The exact text in `Feedback / Notes`
+    2. Any attached screenshot tally (`Screenshots Attached: N`)
+    3. Any user questions, edge cases, or feedback annotations (e.g. `COUNTRY - GERMANY`, `Worked after refresh`, `Should i see invoice in the sandbox?`)
+- **Mandatory Explicit Itemisation in Agent Responses**:
+  - The agent's response MUST explicitly itemise, quote, and directly address EVERY user comment and note found in the submission.
+  - The agent MUST NEVER summarize passed tests into a generic bullet list that conceals, glosses over, or ignores user observations or attached notes.
+- **Observation-to-Action Pipeline on Passed Tests**:
+  - If a test is marked `✅ PASS` but contains a user observation, metadata discrepancy, or refinement request (such as `COUNTRY - GERMANY` indicating an unpopulated Country field), the agent MUST:
+    1. Treat the observation as a high-priority production defect / refinement vector.
+    2. Trace the root cause immediately across data fixtures, schemas, and UI forms.
+    3. Implement the fix, run local unit tests (`npm.cmd test`) and production build gates (`npm.cmd run build`), commit, push, and verify rollout on staging per Rule 5.
+    4. Report the exact resolution to the user before closing the test cycle.
+- **The Premature Milestone Celebration Lock**:
+  - The agent is **STRICTLY FORBIDDEN** from declaring a milestone 100% complete, closing tickets, or transitioning to future ideation/suggestions if ANY user comment, note, observation, or question in the QA submission remains unanalyzed, unanswered, or unaddressed.
+
 # Deployment Milestones
 - **2026-06-29**: v1.1.0-beta. Resolved dynamic Einstein template hydration, automated client-side cloning, multi-core GCF FFmpeg processing execution, and structured telemetry reporting. (Build Verify: SUCCESS)
 - **2026-07-04**: v1.1.0-beta-MW-70. Resolved MFA loader lockout, expanded TOTP key length to 16 characters, corrected QR code URI literal colon separator, and added setup page console diagnostics. (Build Verify: SUCCESS)
