@@ -225,6 +225,25 @@ function generateQAChecklistHtml(config) {
         </div>
       </div>` : ''}
 
+      <!-- LIVE API PROBE SECTION -->
+      ${t.testProbe ? `
+      <div class="mb-4 p-3.5 rounded-xl bg-gray-950/80 border border-amber-500/20">
+        <div class="flex items-center justify-between gap-2 mb-2 flex-wrap">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[10px] uppercase font-bold">${t.testProbe.method || 'POST'}</span>
+            <span class="text-xs font-mono text-gray-300 truncate max-w-md">${t.testProbe.url || t.url}</span>
+          </div>
+          <button onclick="sendLiveProbe(${num})" id="probe-btn-${num}" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-gray-950 text-xs font-bold font-mono transition flex items-center gap-1 shadow-lg shadow-amber-500/10 cursor-pointer">
+            <span>⚡ Send Live Probe</span>
+          </button>
+        </div>
+        ${t.testProbe.body ? `
+        <div class="text-[10px] font-mono text-gray-400 mb-1.5">
+          <span class="text-gray-500">Payload:</span> <code class="text-amber-300/80">${JSON.stringify(t.testProbe.body)}</code>
+        </div>` : ''}
+        <div id="probe-result-${num}" class="hidden mt-2 p-2.5 rounded-lg bg-gray-900 border border-gray-800 text-[11px] font-mono overflow-x-auto max-h-48 custom-scrollbar"></div>
+      </div>` : ''}
+
       <!-- STATUS ATTRIBUTION & RATIONALE -->
       ${t.statusAttribution || t.statusRationale ? `
       <div class="mb-4 p-3.5 rounded-xl bg-gray-950/70 border border-gray-800 flex items-start gap-3">
@@ -330,9 +349,11 @@ function generateQAChecklistHtml(config) {
     };
 
     function init() {
-      try {
+        let isExactCommitSession = false;
         let saved = localStorage.getItem(STORAGE_KEY);
-        if (!saved) {
+        if (saved) {
+          isExactCommitSession = true;
+        } else {
           // Cross-Commit Migration: Check for latest session or prior commit keys
           saved = localStorage.getItem('mw_qa_state_v1_latest');
           if (!saved) {
@@ -351,13 +372,38 @@ function generateQAChecklistHtml(config) {
         }
 
         if (saved) {
-          state = JSON.parse(saved);
+          const loaded = JSON.parse(saved);
+          if (isExactCommitSession) {
+            state = loaded;
+          } else {
+            // Migrating across commits: Match strictly by test title!
+            const priorTitles = loaded.testTitles || {};
+            TEST_METADATA.forEach((t, idx) => {
+              const num = idx + 1;
+              let matchedPriorNum = null;
+              for (const [pNum, pTitle] of Object.entries(priorTitles)) {
+                if (pTitle === t.title) {
+                  matchedPriorNum = pNum;
+                  break;
+                }
+              }
+              if (matchedPriorNum) {
+                if (loaded.statuses?.[matchedPriorNum]) state.statuses[num] = loaded.statuses[matchedPriorNum];
+                if (loaded.notes?.[matchedPriorNum]) state.notes[num] = loaded.notes[matchedPriorNum];
+                if (loaded.telemetry?.[matchedPriorNum]) state.telemetry[num] = loaded.telemetry[matchedPriorNum];
+                if (loaded.screenshots?.[matchedPriorNum]) state.screenshots[num] = loaded.screenshots[matchedPriorNum];
+              } else if (t.defaultStatus && t.defaultStatus !== 'UNTESTED') {
+                state.statuses[num] = t.defaultStatus;
+                if (t.defaultNotes) state.notes[num] = t.defaultNotes;
+              }
+            });
+          }
         }
 
-        // Hydrate from metadata for any unassigned fields or retest triggers
+        // Hydrate defaultStatus for unassigned tests
         TEST_METADATA.forEach((t, idx) => {
           const num = idx + 1;
-          if (state.statuses[num] === undefined && t.defaultStatus) {
+          if (state.statuses[num] === undefined && t.defaultStatus && t.defaultStatus !== 'UNTESTED') {
             state.statuses[num] = t.defaultStatus;
           }
           if (!state.notes[num] && t.defaultNotes) {
@@ -405,6 +451,10 @@ function generateQAChecklistHtml(config) {
 
     function saveState() {
       try {
+        state.testTitles = {};
+        TEST_METADATA.forEach((t, idx) => {
+          state.testTitles[idx + 1] = t.title;
+        });
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         localStorage.setItem('mw_qa_state_v1_latest', JSON.stringify(state));
       } catch (e) {
@@ -488,6 +538,48 @@ function generateQAChecklistHtml(config) {
       }).catch(() => {
         prompt('Copy text:', text);
       });
+    }
+
+    async function sendLiveProbe(testNum) {
+      const meta = TEST_METADATA[testNum - 1];
+      if (!meta || !meta.testProbe) return;
+      const btn = document.getElementById(\`probe-btn-\${testNum}\`);
+      const resEl = document.getElementById(\`probe-result-\${testNum}\`);
+      if (!btn || !resEl) return;
+      
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ Probing...';
+      btn.disabled = true;
+      resEl.classList.remove('hidden');
+      resEl.innerHTML = '<span class="text-gray-400">Sending request to edge...</span>';
+
+      try {
+        const t0 = performance.now();
+        const res = await fetch(meta.testProbe.url || meta.url, {
+          method: meta.testProbe.method || 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(meta.testProbe.headers || {})
+          },
+          body: meta.testProbe.body ? JSON.stringify(meta.testProbe.body) : undefined,
+        });
+        const duration = Math.round(performance.now() - t0);
+        const data = await res.json().catch(() => ({ statusText: res.statusText }));
+        
+        const statusColor = res.ok ? 'text-emerald-400' : 'text-amber-400';
+        resEl.innerHTML = \`
+          <div class="flex items-center justify-between text-xs mb-1.5 pb-1 border-b border-gray-800">
+            <span class="\${statusColor} font-bold">HTTP \${res.status} \${res.statusText} (\${duration}ms)</span>
+            <button onclick="copyToClipboard('\${JSON.stringify(data).replace(/'/g, "\\\\'")}', 'copy-res-\${testNum}')" id="copy-res-\${testNum}" class="text-[10px] text-gray-400 hover:text-white cursor-pointer">📋 Copy JSON</button>
+          </div>
+          <pre class="text-gray-300 leading-tight whitespace-pre-wrap">\${JSON.stringify(data, null, 2)}</pre>
+        \`;
+      } catch (err) {
+        resEl.innerHTML = \`<span class="text-rose-400 font-bold">Error: \${err.message}</span>\`;
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
     }
 
     /* SCREENSHOT ATTACHMENT ENGINE */
@@ -920,9 +1012,9 @@ if (require.main === module) {
           { label: 'Sensory Anchors', value: 'Cold Brass Pocket Compass, Trembling Magnetic Needle (Unseen North), Munich Bedroom Rain & Linens' }
         ],
         defaultStatus: 'PASS',
-        statusAttribution: '👤 Verified by User (Commit d727b68)',
-        statusRationale: 'Verified authentic 1884 Munich magnetic compass monologue, demographic anchors, and 0ms sync hydration on staging.',
-        defaultNotes: 'COUNTRY - GERMANY'
+        statusAttribution: '👤 Verified by User (Commit 5fb97d6)',
+        statusRationale: 'Verified authentic 1884 Munich magnetic compass monologue, demographic anchors (Location: Munich, Country: Germany), and 0ms sync hydration on staging.',
+        defaultNotes: ''
       }
     ]
   };

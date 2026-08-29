@@ -5,6 +5,21 @@ import { GiftVoucherDocument, RedemptionResult } from '@/types/gift';
 
 export const dynamic = 'force-dynamic';
 
+export async function GET(req: NextRequest) {
+  return NextResponse.json({
+    status: 'online',
+    endpoint: '/api/gift/redeem',
+    method: 'POST (Authenticated)',
+    description: 'Memory Weaver Atomic Gift Voucher Redemption API',
+    usage: {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { code: 'MW-VAULT-XXXX-XXXX' },
+    },
+    version: '1.1.0-beta',
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession();

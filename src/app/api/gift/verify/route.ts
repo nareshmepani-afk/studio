@@ -27,6 +27,21 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+export async function GET(req: NextRequest) {
+  return NextResponse.json({
+    status: 'online',
+    endpoint: '/api/gift/verify',
+    method: 'POST',
+    description: 'Memory Weaver Gift Voucher Verification API',
+    usage: {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { code: 'MW-VAULT-XXXX-XXXX' },
+    },
+    version: '1.1.0-beta',
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown-ip';

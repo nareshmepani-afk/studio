@@ -6,6 +6,16 @@ import { GiftVoucherDocument, GiftTier, DeliveryMode, UnboxingLanguage } from '@
 
 export const dynamic = 'force-dynamic';
 
+export async function GET(req: NextRequest) {
+  return NextResponse.json({
+    status: 'online',
+    endpoint: '/api/gift/create',
+    method: 'POST (Admin / Internal)',
+    description: 'Memory Weaver Internal Gift Voucher Creation API',
+    version: '1.1.0-beta',
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const internalKey = req.headers.get('x-internal-key');
