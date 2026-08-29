@@ -350,6 +350,7 @@ function generateQAChecklistHtml(config) {
     };
 
     function init() {
+      try {
         let isExactCommitSession = false;
         let saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
