@@ -20,7 +20,7 @@ import type { GiftTier } from '@/types/gift';
 // Crockford Base32 Alphabet (32 unambiguous characters)
 // ---------------------------------------------------------------------------
 
-const CROCKFORD_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+export const CROCKFORD_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
 /** Tier prefix mapping for voucher codes */
 const TIER_PREFIX: Record<GiftTier, string> = {
@@ -101,9 +101,40 @@ export function isValidVoucherFormat(code: string): boolean {
  * @returns Normalised voucher code string
  */
 export function normaliseVoucherCode(input: string): string {
-  return input
-    .trim()
-    .toUpperCase()
+  const trimmed = input.trim().toUpperCase();
+
+  // If prefixed with standard prefixes, isolate prefix from payload segments to prevent corrupting 'VAULT' or 'PASS'
+  if (trimmed.startsWith('MW-PASS-')) {
+    const payload = trimmed.slice('MW-PASS-'.length);
+    const normalisedPayload = payload
+      .replace(/I/g, '1')
+      .replace(/L/g, '1')
+      .replace(/O/g, '0')
+      .replace(/U/g, 'V');
+    return `MW-PASS-${normalisedPayload}`;
+  }
+
+  if (trimmed.startsWith('MW-VAULT-')) {
+    const payload = trimmed.slice('MW-VAULT-'.length);
+    const normalisedPayload = payload
+      .replace(/I/g, '1')
+      .replace(/L/g, '1')
+      .replace(/O/g, '0')
+      .replace(/U/g, 'V');
+    return `MW-VAULT-${normalisedPayload}`;
+  }
+
+  if (trimmed.startsWith('MW-')) {
+    const payload = trimmed.slice('MW-'.length);
+    const normalisedPayload = payload
+      .replace(/I/g, '1')
+      .replace(/L/g, '1')
+      .replace(/O/g, '0')
+      .replace(/U/g, 'V');
+    return `MW-${normalisedPayload}`;
+  }
+
+  return trimmed
     .replace(/I/g, '1')
     .replace(/L/g, '1')
     .replace(/O/g, '0')

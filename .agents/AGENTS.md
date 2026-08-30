@@ -875,3 +875,17 @@ The final **Production-Ready Audit & Retrospective** (Rule 16) MUST explicitly c
   2. Live formatted JSON response output in a syntax-highlighted code container.
   3. A 1-click `[ 📋 Copy JSON ]` action button.
 
+# 34. Dual-Tier Verification Architecture Standard (Automated Vitest Invariants vs Human UI Flow Testing)
+
+## 34.1 The Division of Verification Responsibilities
+- **Anti-Pattern (Manual Backend State Manipulation)**: Never ask or expect human testers to manually evaluate backend transaction invariants (e.g. attempting to double-redeem vouchers, attempting to claim duplicate lifetime passes, simulating rate limiter thresholds, or checking date math arithmetic) through manual database seeding and browser refreshes. This is slow, error-prone, and causes tester fatigue.
+- **Tier 1: Mandatory Automated Vitest Regression Shield (`npm test`)**:
+  - All transactional invariants, boundary conditions, rate limiting rules, permission gates, cumulative timestamp math, quota preservation (`Math.max`), and token normalization MUST be codified in automated Vitest test suites (`src/test/*.test.ts`).
+  - Vitest tests MUST run on every commit and pre-push build gate, providing 100% deterministic mathematical proof of backend correctness.
+- **Tier 2: Human UI Flow Testing in Interactive QA Artifacts (`qa_checklist_interactive.html`)**:
+  - Human verification MUST focus on the end-to-end user experience, emotional resonance, visual layout fidelity, ceremony pacing, haptics, responsive design, and unboxing rituals (e.g. purchasing on `/gift`, 1-click test voucher minting on `/admin?suite=vouchers`, experiencing `/unboxing/[code]`, and receiving keepsake emails).
+  - When backend-only routes are listed in QA artifacts during early sprint stages, each test card MUST:
+    1. Display clear automated test verification status (`✅ Vitest Invariant Suite: PASSED`).
+    2. Provide an interactive `[ ⚡ Send Live Probe ]` execution harness with pre-filled test payloads for instant edge verification.
+
+

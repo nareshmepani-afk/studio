@@ -4,6 +4,26 @@ import { createStripeCheckoutSession, CheckoutTier, SupportedCurrency } from '@/
 
 export const dynamic = 'force-dynamic';
 
+export async function GET(req: NextRequest) {
+  return NextResponse.json({
+    status: 'online',
+    endpoint: '/api/checkout/create-session',
+    method: 'POST (Authenticated)',
+    description: 'Memory Weaver Stripe Checkout Session Creation API',
+    usage: {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        tier: 'director | generational_vault',
+        currency: 'gbp | usd',
+        returnUrl: 'string (optional)',
+        giftParams: 'GiftCheckoutParams (optional, for heirloom gifting)',
+      },
+    },
+    version: '1.1.0-beta',
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
@@ -16,7 +36,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { tier, currency = 'gbp', returnUrl } = body;
+    const { tier, currency = 'gbp', returnUrl, giftParams } = body;
 
     if (!tier || (tier !== 'director' && tier !== 'generational_vault')) {
       return NextResponse.json(
@@ -38,6 +58,7 @@ export async function POST(req: NextRequest) {
       currency: (currency.toLowerCase() === 'usd' ? 'usd' : 'gbp') as SupportedCurrency,
       origin,
       returnUrl,
+      giftParams,
     });
 
     return NextResponse.json({

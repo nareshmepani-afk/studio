@@ -99,3 +99,17 @@ This document codifies the critical lessons learned from our development Sprints
 2. **Dual-Method API Standard (Rule 32)**: Every operational API route MUST provide an informative, self-documenting GET handler returning HTTP 200 JSON status and schema rather than leaving GET unhandled.
 3. **Title-Based Lineage (Rule 30.1)**: Cross-commit QA state migration MUST match tests strictly by exact test `title`, keeping new tests in `UNTESTED` state.
 4. **Universal CORS & Interactive Probes (Rule 33)**: Diagnostic endpoints must send permissive CORS headers (`Access-Control-Allow-Origin: *`), and interactive QA cards must embed `[ ⚡ Send Live Probe ]` execution harnesses for 1-click verification.
+
+---
+
+### Lesson 10: On Dual-Tier Verification: Automated Vitest Invariant Proofs vs Human UI Flow Testing
+
+**Verdict:** The Sealed Ceremony
+**User Feedback:** "Can't some of these be done via another method, how does the user test 'rejects already-redeemed vouchers (HTTP 409 VOUCHER_ALREADY_REDEEMED), prevents duplicate lifetime memberships (HTTP 409 ALREADY_LIFETIME_HOLDER), and applies cumulative +31 day extensions for Director passes.' PART OF VITEST OR CURL ETC. WHAT DO YOU THINK?"
+**Root Cause:**
+- Expecting human testers to manually test complex backend transaction invariants (e.g. double-claims, duplicate lifetime passes, rate-limiting windows, date arithmetic) in browser tabs. Manual testing of database state transitions requires manual seed creation, resets, and repeated auth manipulation, which is slow and frustrating.
+
+**The Protocol (Rule 34):**
+1. **Automated Vitest Invariants (Tier 1)**: All backend transaction rules, mathematical date projections (+31 days), duplicate claim rejections, rate limiter resets, storage quota expansions (`Math.max`), and Base32 Crockford sanitizations MUST be 100% verified via automated Vitest regression suites (`src/test/*.test.ts`).
+2. **Human UI Flow Testing (Tier 2)**: Human verification in interactive QA suites (`qa_checklist_interactive.html`) must focus on real end-to-end user journeys (buying gifts on `/gift`, 1-click test minting on `/admin?suite=vouchers`, experiencing `/unboxing/[code]` ceremony, breaking wax seals, haptics, and email receipts).
+3. **Backend API QA Cards**: For backend-only routes in early sprint stages, provide clear Vitest automation status alongside 1-click `[ ⚡ Send Live Probe ]` execution harnesses for instant live edge verification.

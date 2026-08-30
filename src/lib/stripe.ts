@@ -102,11 +102,9 @@ export async function getOrCreateStripeCustomer(params: {
   return customer.id;
 }
 
-/**
- * Creates a customized Stripe Checkout session for Director Pass or Generational Vault.
- * Both tiers operate under mode: 'payment' for fixed-duration and lifetime access (matching Section 5 of Terms of Service).
- */
-export async function createStripeCheckoutSession(params: {
+import type { GiftCheckoutParams } from '@/types/gift';
+
+export interface CreateStripeCheckoutSessionParams {
   uid: string;
   email: string;
   displayName?: string | null;
@@ -114,8 +112,15 @@ export async function createStripeCheckoutSession(params: {
   currency?: SupportedCurrency;
   origin: string;
   returnUrl?: string;
-}): Promise<Stripe.Checkout.Session> {
-  const { uid, email, displayName, tier, currency = 'gbp', origin, returnUrl } = params;
+  giftParams?: GiftCheckoutParams;
+}
+
+/**
+ * Creates a customized Stripe Checkout session for Director Pass or Generational Vault.
+ * Both tiers operate under mode: 'payment' for fixed-duration and lifetime access (matching Section 5 of Terms of Service).
+ */
+export async function createStripeCheckoutSession(params: CreateStripeCheckoutSessionParams): Promise<Stripe.Checkout.Session> {
+  const { uid, email, displayName, tier, currency = 'gbp', origin, returnUrl, giftParams } = params;
   const stripe = getStripe();
   const tierConfig = PRICING_TIERS_CONFIG[tier];
 
@@ -123,19 +128,29 @@ export async function createStripeCheckoutSession(params: {
     throw new Error(`Invalid checkout tier: ${tier}`);
   }
 
+  const isGift = Boolean(giftParams?.isGift);
   const customerId = await getOrCreateStripeCustomer({ uid, email, displayName });
   const unitAmount = tierConfig.amount[currency] || tierConfig.amount.gbp;
 
-  const successUrl = `${origin}/settings?checkout=success&session_id={CHECKOUT_SESSION_ID}&tier=${tier}`;
-  const cancelUrl = returnUrl || `${origin}/pricing?checkout=cancelled&tier=${tier}`;
+  const successUrl = isGift
+    ? `${origin}/gift/confirmation?session_id={CHECKOUT_SESSION_ID}`
+    : `${origin}/settings?checkout=success&session_id={CHECKOUT_SESSION_ID}&tier=${tier}`;
+  const cancelUrl = returnUrl || (isGift ? `${origin}/gift?checkout=cancelled&tier=${tier}` : `${origin}/pricing?checkout=cancelled&tier=${tier}`);
+
+  const productName = isGift
+    ? (tier === 'generational_vault' ? 'Gift: The Generational Heirloom (Lifetime Access & 100 GB Vault)' : 'Gift: The Milestone Director\'s Edition (31-Day Pass & 15 GB Vault)')
+    : tierConfig.name;
 
   const priceData: Stripe.Checkout.SessionCreateParams.LineItem.PriceData = {
     currency,
     product_data: {
-      name: tierConfig.name,
-      description: tierConfig.description,
+      name: productName,
+      description: isGift
+        ? (giftParams?.recipientName ? `Heirloom Gift for ${giftParams.recipientName}. Includes personalised physical vector keepsake card & 2.39:1 widescreen unboxing cinema.` : tierConfig.description)
+        : tierConfig.description,
       metadata: {
         tier,
+        isGift: isGift ? 'true' : 'false',
       },
     },
     unit_amount: unitAmount,
@@ -145,6 +160,24 @@ export async function createStripeCheckoutSession(params: {
     priceData.recurring = {
       interval: tierConfig.interval,
     };
+  }
+
+  const sessionMetadata: Record<string, string> = {
+    uid,
+    tier,
+    userEmail: email,
+  };
+
+  if (isGift && giftParams) {
+    sessionMetadata.isGift = 'true';
+    sessionMetadata.giverName = displayName || email.split('@')[0];
+    sessionMetadata.giverEmail = email;
+    sessionMetadata.recipientName = giftParams.recipientName;
+    sessionMetadata.recipientEmail = giftParams.recipientEmail || '';
+    sessionMetadata.giftMessage = giftParams.giftMessage || '';
+    sessionMetadata.deliveryMode = giftParams.deliveryMode;
+    sessionMetadata.scheduledDeliveryDate = giftParams.scheduledDeliveryDate || '';
+    sessionMetadata.unboxingLanguage = giftParams.unboxingLanguage || 'en';
   }
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
@@ -158,11 +191,7 @@ export async function createStripeCheckoutSession(params: {
         quantity: 1,
       },
     ],
-    metadata: {
-      uid,
-      tier,
-      userEmail: email,
-    },
+    metadata: sessionMetadata,
     success_url: successUrl,
     cancel_url: cancelUrl,
     billing_address_collection: 'auto',
@@ -170,7 +199,9 @@ export async function createStripeCheckoutSession(params: {
     submit_type: 'pay',
     custom_text: {
       submit: {
-        message: 'Your memory studio access and 4K cloud vault activate immediately upon completion.',
+        message: isGift
+          ? 'Your heirloom gift pass and wax-sealed keepsake voucher will be generated immediately upon checkout.'
+          : 'Your memory studio access and 4K cloud vault activate immediately upon completion.',
       },
     },
   };
